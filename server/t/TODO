@@ -1,0 +1,12 @@
+undelete
+
+    zones
+    records
+
+searching
+    various function calls (get_group_zones/nameservers/users/subgroups etc)
+        can include search params.  check searching/sorting works
+
+logging
+
+    check that actions that should be logged are done so correctly

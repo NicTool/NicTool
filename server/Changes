@@ -1,0 +1,188 @@
+Revision history for Perl extension NicToolServer.
+
+2.08 - Mar 2010
+
+    * added support for encrypted passwords in nt_user table 
+        see http://www.tnpi.net/support/forums/index.php/topic,902.0.html
+      NOTICE: this version requires updating the database:
+         $ mysql -u nictool -p nictool < sql/upgrade/update_v2_08.sql
+    * Added file existence test before comparing for differences in 
+      nt_export_djb.pl 
+    * Updated the Ipv6 implementation to choose between AAAA records with and
+      without auto created PTR records. Lines prefixed with a 6 will have 
+      both an AAAA and a PTR record created. Those prefixed with a 3 will only 
+      have an AAAA record created. 
+    * Fixed a bug in Zone/Record/Sanity that allowed : character to be allowed
+      when it shouldn't have been. This was causing tests to fail.
+    * Restrictions on passwords were imposed but the test weren't updated. Fixed.
+
+2.07 - Sep 2008
+
+    * Updated the export routine to djbdns so it supports Ipv6 adresses
+    * Add the option to add IPv6 AAAA addresses checked by Net::IP
+    * fixed a bug that prevented Advanced Search feature from working
+    * removed 28 lines of redundant code (thanks, maxv)
+
+2.06 - Oct 2007
+
+    * fixed a bug in nt_export_djb.pl ($UID)
+        (https://www.tnpi.net/support/forums/index.php/topic,821.0.html)
+    * sort the zone records as signed integers (so reverse zone records are
+       sorted correctly) - thanks Patrick Woo at telus
+    * sort the zones as signed integers if group name has "reverse" in it
+    * added additional user and password validity checks
+       - max pass length of 15 chars
+       - max user length of 50 chars
+       - increased min password length to 6 chars
+       - password cannot be same as username
+       - password cannot contain the username
+    * removed a bunch of code duplication in User/Sanity.pm by abstracting
+      the user and password tests into their own subroutines
+    * Changed the hard coded paging limit from 100 to 255 and noted the
+      limit in the API docs per this notice:
+        https://www.tnpi.net/support/forums/index.php/topic,800.0.html
+    * nt_export_djb.pl fixes:
+       - export always reported failure if rsync was not being used.
+       - disabled some superfluous db logging that is not used.
+       - nicer formatting of the "export status" message
+
+2.05 - Feb 2007
+
+NOTICE: this version requires updating your SQL tables! Something like this should work:
+     mysql -u nictool -p nictool < sql/upgrade/update_v2_05.sql
+
+    * abstracted NicToolServer::Zone::Record::Sanity::new_or_edit_basic_verify
+      into a suite of functions instead of one really big long nasty hard to read and poorly documented one
+    * nt_export_djb updates to support SRV records
+    * db_mysql.h
+          o ZONE_QUERY_FORMAT shortened from 716 to 509 characters
+          o added ZR_PRIORITY
+          o added ZR_OTHER 
+    * nameserver/install.pl, rewrote, prompts for all required values with
+      reasonable defaults. Setting up a nameserver export process is now much easier. 
+    * NicToolServer::Zone::get_zone_records: patch from slink, see forum thread 
+    * nt_export_djb.pl - provides better error messages if your ns export isn't set up right 
+    * bin/install_deps.sh - tries to install perl modules NicTool requires
+
+
+2.04 - Jan 2007
+
+    - added "use Apache2::SOAP to nictoolserver.conf (mps)
+    - djbdns/nameserver/install.pl updates (rl)
+
+2.03 - Apr 2005
+
+    - NicToolServer/Zone/Record/Sanity.pm - allow / character in TXT records (for SPF)
+    - NicToolServer/Zone/Record/Sanity.pm - replace any : characters in TXT records with \072 since : is a field delimiter in tinydns data files.
+
+2.02 - Oct 2004
+
+    - NicToolServer/Response.pm - added mod_perl 2 check and use content_type instead of send_http_header if mod_perl 2.
+
+2.01 - Sep 2004
+
+    - Added Copyright and Affero GPL license text to all source files
+    - Added files LICENSE & COPYING
+    - Updated files to reflect version 2.01
+    - sys/djb - make clean now cleans up nameserver/sample/nt_export_djb*
+    - consistent password among the variety of config files, now you can grep for it and change it everywhere at once.
+    - Added support for TXT records, now you can set up SPF records for email
+ 
+2.00 - Feb 2002
+    -Protocol version is now specified via the "nt_protocol_version" parameter.  This is an optional parameter.  If specified NicToolServer will require that the version string is allowed
+    -Protocol version changed to 1.0.  Only this version is supported in NicToolServer version 2.00.
+    -Permissions
+        Entirely new permissions system.
+        The affected API functions are:
+        new_user, edit_user,get_user, new_group,edit_group,get_group
+        Nearly all actual function calls are affected, because certain actions may
+        not be allowed depending on a user's permissions.
+    -Delegation
+        Zones and Zone Records can be delegated to sub groups with a certain set
+        of permissions.  (Affected API functions : delegate_zones,delegate_zone_records,edit_zone_delegation,edit_zone_record_delegation,delete_zone_delegation,delete_zone_record_delegation, get_delegated_zones,get_delegated_zone_records,get_zone_delegates,get_zone_record_delegates).
+
+    -Usable Nameservers
+        Each Group now contains a list of Nameserver objects which are in effect delegated to the Group.  Zones within the Group (and subgroups of the Group) can be published to any of these Nameservers. 
+    -API changes:
+        get_user - 'nt_user_id' now only parameter
+        save_user - DEPRECATED (see new_user and edit_user)
+        new_user  - creates new user (params 'nt_group_id','username','email' required)
+			can have all permissions specifications or
+			"inherit_group_permissions"==1 for inherited.
+        edit_user - modifies existing user (params nt_user_id required)
+
+        save_group - DEPRECATED (see new_group edit_group)
+        new_group - creates new group (params 'nt_group_id' 'name' required.  can have 'usable_nameservers' list of nameserver ids.)
+        edit_group- param nt_group_id required (can have usable_nameservers)
+        delete_group - only 'nt_group_id' parameter  reqd.
+
+        save_zone - DEPRECATED (see new_zone edit_zone)
+        new_zone  - 'nt_group_id' and 'zone' required (optional 'nameservers' list of nameservers to publish to)
+        edit_zone - nt_zone_id required (optional 'nameservers' list of nameserver ids)
+                  - parameter "deleted" = '0' means undelete a deleted zone
+
+        get_zone_application_log REMOVED (it was never implemented but was enabled)
+
+        save_zone_record - DEPRECATED (use new_zone_record and edit_zone_record)
+        new_zone_record - 'nt_zone_id','name','ttl','address' are required
+        edit_zone_record - only 'nt_zone_record_id' is required
+        
+
+        save_nameserver - DEPRECATED (use new_nameserver and edit_nameserver)
+        new_nameserver - 'nt_nameserver_id','address','name','service_type','output_format' are required
+        edit_nameserver - only 'nt_zone_record_id' is required
+        
+        get_group_zones - parameter "search_deleted" = '1' means only look for 
+            deleted zones with the specified properties
+    -API additions
+        error responses may contain 'error_desc' in addition to 'error_code' and 'error_msg', with a short description of the error.
+        XXX
+        get_group_permissions - req: nt_group_id
+        get_user_permissions - req: nt_user_id
+
+        delegate_zones    - nt_group_id, nt_zone_id
+        delegate_zone_records    - nt_group_id, nt_zone_record_id
+        edit_zone_delegation    - nt_group_id, nt_zone_id
+        edit_zone_record_delegation    - nt_group_id, nt_zone_record_id
+        delete_zone_delegation    - nt_group_id, nt_zone_id
+        delete_zone_record_delegation    - nt_group_id, nt_zone_record_id
+        get_delegated_zones    - nt_group_id
+        get_delegated_zone_records    - nt_group_id
+        get_zone_delegates    - nt_zone_id
+        get_zone_record_delegates    - nt_zone_record_id
+
+
+     -Error Codes
+            These are now the error codes:
+            200 OK
+            300 Sanity Error
+            301 Required Parameters Missing
+            302 Some parameters were invalid
+            403 Invalid Username and/or Password
+            404 Access Permission Denied
+            500 Request for unknown action
+            501 Data transport Content-Type not supported
+            502 XML-RPC Parse Error
+            503 Method has been Deprecated
+            505 SQL Error
+            507 Internal Consistency Error
+            508 Internal Error
+            510 Incorrect Protocol Version
+            600 Failed to Complete Request
+            601 Object Not Found
+            700 Unknown Error
+    -Sanity checks for search/sort/paging parameters
+    -Sanity checks when creating Zones and Records to allow RFC 2317 style reverse lookup domains
+    -Database Changes
+        added 3 tables: nt_delegate, nt_delegate_log, and nt_perm
+        changed: nt_user_global_log. added the fields: target,target_id,target_name. changed the field action to add more enum values ('delegated','recovered','modified delegation',and 'removed delegation')
+    -Many, many bug fixes.
+    -Creating or editing NS Records with 'name' set to the 'zone' of the enclosing zone will be disallowed (these records will be created automatically at export time). -gws
+
+1.06x ???
+    -err, somebody forgot to list the changes -gws
+
+0.01  Fri Jan 26 10:42:19 2001
+	- original version; created by h2xs 1.20 with options
+		-X -n NicToolServer
+

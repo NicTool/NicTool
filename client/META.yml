@@ -1,0 +1,22 @@
+--- #YAML:1.0
+name:               NicToolClient
+version:            2.08
+abstract:           DNS management solution
+author:
+    - Damon Edwards, Abe Shelton, Greg Schueler, Matt Simerson
+license:            affero-gpl
+distribution_type:  module
+configure_requires:
+    ExtUtils::MakeMaker:  0
+requires:
+    LWP::UserAgent:  1
+    RPC::XML:        1
+    SOAP::Lite:      0
+no_index:
+    directory:
+        - t
+        - inc
+generated_by:       ExtUtils::MakeMaker version 6.48
+meta-spec:
+    url:      http://module-build.sourceforge.net/META-spec-v1.4.html
+    version:  1.4

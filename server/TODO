@@ -1,0 +1,83 @@
+----NEW----
+
+. Crypt the user passwords (requires schema changes)
+
+. If a user does not have delete permission for a zone/zone record, they should also not have restore permissions (https://www.tnpi.net/support/forums/index.php/topic,797.0.html)
+
+. Fix bug: login returns nt_perm_id and perm_name in user hash, and
+should not.
+
+==== COMPLETED =====
+
+. Make sure password length is not longer than SQL table allows. otherwise, 
+   matching password will get truncated in the table and won't match upon 
+   auth attempts. DONE - mps 10/13/2007
+
+. Update documentation for API to note limit of 100 record max.
+   (https://www.tnpi.net/support/forums/index.php/topic,800.0.html) 
+   - DONE - mps 10/13/2007
+
+. Fix Sanity checks which have changed with API/Permissions changes
+    group,user,zone,record,nameserver - DONE -gws 3/4/02
+
+. Fix bug: get_group_zones (And other functions which conform to the
+search interface) should error if the "x_option" parameter (or others)
+have an incorrect value: can be done in Sanity
+    DONE - gws 3/4/02
+
+. Matt's bugs: Sanity check on new resource records for conformance to
+RFC 1035, as much as possible.  Determine policy re: DNS lookups
+...maybe allow it to work, but issue warning about possibility of
+non-conformance to RFC.
+    DONE - gws 3/1/02
+
+        4a. Modify NicToolClient to deal with Warnings explicitly that are not
+failures.
+
+. Upgrade script for v 1.06x to v 2.00
+        - add nt_perm tables
+        - add entries in nt_perm for all groups
+        - prompt install person for permissions for non-root groups?
+        
+. Complete test scripts to test new features, verify old things work
+correctly:
+        6a. make sure Client Framework code is good/is working
+        6b. write the damn scripts, (should be easier w/ client framework)
+        6c. write sample scripts + documentation to make it usable.
+        6c. Maybe package Client Framework separately from NicToolServer, like
+with NicToolClient or something..
+
+. API DOCUMENTATION NEEDS TO BE UPDATED: gah, lots of changes, fixes to
+old bugs need to be done......YOU CAN HELP: maybe...
+This item has the highest usefulness vs. enjoyability rating in terms of
+finishing NicTool
+
+.undelete for zones/finding deleted zones
+    DID  3/4/02 -  changed edit_zone to allow 'deleted' parameter to undelete deleted zones (no way to delete that way) (cannot undelete zone if the same 'zone' is used by a non-deleted zone)
+                -   changed delete_zones to not delete records
+                -   changed get_group_zones to allow 'search_deleted' parameter to
+                        perform search only on deleted zones
+
+
+
+----OLD----
+- sanity when moving objects
+- security when moving objects
+- tweaks for gracefully handling reverse DNS
+- nt_zone_nameserver_log 
+- import tools
+	- BINDParse, DJBParse perl modules
+	- web interface tools
+	- command line tools
+- double check that everything from network is dbh->quoted
+- summary sub-system finialization, testing
+- transaction queueing layer, examine possible failure points, solutions
+- make dist should clean out developer-specific DB usernames/passes, etc (*.sql)
+- DES encrypt client-local messages (to thawt cross-site scripting hacks)
+- standardization of error/response codes
+- multiple xml-rpc/SOAP per-connection -- keep-alive: possible?
+- SSL layer testing
+- user documentationa
+- soft errors/warnings
+- nameserver permission check (need to define exact policy first)
+- client/server versions could differ, but should be displayed by client

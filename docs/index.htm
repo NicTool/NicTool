@@ -1,0 +1,162 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<meta name="generator" content="HTML Tidy, see www.w3.org">
+<title>NicToolServer API Documentation for SOAP and XML-RPC
+(v2.00b)</title>
+<meta name="GENERATOR" content=
+"Modular DocBook HTML Stylesheet Version 1.76b+ ">
+<link rel="NEXT" title="Typographic Conventions" href="typo.htm">
+<link rel="STYLESHEET" type="text/css" href="docbook.css">
+</head>
+<body class="ARTICLE" bgcolor="#FFFFFF" text="#000000" link=
+"#0000FF" vlink="#840084" alink="#0000FF">
+<div class="ARTICLE">
+<div class="TITLEPAGE">
+<h1 class="TITLE"><a name="AEN2">NicToolServer API Documentation
+for SOAP and XML-RPC (v2.00b)</a></h1>
+
+<h3 class="AUTHOR"><a name="AEN4">Greg Schueler</a></h3>
+
+<p class="COPYRIGHT">Copyright &copy; 2001 by Dajoba, LLC.</p>
+
+<hr>
+</div>
+
+<div class="TOC">
+<dl>
+<dt><b>Table of Contents</b></dt>
+
+<dt><a href="index.htm#INTRO">Introduction</a></dt>
+
+<dt><a href="typo.htm">Typographic Conventions</a></dt>
+
+<dt><a href="changes.htm">Changes since version 1.06x</a></dt>
+
+<dt><a href="apinotes.htm">API Notes</a></dt>
+
+<dt><a href="objects.htm"><span class="emphasis"><i class=
+"EMPHASIS">NicTool</i></span> Objects</a></dt>
+
+<dt><a href="generalfuncs.htm">General Functions</a></dt>
+
+<dt><a href="usersfuncs.htm">Functions for Users</a></dt>
+
+<dt><a href="groupsfuncs.htm">Functions for Groups</a></dt>
+
+<dt><a href="nameserversfuncs.htm">Functions for
+Nameservers</a></dt>
+
+<dt><a href="zonesfuncs.htm">Functions for Zones</a></dt>
+
+<dt><a href="zonerecordsfuncs.htm">Functions for Zone
+Records</a></dt>
+
+<dt><a href="permissionsfuncs.htm">Functions for
+Permissions</a></dt>
+
+<dt><a href="delegationfuncs.htm">Functions for Delegation</a></dt>
+
+<dt><a href="api.htm">API</a></dt>
+
+<dt><a href="apiindex.htm">Index</a></dt>
+</dl>
+</div>
+
+<div class="SECTION">
+<h1 class="SECTION"><a name="INTRO">Introduction</a></h1>
+
+<p></p>
+
+<div class="INFORMALFIGURE"><a name="AEN13"></a>
+<p><img src="img/nictool.gif"></p>
+</div>
+
+This document describes the public API for interaction with NicTool
+Server via the <a href="http://www.w3.org/TR/soap12/" target=
+"_top">SOAP</a> or <a href="http://www.xml-rpc.org/" target=
+"_top">XML-RPC</a> protocols. <span class="emphasis"><i class=
+"EMPHASIS">NicTool</i></span> version 1.06 was created by Dajoba,
+LLC. with development done primarily by Joseph Ingersoll. Changes
+to <span class="emphasis"><i class="EMPHASIS">NicTool</i></span>
+for version 2.00b were made by Greg Schueler. 
+
+<ul>
+<li>
+<p><a href="http://www.dajoba.com/projects/nictool" target=
+"_top"><span class="emphasis"><i class=
+"EMPHASIS">NicTool</i></span></a>: The website for the <span class=
+"emphasis"><i class="EMPHASIS">NicTool</i></span> project.</p>
+</li>
+
+<li>
+<p><a href="http://www.ietf.org/rfc/rfc1034.txt?number=1034"
+target="_top">RFC 1034</a>: DOMAIN NAMES - CONCEPTS AND
+FACILITIES</p>
+</li>
+
+<li>
+<p><a href="http://www.ietf.org/rfc/rfc1035.txt?number=1035"
+target="_top">RFC 1035</a>: DOMAIN NAMES - IMPLEMENTATION AND
+SPECIFICATION</p>
+</li>
+
+<li>
+<p><a href="http://www.w3.org/TR/soap12/" target="_top">SOAP</a>:
+Protocol and specification</p>
+</li>
+
+<li>
+<p><a href="http://www.xml-rpc.org/" target="_top">XML-RPC</a>:
+XML-RPC homepage</p>
+</li>
+</ul>
+
+<br>
+<br>
+<div class="FORMALPARA">
+<p><b>Why would I use this API?</b> Nearly all of the functionality
+of this API is accessible via NicToolClient, the web-based client
+to NicTool Server, and is presented with an easy and intuitive
+interface. However the full power of NicTool Server is hard to take
+advantage of with point-and-click. The public API allows any
+client-developed program with SOAP or XML-RPC capability to
+interact with a NicTool Server. This allows you to write scripts
+for batch updates, mass zone imports, and other provisioning
+specific to your system. Your scripts could be usable via a command
+line or a custom CGI or any other SOAP/XML-RPC enabled system. You
+could even present your customers with a limited functionality
+control panel built right in to your pre-existing web site.</p>
+</div>
+
+<p>The API is provided mostly for increased economy of scale. With
+just 10 zones the NicToolClient interface is sufficient for
+everything you might want to do. However, it would be quite hard to
+do the necessary maintainance for &gt;10000 zones and 14 DNS server
+clusters scattered across the globe with just a mouse and a web
+browser.</p>
+</div>
+</div>
+
+<div class="NAVFOOTER">
+<hr align="LEFT" width="100%">
+<table summary="Footer navigation table" width="100%" border="0"
+cellpadding="0" cellspacing="0">
+<tr>
+<td width="33%" align="left" valign="top">&nbsp;</td>
+<td width="34%" align="center" valign="top">&nbsp;</td>
+<td width="33%" align="right" valign="top"><a href="typo.htm"
+accesskey="N">Next</a></td>
+</tr>
+
+<tr>
+<td width="33%" align="left" valign="top">&nbsp;</td>
+<td width="34%" align="center" valign="top">&nbsp;</td>
+<td width="33%" align="right" valign="top">Typographic
+Conventions</td>
+</tr>
+</table>
+</div>
+</body>
+</html>
+

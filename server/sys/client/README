@@ -1,0 +1,30 @@
+NicTool Client framework README.
+(c) 2002 Dajoba, LLC
+Greg Schueler, 2/26/02
+greg@dajoba.com
+
+This is a short README to introduce the client framework for NicTool.  It consists of the NicTool.pm module and various subpackages.
+To use this client framework you need to have a working installation of NicToolServer .
+
+There are a number of objects in the NicTool system, and they are represented as follows:
+
+group       - NicTool::Group
+user        - NicTool::User
+zone        - NicTool::Zone
+record      - NicTool::Record
+nameserver  - NicTool::Nameserver
+
+Some functions in the NicTool API return lists of objects.  A list is represented by:
+
+list        - NicTool::List
+
+Every time a function is called, the object that is returned is an instance of NicTool::Result
+which has the following methods:
+
+
+NicTool::Result::error_code -   returns the numerical error code
+NicTool::Result::error_msg  -   returns the textual error message
+NicTool::Result::is_error   -   returns TRUE if the error code is not '200'
+
+Every type of object is a subclass of NicTool::Result 
+

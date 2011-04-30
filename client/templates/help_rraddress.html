@@ -1,0 +1,60 @@
+<! --
+NicTool Version {{VERSION}}
+License: {{LICENSE}}
+Source: {{SRCURL}}
+-->
+{{font}}
+Type <B>A</B> Records require that the Address field be an IP address.
+</font>
+</td></tr>
+<tr><td bgcolor={{light_grey}}>
+{{font}}
+All other Types (<b>CNAME</b>, <b>MX</B>, <B>NS</B>, <B>PTR</B>) require a domain name in the Address field.
+<p>
+If the domain name is not fully qualified (ending with '.') then it will be 
+automatically qualified by appending the name of the Zone:<p>
+        'www' =&gt; 'www.myzone.com.'
+</font>
+</td></tr>
+<tr><td bgcolor={{light_grey}}>
+{{font}}
+Some characters have special meaning and use:
+<table cellspacing=2 cellpadding=3><tr><td bgcolor={{dark_grey}}>Character</td><td bgcolor={{dark_grey}} align=center>Meaning</td><td bgcolor={{dark_grey}} align=center>Example</td></tr>
+<tr>
+<td bgcolor={{dark_grey}}><b>@</b></td><td bgcolor={{dark_grey}}> The @ character can be used to stand for the name of the parent zone.</td>
+<td bgcolor={{dark_grey}}>
+@ (becomes zone.com.)<br>
+www.@ (becomes www.zone.com.)
+</td></tr>
+<tr>
+<td bgcolor={{dark_grey}}><b>*</b></td>
+<td bgcolor={{dark_grey}}>You can use the * character only at the beginning of the Address</td>
+<td bgcolor={{dark_grey}}>
+*.zone.com.<br>
+*
+</td></tr>
+
+<tr>
+<td bgcolor={{dark_grey}}><b>/</b></td>
+<td bgcolor={{dark_grey}}>
+You can use the / character only in Reverse Lookup Addresses that end with '.in-addr.arpa.'</td>
+<td bgcolor={{dark_grey}}>
+1.0/24.3.4.5.in-addr.arpa.<br>
+1.2.0/16.3.4.in-addr.arpa.
+</td>
+</tr>
+
+<tr>
+<td bgcolor={{dark_grey}}><b>&amp;</b></td>
+<td bgcolor={{dark_grey}}>
+Addresses that end in .&amp; will have the &amp; character changed to 'in-addr.arpa.'</td>
+<td bgcolor={{dark_grey}}>
+1.2.3.4.&amp; (becomes 1.2.3.4.in-addr.arpa. )<br>
+1.2.0/16.3.4.&amp; (becomes 1.2.0/16/3.4.in-addr.arpa. )
+</td>
+</tr>
+
+</table>
+
+</pre>
+</font>

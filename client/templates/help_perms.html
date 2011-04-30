@@ -1,0 +1,116 @@
+<! --
+NicTool Version {{VERSION}}
+License: {{LICENSE}}
+Source: {{SRCURL}}
+-->
+<table width=100% cellpadding=6 cellspacing=2 border=0 align=center>
+            <tr>
+                <td></td>
+                <td valign=top  align=center>{{font}}
+                    <b>Edit Properties</b></font></td> 
+                <td valign=top  align=center>{{font}}
+                    <b>Create New Object</b></font></td> 
+                <td valign=top  align=center>{{font}}
+                    <b>Delete Object</b></font></td> 
+                <td valign=top  align=center>{{font}}
+                    <b>Delegate Object</b></font></td> 
+
+            </tr>
+            
+            <tr>
+                <td align=right>{{font}}<b>Group:</b></font></td>
+                <td valign=top bgcolor=white align=left>{{font}}<img src=images/perm-checked.gif>
+                    <b>Edit</b><br>The user may edit sub-group properties.</font></td> 
+                    
+                <td valign=top bgcolor=white align=left>{{font}}<img src=images/perm-checked.gif>
+                    <b>Create</b><br>The user may create new sub-groups.</font></td> 
+
+
+                <td valign=top bgcolor=white align=left>{{font}}<img src=images/perm-checked.gif>
+                    <b>Delete</b><br>The user may delete sub-groups.</font></td> 
+                <td bgcolor=white>&nbsp;</td>
+               </tr>
+            
+            <tr>
+                <td align=right>{{font}}<b>User:</b></font></td>
+                    
+                <td valign=top bgcolor={{light_grey}} align=left>{{font}}<img src=images/perm-checked.gif>
+                    <b>Edit</b>
+                    <br>The user may edit other users' properties.</font></td> 
+                <td valign=top bgcolor={{light_grey}} align=left>{{font}}<img src=images/perm-checked.gif>
+                    <b>Create</b>
+                    <br>The user may create new users.</font></td> 
+                <td valign=top bgcolor={{light_grey}} align=left>{{font}}<img src=images/perm-checked.gif>
+                    <b>Delete</b>
+                    <br>The user  may delete other users.</font></td> 
+                <td bgcolor={{light_grey}}>&nbsp;</td>
+
+            </tr>
+            
+            <tr>
+                <td align=right>{{font}}<b>Zone:</b></font></td>
+                    
+                <td valign=top bgcolor=white align=left>{{font}}<img src=images/perm-checked.gif>
+                    <b>Edit</b>
+                    <br>The user may edit zone properties.</font></td> 
+                <td valign=top bgcolor=white align=left>{{font}}<img src=images/perm-checked.gif>
+                    <b>Create</b>
+                    <br>The user may create new zones.</font></td> 
+                <td valign=top bgcolor=white align=left>{{font}}<img src=images/perm-checked.gif>
+                    <b>Delete</b>
+                    <br>The user may delete zones.</font></td> 
+                <td valign=top bgcolor=white align=left>{{font}}<img src=images/perm-checked.gif>
+                    <b>Delegate</b>
+                    <br>The user may delegate zones.</font></td> 
+            </tr>
+            
+            <tr>
+                <td align=right>{{font}}<b>Zonerecord:</b></font></td>
+                <td valign=top bgcolor={{light_grey}} align=left>{{font}}<img src=images/perm-checked.gif>
+                    <b>Edit</b>
+                    <br>The user may edit zone record properties.</font></td> 
+                    
+                <td valign=top bgcolor={{light_grey}} align=left>{{font}}<img src=images/perm-checked.gif>
+                    <b>Create</b>
+                    <br>The user may create zone records inside zones.</font></td> 
+                <td valign=top bgcolor={{light_grey}} align=left>{{font}}<img src=images/perm-checked.gif>
+                    <b>Delete</b>
+                    <br>The user may delete zone records.</font></td> 
+                <td valign=top bgcolor={{light_grey}} align=left>{{font}}<img src=images/perm-checked.gif>
+                    <b>Delegate</b>
+                    <br>The user may delegate zone records.</font></td> 
+            </tr>
+            
+            <tr>
+                <td align=right>{{font}}<b>Nameserver:</b></font></td>
+                <td valign=top bgcolor=white align=left>{{font}}<img src=images/perm-checked.gif>
+                    <b>Edit</b>
+                    <br>The user may edit nameserver properties.</font></td> 
+                    
+                <td valign=top bgcolor=white align=left>{{font}}<img src=images/perm-checked.gif>
+                    <b>Create</b>
+                    <br>The user may create nameservers.</font></td> 
+                <td valign=top bgcolor=white align=left>{{font}}<img src=images/perm-checked.gif>
+                    <b>Delete</b>
+                    <br>The user may delete nameservers.</font></td> 
+                <td bgcolor=white>&nbsp;</td> 
+            </tr>
+            
+            <tr>
+                <td align=right>{{font}}<b>Self:</b></font></td>
+                    
+                <td valign=top bgcolor={{light_grey}} align=left>{{font}}<img src=images/perm-checked.gif>
+                    <b>Edit</b>
+                    <br>The user may edit his/her own properties.</font></td> 
+                <td bgcolor={{light_grey}}>&nbsp;</td>
+                <td bgcolor={{light_grey}}>&nbsp;</td>
+                <td bgcolor={{light_grey}}>&nbsp;</td>
+
+            </tr>
+             <tr>
+                <td colspan=5 bgcolor=white>
+                    {{font}} <b>Special cases</b>:  A user may never delete his/her self.  A user may never edit his/her own group.</font>
+                </td>
+            </tr>
+
+        </table>

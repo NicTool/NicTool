@@ -1,0 +1,377 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <meta name="generator" content="HTML Tidy, see www.w3.org">
+  <title>Changes since version 1.06x</title>
+  <meta name="GENERATOR" content="Modular DocBook HTML Stylesheet Version 1.76b+ ">
+  <link rel="HOME" title="NicToolServer API Documentation for SOAP and XML-RPC (v2.00b)" href="index.htm">
+  <link rel="PREVIOUS" title="Typographic Conventions" href="typo.htm">
+  <link rel="NEXT" title="API Notes" href="apinotes.htm">
+  <link rel="STYLESHEET" type="text/css" href="docbook.css">
+</head>
+
+<body class="SECTION" bgcolor="#FFFFFF" text="#000000" link="#0000FF" vlink="#840084" alink="#0000FF">
+
+<div class="NAVHEADER">
+<table summary="Header navigation table" width="100%" border="0" cellpadding="0" cellspacing="0">
+  <tr>
+    <th colspan="3" align="center">NicToolServer API Documentation for SOAP and XML-RPC (v2.00b)</th>
+  </tr>
+  <tr>
+    <td width="10%" align="left" valign="bottom"><a href="typo.htm" accesskey="P">Prev</a></td>
+    <td width="80%" align="center" valign="bottom"></td>
+    <td width="10%" align="right" valign="bottom"><a href="apinotes.htm" accesskey="N">Next</a></td>
+  </tr>
+</table>
+
+<hr align="LEFT" width="100%">
+</div>
+
+<div class="SECTION">
+<h1 class="SECTION"><a name="CHANGES">Changes since version 1.06x</a></h1>
+
+<p>There have been a number of changes to the overall system since
+version 1.06 some of which affect the way the API behaves, and
+there have also been a number of changes to functions in the API
+independent of the system changes.</p>
+
+<div class="FORMALPARA">
+<p><b>System Changes.</b></p>
+
+<div class="VARIABLELIST">
+<dl>
+<dt>Permissions</dt>
+
+<dd>
+<p>NicTool now uses an action-oriented permissions system. Group
+objects may be created with specific sets of permissions defining
+what actions are allowed by users inside the group. Users can be
+created with their own set of permissions, or by default they
+inherit the permissions defined for their group. The Permissions
+define what types of objects can be created, deleted, modified, or
+delegated. (See <a href="api.htm#NEWUSERFUNC">new_user</a> and <a
+href="api.htm#NEWGROUPFUNC">new_group</a>)</p>
+</dd>
+
+<dt>Delegation</dt>
+
+<dd>
+<p>Users of NicTool can now "Delegate" Zones and Zone Records to
+any of the sub-groups available to them. They can specify what the
+delegate group can do to the delegated Zone or Record, including
+modify,re-delegate, and remove delegation. In addition they can
+specify whether Zone Records can be added to or deleted from a
+delegated Zone. Delegation provides a way for certain groups of
+users to have limited access to Zones and Records. One application
+of this feature is that it enables administrators to delegate
+reverse-lookup Zones and Records ("in-addr.arpa" zones) to an
+appropriate person. (See <a href=
+"api.htm#DELEGATEZONESFUNC">delegate_zones</a> and <a href=
+"api.htm#DELEGATEZONERECORDSFUNC">delegate_zone_records</a>.)</p>
+</dd>
+
+<dt>Nameservers</dt>
+
+<dd>
+<p>With the Permissions and Delegation changes made to the system,
+the behavior of Nameserver objects needed to be changed as well.
+When a new Group is created, you must now specify the list of
+Nameserver objects that users in that group may publish zones to.
+(See <a href="api.htm#NEWGROUPFUNC">new_group</a> and <a href=
+"api.htm#EDITGROUPFUNC">edit_group</a>.)</p>
+</dd>
+
+<dt>Creating/Modifying Objects</dt>
+
+<dd>
+<p>In version 1.06, the function <tt class="FUNCTION">save_X</tt>
+was used both to create and modify objects of type X. Each of those
+functions has been split into <tt class="FUNCTION">new_X</tt> and
+<tt class="FUNCTION">edit_X</tt>. This is a less clutered
+protocol.</p>
+</dd>
+</dl>
+</div>
+
+<br>
+<br>
+</div>
+
+<div class="FORMALPARA">
+<p><b>API Changes.</b></p>
+
+<div class="VARIABLELIST">
+<dl>
+<dt>List parameters</dt>
+
+<dd>
+<p>Some functions take some kind of "list" as a parameter. In
+version 1.06 it was required to be a comma-separated string. You
+can now specify the list as a true array as well. A comma-separated
+string is still allowed for backwards compatibility.</p>
+</dd>
+
+<dt><a href="api.htm#GETUSERFUNC">get_user</a></dt>
+
+<dd>
+<p>The parameter <tt class="PARAMETER"><i>nt_group_id</i></tt> was
+unneeded and should no longer be included.</p>
+</dd>
+
+<dt><a href="api.htm#SAVEUSERFUNC">save_user</a></dt>
+
+<dd>
+<p><span class="emphasis"><i class="EMPHASIS">DEPRECATED since version 2.00b</i></span>. Use <a href="api.htm#NEWUSERFUNC">new_user</a> or <a href="api.htm#EDITUSERFUNC">edit_user</a>.</p>
+</dd>
+
+<dt><a href="api.htm#NEWUSERFUNC">new_user</a></dt>
+
+<dd>
+<p>Use this function to create new User objects. You can specify
+all of the permissions parameters or you can include the parameter
+<tt class="PARAMETER"><i>inherit_group_permissions</i></tt> with a
+value of '<tt class="LITERAL">1</tt>' to explicitly have
+permissions inherited from the user's group.</p>
+</dd>
+
+<dt><a href="api.htm#EDITUSERFUNC">edit_user</a></dt>
+
+<dd>
+<p>Use this function to modify existing User objects.</p>
+</dd>
+
+<dt><a href="api.htm#SAVEGROUPFUNC">save_group</a></dt>
+
+<dd>
+<p><span class="emphasis"><i class="EMPHASIS">DEPRECATED since version 2.00b</i></span>. Use <a href=
+"api.htm#NEWGROUPFUNC">new_group</a> or <a href="api.htm#EDITGROUPFUNC">edit_group</a>.</p>
+</dd>
+
+<dt><a href="api.htm#NEWGROUPFUNC">new_group</a></dt>
+
+<dd>
+<p>Use this function to create new Group objects.</p>
+</dd>
+
+<dt><a href="api.htm#EDITGROUPFUNC">edit_group</a></dt>
+
+<dd>
+<p>Use this function to modify existing Group objects.</p>
+</dd>
+
+<dt><a href="api.htm#DELETEGROUPFUNC">delete_group</a></dt>
+
+<dd>
+<p>The parameter <tt class="PARAMETER"><i>nt_group_id</i></tt> now
+specifies the group that should be deleted, and the parameter <tt
+class="PARAMETER"><i>gid</i></tt> is no longer used.</p>
+</dd>
+
+<dt><a href="api.htm#SAVEZONEFUNC">save_zone</a></dt>
+
+<dd>
+<p><span class="emphasis"><i class="EMPHASIS">DEPRECATED since version 2.00b</i></span>. Use <a href=
+"api.htm#NEWZONEFUNC">new_zone</a> or <a href=
+"api.htm#EDITZONEFUNC">edit_zone</a>.</p>
+</dd>
+
+<dt><a href="api.htm#NEWZONEFUNC">new_zone</a></dt>
+
+<dd>
+<p>Use this function to create new Zone objects.</p>
+</dd>
+
+<dt><a href="api.htm#EDITZONEFUNC">edit_zone</a></dt>
+
+<dd>
+<p>Use this function to modify existing Zone objects. You can undelete a deleted zone by including the parameter <tt class="PARAMETER"><i>deleted</i></tt> with a value of '<tt class="LITERAL">0</tt>'.</p>
+</dd>
+
+<dt><a href="api.htm#SAVEZONERECORDFUNC">save_zone_record</a></dt>
+
+<dd>
+<p><span class="emphasis"><i class="EMPHASIS">DEPRECATED since version 2.00b</i></span>. Use <a href=
+"api.htm#NEWZONERECORDFUNC">new_zone_record</a> or <a href="api.htm#EDITZONERECORDFUNC">edit_zone_record</a>.</p>
+</dd>
+
+<dt><a href="api.htm#NEWZONERECORDFUNC">new_zone_record</a></dt>
+
+<dd>
+<p>Use this function to create new Zone Record objects.</p>
+</dd>
+
+<dt><a href="api.htm#EDITZONERECORDFUNC">edit_zone_record</a></dt>
+
+<dd>
+<p>Use this function to modify existing Zone Record objects.</p>
+</dd>
+
+<dt><a href="api.htm#SAVENAMESERVERFUNC">save_nameserver</a></dt>
+
+<dd>
+<p><span class="emphasis"><i class="EMPHASIS">DEPRECATED since version 2.00b</i></span>. Use <a href=
+"api.htm#NEWNAMESERVERFUNC">new_nameserver</a> or <a href="api.htm#EDITNAMESERVERFUNC">edit_nameserver</a>.</p>
+</dd>
+
+<dt><a href="api.htm#NEWNAMESERVERFUNC">new_nameserver</a></dt>
+
+<dd>
+<p>Use this function to create new Nameserver objects.</p>
+</dd>
+
+<dt><a href="api.htm#EDITNAMESERVERFUNC">edit_nameserver</a></dt>
+
+<dd>
+<p>Use this function to modify existing Nameserver objects.</p>
+</dd>
+
+<dt><a href="api.htm#GETGROUPZONESFUNC">get_group_zones</a></dt>
+
+<dd>
+<p>You can now search for zones that have been deleted by including the parameter <tt class="PARAMETER"><i>search_deleted</i></tt> with a value of '<tt class="LITERAL">1</tt>'.</p>
+</dd>
+</dl>
+</div>
+
+<br>
+<br>
+</div>
+
+<div class="FORMALPARA">
+<p><b>API Additions.</b></p>
+
+<div class="VARIABLELIST">
+<dl>
+<dt><a href=
+"api.htm#GETGROUPPERMISSIONSFUNC">get_group_permissions</a></dt>
+
+<dd>
+<p>Get the permissions settings for a particular group <span class=
+"emphasis"><i class="EMPHASIS">(new since version
+1.06x)</i></span>.</p>
+</dd>
+
+<dt><a href=
+"api.htm#GETUSERPERMISSIONSFUNC">get_user_permissions</a></dt>
+
+<dd>
+<p>Get the permissions settings for a particular user <span class=
+"emphasis"><i class="EMPHASIS">(new since version
+1.06x)</i></span>.</p>
+</dd>
+
+<dt><a href="api.htm#DELEGATEZONESFUNC">delegate_zones</a></dt>
+
+<dd>
+<p>Delegate a list of Zones to a certain group <span class=
+"emphasis"><i class="EMPHASIS">(new since version
+1.06x)</i></span>.</p>
+</dd>
+
+<dt><a href=
+"api.htm#DELEGATEZONERECORDSFUNC">delegate_zone_record</a></dt>
+
+<dd>
+<p>Delegate a list of Zone Records to a certain group <span class=
+"emphasis"><i class="EMPHASIS">(new since version
+1.06x)</i></span>.</p>
+</dd>
+
+<dt><a href=
+"api.htm#EDITZONEDELEGATIONFUNC">edit_zone_delegation</a></dt>
+
+<dd>
+<p>Modify the delegation permissions of a Zone delegated to a
+certain Group <span class="emphasis"><i class="EMPHASIS">(new since
+version 1.06x)</i></span>.</p>
+</dd>
+
+<dt><a href=
+"api.htm#EDITZONERECORDDELEGATIONFUNC">edit_zone_record_delegation</a></dt>
+
+<dd>
+<p>Modify the delegation permissions of a Zone Record delegated to
+a certain Group <span class="emphasis"><i class="EMPHASIS">(new
+since version 1.06x)</i></span>.</p>
+</dd>
+
+<dt><a href=
+"api.htm#DELETEZONEDELEGATIONFUNC">delete_zone_delegation</a></dt>
+
+<dd>
+<p>Remove the delegation of a Zone to a Group <span class=
+"emphasis"><i class="EMPHASIS">(new since version
+1.06x)</i></span>.</p>
+</dd>
+
+<dt><a href=
+"api.htm#DELETEZONERECORDDELEGATIONFUNC">delete_zone_record_delegation</a></dt>
+
+<dd>
+<p>Remove the delegation of a Zone Record to a Group <span class=
+"emphasis"><i class="EMPHASIS">(new since version
+1.06x)</i></span>.</p>
+</dd>
+
+<dt><a href=
+"api.htm#GETDELEGATEDZONESFUNC">get_delegated_zones</a></dt>
+
+<dd>
+<p>Get a list of Zones that have been delegated to the specified
+Group <span class="emphasis"><i class="EMPHASIS">(new since version 1.06x)</i></span>.</p>
+</dd>
+
+<dt><a href=
+"api.htm#GETDELEGATEDZONERECORDSFUNC">get_delegated_zone_records</a></dt>
+
+<dd>
+<p>Get a list of Zone Records that have been delegated to the
+specified Group <span class="emphasis"><i class="EMPHASIS">(new since version 1.06x)</i></span>.</p>
+</dd>
+
+<dt><a href=
+"api.htm#GETZONEDELEGATESFUNC">get_zone_delegates</a></dt>
+
+<dd>
+<p>Get a list of Groups that have been delegated the specified Zone
+<span class="emphasis"><i class="EMPHASIS">(new since version 1.06x)</i></span>.</p>
+</dd>
+
+<dt><a href=
+"api.htm#GETZONERECORDDELEGATESFUNC">get_zone_record_delegates</a></dt>
+
+<dd>
+<p>Get a list of Groups that have been delegated the specified Zone Record <span class="emphasis"><i class="EMPHASIS">(new since version 1.06x)</i></span>.</p>
+</dd>
+</dl>
+</div>
+
+<br>
+<br>
+</div>
+
+<div class="FORMALPARA">
+<p><b>New Sanity Checks.</b> XXX</p>
+</div>
+</div>
+
+<div class="NAVFOOTER">
+<hr align="LEFT" width="100%">
+<table summary="Footer navigation table" width="100%" border="0"
+cellpadding="0" cellspacing="0">
+<tr>
+<td width="33%" align="left" valign="top"><a href="typo.htm" accesskey="P">Prev</a></td>
+<td width="34%" align="center" valign="top"><a href="index.htm" accesskey="H">Home</a></td>
+<td width="33%" align="right" valign="top"><a href="apinotes.htm" accesskey="N">Next</a></td>
+</tr>
+
+<tr>
+<td width="33%" align="left" valign="top">Typographic Conventions</td>
+<td width="34%" align="center" valign="top">&nbsp;</td>
+<td width="33%" align="right" valign="top">API Notes</td>
+</tr>
+</table>
+</div>
+</body>
+</html>
+

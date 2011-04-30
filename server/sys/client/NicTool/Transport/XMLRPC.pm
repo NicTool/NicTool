@@ -1,0 +1,119 @@
+#!/usr/bin/perl
+###
+# XMLRPC.pm
+# XMLRPC transport module
+# $Id: XMLRPC.pm 347 2004-12-10 03:13:38Z matt $
+###
+#
+# NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
+# NicTool v2.01 Copyright 2004 The Network People, Inc.
+#
+# NicTool is free software; you can redistribute it and/or modify it under
+# the terms of the Affero General Public License as published by Affero,
+# Inc.; either version 1 of the License, or any later version.
+#
+# NicTool is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+# or FITNESS FOR A PARTICULAR PURPOSE. See the Affero GPL for details.
+#
+# You should have received a copy of the Affero General Public License
+# along with this program; if not, write to Affero Inc., 521 Third St,
+# Suite 225, San Francisco, CA 94107, USA
+#
+###
+package NicTool::Transport::XMLRPC;
+
+use RPC::XML;
+use RPC::XML::Parser;
+use LWP;
+
+our @ISA = qw(NicTool::Transport);
+
+sub send_request {
+    my $self = shift;
+    my $url  = shift;
+    my %vars = @_;
+
+    my $com = $vars{action};
+    delete $vars{action};
+
+    #encode data into xml-rpc request obj and get xml string
+    my $xmlreq
+        = RPC::XML::request->new( $com, RPC::XML::smart_encode( \%vars ) );
+    my $command = $xmlreq->as_string;
+
+    my $ua = new LWP::UserAgent;
+    my $req = HTTP::Request->new( 'POST', $url );
+
+    if ($NicToolServerAPI::use_https_authentication) {
+
+        #set up https authentication vars
+        $ENV{HTTPS_CERT_FILE} = $NicToolServerAPI::client_certificate_file;
+        $ENV{HTTPS_KEY_FILE}  = $NicToolServerAPI::client_key_file;
+        if ($NicToolServerAPI::use_https_peer_authentication) {
+            $ENV{HTTPS_CA_FILE} = $NicToolServerAPI::ca_certificate_file;
+            $ENV{HTTPS_CA_DIR}  = $NicToolServerAPI::ca_certificate_path;
+        }
+    }
+    $ua->agent("NicTool Client Framework v$NicTool::VERSION");
+    $req->content_type('text/xml');
+    $req->content($command);
+    $req->header( "NicTool-protocol_version" => "$NicTool::api_version" );
+
+    #send request, evaluate response
+    my $response = $ua->request($req);
+    my $res      = $response->content;
+
+    if ( !$response->is_success ) {
+        return (
+            {   error_code => 508,
+                error_msg  => "XML-RPC: $url: "
+                    . $response->code . " "
+                    . $response->message
+            }
+        );
+    }
+
+    my $restype = $response->header('Content-Type');
+
+    if ( $restype =~ /^text\/xml$/ ) {
+        return $self->_parse_xml($res);
+    }
+    else {
+        return {
+            error_code => '501',
+            error_msg  => 'XML-RPC: Content-Type not text/xml: ' . $restype
+        };
+    }
+
+}
+
+# try to parse the xml -- handle xml-rpc faults as well as parsing errors
+sub _parse_xml {
+    my ( $self, $string ) = @_;
+
+    my $resp = RPC::XML::Parser->new()->parse($string);
+
+    # $resp will be ref if a real response, otherwise scalar error string
+    if ( ref($resp) && !$resp->is_fault ) {
+
+        # get data-type value of response, and get perl value of that
+        return $resp->value->value;
+    }
+    elsif ( ref($resp) && $resp->is_fault ) {
+        return {
+            error_code => $resp->value->code,
+            error_msg  => 'XML-RPC: fault: ' . $resp->value->string
+        };
+    }
+    else {
+
+        # parsing error
+        return {
+            error_code => '501',
+            error_msg  => 'XML-RPC: parse error:' . $resp
+        };
+    }
+}
+
+1;

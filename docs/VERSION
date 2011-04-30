@@ -1,0 +1,2 @@
+# to prevent munged NicToolServer.pm making wrong version number
+$VERSION = '2.01';

@@ -1,0 +1,34 @@
+Changes
+COPYING
+LICENSE
+Makefile.PL
+MANIFEST
+META.yml			Module meta-data (added by MakeMaker)
+NicTool.pm
+NicTool/API.pm
+NicTool/Cache.pm
+NicTool/DBObject.pm
+NicTool/Group.pm
+NicTool/List.pm
+NicTool/Nameserver.pm
+NicTool/NTObject.pm
+NicTool/Record.pm
+NicTool/Result.pm
+NicTool/Transport.pm
+NicTool/Transport/SOAP.pm
+NicTool/Transport/XMLRPC.pm
+NicTool/User.pm
+NicTool/Zone.pm
+README
+test.cfg
+test.pl
+t/api.t
+t/cache.t
+t/list.t
+t/nictool.t
+t/object.t
+t/protocol.t
+t/result.t
+t/TestConfig.pm
+t/transport.t
+META.yml                                Module meta-data (added by MakeMaker)

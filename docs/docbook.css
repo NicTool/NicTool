@@ -1,0 +1,16 @@
+.ARTICLE .COPYRIGHT	{ text-align:center; text-size: 9pt; font-style:italic}
+.ARTICLE .TITLE          { text-align: center }
+.ARTICLE .SUBTITLE       { text-align: center }
+.ARTICLE .CORPAUTHOR     { text-align: center }
+.ARTICLE .AUTHOR         { text-align: center }
+.ARTICLE .AFFILIATION    { text-align: center }
+.ARTICLE .EDITEDBY       { text-align: center }
+.ARTICLE .EDITOR         { text-align: center }
+.ARTICLE .GRAPHIC        { text-align: center }
+.ARTICLE .ABSTRACT       { margin-left: 0.5in;
+                           margin-right: 0.5in;
+                           font-style: italic }
+ .TYPE		{color:"#0000ff"; font-weight:bold;}
+ .LITERAL	{color: "#ff0000"; font-style:italic;text-size:10pt; }
+ .PARAMETER	{font-weight:bold}
+ .RETURNVALUE	{font-style:italic}

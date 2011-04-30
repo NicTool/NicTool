@@ -1,0 +1,240 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<meta name="generator" content="HTML Tidy, see www.w3.org">
+<title>API Notes</title>
+<meta name="GENERATOR" content=
+"Modular DocBook HTML Stylesheet Version 1.76b+ ">
+<link rel="HOME" title=
+"NicToolServer API Documentation for SOAP and XML-RPC (v2.00b)"
+href="index.htm">
+<link rel="PREVIOUS" title="Changes since version 1.06x" href=
+"changes.htm">
+<link rel="NEXT" title="NicTool Objects" href="objects.htm">
+<link rel="STYLESHEET" type="text/css" href="docbook.css">
+</head>
+<body class="SECTION" bgcolor="#FFFFFF" text="#000000" link=
+"#0000FF" vlink="#840084" alink="#0000FF">
+<div class="NAVHEADER">
+<table summary="Header navigation table" width="100%" border="0"
+cellpadding="0" cellspacing="0">
+<tr>
+<th colspan="3" align="center">NicToolServer API Documentation for
+SOAP and XML-RPC (v2.00b)</th>
+</tr>
+
+<tr>
+<td width="10%" align="left" valign="bottom"><a href="changes.htm"
+accesskey="P">Prev</a></td>
+<td width="80%" align="center" valign="bottom"></td>
+<td width="10%" align="right" valign="bottom"><a href="objects.htm"
+accesskey="N">Next</a></td>
+</tr>
+</table>
+
+<hr align="LEFT" width="100%">
+</div>
+
+<div class="SECTION">
+<h1 class="SECTION"><a name="APINOTES">API Notes</a></h1>
+
+<p>NicToolServer provides a rich set of function calls which may be
+called with the SOAP or XML-RPC protocols, using HTTP (or
+preferably, HTTPS) as a transport layer. First a session must be
+created with the <a href="api.htm#LOGINFUNC"><tt class=
+"FUNCTION">login</tt></a> function. When you are done with your
+session, it may be terminated with the <a href=
+"api.htm#LOGOUTFUNC"><tt class="FUNCTION">logout</tt></a> function.
+Your session will timeout after a certain amount of time has passed
+with no activity, and you will be required to login again.</p>
+
+<div class="FORMALPARA">
+<p><b>Data types.</b> The data types used by NicToolServer are
+fairly simple:</p>
+
+<ul>
+<li>
+<p><span class="TYPE">struct</span>. A hash table of name/value
+pairs.</p>
+</li>
+
+<li>
+<p><span class="TYPE">string</span>. A string of characters</p>
+</li>
+
+<li>
+<p><span class="TYPE">int</span>. A number</p>
+</li>
+
+<li>
+<p><span class="TYPE">array</span>. A list of other values</p>
+</li>
+
+<li>
+<p><span class="TYPE">flag</span>. This is a boolean value
+represented by a <span class="TYPE">string</span>. It should be
+either '<tt class="LITERAL">1</tt>' meaning TRUE or '<tt class=
+"LITERAL">0</tt>' meaning FALSE.</p>
+</li>
+</ul>
+
+The <span class="TYPE">struct</span>, or perl <span class=
+"TYPE">hash table</span>, is returned by all functions, and is the
+type of the only parameter of every function. Most values contained
+within the hashtable are either a <span class="TYPE">string</span>,
+an <span class="TYPE">int</span>, or other <span class=
+"TYPE">hashtable</span>s. Also used are <span class=
+"TYPE">array</span> elements. Refer to the <a href=
+"http://www.w3.org/TR/soap12/" target="_top">SOAP 1.2 spec</a> for
+more information about these data types in SOAP, and the <a href=
+"http://www.xml-rpc.org/spec" target="_top">XML-RPC spec</a> for
+information about these data types in XML-RPC. <br>
+<br>
+</div>
+
+<div class="FORMALPARA">
+<p><b>Function calling.</b></p>
+
+<div class="NOTE">
+<blockquote class="NOTE">
+<p><b>Note:</b> Function names are case <span class="emphasis"><i
+class="EMPHASIS">insensitive</i></span>.</p>
+</blockquote>
+</div>
+
+All functions take as a parameter one <span class=
+"TYPE">struct</span>, and all functions return one <span class=
+"TYPE">struct</span>. Typically there will be a number of required
+named entries in a <span class="TYPE">struct</span> parameter. 
+
+<div class="NOTE">
+<blockquote class="NOTE">
+<p><b>Note:</b> Named parameters inside <span class=
+"TYPE">struct</span>s are case <span class="emphasis"><i class=
+"EMPHASIS">sensitive</i></span>.</p>
+</blockquote>
+</div>
+
+These required entries are listed within each function's definition
+below. <br>
+<br>
+</div>
+
+<div class="FORMALPARA">
+<p><b>Special parameters.</b> There is one named parameter that is
+required by all function calls. It should be included along with
+the other named hash entries in all function calls, unless
+noted:</p>
+
+<div class="VARIABLELIST">
+<dl>
+<dt><tt class="PARAMETER"><i>nt_user_session</i></tt></dt>
+
+<dd>
+<p>The session ID string. This string is required for all functions
+other than <a href="api.htm#LOGINFUNC"><tt class=
+"FUNCTION">login</tt></a></p>
+</dd>
+</dl>
+</div>
+
+Also the optional <tt class=
+"PARAMETER"><i>nt_protocol_version</i></tt> has special meaning. If
+you specify a version number with it (like "<tt class=
+"LITERAL">1.0</tt>") the <span class="emphasis"><i class=
+"EMPHASIS">NicTool</i></span> Server will return an error unless it
+supports the given version. If you do not specify it, no version
+check is performed. This allows clients who wish to guarantee that
+their protocol version will work to do so, but it also allows
+clients to attempt to interact with a server without checking the
+version number of the protocol. 
+
+<div class="NOTE">
+<blockquote class="NOTE">
+<p><b>Note:</b> The only protocol version supported by <span class=
+"emphasis"><i class="EMPHASIS">NicTool</i></span> Server 2.00b is
+"1.0"</p>
+</blockquote>
+</div>
+
+<div class="VARIABLELIST">
+<dl>
+<dt><tt class="PARAMETER"><i>nt_protocol_version</i></tt></dt>
+
+<dd>
+<p>a string naming the protocol version in use by the client
+agent</p>
+</dd>
+</dl>
+</div>
+
+<br>
+<br>
+</div>
+
+<div class="FORMALPARA">
+<p><b>Errors.</b> If a function call encounters an error, three
+entries in the returned hash will contain the error code, a short
+description of the error, and the specific error message. If no
+error occurs, these three entries may still be present. The
+returned named entry <span class="RETURNVALUE">error_code</span>
+will have a value other than "<tt class="LITERAL">200</tt>" if the
+result is an error.</p>
+
+<div class="VARIABLELIST">
+<dl>
+<dt><span class="RETURNVALUE">error_code</span></dt>
+
+<dd>
+<p><span class="TYPE">string</span>. Code number of the error. "<tt
+class="LITERAL">200</tt>" indicates that no error has occurred.</p>
+</dd>
+
+<dt><span class="RETURNVALUE">error_desc</span></dt>
+
+<dd>
+<p><span class="TYPE">string</span>. Short description of the
+error. "<tt class="LITERAL">OK</tt>" is the normal response if
+there is no error.</p>
+</dd>
+
+<dt><span class="RETURNVALUE">error_msg</span></dt>
+
+<dd>
+<p><span class="TYPE">string</span>. The full error message. "<tt
+class="LITERAL">OK</tt>" is the normal response if there is no
+error.</p>
+</dd>
+</dl>
+</div>
+
+<br>
+<br>
+</div>
+</div>
+
+<div class="NAVFOOTER">
+<hr align="LEFT" width="100%">
+<table summary="Footer navigation table" width="100%" border="0"
+cellpadding="0" cellspacing="0">
+<tr>
+<td width="33%" align="left" valign="top"><a href="changes.htm"
+accesskey="P">Prev</a></td>
+<td width="34%" align="center" valign="top"><a href="index.htm"
+accesskey="H">Home</a></td>
+<td width="33%" align="right" valign="top"><a href="objects.htm"
+accesskey="N">Next</a></td>
+</tr>
+
+<tr>
+<td width="33%" align="left" valign="top">Changes since version
+1.06x</td>
+<td width="34%" align="center" valign="top">&nbsp;</td>
+<td width="33%" align="right" valign="top"><span class=
+"emphasis"><i class="EMPHASIS">NicTool</i></span> Objects</td>
+</tr>
+</table>
+</div>
+</body>
+</html>
+

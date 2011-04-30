@@ -1,0 +1,11 @@
+#XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
+name:         NicTool
+version:      1.00
+version_from: NicTool.pm
+installdirs:  site
+requires:
+    RPC::XML:                      1.09
+    SOAP::Lite:                    0.51
+
+distribution_type: module
+generated_by: ExtUtils::MakeMaker version 6.12

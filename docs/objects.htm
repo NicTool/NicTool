@@ -1,0 +1,112 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<meta name="generator" content="HTML Tidy, see www.w3.org">
+<title>NicTool Objects</title>
+<meta name="GENERATOR" content=
+"Modular DocBook HTML Stylesheet Version 1.76b+ ">
+<link rel="HOME" title=
+"NicToolServer API Documentation for SOAP and XML-RPC (v2.00b)"
+href="index.htm">
+<link rel="PREVIOUS" title="API Notes" href="apinotes.htm">
+<link rel="NEXT" title="General Functions" href="generalfuncs.htm">
+<link rel="STYLESHEET" type="text/css" href="docbook.css">
+</head>
+<body class="SECTION" bgcolor="#FFFFFF" text="#000000" link=
+"#0000FF" vlink="#840084" alink="#0000FF">
+<div class="NAVHEADER">
+<table summary="Header navigation table" width="100%" border="0"
+cellpadding="0" cellspacing="0">
+<tr>
+<th colspan="3" align="center">NicToolServer API Documentation for
+SOAP and XML-RPC (v2.00b)</th>
+</tr>
+
+<tr>
+<td width="10%" align="left" valign="bottom"><a href="apinotes.htm"
+accesskey="P">Prev</a></td>
+<td width="80%" align="center" valign="bottom"></td>
+<td width="10%" align="right" valign="bottom"><a href=
+"generalfuncs.htm" accesskey="N">Next</a></td>
+</tr>
+</table>
+
+<hr align="LEFT" width="100%">
+</div>
+
+<div class="SECTION">
+<h1 class="SECTION"><a name="OBJECTS"><span class="emphasis"><i
+class="EMPHASIS">NicTool</i></span> Objects</a></h1>
+
+<p><span class="emphasis"><i class="EMPHASIS">NicTool</i></span>
+allows you to manage your DNS server by manipulating a few basic
+types of objects.</p>
+
+<ul>
+<li>
+<p><span class="TYPE">Users</span>. A User object represents a
+person who has access to the <span class="emphasis"><i class=
+"EMPHASIS">NicTool</i></span> Server. Users belong to a certain
+Group and can only access objects inside that Group or its
+sub-groups.</p>
+</li>
+
+<li>
+<p><span class="TYPE">Groups</span>. Groups define a
+tree-structured hierarchy of objects inside <span class=
+"emphasis"><i class="EMPHASIS">NicTool</i></span>. There is a
+single root Group, and every Group may contain other <span class=
+"emphasis"><i class="EMPHASIS">NicTool</i></span> object types,
+including other Groups. Users inside a sub-group do not have upward
+access to the tree of Groups.</p>
+</li>
+
+<li>
+<p><span class="TYPE">Zones</span>. A Zone represents a Zone in the
+DNS system. A Zone object contains a number of Zone Record objects,
+and has a list of Nameservers to which the Zone will be
+published.</p>
+</li>
+
+<li>
+<p><span class="TYPE">Zone Records</span>. A Zone Record is a
+Resource Record in the DNS system which belongs to a particular
+Zone.</p>
+</li>
+
+<li>
+<p><span class="TYPE">Nameservers</span>. A Nameserver represents a
+single DNS server which is controlled by <span class="emphasis"><i
+class="EMPHASIS">NicTool</i></span>. Zones can publish to any
+Nameservers in the same Group or any Nameserver along the path from
+that Group to the root Group.</p>
+</li>
+</ul>
+
+<br>
+<br>
+</div>
+
+<div class="NAVFOOTER">
+<hr align="LEFT" width="100%">
+<table summary="Footer navigation table" width="100%" border="0"
+cellpadding="0" cellspacing="0">
+<tr>
+<td width="33%" align="left" valign="top"><a href="apinotes.htm"
+accesskey="P">Prev</a></td>
+<td width="34%" align="center" valign="top"><a href="index.htm"
+accesskey="H">Home</a></td>
+<td width="33%" align="right" valign="top"><a href=
+"generalfuncs.htm" accesskey="N">Next</a></td>
+</tr>
+
+<tr>
+<td width="33%" align="left" valign="top">API Notes</td>
+<td width="34%" align="center" valign="top">&nbsp;</td>
+<td width="33%" align="right" valign="top">General Functions</td>
+</tr>
+</table>
+</div>
+</body>
+</html>
+
