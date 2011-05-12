@@ -1,8 +1,4 @@
 package NicToolServer::Zone::Record::Sanity;
-
-#
-# $Id: Sanity.pm 694 2008-10-16 07:38:33Z rob@bsdfreaks.nl $
-#
 #
 # NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
 # NicTool v2.01+    Copyright 2004-2008 The Network People, Inc.
@@ -18,7 +14,6 @@ package NicToolServer::Zone::Record::Sanity;
 # You should have received a copy of the Affero General Public License
 # along with this program; if not, write to Affero Inc., 521 Third St,
 # Suite 225, San Francisco, CA 94107, USA
-#
 
 use strict;
 
@@ -321,6 +316,12 @@ sub _valid_address_chars {
         }
         return;
     }
+
+    # convert : characters in IPv6 AAAA records to char value. See:
+    # https://www.tnpi.net/support/forums/index.php/topic,990.0.html
+    if ( $data->{'type'} eq "AAAA" && $data->{address} =~ /:/ ) {
+        $data->{address} =~ s/:/\\072/g;
+    };
 
     if ( $data->{address} =~ /\// 
         && $data->{address} !~ /in-addr\.arpa\.$/i ) {
