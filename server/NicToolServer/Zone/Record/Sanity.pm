@@ -317,10 +317,11 @@ sub _valid_address_chars {
         return;
     }
 
-    # convert : characters in IPv6 AAAA records to char value. See:
+    my $valid_chars = "[^a-zA-Z0-9\-\.]";
+
     # https://www.tnpi.net/support/forums/index.php/topic,990.0.html
-    if ( $data->{'type'} eq "AAAA" && $data->{address} =~ /:/ ) {
-        $data->{address} =~ s/:/\\072/g;
+    if ( $data->{'type'} eq "AAAA" ) {
+        $valid_chars = "[^a-zA-Z0-9\-\.:]";  # allow : char for AAAA (IPv6)
     };
 
     if ( $data->{address} =~ /\// 
@@ -331,7 +332,7 @@ sub _valid_address_chars {
             "invalid character in record address '/'.  Not allowed in non-reverse-lookup addresses"
         );
     }
-    elsif ( $data->{address} =~ /([^a-zA-Z0-9\-\.])/ ) {
+    elsif ( $data->{address} =~ /($valid_chars)/ ) {
         $self->{errors}{address}++;
         push(
             @{ $self->{'error_messages'} },
