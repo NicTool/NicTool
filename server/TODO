@@ -1,6 +1,5 @@
 ----NEW----
-
-. Crypt the user passwords (requires schema changes)
+. Support tinydns locations and/or BIND views
 
 . If a user does not have delete permission for a zone/zone record, they should also not have restore permissions (https://www.tnpi.net/support/forums/index.php/topic,797.0.html)
 
@@ -8,6 +7,8 @@
 should not.
 
 ==== COMPLETED =====
+
+. Crypt the user passwords (requires schema changes)
 
 . Make sure password length is not longer than SQL table allows. otherwise, 
    matching password will get truncated in the table and won't match upon 
