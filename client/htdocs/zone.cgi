@@ -78,19 +78,13 @@ sub display {
         return;
     }
 
-    my $zone_summary = $nt_obj->get_zone_summary(
-        nt_group_id => $q->param('nt_group_id'),
-        nt_zone_id  => $q->param('nt_zone_id')
-    );
-
     $nt_obj->display_zone_list_options( $user, $q->param('nt_group_id'),
         $level, 0 );
     $nt_obj->display_zone_options( $user, $zone, $level + 1, 0 );    #1);
 
-    $zone = &display_properties( $nt_obj, $user, $q, $zone, $zone_summary );
-    &display_nameservers( $nt_obj, $user, $q, $zone, $zone_summary );
-    &display_summary( $nt_obj, $q, $zone, $zone_summary );
-    &display_zone_records( $nt_obj, $user, $q, $zone, $zone_summary );
+    $zone = &display_properties( $nt_obj, $user, $q, $zone );
+    &display_nameservers( $nt_obj, $user, $q, $zone );
+    &display_zone_records( $nt_obj, $user, $q, $zone );
 
     $nt_obj->parse_template($NicToolClient::end_html_template);
 }
@@ -577,10 +571,9 @@ sub display_nameservers {
 }
 
 sub display_zone_records {
-    my ( $nt_obj, $user, $q, $zone, $summary ) = @_;
+    my ( $nt_obj, $user, $q, $zone ) = @_;
     my $group = $nt_obj->get_group(
         nt_group_id  => $user->{'nt_group_id'},
-        summary_data => 1
     );
     my $zonedelegate = exists $zone->{'delegated_by_id'};
 
@@ -1577,84 +1570,5 @@ sub display_edit_zone {
         $q->submit('Cancel'), "</td></tr>";
     print "</table>";
     print $q->end_form;
-}
-
-sub display_summary {
-
-    return unless $NicToolClient::display_summary_data;
-
-    my $nt_obj = shift;
-    my $q      = shift;
-    my $group  = shift;
-    my $data   = shift;
-
-    my %labels = (
-        zone_records              => 'Total Records',
-        zone_record_additions     => 'Record Additions',
-        zone_record_modifications => 'Record Modifications',
-        zone_record_deletions     => 'Record Deletions',
-    );
-
-    my $width = '50%';
-
-    $nt_obj->display_hr();
-
-    print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-    print "<tr bgcolor=$NicToolClient::dark_grey><td>";
-    print "<table cellpadding=0 cellspacing=0 border=0 width=100%>";
-    print "<tr>";
-    print "<td><b>Summary data for period "
-        . ( scalar localtime( $data->{'range_start'} ) ) . " - "
-        . ( scalar localtime( $data->{'range_end'} ) )
-        . "</b></td></tr>";
-    print "</tr></table></td></tr>";
-    print "</table>";
-
-    my @options;
-    push( @options,
-              "<a href=zone_application_log.cgi?nt_group_id="
-            . $q->param('nt_group_id')
-            . "&nt_zone_id="
-            . $q->param('nt_zone_id')
-            . ">View log</a>" );
-
-    print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-    print "<tr bgcolor=$NicToolClient::dark_grey><td>";
-    print "<table cellpadding=0 cellspacing=0 border=0 width=100%>";
-    print "<tr>";
-    print "<td>", "Zones application log summary</td>";
-    print "<td align=right>", join( ' | ', @options ), "</td>";
-    print "</tr>";
-    print "</table></td></tr></table>";
-
-    return $nt_obj->display_nice_error( $data, "Get Zone Summary" )
-        if ( $data->{'error_code'} != 200 );
-
-    print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-    print "<tr>";
-    print "<td width=$width>";
-    print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-    foreach (qw(zone_records zone_record_additions)) {
-        print "<tr bgcolor=$NicToolClient::light_grey>";
-        print "<td nowrap><font size=-2>", "$labels{$_}: </font></td>";
-        print "<td width=100% align=right><font size=-2>",
-            ( $data->{$_} ? $data->{$_} : 'n/a' ), "</font></td>";
-        print "</tr>";
-    }
-    print "</table>";
-    print "</td>";
-    print "<td width=$width>";
-    print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-    foreach (qw(zone_record_modifications zone_record_deletions)) {
-        print "<tr bgcolor=$NicToolClient::light_grey>";
-        print "<td nowrap><font size=-2>", "$labels{$_}: </font></td>";
-        print "<td width=100% align=right><font size=-2>",
-            ( $data->{$_} ? $data->{$_} : 'n/a' ), "</font></td>";
-        print "</tr>";
-    }
-    print "</table>";
-    print "</td>";
-    print "</tr>";
-    print "</table>";
 }
 

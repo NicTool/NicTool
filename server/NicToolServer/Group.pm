@@ -445,32 +445,6 @@ sub get_group {
     }
     $sth->finish;
 
-    if ( $rv{'nt_group_id'} and $data->{'summary_data'} ) {
-        $sql
-            = "SELECT COUNT(*) FROM nt_group WHERE deleted = '0' AND parent_group_id = "
-            . $dbh->quote( $rv{'nt_group_id'} );
-        $sth = $dbh->prepare($sql);
-        warn "$sql\n" if $self->debug_sql;
-        $sth->execute;
-        $rv{'has_children'} = $sth->fetch->[0];
-        $sth->finish;
-
-#$sth = $dbh->prepare("SELECT COUNT(*) FROM nt_zone WHERE nt_group_id = " . $dbh->quote($rv{'nt_group_id'}));
-#$sth->execute;
-#$rv{'has_zones'} = $sth->fetch->[0];
-#$sth->finish;
-
-#$sth = $dbh->prepare("SELECT COUNT(*) FROM nt_user WHERE nt_group_id = " . $dbh->quote($rv{'nt_group_id'}));
-#$sth->execute;
-#$rv{'has_users'} = $sth->fetch->[0];
-#$sth->finish;
-
-#$sth = $dbh->prepare("SELECT COUNT(*) FROM nt_nameserver WHERE nt_group_id = " . $dbh->quote($rv{'nt_group_id'}));
-#$sth->execute;
-#$rv{'has_nameservers'} = $sth->fetch->[0];
-#$sth->finish;
-
-    }
     delete $rv{'nt_user_id'};
 
     return \%rv;
@@ -544,11 +518,6 @@ sub get_group_subgroups {
     my %field_map = (
         group =>
             { timefield => 0, quicksearch => 1, field => 'nt_group.name' },
-        sub_groups => {
-            timefield   => 0,
-            quicksearch => 0,
-            field       => 'nt_group_current_summary.children'
-        },
         parent_group_id => {
             timefield   => 0,
             quicksearch => 0,
@@ -574,10 +543,7 @@ sub get_group_subgroups {
     my $r_data = { error_code => 200, error_msg => 'OK', groups => [] };
 
     my $sql = "SELECT COUNT(*) FROM nt_group ";
-    $sql
-        .= "LEFT JOIN nt_group_current_summary ON nt_group.nt_group_id = nt_group_current_summary.nt_group_id ";
-    $sql
-        .= "WHERE deleted = '0' AND nt_group.parent_group_id IN("
+    $sql .= "WHERE deleted = '0' AND nt_group.parent_group_id IN("
         . join( ',', @group_list ) . ") "
         . ( @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
 
@@ -595,11 +561,7 @@ sub get_group_subgroups {
         return $r_data;
     }
 
-    $sql
-        = "SELECT nt_group.*, "
-        . "       nt_group_current_summary.children as sub_groups "
-        . "FROM nt_group "
-        . "LEFT JOIN nt_group_current_summary ON nt_group.nt_group_id = nt_group_current_summary.nt_group_id "
+    $sql = "SELECT nt_group.* FROM nt_group "
         . "WHERE deleted = '0' AND nt_group.parent_group_id IN("
         . join( ',', @group_list ) . ") ";
     $sql .= 'AND (' . join( ' ', @$conditions ) . ') ' if @$conditions;

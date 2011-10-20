@@ -471,7 +471,6 @@ sub display_zone_options {
 
     my $group = $self->get_group(
         nt_group_id  => $user->{'nt_group_id'},
-        summary_data => 1
     );
 
     my $q = $self->{'CGI'};
@@ -598,12 +597,12 @@ sub display_nameserver_options {
     if ( $user->{'nameserver_create'} ) {
         push( @options,
             "<a href=group_nameservers.cgi?nt_group_id=$group_id&edit=1>New Nameserver</a>"
-        ) unless ($in_ns_summary);
+        ) if ! $in_ns_summary;
     }
     else {
         push( @options,
             "<font color=$NicToolClient::disabled_color>New Nameserver</font>"
-        ) unless ($in_ns_summary);
+        ) if ! $in_ns_summary;
     }
 
     print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
@@ -1059,154 +1058,6 @@ sub display_advanced_search {
     print $q->endform();
 }
 
-sub display_group_zones_summary {
-    my $self  = shift;
-    my $user  = shift;
-    my $group = shift;
-    my $data  = shift;
-    my %opts  = @_;
-
-    my $q = $self->{'CGI'};
-
-    my %labels = (
-        zones         => 'Total Zones',
-        additions     => 'Zone Additions',
-        modifications => 'Zone Modifications',
-        deletions     => 'Zone Deletions',
-
-        zone_records              => 'Total Zone Records',
-        zone_record_additions     => 'Zone Record Additions',
-        zone_record_modifications => 'Zone Record Modifications',
-        zone_record_deletions     => 'Zone Record Deletions',
-
-        children            => 'Total Sub-group Zones',
-        child_additions     => 'Sub-group Zone Additions',
-        child_modifications => 'Sub-group Zone Modifications',
-        child_deletions     => 'Sub-group Zone Deletions',
-
-        child_zone_records          => 'Total Sub-group Zone Records',
-        child_zone_record_additions => 'Sub-group Zone Record Additions',
-        child_zone_record_modifications =>
-            'Sub-group Zone Record Modifications',
-        child_zone_record_deletions => 'Sub-group Zone Record Deletions'
-    );
-
-    my $width = $group->{'has_children'} ? '25%' : '50%';
-
- #print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
- #print "<tr bgcolor=$NicToolClient::dark_grey><td>";
- #print "<table cellpadding=0 cellspacing=0 border=0 width=100%>";
- #print "<tr>";
- #print "<td>$NicToolClient::font<b>Group Zones Summary</b></font></td></tr>";
- #print "</tr></table></td></tr>";
- #print "</table>";
-
-    my @options;
-    if ( $opts{'show_new'} ) {
-        if ( $user->{'zone_create'} ) {
-            push( @options,
-                "<a href=group_zones.cgi?nt_group_id=$group->{'nt_group_id'}&new=1>New Zone</a>"
-            );
-        }
-        else {
-            push( @options,
-                "<font color=$NicToolClient::disabled_color>New Zone</font>"
-            );
-        }
-    }
-
-    print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-    print "<tr bgcolor=$NicToolClient::dark_grey><td>";
-    print "<table cellpadding=0 cellspacing=0 border=0 width=100%>";
-    print "<tr>";
-    if ( $data->{'range_start'} ) {
-        print "<td>$NicToolClient::font",
-              "Zones application log summary for period "
-            . ( scalar localtime( $data->{'range_start'} ) ) . " - "
-            . ( scalar localtime( $data->{'range_end'} ) )
-            . "</font></td>";
-    }
-    else {
-        print "<td>$NicToolClient::font",
-            "Zones application log summary</font></td>";
-    }
-    print "<td align=right>$NicToolClient::font";
-    print @options ? join( ' | ', @options ) : "&nbsp;";
-    print "</font></td>";
-    print "</tr>";
-    print "</table></td></tr></table>";
-
-    return $self->display_error($data) if ( $data->{'error_code'} != 200 );
-
-    print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-    print "<tr>";
-    print "<td width=$width>";
-    print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-    foreach (qw(zones additions modifications deletions)) {
-        print "<tr bgcolor=$NicToolClient::light_grey>";
-        print "<td nowrap>$NicToolClient::font<font size=-2>",
-            "$labels{$_}: </font></td>";
-        print "<td width=100% align=right>$NicToolClient::font<font size=-2>",
-            ( $data->{$_} ? $data->{$_} : 'n/a' ), "</font></td>";
-        print "</tr>";
-    }
-    print "</table>";
-    print "</td>";
-    print "<td width=$width>";
-    print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-    foreach (
-        qw(zone_records zone_record_additions zone_record_modifications zone_record_deletions)
-        )
-    {
-        print "<tr bgcolor=$NicToolClient::light_grey>";
-        print "<td nowrap>$NicToolClient::font<font size=-2>",
-            "$labels{$_}: </font></td>";
-        print "<td width=100% align=right>$NicToolClient::font<font size=-2>",
-            ( $data->{$_} ? $data->{$_} : 'n/a' ), "</font></td>";
-        print "</tr>";
-    }
-    print "</table>";
-    print "</td>";
-
-    if ( $group->{'has_children'} ) {
-        print "<td width=$width>";
-        print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-        foreach (
-            qw(children child_additions child_modifications child_deletions))
-        {
-            print "<tr bgcolor=$NicToolClient::light_grey>";
-            print "<td nowrap>$NicToolClient::font<font size=-2>",
-                "$labels{$_}: </font></td>";
-            print
-                "<td width=100% align=right>$NicToolClient::font<font size=-2>",
-                ( $data->{$_} ? $data->{$_} : 'n/a' ), "</font></td>";
-            print "</tr>";
-        }
-        print "</table>";
-        print "</td>";
-        print "<td width=$width>";
-        print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-        foreach (
-            qw(child_zone_records child_zone_record_additions child_zone_record_modifications child_zone_record_deletions)
-            )
-        {
-            print "<tr bgcolor=$NicToolClient::light_grey>";
-            print "<td nowrap>$NicToolClient::font<font size=-2>",
-                "$labels{$_}: </font></td>";
-            print
-                "<td width=100% align=right>$NicToolClient::font<font size=-2>",
-                ( $data->{$_} ? $data->{$_} : 'n/a' ), "</font></td>";
-            print "</tr>";
-        }
-        print "</table>";
-        print "</td>";
-    }
-
-    print "</tr>";
-    print "</table>";
-
-}
-
 sub display_group_list {
     my ( $self, $q, $user, $cgi, $action, $excludeid, $moreparams ) = @_;
 
@@ -1222,7 +1073,6 @@ sub display_group_list {
 
     my $group = $self->get_group(
         nt_group_id  => $q->param('nt_group_id'),
-        summary_data => 1
     );
 
     unless ( $group->{'has_children'} ) {
@@ -1232,7 +1082,6 @@ sub display_group_list {
         $q->param( 'nt_group_id', $group->{'parent_group_id'} );
         $group = $self->get_group(
             nt_group_id  => $q->param('nt_group_id'),
-            summary_data => 1
         );
     }
     my $include_subgroups = $group->{'has_children'} ? 'sub-groups' : undef;

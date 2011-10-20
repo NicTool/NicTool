@@ -92,7 +92,6 @@ sub _api {
         get_group_subgroups           => { 'include' => ['nt_group_id'] },
         get_global_application_log    => { 'include' => ['nt_group_id'] },
         get_group_zones               => { 'include' => ['nt_group_id'] },
-        get_group_zone_summary        => { 'include' => ['nt_group_id'] },
         new_zone                      => { 'include' => ['nt_group_id'] },
         move_zones                    => { 'include' => ['nt_group_id'] },
         new_nameserver                => { 'include' => ['nt_group_id'] },

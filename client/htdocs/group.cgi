@@ -154,13 +154,6 @@ sub display {
         nt_group_id  => $q->param('nt_group_id'),
         summary_data => 1
     );
-    my $summary = $nt_obj->get_group_zone_summary(
-        nt_group_id => $q->param('nt_group_id') );
-
-    if ($NicToolClient::display_summary_data) {
-        $nt_obj->display_group_zones_summary( $user, $group, $summary,
-            show_new => 1 );
-    }
 
     #&display_zone_search($nt_obj, $q, $group);
     #$nt_obj->display_hr();
@@ -212,7 +205,6 @@ sub display_group_list {
         group      => 'Group',
         sub_groups => '*Sub Groups',
     );
-    push( @columns, 'sub_groups' ) if $NicToolClient::display_summary_data;
 
     my $include_subgroups = $group->{'has_children'} ? 'sub-groups' : undef;
 
@@ -331,11 +323,6 @@ sub display_group_list {
                 ),
                 "</td>"
                 . "</tr></table></td>";
-
-            print "<td>",
-                ( $group->{'children'} ? $group->{'children'} : 'n/a' ),
-                "</td>"
-                if $NicToolClient::display_summary_data;
 
             for (qw(zones nameservers users log)) {
                 print "<td align=center width=1%>"

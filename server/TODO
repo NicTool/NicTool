@@ -71,7 +71,6 @@ finishing NicTool
 	- web interface tools
 	- command line tools
 - double check that everything from network is dbh->quoted
-- summary sub-system finialization, testing
 - transaction queueing layer, examine possible failure points, solutions
 - make dist should clean out developer-specific DB usernames/passes, etc (*.sql)
 - DES encrypt client-local messages (to thawt cross-site scripting hacks)

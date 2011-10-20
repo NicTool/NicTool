@@ -96,71 +96,11 @@ sub pack_nameservers {
     $sth->execute;
     my @ns;
     while ( my $data = $sth->fetchrow_hashref ) {
-
-#  TODO
-#my $sth2 = $dbh->prepare("SELECT SUM(queries_norecord) as queries_norecord, SUM(queries_successful) as queries_successful FROM nt_zone_nameserver_summary WHERE nt_zone_nameserver_id = $data->{'nt_zone_nameserver_id'}");
-#if( $sth2->execute ) {
-#    $data = { %$data, %{ $sth2->fetchrow_hashref } };
-#}
-#$sth2->finish;
-
         push( @ns, $data );
     }
     $sth->finish;
 
     $data->{'nameservers'} = \@ns;
-}
-
-sub get_zone_summary {
-    my ( $self, $data ) = @_;
-
-    my %rv;
-
-    my $dbh = $self->{'dbh'};
-    my $sql
-        = "SELECT period FROM nt_zone_summary WHERE nt_zone_id = $data->{'nt_zone_id'} ORDER BY sid LIMIT 1";
-    my $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
-    $sth->execute();
-    my $row = $sth->fetch;
-    if ( ref($row) ) {
-        $rv{'range_start'} = $row->[0] - 3599;
-    }
-    else {
-        $rv{'error_code'} = 600;
-        $rv{'error_msg'}  = "Summary data unavailable";
-        return \%rv;
-    }
-    $sth->finish;
-
-    $sql
-        = "SELECT * FROM nt_zone_summary WHERE nt_zone_id = $data->{'nt_zone_id'} ORDER BY sid DESC LIMIT 1";
-    $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
-    $sth->execute;
-    $row                = $sth->fetchrow_hashref;
-    $rv{'range_end'}    = $row->{'period'};
-    $rv{'zone_records'} = $row->{'zone_records'};
-    $sth->finish;
-
-    my @agg_fields = map( "SUM($_) AS $_",
-        qw(zone_record_modifications zone_record_additions zone_record_deletions queries_norecord queries_successful)
-    );
-    $sql
-        = "SELECT nt_zone_id, "
-        . join( ', ', @agg_fields )
-        . " FROM nt_zone_summary WHERE nt_zone_id = $data->{'nt_zone_id'} GROUP BY nt_zone_id";
-    $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
-    $sth->execute;
-    $row = $sth->fetchrow_hashref;
-    %rv = ( %rv, %$row ) if ( ref($row) );
-    $sth->finish;
-
-    $rv{'error_code'} = 200;
-    $rv{'error_msg'}  = 'OK';
-
-    return \%rv;
 }
 
 sub get_zone_log {
@@ -417,61 +357,6 @@ sub get_group_zones_log {
     return $r_data;
 }
 
-sub get_group_zone_summary {
-    my ( $self, $data ) = @_;
-
-    my $dbh = $self->{'dbh'};
-
-    my $rv = {};
-
-    my $sql
-        = "SELECT period FROM nt_zone_general_summary WHERE nt_group_id = $data->{'nt_group_id'} ORDER BY period LIMIT 1";
-    my $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
-    $sth->execute;
-    my $row = $sth->fetch;
-    unless ( ref($row) ) {
-        $rv->{'error_code'} = '600';
-        $rv->{'error_msg'}  = 'Summary data unavailable';
-        return $rv;
-    }
-    else {
-        $rv->{'range_start'} = $row->[0] - 3599;
-    }
-    $sth->finish;
-
-    $sql
-        = "SELECT * FROM nt_zone_general_summary WHERE nt_group_id = $data->{'nt_group_id'} ORDER BY period DESC LIMIT 1";
-    $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
-    $sth->execute;
-    $row = $sth->fetchrow_hashref;
-    $sth->finish;
-
-    $rv->{'range_end'} = $row->{'period'};
-    foreach (qw(zones children zone_records)) {
-        $rv->{$_} = $row->{$_};
-    }
-
-    my @agg_fields = map( "SUM($_) AS $_",
-        qw(additions modifications deletions children child_additions child_modifications child_deletions zone_record_modifications zone_record_additions zone_record_deletions queries_norecord queries_successful child_queries_norecord child_queries_successful child_zone_records child_zone_record_additions child_zone_record_modifications child_zone_record_deletions)
-    );
-    $sql
-        = "SELECT nt_group_id, "
-        . join( ', ', @agg_fields )
-        . " FROM nt_zone_general_summary WHERE nt_group_id = $data->{'nt_group_id'} GROUP BY nt_group_id";
-    $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
-    $sth->execute;
-    $rv = { %$rv, %{ $sth->fetchrow_hashref } };
-    $sth->finish;
-
-    $rv->{'error_code'} = 200;
-    $rv->{'error_msg'}  = 'OK';
-
-    return $rv;
-}
-
 sub get_group_zones {
     my ( $self, $data ) = @_;
 
@@ -488,21 +373,6 @@ sub get_group_zones {
             timefield   => 0,
             quicksearch => 0,
             field       => 'nt_zone.description'
-        },
-        queries_successful => {
-            timefield   => 0,
-            quicksearch => 0,
-            field       => 'nt_zone_current_summary.queries_successful'
-        },
-        queries_norecord => {
-            timefield   => 0,
-            quicksearch => 0,
-            field       => 'nt_zone_current_summary.queries_norecord'
-        },
-        records => {
-            timefield   => 0,
-            quicksearch => 0,
-            field       => 'nt_zone_current_summary.zone_records'
         },
     );
 
@@ -657,14 +527,10 @@ sub get_group_zones {
         . "       nt_zone.nt_group_id as owner_group_id, "
         . "       nt_zone.description, "
         . "       nt_zone.deleted, "
-        . "       nt_zone_current_summary.queries_successful, "
-        . "       nt_zone_current_summary.queries_norecord, "
-        . "       nt_zone_current_summary.zone_records as records, "
         . "	   nt_group.name as group_name, "
         . "	   nt_group.nt_group_id "
         . "FROM nt_zone "
         . "INNER JOIN nt_group ON nt_zone.nt_group_id=nt_group.nt_group_id "
-        . "LEFT JOIN nt_zone_current_summary ON nt_zone.nt_zone_id = nt_zone_current_summary.nt_zone_id "
         . "WHERE "
         . "    nt_zone.deleted='"
         . ( $data->{'search_deleted'} ? '1' : '0' ) . "' "
@@ -752,11 +618,6 @@ sub get_zone_records {
             quicksearch => 0,
             field       => 'nt_zone_record.other'
         },
-        queries => {
-            timefield   => 0,
-            quicksearch => 0,
-            field       => 'nt_zone_record_current_summary.queries'
-        },
     );
 
     my $conditions = $self->format_search_conditions( $data, \%field_map );
@@ -776,7 +637,7 @@ sub get_zone_records {
     }
     else {
         $sql
-            = "SELECT COUNT(*) FROM nt_zone_record LEFT JOIN nt_zone_record_current_summary ON nt_zone_record.nt_zone_record_id = nt_zone_record_current_summary.nt_zone_record_id WHERE nt_zone_record.deleted = '0' AND nt_zone_record.nt_zone_id = $data->{'nt_zone_id'}"
+            = "SELECT COUNT(*) FROM nt_zone_record WHERE nt_zone_record.deleted = '0' AND nt_zone_record.nt_zone_id = $data->{'nt_zone_id'}"
             . (
             @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
     }
@@ -843,10 +704,7 @@ sub get_zone_records {
         . "       nt_delegate.zone_perm_delete_records as delegate_delete_records, "
 
         #. "       nt_delegate.perm_full as delegate_full, "
-        . "       nt_zone_record_current_summary.queries, "
-        . "       nt_zone_record_current_summary.period "
         . "FROM nt_zone_record "
-        . "LEFT JOIN nt_zone_record_current_summary ON nt_zone_record.nt_zone_record_id = nt_zone_record_current_summary.nt_zone_record_id "
         . "$join JOIN nt_delegate ON (nt_delegate.nt_group_id=$group_id AND nt_delegate.nt_object_id=nt_zone_record.nt_zone_record_id AND nt_delegate.nt_object_type='ZONERECORD' ) "
         . "WHERE nt_zone_record.nt_zone_id = $data->{'nt_zone_id'} "
         . "AND nt_zone_record.deleted = '0' "
@@ -860,10 +718,7 @@ sub get_zone_records {
 #}
 #else{
 #$sql = "SELECT nt_zone_record.*, "
-#. "       nt_zone_record_current_summary.queries, "
-#. "       nt_zone_record_current_summary.period "
 #. "FROM nt_zone_record "
-#. "LEFT JOIN nt_zone_record_current_summary ON nt_zone_record.nt_zone_record_id = nt_zone_record_current_summary.nt_zone_record_id "
 #. "WHERE deleted = '0' "
 #. "AND nt_zone_record.nt_zone_id = $data->{'nt_zone_id'} ";
 #$sql .= 'AND (' . join(' ', @$conditions) . ') ' if @$conditions;

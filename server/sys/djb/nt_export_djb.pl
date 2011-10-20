@@ -86,7 +86,7 @@ $ns->{'name'} =~ s/\.$//;
 my $last_export_status = &get_export_status( $ns, $dbh_read );
 my $last_export_failed = $last_export_status =~ /last:FAILED/ ? 1 : 0;
 &set_export_status( $ns, $dbh_write, "export starting" );
-my $db_row = &start_export_log( $ns, time() );
+#my $db_row = &start_export_log( $ns, time() );
 
 my $data_dir;
 if ( exists( $ENV{'TINYDNS_DATA_DIR'} ) ) {
@@ -138,8 +138,7 @@ die "NT_EXPORT_DJB ($nt_export_djb_path) is not executable!\n"
 
 my $nt_export_djb_ret = system("$nt_export_djb_path $nsid");
 if ($nt_export_djb_ret) {
-    die
-        "$nt_export_djb_path exited non-zero (with error) -- $nt_export_djb_ret\n";
+    die "$nt_export_djb_path exited non-zero (with error) -- $nt_export_djb_ret\n";
 }
 
 my $sec_build_data = time - $sec_build_data_start;
@@ -174,7 +173,6 @@ if ($rsync) {
             $sec_rsync_cdb = &rsync_cdb($ns);
         }
         else {
-
             #no change to db
             $export        = "success(no_change)";
             $sec_rsync_cdb = 0;

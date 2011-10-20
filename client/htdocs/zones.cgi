@@ -46,13 +46,7 @@ sub display {
 
     my $group = $nt_obj->get_group(
         nt_group_id  => $q->param('nt_group_id'),
-        summary_data => 1
     );
-    my $summary = $nt_obj->get_group_zone_summary(
-        nt_group_id => $q->param('nt_group_id') );
-
-    $nt_obj->display_group_zones_summary( $user, $group, $summary )
-        if $NicToolClient::display_summary_data;
 
     my %vars = setup_http_vars( $q, 1 );
     $vars{'ns_tree'} = $nt_obj->get_usable_nameservers(

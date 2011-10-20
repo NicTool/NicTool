@@ -258,14 +258,6 @@ sub api_commands {
             },
             'result-type' => 'Log'
         },
-        'get_group_zone_summary' => {
-            'class'      => 'Zone',
-            'method'     => 'get_group_zone_summary',
-            'parameters' => {
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
-            },
-        },
         'get_group_zone_query_log' => {
             'class'      => 'Zone',
             'method'     => 'get_group_zone_query_log',
@@ -325,14 +317,6 @@ sub api_commands {
                     { 'access' => 'read', required => 1, type => 'ZONE' },
             },
             'result-type' => 'Log',
-        },
-        'get_zone_summary' => {
-            'class'      => 'Zone',
-            'method'     => 'get_zone_summary',
-            'parameters' => {
-                'nt_zone_id' =>
-                    { 'access' => 'read', required => 1, type => 'ZONE' },
-            },
         },
         'get_zone_records' => {
             'class'      => 'Zone',

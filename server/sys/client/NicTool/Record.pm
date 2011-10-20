@@ -50,10 +50,6 @@ Returns a B<NicTool::Result> object.
 
 Returns a B<NicTool::Result> object.
 
-=item get_zone_summary
-
-Returns a B<NicTool::Result> object.
-
 =item get_zone_application_log
 
 Returns a B<NicTool::Result> object.

@@ -1960,12 +1960,6 @@ class="PDPARAM">data</var>);</div>
 <p><span class="TYPE">string</span>. REQUIRED. The group ID.</p>
 </dd>
 
-<dt><tt class="PARAMETER"><i>summary_data</i></tt></dt>
-
-<dd>
-<p><span class="TYPE">int</span>. Is summary data requested? 0
-means false</p>
-</dd>
 </dl>
 </div>
 
@@ -2005,12 +1999,6 @@ id.</p>
 name.</p>
 </dd>
 
-<dt><span class="RETURNVALUE">has_children</span></dt>
-
-<dd>
-<p><span class="TYPE">string</span>. The number of children of the
-requested group. (Only present if 'summary_data' is not 0.)</p>
-</dd>
 </dl>
 </div>
 
@@ -7546,110 +7534,6 @@ returned.</p>
 </div>
 </div>
 
-<div class="SECTION">
-<h2 class="SECTION"><a name=
-"GETZONESUMMARYFUNC">get_zone_summary</a></h2>
-
-<div class="FUNCSYNOPSIS"><a name="AEN6687"></a><code class=
-"FUNCDEF">struct <b class=
-"FSFUNC">get_zone_summary</b></code>(struct <var class=
-"PDPARAM">data</var>);</div>
-
-<p>This function returns summary information for a particular
-zone.</p>
-
-<div class="FORMALPARA">
-<p><b>data.</b> Named hash elements in the <tt class=
-"PARAMETER"><i>data</i></tt> hash:</p>
-
-<div class="VARIABLELIST">
-<dl>
-<dt><tt class="PARAMETER"><i>nt_zone_id</i></tt></dt>
-
-<dd>
-<p><span class="TYPE">string</span>. ID number of the requested
-zone. REQUIRED.</p>
-</dd>
-</dl>
-</div>
-
-<br>
-<br>
-</div>
-
-<div class="FORMALPARA">
-<p><b>return.</b></p>
-
-<div class="VARIABLELIST">
-<dl>
-<dt><span class="RETURNVALUE">nt_zone_id</span></dt>
-
-<dd>
-<p><span class="TYPE">string</span>.The chosen zone.</p>
-</dd>
-
-<dt><span class="RETURNVALUE">range_start</span></dt>
-
-<dd>
-<p><span class="TYPE">string</span>.The number of the first period
-this summary covers.</p>
-</dd>
-
-<dt><span class="RETURNVALUE">range_end</span></dt>
-
-<dd>
-<p><span class="TYPE">string</span>.The number of the last period
-this summary covers.</p>
-</dd>
-
-<dt><span class="RETURNVALUE">zone_records</span></dt>
-
-<dd>
-<p><span class="TYPE">string</span>.The number of zone records for
-this zone.</p>
-</dd>
-
-<dt><span class="RETURNVALUE">zone_record_modifications</span></dt>
-
-<dd>
-<p><span class="TYPE">string</span>.The number of zone record
-changes.</p>
-</dd>
-
-<dt><span class="RETURNVALUE">zone_record_additions</span></dt>
-
-<dd>
-<p><span class="TYPE">string</span>.The number of zone record
-additions.</p>
-</dd>
-
-<dt><span class="RETURNVALUE">zone_record_deletions</span></dt>
-
-<dd>
-<p><span class="TYPE">string</span>.The number of zone record
-deletions.</p>
-</dd>
-
-<dt><span class="RETURNVALUE">queries_norecord</span></dt>
-
-<dd>
-<p><span class="TYPE">string</span>.The number of unsuccessful
-queries for this zone.</p>
-</dd>
-
-<dt><span class="RETURNVALUE">queries_successful</span></dt>
-
-<dd>
-<p><span class="TYPE">string</span>.The number of successful
-queries for this zone.</p>
-</dd>
-</dl>
-</div>
-
-<br>
-<br>
-</div>
-</div>
 
 <div class="SECTION">
 <h2 class="SECTION"><a name="LOGINFUNC">login</a></h2>

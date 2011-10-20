@@ -86,10 +86,6 @@ Returns a B<NicTool::Result> object.
 
 Returns a B<NicTool::List> containing B<NicTool::Zone> objects. 
 
-=item get_group_zone_summary
-
-Returns a B<NicTool::Result> object. 
-
 =item new_zone
 
 Returns a B<NicTool::Result> object. 
@@ -168,7 +164,6 @@ sub _api {
         get_group_subgroups           => { 'includeid' => 1 },
         get_global_application_log    => { 'includeid' => 1 },
         get_group_zones               => { 'includeid' => 1 },
-        get_group_zone_summary        => { 'includeid' => 1 },
         new_zone                      => { 'includeid' => 1 },
         move_zones                    => { 'includeid' => 1 },
         new_nameserver                => { 'includeid' => 1 },

@@ -120,13 +120,7 @@ sub display {
 
     my $group = $nt_obj->get_group(
         nt_group_id  => $q->param('nt_group_id'),
-        summary_data => 1
     );
-    my $summary = $nt_obj->get_group_zone_summary(
-        nt_group_id => $q->param('nt_group_id') );
-
-    $nt_obj->display_group_zones_summary( $user, $group, $summary )
-        if $NicToolClient::display_summary_data;
 
     if ( $q->param('new') ) {
         $nt_obj->nice_message(@nicemessage) if @nicemessage;
@@ -189,17 +183,16 @@ sub display {
         }
     }
 
-    &display_list( $nt_obj, $q, $summary, $group, $user );
+    &display_list( $nt_obj, $q, $group, $user );
 
     $nt_obj->parse_template($NicToolClient::end_html_template);
 }
 
 sub display_list {
-    my ( $nt_obj, $q, $summary, $group, $user ) = @_;
+    my ( $nt_obj, $q, $group, $user ) = @_;
 
     my $user_group = $nt_obj->get_group(
         nt_group_id  => $user->{'nt_group_id'},
-        summary_data => 1
     );
 
     my @columns = qw(description);
@@ -210,10 +203,6 @@ sub display_list {
         description => 'Description',
         records     => '*Resource Records'
     );
-
-    if ($NicToolClient::display_summary_data) {
-        push( @columns, 'records' );
-    }
 
     my $include_subgroups = $group->{'has_children'} ? 'sub-groups' : undef;
     if ($include_subgroups) {
@@ -477,9 +466,6 @@ sub display_list {
                 (
                 $zone->{'description'} ? $zone->{'description'} : '&nbsp;' ),
                 "</td>";
-            print "<td width=$width>",
-                ( $zone->{'records'} ? $zone->{'records'} : 'n/a' ), "</td>"
-                if ($NicToolClient::display_summary_data);
 
             if (   $nt_obj->no_gui_hints
                 || $user_group->{'has_children'}
@@ -527,21 +513,6 @@ sub display_list {
         }
 
         print "</table>";
-
-        if ($NicToolClient::display_summary_data) {
-            print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-            print "<tr bgcolor=$NicToolClient::dark_grey><td>";
-            if ( $summary->{'error_code'} == 600 ) {
-                print "* $summary->{'error_msg'}<BR>";
-                print "* $summary->{'error_msg'}";
-            }
-            else {
-                print "<b>*</b> Total number of zone resource records as of ",
-                    scalar( localtime( $summary->{'range_end'} ) ), "<BR>";
-            }
-            print "</td></tr>";
-            print "</table>";
-        }
     }
 
     print $q->endform;
