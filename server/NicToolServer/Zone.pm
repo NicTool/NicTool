@@ -688,22 +688,18 @@ sub get_zone_records {
         $join = "LEFT";
     }
 
-    #if($del && $del->{'pseudo'}){
     $sql
         = "SELECT nt_zone_record.*, "
         . "       nt_delegate.delegated_by_id, "
         . "       nt_delegate.delegated_by_name, "
 
-        #. "       nt_delegate.perm_read as delegate_read, "
         . "       nt_delegate.perm_write as delegate_write, "
 
-        #. "       nt_delegate.perm_move as delegate_move, "
         . "       nt_delegate.perm_delete as delegate_delete, "
         . "       nt_delegate.perm_delegate as delegate_delegate, "
         . "       nt_delegate.zone_perm_add_records as delegate_add_records, "
-        . "       nt_delegate.zone_perm_delete_records as delegate_delete_records, "
+        . "       nt_delegate.zone_perm_delete_records as delegate_delete_records "
 
-        #. "       nt_delegate.perm_full as delegate_full, "
         . "FROM nt_zone_record "
         . "$join JOIN nt_delegate ON (nt_delegate.nt_group_id=$group_id AND nt_delegate.nt_object_id=nt_zone_record.nt_zone_record_id AND nt_delegate.nt_object_type='ZONERECORD' ) "
         . "WHERE nt_zone_record.nt_zone_id = $data->{'nt_zone_id'} "
@@ -714,17 +710,6 @@ sub get_zone_records {
     $sql .= 'AND (' . join( ' ', @$conditions ) . ') ' if @$conditions;
     $sql .= "ORDER BY " . join( ', ', @$sortby ) . " " if (@$sortby);
     $sql .= "LIMIT " . ( $r_data->{'start'} - 1 ) . ", $r_data->{'limit'}";
-
-#}
-#else{
-#$sql = "SELECT nt_zone_record.*, "
-#. "FROM nt_zone_record "
-#. "WHERE deleted = '0' "
-#. "AND nt_zone_record.nt_zone_id = $data->{'nt_zone_id'} ";
-#$sql .= 'AND (' . join(' ', @$conditions) . ') ' if @$conditions;
-#$sql .= "ORDER BY " . join(', ', @$sortby) . " " if( @$sortby );
-#$sql .= "LIMIT " . ($r_data->{'start'} - 1) . ", $r_data->{'limit'}";
-#}
 
     $sth = $dbh->prepare($sql);
     warn "$sql\n" if $self->debug_sql;
