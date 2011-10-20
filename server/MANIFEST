@@ -37,8 +37,8 @@ sql/upgrade/README
 sql/upgrade/update_nt_group_subgoups_table.pl
 sql/upgrade/update_v2_05.sql
 sql/upgrade/update_v2_08.sql
-sql/upgrade/upgrade.pl
-sql/upgrade/upgrade106.sql
+sql/upgrade/update_v2.pl
+sql/upgrade/update_v1_06.sql
 sys/certificates/conf/ca.conf
 sys/certificates/conf/client-cert.conf
 sys/certificates/conf/client-req.conf

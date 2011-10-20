@@ -23,11 +23,10 @@ use strict;
 use vars qw/ $AUTOLOAD /;
 use NicToolServerAPI();
 
-$NicToolClient::VERSION = '2.08';
+$NicToolClient::VERSION = '2.09';
 $NicToolClient::NTURL   = 'http://www.nictool.com/';
 $NicToolClient::LICENSE = 'http://www.affero.org/oagpl.html';
-$NicToolClient::SRCURL
-    = 'http://www.nictool.com/download/NicToolClient-2.08.tar.gz';
+$NicToolClient::SRCURL  = 'http://www.nictool.com/download/NicTool.tar.gz';
 
 sub new {
     my $class = shift;
