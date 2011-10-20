@@ -1,0 +1,5 @@
+
+2.09 - Oct 2011
+    * removed all summary code (unused)
+    * packaged client and server together (simplify distribution)
+
