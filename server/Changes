@@ -1,5 +1,9 @@
 Revision history for Perl extension NicToolServer.
 
+2.09 - Oct 2011
+    * added nt_options database table (and db_version value). Expect the
+      contents of nictoolserver.conf and nictoolclient.conf to be here.
+
 2.08 - Mar 2010
 
     * added support for encrypted passwords in nt_user table 

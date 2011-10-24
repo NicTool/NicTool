@@ -150,10 +150,7 @@ sub display {
         $nt_obj->refresh_nav();
     }
 
-    my $group = $nt_obj->get_group(
-        nt_group_id  => $q->param('nt_group_id'),
-        summary_data => 1
-    );
+    my $group = $nt_obj->get_group( nt_group_id  => $q->param('nt_group_id') );
 
     #&display_zone_search($nt_obj, $q, $group);
     #$nt_obj->display_hr();
@@ -374,8 +371,7 @@ sub display_edit {
     my $data            = {};
     my @param;
     if ( $edit eq 'edit' ) {
-        my $rv
-            = $nt_obj->get_group( nt_group_id => $q->param('nt_group_id') );
+        my $rv = $nt_obj->get_group( nt_group_id => $q->param('nt_group_id') );
         return $nt_obj->display_nice_error( $rv, "Get Group Details" )
             if ( $rv->{'error_code'} != 200 );
         $data = $rv;

@@ -104,10 +104,7 @@ sub display_log {
     my $cgi        = 'group_zones_log.cgi';
     my @req_fields = qw(nt_group_id);
 
-    my $group = $nt_obj->get_group(
-        nt_group_id  => $q->param('nt_group_id'),
-        summary_data => 1
-    );
+    my $group = $nt_obj->get_group( nt_group_id  => $q->param('nt_group_id') );
 
     my $include_subgroups = $group->{'has_children'} ? 'sub-groups' : undef;
     push( @columns, 'group_name' ) if $include_subgroups;

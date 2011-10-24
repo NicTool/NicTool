@@ -58,10 +58,7 @@ sub display {
 
     $nt_obj->display_user_list_options( $user, $q->param('nt_group_id'),
         $level, 1 );
-    my $group = $nt_obj->get_group(
-        nt_group_id  => $q->param('nt_group_id'),
-        summary_data => 1
-    );
+    my $group = $nt_obj->get_group( nt_group_id => $q->param('nt_group_id') );
 
     my @fields
         = qw(user_create user_delete user_write group_create group_delete group_write zone_create zone_delegate zone_delete zone_write zonerecord_create zonerecord_delegate zonerecord_delete zonerecord_write nameserver_create nameserver_delete nameserver_write self_write);
@@ -428,10 +425,7 @@ sub display_list {
 
     my $cgi = 'group_users.cgi';
 
-    my $user_group = $nt_obj->get_group(
-        nt_group_id  => $user->{'nt_group_id'},
-        summary_data => 1
-    );
+    my $user_group = $nt_obj->get_group( nt_group_id => $user->{'nt_group_id'} );
 
     my @columns = qw(username first_name last_name email);
 

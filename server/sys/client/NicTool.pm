@@ -1,8 +1,4 @@
 #!/usr/bin/perl
-###
-# NicTool.pm
-# $Id: NicTool.pm 392 2005-09-26 23:55:55Z matt $
-###
 #
 # NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
 # NicTool v2.01 Copyright 2004 The Network People, Inc.

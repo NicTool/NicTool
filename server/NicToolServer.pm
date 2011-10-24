@@ -842,26 +842,6 @@ sub api_commands {
                     { 'access' => 'read', required => 1, type => 'GROUP' },
             },
         },
-
-#'get_delegated_nameservers'=> {
-#'class' =>  'Permission',
-#'method'=>  'get_delegated_nameservers',
-#'parameters'=>{ 'nt_group_id'=>{'access'=>'read',required=>1,type=>'GROUP'},
-#},
-#},
-#'get_object_delegates'=> {
-#'class' =>  'Permission',
-#'method'=>  'get_object_delegates',
-#'parameters'=>{'nt_object_id'=>{access=>'read',required=>1,type=>'parameters:nt_object_type'},
-#'nt_object_type'=>{required=>1},
-#},
-#},
-#'get_group_delegates'=> {
-#'class' =>  'Permission',
-#'method'=>  'get_group_delegates',
-#'parameters'=>{'nt_group_id'=>{access=>'read',required=>1,type=>'GROUP'},
-#},
-#},
         'get_zone_delegates' => {
             'class'      => 'Permission',
             'method'     => 'get_zone_delegates',
@@ -878,14 +858,6 @@ sub api_commands {
                     { access => 'read', required => 1, type => 'ZONERECORD' },
             },
         },
-
-#'get_nameserver_delegates'=> {
-#'class' =>  'Permission',
-#'method'=>  'get_nameserver_delegates',
-#'parameters'=>{'nt_nameserver_id'=>{access=>'read',required=>1,type=>'NAMESERVER'},
-#},
-#},
-
     };
 }
 
@@ -1082,9 +1054,6 @@ sub check_permission {
 
     my $group_ok = $self->group_usage_ok($obj_group_id);
 
-#warn "group_usage_ok for $obj_group_id is subgroup of ".$self->{'user'}->{'nt_group_id'}." is $group_ok";
-#my $permissions = $self->get_user_permissions($user_id);
-#$permissions = $self->get_group_permissions($group_id) unless $permissions;
     my $permissions = $self->{'user'};
 
     my $debug

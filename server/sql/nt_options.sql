@@ -1,0 +1,13 @@
+
+
+DROP TABLE IF EXISTS nt_options;
+CREATE TABLE nt_options (
+  option_id int(11) unsigned NOT NULL auto_increment,
+  option_name varchar(64) NOT NULL default '',
+  option_value text NOT NULL,
+  PRIMARY KEY  (`option_id`),
+  UNIQUE KEY `option_name` (`option_name`)
+);
+
+INSERT INTO `nt_options` VALUES (1,'db_version','2.09');
+

@@ -112,10 +112,7 @@ sub display {
         }
     }
 
-    my $group = $nt_obj->get_group(
-        nt_group_id  => $q->param('nt_group_id'),
-        summary_data => 1
-    );
+    my $group = $nt_obj->get_group( nt_group_id => $q->param('nt_group_id') );
 
     &display_list( $nt_obj, $q, $group, $user );
 
@@ -127,10 +124,7 @@ sub display_list {
 
     my $cgi = 'group_nameservers.cgi';
 
-    my $user_group = $nt_obj->get_group(
-        nt_group_id  => $user->{'nt_group_id'},
-        summary_data => 1
-    );
+    my $user_group = $nt_obj->get_group( nt_group_id => $user->{'nt_group_id'} );
 
     my @columns = qw(name description address status);
 

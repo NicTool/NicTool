@@ -118,9 +118,7 @@ sub display {
     $nt_obj->display_zone_list_options( $user, $q->param('nt_group_id'),
         $level, 1 );
 
-    my $group = $nt_obj->get_group(
-        nt_group_id  => $q->param('nt_group_id'),
-    );
+    my $group = $nt_obj->get_group( nt_group_id => $q->param('nt_group_id') );
 
     if ( $q->param('new') ) {
         $nt_obj->nice_message(@nicemessage) if @nicemessage;
@@ -191,9 +189,7 @@ sub display {
 sub display_list {
     my ( $nt_obj, $q, $group, $user ) = @_;
 
-    my $user_group = $nt_obj->get_group(
-        nt_group_id  => $user->{'nt_group_id'},
-    );
+    my $user_group = $nt_obj->get_group( nt_group_id  => $user->{'nt_group_id'} );
 
     my @columns = qw(description);
 

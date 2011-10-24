@@ -44,9 +44,7 @@ sub display {
     $nt_obj->display_zone_list_options( $user, $q->param('nt_group_id'),
         $level, 1 );
 
-    my $group = $nt_obj->get_group(
-        nt_group_id  => $q->param('nt_group_id'),
-    );
+    my $group = $nt_obj->get_group( nt_group_id => $q->param('nt_group_id') );
 
     my %vars = setup_http_vars( $q, 1 );
     $vars{'ns_tree'} = $nt_obj->get_usable_nameservers(

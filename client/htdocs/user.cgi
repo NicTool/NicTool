@@ -164,10 +164,7 @@ sub display {
 
     $level++;
 
-    my $group = $nt_obj->get_group(
-        nt_group_id  => $user->{'nt_group_id'},
-        summary_data => 1
-    );
+    my $group = $nt_obj->get_group( nt_group_id => $user->{'nt_group_id'} );
 
     my @options;
     if ( $user->{'user_delete'}
@@ -634,8 +631,7 @@ sub display_edit {
         if (  !$editself && $modifyperm
             || $duser->{'inherit_group_permissions'} )
         {
-            my $group = $nt_obj->get_group(
-                'nt_group_id' => $duser->{'nt_group_id'} );
+            my $group = $nt_obj->get_group( nt_group_id => $duser->{'nt_group_id'} );
 
             #show nameservers
             my %nsmap;

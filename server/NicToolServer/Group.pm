@@ -445,6 +445,16 @@ sub get_group {
     }
     $sth->finish;
 
+    if ( $rv{'nt_group_id'} ) {
+        $sql = "SELECT COUNT(*) FROM nt_group WHERE deleted='0' AND parent_group_id = "
+            . $dbh->quote( $rv{'nt_group_id'} );
+        $sth = $dbh->prepare($sql);
+        warn "$sql\n" if $self->debug_sql;
+        $sth->execute;
+        $rv{'has_children'} = $sth->fetch->[0];
+        $sth->finish;
+    };
+
     delete $rv{'nt_user_id'};
 
     return \%rv;
@@ -488,22 +498,6 @@ sub get_group_groups {
             $sth->execute;
             $_->{'has_children'} = $sth->fetch->[0];
             $sth->finish;
-
-#$sth = $dbh->prepare("SELECT COUNT(*) FROM nt_zone WHERE nt_group_id = " . $dbh->quote($_->{'nt_group_id'}));
-#$sth->execute;
-#$_->{'has_zones'} = $sth->fetch->[0];
-#$sth->finish;
-
-#$sth = $dbh->prepare("SELECT COUNT(*) FROM nt_user WHERE nt_group_id = " . $dbh->quote($_->{'nt_group_id'}));
-#$sth->execute;
-#$_->{'has_users'} = $sth->fetch->[0];
-#$sth->finish;
-
-#$sth = $dbh->prepare("SELECT COUNT(*) FROM nt_nameserver WHERE nt_group_id = " . $dbh->quote($_->{'nt_group_id'}));
-#$sth->execute;
-#$_->{'has_nameservers'} = $sth->fetch->[0];
-#$sth->finish;
-
         }
     }
 

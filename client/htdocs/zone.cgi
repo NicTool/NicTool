@@ -572,9 +572,7 @@ sub display_nameservers {
 
 sub display_zone_records {
     my ( $nt_obj, $user, $q, $zone ) = @_;
-    my $group = $nt_obj->get_group(
-        nt_group_id  => $user->{'nt_group_id'},
-    );
+    my $group = $nt_obj->get_group( nt_group_id => $user->{'nt_group_id'} );
     my $zonedelegate = exists $zone->{'delegated_by_id'};
 
     # display any status messages regarding any previous actions

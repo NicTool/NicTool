@@ -468,9 +468,7 @@ sub display_user_list_options {
 sub display_zone_options {
     my ( $self, $user, $zone, $level, $in_zone ) = @_;
 
-    my $group = $self->get_group(
-        nt_group_id  => $user->{'nt_group_id'},
-    );
+    my $group = $self->get_group( nt_group_id => $user->{'nt_group_id'} );
 
     my $q = $self->{'CGI'};
 
@@ -1070,18 +1068,14 @@ sub display_group_list {
     $q->param( 'nt_group_id', $user->{'nt_group_id'} )
         unless $q->param('nt_group_id');
 
-    my $group = $self->get_group(
-        nt_group_id  => $q->param('nt_group_id'),
-    );
+    my $group = $self->get_group( nt_group_id => $q->param('nt_group_id') );
 
     unless ( $group->{'has_children'} ) {
         print "<center>$NicToolClient::font<font color=red><B>Group "
             . $group->{'name'}
             . " has no sub-groups!</b></font></font></center>";
         $q->param( 'nt_group_id', $group->{'parent_group_id'} );
-        $group = $self->get_group(
-            nt_group_id  => $q->param('nt_group_id'),
-        );
+        $group = $self->get_group( nt_group_id => $q->param('nt_group_id') );
     }
     my $include_subgroups = $group->{'has_children'} ? 'sub-groups' : undef;
 

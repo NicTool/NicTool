@@ -1,7 +1,5 @@
 #!/usr/bin/perl
 #
-# $Id: nav.cgi 1043 2010-03-26 00:52:03Z matt $
-#
 # NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
 # NicTool v2.01 Copyright 2004 The Network People, Inc.
 #
@@ -47,13 +45,9 @@ sub display {
     my $expanded = {
         'expanded' => { map { $_, 1 } split( /,/, $q->param('expanded') ) } };
 
-    my $group = $nt_obj->get_group(
-        nt_group_id  => $user->{'nt_group_id'},
-        summary_data => 1
-    );
+    my $group = $nt_obj->get_group( nt_group_id => $user->{'nt_group_id'} );
 
-    return $nt_obj->display_error($group)
-        if ( $group->{'error_code'} != '200' );
+    return $nt_obj->display_error($group) if $group->{'error_code'} != '200';
 
     print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
     print
@@ -148,7 +142,6 @@ sub recurse_groups {
 
     foreach ( 0 .. $total ) {
 
-#my $group = $nt_obj->get_group('nt_group_id'=>$data->{'groups'}->[$_]->{'nt_group_id'});
         my $group = $data->{'groups'}->[$_];
 
         my $html
@@ -280,3 +273,5 @@ sub expand_url {
 
     return join( '&', @url );
 }
+
+
