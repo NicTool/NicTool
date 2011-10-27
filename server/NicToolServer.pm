@@ -1,8 +1,5 @@
 package NicToolServer;
 
-#
-# $Id: NicToolServer.pm 1044 2010-03-26 00:53:36Z matt $
-#
 # NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
 # NicTool v2.01+    Copyright 2004-2008 The Network People, Inc.
 #
@@ -60,71 +57,52 @@ sub handler {
 
 # process session verification, login or logouts by just responding with the user hash
 
-    my $error
-        = NicToolServer::Session->new( $r, $client_obj, $dbh )->verify();
+    my $error = NicToolServer::Session->new( $r, $client_obj, $dbh )->verify();
     warn "request: " . Data::Dumper::Dumper( $client_obj->data )
         if $self->debug_request;
     warn "request: error: " . Data::Dumper::Dumper($error)
         if $self->debug_request and $error;
-    return $response_obj->respond($error) if ($error);
-    if (   uc( $client_obj->data()->{'action'} ) eq 'LOGIN'
-        or uc( $client_obj->data()->{'action'} ) eq 'VERIFY_SESSION'
-        or uc( $client_obj->data()->{'action'} ) eq 'LOGOUT' )
+    return $response_obj->respond($error) if $error;
+    my $action = uc( $client_obj->data()->{'action'} );
+    if (   $action eq 'LOGIN'
+        or $action eq 'VERIFY_SESSION'
+        or $action eq 'LOGOUT' )
     {
 
 #warn "result of session verify: ".Data::Dumper::Dumper($client_obj->data->{'user'});
         return $response_obj->respond( $client_obj->data()->{'user'} );
-    }
+    };
 
     $self->{'user'} = $client_obj->data()->{'user'};
 
-    # if action exists, run checks & call it - else, puke
-    if ( my $cmd
-        = $self->api_commands->{ lc( $client_obj->data()->{'action'} ) } )
-    {
-
-  # check required
-  #$error = $self->verify_required( $cmd->{'required'}, $client_obj->data() );
-  #return $response_obj->respond($error) if ($error);
-
-        # check permissions
-        $error = $self->verify_obj_usage( $cmd, $client_obj->data(),
-            lc( $client_obj->data()->{'action'} ) );
-        return $response_obj->respond($error) if ($error);
-
-        # create obj, call method, return response
-        my $class = 'NicToolServer::' . $cmd->{'class'};
-        my $obj   = $class->new(
-            $self->{'Apache'}, $self->{'client'}, $self->{'dbh'},
-            $self->{'meta'},   $self->{'user'}
-        );
-        my $method = $cmd->{'method'};
-        warn
-            "calling NicToolServer action: $cmd->{'class'}::$cmd->{'method'} ("
-            . lc( $client_obj->data()->{'action'} ) . ")\n"
-            if $self->debug;
-        my $res;
-        eval { $res = $obj->$method( $client_obj->data() ) };
-        warn "result: " . Data::Dumper::Dumper($res) if $self->debug_result;
-
-        if ($@) {
-            return $response_obj->send_error(
-                $self->error_response( 508, $@ ) );
-        }
-        return $response_obj->respond($res);
-
-    }
-    else {
-
+    my $cmd = $self->api_commands->{ $action } or do {
         # fart on unknown actions
-        warn "unknown NicToolServer action: ",
-            lc( $client_obj->data()->{'action'} ), "\n"
-            if $self->debug;
+        warn "unknown NicToolServer action: $action\n" if $self->debug;
+        $response_obj->respond( $self->error_response( 500, $action ) );
+    };
 
-#$self->send_error({ 'error_code' => 500, 'error_msg' => 'Request for unknown action - ' . $client_obj->data()->{'action'} });
-        $response_obj->respond(
-            $self->error_response( 500, $client_obj->data()->{'action'} ) );
+    # check permissions
+    $error = $self->verify_obj_usage( $cmd, $client_obj->data(), $action);
+    return $response_obj->respond($error) if $error;
+
+    # create obj, call method, return response
+    my $class = 'NicToolServer::' . $cmd->{'class'};
+    my $obj   = $class->new(
+        $self->{'Apache'}, $self->{'client'}, $self->{'dbh'},
+        $self->{'meta'},   $self->{'user'}
+    );
+    my $method = $cmd->{'method'};
+    warn "calling NicToolServer action: $cmd->{'class'}::$cmd->{'method'} ("
+        . $action . ")\n" if $self->debug;
+    my $res;
+    eval { $res = $obj->$method( $client_obj->data() ) };
+    warn "result: " . Data::Dumper::Dumper($res) if $self->debug_result;
+
+    if ($@) {
+        return $response_obj->send_error( $self->error_response( 508, $@ ) );
     }
+    return $response_obj->respond($res);
+
     $dbh->disconnect;
 }
 
@@ -1576,37 +1554,6 @@ sub valid_ip_address {
     }
 }
 
-#sub verify_zone_usage {
-#my ($self, $zone_id) = @_;
-#
-#my $dbh = $self->{'dbh'};
-#my $sql = "SELECT nt_group_id FROM nt_zone WHERE nt_zone_id = $zone_id";
-#my $sth = $dbh->prepare($sql); warn "$sql\n" if $self->debug_sql;
-#$sth->execute || die $dbh->errstr;
-#my $auth_data = $sth->fetchrow_hashref;
-#return $self->group_usage_ok_old($auth_data);
-#}
-
-#sub group_usage_ok_old {
-#my ($self, $data) = @_;
-#
-#my $user = $self->{'user'};
-#
-#if( $user->{'nt_group_id'} == $data->{'parent_group_id'} ) {
-#return 1;
-#}
-#
-#if( $user->{'nt_group_id'} == $data->{'nt_group_id'} ) {
-#return 1;
-#}
-#
-#if( $self->is_subgroup($user->{'nt_group_id'}, $data->{'nt_group_id'}) ) {
-#return 1;
-#}
-#
-#return 0;
-#}
-
 sub group_usage_ok {
     my ( $self, $id ) = @_;
 
@@ -1934,8 +1881,6 @@ sub diff_changes {
 sub throw_sanity_error {
     my $self = shift;
 
-    #my $return = { 'error_code' => 300 };
-    #$return->{'error_msg'} = join(" AND ", @{ $self->{'error_messages'} });
     my $return = $self->error_response( 300,
         join( " AND ", @{ $self->{'error_messages'} } ) );
     $return->{'sanity_err'} = $self->{'errors'};
@@ -2220,7 +2165,7 @@ sub push_sanity_error {
 
 ### serial number routines
 #
-# bump_serial is the only publically-used method
+# bump_serial is the only publicly-used method
 
 sub bump_serial {
     my ( $self, $nt_zone_id, $current_serial ) = @_;
