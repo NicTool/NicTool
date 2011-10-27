@@ -25,3 +25,14 @@ DROP TABLE IF EXISTS nt_zone_current_summary;
 DROP TABLE IF EXISTS nt_zone_record_summary;
 DROP TABLE IF EXISTS nt_zone_record_current_summary;
 
+ALTER TABLE nt_nameserver_export_log DROP column stat9;
+ALTER TABLE nt_nameserver_export_log DROP column stat8;
+ALTER TABLE nt_nameserver_export_log DROP column stat7;
+ALTER TABLE nt_nameserver_export_log DROP column stat6;
+ALTER TABLE nt_nameserver_export_log DROP column stat5;
+ALTER TABLE nt_nameserver_export_log DROP column stat4;
+ALTER TABLE nt_nameserver_export_log DROP column stat3;
+ALTER TABLE nt_nameserver_export_log DROP column stat2;
+ALTER TABLE nt_nameserver_export_log DROP column stat1;
+
+DROP TABLE IF EXISTS nt_zone_ns_log;

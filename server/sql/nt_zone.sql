@@ -86,20 +86,6 @@ CREATE INDEX nt_zone_log_idx2 on nt_zone_log(nt_zone_id); # for update_djb
 CREATE INDEX nt_zone_log_idx3 on nt_zone_log(action); # for update_djb
 
 
-DROP TABLE IF EXISTS nt_zone_ns_log;
-CREATE TABLE nt_zone_ns_log(
-    nt_zone_id          INT UNSIGNED NOT NULL,
-    action              ENUM('added','modified','deleted') NOT NULL,
-    timestamp           INT UNSIGNED NOT NULL,
-    nt_nameserver_id    SMALLINT UNSIGNED NOT NULL,
-    ns_field            ENUM('0','1','2','3','4','5','6','7','8','9') NOT NULL
-);
-CREATE INDEX nt_zone_ns_log_idx1 on nt_zone_ns_log(timestamp);
-CREATE INDEX nt_zone_ns_log_idx2 on nt_zone_ns_log(nt_zone_id);
-CREATE INDEX nt_zone_ns_log_idx3 on nt_zone_ns_log(nt_nameserver_id);
-CREATE INDEX nt_zone_ns_log_idx4 on nt_zone_ns_log(action);
-
-
 DROP TABLE IF EXISTS nt_zone_record;
 CREATE TABLE nt_zone_record(
     nt_zone_record_id   INT UNSIGNED AUTO_INCREMENT NOT NULL PRIMARY KEY,

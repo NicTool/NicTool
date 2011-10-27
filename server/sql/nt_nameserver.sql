@@ -93,16 +93,7 @@ CREATE TABLE nt_nameserver_export_log(
     nt_nameserver_export_log_id     INT UNSIGNED AUTO_INCREMENT NOT NULL PRIMARY KEY,
     nt_nameserver_id                SMALLINT UNSIGNED NOT NULL,
     date_start                      INT UNSIGNED NOT NULL,
-    date_finish                     INT UNSIGNED,
-    stat1                           SMALLINT UNSIGNED, # DJB: time to dump data
-    stat2                           SMALLINT UNSIGNED, # time to build cdb
-    stat3                           SMALLINT UNSIGNED, # time to rsync
-    stat4                           SMALLINT UNSIGNED, # size of data ?
-    stat5                           SMALLINT UNSIGNED, # size of data.cdb ?
-    stat6                           SMALLINT UNSIGNED,
-    stat7                           SMALLINT UNSIGNED,
-    stat8                           SMALLINT UNSIGNED,
-    stat9                           SMALLINT UNSIGNED
+    date_finish                     INT UNSIGNED
 );
 CREATE INDEX nt_nameserver_export_log_idx1 on nt_nameserver_export_log(nt_nameserver_id);
 
