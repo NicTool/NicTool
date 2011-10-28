@@ -117,9 +117,6 @@ my $dbh;
 if(!$test_run){
 $dbh = DBI->connect("dbi:mysql:host=$db_host", "root", $root_pw);
 
-# Create database and initial priveleges
-#$dbh->do("DROP DATABASE IF EXISTS $db");
-#$dbh->do("CREATE DATABASE $db");
 print "Granting privleges to $db_user...\n";
 $dbh->do("GRANT ALL PRIVILEGES ON $db.* TO $db_user\@$db_host IDENTIFIED BY '$db_pass'");
 $dbh->disconnect;

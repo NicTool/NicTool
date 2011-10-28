@@ -49,6 +49,7 @@ sub handler {
     my $r = shift;
 
     my $dbh = &NicToolServer::dbh;
+    my $dbix = &NicToolServer::dbix;
 
     # create & initialize required objects
     my $client_obj = NicToolServer::Client->new( $r, $dbh );
@@ -1729,6 +1730,21 @@ sub fetch_row {
 
     return $data;
 }
+
+sub dbix {
+
+    my $dsn = "DBI:$NicToolServer::db_engine:"
+            . "database=$NicToolServer::db;"
+            . "host=$NicToolServer::db_host;"
+            . "port=3306";
+
+    my $options = { RaiseError => 1, AutoCommit => 1 };
+
+    my $dbix = DBIx::Simple->connect( $dsn, $NicToolServer::db_user, $NicToolServer::db_pass, $options )
+        or die DBIx::Simple->error;
+
+    return $dbix;
+};
 
 sub dbh {
     my $dbh = DBI->connect(
