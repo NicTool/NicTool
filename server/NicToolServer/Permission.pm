@@ -417,7 +417,7 @@ sub delete_object_delegation {
                 "Cannot delete delegation to a deleted group!" );
         }
         my @fields = qw(nt_group_id nt_object_id nt_object_type);
-        $sql = "DELETE from nt_delegate WHERE "
+        $sql = "DELETE FROM nt_delegate WHERE "
             . join( " AND ",
             map( "$_ = " . $dbh->quote( $data->{$_} ), @fields ) );
 
@@ -669,7 +669,7 @@ sub edit_object_delegation {
     ##end sanity checks
 
     my $sql
-        = "SELECT * from nt_delegate"
+        = "SELECT * FROM nt_delegate"
         . "   WHERE deleted='0'"
         . "   AND nt_group_id=$data->{'nt_group_id'}"
         . "   AND nt_object_id=$data->{'nt_object_id'}"

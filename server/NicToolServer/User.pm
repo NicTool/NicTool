@@ -319,7 +319,7 @@ sub edit_user {
     }
 
     #see if the user has explicit perms
-    #$sql = "SELECT * from nt_perm WHERE nt_user_id = ".$data->{'nt_user_id'};
+    #$sql = "SELECT * FROM nt_perm WHERE nt_user_id = ".$data->{'nt_user_id'};
     #warn "$sql\n" if $self->debug_sql;
     my $sth; # = $dbh->prepare($sql);
              #$sth->execute || return $self->error_response(505,$dbh->errstr);
@@ -332,7 +332,7 @@ sub edit_user {
 #make sure moving from explicit perms to inherited perms doesn't restrict a permission
 # that the executing user doens't have the right to modify
             $sql
-                = "SELECT nt_perm.*,nt_user.nt_group_id as group_id from nt_perm INNER JOIN nt_user on nt_perm.nt_group_id = nt_user.nt_group_id "
+                = "SELECT nt_perm.*,nt_user.nt_group_id as group_id FROM nt_perm INNER JOIN nt_user ON nt_perm.nt_group_id = nt_user.nt_group_id "
                 . " AND nt_user.nt_user_id = "
                 . $data->{'nt_user_id'};
             $sth = $dbh->prepare($sql);
@@ -346,7 +346,7 @@ sub edit_user {
                 }
 
 #things are good, we will now delete the user perms and perms will then be inherited automatically.
-                $sql = "delete from nt_perm WHERE nt_user_id = "
+                $sql = "DELETE FROM nt_perm WHERE nt_user_id = "
                     . $data->{'nt_user_id'};
             }
             else {

@@ -1,7 +1,6 @@
 ##########
 # vim: syn=perl
 ##########
-# $Id: 08_nameservers.t 639 2008-09-13 04:43:46Z matt $
 # nameservers.pl
 #
 # NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler

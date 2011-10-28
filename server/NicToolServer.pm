@@ -942,8 +942,9 @@ sub get_group_id {
         $rid = $auth_data->{'nt_group_id'} if $auth_data;
     }
     elsif ( $key eq 'nt_zone_record_id' or uc($type) eq 'ZONERECORD' ) {
-        $sql
-            = "SELECT nt_zone.nt_group_id FROM nt_zone_record,nt_zone WHERE nt_zone_record.nt_zone_record_id = $id AND nt_zone.nt_zone_id=nt_zone_record.nt_zone_id";
+        $sql = "SELECT nt_zone.nt_group_id FROM nt_zone_record,nt_zone "
+            . "WHERE nt_zone_record.nt_zone_record_id = $id "
+            . "AND nt_zone.nt_zone_id=nt_zone_record.nt_zone_id";
         $sth = $dbh->prepare($sql);
         warn "$sql\n" if $self->debug_sql;
         $sth->execute || die $dbh->errstr;
@@ -951,8 +952,8 @@ sub get_group_id {
         $rid = $auth_data->{'nt_group_id'} if $auth_data;
     }
     elsif ( $key eq 'nt_nameserver_id' or uc($type) eq 'NAMESERVER' ) {
-        $sql
-            = "SELECT nt_group_id FROM nt_nameserver WHERE nt_nameserver_id = $id";
+        $sql = "SELECT nt_group_id FROM nt_nameserver "
+             . "WHERE nt_nameserver_id = $id";
         $sth = $dbh->prepare($sql);
         warn "$sql\n" if $self->debug_sql;
 
@@ -981,8 +982,7 @@ sub get_group_permissions {
     my $sql;
     my $sth;
     my $dbh = $self->{'dbh'};
-    $sql
-        = "SELECT * FROM nt_perm WHERE nt_group_id = $groupid AND nt_user_id=0 AND deleted != '1'";
+    $sql = "SELECT * FROM nt_perm WHERE nt_group_id = $groupid AND nt_user_id=0 AND deleted != '1'";
     $sth = $dbh->prepare($sql);
     warn "$sql\n" if $self->debug_sql;
     $sth->execute || die $dbh->errstr;
@@ -995,8 +995,7 @@ sub get_user_permissions {
     my $sql;
     my $sth;
     my $dbh = $self->{'dbh'};
-    $sql
-        = "SELECT * FROM nt_perm WHERE nt_group_id = '0' AND nt_user_id='$userid' AND deleted != '1'";
+    $sql = "SELECT * FROM nt_perm WHERE nt_group_id = '0' AND nt_user_id='$userid' AND deleted != '1'";
     $sth = $dbh->prepare($sql);
     warn "$sql\n" if $self->debug_sql;
     $sth->execute || die $dbh->errstr;
@@ -1219,7 +1218,7 @@ sub get_delegate_access {
     }
     else {
         $sql
-            = "SELECT nt_delegate.*,nt_group.name as group_name FROM nt_delegate "
+            = "SELECT nt_delegate.*,nt_group.name AS group_name FROM nt_delegate "
             . " INNER JOIN $tables{$type} on $tables{$type}.$fields{$type} = nt_delegate.nt_object_id AND nt_delegate.nt_object_type='$type'"
             . " INNER JOIN nt_group on $tables{$type}.nt_group_id = nt_group.nt_group_id"
             . " WHERE nt_delegate.nt_group_id=$group_id AND nt_delegate.nt_object_id=$id AND nt_delegate.nt_object_type='$type'";
@@ -1233,7 +1232,7 @@ sub get_delegate_access {
 
 #see if any records in the zone are delegated, if so then read access is allowed
             $sql
-                = "SELECT count(*) as count,nt_group.name as group_name FROM nt_delegate "
+                = "SELECT count(*) AS count,nt_group.name AS group_name FROM nt_delegate "
                 . " INNER JOIN nt_zone_record on nt_zone_record.nt_zone_record_id = nt_delegate.nt_object_id AND nt_delegate.nt_object_type='ZONERECORD'"
                 . " INNER JOIN nt_zone on nt_zone.nt_zone_id = nt_zone_record.nt_zone_id"
                 . " INNER JOIN nt_group on nt_delegate.nt_group_id = nt_group.nt_group_id"
@@ -1271,7 +1270,7 @@ sub get_zonerecord_delegate_access {
     my $sql;
     my $sth;
     $sql
-        = "SELECT nt_delegate.*,nt_group.name as group_name FROM nt_delegate "
+        = "SELECT nt_delegate.*,nt_group.name AS group_name FROM nt_delegate "
         . " INNER JOIN nt_zone_record on nt_zone_record.nt_zone_record_id= nt_delegate.nt_object_id AND nt_delegate.nt_object_type='ZONERECORD'"
         . " INNER JOIN nt_zone on nt_zone.nt_zone_id=nt_zone_record.nt_zone_id"
         . " INNER JOIN nt_group on nt_zone.nt_group_id = nt_group.nt_group_id"
@@ -1285,7 +1284,7 @@ sub get_zonerecord_delegate_access {
     return $auth_data if $auth_data;
 
     $sql
-        = "SELECT nt_delegate.*, 1 as pseudo, nt_group.name as group_name FROM nt_delegate "
+        = "SELECT nt_delegate.*, 1 AS pseudo, nt_group.name AS group_name FROM nt_delegate "
         . " INNER JOIN nt_zone on nt_zone.nt_zone_id=nt_delegate.nt_object_id AND nt_delegate.nt_object_type='ZONE'"
         . " INNER JOIN nt_zone_record on nt_zone_record.nt_zone_id= nt_zone.nt_zone_id"
         . " INNER JOIN nt_group on nt_zone.nt_group_id = nt_group.nt_group_id"
@@ -1716,41 +1715,41 @@ sub fetch_row {
         }
         else {
             $data = $self->error_response(601);
-
-            #$data->{'error_code'}   = 610;
-            #$data->{'error_msg'}    = $self->error_response()->{610};
         }
     }
     else {
         $data = $self->error_response( 600, $sth->errstr );
-
-        #$data->{'error_code'}   = '600';
-        #$data->{'error_msg'}    = $self->$sth->errstr;
     }
 
     return $data;
 }
 
-sub dbix {
+sub get_dbix {
 
-    my $dsn = "DBI:$NicToolServer::db_engine:"
+    my $dsn = shift;
+    if ( $dsn !~ /^DBI/ ) {
+        $dsn = "DBI:$NicToolServer::db_engine:"
             . "database=$NicToolServer::db;"
             . "host=$NicToolServer::db_host;"
             . "port=3306";
+    };
 
-    my $options = { RaiseError => 1, AutoCommit => 1 };
-
-    my $dbix = DBIx::Simple->connect( $dsn, $NicToolServer::db_user, $NicToolServer::db_pass, $options )
+    my $dbix = DBIx::Simple->connect( $dsn, 
+            $NicToolServer::db_user, 
+            $NicToolServer::db_pass, 
+            { RaiseError => 1, AutoCommit => 1 },
+        )
         or die DBIx::Simple->error;
 
     return $dbix;
 };
 
 sub dbh {
-    my $dbh = DBI->connect(
-        "DBI:$NicToolServer::db_engine:database=$NicToolServer::db;host=$NicToolServer::db_host",
-        $NicToolServer::db_user, $NicToolServer::db_pass
-    );
+
+    my $dsn = "DBI:$NicToolServer::db_engine:database=$NicToolServer::db;"
+            . "host=$NicToolServer::db_host;port=3306";
+
+    my $dbh = DBI->connect( $dsn, $NicToolServer::db_user, $NicToolServer::db_pass);
 
     unless ($dbh) {
         die "unable to connect to database: " . $DBI::errstr . "\n";
@@ -1758,6 +1757,40 @@ sub dbh {
 
     return $dbh;
 }
+
+sub exec_query {
+    my $self = shift;
+    my ( $query, $params, $extra ) = @_;
+    die "invalid arguments to exec_query!" if $extra;
+
+    my @params; 
+    if ( defined $params ) {  # dereference $params into @params
+        @params = ref $params eq 'ARRAY' ? @$params : $params;
+    };
+
+    my $err = "query failed: $query\n" . join(',', @params);
+    warn "$query\n" . join(',', @params) if $self->debug_sql;
+
+    if ( $query =~ /INSERT INTO/ ) {
+        my ( $table ) = $query =~ /INSERT INTO (\w+)\s/;
+        $self->{dbix}->query( $query, @params );
+        if ( $self->{dbix}->error ne 'DBI error: ' ) {
+            die $self->{dbix}->error;
+        };
+        my $id = $self->{dbix}->last_insert_id(undef,undef,$table,undef)
+            or die $err;
+        return $id;
+    }
+    elsif ( $query =~ /DELETE/ ) {
+        $self->{dbix}->query( $query, @params )->hashes 
+            or return $self->error( $err );
+        return $self->{dbix}->query("SELECT ROW_COUNT()")->list;
+    };
+
+    my $r = $self->{dbix}->query( $query, @params )->hashes or die $err;
+
+    return $r;
+};
 
 sub escape {
     my ( $self, $toencode ) = @_;
@@ -1781,7 +1814,7 @@ sub check_object_deleted {
     );
     if ( my $dbst = $map{ lc($otype) } ) {
         $sql
-            = "SELECT deleted from $dbst->{'table'} where $dbst->{'field'} = $oid";
+            = "SELECT deleted FROM $dbst->{'table'} WHERE $dbst->{'field'} = $oid";
         $sth = $dbh->prepare($sql);
         warn "$sql\n" if $self->debug_sql;
         unless ( $sth->execute ) {
@@ -1800,26 +1833,26 @@ sub get_title {
     my $sql;
     my $sth;
     if ( $otype =~ /^zone$/i ) {
-        $sql = "SELECT zone as title from nt_zone where nt_zone_id = $oid";
+        $sql = "SELECT zone AS title FROM nt_zone WHERE nt_zone_id = $oid";
     }
     elsif ( $otype =~ /^zonerecord$/i ) {
         $sql
-            = "SELECT CONCAT(nt_zone_record.name,'.',nt_zone.zone) as title from nt_zone_record"
+            = "SELECT CONCAT(nt_zone_record.name,'.',nt_zone.zone) AS title FROM nt_zone_record"
             . " INNER JOIN nt_zone on nt_zone_record.nt_zone_id=nt_zone.nt_zone_id"
             . " WHERE nt_zone_record.nt_zone_record_id = $oid";
     }
     elsif ( $otype =~ /^nameserver$/i ) {
         $sql
-            = "SELECT CONCAT(address,' (',name,')') as title from nt_nameserver"
+            = "SELECT CONCAT(address,' (',name,')') AS title FROM nt_nameserver"
             . " WHERE nt_nameserver_id = $oid";
     }
     elsif ( $otype =~ /^group$/i ) {
-        $sql = "SELECT name as title from nt_group"
+        $sql = "SELECT name AS title FROM nt_group"
             . " WHERE nt_group_id = $oid";
     }
     elsif ( $otype =~ /^user$/i ) {
         $sql
-            = "SELECT CONCAT(username,' (',first_name,' ',last_name,')') as title from nt_user"
+            = "SELECT CONCAT(username,' (',first_name,' ',last_name,')') AS title FROM nt_user"
             . " WHERE nt_user_id = $oid";
     }
     else {

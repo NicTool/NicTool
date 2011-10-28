@@ -147,7 +147,7 @@ sub new_group {
             $error{'error_msg'}  = $dbh->errstr;
 
 # now we have to undo the nt_group insert otherwise we have a group with no perms, and that's a problem
-            $sql = "Delete from nt_group WHERE nt_group_id=$insertid";
+            $sql = "DELETE FROM nt_group WHERE nt_group_id=$insertid";
             warn "$sql\n" if $self->debug_sql;
             unless ( $dbh->do($sql) ) {
                 $error{'error_msg'} .= " (further:) " . $dbh->errstr;

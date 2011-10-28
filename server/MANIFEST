@@ -11,6 +11,7 @@ nictoolserver.conf
 NicToolServer.pm
 NicToolServer/Client.pm
 NicToolServer/Client/SOAP.pm
+NicToolServer/Export.pm
 NicToolServer/Group.pm
 NicToolServer/Group/Sanity.pm
 NicToolServer/Nameserver.pm
@@ -29,6 +30,7 @@ sql/create_tables.pl
 sql/dump_schema.pl
 sql/nt_group.sql
 sql/nt_nameserver.sql
+sql/nt_options.sql
 sql/nt_perm.sql
 sql/nt_summary.sql
 sql/nt_user.sql
@@ -37,6 +39,7 @@ sql/upgrade/README
 sql/upgrade/update_nt_group_subgoups_table.pl
 sql/upgrade/update_v2_05.sql
 sql/upgrade/update_v2_08.sql
+sql/upgrade/update_v2_09.sql
 sql/upgrade/update_v2.pl
 sql/upgrade/update_v1_06.sql
 sys/certificates/conf/ca.conf
