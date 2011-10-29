@@ -321,15 +321,6 @@ sub config {
     }
 }
 
-#sub error{
-#my $self = shift;
-#my $res = shift;
-#if(defined($res->{error_code})&& $res->{error_code} ne '200'){
-#return $res->{error_msg}||1;
-#}
-#return undef;
-#}
-
 sub _send_request {
     my $self = shift;
     $self->{transport}
