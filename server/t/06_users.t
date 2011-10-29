@@ -1,8 +1,6 @@
 ##########
 # vim: syn=perl
 ##########
-# $Id: 06_users.t 693 2008-10-15 23:59:01Z matt $
-# users.pl
 #
 # NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
 # NicTool v2.01 Copyright 2004 The Network People, Inc.
@@ -20,6 +18,8 @@
 # Suite 225, San Francisco, CA 94107, USA
 #
 ##########
+use strict;
+use warnings;
 use lib ".";
 use lib "t";
 use TestConfig;
@@ -47,22 +47,23 @@ use NicTool;
 # runup            #
 ####################
 
-$user = new NicTool(
+my $nt_obj = new NicTool(
     cache_users  => 0,
     cache_groups => 0,
     server_host  => Config('server_host'),
     server_port  => Config('server_port')
 );
-die "Couldn't create NicTool Object" unless ok( ref $user, 'NicTool' );
+die "Couldn't create NicTool Object" unless ok( ref $nt_obj, 'NicTool' );
 
-$user->login(
+$nt_obj->login(
     username => Config('username'),
     password => Config('password')
 );
-die "Couldn't log in" unless ok( !$user->result->is_error );
-die "Couldn't log in" unless ok( $user->nt_user_session );
+die "Couldn't log in" unless ok( !$nt_obj->result->is_error );
+die "Couldn't log in" unless ok( $nt_obj->nt_user_session );
 
 #try to do the tests
+my ($uid1, $uid2, $gid1, $gid2);
 eval {&doit};
 warn $@ if $@;
 
@@ -77,25 +78,24 @@ sub doit {
     ####################
 
     #make a new group
-    $res = $user->get_group->new_group( name => 'test_delete_me1' );
+    my $res = $nt_obj->get_group->new_group( name => 'test_delete_me1' );
     die "Couldn't create test group1"
         unless noerrok($res)
             and ok( $res->get('nt_group_id') => qr/^\d+$/ );
-    $gid1 = $res->get('nt_group_id');
 
-    $group1 = $user->get_group( nt_group_id => $gid1 );
+    $gid1   = $res->get('nt_group_id');
+    my $group1 = $nt_obj->get_group( nt_group_id => $gid1 );
     die "Couldn't get test group1"
         unless noerrok($group1)
             and ok( $group1->id, $gid1 );
 
     #make a new group
-    $res = $user->get_group->new_group( name => 'test_delete_me2' );
+    $res = $nt_obj->get_group->new_group( name => 'test_delete_me2' );
     die "Couldn't create test group2"
         unless noerrok($res)
             and ok( $res->get('nt_group_id') => qr/^\d+$/ );
-    $gid2 = $res->get('nt_group_id');
-
-    $group2 = $user->get_group( nt_group_id => $gid2 );
+    $gid2   = $res->get('nt_group_id');
+    my $group2 = $nt_obj->get_group( nt_group_id => $gid2 );
     die "Couldn't get test group2"
         unless noerrok($group2)
             and ok( $group2->id, $gid2 );
@@ -118,7 +118,7 @@ sub doit {
     ok( $res->get('error_msg')  => 'password2' );
     ok( $res->get('error_desc') => qr/Required parameters missing/ );
     if ( !$res->is_error ) {
-        $res = $user->delete_users( user_list => $res->get('nt_user_id') );
+        $res = $nt_obj->delete_users( user_list => $res->get('nt_user_id') );
     }
 
     #no password
@@ -131,7 +131,7 @@ sub doit {
     ok( $res->get('error_msg')  => 'password' );
     ok( $res->get('error_desc') => qr/Required parameters missing/ );
     if ( !$res->is_error ) {
-        $res = $user->delete_users( user_list => $res->get('nt_user_id') );
+        $res = $nt_obj->delete_users( user_list => $res->get('nt_user_id') );
     }
 
     #no username
@@ -144,7 +144,7 @@ sub doit {
     ok( $res->get('error_msg')  => 'username' );
     ok( $res->get('error_desc') => qr/Required parameters missing/ );
     if ( !$res->is_error ) {
-        $res = $user->delete_users( user_list => $res->get('nt_user_id') );
+        $res = $nt_obj->delete_users( user_list => $res->get('nt_user_id') );
     }
 
     #no email
@@ -157,7 +157,7 @@ sub doit {
     ok( $res->get('error_msg')  => 'email' );
     ok( $res->get('error_desc') => qr/Required parameters missing/ );
     if ( !$res->is_error ) {
-        $res = $user->delete_users( user_list => $res->get('nt_user_id') );
+        $res = $nt_obj->delete_users( user_list => $res->get('nt_user_id') );
     }
 
     #no nt_group_id
@@ -172,7 +172,7 @@ sub doit {
     ok( $res->get('error_msg')  => 'nt_group_id' );
     ok( $res->get('error_desc') => qr/Required parameters missing/ );
     if ( !$res->is_error ) {
-        $res = $user->delete_users( user_list => $res->get('nt_user_id') );
+        $res = $nt_obj->delete_users( user_list => $res->get('nt_user_id') );
     }
 
     #nt_group_id not integer
@@ -187,7 +187,7 @@ sub doit {
     ok( $res->get('error_msg')  => 'nt_group_id' );
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
     if ( !$res->is_error ) {
-        $res = $user->delete_users( user_list => $res->get('nt_user_id') );
+        $res = $nt_obj->delete_users( user_list => $res->get('nt_user_id') );
     }
 
     #nt_group_id invalid id
@@ -202,7 +202,7 @@ sub doit {
     ok( $res->get('error_msg')  => 'nt_group_id' );
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
     if ( !$res->is_error ) {
-        $res = $user->delete_users( user_list => $res->get('nt_user_id') );
+        $res = $nt_obj->delete_users( user_list => $res->get('nt_user_id') );
     }
 
     #invalid email address
@@ -216,7 +216,7 @@ sub doit {
     ok( $res->get('error_msg')  => qr/Email must be a valid email address/ );
     ok( $res->get('error_desc') => qr/Sanity error/ );
     if ( !$res->is_error ) {
-        $res = $user->delete_users( user_list => $res->get('nt_user_id') );
+        $res = $nt_obj->delete_users( user_list => $res->get('nt_user_id') );
     }
 
     #username too small
@@ -232,8 +232,7 @@ sub doit {
                 qr/Username must be at least 3 characters/ );
         ok( $res->get('error_desc') => qr/Sanity error/ );
         if ( !$res->is_error ) {
-            $res
-                = $user->delete_users( user_list => $res->get('nt_user_id') );
+            $res = $nt_obj->delete_users( user_list => $res->get('nt_user_id') );
         }
     }
 
@@ -255,8 +254,7 @@ sub doit {
                 qr/Username contains an invalid character/ );
         ok( $res->get('error_desc') => qr/Sanity error/ );
         if ( !$res->is_error ) {
-            $res
-                = $user->delete_users( user_list => $res->get('nt_user_id') );
+            $res = $nt_obj->delete_users( user_list => $res->get('nt_user_id') );
         }
     }
 
@@ -269,10 +267,10 @@ sub doit {
     );
     noerrok( $res, 300 );
     ok( $res->get('error_msg') =>
-            qr/Password too short, must be 6-15 characters long./ );
+            qr/Password too short, must be 6-30 characters long./ );
     ok( $res->get('error_desc') => qr/Sanity error/ );
     if ( !$res->is_error ) {
-        $res = $user->delete_users( user_list => $res->get('nt_user_id') );
+        $res = $nt_obj->delete_users( user_list => $res->get('nt_user_id') );
     }
 
     #mismatched passwords
@@ -286,7 +284,7 @@ sub doit {
     ok( $res->get('error_msg')  => qr/Passwords must match/ );
     ok( $res->get('error_desc') => qr/Sanity error/ );
     if ( !$res->is_error ) {
-        $res = $user->delete_users( user_list => $res->get('nt_user_id') );
+        $res = $nt_obj->delete_users( user_list => $res->get('nt_user_id') );
     }
 
     ####################
@@ -337,7 +335,7 @@ sub doit {
             qr/is not unique. Please choose a different username/ );
     ok( $res->get('error_desc') => qr/Sanity error/ );
     if ( !$res->is_error ) {
-        $res = $user->delete_users( user_list => $res->get('nt_user_id') );
+        $res = $nt_obj->delete_users( user_list => $res->get('nt_user_id') );
     }
 
 ####################
@@ -349,19 +347,19 @@ sub doit {
     ####################
 
     #nt_user_id missing
-    $res = $user->get_user( nt_user_id => '' );
+    $res = $nt_obj->get_user( nt_user_id => '' );
     noerrok( $res, 301 );
     ok( $res->get('error_msg')  => 'nt_user_id' );
     ok( $res->get('error_desc') => qr/Required parameters missing/ );
 
     #nt_user_id not integer
-    $res = $user->get_user( nt_user_id => 'abc' );
+    $res = $nt_obj->get_user( nt_user_id => 'abc' );
     noerrok( $res, 302 );
     ok( $res->get('error_msg')  => 'nt_user_id' );
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
 
     #nt_user_id not valid id
-    $res = $user->get_user( nt_user_id => '0' );
+    $res = $nt_obj->get_user( nt_user_id => '0' );
     noerrok( $res, 302 );
     ok( $res->get('error_msg')  => 'nt_user_id' );
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
@@ -370,14 +368,14 @@ sub doit {
     # get test users   #
     ####################
     #get_user 1
-    $user1 = $user->get_user( nt_user_id => $uid1 );
+    my $user1 = $nt_obj->get_user( nt_user_id => $uid1 );
     die "Couldn't get test user1"
         unless noerrok($user1)
             and ok( $user1->id, $uid1 );
     ok( $user1->get('username') => 'testuser1' );
 
     #get_user 2
-    $user2 = $user->get_user( nt_user_id => $uid2 );
+    my $user2 = $nt_obj->get_user( nt_user_id => $uid2 );
     die "Couldn't get test user1"
         unless noerrok($user2)
             and ok( $user2->id, $uid2 );
@@ -481,7 +479,7 @@ sub doit {
     );
     noerrok( $res, 300 );
     ok( $res->get('error_msg') =>
-            qr/Password too short, must be 6-15 characters long./ );
+            qr/Password too short, must be 6-30 characters long./ );
     ok( $res->get('error_desc') => qr/Sanity error/ );
 
     #change password mismatched
@@ -513,7 +511,7 @@ sub doit {
 
     ok( $res->get('nt_user_id') => $uid1 );
 
-    $res = $user->get_user( 'nt_user_id' => $uid1 );
+    $res = $nt_obj->get_user( 'nt_user_id' => $uid1 );
     noerrok($res);
     ok( $res->get('first_name') => 'name1' );
     ok( $res->get('last_name')  => '1name' );
@@ -528,7 +526,7 @@ sub doit {
     noerrok($res);
     ok( $res->get('nt_user_id') => $uid2 );
 
-    $res = $user->get_user( 'nt_user_id' => $uid2 );
+    $res = $nt_obj->get_user( 'nt_user_id' => $uid2 );
     noerrok($res);
     ok( $res->get('first_name') => 'name2' );
     ok( $res->get('last_name')  => '2name' );
@@ -537,15 +535,16 @@ sub doit {
     #test changing of password
 
     my $tuser = new NicTool(
+        cache_users  => 0,
         cache_groups => 0,
         server_host  => Config('server_host'),
         server_port  => Config('server_port')
     );
-    die "Couldn't create NicTool Object" unless ok( ref $user, 'NicTool' );
+    die "Couldn't create NicTool Object" unless ok( ref $nt_obj, 'NicTool' );
 
     $tuser->login(
         username => 'testuser2@test_delete_me1',
-        password => 'testpass'
+        password => 'testpass',
     );
     noerrok( $tuser->result );
     ok( $tuser->nt_user_session );
@@ -554,6 +553,7 @@ sub doit {
 
     #edit_user 2
     $res = $user2->edit_user(
+        username         => 'testuser2',
         current_password => 'testpass',
         password         => 'testpass2',
         password2        => 'testpass2'
@@ -562,21 +562,24 @@ sub doit {
 
     $tuser->login(
         username => 'testuser2@test_delete_me1',
-        password => 'testpass2'
+        password => 'testpass2',
     );
     ok( !$tuser->result->is_error );
-    ok( $tuser->nt_user_session );
 
-    noerrok( $tuser->logout );
+    if ( ! $tuser->result->is_error ) {
+        ok( $tuser->nt_user_session );
+        noerrok( $tuser->logout );
+    };
+
 
     ####################
     # use data later   #
     ####################
 
-    %username   = ( $uid1 => 'testuser1',       $uid2 => 'testuser2' );
-    %first_name = ( $uid1 => 'name1',           $uid2 => 'name2' );
-    %last_name  = ( $uid1 => '1name',           $uid2 => '2name' );
-    %email      = ( $uid1 => 'test1@blah.blah', $uid2 => 'test2@blah.blah' );
+    my %username   = ( $uid1 => 'testuser1',       $uid2 => 'testuser2' );
+    my %first_name = ( $uid1 => 'name1',           $uid2 => 'name2' );
+    my %last_name  = ( $uid1 => '1name',           $uid2 => '2name' );
+    my %email      = ( $uid1 => 'test1@blah.blah', $uid2 => 'test2@blah.blah' );
 
 ####################
     # get_group_users  #
@@ -613,7 +616,7 @@ sub doit {
     ok( ref $res, 'NicTool::List' );
     ok( $res->size => 2 );
     if ( $res->size == 2 ) {
-        @u = $res->list;
+        my @u = $res->list;
         ok( $u[0]->get('username')   => $username{ $u[0]->id } );
         ok( $u[1]->get('username')   => $username{ $u[1]->id } );
         ok( $u[0]->get('first_name') => $first_name{ $u[0]->id } );
@@ -684,11 +687,11 @@ sub doit {
 
     noerrok($res);
 
-    $user1 = $user->get_user( nt_user_id => $uid1 );
+    $user1 = $nt_obj->get_user( nt_user_id => $uid1 );
     noerrok($user1);
     ok( $user1->get('nt_group_id'), $gid2 );
 
-    $user2 = $user->get_user( nt_user_id => $uid2 );
+    $user2 = $nt_obj->get_user( nt_user_id => $uid2 );
     noerrok($user2);
     ok( $user2->get('nt_group_id'), $gid2 );
 
@@ -697,7 +700,7 @@ sub doit {
     ok( ref $res, 'NicTool::List' );
     ok( $res->size => 2 );
     if ( $res->size == 2 ) {
-        @u = $res->list;
+        my @u = $res->list;
         ok( $u[0]->get('username')   => $username{ $u[0]->id } );
         ok( $u[1]->get('username')   => $username{ $u[1]->id } );
         ok( $u[0]->get('first_name') => $first_name{ $u[0]->id } );
@@ -720,19 +723,19 @@ sub doit {
     ####################
 
     #user_list missing
-    $res = $user->get_user_list( user_list => "" );
+    $res = $nt_obj->get_user_list( user_list => "" );
     noerrok( $res, 301 );
     ok( $res->get('error_msg')  => 'user_list' );
     ok( $res->get('error_desc') => qr/Required parameters missing/ );
 
     #user_list not integer
-    $res = $user->get_user_list( user_list => "abc" );
+    $res = $nt_obj->get_user_list( user_list => "abc" );
     noerrok( $res, 302 );
     ok( $res->get('error_msg')  => 'user_list' );
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
 
     #user_list not valid id
-    $res = $user->get_user_list( user_list => "0" );
+    $res = $nt_obj->get_user_list( user_list => "0" );
     noerrok( $res, 302 );
     ok( $res->get('error_msg')  => 'user_list' );
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
@@ -741,12 +744,12 @@ sub doit {
     # get test users   #
     ####################
 
-    $res = $user->get_user_list( user_list => "$uid1,$uid2" );
+    $res = $nt_obj->get_user_list( user_list => "$uid1,$uid2" );
     noerrok($res);
     ok( ref $res, 'NicTool::List' );
     ok( $res->size => 2 );
     if ( $res->size == 2 ) {
-        @u = $res->list;
+        my @u = $res->list;
         ok( $u[0]->get('username')   => $username{ $u[0]->id } );
         ok( $u[1]->get('username')   => $username{ $u[1]->id } );
         ok( $u[0]->get('first_name') => $first_name{ $u[0]->id } );
@@ -761,12 +764,12 @@ sub doit {
     }
 
     #user 1
-    $res = $user->get_user_list( user_list => "$uid1" );
+    $res = $nt_obj->get_user_list( user_list => "$uid1" );
     noerrok($res);
     ok( ref $res, 'NicTool::List' );
     ok( $res->size => 1 );
     if ( $res->size == 1 ) {
-        @u = $res->list;
+        my @u = $res->list;
         ok( $u[0]->id, $uid1 );
         ok( $u[0]->get('username')   => $username{$uid1} );
         ok( $u[0]->get('first_name') => $first_name{$uid1} );
@@ -778,12 +781,12 @@ sub doit {
     }
 
     #user 2
-    $res = $user->get_user_list( user_list => "$uid2" );
+    $res = $nt_obj->get_user_list( user_list => "$uid2" );
     noerrok($res);
     ok( ref $res, 'NicTool::List' );
     ok( $res->size => 1 );
     if ( $res->size == 1 ) {
-        @u = $res->list;
+        my @u = $res->list;
         ok( $u[0]->id, $uid2 );
         ok( $u[0]->get('username')   => $username{$uid2} );
         ok( $u[0]->get('first_name') => $first_name{$uid2} );
@@ -809,19 +812,19 @@ sub doit {
     ####################
 
     #user list missing
-    $res = $user->delete_users( user_list => "" );
+    $res = $nt_obj->delete_users( user_list => "" );
     noerrok( $res, 301 );
     ok( $res->get('error_msg')  => 'user_list' );
     ok( $res->get('error_desc') => qr/Required parameters missing/ );
 
     #user list not integer
-    $res = $user->delete_users( user_list => "abc" );
+    $res = $nt_obj->delete_users( user_list => "abc" );
     noerrok( $res, 302 );
     ok( $res->get('error_msg')  => 'user_list' );
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
 
     #user list invalid id
-    $res = $user->delete_users( user_list => "0" );
+    $res = $nt_obj->delete_users( user_list => "0" );
     noerrok( $res, 302 );
     ok( $res->get('error_msg')  => 'user_list' );
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
@@ -836,14 +839,14 @@ sub del {
     if ( defined $uid1 and defined $uid2 ) {
 
         #delete_users
-        $res = $user->delete_users( user_list => "$uid1,$uid2" );
+        my $res = $nt_obj->delete_users( user_list => "$uid1,$uid2" );
 
         #verify
         noerrok($res);
-        $res = $user->get_user( nt_user_id => $uid1 );
+        $res = $nt_obj->get_user( nt_user_id => $uid1 );
         noerrok($res);
         ok( $res->get('deleted') );
-        $res = $user->get_user( nt_user_id => $uid2 );
+        $res = $nt_obj->get_user( nt_user_id => $uid2 );
         noerrok($res);
         ok( $res->get('deleted') );
     }
@@ -855,9 +858,9 @@ sub del {
     # delete support groups
 ####################
     if ( defined $gid1 and defined $gid2 ) {
-        $res = $user->delete_group( nt_group_id => $gid1 );
+        my $res = $nt_obj->delete_group( nt_group_id => $gid1 );
         noerrok($res);
-        $res = $user->delete_group( nt_group_id => $gid2 );
+        $res = $nt_obj->delete_group( nt_group_id => $gid2 );
         noerrok($res);
     }
     else {
