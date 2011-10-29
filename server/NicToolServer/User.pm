@@ -1,8 +1,5 @@
 package NicToolServer::User;
 
-#
-# $Id: User.pm 1044 2010-03-26 00:53:36Z matt $
-#
 # NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
 # NicTool v2.01 Copyright 2004 The Network People, Inc.
 #
@@ -157,13 +154,6 @@ sub get_user {
     return \%rv;
 }
 
-sub save_user {
-    my ( $self, $data ) = @_;
-    warn "XXX: User::save_user is deprecated as of NicToolServer 2.0: "
-        . Data::Dumper::Dumper($data);
-    return $self->error_result( 503, 'save_user, use new_user or edit_user' );
-}
-
 sub new_user {
     my ( $self, $data ) = @_;
 
@@ -247,12 +237,14 @@ sub edit_user {
     my @columns = grep { exists $data->{$_} }
         qw(nt_group_id first_name last_name username email);
 
-    # only update the password if the field is not NULL
-    push( @columns, 'password' )
-        if ( exists( $data->{'password'} ) && $data->{'password'} ne '' );
+    # only update the password and username fields are not NULL
+    if (    exists $data->{password} && $data->{password} ne ''
+         && exists $data->{username} && $data->{username} ne '' ) {
+        push( @columns, 'password' );
 
-    # RCC - use hmac to store the password using the username as a key
-    $data->{'password'} = hmac_sha1_hex($data->{'password'}, $data->{'username'});
+        # RCC - use hmac to store the password using the username as a key
+        $data->{'password'} = hmac_sha1_hex($data->{'password'}, $data->{'username'} );
+    };
 
     my @values;
 
@@ -262,16 +254,11 @@ sub edit_user {
     return $prev_data if $self->is_error_response($prev_data);
 
     if (@columns) {
-        $sql
-            = "UPDATE nt_user SET "
-            . join( ',',
-            map( "$_ = " . $dbh->quote( $data->{$_} ), @columns ) )
+        $sql = "UPDATE nt_user SET "
+            . join( ',', map( "$_ = " . $dbh->quote( $data->{$_} ), @columns ) )
             . " WHERE nt_user_id = "
             . $dbh->quote( $data->{'nt_user_id'} );
         $action = 'modified';
-
-        warn "$sql\n" if $self->debug_sql;
-
         unless ( $dbh->do($sql) ) {
             $error{'error_code'} = 600;
             $error{'error_msg'}  = $dbh->errstr;
@@ -289,7 +276,6 @@ sub edit_user {
 
         #cruft  ?
         #^^^^^^^^^^^^
-
     }
 
 #XXX may want to let this happen ?
@@ -318,26 +304,19 @@ sub edit_user {
         %ns = map { ( "usable_ns$_" => $usable[$_] ) } ( 0 .. 9 );
     }
 
-    #see if the user has explicit perms
-    #$sql = "SELECT * FROM nt_perm WHERE nt_user_id = ".$data->{'nt_user_id'};
-    #warn "$sql\n" if $self->debug_sql;
-    my $sth; # = $dbh->prepare($sql);
-             #$sth->execute || return $self->error_response(505,$dbh->errstr);
     if ( !$prev_data->{'inherit_group_permissions'} ) {
 
         #the user has some explicit permissions
-        #$sth->finish;
         if ( $data->{'inherit_group_permissions'} ) {
 
-#make sure moving from explicit perms to inherited perms doesn't restrict a permission
-# that the executing user doens't have the right to modify
-            $sql
-                = "SELECT nt_perm.*,nt_user.nt_group_id as group_id FROM nt_perm INNER JOIN nt_user ON nt_perm.nt_group_id = nt_user.nt_group_id "
-                . " AND nt_user.nt_user_id = "
-                . $data->{'nt_user_id'};
-            $sth = $dbh->prepare($sql);
+#make sure moving from explicit perms to inherited perms doesn't restrict a permission that the executing user doesn't have the right to modify
+            $sql = "SELECT nt_perm.*,nt_user.nt_group_id as group_id "
+                . "FROM nt_perm "
+                . "INNER JOIN nt_user ON nt_perm.nt_group_id = nt_user.nt_group_id "
+                . " AND nt_user.nt_user_id = " . $data->{'nt_user_id'};
+            my $sth = $dbh->prepare($sql);
             $sth->execute
-                || return $self->error_response( 505, $dbh->errstr );
+                or return $self->error_response( 505, $dbh->errstr );
             if ( my $group = $sth->fetchrow_hashref ) {
                 foreach my $k ( keys %nonperm ) {
                     return $self->error_response( 404,
@@ -409,8 +388,7 @@ sub edit_user {
         }
     }
     else {
-
-   #perms are already inherited and inherit_group_permissions is 1: do nothing
+# perms are inherited and inherit_group_permissions is 1: do nothing
     }
 
     $data->{'nt_group_id'} = $prev_data->{'nt_group_id'}

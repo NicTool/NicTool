@@ -108,7 +108,7 @@ sub handler {
 }
 
 #check the protocol version if included
-sub vcheck {
+sub ver_check {
     my $self = shift;
     my $pv   = $self->{'client'}->protocol_version;
     return undef unless $pv;
@@ -132,11 +132,6 @@ sub api_commands {
                 'nt_user_id' =>
                     { access => 'read', required => 1, type => 'USER' },
             },
-        },
-        'save_user' => {
-            'result' => $self->error_response(
-                503, 'save_user.  Use edit_user or new_user.'
-            ),
         },
         'new_user' => {
             'class'      => 'User::Sanity',
@@ -2341,6 +2336,6 @@ NicToolServer - NicTool API reference server implementation
 =head1 AUTHOR
 
 Dajoba, LLC - 2001 <info@dajoba.com>
-The Network People - 2008 <info@tnpi.net>
+The Network People, Inc. - 2008 <info@tnpi.net>
 
 =cut

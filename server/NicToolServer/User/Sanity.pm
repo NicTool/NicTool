@@ -136,7 +136,7 @@ sub _check_current_password {
         $data->{'current_password'} = hmac_sha1_hex($data->{'current_password'}, $db_user);
     }
 
-    return ( $db_pass eq $data->{'current_password'} ) ? 1 : 0;
+    return $db_pass eq $data->{'current_password'} ? 1 : 0;
 }
 
 sub _username_exists {
@@ -269,21 +269,27 @@ sub _valid_password {
     }
 
     my $username = $data->{'username'};
-    if ( $data->{'password'} eq $username ) {
+    if ( ! $username ) {
         $self->{'errors'}->{'password'} = 1;
-        push(
-            @{ $self->{'error_messages'} },
-            "Password cannot be the same as username!."
+        push( @{ $self->{'error_messages'} },
+            "Internal error. Missing username in password update request."
         );
     }
+    else {
+        if ( $data->{'password'} eq $username ) {
+            $self->{'errors'}->{'password'} = 1;
+            push( @{ $self->{'error_messages'} },
+                "Password cannot be the same as username!."
+            );
+        }
 
-    if ( $data->{'password'} =~ m/$username/ ) {
-        $self->{'errors'}->{'password'} = 1;
-        push(
-            @{ $self->{'error_messages'} },
-            "Password cannot contain your username!."
-        );
-    }
+        if ( $data->{'password'} =~ m/$username/ ) {
+            $self->{'errors'}->{'password'} = 1;
+            push( @{ $self->{'error_messages'} },
+                "Password cannot contain your username!."
+            );
+        }
+    };
 
     if ( $data->{'password'} ne $data->{'password2'} ) {
         $self->{'errors'}->{'password'} = $self->{'errors'}->{'password2'}

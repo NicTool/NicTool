@@ -1,9 +1,5 @@
 package NicToolServer::Zone;
 
-# vim:set ts=4:
-#
-# $Id: Zone.pm 667 2008-10-01 01:33:43Z matt $
-#
 # NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
 # NicTool v2.01+ Copyright 2004-2008 The Network People, Inc.
 #
