@@ -35,4 +35,6 @@ ALTER TABLE nt_nameserver_export_log DROP column stat3;
 ALTER TABLE nt_nameserver_export_log DROP column stat2;
 ALTER TABLE nt_nameserver_export_log DROP column stat1;
 
+ALTER TABLE nt_user DROP COLUMN is_admin;
+
 DROP TABLE IF EXISTS nt_zone_ns_log;

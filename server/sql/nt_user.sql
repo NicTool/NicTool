@@ -29,7 +29,6 @@ CREATE TABLE nt_user(
     username            VARCHAR(50) NOT NULL,
     password            VARCHAR(128) NOT NULL,
     email               VARCHAR(100) NOT NULL,
-    is_admin            TINYINT UNSIGNED,
     deleted             ENUM('0','1') DEFAULT '0' NOT NULL
 );
 CREATE INDEX nt_user_idx1 on nt_user(username, password);
