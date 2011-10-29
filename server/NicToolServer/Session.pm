@@ -1,8 +1,5 @@
 package NicToolServer::Session;
 
-#
-# $Id: Session.pm 1044 2010-03-26 00:53:36Z matt $
-#
 # NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
 # NicTool v2.01 Copyright 2004 The Network People, Inc.
 #
@@ -20,7 +17,8 @@ package NicToolServer::Session;
 #
 
 use strict;
-use Digest::HMAC_SHA1 qw(hmac_sha1 hmac_sha1_hex);
+use warnings;
+use Digest::HMAC_SHA1 qw(hmac_sha1_hex);
 
 @NicToolServer::Session::ISA = qw(NicToolServer);
 
@@ -33,14 +31,12 @@ sub verify {    # return of 0 = sucess, return of anything else = error
     my $data = $self->{'client'}->data();
     $data->{'action'} = uc( $data->{'action'} );
 
-    my $vcheck = $self->vcheck;
+    my $vcheck = $self->ver_check;
     return $vcheck if $vcheck;
 
     #warn "action is ".$data->{'action'};
-    # for anything but LOGIN, just verify the session
-    ( $data->{'action'} eq 'LOGIN' )
-        ? return $self->verify_login
-        : return $self->verify_session;
+    return $self->verify_login if $data->{'action'} eq 'LOGIN';
+    return $self->verify_session;  # just verify the session
 }
 
 ### private methods
@@ -48,7 +44,7 @@ sub verify_login {
     my $self = shift;
 
 # timeout_sessions could be called from a cron job every $NicToolServer::session_timeout,
-# but this is easier to setup a
+# but this is easier to setup
     $self->timeout_sessions;
 
     my $data = $self->{'client'}->data();
@@ -56,44 +52,42 @@ sub verify_login {
 
     my $error_msg = 'Invalid username and/or password.';
 
-    return $self->auth_error($error_msg)
-        unless ( $self->populate_groups );    # sets $data->nt_group_id
+    return $self->auth_error('invalid group(s)')
+        if ! $self->populate_groups;  # sets $data->nt_group_id
 
     my $sql
-        = "SELECT nt_user.*, nt_group.name as groupname FROM nt_user, nt_group "
+        = "SELECT nt_user.*, nt_group.name AS groupname FROM nt_user, nt_group "
         . "WHERE nt_user.nt_group_id = nt_group.nt_group_id AND "
         . "nt_user.deleted = '0' AND nt_user.nt_group_id IN ("
         . join( ',', @{ $data->{'groups'} } )
-        . ") AND nt_user.username = "
-        . $dbh->quote( $data->{'username'} );
+        . ") AND nt_user.username = " . $dbh->quote( $data->{'username'} );
 
     my $sth = $dbh->prepare($sql);
     warn "$sql\n" if $self->debug_session_sql;
     $sth->execute() || return $self->error_response( 505, $dbh->errstr );
 
-    return $self->auth_error($error_msg) unless ( $sth->rows );
-    return $self->auth_error($error_msg)
-        if ( $sth->rows > 1 );    # error if more than one username@groupname
+    return $self->auth_error('no such username') if ! $sth->rows;
+    return $self->auth_error('invalid username') if $sth->rows > 1;
 
     my $attempted_pass = $data->{'password'};
     delete( $data->{'password'} )
         ; # must delete the hashkey or perl maintains attempted_pass as a ref to the hash key's lvalue
 
     $data->{'user'} = $sth->fetchrow_hashref;
+
     # RCC - Handle HMAC passwords
-    if ($data->{'user'}{'password'} =~ /[0-9a-f]{40}/) {
-        $attempted_pass = hmac_sha1_hex($attempted_pass, $data->{'username'});
+    if ($data->{user}{password} =~ /[0-9a-f]{40}/) {
+        $attempted_pass = hmac_sha1_hex($attempted_pass, $data->{username} );
     }
 
-    return $self->auth_error($error_msg)
-        unless ( $attempted_pass eq $data->{'user'}->{'password'} );
+    return $self->auth_error('invalid password')
+        if $attempted_pass ne $data->{user}{password};
 
     $self->clean_user_data;
 
     $data->{'user'}->{'nt_user_session'} = $self->session_id;
 
-    $sql
-        = "SELECT * "
+    $sql = "SELECT * "
         . "FROM nt_perm "
         . "WHERE deleted = '0' "
         . "AND nt_user_id = "
@@ -106,9 +100,7 @@ sub verify_login {
     my $groupperm;
     my $perm = $sth->fetchrow_hashref;
 
-    #if( !$perm) {
-    $sql
-        = "SELECT nt_perm.* FROM nt_perm"
+    $sql = "SELECT nt_perm.* FROM nt_perm"
         . " INNER JOIN nt_user ON nt_perm.nt_group_id = nt_user.nt_group_id "
         . " WHERE ( nt_perm.deleted = '0' "
         . " AND nt_user.deleted = '0' "
@@ -119,7 +111,6 @@ sub verify_login {
     $sth->execute || return $self->error_response( 505, $dbh->errstr );
     $groupperm = $sth->fetchrow_hashref;
 
-    #}
     if ( !$perm ) {
         $perm = $groupperm;
         $perm->{'inherit_group_permissions'} = 1;
@@ -149,8 +140,7 @@ sub verify_login {
         $data->{'user'}->{$_} = $perm->{$_};
     }
 
-    $sql
-        = 'INSERT INTO nt_user_session(nt_user_id, nt_user_session, last_access) VALUES ('
+    $sql = 'INSERT INTO nt_user_session(nt_user_id, nt_user_session, last_access) VALUES ('
         . "$data->{'user'}->{nt_user_id},"
         . $dbh->quote( $data->{'user'}->{'nt_user_session'} ) . ','
         . time() . ')';
@@ -159,8 +149,7 @@ sub verify_login {
     $sth->execute() || warn $dbh->errstr;
     my $nt_user_session_id = $dbh->{'mysql_insertid'};
 
-    $sql
-        = "INSERT INTO nt_user_session_log(nt_user_id, action, timestamp, nt_user_session_id, nt_user_session) VALUES ("
+    $sql = "INSERT INTO nt_user_session_log(nt_user_id, action, timestamp, nt_user_session_id, nt_user_session) VALUES ("
         . "$data->{user}->{'nt_user_id'}, 'login',"
         . time()
         . ",$nt_user_session_id,"
@@ -391,7 +380,7 @@ sub clean_user_data
 
     my $data = $self->{'client'}->data();
 
-    my @fields = qw(password deleted is_admin nt_user_session_id last_access);
+    my @fields = qw(password deleted nt_user_session_id last_access);
 
     foreach my $f (@fields) {
         delete( $data->{'user'}->{$f} )
