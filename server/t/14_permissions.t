@@ -256,7 +256,6 @@ sub test_perms {
     }
 
     #make user inherit perms again
-
     $res = $user->edit_user(
         nt_user_id                => $uid1,
         inherit_group_permissions => 1
