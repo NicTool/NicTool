@@ -1,8 +1,5 @@
 package NicToolClient;
 
-#
-# $Id: NicToolClient.pm 1043 2010-03-26 00:52:03Z matt $
-#
 # NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
 # NicTool v2.01+ Copyright 2004-2008 The Network People, Inc.
 #
@@ -1539,70 +1536,6 @@ function selectAllSelf(form, action) {
 ENDJS
 }
 
-sub display_move_javascript_old {
-    my ( $self, $cgi, $name ) = @_;
-
-    print "<script language='JavaScript'>";
-    print "function selectAllorNone(group, action) {\n";
-    print "\tfor( var x = 0; x < group.length; x++ ) {\n";
-    print "\t\tgroup[x].checked = action;\n";
-    print "\t}\n";
-    print "}\n";
-    print "function open_move(list) {\n";
-    print "\tvar obj_list = new Array();\n";
-    print "\tif( list.length ) {\n";
-    print "\t\tvar y = 0;\n";
-    print "\t\tfor( x = 0; x < list.length; x++ ) {\n";
-    print
-        "\t\t// alert(x + ', value: ' + list[x].value + ' checked: ' + list[x].checked);\n";
-    print "\t\t\tif( list[x].checked ) obj_list[y++] = list[x].value;\n";
-    print "\t\t}\n";
-    print "\t} else {\n";
-    print "\t\tif( list.checked ) obj_list[0] = list.value;\n";
-    print "\t}\n";
-    print "\tif( obj_list.length > 0 ) {\n";
-    print
-        "\t\tnewwin = window.open('$cgi?obj_list=' + obj_list.join(','), 'move_win', 'width=640,height=480,scrollbars,resizable=yes');\n";
-    print "\t\tnewwin.opener = self;\n";
-    print "\t} else {\n";
-    print "\t\talert('Select at least one $name');\n";
-    print "\t}\n";
-    print "}\n";
-    print "</script>";
-}
-
-sub display_delegate_javascript_old {
-    my ( $self, $cgi, $name ) = @_;
-
-    print "<script language='JavaScript'>";
-    print "function selectAllorNone(group, action) {\n";
-    print "\tfor( var x = 0; x < group.length; x++ ) {\n";
-    print "\t\tgroup[x].checked = action;\n";
-    print "\t}\n";
-    print "}\n";
-    print "function open_delegate(list) {\n";
-    print "\tvar obj_list = new Array();\n";
-    print "\tif( list.length ) {\n";
-    print "\t\tvar y = 0;\n";
-    print "\t\tfor( x = 0; x < list.length; x++ ) {\n";
-    print
-        "\t\t// alert(x + ', value: ' + list[x].value + ' checked: ' + list[x].checked);\n";
-    print "\t\t\tif( list[x].checked ) obj_list[y++] = list[x].value;\n";
-    print "\t\t}\n";
-    print "\t} else {\n";
-    print "\t\tif( list.checked ) obj_list[0] = list.value;\n";
-    print "\t}\n";
-    print "\tif( obj_list.length > 0 ) {\n";
-    print
-        "\t\tnewwin = window.open('$cgi?obj_list=' + obj_list.join(','), 'move_win', 'width=640,height=480,scrollbars,resizable=yes');\n";
-    print "\t\tnewwin.opener = self;\n";
-    print "\t} else {\n";
-    print "\t\talert('Select at least one $name');\n";
-    print "\t}\n";
-    print "}\n";
-    print "</script>";
-}
-
 sub display_hr {
     print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
     print "<tr><td><hr></td></tr>";
@@ -1752,9 +1685,8 @@ sub display_error {
 
 sub zone_record_template_list {
 
-    # return a list of the templates available in zone_record_template
-    my @list = qw( none basic wildcard basic-spf wildcard-spf );
-    return @list;
+    # the templates available in zone_record_template
+    return qw( none basic wildcard basic-spf wildcard-spf );
 }
 
 sub zone_record_template {
@@ -1771,7 +1703,12 @@ sub zone_record_template {
 
     print "zone_record_template: $id, $zone, $template\n" if $debug;
 
-    # basic template definition
+    #               basic template 
+    #       zone.com.        IN     A      xx.xxx.xx.xx
+    #       zone.com.        IN  10 MX     zone.com.
+    #       mail             IN     A      xx.xxx.xx.xx
+    #       www.zone.com.    IN     CNAME  zone.com.
+
     my %record1 = (
         nt_zone_id => $id,
         name       => "$zone.",
@@ -1801,11 +1738,11 @@ sub zone_record_template {
 
     if ( $template eq "wildcard" ) {
 
-        #                     template Basic with hostname wildcard
-        #                 zone.com.        IN     A      xx.xxx.xx.xx
-        #                 zone.com.        IN  10 MX     mail.zone.com.
-        #                 mail             IN     A      xx.xxx.xx.xx
-        #                 *.zone.com.      IN     CNAME  zone.com.
+        #          template Basic with hostname wildcard
+        #       zone.com.        IN     A      NN.NNN.NN.NN
+        #       zone.com.        IN  10 MX     mail.zone.com.
+        #       mail             IN     A      NN.NNN.NN.NN
+        #       *.zone.com.      IN     CNAME  zone.com.
         #
         %record3 = (
             nt_zone_id => $id,
@@ -1820,7 +1757,7 @@ sub zone_record_template {
             nt_zone_id => $id,
             name       => "$zone.",
             type       => "TXT",
-            address    => "v=spf1 a mx ~all"
+            address    => "v=spf1 a mx -all"
         );
         @zr = ( \%record1, \%record2, \%record3, \%record4, \%record5 );
     }
@@ -1835,17 +1772,9 @@ sub zone_record_template {
             nt_zone_id => $id,
             name       => "$zone.",
             type       => "TXT",
-            address    => "v=spf1 a mx ~all"
+            address    => "v=spf1 a mx -all"
         );
         @zr = ( \%record1, \%record2, \%record3, \%record4, \%record5 );
-    }
-    else {
-        #                         template Basic (default)
-        #                 zone.com.        IN     A      xx.xxx.xx.xx
-        #                 zone.com.        IN  10 MX     zone.com.
-        #                 mail             IN     A      xx.xxx.xx.xx
-        #                 www.zone.com.    IN     CNAME  zone.com.
-        #
     }
 
     return \@zr;
