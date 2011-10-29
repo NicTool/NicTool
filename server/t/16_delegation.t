@@ -155,19 +155,6 @@ use NicTool;
     #zonerecord_perm_modify_desc=>1,
 );
 
-#no delegation permissions for zone records
-%dzrpermsnone = (
-    perm_write    => 0,
-    perm_delete   => 0,
-    perm_delegate => 0,
-
-    #zonerecord_perm_modify_name=>0,
-    #zonerecord_perm_modify_type=>0,
-    #zonerecord_perm_modify_addr=>0,
-    #zonerecord_perm_modify_weight=>0,
-    #zonerecord_perm_modify_ttl=>0,
-    #zonerecord_perm_modify_desc=>0,
-);
 %dpermmap = (
     perm_write               => 'delegate_write',
     perm_delete              => 'delegate_delete',
