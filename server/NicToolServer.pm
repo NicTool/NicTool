@@ -49,7 +49,6 @@ sub handler {
     my $r = shift;
 
     my $dbh = &NicToolServer::dbh;
-    my $dbix = &NicToolServer::dbix;
 
     # create & initialize required objects
     my $client_obj = NicToolServer::Client->new( $r, $dbh );
@@ -226,13 +225,6 @@ sub api_commands {
                     { 'access' => 'read', required => 1, type => 'GROUP' },
             },
         },
-
-        'save_group' => {    # deprecated
-            'result' => $self->error_response(
-                503, 'save_group, use new_group or edit_group'
-            ),
-        },
-
         'new_group' => {
             'class'      => 'Group::Sanity',
             'method'     => 'new_group',
@@ -339,11 +331,6 @@ sub api_commands {
                     { 'access' => 'read', required => 1, type => 'GROUP' },
             },
         },
-        'save_zone' => {
-            'result' => $self->error_response(
-                503, 'save_zone.  Use edit_zone or new_zone.'
-            ),
-        },
         'new_zone' => {
             'class'      => 'Zone::Sanity',
             'method'     => 'new_zone',
@@ -440,13 +427,6 @@ sub api_commands {
         },
 
         # zone_record API
-
-        'save_zone_record' => {
-            'result' => $self->error_response(
-                503,
-                'save_zone_record.  Use edit_zone_record or new_zone_record.'
-            ),
-        },
         'new_zone_record' => {
             'class'      => 'Zone::Record::Sanity',
             'method'     => 'new_zone_record',
@@ -543,12 +523,6 @@ sub api_commands {
                 'nt_group_id' =>
                     { 'access' => 'read', required => 0, type => 'GROUP' },
             },
-        },
-        'save_nameserver' => {
-            'result' => $self->error_response(
-                503,
-                'save_nameserver.  Use edit_nameserver or new_nameserver.'
-            ),
         },
         'new_nameserver' => {
             'class'      => 'Nameserver::Sanity',
@@ -998,8 +972,8 @@ sub get_user_permissions {
     return $auth_data;
 }
 
-# return 1 if user has $access permissions on the object $id of type $type, else 0
 sub get_access_permission {
+# return 1 if user has $access permissions on the object $id of type $type, else 0
     my ( $self, $type, $id, $access ) = @_;
     warn "##############################\nget_access_permission ("
         . join( ",", caller )
@@ -1008,7 +982,7 @@ sub get_access_permission {
         #"      params: ".Data::Dumper::Dumper($params).""
         if $self->debug_permissions;
     my @error = $self->check_permission( '', $id, $access, $type );
-    warn "get_access_permission: @error returning " . ( $error[0] ? 0 : 1 );
+    #warn "get_access_permission: @error returning " . ( $error[0] ? 0 : 1 );
     return $error[0] ? 0 : 1;
 }
 
@@ -1166,13 +1140,13 @@ sub check_permission {
                 if ( !$del->{"perm_$access"} ) {
                     warn "NO delegate '$access': $debug"
                         if $self->debug_permissions;
-                    warn Data::Dumper::Dumper($del);
+                    #warn Data::Dumper::Dumper($del);
                     return ( '404',
                         "You have no '$access' permission for the delegated object"
                     );
                 }
                 else {
-                    warn Data::Dumper::Dumper($del);
+                    #warn Data::Dumper::Dumper($del);
                     warn "YES delegate '$access': $debug"
                         if $self->debug_permissions;
                 }
@@ -1440,8 +1414,8 @@ sub verify_obj_usage {
     return $error[0] ? $self->error_response(@error) : 0;
 }
 
-#gets keyed data for a certain parameter of the function call
 sub get_param_meta {
+#gets keyed data for a certain parameter of the function call
     my $self  = shift;
     my $param = shift;
     my $key   = shift;
@@ -1450,8 +1424,8 @@ sub get_param_meta {
     return $self->{'meta'}->{$param}->{$key};
 }
 
-#Sets keyed info about a parameter for the function call
 sub set_param_meta {
+#Sets keyed info about a parameter for the function call
     my $self  = shift;
     my $param = shift;
     my $key   = shift;
@@ -1689,61 +1663,9 @@ sub get_group_branches {
     }
 }
 
-sub fetch_row {
-    my $self  = shift;
-    my $table = shift;
-    my %cond  = @_;
-
-    my $dbh = $self->{'dbh'};
-    my $sql
-        = "SELECT * FROM $table WHERE "
-        . join( ' AND ',
-        map( "$_ = " . $dbh->quote( $cond{$_} ), keys %cond ) );
-
-    my $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
-    my $data = {};
-
-    if ( $sth->execute ) {
-        if ( $sth->rows ) {
-            $data = $sth->fetchrow_hashref;
-        }
-        else {
-            $data = $self->error_response(601);
-        }
-    }
-    else {
-        $data = $self->error_response( 600, $sth->errstr );
-    }
-
-    return $data;
-}
-
-sub get_dbix {
-
-    my $dsn = shift;
-    if ( $dsn !~ /^DBI/ ) {
-        $dsn = "DBI:$NicToolServer::db_engine:"
-            . "database=$NicToolServer::db;"
-            . "host=$NicToolServer::db_host;"
-            . "port=3306";
-    };
-
-    my $dbix = DBIx::Simple->connect( $dsn, 
-            $NicToolServer::db_user, 
-            $NicToolServer::db_pass, 
-            { RaiseError => 1, AutoCommit => 1 },
-        )
-        or die DBIx::Simple->error;
-
-    return $dbix;
-};
-
 sub dbh {
 
-    my $dsn = "DBI:$NicToolServer::db_engine:database=$NicToolServer::db;"
-            . "host=$NicToolServer::db_host;port=3306";
-
+    my $dsn = $NicToolServer::dsn;
     my $dbh = DBI->connect( $dsn, $NicToolServer::db_user, $NicToolServer::db_pass);
 
     unless ($dbh) {
@@ -1753,45 +1675,58 @@ sub dbh {
     return $dbh;
 }
 
-sub exec_query {
-    my $self = shift;
-    my ( $query, $params, $extra ) = @_;
-    die "invalid arguments to exec_query!" if $extra;
-
-    my @params; 
-    if ( defined $params ) {  # dereference $params into @params
-        @params = ref $params eq 'ARRAY' ? @$params : $params;
-    };
-
-    my $err = "query failed: $query\n" . join(',', @params);
-    warn "$query\n" . join(',', @params) if $self->debug_sql;
-
-    if ( $query =~ /INSERT INTO/ ) {
-        my ( $table ) = $query =~ /INSERT INTO (\w+)\s/;
-        $self->{dbix}->query( $query, @params );
-        if ( $self->{dbix}->error ne 'DBI error: ' ) {
-            die $self->{dbix}->error;
-        };
-        my $id = $self->{dbix}->last_insert_id(undef,undef,$table,undef)
-            or die $err;
-        return $id;
-    }
-    elsif ( $query =~ /DELETE/ ) {
-        $self->{dbix}->query( $query, @params )->hashes 
-            or return $self->error( $err );
-        return $self->{dbix}->query("SELECT ROW_COUNT()")->list;
-    };
-
-    my $r = $self->{dbix}->query( $query, @params )->hashes or die $err;
-
-    return $r;
-};
-
 sub escape {
     my ( $self, $toencode ) = @_;
     $toencode =~ s/([^a-zA-Z0-9_.-])/uc sprintf("%%%02x",ord($1))/eg;
     return $toencode;
 }
+
+sub exec_query {
+    my $self = shift;
+    my ( $query, $params, $extra ) = @_;
+
+    my @caller = caller;
+    my $err = sprintf( "exec_query called by %s, %s\n", $caller[0], $caller[2] );
+    $err .= "\t$query\n\t";
+
+    die "invalid arguments to exec_query!" if $extra;
+
+    my @params;
+    if ( defined $params ) {  # dereference $params into @params
+        @params = ref $params eq 'ARRAY' ? @$params : $params;
+        $err .= join(', ', @params) . "\n";
+    };
+
+    warn $err if $self->debug_sql;
+
+    my $dbix = DBIx::Simple->connect( $self->{dbh} ) 
+        or die DBIx::Simple->error;
+
+    if ( $query =~ /INSERT INTO/ ) {
+        my ( $table ) = $query =~ /INSERT INTO (\w+)\s/;
+        eval { $dbix->query( $query, @params ); };
+        if ($@ or $dbix->error ne 'DBI error: ') {
+            warn $err . $dbix->error if $self->debug_sql;
+            return;
+        };
+        my $id = $dbix->last_insert_id(undef,undef,$table,undef)
+            or die $err . $dbix->error;
+        return $id;
+    }
+    elsif ( $query =~ /DELETE|UPDATE/ ) {
+        eval { $dbix->query( $query, @params ) };
+        if ($@ or $dbix->error ne 'DBI error: ') {
+            warn $err . $dbix->error if $self->debug_sql;
+            return;
+        };
+        return $dbix->query("SELECT ROW_COUNT()")->list;
+    };
+
+    my $r;
+    eval { $r = $dbix->query( $query, @params )->hashes; };
+    warn "$err\t$@" if ( $@ ); #&& $self->debug_sql );
+    return $r;
+};
 
 sub check_object_deleted {
     my ( $self, $otype, $oid ) = @_;

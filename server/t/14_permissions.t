@@ -1,8 +1,4 @@
 ##########
-# vim: syn=perl
-##########
-# $Id: 14_permissions.t 693 2008-10-15 23:59:01Z matt $
-# interaction.pl
 #
 # NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
 # NicTool v2.01 Copyright 2004 The Network People, Inc.

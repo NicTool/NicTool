@@ -1,8 +1,6 @@
 package NicToolServer::Nameserver;
 
 #
-# $Id: Nameserver.pm 639 2008-09-13 04:43:46Z matt $
-#
 # NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
 # NicTool v2.01 Copyright 2004 The Network People, Inc.
 #
@@ -26,97 +24,37 @@ use strict;
 sub get_usable_nameservers {
     my ( $self, $data ) = @_;
 
-#my @groups = ($data->{'nt_group_id'}, @{ $self->get_parentgroup_ids($data->{'nt_group_id'}) });
     my @groups;
     my @usable;
     my $dbh = $self->{'dbh'};
     if ( $data->{'nt_group_id'} ) {
 
-#push @groups,$data->{'nt_group_id'};
-#my $gperm = $self->NicToolServer::Permission::get_group_permissions({nt_group_id=>$data->{'nt_group_id'}});
-
-#warn "using ". ($data->{'nt_group_id'}? "data " : "user ").$gperm->{'nt_group_id'};
-#warn "gperm group id is ".$gperm->{'nt_group_id'};
-#foreach (0..9){
-#push @usable,$gperm->{"usable_ns$_"} if $gperm->{"usable_ns$_"} ne 0;
-#}
         my $res = $self->NicToolServer::Group::get_group_branch($data);
         return $res if $self->is_error_response($res);
         @groups = map { $_->{'nt_group_id'} } @{ $res->{'groups'} };
     }
 
-    #if($data->{'include_for_user'} || !$data->{'nt_group_id'}){
     push @groups, $self->{'user'}->{'nt_group_id'};
     foreach ( 0 .. 9 ) {
         push @usable, $self->{'user'}->{"usable_ns$_"}
             if $self->{'user'}->{"usable_ns$_"} ne 0;
     }
 
-    #}
     my $sql
         = "SELECT * FROM nt_nameserver "
-        . " WHERE deleted = '0' "
-        . " AND (nt_group_id IN ("
+        . " WHERE deleted = '0' AND (nt_group_id IN ("
         . join( ",", @groups )
-        . ")"    #$gperm->{'nt_group_id'}
+        . ")"
         . (
         @usable
         ? " OR " . "nt_nameserver_id IN (" . join( ",", @usable ) . " )"
         : ''
         ) . " ) ";
 
-  #my $sql = "SELECT DISTINCT n.* FROM nt_nameserver as n "
-  #.   "INNER JOIN nt_group as g "
-  #.       "ON g.nt_group_id=n.nt_group_id "
-  #.   "INNER JOIN nt_group_subgroups as s "
-  #.       "ON g.nt_group_id=s.nt_group_id OR g.nt_group_id=s.nt_subgroup_id "
-  #.   "WHERE g.deleted = '0' "
-  #.   "AND n.deleted = '0' "
-  #.   "AND s.nt_group_id=".$self->{'user'}->{'nt_group_id'}
-  #.   (@usable ?
-  #" OR "
-  #. "n.deleted='0' "
-  #. "AND nt_nameserver_id IN (".join (",",@usable)." )"
-  #: '')
-  #;
-
     my $sth = $dbh->prepare($sql);
     warn "$sql\n" if $self->debug_sql;
 
     my $r_data = $self->error_response(200);
-    $r_data->{'nameservers'} = [];
-
-    if ( $sth->execute ) {
-        while ( my $row = $sth->fetchrow_hashref ) {
-            push( @{ $r_data->{'nameservers'} }, $row );
-        }
-    }
-    else {
-        $r_data->{'error_code'} = '600';
-        $r_data->{'error_msg'}  = $sth->errstr;
-    }
-    $sth->finish;
-
-    return $r_data;
-}
-
-sub get_nameserver_tree_old {
-    my ( $self, $data ) = @_;
-
-    my @groups = (
-        $data->{'nt_group_id'},
-        @{ $self->get_parentgroup_ids( $data->{'nt_group_id'} ) }
-    );
-
-    my $dbh = $self->{'dbh'};
-    my $sql
-        = "SELECT * FROM nt_nameserver WHERE deleted = '0' AND nt_group_id IN (";
-    $sql .= join( ",", @groups ) . ")";
-
-    my $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
-
-    my $r_data = {};
     $r_data->{'nameservers'} = [];
 
     if ( $sth->execute ) {
@@ -365,15 +303,6 @@ sub get_nameserver {
     return \%rv;
 }
 
-sub save_nameserver {
-    my ( $self, $data ) = @_;
-    warn
-        "XXX: Nameserver::save_nameserver is deprecated as of NicToolServer 2.0: "
-        . Data::Dumper::Dumper($data);
-    return $self->error_result( 503,
-        'save_nameserver, use new_nameserver or edit_nameserver' );
-}
-
 sub new_nameserver {
     my ( $self, $data ) = @_;
 
@@ -508,8 +437,7 @@ sub log_nameserver {
     $data->{'action'}     = $action;
     $data->{'timestamp'}  = time();
 
-    my $sql
-        = "INSERT INTO nt_nameserver_log("
+    my $sql = "INSERT INTO nt_nameserver_log("
         . join( ',', @columns )
         . ") VALUES("
         . join( ',', map( $dbh->quote( $data->{$_} ), @columns ) ) . ")";

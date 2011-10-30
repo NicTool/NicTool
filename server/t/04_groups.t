@@ -1,8 +1,4 @@
 ##########
-# vim: syn=perl
-##########
-# $Id: 04_groups.t 639 2008-09-13 04:43:46Z matt $
-# groups.pl
 #
 # NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
 # NicTool v2.01 Copyright 2004 The Network People, Inc.

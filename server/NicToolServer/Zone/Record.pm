@@ -1,8 +1,6 @@
 package NicToolServer::Zone::Record;
 
 #
-# $Id: Record.pm 667 2008-10-01 01:33:43Z matt $
-#
 # NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
 # NicTool v2.01+ Copyright 2004-2008 The Network People, Inc.
 #
@@ -22,15 +20,6 @@ package NicToolServer::Zone::Record;
 use strict;
 
 @NicToolServer::Zone::Record::ISA = qw(NicToolServer::Zone);
-
-sub save_zone_record {
-    my ( $self, $data ) = @_;
-    warn
-        "XXX: Zone::Record::save_zone_record is deprecated as of NicToolServer 2.0: "
-        . Data::Dumper::Dumper($data);
-    return $self->error_response( 503,
-        "save_zone_record, use new_zone_record or edit_zone_record" );
-}
 
 sub new_zone_record {
     my ( $self, $data ) = @_;

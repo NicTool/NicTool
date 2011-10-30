@@ -850,14 +850,6 @@ sub get_group_zone_query_log {
     return $r_data;
 }
 
-sub save_zone {
-    my ( $self, $data ) = @_;
-
-    warn "XXX: Zone::save_zone is deprecated as of NicToolServer 2.0: "
-        . Data::Dumper::Dumper($data);
-    return $self->error_result( 503, 'save_zone, use new_zone or edit_zone' );
-}
-
 sub new_zone {
     my ( $self, $data ) = @_;
 

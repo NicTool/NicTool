@@ -1,7 +1,6 @@
 #!/usr/bin/perl
 ###
 # Group.pm
-# $Id: Group.pm 347 2004-12-10 03:13:38Z matt $
 ###
 #
 # NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler

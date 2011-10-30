@@ -1,7 +1,6 @@
 #!/usr/bin/perl
 ###
 # NTObject.pm
-# $Id: NTObject.pm 358 2005-04-16 18:19:30Z matt $
 ###
 #
 # NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler

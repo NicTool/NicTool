@@ -117,6 +117,7 @@ sys/djb/scan.h
 sys/djb/scan_ulong.c
 sys/djb/scan_xlong.c
 sys/djb/test.conf
+t/01_data.t
 t/02_basic.t
 t/04_groups.t
 t/06_users.t

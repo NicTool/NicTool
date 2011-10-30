@@ -1,8 +1,5 @@
 #!/usr/bin/perl
 ###
-# Zone.pm
-# $Id: Zone.pm 347 2004-12-10 03:13:38Z matt $
-###
 #
 # NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
 # NicTool v2.01 Copyright 2004 The Network People, Inc.

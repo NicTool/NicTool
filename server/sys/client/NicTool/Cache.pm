@@ -2,7 +2,6 @@
 ###
 # Cache.pm
 # a simple path based cache
-# $Id: Cache.pm 362 2005-05-02 21:03:54Z matt $
 ###
 #
 # NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler

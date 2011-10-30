@@ -1,8 +1,6 @@
 package NicToolServer::User::Sanity;
 
 #
-# $Id: Sanity.pm 1044 2010-03-26 00:53:36Z matt $
-#
 # NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
 # NicTool v2.01 Copyright 2004 The Network People, Inc.
 #
@@ -146,8 +144,7 @@ sub _username_exists {
     my $sql;
 
     if ( exists $data->{'nt_user_id'} ) {
-        $sql
-            = "SELECT name FROM nt_group INNER JOIN nt_user "
+        $sql = "SELECT name FROM nt_group INNER JOIN nt_user "
             . "ON nt_user.nt_group_id=nt_group.nt_group_id "
             . "WHERE nt_user.nt_user_id = "
             . $dbh->quote( $data->{'nt_user_id'} );
@@ -164,8 +161,7 @@ sub _username_exists {
 
     $data->{'groupname'} = $group[0];
 
-    $sql
-        = "SELECT nt_group_id FROM nt_group WHERE name = "
+    $sql = "SELECT nt_group_id FROM nt_group WHERE name = "
         . $dbh->quote( $group[0] )
         . " AND deleted='0'";
     $sth = $dbh->prepare($sql);
@@ -174,18 +170,16 @@ sub _username_exists {
     while ( my @row = $sth->fetchrow ) {
         push( @groups, $row[0] );
     }
+    #return 0 if scalar @groups == 0;
 
     if ( $data->{'nt_user_id'} ) {
-        $sql
-            = "SELECT nt_user_id FROM nt_user WHERE deleted = '0' AND nt_group_id IN ("
+        $sql = "SELECT nt_user_id FROM nt_user WHERE deleted = '0' AND nt_group_id IN ("
             . join( ',', @groups )
             . ") AND nt_user_id != $data->{'nt_user_id'} AND username="
             . $dbh->quote( $data->{'username'} );
-
     }
     else {
-        $sql
-            = "SELECT nt_user_id FROM nt_user WHERE deleted = '0' AND nt_group_id IN ("
+        $sql = "SELECT nt_user_id FROM nt_user WHERE deleted = '0' AND nt_group_id IN ("
             . join( ',', @groups )
             . ") AND username="
             . $dbh->quote( $data->{'username'} );
