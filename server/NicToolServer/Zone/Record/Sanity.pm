@@ -1,4 +1,5 @@
 package NicToolServer::Zone::Record::Sanity;
+
 #
 # NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
 # NicTool v2.01+    Copyright 2004-2008 The Network People, Inc.
@@ -191,20 +192,14 @@ sub new_or_edit_basic_verify {
 sub record_exists {
     my ( $self, $record, $record_type, $zone_id, $rid ) = @_;
 
-    my $dbh = $self->{'dbh'};
-    my $sql
-        = "SELECT * FROM nt_zone_record WHERE deleted = '0' AND type = "
-        . $dbh->quote($record_type)
-        . " AND nt_zone_id = $zone_id AND name = "
-        . $dbh->quote($record);
+    my $sql = "SELECT * FROM nt_zone_record WHERE deleted = '0' AND type = ?
+         AND nt_zone_id = ? AND name = ?";
     if ($rid) {
         $sql .= " AND nt_zone_record_id <> $rid";
     }
-    my $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
-    $sth->execute;
+    my $zrs = $self->exec_query( $sql, [ $record_type, $zone_id, $record ] );
 
-    return ref( $sth->fetch ) ? 1 : 0;
+    return ref( $zrs->[0] ) ? 1 : 0;
 }
 
 sub rr_types {

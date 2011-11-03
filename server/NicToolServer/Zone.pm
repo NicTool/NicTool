@@ -23,48 +23,41 @@ use strict;
 sub get_zone {
     my ( $self, $data ) = @_;
 
-    my $dbh = $self->{'dbh'};
-    my $sql = "SELECT nt_zone.* FROM nt_zone WHERE nt_zone_id = "
-        . $dbh->quote( $data->{'nt_zone_id'} );
-    my $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
+    my $sql = "SELECT nt_zone.* FROM nt_zone WHERE nt_zone_id = ?";
+    my $zones = $self->exec_query( $sql, $data->{nt_zone_id} )
+        or return {
+            error_code => 600,
+            error_msg  => $self->{dbh}->errstr,
+        };
 
-    my %rv;
-    if ( $sth->execute ) {
-        %rv = %{ $sth->fetchrow_hashref };
-        $rv{'nameservers'} = $self->pack_nameservers( \%rv );
+    my %rv = ( %{ $zones->[0] } );
+    $rv{'nameservers'} = $self->pack_nameservers( \%rv );
+    $rv{'error_code'} = 200;
+    $rv{'error_msg'}  = 'OK';
 
-        $rv{'error_code'} = 200;
-        $rv{'error_msg'}  = 'OK';
-        if ( my $del = $self->get_param_meta( 'nt_zone_id', 'delegate' ) ) {
+    if ( my $del = $self->get_param_meta( 'nt_zone_id', 'delegate' ) ) {
 
 # this info comes from NicToolServer.pm when it checks for access perms to the objects
-            my %mapping = (
-                delegated_by_id   => 'delegated_by_id',
-                delegated_by_name => 'delegated_by_name',
-                pseudo            => 'pseudo',
+        my %mapping = (
+            delegated_by_id   => 'delegated_by_id',
+            delegated_by_name => 'delegated_by_name',
+            pseudo            => 'pseudo',
 
-                #perm_read=>'delegate_read',
-                perm_write               => 'delegate_write',
-                perm_delete              => 'delegate_delete',
-                perm_delegate            => 'delegate_delegate',
-                zone_perm_add_records    => 'delegate_add_records',
-                zone_perm_delete_records => 'delegate_delete_records',
+            #perm_read=>'delegate_read',
+            perm_write               => 'delegate_write',
+            perm_delete              => 'delegate_delete',
+            perm_delegate            => 'delegate_delegate',
+            zone_perm_add_records    => 'delegate_add_records',
+            zone_perm_delete_records => 'delegate_delete_records',
 
-                #perm_move=>'delegate_move',
-                #perm_full=>'delegate_full',
-                group_name => 'group_name'
-            );
-            foreach my $key ( keys %mapping ) {
-                $rv{ $mapping{$key} } = $del->{$key};
-            }
+            #perm_move=>'delegate_move',
+            #perm_full=>'delegate_full',
+            group_name => 'group_name'
+        );
+        foreach my $key ( keys %mapping ) {
+            $rv{ $mapping{$key} } = $del->{$key};
         }
-    }
-    else {
-        $rv{'error_code'} = 600;
-        $rv{'error_msg'}  = $sth->errstr;
-    }
-    $sth->finish;
+    };
     return \%rv;
 }
 
@@ -81,20 +74,15 @@ sub pack_nameservers {
         return [];
     }
 
-    my $dbh = $self->{'dbh'};
-    my $sql
-        = "SELECT nt_nameserver.*,nt_zone.nt_zone_id FROM nt_nameserver,nt_zone WHERE nt_nameserver.nt_nameserver_id IN ("
+    my $sql = "SELECT nt_nameserver.*,nt_zone.nt_zone_id FROM nt_nameserver,nt_zone 
+        WHERE nt_nameserver.nt_nameserver_id IN ("
         . join( ',', @temp )
-        . ") AND nt_zone.nt_zone_id = "
-        . $dbh->quote( $data->{nt_zone_id} );
-    my $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
-    $sth->execute;
+        . ") AND nt_zone.nt_zone_id = ?";
+    my $nameservers = $self->exec_query( $sql, $data->{nt_zone_id} );
     my @ns;
-    while ( my $data = $sth->fetchrow_hashref ) {
+    foreach my $data ( @$nameservers ) {
         push( @ns, $data );
     }
-    $sth->finish;
 
     $data->{'nameservers'} = \@ns;
 }
@@ -112,32 +100,28 @@ sub get_zone_log {
         . "AND nt_zone_log.nt_zone_id = $data->{'nt_zone_id'} "
         . "ORDER BY timestamp DESC";
 
-    my $sth = $self->{'dbh'}->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
-    my %rv;
-    if ( $sth->execute ) {
-        $rv{'data'} = [];
+    my $zone_logs = $self->exec_query( $sql ) 
+        or return {
+            error_code => 600,
+            error_msg  => $self->{dbh}->errstr,
+       
+        };
 
-        while ( my $data = $sth->fetchrow_hashref ) {
-            push( @{ $rv{'data'} }, $data );
-        }
+    my %rv = (
+        data       => [],
+        error_code => 200,
+        error_msg  => 'OK',
+    );
 
-        $rv{'error_code'} = 200;
-        $rv{'error_msg'}  = 'OK';
+    foreach my $data ( @$zone_logs ) {
+        push( @{ $rv{'data'} }, $data );
     }
-    else {
-        $rv{'error_code'} = 600;
-        $rv{'error_msg'}  = $sth->errstr;
-    }
 
-    $sth->finish;
     return \%rv;
 }
 
 sub get_zone_record_log {
     my ( $self, $data ) = @_;
-
-    my $dbh = $self->{'dbh'};
 
     my %field_map = (
         action => {
@@ -195,63 +179,51 @@ sub get_zone_record_log {
 
     my $r_data = { error_code => 200, error_msg => 'OK', log => [] };
 
-    my $sql
-        = "SELECT COUNT(*) FROM "
-        . "nt_zone_record_log, nt_zone_record, nt_user "
-        . "WHERE nt_zone_record_log.nt_zone_record_id = nt_zone_record.nt_zone_record_id "
+    my $dbh = $self->{'dbh'};
 
-#. "AND nt_zone_record_log.nt_log_action_id = nt_log_action.nt_log_action_id "
+    my $sql = "SELECT COUNT(*) AS count FROM 
+        nt_zone_record_log, nt_zone_record, nt_user 
+        WHERE nt_zone_record_log.nt_zone_record_id = nt_zone_record.nt_zone_record_id "
+#       . "AND nt_zone_record_log.nt_log_action_id = nt_log_action.nt_log_action_id "
         . "AND nt_zone_record_log.nt_user_id = nt_user.nt_user_id "
         . "AND nt_zone_record_log.nt_zone_id = "
         . $dbh->quote( $data->{'nt_zone_id'} )
         . ( @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
 
-    my $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
-    $sth->execute;
-    $r_data->{'total'} = $sth->fetch->[0];
-    $sth->finish;
+    my $c = $self->exec_query( $sql );
+    $r_data->{'total'} = $c->[0]{count};
 
     $self->set_paging_vars( $data, $r_data );
 
-    if ( $r_data->{'total'} == 0 ) {
-        return $r_data;
-    }
+    return $r_data if $r_data->{'total'} == 0;
 
-    $sql
-        = "SELECT nt_zone_record_log.*, nt_zone_record_log.action as action, CONCAT(nt_user.first_name, \" \", nt_user.last_name, \" (\", nt_user.username, \")\") as user FROM "
-        . "nt_zone_record_log, nt_zone_record, nt_user "
-        . "WHERE nt_zone_record_log.nt_zone_record_id = nt_zone_record.nt_zone_record_id "
-
-#. "AND nt_zone_record_log.nt_log_action_id = nt_log_action.nt_log_action_id "
-        . "AND nt_zone_record_log.nt_user_id = nt_user.nt_user_id "
-        . "AND nt_zone_record_log.nt_zone_id = "
+    $sql = "SELECT nt_zone_record_log.*, nt_zone_record_log.action as action, 
+        CONCAT(nt_user.first_name, \" \", nt_user.last_name, \" (\", nt_user.username, \")\") as user
+        FROM nt_zone_record_log, nt_zone_record, nt_user
+          WHERE nt_zone_record_log.nt_zone_record_id = nt_zone_record.nt_zone_record_id "
+#          AND nt_zone_record_log.nt_log_action_id = nt_log_action.nt_log_action_id "
+        . "AND nt_zone_record_log.nt_user_id = nt_user.nt_user_id 
+           AND nt_zone_record_log.nt_zone_id = "
         . $dbh->quote( $data->{'nt_zone_id'} )
         . ( @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
     $sql .= " ORDER BY " . join( ', ', @$sortby ) . " " if (@$sortby);
     $sql .= "LIMIT " . ( $r_data->{'start'} - 1 ) . ", $r_data->{'limit'}";
 
-    $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
+    my $zr_logs = $self->exec_query( $sql )
+        or return {
+            error_code => '600',
+            error_msg  => $self->{dbh}->errstr,
+        };
 
-    if ( $sth->execute ) {
-        while ( my $row = $sth->fetchrow_hashref ) {
-            push( @{ $r_data->{'log'} }, $row );
-        }
+    foreach my $row ( @$zr_logs ) {
+        push( @{ $r_data->{'log'} }, $row );
     }
-    else {
-        $r_data->{'error_code'} = '600';
-        $r_data->{'error_msg'}  = $sth->errstr;
-    }
-    $sth->finish;
 
     return $r_data;
 }
 
 sub get_group_zones_log {
     my ( $self, $data ) = @_;
-
-    my $dbh = $self->{'dbh'};
 
     my %field_map = (
         action => {
@@ -297,66 +269,54 @@ sub get_group_zones_log {
     }
 
     my $sql
-        = "SELECT COUNT(*) FROM "
-        . "nt_zone_log, nt_zone, nt_user, nt_group "
-        . "WHERE nt_zone_log.nt_zone_id = nt_zone.nt_zone_id "
-        . "AND nt_zone_log.nt_user_id = nt_user.nt_user_id "
-        . "AND nt_zone.nt_group_id = nt_group.nt_group_id "
-        . "AND nt_zone.nt_group_id IN("
+        = "SELECT COUNT(*) AS count FROM
+          nt_zone_log, nt_zone, nt_user, nt_group
+        WHERE nt_zone_log.nt_zone_id = nt_zone.nt_zone_id
+          AND nt_zone_log.nt_user_id = nt_user.nt_user_id
+          AND nt_zone.nt_group_id = nt_group.nt_group_id
+          AND nt_zone.nt_group_id IN("
         . join( ',', @group_list ) . ")"
         . ( @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
 
-    my $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
-    $sth->execute;
-    $r_data->{'total'} = $sth->fetch->[0];
-    $sth->finish;
+    my $c = $self->exec_query( $sql );
+    $r_data->{'total'} = $c->[0]{count};
 
     $self->set_paging_vars( $data, $r_data );
 
-    if ( $r_data->{'total'} == 0 ) {
-        return $r_data;
-    }
+    return $r_data if $r_data->{'total'} == 0;
 
-    $sql
-        = "SELECT nt_zone_log.*, CONCAT(nt_user.first_name, \" \", nt_user.last_name, \" (\", nt_user.username, \")\") as user, nt_zone.nt_group_id, nt_group.name as group_name FROM "
-        . "nt_zone_log, nt_zone, nt_user, nt_group "
-        . "WHERE nt_zone_log.nt_zone_id = nt_zone.nt_zone_id "
-        . "AND nt_zone_log.nt_user_id = nt_user.nt_user_id "
-        . "AND nt_zone.nt_group_id = nt_group.nt_group_id "
-        . "AND nt_zone.nt_group_id IN("
+    $sql = "SELECT nt_zone_log.*, 
+        CONCAT(nt_user.first_name, \" \", nt_user.last_name, \" (\", nt_user.username, \")\") as user, nt_zone.nt_group_id, nt_group.name as group_name 
+        FROM nt_zone_log, nt_zone, nt_user, nt_group
+          WHERE nt_zone_log.nt_zone_id = nt_zone.nt_zone_id
+           AND nt_zone_log.nt_user_id = nt_user.nt_user_id
+           AND nt_zone.nt_group_id = nt_group.nt_group_id
+           AND nt_zone.nt_group_id IN("
         . join( ',', @group_list ) . ")"
         . ( @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
     $sql .= " ORDER BY " . join( ', ', @$sortby ) . " " if (@$sortby);
     $sql .= "LIMIT " . ( $r_data->{'start'} - 1 ) . ", $r_data->{'limit'}";
 
-    $sth = $dbh->prepare($sql);
+    my $zone_logs = $self->exec_query( $sql )
+        or return {
+            error_code => '600',
+            error_msg  => $self->{dbh}->errstr,
+        };
 
-    warn "$sql\n" if $self->debug_sql;
-
-    if ( $sth->execute ) {
-        my %groups;
-        while ( my $row = $sth->fetchrow_hashref ) {
-            push( @{ $r_data->{'log'} }, $row );
-            $groups{ $row->{'nt_group_id'} } = 1;
-        }
-
-        $r_data->{'group_map'} = $self->get_group_map( $data->{'nt_group_id'},
-            [ keys %groups ] );
+    my %groups;
+    foreach my $row ( @$zone_logs ) {
+        push( @{ $r_data->{'log'} }, $row );
+        $groups{ $row->{'nt_group_id'} } = 1;
     }
-    else {
-        $r_data->{'error_code'} = '600';
-        $r_data->{'error_msg'}  = $sth->errstr;
-    }
-    $sth->finish;
+
+    $r_data->{'group_map'} = $self->get_group_map( $data->{'nt_group_id'},
+        [ keys %groups ] );
 
     return $r_data;
 }
 
 sub get_group_zones {
     my ( $self, $data ) = @_;
-
-    my $dbh = $self->{'dbh'};
 
     my %field_map = (
         zone => { timefield => 0, quicksearch => 1, field => 'nt_zone.zone' },
@@ -388,8 +348,7 @@ sub get_group_zones {
     my $r_data = { 'error_code' => 200, 'error_msg' => 'OK', zones => [] };
 
     #count total number of zones inside the groups
-    my $sql
-        = "SELECT COUNT(*) FROM nt_zone "
+    my $sql = "SELECT COUNT(*) AS count FROM nt_zone "
         . " WHERE nt_zone.nt_group_id IN ("
         . join( ",", @group_list ) . ") "
         . " AND nt_zone.deleted='"
@@ -398,92 +357,55 @@ sub get_group_zones {
     $sql .= (
         @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
 
-    my $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
-    $sth->execute || return $self->error_response( 508, $dbh->errstr );
-    $r_data->{'total'} = $sth->fetch->[0];
-    $sth->finish;
-
-    if (0) {
-## slink 2007-02-01 :
-#  this query is highly ineffecient, due to massive left joining, result set
-#  becomes really big (with redundancies removed by COUNT(DISTINCT ) afterwards)
-#
-#  rather than getting the count first and then getting the delegates,
-#  we might as well get the delegates now
-##
-        #add count of delegates/pseudo delegates,
-        my $sql2
-            = "SELECT COUNT(DISTINCT nt_zone.nt_zone_id) FROM nt_group "
-            . "LEFT JOIN nt_delegate as zdel ON "
-            . "zdel.nt_group_id= $data->{'nt_group_id'} AND zdel.nt_object_type='ZONE'  "
-            . "LEFT JOIN nt_delegate as zrdel ON "
-            . "zrdel.nt_group_id= $data->{'nt_group_id'} AND zrdel.nt_object_type='ZONERECORD' "
-            . "LEFT JOIN nt_zone_record ON "
-            . "zrdel.nt_object_id=nt_zone_record.nt_zone_record_id AND nt_zone_record.deleted ='0' "
-            . "INNER JOIN nt_zone ON "
-            . " nt_zone.nt_zone_id=zdel.nt_object_id OR nt_zone.nt_zone_id=nt_zone_record.nt_zone_id "
-            . " AND ( nt_zone_record.deleted='0' OR nt_zone_record.deleted IS NULL )";
-
-        $sql2 .= (
-            @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
-
-        $sth = $dbh->prepare($sql2);
-        warn "$sql2\n" if $self->debug_sql;
-        $sth->execute || return $self->error_response( 508, $dbh->errstr );
-        $r_data->{'total'} += $sth->fetch->[0];
-        $sth->finish;
-    }
+    my $c = $self->exec_query( $sql )
+        or return $self->error_response( 508, $self->{dbh}->errstr );
+    $r_data->{'total'} = $c->[0]{count};
 
     my %delegates;
 
   #get zones that are 'pseudo' delegates: some of their records are delegated.
-    $sql
-        = " SELECT nt_zone.nt_zone_id, "
-        . "       count(*) as delegated_records,"
-        . "       nt_delegate.delegated_by_id,"
-        . "       nt_delegate.delegated_by_name,"
-        . "       1 as pseudo "
-        . " FROM nt_delegate "
-        . " INNER JOIN nt_zone_record ON nt_delegate.nt_object_id=nt_zone_record.nt_zone_record_id "
-        . " INNER JOIN nt_zone ON nt_zone.nt_zone_id=nt_zone_record.nt_zone_id "
-        . " WHERE nt_delegate.nt_group_id=$data->{'nt_group_id'} AND nt_delegate.nt_object_type='ZONERECORD'"
-        . " GROUP BY nt_zone.nt_zone_id";
-    $sql .= (
-        @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
+    $sql = " SELECT nt_zone.nt_zone_id,
+                 count(*) as delegated_records,
+               nt_delegate.delegated_by_id,
+               nt_delegate.delegated_by_name,
+               1 as pseudo
+         FROM nt_delegate
+         INNER JOIN nt_zone_record ON nt_delegate.nt_object_id=nt_zone_record.nt_zone_record_id
+         INNER JOIN nt_zone ON nt_zone.nt_zone_id=nt_zone_record.nt_zone_id
+       WHERE nt_delegate.nt_group_id=$data->{'nt_group_id'} AND nt_delegate.nt_object_type='ZONERECORD'
+         GROUP BY nt_zone.nt_zone_id";
+    $sql .= ( @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
 
-    $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
-    $sth->execute || return $self->error_response( 505, $sth->errstr );
-    while ( my $z = $sth->fetchrow_hashref ) {
+    my $delegs = $self->exec_query( $sql )
+        or return $self->error_response( 505, $self->{dbh}->errstr );
+
+    foreach my $z ( @$delegs ) {
         $delegates{ $z->{'nt_zone_id'} } = $z;
     }
 
     #get zones that are normal delegates
-    $sql
-        = " SELECT nt_zone.nt_zone_id,"
-        . "      d.delegated_by_id,"
-        . "      d.delegated_by_name,"
-        . "      d.perm_write as delegate_write,"
-        . "      d.perm_delete as delegate_delete,"
-        . "      d.perm_delegate as delegate_delegate,"
-        . "      d.zone_perm_add_records as delegate_add_records,"
-        . "      d.zone_perm_delete_records as delegate_delete_records"
-        . " FROM  nt_delegate as d"
-        . " INNER JOIN nt_zone ON nt_zone.nt_zone_id=d.nt_object_id"
-        . " WHERE d.nt_group_id=$data->{'nt_group_id'} AND d.nt_object_type='ZONE'";
+    $sql = " SELECT nt_zone.nt_zone_id,
+              d.delegated_by_id,
+              d.delegated_by_name,
+              d.perm_write as delegate_write,
+              d.perm_delete as delegate_delete,
+              d.perm_delegate as delegate_delegate,
+              d.zone_perm_add_records as delegate_add_records,
+              d.zone_perm_delete_records as delegate_delete_records
+         FROM  nt_delegate as d
+         INNER JOIN nt_zone ON nt_zone.nt_zone_id=d.nt_object_id
+         WHERE d.nt_group_id=$data->{'nt_group_id'} AND d.nt_object_type='ZONE'";
     $sql .= (
         @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
 
-    $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
-    $sth->execute || return $self->error_response( 505, $sth->errstr );
-    while ( my $z = $sth->fetchrow_hashref ) {
+    my $delegs = $self->exec_query( $sql )
+        or return $self->error_response( 505, $self->{dbh}->errstr );
+    foreach my $z ( @$delegs ) {
         $delegates{ $z->{'nt_zone_id'} } = $z;
     }
     my @zones = keys %delegates;
 
-    $r_data->{'total'} += scalar(@zones);
+    $r_data->{'total'} += scalar @zones;
 
     $self->set_paging_vars( $data, $r_data );
 
@@ -491,20 +413,15 @@ sub get_group_zones {
 
     my $sortby;
     if ( $r_data->{'total'} > 10000 ) {
-
-# if > than 10,000 zones, don't explicity ORDER BY -- mysql takes too long. --ai
         $sortby = $self->format_sort_conditions( $data, \%field_map, "" );
+# if > than 10,000 zones, don't explicity ORDER BY -- mysql takes too long. --ai
     }
     else {
 
         # get the name of the group
-        $sql
-            = "SELECT name from nt_group where nt_group_id=$data->{'nt_group_id'}";
-        my $sth = $dbh->prepare($sql);
-        warn "$sql\n" if $self->debug_sql;
-        $sth->execute;
-        my $group_name = $sth->fetch->[0];
-        $sth->finish;
+        $sql = "SELECT name from nt_group where nt_group_id=?";
+        my $g = $self->exec_query( $sql, $data->{nt_group_id} );
+        my $group_name = $g->[0]{name};
 
         if ( $group_name =~ /reverse/ ) {
             $sortby = $self->format_sort_conditions( $data, \%field_map,
@@ -517,18 +434,16 @@ sub get_group_zones {
     }
 
     #get all zones in user's group (or subgroups) and the delegated zones
-    $sql
-        = "SELECT nt_zone.nt_zone_id, "
-        . "       nt_zone.zone, "
-        . "       nt_zone.nt_group_id as owner_group_id, "
-        . "       nt_zone.description, "
-        . "       nt_zone.deleted, "
-        . "	   nt_group.name as group_name, "
-        . "	   nt_group.nt_group_id "
-        . "FROM nt_zone "
-        . "INNER JOIN nt_group ON nt_zone.nt_group_id=nt_group.nt_group_id "
-        . "WHERE "
-        . "    nt_zone.deleted='"
+    $sql = "SELECT nt_zone.nt_zone_id,
+               nt_zone.zone,
+               nt_zone.nt_group_id as owner_group_id,
+               nt_zone.description,
+               nt_zone.deleted,
+        	   nt_group.name as group_name,
+        	   nt_group.nt_group_id
+        FROM nt_zone
+          INNER JOIN nt_group ON nt_zone.nt_group_id=nt_group.nt_group_id
+        WHERE nt_zone.deleted='"
         . ( $data->{'search_deleted'} ? '1' : '0' ) . "' "
         . "    AND ( "
         . "          nt_group.nt_group_id IN("
@@ -543,31 +458,27 @@ sub get_group_zones {
     $sql .= "ORDER BY " . join( ', ', @$sortby ) . " " if (@$sortby);
     $sql .= "LIMIT " . ( $r_data->{'start'} - 1 ) . ", $r_data->{'limit'}";
 
-    $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
+    my $all_zones = $self->exec_query( $sql )
+        or return {
+            error_code => '505',
+            error_msg  => $self->{dbh}->errstr,
+        };
 
-    if ( $sth->execute ) {
-        my %groups;
-        while ( my $row = $sth->fetchrow_hashref ) {
-            my $zid = $row->{'nt_zone_id'};
+    my %groups;
+    foreach my $row ( @$all_zones ) {
+        my $zid = $row->{'nt_zone_id'};
 
-            #copy delegation information
-            if ( $delegates{$zid} ) {
-                my @k = keys %{ $delegates{$zid} };
-                @$row{@k} = @{ $delegates{$zid} }{@k};
-            }
-            push( @{ $r_data->{'zones'} }, $row );
-            $groups{ $row->{'nt_group_id'} } = 1;
+        #copy delegation information
+        if ( $delegates{$zid} ) {
+            my @k = keys %{ $delegates{$zid} };
+            @$row{@k} = @{ $delegates{$zid} }{@k};
         }
+        push( @{ $r_data->{'zones'} }, $row );
+        $groups{ $row->{'nt_group_id'} } = 1;
+    }
 
-        $r_data->{'group_map'} = $self->get_group_map( $data->{'nt_group_id'},
-            [ keys %groups ] );
-    }
-    else {
-        $r_data->{'error_code'} = '505';
-        $r_data->{'error_msg'}  = $sth->errstr;
-    }
-    $sth->finish;
+    $r_data->{'group_map'} = $self->get_group_map( $data->{'nt_group_id'},
+        [ keys %groups ] );
 
     return $r_data;
 }
@@ -575,7 +486,6 @@ sub get_group_zones {
 sub get_zone_records {
     my ( $self, $data ) = @_;
 
-    my $dbh      = $self->{'dbh'};
     my $group_id = $data->{'user'}->{'nt_group_id'};
 
     my %field_map = (
@@ -622,8 +532,7 @@ sub get_zone_records {
     my $sql;
     my $del = $self->get_param_meta( "nt_zone_id", "delegate" );
     if ( $del && $del->{'pseudo'} ) {
-        $sql
-            = "SELECT COUNT(*) FROM nt_zone_record "
+        $sql = "SELECT COUNT(*) AS count FROM nt_zone_record "
             . "LEFT JOIN nt_delegate ON (nt_delegate.nt_group_id=$group_id AND nt_delegate.nt_object_id=nt_zone_record.nt_zone_record_id AND nt_delegate.nt_object_type='ZONERECORD' ) "
             . "WHERE nt_zone_record.nt_zone_id = $data->{'nt_zone_id'} "
             . "AND nt_zone_record.deleted = '0' "
@@ -632,16 +541,12 @@ sub get_zone_records {
             @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
     }
     else {
-        $sql
-            = "SELECT COUNT(*) FROM nt_zone_record WHERE nt_zone_record.deleted = '0' AND nt_zone_record.nt_zone_id = $data->{'nt_zone_id'}"
-            . (
-            @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
+        $sql = "SELECT COUNT(*) AS count FROM nt_zone_record 
+            WHERE nt_zone_record.deleted = '0' AND nt_zone_record.nt_zone_id = $data->{'nt_zone_id'}"
+            . ( @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
     }
-    my $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
-    $sth->execute;
-    $r_data->{'total'} = $sth->fetch->[0];
-    $sth->finish;
+    my $c = $self->exec_query( $sql );
+    $r_data->{'total'} = $c->[0]{count};
 
     $self->set_paging_vars( $data, $r_data );
 
@@ -657,13 +562,9 @@ sub get_zone_records {
     else {
 
         # get the name of the zone
-        $sql
-            = "SELECT zone from nt_zone where nt_zone_id=$data->{'nt_zone_id'}";
-        my $sth = $dbh->prepare($sql);
-        warn "$sql\n" if $self->debug_sql;
-        $sth->execute;
-        my $zone_name = $sth->fetch->[0];
-        $sth->finish;
+        $sql = "SELECT zone from nt_zone where nt_zone_id=?";
+        my $znames = $self->exec_query( $sql, $data->{nt_zone_id} );
+        my $zone_name = $znames->[0]{zone};
 
         if ( $zone_name =~ /in-addr.arpa/ ) {
 
@@ -684,56 +585,44 @@ sub get_zone_records {
         $join = "LEFT";
     }
 
-    $sql
-        = "SELECT nt_zone_record.*, "
-        . "       nt_delegate.delegated_by_id, "
-        . "       nt_delegate.delegated_by_name, "
-
-        . "       nt_delegate.perm_write as delegate_write, "
-
-        . "       nt_delegate.perm_delete as delegate_delete, "
-        . "       nt_delegate.perm_delegate as delegate_delegate, "
-        . "       nt_delegate.zone_perm_add_records as delegate_add_records, "
-        . "       nt_delegate.zone_perm_delete_records as delegate_delete_records "
-
-        . "FROM nt_zone_record "
-        . "$join JOIN nt_delegate ON (nt_delegate.nt_group_id=$group_id AND nt_delegate.nt_object_id=nt_zone_record.nt_zone_record_id AND nt_delegate.nt_object_type='ZONERECORD' ) "
-        . "WHERE nt_zone_record.nt_zone_id = $data->{'nt_zone_id'} "
-        . "AND nt_zone_record.deleted = '0' "
-        . "AND ( nt_delegate.deleted = '0' OR nt_delegate.deleted IS NULL ) "
-
-        ;
+    $sql = "SELECT nt_zone_record.*,
+               nt_delegate.delegated_by_id,
+               nt_delegate.delegated_by_name,
+               nt_delegate.perm_write as delegate_write,
+               nt_delegate.perm_delete as delegate_delete,
+               nt_delegate.perm_delegate as delegate_delegate,
+               nt_delegate.zone_perm_add_records as delegate_add_records,
+               nt_delegate.zone_perm_delete_records as delegate_delete_records
+        FROM nt_zone_record
+         $join JOIN nt_delegate ON (nt_delegate.nt_group_id=$group_id AND nt_delegate.nt_object_id=nt_zone_record.nt_zone_record_id AND nt_delegate.nt_object_type='ZONERECORD' )
+        WHERE nt_zone_record.nt_zone_id = $data->{'nt_zone_id'}
+          AND nt_zone_record.deleted = '0'
+          AND ( nt_delegate.deleted = '0' OR nt_delegate.deleted IS NULL ) ";
     $sql .= 'AND (' . join( ' ', @$conditions ) . ') ' if @$conditions;
     $sql .= "ORDER BY " . join( ', ', @$sortby ) . " " if (@$sortby);
     $sql .= "LIMIT " . ( $r_data->{'start'} - 1 ) . ", $r_data->{'limit'}";
 
-    $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
+    my $zrecords = $self->exec_query( $sql ) 
+        or return {
+            error_code => '600',
+            error_msg  => $self->{dbh}->errstr,
+        };
 
-    if ( $sth->execute ) {
-        while ( my $row = $sth->fetchrow_hashref ) {
-            foreach (
-                qw(delegated_by_id delegated_by_name delegate_read delegate_write delegate_move delegate_delete delegate_delegate delegate_full)
-                )
-            {
-                delete $row->{$_} if $row->{$_} eq '';
-            }
-            push( @{ $r_data->{'records'} }, $row );
+    foreach my $row ( @$zrecords ) {
+        foreach (
+            qw(delegated_by_id delegated_by_name delegate_read delegate_write delegate_move delegate_delete delegate_delegate delegate_full)
+            )
+        {
+            delete $row->{$_} if $row->{$_} eq '';
         }
+        push( @{ $r_data->{'records'} }, $row );
     }
-    else {
-        $r_data->{'error_code'} = '600';
-        $r_data->{'error_msg'}  = $sth->errstr;
-    }
-    $sth->finish;
 
     return $r_data;
 }
 
 sub get_group_zone_query_log {
     my ( $self, $data ) = @_;
-
-    my $dbh = $self->{'dbh'};
 
     my %field_map = (
         timestamp => {
@@ -779,28 +668,22 @@ sub get_group_zone_query_log {
     my $r_data = { 'search_result' => [] };
 
     my @zone_ids;
-    my $sql
-        = "SELECT nt_zone_id FROM nt_zone WHERE nt_group_id = $data->{'nt_group_id'}";
-    my $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
-    $sth->execute;
-    while ( my $row = $sth->fetch ) {
+
+    my $sql = "SELECT nt_zone_id FROM nt_zone WHERE nt_group_id =?";
+    my $zone_ids = $self->exec_query( $sql, $data->{nt_group_id} );
+    foreach my $row ( @$zone_ids ) {
         push( @zone_ids, $row->[0] );
     }
-    $sth->finish;
 
     if (@zone_ids) {
         my $sql
-            = "SELECT COUNT(*) FROM nt_nameserver_qlog, nt_zone, nt_nameserver WHERE nt_zone.nt_zone_id IN("
+            = "SELECT COUNT(*) AS count FROM nt_nameserver_qlog, nt_zone, nt_nameserver WHERE nt_zone.nt_zone_id IN("
             . join( ',', @zone_ids )
             . ") AND nt_nameserver_qlog.nt_zone_id = nt_zone.nt_zone_id AND nt_nameserver_qlog.nt_nameserver_id = nt_nameserver.nt_nameserver_id "
             . (
             @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
-        $sth = $dbh->prepare($sql);
-        warn "$sql\n" if $self->debug_sql;
-        $sth->execute;
-        $r_data->{'total'} = $sth->fetch->[0];
-        $sth->finish;
+        my $c = $self->exec_query( $sql );
+        $r_data->{'total'} = $c->[0]{count};
     }
     else {
         $r_data->{'total'} = 0;
@@ -820,32 +703,26 @@ sub get_group_zone_query_log {
             "timestamp DESC" );
     }
 
-    $sql
-        = "SELECT nt_nameserver_qlog.*, "
-        . "nt_zone.zone, "
-        . "nt_nameserver.name AS nameserver "
-        . "FROM nt_nameserver_qlog, nt_zone, nt_nameserver "
-        . "WHERE nt_zone.nt_zone_id IN("
-        . join( ',', @zone_ids ) . ") "
-        . "AND nt_nameserver_qlog.nt_zone_id = nt_zone.nt_zone_id "
-        . "AND nt_nameserver_qlog.nt_nameserver_id = nt_nameserver.nt_nameserver_id ";
+    $sql = "SELECT nt_nameserver_qlog.*,
+        nt_zone.zone,
+        nt_nameserver.name AS nameserver
+        FROM nt_nameserver_qlog, nt_zone, nt_nameserver
+        WHERE nt_zone.nt_zone_id IN(" . join( ',', @zone_ids ) . ")
+          AND nt_nameserver_qlog.nt_zone_id = nt_zone.nt_zone_id 
+          AND nt_nameserver_qlog.nt_nameserver_id = nt_nameserver.nt_nameserver_id ";
     $sql .= 'AND (' . join( ' ', @$conditions ) . ') ' if @$conditions;
     $sql .= "ORDER BY " . join( ', ', @$sortby ) . " " if (@$sortby);
     $sql .= "LIMIT " . ( $r_data->{'start'} - 1 ) . ", $r_data->{'limit'}";
 
-    $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
+    my $nses = $self->exec_query( $sql )
+        or return {
+            error_code => '600',
+            error_msg  => $self->{dbh}->errstr,
+        };
 
-    if ( $sth->execute ) {
-        while ( my $row = $sth->fetchrow_hashref ) {
-            push( @{ $r_data->{'search_result'} }, $row );
-        }
+    foreach my $row ( @$nses ) {
+        push( @{ $r_data->{'search_result'} }, $row );
     }
-    else {
-        $r_data->{'error_code'} = '600';
-        $r_data->{'error_msg'}  = $sth->errstr;
-    }
-    $sth->finish;
 
     return $r_data;
 }
@@ -853,15 +730,11 @@ sub get_group_zone_query_log {
 sub new_zone {
     my ( $self, $data ) = @_;
 
-    my $dbh = $self->{'dbh'};
     my %error = ( 'error_code' => 200, 'error_msg' => 'OK' );
 
     my @columns
         = qw(mailaddr description refresh retry expire minimum ttl serial nt_group_id zone);
-    my @values;
 
-    my $sql;
-    my $log_action;
     my $prev_data;
     my $default_serial = 0;
 
@@ -873,25 +746,20 @@ sub new_zone {
         $default_serial = 1;
     }
 
-    $sql
-        = "INSERT INTO nt_zone("
+    my $sql = "INSERT INTO nt_zone("
         . join( ',', @columns )
         . ") VALUES("
-        . join( ',', map( $dbh->quote( $data->{$_} ), @columns ) ) . ")";
-    $log_action = 'added';
+        . join( ',', map( $self->{dbh}->quote( $data->{$_} ), @columns ) ) . ")";
 
-    warn "$sql\n" if $self->debug_sql;
+    my $insertid = $self->exec_query( $sql ) 
+        or return {
+            error_code => 600,
+            error_msg  => $self->{dbh}->errstr,
+        };
 
-    unless ( $dbh->do($sql) ) {
-        $error{'error_code'} = 600;
-        $error{'error_msg'}  = $dbh->errstr;
-        return \%error;
-    }
+    $error{'nt_zone_id'} = $data->{'nt_zone_id'} = $insertid;
 
-    $error{'nt_zone_id'} = $data->{'nt_zone_id'} = $dbh->{'mysql_insertid'}
-        if ( $log_action eq 'added' );
-
-    $self->log_zone( $data, $log_action, $prev_data, $default_serial );
+    $self->log_zone( $data, 'added', $prev_data, $default_serial );
 
     return \%error;
 }
@@ -899,7 +767,6 @@ sub new_zone {
 sub edit_zone {
     my ( $self, $data ) = @_;
 
-    my $dbh = $self->{'dbh'};
     my %error = ( 'error_code' => 200, 'error_msg' => 'OK' );
     if ( my $del = $self->get_param_meta( "nt_zone_id", "delegate" ) ) {
         delete $data->{'nt_group_id'};
@@ -919,14 +786,13 @@ sub edit_zone {
     }
 
     my $sql;
-    my $log_action;
     my $prev_data;
     my $default_serial = 0;
 
     #$self->unpack_nameservers($data,\@columns) if ($data->{'nameservers'});
 
     $prev_data  = $self->find_zone( $data->{'nt_zone_id'} );
-    $log_action = $prev_data->{'deleted'}
+    my $log_action = $prev_data->{'deleted'}
         && ( $data->{'deleted'} eq '0' ) ? 'recovered' : 'modified';
 
     my %ns;
@@ -976,26 +842,21 @@ sub edit_zone {
         $default_serial = 1;
     }
 
+    my $dbh = $self->{'dbh'};
     $sql = "UPDATE nt_zone SET "
         . join( ',',
         map( "$_ = " . $dbh->quote( $data->{$_} ), @columns ),
         map( "$_ = " . $ns{$_},                    keys %ns ) )
-        . " WHERE nt_zone_id = "
-        . $data->{'nt_zone_id'};
+        . " WHERE nt_zone_id = ?";
+    my $r = $self->exec_query( $sql, $data->{nt_zone_id} );
 
-    $data->{'nt_group_id'} = $prev_data->{'nt_group_id'}
-        unless $data->{'nt_group_id'};
+    $data->{nt_group_id} = $prev_data->{nt_group_id} if ! $data->{nt_group_id};
 
-    warn "$sql\n" if $self->debug_sql;
-
-    unless ( $dbh->do($sql) ) {
-        $error{'error_code'} = 600;
-        $error{'error_msg'}  = $dbh->errstr;
-        return \%error;
-    }
-
-    $error{'nt_zone_id'} = $data->{'nt_zone_id'} = $dbh->{'mysql_insertid'}
-        if ( $log_action eq 'added' );
+    return {
+        error_code => 600,
+        error_msg  => $self->{dbh}->errstr,
+    } 
+    if ! $r;
 
     $self->log_zone( $data, $log_action, $prev_data, $default_serial );
 
@@ -1021,10 +882,8 @@ sub unpack_nameservers {
 sub log_zone {
     my ( $self, $data, $action, $prev_data, $default_serial ) = @_;
 
-    my $dbh = $self->{'dbh'};
     my @columns
         = qw(nt_group_id nt_zone_id nt_user_id action timestamp zone mailaddr description refresh retry expire ttl);
-    my @values;
 
     # only log serial if it wasn't set by default
     $default_serial
@@ -1041,20 +900,19 @@ sub log_zone {
         $data->{$_} = $prev_data->{$_} unless $data->{$_};
     }
 
-    my $sql
-        = "INSERT INTO nt_zone_log("
+    my $dbh = $self->{'dbh'};
+    my $sql = "INSERT INTO nt_zone_log("
         . join( ',', @columns )
         . ") VALUES("
         . join( ',', map( $dbh->quote( $data->{$_} ), @columns ) ) . ")";
 
-    warn "$sql\n" if $self->debug_sql;
-    $dbh->do($sql) || warn $dbh->errstr;
+    my $insertid = $self->exec_query($sql ) or warn $dbh->errstr;
 
     my @g_columns
         = qw(nt_user_id timestamp action object object_id log_entry_id title description);
 
     $data->{'object'}       = 'zone';
-    $data->{'log_entry_id'} = $dbh->{'mysql_insertid'};
+    $data->{'log_entry_id'} = $insertid;
     $data->{'title'}        = $data->{'zone'} || $prev_data->{'zone'};
     $data->{'object_id'}    = $data->{'nt_zone_id'};
 
@@ -1078,20 +936,15 @@ sub log_zone {
         $data->{'description'} = "recovered zone from deleted bin";
     }
 
-    $sql
-        = "INSERT INTO nt_user_global_log("
+    $sql = "INSERT INTO nt_user_global_log("
         . join( ',', @g_columns )
         . ") VALUES("
         . join( ',', map( $dbh->quote( $data->{$_} ), @g_columns ) ) . ")";
-    warn "$sql\n" if $self->debug_sql;
-    $dbh->do($sql) || warn $dbh->errstr;
-
+    $self->exec_query( $sql );
 }
 
 sub delete_zones {
     my ( $self, $data ) = @_;
-
-    my $dbh = $self->{'dbh'};
 
     my %error = ( 'error_code' => 200, 'error_msg' => 'OK' );
 
@@ -1102,43 +955,34 @@ sub delete_zones {
 
     my $sql = "SELECT * FROM nt_zone WHERE nt_zone.nt_zone_id IN("
         . $data->{'zone_list'} . ")";
-    my $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
-    $sth->execute;
+    my $zones_data = $self->exec_query( $sql );
 
     my $record_obj = new NicToolServer::Zone::Record( $self->{'Apache'},
         $self->{'client'}, $self->{'dbh'} );
 
-    while ( my $zone_data = $sth->fetchrow_hashref ) {
-        next unless ( $groups{ $zone_data->{'nt_group_id'} } );
+    foreach my $zone_data ( @$zones_data ) {
+        next if ! ( $groups{ $zone_data->{'nt_group_id'} } );
 
-        $sql
-            = "UPDATE nt_zone SET deleted = '1' WHERE nt_zone_id = $zone_data->{'nt_zone_id'}";
+        $sql = "UPDATE nt_zone SET deleted = '1' WHERE nt_zone_id = ?";
         $zone_data->{'user'} = $data->{'user'};
-        warn "$sql\n" if $self->debug_sql;
-        unless ( $dbh->do($sql) ) {
+        $self->exec_query( $sql, $zone_data->{nt_zone_id} ) or do {
             $error{'error_code'} = 600;
-            $error{'error_msg'}  = $dbh->errstr;
+            $error{'error_msg'}  = $self->{dbh}->errstr;
             next;
-        }
+        };
 
         $self->log_zone( $zone_data, 'deleted', $zone_data, 0 );
 
         next;
 
         # delete associated zone_record records
-        $sql
-            = "SELECT * from nt_zone_record where deleted = '0' AND nt_zone_id = "
-            . $dbh->quote( $zone_data->{'nt_zone_id'} );
-        my $sth = $dbh->prepare($sql);
-        warn "$sql\n" if $self->debug_sql;
-        $sth->execute;
-        while ( my $zr = $sth->fetchrow_hashref ) {
+        $sql = "SELECT * from nt_zone_record where deleted = '0' AND nt_zone_id = ?";
+        my $zrecs = $self->exec_query( $sql, $zone_data->{nt_zone_id} );
+        foreach my $zr ( @$zrecs ) {
             $zr->{'user'} = $data->{'user'};
             $record_obj->delete_zone_record( $zr, $zone_data );
         }
     }
-    $sth->finish;
 
     return \%error;
 }
@@ -1156,36 +1000,30 @@ sub move_zones {
     my $new_group
         = $self->NicToolServer::Group::find_group( $data->{'nt_group_id'} );
 
-    my $dbh = $self->{'dbh'};
-    my $sql
-        = "SELECT nt_zone.*, nt_group.name as old_group_name FROM nt_zone, nt_group WHERE nt_zone.nt_group_id = nt_group.nt_group_id AND nt_zone_id IN("
-        . $data->{'zone_list'} . ")";
-    my $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
+    my $sql = "SELECT nt_zone.*, nt_group.name as old_group_name 
+        FROM nt_zone, nt_group 
+       WHERE nt_zone.nt_group_id = nt_group.nt_group_id 
+         AND nt_zone_id IN(" . $data->{'zone_list'} . ")";
 
-    unless ( $sth->execute ) {
-        $rv{'error_code'} = 600;
-        $rv{'error_msg'}  = $sth->errstr;
-        return \%rv;
-    }
+    my $zrecs = $self->exec_query( $sql ) or return {
+        error_code => 600,
+        error_msg  => $self->{dbh}->errstr,
+    };
 
-    while ( my $row = $sth->fetchrow_hashref ) {
-        next unless ( $groups{ $row->{'nt_group_id'} } );
+    foreach my $row ( @$zrecs ) {
+        next if ! $groups{ $row->{'nt_group_id'} };
 
-        $sql
-            = "UPDATE nt_zone SET nt_group_id = "
-            . $dbh->quote( $data->{'nt_group_id'} )
-            . " WHERE nt_zone_id = $row->{'nt_zone_id'}";
-        warn "$sql\n" if $self->debug_sql;
-        if ( $dbh->do($sql) ) {
+        $sql = "UPDATE nt_zone SET nt_group_id = ?"
+            . " WHERE nt_zone_id = ?";
+
+        if ( $self->exec_query( $sql, [ $data->{nt_group_id}, $row->{nt_zone_id}, ] ) ) {
             my %zone = ( %$row, user => $data->{'user'} );
             $zone{'nt_group_id'} = $data->{'nt_group_id'};
             $zone{'group_name'}  = $new_group->{'name'};
 
             $self->log_zone( \%zone, 'moved', $row, 0 );
-        }
+        };
     }
-    $sth->finish;
 
     return \%rv;
 }
@@ -1197,51 +1035,39 @@ sub get_zone_list {
 
 #my %groups = map { $_, 1 } ($data->{'user'}->{'nt_group_id'}, @{ $self->get_subgroup_ids($data->{'user'}->{'nt_group_id'}) });
 
-    my $dbh = $self->{'dbh'};
-    my $sql
-        = "SELECT * FROM nt_zone WHERE deleted = '0' AND nt_zone_id IN("
-        . $data->{'zone_list'}
-        . ") ORDER BY zone";
-    my $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
+    my $sql = "SELECT * FROM nt_zone WHERE deleted = '0' 
+        AND nt_zone_id IN(" . $data->{zone_list} .") ORDER BY zone";
 
-    unless ( $sth->execute ) {
-        $rv{'error_code'} = 600;
-        $rv{'error_msg'}  = $sth->errstr;
-        return \%rv;
-    }
+    my $ntzones = $self->exec_query( $sql ) or return {
+        error_code => 600,
+        error_msg  => $self->{dbh}->errstr,
+    };
 
     my %delegatemapping = (
         delegated_by_id   => 'delegated_by_id',
         delegated_by_name => 'delegated_by_name',
         pseudo            => 'pseudo',
-
         #perm_read=>'delegate_read',
         perm_write               => 'delegate_write',
         perm_delete              => 'delegate_delete',
         perm_delegate            => 'delegate_delegate',
         zone_perm_add_records    => 'delegate_add_records',
         zone_perm_delete_records => 'delegate_delete_records',
-
         #perm_move=>'delegate_move',
         #perm_full=>'delegate_full',
         group_name => 'group_name'
     );
-    while ( my $row = $sth->fetchrow_hashref ) {
 
-        #next unless( $groups{ $row->{'nt_group_id'} } );
-        if (my $del = $self->get_param_meta(
-                "zone_list:$row->{'nt_zone_id'}", 'delegate'
-            )
-            )
-        {
+    foreach my $row ( @$ntzones) {
+
+        if (my $del = $self->get_param_meta( "zone_list:$row->{'nt_zone_id'}", 'delegate' )) {
             foreach my $key ( keys %delegatemapping ) {
                 $row->{ $delegatemapping{$key} } = $del->{$key};
+        #next unless( $groups{ $row->{'nt_group_id'} } );
             }
         }
         push( @{ $rv{'zones'} }, $row );
     }
-    $sth->finish;
 
     return \%rv;
 }
@@ -1249,29 +1075,21 @@ sub get_zone_list {
 sub find_zone {
     my ( $self, $nt_zone_id ) = @_;
 
-    my $dbh = $self->{'dbh'};
-    my $sql = "SELECT * FROM nt_zone WHERE nt_zone_id = $nt_zone_id";
-    my $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
-    $sth->execute || warn $dbh->errstr . ": sql :$sql";
-    return $sth->fetchrow_hashref || {};
+    my $sql = "SELECT * FROM nt_zone WHERE nt_zone_id = ?";
+    my $zones = $self->exec_query( $sql, $nt_zone_id );
+    return $zones->[0] || {};
 }
 
 sub zone_exists {
     my ( $self, $zone, $zid ) = @_;
-    my $dbh = $self->{'dbh'};
 
-    my $sql
-        = "SELECT nt_zone_id,nt_group_id FROM nt_zone WHERE deleted = '0' AND nt_zone_id != "
-        . $dbh->quote($zid)
-        . " AND zone = "
-        . $dbh->quote($zone);
-    my $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
-    $sth->execute;
-    my $href = $sth->fetchrow_hashref;
+    my $sql = "SELECT nt_zone_id,nt_group_id FROM nt_zone WHERE deleted = '0' 
+        AND nt_zone_id != ? AND zone = ?";
 
-    return ref($href) ? $href : 0;
+    my $zones = $self->exec_query( $sql, [ $zid, $zone ] );
+    my $href = $zones->[0];
+
+    return ref $href ? $href : 0;
 }
 
 1;

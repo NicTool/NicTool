@@ -26,7 +26,6 @@ sub get_usable_nameservers {
 
     my @groups;
     my @usable;
-    my $dbh = $self->{'dbh'};
     if ( $data->{'nt_group_id'} ) {
 
         my $res = $self->NicToolServer::Group::get_group_branch($data);
@@ -40,6 +39,9 @@ sub get_usable_nameservers {
             if $self->{'user'}->{"usable_ns$_"} ne 0;
     }
 
+    my $r_data = $self->error_response(200);
+    $r_data->{'nameservers'} = [];
+
     my $sql
         = "SELECT * FROM nt_nameserver "
         . " WHERE deleted = '0' AND (nt_group_id IN ("
@@ -51,30 +53,21 @@ sub get_usable_nameservers {
         : ''
         ) . " ) ";
 
-    my $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
+    my $nameservers = $self->exec_query( $sql )
+        or return {
+            error_code => 600,
+            error_msg  => $self->{dbh}->errstr,
+        }; 
 
-    my $r_data = $self->error_response(200);
-    $r_data->{'nameservers'} = [];
-
-    if ( $sth->execute ) {
-        while ( my $row = $sth->fetchrow_hashref ) {
-            push( @{ $r_data->{'nameservers'} }, $row );
-        }
+    foreach my $row ( @$nameservers ) {
+        push( @{ $r_data->{'nameservers'} }, $row );
     }
-    else {
-        $r_data->{'error_code'} = '600';
-        $r_data->{'error_msg'}  = $sth->errstr;
-    }
-    $sth->finish;
 
     return $r_data;
 }
 
 sub get_group_nameservers {
     my ( $self, $data ) = @_;
-
-    my $dbh = $self->{'dbh'};
 
     my %field_map = (
         name => {
@@ -128,28 +121,22 @@ sub get_group_nameservers {
 
     my $r_data = { 'error_code' => 200, 'error_msg' => 'OK', list => [] };
 
-    my $sql = "SELECT COUNT(*) FROM nt_nameserver ";
-    $sql
-        .= "INNER JOIN nt_group ON nt_nameserver.nt_group_id = nt_group.nt_group_id ";
-    $sql .= "WHERE nt_nameserver.deleted = '0' ";
-    $sql
-        .= "AND nt_nameserver.nt_group_id IN("
+    my $sql = "SELECT COUNT(*) AS count FROM nt_nameserver "
+        . "INNER JOIN nt_group ON nt_nameserver.nt_group_id = nt_group.nt_group_id "
+        . "WHERE nt_nameserver.deleted = '0' "
+        . "AND nt_nameserver.nt_group_id IN("
         . join( ',', @group_list ) . ")"
         . ( @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
+    my $c = $self->exec_query( $sql );
 
-    my $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
-    $sth->execute;
-    $r_data->{'total'} = $sth->fetch->[0];
-    $sth->finish;
+    $r_data->{'total'} = $c->[0]{count};
 
     $self->set_paging_vars( $data, $r_data );
 
     my $sortby;
-    if ( $r_data->{'total'} == 0 ) {
-        return $r_data;
-    }
-    elsif ( $r_data->{'total'} > 10000 ) {
+    return $r_data if $r_data->{'total'} == 0;
+
+    if ( $r_data->{'total'} > 10000 ) {
         $sortby = $self->format_sort_conditions( $data, \%field_map, "" );
     }
     else {
@@ -158,14 +145,6 @@ sub get_group_nameservers {
     }
 
     $sql = "SELECT nt_nameserver.*, "
-
-        #.   "nt_nameserver.nt_nameserver_id, "
-        #. " nt_nameserver.name, "
-        #. "	nt_nameserver.description, "
-        #. " nt_nameserver.address, "
-        #. " nt_nameserver.service_type, "
-        #. " nt_nameserver.output_format, "
-        #. " nt_nameserver.nt_group_id, "
         . " nt_group.name as group_name, "
         . " nt_nameserver_export_procstatus.status as status "
         . "FROM nt_nameserver "
@@ -178,24 +157,20 @@ sub get_group_nameservers {
     $sql .= "ORDER BY " . join( ', ', @$sortby ) . " " if (@$sortby);
     $sql .= "LIMIT " . ( $r_data->{'start'} - 1 ) . ", $r_data->{'limit'}";
 
-    $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
+    my $nameservers = $self->exec_query( $sql )
+        or return {
+            error_code => '600',
+            error_msg  => $self->{dbh}->errstr,
+        };
 
-    if ( $sth->execute ) {
-        my %groups;
-        while ( my $row = $sth->fetchrow_hashref ) {
-            push( @{ $r_data->{'list'} }, $row );
-            $groups{ $row->{'nt_group_id'} } = 1;
-        }
+    my %groups;
+    foreach my $row ( @$nameservers ) {
+        push( @{ $r_data->{'list'} }, $row );
+        $groups{ $row->{'nt_group_id'} } = 1;
+    }
 
-        $r_data->{'group_map'} = $self->get_group_map( $data->{'nt_group_id'},
-            [ keys %groups ] );
-    }
-    else {
-        $r_data->{'error_code'} = '600';
-        $r_data->{'error_msg'}  = $sth->errstr;
-    }
-    $sth->finish;
+    $r_data->{group_map} = $self->get_group_map( $data->{nt_group_id},
+        [ keys %groups ] );
 
     return $r_data;
 }
@@ -205,29 +180,21 @@ sub get_nameserver_list {
 
     my %rv = ( 'error_code' => 200, 'error_msg' => 'OK', list => [] );
 
-#my %groups = map { $_, 1 } ($data->{'user'}->{'nt_group_id'}, @{ $self->get_subgroup_ids($data->{'user'}->{'nt_group_id'}) });
+# my %groups = map { $_, 1 } ($data->{'user'}->{'nt_group_id'}, @{ $self->get_subgroup_ids($data->{'user'}->{'nt_group_id'}) });
 
-    my $dbh = $self->{'dbh'};
-    my $sql
-        = "SELECT * FROM nt_nameserver WHERE deleted = '0' AND nt_nameserver_id IN("
-        . $data->{'nameserver_list'}
-        . ") ORDER BY name";
-    my $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
+    my $sql = "SELECT * FROM nt_nameserver WHERE deleted = '0' AND nt_nameserver_id IN(??) ORDER BY name";
 
-    unless ( $sth->execute ) {
-        $rv{'error_code'} = 600;
-        $rv{'error_msg'}  = $sth->errstr;
-        return \%rv;
+    my @ns_list = split(',', $data->{'nameserver_list'} );
+    my $nameservers = $self->exec_query( $sql, [ @ns_list ] )
+        or return {
+            error_code => 600,
+            error_msg  => $self->{dbh}->errstr,
+            list       => [],
+        };
+
+    foreach my $ns ( @$nameservers ) {
+        push( @{ $rv{list} }, $ns );
     }
-
-    while ( my $row = $sth->fetchrow_hashref ) {
-
-        #    next unless( $groups{ $row->{'nt_group_id'} } );
-
-        push( @{ $rv{'list'} }, $row );
-    }
-    $sth->finish;
 
     return \%rv;
 }
@@ -245,38 +212,28 @@ sub move_nameservers {
     my $new_group
         = $self->NicToolServer::Group::find_group( $data->{'nt_group_id'} );
 
-    my $dbh = $self->{'dbh'};
-    my $sql
-        = "SELECT nt_nameserver.*, nt_group.name as old_group_name FROM nt_nameserver, nt_group WHERE nt_nameserver.nt_group_id = nt_group.nt_group_id AND nt_nameserver_id IN("
-        . $data->{'nameserver_list'} . ")";
-    my $sth = $dbh->prepare($sql);
+    my $sql = "SELECT nt_nameserver.*, nt_group.name as old_group_name FROM nt_nameserver, nt_group "
+        . "WHERE nt_nameserver.nt_group_id = nt_group.nt_group_id AND nt_nameserver_id IN(??)";
 
-    warn "$sql\n" if $self->debug_sql;
+    my @ns_list = split(',', $data->{'nameserver_list'} );
+    my $nameservers = $self->exec_query( $sql, [ @ns_list ] )
+        or return {
+            error_code => 600,
+            error_msg  => $self->{dbh}->errstr,
+        };
 
-    unless ( $sth->execute ) {
-        $rv{'error_code'} = 600;
-        $rv{'error_msg'}  = $sth->errstr;
-        return \%rv;
+    foreach my $row ( @$nameservers ) {
+        next unless $groups{ $row->{nt_group_id} };
+
+        $sql = "UPDATE nt_nameserver SET nt_group_id = ? WHERE nt_nameserver_id = ?";
+        $self->exec_query( $sql, [ $data->{nt_group_id}, $row->{nt_nameserver_id} ] ) or next;
+
+        my %ns = ( %$row, user => $data->{'user'} );
+        $ns{'nt_group_id'} = $data->{'nt_group_id'};
+        $ns{'group_name'}  = $new_group->{'name'};
+
+        $self->log_nameserver( \%ns, 'moved', $row );
     }
-
-    while ( my $row = $sth->fetchrow_hashref ) {
-        next unless ( $groups{ $row->{'nt_group_id'} } );
-
-        $sql
-            = "UPDATE nt_nameserver SET nt_group_id = "
-            . $dbh->quote( $data->{'nt_group_id'} )
-            . " WHERE nt_nameserver_id = $row->{'nt_nameserver_id'}";
-        warn "$sql\n" if $self->debug_sql;
-
-        if ( $dbh->do($sql) ) {
-            my %ns = ( %$row, user => $data->{'user'} );
-            $ns{'nt_group_id'} = $data->{'nt_group_id'};
-            $ns{'group_name'}  = $new_group->{'name'};
-
-            $self->log_nameserver( \%ns, 'moved', $row );
-        }
-    }
-    $sth->finish;
 
     return \%rv;
 }
@@ -284,102 +241,72 @@ sub move_nameservers {
 sub get_nameserver {
     my ( $self, $data ) = @_;
 
-    my $dbh = $self->{'dbh'};
-    my $sql = "SELECT * FROM nt_nameserver WHERE nt_nameserver_id = "
-        . $dbh->quote( $data->{'nt_nameserver_id'} );
-    my $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
-    my %rv;
-    if ( $sth->execute ) {
-        %rv               = %{ $sth->fetchrow_hashref };
-        $rv{'error_code'} = 200;
-        $rv{'error_msg'}  = 'OK';
-    }
-    else {
-        $rv{'error_code'} = 600;
-        $rv{'error_msg'}  = $sth->errstr;
-    }
-    $sth->finish;
-    return \%rv;
+    my $sql = "SELECT * FROM nt_nameserver WHERE nt_nameserver_id = ?";
+    my $nameservers = $self->exec_query( $sql, $data->{nt_nameserver_id} )
+        or return {
+            error_code => 600,
+            error_msg  => $self->{dbh}->errstr,
+        };
+
+    return {
+        %{ $nameservers->[0] },
+        error_code => 200,
+        error_msg  => 'OK',
+    };
 }
 
 sub new_nameserver {
     my ( $self, $data ) = @_;
 
-    my $dbh = $self->{'dbh'};
-    my %error = ( 'error_code' => 200, 'error_msg' => 'OK' );
+    my @columns = qw/ nt_group_id nt_nameserver_id name ttl description 
+        address service_type output_format logdir datadir export_interval /;
 
-    my @columns
-        = qw(nt_group_id nt_nameserver_id name ttl description address service_type output_format logdir datadir export_interval);
-    my @values;
+    my $sql = "INSERT INTO nt_nameserver(" . join( ',', @columns ) . ") VALUES("
+        . join( ',', map( $self->{dbh}->quote( $data->{$_} ), @columns ) ) . ")";
+    my $action = 'added';
 
-    my ( $sql, $action, $prev_data );
+    my $insertid = $self->exec_query( $sql ) 
+        or return {
+            error_code => 600,
+            error_msg  => $self->{dbh}->errstr,
+        };
 
-    $sql
-        = "INSERT INTO nt_nameserver("
-        . join( ',', @columns )
-        . ") VALUES("
-        . join( ',', map( $dbh->quote( $data->{$_} ), @columns ) ) . ")";
-    $action = 'added';
-
-    warn "$sql\n" if $self->debug_sql;
-
-    unless ( $dbh->do($sql) ) {
-        $error{'error_code'} = 600;
-        $error{'error_msg'}  = $dbh->errstr;
-        return \%error;
-    }
-    else {
-        $error{'nt_nameserver_id'}
-            = ( $action == 'added' )
-            ? $dbh->{'mysql_insertid'}
-            : $data->{'nt_nameserver_id'};
-    }
-
-    my $insertid = $dbh->{'mysql_insertid'};
     $data->{'nt_nameserver_id'} = $insertid;
-    $self->log_nameserver( $data, $action, $prev_data );
+    $self->log_nameserver( $data, $action );
 
-    return \%error;
+    return {
+        error_code => 200, 
+        error_msg  => 'OK',
+        nt_nameserver_id => $action == 'added' ? $insertid : $data->{nt_nameserver_id},
+    };
 }
 
 sub edit_nameserver {
     my ( $self, $data ) = @_;
 
-    my $dbh = $self->{'dbh'};
-    my %error = ( 'error_code' => 200, 'error_msg' => 'OK' );
-
+    my $dbh = $self->{dbh};
     my @columns = grep { exists $data->{$_} }
         qw(nt_group_id nt_nameserver_id name ttl description address service_type output_format logdir datadir export_interval);
-    my @values;
 
-    my ( $sql, $action, $prev_data );
+    my $prev_data = $self->find_nameserver( $data->{'nt_nameserver_id'} );
 
-    $sql
-        = "UPDATE nt_nameserver SET "
+    my $sql = "UPDATE nt_nameserver SET "
         . join( ',', map( "$_ = " . $dbh->quote( $data->{$_} ), @columns ) )
-        . " WHERE nt_nameserver_id = "
-        . $data->{'nt_nameserver_id'};
-    $action    = 'modified';
-    $prev_data = $self->find_nameserver( $data->{'nt_nameserver_id'} );
+        . " WHERE nt_nameserver_id = ?";
 
-    warn "$sql\n" if $self->debug_sql;
+    $self->exec_query( $sql, $data->{'nt_nameserver_id'} )
+        or return {
+            error_code => 600,
+            error_msg  => $dbh->errstr,
+        };
 
-    unless ( $dbh->do($sql) ) {
-        $error{'error_code'} = 600;
-        $error{'error_msg'}  = $dbh->errstr;
-        return \%error;
-    }
-    else {
-        $error{'nt_nameserver_id'}
-            = ( $action == 'added' )
-            ? $dbh->{'mysql_insertid'}
-            : $data->{'nt_nameserver_id'};
-    }
+    $self->log_nameserver( $data, 'modified', $prev_data );
 
-    $self->log_nameserver( $data, $action, $prev_data );
-
-    return \%error;
+    return {
+        error_code => 200,
+        error_msg  => 'OK',
+        nt_nameserver_id => $data->{nt_nameserver_id},
+    };
 }
 
 sub delete_nameserver {
@@ -390,34 +317,25 @@ sub delete_nameserver {
     my %error = ( 'error_code' => 200, 'error_msg' => 'OK' );
 
     my $nsid = $dbh->quote( $data->{'nt_nameserver_id'} );
-    my $sql
-        = "SELECT nt_zone_id FROM nt_zone "
-        . "WHERE deleted = '0' "
-        . "AND (ns0 = $nsid OR ns1 = $nsid OR ns2 = $nsid OR ns3 = $nsid OR ns4 = $nsid OR ns5 = $nsid OR ns6 = $nsid OR ns7 = $nsid OR ns8 = $nsid OR ns9 = $nsid)";
+    my $sql = "SELECT nt_zone_id FROM nt_zone WHERE deleted = '0'"
+        . " AND (ns0 = $nsid OR ns1 = $nsid OR ns2 = $nsid OR ns3 = $nsid"
+        . " OR ns4 = $nsid OR ns5 = $nsid OR ns6 = $nsid OR ns7 = $nsid"
+        . " OR ns8 = $nsid OR ns9 = $nsid)";
 
-    my $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
-    $sth->execute;
-    if ( $sth->rows ) {
+    my $zones = $self->exec_query( $sql );
+
+    if ( scalar @$zones ) {
         return $self->error_response( 600,
-            "You can't delete this nameserver until you delete all of it's zones"
+            "You can't delete this nameserver until you delete all of its zones"
         );
     }
 
     my $ns_data = $self->find_nameserver( $data->{'nt_nameserver_id'} );
     $ns_data->{'user'} = $data->{'user'};
 
-    $sql
-        = "UPDATE nt_nameserver SET deleted = '1' WHERE nt_nameserver_id = $nsid";
-
-    warn "$sql\n" if $self->debug_sql;
-
-    unless ( $dbh->do($sql) ) {
-
-        #$error{'error_code'} = 600;
-        #$error{'error_msg'} = $dbh->errstr;
-        return $self->error_response( 600, $dbh->errstr );
-    }
+    $sql = "UPDATE nt_nameserver SET deleted = '1' WHERE nt_nameserver_id = ?";
+    $self->exec_query( $sql, $data->{'nt_nameserver_id'} )
+        or return $self->error_response( 600, $dbh->errstr );
 
     $self->log_nameserver( $ns_data, 'deleted' );
 
@@ -428,28 +346,25 @@ sub log_nameserver {
     my ( $self, $data, $action, $prev_data ) = @_;
 
     my $dbh = $self->{'dbh'};
-    my @columns
-        = qw(nt_group_id nt_user_id action timestamp nt_nameserver_id name ttl description address service_type output_format logdir datadir export_interval);
-    my @values;
+    my @columns = qw/ nt_group_id nt_user_id action timestamp nt_nameserver_id
+    name ttl description address service_type output_format logdir datadir export_interval /;
 
     my $user = $data->{'user'};
     $data->{'nt_user_id'} = $user->{'nt_user_id'};
     $data->{'action'}     = $action;
     $data->{'timestamp'}  = time();
 
-    my $sql = "INSERT INTO nt_nameserver_log("
-        . join( ',', @columns )
+    my $sql = "INSERT INTO nt_nameserver_log(" . join( ',', @columns )
         . ") VALUES("
         . join( ',', map( $dbh->quote( $data->{$_} ), @columns ) ) . ")";
 
-    warn "$sql\n" if $self->debug_sql;
-    $dbh->do($sql) || warn $dbh->errstr;
+    my $insertid = $self->exec_query( $sql );
 
-    my @g_columns
-        = qw(nt_user_id timestamp action object object_id log_entry_id title description);
+    my @g_columns = qw/ nt_user_id timestamp action object object_id
+        log_entry_id title description /;
 
     $data->{'object'}       = 'nameserver';
-    $data->{'log_entry_id'} = $dbh->{'mysql_insertid'};
+    $data->{'log_entry_id'} = $insertid;
     $data->{'title'}        = $data->{'name'};
     $data->{'object_id'}    = $data->{'nt_nameserver_id'};
 
@@ -467,25 +382,18 @@ sub log_nameserver {
             = "moved from $data->{'old_group_name'} to $data->{'group_name'}";
     }
 
-    $sql
-        = "INSERT INTO nt_user_global_log("
+    $sql = "INSERT INTO nt_user_global_log("
         . join( ',', @g_columns )
         . ") VALUES("
         . join( ',', map( $dbh->quote( $data->{$_} ), @g_columns ) ) . ")";
-    warn "$sql\n" if $self->debug_sql;
-    $dbh->do($sql) || warn $dbh->errstr;
+    $self->exec_query( $sql );
 }
 
 sub find_nameserver {
     my ( $self, $nt_nameserver_id ) = @_;
-
-    my $dbh = $self->{'dbh'};
-    my $sql
-        = "SELECT * FROM nt_nameserver WHERE nt_nameserver_id = $nt_nameserver_id";
-    my $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
-    $sth->execute;
-    return $sth->fetchrow_hashref || {};
+    my $sql = "SELECT * FROM nt_nameserver WHERE nt_nameserver_id = ?";
+    my $nameservers = $self->exec_query( $sql, $nt_nameserver_id ) or return {};
+    return $nameservers->[0];
 }
 
 1;

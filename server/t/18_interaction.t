@@ -119,7 +119,7 @@ sub groups_with_children {
         $res = $group1->delete;
         noerrok( $res, 600, 'has zone' );
         ok( $res->get('error_msg') =>
-                qr/You can't delete this group until you delete all of it's zones/
+                qr/You can't delete this group until you delete all of its zones/
         );
         ok( $res->get('error_desc') => qr/Failure/ );
 
@@ -168,7 +168,7 @@ sub groups_with_children {
         $res = $group1->delete;
         noerrok( $res, 600, 'has user' );
         ok( $res->get('error_msg') =>
-                qr/You can't delete this group until you delete all of it's users/
+                qr/You can't delete this group until you delete all of its users/
         );
         ok( $res->get('error_desc') => qr/Failure/ );
 
@@ -210,7 +210,7 @@ sub groups_with_children {
         $res = $group1->delete;
         noerrok( $res, 600, 'has group' );
         ok( $res->get('error_msg') =>
-                qr/You can't delete this group until you delete all of it's sub-groups/
+                qr/You can't delete this group until you delete all of its sub-groups/
         );
         ok( $res->get('error_desc') => qr/Failure/ );
 
@@ -297,7 +297,7 @@ sub nameserver_with_zones {
     $res = $user->delete_nameserver( nt_nameserver_id => $nsid );
     noerrok( $res, 600, 'nameserver has zones' );
     ok( $res->get('error_msg') =>
-            qr/You can't delete this nameserver until you delete all of it's zones/
+            qr/You can't delete this nameserver until you delete all of its zones/
     );
     ok( $res->get('error_desc') => qr/Failure/ );
 
@@ -309,7 +309,7 @@ sub nameserver_with_zones {
     $res = $user->delete_nameserver( nt_nameserver_id => $nsid );
     noerrok( $res, 600, 'nameserver has zones' );
     ok( $res->get('error_msg') =>
-            qr/You can't delete this nameserver until you delete all of it's zones/
+            qr/You can't delete this nameserver until you delete all of its zones/
     );
     ok( $res->get('error_desc') => qr/Failure/ );
 

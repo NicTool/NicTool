@@ -889,57 +889,35 @@ sub verify_required {
 sub get_group_id {
     my ( $self, $key, $id, $type ) = @_;
     my $sql;
-    my $sth;
-    my $dbh = $self->{'dbh'};
     my $rid = '';
     if ( $key eq 'nt_group_id' or uc($type) eq 'GROUP' ) {
-        $sql = "SELECT parent_group_id FROM nt_group WHERE nt_group_id = $id";
-        $sth = $dbh->prepare($sql);
-        warn "$sql\n" if $self->debug_sql;
-        $sth->execute || die $dbh->errstr;
-        my $auth_data = $sth->fetchrow_hashref;
-        my $return    = $auth_data->{'parent_group_id'};
-        $return = 1 if $return eq 0;
-        $rid = $return;
+        $sql = "SELECT parent_group_id FROM nt_group WHERE nt_group_id = ?";
+        my $ids = $self->exec_query( $sql, $id );
+        my $rid = $ids->[0]->{'parent_group_id'};
+        $rid = 1 if $rid eq 0;
     }
     elsif ( $key eq 'nt_zone_id' or uc($type) eq 'ZONE' ) {
-        $sql = "SELECT nt_group_id FROM nt_zone WHERE nt_zone_id = $id";
-        $sth = $dbh->prepare($sql);
-        warn "$sql\n" if $self->debug_sql;
-        $sth->execute || die $dbh->errstr;
-        my $auth_data = $sth->fetchrow_hashref;
-        $rid = $auth_data->{'nt_group_id'} if $auth_data;
+        $sql = "SELECT nt_group_id FROM nt_zone WHERE nt_zone_id = ?";
+        my $ids = $self->exec_query( $sql, $id );
+        $rid = $ids->[0]->{'nt_group_id'} if $ids;
     }
     elsif ( $key eq 'nt_zone_record_id' or uc($type) eq 'ZONERECORD' ) {
         $sql = "SELECT nt_zone.nt_group_id FROM nt_zone_record,nt_zone "
-            . "WHERE nt_zone_record.nt_zone_record_id = $id "
+            . "WHERE nt_zone_record.nt_zone_record_id = ? "
             . "AND nt_zone.nt_zone_id=nt_zone_record.nt_zone_id";
-        $sth = $dbh->prepare($sql);
-        warn "$sql\n" if $self->debug_sql;
-        $sth->execute || die $dbh->errstr;
-        my $auth_data = $sth->fetchrow_hashref;
-        $rid = $auth_data->{'nt_group_id'} if $auth_data;
+        my $ids = $self->exec_query( $sql, $id );
+        $rid = $ids->[0]->{'nt_group_id'} if $ids;
     }
     elsif ( $key eq 'nt_nameserver_id' or uc($type) eq 'NAMESERVER' ) {
         $sql = "SELECT nt_group_id FROM nt_nameserver "
-             . "WHERE nt_nameserver_id = $id";
-        $sth = $dbh->prepare($sql);
-        warn "$sql\n" if $self->debug_sql;
-
-        #warn "getting nameserver group id $id :$sql";
-        $sth->execute || die $dbh->errstr;
-        my $auth_data = $sth->fetchrow_hashref;
-
-        #warn "found id $auth_data->{'nt_group_id'}";
-        $rid = $auth_data->{'nt_group_id'} if $auth_data;
+             . "WHERE nt_nameserver_id = ?";
+        my $ids = $self->exec_query( $sql, $id );
+        $rid = $ids->[0]->{'nt_group_id'} if $ids;
     }
     elsif ( $key eq 'nt_user_id' or uc($type) eq 'USER' ) {
-        $sql = "SELECT nt_group_id FROM nt_user WHERE nt_user_id = $id";
-        $sth = $dbh->prepare($sql);
-        warn "$sql\n" if $self->debug_sql;
-        $sth->execute || die $dbh->errstr;
-        my $auth_data = $sth->fetchrow_hashref;
-        $rid = $auth_data->{'nt_group_id'} if $auth_data;
+        $sql = "SELECT nt_group_id FROM nt_user WHERE nt_user_id = ?";
+        my $ids = $self->exec_query( $sql, $id );
+        $rid = $ids->[0]->{'nt_group_id'} if $ids;
     }
 
     #warn "returning ID $rid";
@@ -948,28 +926,16 @@ sub get_group_id {
 
 sub get_group_permissions {
     my ( $self, $groupid ) = @_;
-    my $sql;
-    my $sth;
-    my $dbh = $self->{'dbh'};
-    $sql = "SELECT * FROM nt_perm WHERE nt_group_id = $groupid AND nt_user_id=0 AND deleted != '1'";
-    $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
-    $sth->execute || die $dbh->errstr;
-    my $auth_data = $sth->fetchrow_hashref;
-    return $auth_data;
+    my $sql = "SELECT * FROM nt_perm WHERE nt_group_id=? AND nt_user_id=0 AND deleted != '1'";
+    my $perms = $self->exec_query( $sql, $groupid );
+    return $perms->[0];
 }
 
 sub get_user_permissions {
     my ( $self, $userid ) = @_;
-    my $sql;
-    my $sth;
-    my $dbh = $self->{'dbh'};
-    $sql = "SELECT * FROM nt_perm WHERE nt_group_id = '0' AND nt_user_id='$userid' AND deleted != '1'";
-    $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
-    $sth->execute || die $dbh->errstr;
-    my $auth_data = $sth->fetchrow_hashref;
-    return $auth_data;
+    my $sql = "SELECT * FROM nt_perm WHERE nt_group_id = '0' AND nt_user_id=? AND deleted != '1'";
+    my $perms = $self->exec_query( $sql, $userid );
+    return $perms->[0];
 }
 
 sub get_access_permission {
@@ -1179,9 +1145,7 @@ sub get_delegate_access {
     my %fields = ( ZONE => 'nt_zone_id' );
 
     return undef unless $type eq 'ZONE' or $type eq 'ZONERECORD';
-    my $dbh = $self->{'dbh'};
     my $sql;
-    my $sth;
     if ( $type eq 'ZONERECORD' ) {
         return $self->get_zonerecord_delegate_access( $id, $type );
     }
@@ -1190,11 +1154,9 @@ sub get_delegate_access {
             = "SELECT nt_delegate.*,nt_group.name AS group_name FROM nt_delegate "
             . " INNER JOIN $tables{$type} on $tables{$type}.$fields{$type} = nt_delegate.nt_object_id AND nt_delegate.nt_object_type='$type'"
             . " INNER JOIN nt_group on $tables{$type}.nt_group_id = nt_group.nt_group_id"
-            . " WHERE nt_delegate.nt_group_id=$group_id AND nt_delegate.nt_object_id=$id AND nt_delegate.nt_object_type='$type'";
-        $sth = $dbh->prepare($sql);
-        warn "$sql\n" if $self->debug_sql;
-        $sth->execute || die $dbh->errstr;
-        my $auth_data = $sth->fetchrow_hashref;
+            . " WHERE nt_delegate.nt_group_id=? AND nt_delegate.nt_object_id=? AND nt_delegate.nt_object_type=?";
+        my $r = $self->exec_query( $sql, [ $group_id, $id, $type ] );
+        my $auth_data = $r->[0];
 
 #warn "Auth data: ".Data::Dumper::Dumper($auth_data) if $self->debug_permissions;
         if ( !$auth_data && $type eq 'ZONE' ) {
@@ -1205,12 +1167,11 @@ sub get_delegate_access {
                 . " INNER JOIN nt_zone_record on nt_zone_record.nt_zone_record_id = nt_delegate.nt_object_id AND nt_delegate.nt_object_type='ZONERECORD'"
                 . " INNER JOIN nt_zone on nt_zone.nt_zone_id = nt_zone_record.nt_zone_id"
                 . " INNER JOIN nt_group on nt_delegate.nt_group_id = nt_group.nt_group_id"
-                . " WHERE nt_delegate.nt_group_id=$group_id AND nt_zone.nt_zone_id=$id "
+                . " WHERE nt_delegate.nt_group_id=? AND nt_zone.nt_zone_id=? "
                 . " GROUP BY nt_zone.zone";
-            $sth = $dbh->prepare($sql);
-            warn "$sql\n" if $self->debug_sql;
-            $sth->execute || die $dbh->errstr;
-            my $result = $sth->fetchrow_hashref;
+            my $r = $self->exec_query( $sql, [ $group_id, $id ] );
+            my $result = $r->[0];
+
             if ( $result && $result->{'count'} gt 0 ) {
                 return +{
                     pseudo                     => 1,
@@ -1234,37 +1195,24 @@ sub get_zonerecord_delegate_access {
     my $group_id = $self->{'user'}->{'nt_group_id'};
 
     #check delegation
-
-    my $dbh = $self->{'dbh'};
-    my $sql;
-    my $sth;
-    $sql
+    my $sql
         = "SELECT nt_delegate.*,nt_group.name AS group_name FROM nt_delegate "
         . " INNER JOIN nt_zone_record on nt_zone_record.nt_zone_record_id= nt_delegate.nt_object_id AND nt_delegate.nt_object_type='ZONERECORD'"
         . " INNER JOIN nt_zone on nt_zone.nt_zone_id=nt_zone_record.nt_zone_id"
         . " INNER JOIN nt_group on nt_zone.nt_group_id = nt_group.nt_group_id"
-        . " WHERE nt_delegate.nt_group_id=$group_id AND nt_delegate.nt_object_id=$id AND nt_delegate.nt_object_type='ZONERECORD'";
-    $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
-    $sth->execute || die $dbh->errstr;
-    my $auth_data = $sth->fetchrow_hashref;
+        . " WHERE nt_delegate.nt_group_id=? AND nt_delegate.nt_object_id=? AND nt_delegate.nt_object_type='ZONERECORD'";
 
-#warn "Auth data: ".Data::Dumper::Dumper($auth_data) if $self->debug_permissions;
-    return $auth_data if $auth_data;
+    my $r = $self->exec_query( $sql, [ $group_id, $id ] );
+    return $r->[0] if $r->[0];
 
     $sql
         = "SELECT nt_delegate.*, 1 AS pseudo, nt_group.name AS group_name FROM nt_delegate "
         . " INNER JOIN nt_zone on nt_zone.nt_zone_id=nt_delegate.nt_object_id AND nt_delegate.nt_object_type='ZONE'"
         . " INNER JOIN nt_zone_record on nt_zone_record.nt_zone_id= nt_zone.nt_zone_id"
         . " INNER JOIN nt_group on nt_zone.nt_group_id = nt_group.nt_group_id"
-        . " WHERE nt_zone_record.nt_zone_record_id=$id";
-    $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
-    $sth->execute || die $dbh->errstr;
-    $auth_data = $sth->fetchrow_hashref;
-
-#warn "Auth data: ".Data::Dumper::Dumper($auth_data) if $self->debug_permissions;
-    return $auth_data;
+       . " WHERE nt_zone_record.nt_zone_record_id=?";
+    $r = $self->exec_query( $sql, $id );
+    return $r->[0];
 }
 
 sub verify_obj_usage {
@@ -1273,10 +1221,6 @@ sub verify_obj_usage {
     my @error;
     return $api->{'result'} if exists $api->{'result'};
     my $params = $api->{'parameters'};
-
-    my $dbh = $self->{'dbh'};
-    my $sql;
-    my $sth;
 
     warn
         "##############################\n$cmd VERIFY OBJECT USAGE\n##############################\n"
@@ -1542,7 +1486,6 @@ sub group_usage_ok {
 sub get_group_map {
     my ( $self, $top_group_id, $groups ) = @_;
 
-    my $dbh = $self->{'dbh'};
     my %map;
 
     my @blah = @{$groups};
@@ -1563,21 +1506,21 @@ sub get_group_map {
         . "AND nt_group.deleted = '0' "
         . "ORDER BY nt_group_subgroups.nt_subgroup_id, nt_group_subgroups.rank DESC";
 
-    my $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
-    if ( $sth->execute ) {
+    my $subgroups = $self->exec_query( $sql );
+
+    if ( $subgroups ) {
         my $skipping = 0;
 
-        while ( my $row = $sth->fetchrow_hashref ) {
+        foreach my $r ( @$subgroups ) {
 
-            if ( $row->{'nt_group_id'} == $top_group_id ) {
-                $skipping = $row->{'nt_subgroup_id'};
+            if ( $r->{'nt_group_id'} == $top_group_id ) {
+                $skipping = $r->{'nt_subgroup_id'};
             }
-            elsif ( $row->{'nt_subgroup_id'} == $top_group_id ) {
+            elsif ( $r->{'nt_subgroup_id'} == $top_group_id ) {
                 next;
             }
             elsif ($skipping) {
-                if ( $skipping != $row->{'nt_subgroup_id'} ) {
+                if ( $skipping != $r->{'nt_subgroup_id'} ) {
                     $skipping = 0;
                 }
                 else {
@@ -1585,10 +1528,9 @@ sub get_group_map {
                 }
             }
 
-            unshift( @{ $map{ $row->{'nt_subgroup_id'} } }, $row );
+            unshift( @{ $map{ $r->{'nt_subgroup_id'} } }, $r );
         }
     }
-    $sth->finish;
 
     return \%map;
 }
@@ -1596,70 +1538,45 @@ sub get_group_map {
 sub get_subgroup_ids {
     my ( $self, $nt_group_id ) = @_;
 
-    my $dbh = $self->{'dbh'};
-    my $sql
-        = "SELECT * FROM nt_group_subgroups "
-        . " WHERE nt_group_id = "
-        . $dbh->quote($nt_group_id);
-    my $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
-    $sth->execute || die $dbh->errstr;
+    my $sql = "SELECT nt_subgroup_id FROM nt_group_subgroups "
+        . " WHERE nt_group_id = ?";
+    my $subgroups = $self->exec_query( $sql, $nt_group_id );
 
     my @list;
-    while ( my $row = $sth->fetch ) { push( @list, $row->[1] ); }
-
+    foreach ( @$subgroups ) { push( @list, $_->{nt_subgroup_id} ); };
     return \@list;
 }
 
 sub get_parentgroup_ids {
     my ( $self, $nt_group_id ) = @_;
 
-    my $dbh = $self->{'dbh'};
-    my $sql = "SELECT * FROM nt_group_subgroups WHERE nt_subgroup_id = "
-        . $dbh->quote($nt_group_id);
-    my $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
-    $sth->execute || die $dbh->errstr;
+    my $sql = "SELECT nt_group_id FROM nt_group_subgroups WHERE nt_subgroup_id = ?";
+    my $subgroups = $self->exec_query( $sql, $nt_group_id );
 
     my @list;
-    while ( my $row = $sth->fetch ) { push( @list, $row->[0] ); }
-
+    foreach ( @$subgroups ) { push( @list, $_->{nt_group_id} ); };
     return \@list;
 }
 
 sub is_subgroup {
     my ( $self, $nt_group_id, $gid ) = @_;
 
-    my $dbh = $self->{'dbh'};
-    my $sql
-        = "SELECT * FROM nt_group_subgroups WHERE nt_group_id = "
-        . $dbh->quote($nt_group_id)
-        . " AND nt_subgroup_id = "
-        . $dbh->quote($gid);
-    my $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
-    return 0 unless ( $sth->execute );
-
-    return $sth->fetch ? 1 : 0;
+    my $sql = "SELECT COUNT(*) AS count FROM nt_group_subgroups WHERE nt_group_id = ?"
+        . " AND nt_subgroup_id = ?";
+    my $subgroups = $self->exec_query( $sql, [ $nt_group_id, $gid ] )
+        or return 0;
+    return $subgroups->[0]->{count} ? 1 : 0;
 }
 
 sub get_group_branches {
     my ( $self, $nt_group_id ) = @_;
     my @groups;
     my $nextgroup = $nt_group_id;
-    my $dbh       = $self->{'dbh'};
-    my $sql;
-    my $res;
-    my $sth;
     while ($nextgroup) {
-        $sql = "SELECT parent_group_id FROM nt_group WHERE nt_group_id = "
-            . $dbh->quote($nextgroup);
-        $sth = $dbh->prepare($sql);
-        warn "$sql\n" if $self->debug_sql;
-        $sth->execute || die $dbh->errstr;
-        $res = $sth->fetchrow_hashref;
-        unshift @groups, $nextgroup if $res;
-        $nextgroup = $res->{'parent_group_id'};
+        my $sql = "SELECT parent_group_id FROM nt_group WHERE nt_group_id = ?";
+        my $ids = $self->exec_query( $sql, $nextgroup );
+        unshift @groups, $nextgroup if $ids->[0];
+        $nextgroup = $ids->[0]->{'parent_group_id'};
     }
 }
 
@@ -1702,18 +1619,18 @@ sub exec_query {
     my $dbix = DBIx::Simple->connect( $self->{dbh} ) 
         or die DBIx::Simple->error;
 
-    if ( $query =~ /INSERT INTO/ ) {
-        my ( $table ) = $query =~ /INSERT INTO (\w+)\s/;
+    if ( $query =~ /^INSERT INTO/ ) {
+        my ( $table ) = $query =~ /INSERT INTO (\w+)[\s\(]/;
         eval { $dbix->query( $query, @params ); };
         if ($@ or $dbix->error ne 'DBI error: ') {
             warn $err . $dbix->error if $self->debug_sql;
             return;
         };
-        my $id = $dbix->last_insert_id(undef,undef,$table,undef)
-            or die $err . $dbix->error;
-        return $id;
+        return $dbix->last_insert_id(undef,undef,$table,undef);
+# don't test the value of last_insert_id. If the table doesn't have an
+# autoincrement field, the value is always zero
     }
-    elsif ( $query =~ /DELETE|UPDATE/ ) {
+    elsif ( $query =~ /^DELETE|UPDATE/ ) {
         eval { $dbix->query( $query, @params ) };
         if ($@ or $dbix->error ne 'DBI error: ') {
             warn $err . $dbix->error if $self->debug_sql;
@@ -1730,9 +1647,6 @@ sub exec_query {
 
 sub check_object_deleted {
     my ( $self, $otype, $oid ) = @_;
-    my $dbh = $self->{'dbh'};
-    my $sql;
-    my $sth;
     my %map = (
         zone => { table => 'nt_zone', field => 'nt_zone_id' },
         zonerecord =>
@@ -1742,60 +1656,46 @@ sub check_object_deleted {
         group => { table => 'nt_group', field => 'nt_group_id' },
         user  => { table => 'nt_user',  field => 'nt_user_id' },
     );
+
     if ( my $dbst = $map{ lc($otype) } ) {
-        $sql
-            = "SELECT deleted FROM $dbst->{'table'} WHERE $dbst->{'field'} = $oid";
-        $sth = $dbh->prepare($sql);
-        warn "$sql\n" if $self->debug_sql;
-        unless ( $sth->execute ) {
-            warn $dbh->errstr . ": sql :$sql";
-        }
-        else {
-            my $a = $sth->fetchrow_hashref;
-            return $a->{'deleted'};
-        }
+        my $sql = "SELECT deleted FROM $dbst->{'table'} WHERE $dbst->{'field'} = ?";
+        my $deletes = $self->exec_query( $sql, $oid );
+        return $deletes->[0]->{'deleted'} if $deletes->[0];
     }
 }
 
 sub get_title {
     my ( $self, $otype, $oid ) = @_;
-    my $dbh = $self->{'dbh'};
     my $sql;
-    my $sth;
     if ( $otype =~ /^zone$/i ) {
-        $sql = "SELECT zone AS title FROM nt_zone WHERE nt_zone_id = $oid";
+        $sql = "SELECT zone AS title FROM nt_zone WHERE nt_zone_id = ?";
     }
     elsif ( $otype =~ /^zonerecord$/i ) {
         $sql
             = "SELECT CONCAT(nt_zone_record.name,'.',nt_zone.zone) AS title FROM nt_zone_record"
             . " INNER JOIN nt_zone on nt_zone_record.nt_zone_id=nt_zone.nt_zone_id"
-            . " WHERE nt_zone_record.nt_zone_record_id = $oid";
+            . " WHERE nt_zone_record.nt_zone_record_id = ?";
     }
     elsif ( $otype =~ /^nameserver$/i ) {
         $sql
             = "SELECT CONCAT(address,' (',name,')') AS title FROM nt_nameserver"
-            . " WHERE nt_nameserver_id = $oid";
+            . " WHERE nt_nameserver_id = ?";
     }
     elsif ( $otype =~ /^group$/i ) {
-        $sql = "SELECT name AS title FROM nt_group"
-            . " WHERE nt_group_id = $oid";
+        $sql = "SELECT name AS title FROM nt_group WHERE nt_group_id = ?";
     }
     elsif ( $otype =~ /^user$/i ) {
         $sql
             = "SELECT CONCAT(username,' (',first_name,' ',last_name,')') AS title FROM nt_user"
-            . " WHERE nt_user_id = $oid";
+            . " WHERE nt_user_id = ?";
     }
     else {
         return "($otype)";
     }
 
-    $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
-    unless ( $sth->execute ) {
-        warn $dbh->errstr;
-        return "($otype)";
-    }
-    return $sth->fetchrow_hashref->{'title'};
+    my $titles = $self->exec_query( $sql, $oid );
+    return "($otype)" if ! $titles;
+    return $titles->[0]->{'title'};
 }
 
 sub diff_changes {
@@ -1983,8 +1883,6 @@ sub format_search_conditions {
 sub format_sort_conditions {
     my ( $self, $data, $field_map, $default ) = @_;
 
-    my $dbh = $self->{'dbh'};
-
     my @sortby;
 
     if ( $data->{'Sort'} ) {
@@ -2003,9 +1901,8 @@ sub format_sort_conditions {
         }
     }
     else {
-        push( @sortby, $default )
-            if ($default)
-            ;    # if no default specified just return empty arrayref
+        # if no default specified, return empty arrayref
+        push( @sortby, $default ) if $default;
     }
 
     return \@sortby;
@@ -2156,14 +2053,9 @@ sub bump_serial {
     }
     else {
         if ( $current_serial eq '' ) {
-            my $dbh = $self->{'dbh'};
-            my $sql = "SELECT serial FROM nt_zone WHERE nt_zone_id = "
-                . $dbh->quote($nt_zone_id);
-            my $sth = $dbh->prepare($sql);
-            warn "$sql\n" if $self->debug_sql;
-            $sth->execute;
-            my @row = $sth->fetchrow;
-            $current_serial = $row[0];
+            my $sql = "SELECT serial FROM nt_zone WHERE nt_zone_id = ?";
+            my $serials = $self->exec_query( $sql, $nt_zone_id);
+            $current_serial = $serials->[0]->{serial};
         }
         $serial = $self->serial_increment($current_serial);
     }

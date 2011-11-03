@@ -105,26 +105,6 @@ use NicTool;
 );
 
 #full delegation permissions for zone
-%dpermsfull = (
-    perm_write               => 1,
-    perm_delete              => 1,
-    perm_delegate            => 1,
-    zone_perm_add_records    => 1,
-    zone_perm_delete_records => 1,
-
-    #zone_perm_modify_zone=>1,
-    #zone_perm_modify_mailaddr=>1,
-    #zone_perm_modify_desc=>1,
-    #zone_perm_modify_minimum=>1,
-    #zone_perm_modify_serial=>1,
-    #zone_perm_modify_refresh=>1,
-    #zone_perm_modify_retry=>1,
-    #zone_perm_modify_expire=>1,
-    #zone_perm_modify_ttl=>1,
-    #zone_perm_modify_nameservers=>1,
-);
-
-#full delegation permissions for zone
 %dpermsnone = (
     perm_write               => 0,
     perm_delete              => 0,

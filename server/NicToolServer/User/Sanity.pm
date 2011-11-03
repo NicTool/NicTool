@@ -119,15 +119,11 @@ sub get_user_global_log {
 sub _check_current_password {
     my ( $self, $data ) = @_;
 
-    my $dbh = $self->{'dbh'};
+    my $sql = "SELECT password,username FROM nt_user WHERE nt_user_id = ?";
+    my $users = $self->exec_query( $sql, $data->{nt_user_id} );
+    my $user = $users->[0];
 
-    my $sql = "SELECT password,username FROM nt_user WHERE nt_user_id = "
-        . $dbh->quote( $data->{'nt_user_id'} );
-
-    my $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
-    $sth->execute;
-    my ($db_pass,$db_user) = $sth->fetchrow;
+    my ($db_pass,$db_user) = ( $user->{password}, $user->{username} );
 
     # RCC - Handle HMAC passwords
     if ($db_pass =~ /[0-9a-f]{40}/) {
@@ -140,56 +136,43 @@ sub _check_current_password {
 sub _username_exists {
     my ( $self, $data ) = @_;
 
-    my $dbh = $self->{'dbh'};
-    my $sql;
+    my ( $sql, $groups );
 
     if ( exists $data->{'nt_user_id'} ) {
         $sql = "SELECT name FROM nt_group INNER JOIN nt_user "
             . "ON nt_user.nt_group_id=nt_group.nt_group_id "
-            . "WHERE nt_user.nt_user_id = "
-            . $dbh->quote( $data->{'nt_user_id'} );
+            . "WHERE nt_user.nt_user_id = ?";
+        $groups = $self->exec_query( $sql, $data->{nt_user_id} );
     }
     else {
-        $sql = "SELECT name FROM nt_group WHERE nt_group_id = "
-            . $dbh->quote( $data->{'nt_group_id'} );
+        $sql = "SELECT name FROM nt_group WHERE nt_group_id = ?";
+        $groups = $self->exec_query($sql, $data->{nt_group_id} );
     }
 
-    my $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
-    $sth->execute;
-    my @group = $sth->fetchrow;
+    $data->{'groupname'} = $groups->[0]{name};
 
-    $data->{'groupname'} = $group[0];
+    $sql = "SELECT nt_group_id FROM nt_group WHERE name = ? AND deleted='0'";
+    $groups = $self->exec_query( $sql, $groups->[0]{name} );
 
-    $sql = "SELECT nt_group_id FROM nt_group WHERE name = "
-        . $dbh->quote( $group[0] )
-        . " AND deleted='0'";
-    $sth = $dbh->prepare($sql);
-    $sth->execute;
     my @groups;
-    while ( my @row = $sth->fetchrow ) {
-        push( @groups, $row[0] );
+    foreach my $row ( @$groups ) {
+        push( @groups, $row->{nt_group_id} );
     }
-    #return 0 if scalar @groups == 0;
 
     if ( $data->{'nt_user_id'} ) {
         $sql = "SELECT nt_user_id FROM nt_user WHERE deleted = '0' AND nt_group_id IN ("
             . join( ',', @groups )
-            . ") AND nt_user_id != $data->{'nt_user_id'} AND username="
-            . $dbh->quote( $data->{'username'} );
+            . ") AND nt_user_id != $data->{'nt_user_id'} AND username=?";
     }
     else {
         $sql = "SELECT nt_user_id FROM nt_user WHERE deleted = '0' AND nt_group_id IN ("
             . join( ',', @groups )
-            . ") AND username="
-            . $dbh->quote( $data->{'username'} );
+            . ") AND username=?"
     }
 
-    $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
-    $sth->execute;
+    my $users = $self->exec_query( $sql, $data->{username} );
 
-    return ref( $sth->fetch ) ? 1 : 0;
+    return ref( $users->[0] ) ? 1 : 0;
 }
 
 sub _valid_username {

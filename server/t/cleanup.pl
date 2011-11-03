@@ -20,6 +20,7 @@
 #
 
 use lib '../client';
+use lib 't';
 use TestConfig;
 
 @ARGV or die "cleanup <group_id> [...]\n";

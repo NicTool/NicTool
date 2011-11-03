@@ -481,7 +481,7 @@ sub doit {
     $res = $group1->delete_group;
     noerrok( $res, 600 );
     ok( $res->get('error_msg'),
-        qr/You can't delete this group until you delete all of it's sub-groups/
+        qr/You can't delete this group until you delete all of its sub-groups/
     );
 
 }

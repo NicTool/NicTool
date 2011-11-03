@@ -18,7 +18,7 @@
 use lib ".";
 use lib "t";
 use TestConfig;
-use Test::More tests => 12;
+use Test::More tests => 13;
 
 BEGIN {
     use_ok( 'DBIx::Simple' );
@@ -70,6 +70,14 @@ ok( ! $r, "Insert zone fail" );
 $r = $nts->exec_query( "DELETE FROM nt_zonef WHERE nt_zone_id=?", $r );
 ok( ! $r, "Delete zone fail");
 
+
+$r = $nts->is_subgroup(1,1);
+ok( ! $r, "is_subgroup ($r)");
+
+#$r = $nts->is_subgroup(1,320);
+#ok( $r, "is_subgroup ($r)");
+
 diag( "Testing NicToolServer $NicToolServer::VERSION, Perl $], $^X" );
+
 
 

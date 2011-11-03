@@ -25,7 +25,8 @@ use Digest::HMAC_SHA1 qw(hmac_sha1_hex);
 sub debug_session_sql {0}
 
 ### public methods
-sub verify {    # return of 0 = sucess, return of anything else = error
+sub verify {    
+# return of 0 = sucess, return of anything else = error
     my $self = shift;
 
     my $data = $self->{'client'}->data();
@@ -43,8 +44,8 @@ sub verify {    # return of 0 = sucess, return of anything else = error
 sub verify_login {
     my $self = shift;
 
-# timeout_sessions could be called from a cron job every $NicToolServer::session_timeout,
-# but this is easier to setup
+# timeout_sessions could be called from a cron job every
+# $NicToolServer::session_timeout. This is easier to setup
     $self->timeout_sessions;
 
     my $data = $self->{'client'}->data();
@@ -60,20 +61,19 @@ sub verify_login {
         . "WHERE nt_user.nt_group_id = nt_group.nt_group_id AND "
         . "nt_user.deleted = '0' AND nt_user.nt_group_id IN ("
         . join( ',', @{ $data->{'groups'} } )
-        . ") AND nt_user.username = " . $dbh->quote( $data->{'username'} );
+        . ") AND nt_user.username = ?";
 
-    my $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_session_sql;
-    $sth->execute() || return $self->error_response( 505, $dbh->errstr );
+    my $users = $self->exec_query( $sql, $data->{'username'} )
+        or return $self->error_response( 505, $dbh->errstr );
 
-    return $self->auth_error('no such username') if ! $sth->rows;
-    return $self->auth_error('invalid username') if $sth->rows > 1;
+    return $self->auth_error('no such username') if ! $users;
+    return $self->auth_error('invalid username') if scalar @$users > 1;
 
     my $attempted_pass = $data->{'password'};
-    delete( $data->{'password'} )
-        ; # must delete the hashkey or perl maintains attempted_pass as a ref to the hash key's lvalue
+    delete( $data->{'password'} );
+    # delete the hashkey or perl maintains attempted_pass as a ref to the hash key's lvalue
 
-    $data->{'user'} = $sth->fetchrow_hashref;
+    $data->{'user'} = $users->[0];
 
     # RCC - Handle HMAC passwords
     if ($data->{user}{password} =~ /[0-9a-f]{40}/) {
@@ -87,29 +87,23 @@ sub verify_login {
 
     $data->{'user'}->{'nt_user_session'} = $self->session_id;
 
-    $sql = "SELECT * "
-        . "FROM nt_perm "
-        . "WHERE deleted = '0' "
-        . "AND nt_user_id = "
-        . $data->{'user'}->{'nt_user_id'};
-
-    $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
-    $sth->execute || return $self->error_response( 505, $dbh->errstr );
+    $sql = "SELECT * FROM nt_perm "
+        . "WHERE deleted = '0' AND nt_user_id = ?";
+    my $perms = $self->exec_query( $sql, $data->{user}{nt_user_id} )
+        or return $self->error_response( 505, $dbh->errstr );
 
     my $groupperm;
-    my $perm = $sth->fetchrow_hashref;
+    my $perm = $perms->[0];
 
     $sql = "SELECT nt_perm.* FROM nt_perm"
         . " INNER JOIN nt_user ON nt_perm.nt_group_id = nt_user.nt_group_id "
         . " WHERE ( nt_perm.deleted = '0' "
         . " AND nt_user.deleted = '0' "
-        . " AND nt_user.nt_user_id = "
-        . $dbh->quote( $data->{'user'}->{'nt_user_id'} ) . " )";
-    $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
-    $sth->execute || return $self->error_response( 505, $dbh->errstr );
-    $groupperm = $sth->fetchrow_hashref;
+        . " AND nt_user.nt_user_id = ?"
+        . " )";
+    $perms = $self->exec_query( $sql, $data->{user}{nt_user_id} )
+        or return $self->error_response( 505, $dbh->errstr );
+    $groupperm = $perms->[0];
 
     if ( !$perm ) {
         $perm = $groupperm;
@@ -126,37 +120,27 @@ sub verify_login {
 
     if ( !$perm ) {
         return $self->error_response( 507,
-                  "Could not find permissions for user ("
-                . $data->{'user'}->{'nt_user_id'}
-                . ")" );
+            "Could not find permissions for user (" . $data->{user}{nt_user_id}
+        . ")" );
     }
     delete $perm->{'nt_user_id'};
     delete $perm->{'nt_group_id'};
     delete $perm->{'nt_perm_id'};
     delete $perm->{'nt_perm_name'};
 
-    #@{$data->{'user'}}{sort keys %$perm} = @{$perm}{sort keys %$perm};
     foreach ( keys %$perm ) {
         $data->{'user'}->{$_} = $perm->{$_};
     }
 
-    $sql = 'INSERT INTO nt_user_session(nt_user_id, nt_user_session, last_access) VALUES ('
-        . "$data->{'user'}->{nt_user_id},"
-        . $dbh->quote( $data->{'user'}->{'nt_user_session'} ) . ','
-        . time() . ')';
-    $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_session_sql;
-    $sth->execute() || warn $dbh->errstr;
-    my $nt_user_session_id = $dbh->{'mysql_insertid'};
+    $sql = 'INSERT INTO nt_user_session(nt_user_id, nt_user_session, last_access) VALUES (??)';
+    my $nt_user_session_id = $self->exec_query( $sql, 
+        [ $data->{user}{nt_user_id}, $data->{user}{nt_user_session}, time()
+    ] );
 
-    $sql = "INSERT INTO nt_user_session_log(nt_user_id, action, timestamp, nt_user_session_id, nt_user_session) VALUES ("
-        . "$data->{user}->{'nt_user_id'}, 'login',"
-        . time()
-        . ",$nt_user_session_id,"
-        . $dbh->quote( $data->{'user'}->{'nt_user_session'} ) . ')';
-    $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_session_sql;
-    $sth->execute || warn $dbh->errstr;
+
+    $sql = "INSERT INTO nt_user_session_log(nt_user_id, action, timestamp, nt_user_session_id, nt_user_session) VALUES (??)";
+    $self->exec_query( $sql, [ $data->{user}{nt_user_id}, 'login', time(),
+        $nt_user_session_id, $data->{user}{nt_user_session} ] );
 
     return 0;
 }
@@ -172,59 +156,40 @@ sub verify_session {
         . "WHERE nt_user_session.nt_user_id = nt_user.nt_user_id "
         . "AND nt_user.nt_group_id = nt_group.nt_group_id "
         . "AND nt_user.deleted = '0' "
-        . "AND nt_user_session.nt_user_session = "
-        . $dbh->quote( $data->{'nt_user_session'} );
+        . "AND nt_user_session.nt_user_session = ?";
 
-    my $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_session_sql;
-    $sth->execute || return $self->error_response( 505, $dbh->errstr );
+    my $sessions = $self->exec_query( $sql, $data->{nt_user_session} )
+        or return $self->error_response( 505, $dbh->errstr );
 
     return $self->auth_error('Your session has expired. Please login again')
-        unless ( $sth->rows );
+        if ! $sessions;
 
-    $data->{'user'} = $sth->fetchrow_hashref;
+    $data->{'user'} = $sessions->[0];
 
-    if (time() - $NicToolServer::session_timeout
-        >= $data->{'user'}->{'last_access'} )
-    {
-
-        # use logout to nuke the timed-out session
+    my $max_age = time() - $NicToolServer::session_timeout;
+    if ( $max_age >= $data->{user}{last_access} ) {
         $self->logout('timeout');
-        return $self->auth_error(
-            'Your session has expired. Please login again');
+        return $self->auth_error( 'Your session expired. Please login again');
     }
 
     # delete session and log logout if LOGOUT
-    return $self->logout if ( $data->{'action'} eq 'LOGOUT' );
+    return $self->logout if $data->{'action'} eq 'LOGOUT';
 
-    #warn "data 'action' was not LOGOUT: $data->{'action'}";
-
-    $sql
-        = "SELECT * FROM nt_perm WHERE deleted = '0' "
-        . "AND nt_user_id = "
-        . $data->{'user'}->{'nt_user_id'};
-
-    $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
-    $sth->execute || return $self->error_response( 505, $dbh->errstr );
+    $sql = "SELECT * FROM nt_perm WHERE deleted = '0' AND nt_user_id = ?";
+    my $perms = $self->exec_query( $sql, $data->{user}{nt_user_id} )
+        or return $self->error_response( 505, $dbh->errstr );
 
     my $groupperm;
-    my $perm = $sth->fetchrow_hashref;
+    my $perm = $perms->[0];
 
-    #if( !$perm) {
-    $sql
-        = "SELECT nt_perm.* FROM nt_perm"
+    $sql = "SELECT nt_perm.* FROM nt_perm"
         . " INNER JOIN nt_user ON nt_perm.nt_group_id = nt_user.nt_group_id "
         . " WHERE ( nt_perm.deleted = '0' "
         . " AND nt_user.deleted = '0' "
-        . " AND nt_user.nt_user_id = "
-        . $dbh->quote( $data->{'user'}->{'nt_user_id'} ) . " )";
-    $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
-    $sth->execute || return $self->error_response( 505, $dbh->errstr );
-    $groupperm = $sth->fetchrow_hashref;
-
-    #}
+        . " AND nt_user.nt_user_id = ? )";
+    $perms = $self->exec_query( $sql, $data->{user}{nt_user_id} )
+        or return $self->error_response( 505, $dbh->errstr );
+    $groupperm = $perms->[0];
 
     if ( !$perm ) {
         $perm = $groupperm;
@@ -251,13 +216,9 @@ sub verify_session {
         $data->{'user'}->{$_} = $perm->{$_};
     }
 
-    $sql
-        = "UPDATE nt_user_session SET last_access = "
-        . time()
-        . " WHERE nt_user_session_id = "
-        . $dbh->quote( $data->{'user'}->{'nt_user_session_id'} );
-    $dbh->do($sql);
-    warn "$sql\n" if $self->debug_session_sql;
+    $sql = "UPDATE nt_user_session SET last_access = ?"
+        . " WHERE nt_user_session_id = ?";
+    $self->exec_query( $sql, [ time(), $data->{user}{nt_user_session_id} ] );
 
     $self->clean_user_data;
 
@@ -271,70 +232,49 @@ sub logout {
 
     #warn "calling Session::logout ... ".join(" ",caller);
     my $data = $self->{'client'}->data();
-    my $dbh  = $self->{'dbh'};
 
-    my $sql = "DELETE FROM nt_user_session WHERE nt_user_session_id = "
-        . $dbh->quote( $data->{'user'}->{'nt_user_session_id'} );
-    $dbh->do($sql);
-    warn "$sql\n" if $self->debug_session_sql;
+    my $sql = "DELETE FROM nt_user_session WHERE nt_user_session_id = ?";
+    $self->exec_query( $sql, $data->{user}{nt_user_session_id} );
 
-    $sql
-        = "INSERT INTO nt_user_session_log(nt_user_id, action, timestamp, nt_user_session, nt_user_session_id) VALUES ( "
-        . $dbh->quote( $data->{user}->{'nt_user_id'} )
-        . ",'$msg',"
-        . time() . ','
-        . $dbh->quote( $data->{'user'}->{'nt_user_session'} ) . ','
-        . $dbh->quote( $data->{'user'}->{'nt_user_session_id'} ) . ')';
-
-    my $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_session_sql;
-    $sth->execute || warn $dbh->errstr;
+    $sql = "INSERT INTO nt_user_session_log(nt_user_id, action, timestamp, nt_user_session, nt_user_session_id) VALUES (??) ";
+    $self->exec_query( $sql, [ $data->{user}{nt_user_id}, $msg, time(),
+            $data->{user}{nt_user_session}, $data->{user}{nt_user_session_id} 
+        ] 
+    );
 
     foreach my $key ( keys %$data ) {
         delete( $data->{$key} );
     }
 
     return { 'error_code' => 200, error_msg => 'OK', nt_user_session => '' };
-
 }
 
-sub populate_groups
-{ # return true on successful population of @$data->{'groups'}, otherwise return false
+sub populate_groups { 
     my $self = shift;
+# return true on successful population of @$data->{'groups'}, otherwise false
 
     my $data = $self->{'client'}->data();
-    my $dbh  = $self->{'dbh'};
 
+    my $ids;
     $data->{'groups'} = [];
 
     my $sql;
     if ( $data->{'username'} =~ /(.+)\@(.+)/ ) {
         $data->{'username'} = $1;
-        my $g = $2;
-        $sql
-            = "SELECT nt_group_id FROM nt_group WHERE deleted = '0' AND name = "
-            . $dbh->quote($g);
+        $sql = "SELECT nt_group_id FROM nt_group WHERE deleted = '0' AND name = ?";
+        $ids = $self->exec_query( $sql, $2 );
     }
     else {
         return 0 unless @NicToolServer::default_groups;
-        my @groups;
-        foreach (@NicToolServer::default_groups) {
-            push( @groups, $dbh->quote($_) );
-        }
-        $sql
-            = "SELECT nt_group_id FROM nt_group WHERE deleted = '0' AND name IN ( "
-            . join( ',', @groups ) . ')';
+        $sql = "SELECT nt_group_id FROM nt_group WHERE deleted = '0' AND name IN (??)";
+        $ids = $self->exec_query( $sql, [ @NicToolServer::default_groups ] );
     }
-
-    my $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_session_sql;
-    $sth->execute || warn $dbh->errstr;
 
     my $i = 0;
-    while ( my @row = $sth->fetchrow ) {
-        push( @{ $data->{'groups'} }, $row[0] );
+    foreach ( @$ids ) {
+        push( @{ $data->{'groups'} }, $_->{nt_group_id} );
         $i++;
-    }
+    };
 
     # if no group found, return false, else return true
     $i < 1 ? return 0 : return 1;
@@ -343,39 +283,27 @@ sub populate_groups
 sub timeout_sessions {
     my $self = shift;
 
-    my $dbh         = $self->{'dbh'};
     my $valid_until = time() - $NicToolServer::session_timeout;
-    my $sql
-        = "SELECT nt_user_id, last_access, nt_user_session_id FROM nt_user_session WHERE last_access < $valid_until";
+    my $sql = "SELECT nt_user_id, last_access, nt_user_session_id, nt_user_session "
+        . "FROM nt_user_session WHERE last_access < ?";
+    my $sessions = $self->exec_query( $sql, $valid_until );
 
-    my $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_session_sql;
-    $sth->execute;
-    while ( my $s = $sth->fetchrow_hashref ) {
+    foreach my $s ( @$sessions ) {
 
         # delete the dead session
-        $sql
-            = "DELETE FROM nt_user_session WHERE nt_user_session_id = $s->{'nt_user_session_id'}";
-        $dbh->do($sql);
-        warn "$sql\n" if $self->debug_session_sql;
+        $sql = "DELETE FROM nt_user_session WHERE nt_user_session_id = ?";
+        $self->exec_query( $sql, $s->{'nt_user_session_id'} );
 
         # log that the session was auto_logged out
-        $sql
-            = "INSERT INTO nt_user_session_log(nt_user_id, action, timestamp, nt_user_session, nt_user_session_id) VALUES ( "
-            . $dbh->quote( $s->{'nt_user_id'} )
-            . ",'timeout',"
-            . time() . ','
-            . $dbh->quote( $s->{'nt_user_session'} ) . ','
-            . $dbh->quote( $s->{'nt_user_session_id'} ) . ')';
-
-        my $sth2 = $dbh->prepare($sql);
-        warn "$sql\n" if $self->debug_session_sql;
-        $sth2->execute;
+        $sql = "INSERT INTO nt_user_session_log(nt_user_id, action, timestamp, nt_user_session, nt_user_session_id) VALUES (??)";
+        $self->exec_query( $sql, 
+            [ $s->{'nt_user_id'}, 'timeout', time(), $s->{'nt_user_session'}, $s->{'nt_user_session_id'} ] 
+        );
     }
 }
 
-sub clean_user_data
-{    # delete unused and password data from DB-returned user hash
+sub clean_user_data {
+# delete unused and password data from DB-returned user hash
     my $self = shift;
 
     my $data = $self->{'client'}->data();

@@ -245,18 +245,14 @@ sub get_group_zone_query_log {
 sub record_exists_within_zone {
     my ( $self, $zid, $name ) = @_;
 
-    my $dbh       = $self->{'dbh'};
     my $base_name = $name;
     $base_name =~ s/\..*$//;
     $name .= "." unless ( $name =~ /\.$/ );
-    my $sql
-        = "SELECT * FROM nt_zone_record WHERE deleted = '0' AND nt_zone_id = $zid AND ( name = "
-        . $dbh->quote($name)
-        . " OR name = "
-        . $dbh->quote($base_name) . " )";
-    my $sth = $dbh->prepare($sql);
-    warn "$sql\n" if $self->debug_sql;
-    $sth->execute || warn $dbh->errstr;
-    return ref( $sth->fetch ) ? 1 : 0;
+    my $sql = "SELECT * FROM nt_zone_record WHERE deleted = '0'
+        AND nt_zone_id = ? AND ( name = ? OR name = ? )";
+    my $zrs = $self->exec_query( $sql, [ $zid, $name, $base_name ] ); 
+    return ref $zrs->[0] ? 1 : 0;
 }
+
+
 1;
