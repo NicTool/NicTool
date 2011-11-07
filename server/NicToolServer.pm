@@ -17,6 +17,8 @@ package NicToolServer;
 #
 
 use strict;
+use DBI;
+use DBIx::Simple;
 use RPC::XML;
 use Data::Dumper;
 use Net::IP;
@@ -1581,8 +1583,9 @@ sub get_group_branches {
 }
 
 sub dbh {
-
-    my $dsn = $NicToolServer::dsn;
+    #warn Data::Dumper::Dumper(\@_);
+    my $self = shift;
+    my $dsn = shift || $NicToolServer::dsn or die "missing DSN!";
     my $dbh = DBI->connect( $dsn, $NicToolServer::db_user, $NicToolServer::db_pass);
 
     unless ($dbh) {
@@ -1641,7 +1644,7 @@ sub exec_query {
 
     my $r;
     eval { $r = $dbix->query( $query, @params )->hashes; };
-    warn "$err\t$@" if ( $@ ); #&& $self->debug_sql );
+    warn "$err\t$@" if $@; #&& $self->debug_sql );
     return $r;
 };
 

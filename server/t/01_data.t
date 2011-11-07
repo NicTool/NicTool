@@ -26,13 +26,12 @@ BEGIN {
     use_ok( 'NicToolServer' );
 };
 
-
 my $nts = NicToolServer->new();
-$NicToolServer::dsn = "DBI:mysql:database=nictool;host=localhost;port=3306";
-$NicToolServer::db_user = 'nictool';
-$NicToolServer::db_pass = 'lootcin205';
+$NicToolServer::dsn = Config('dsn');
+$NicToolServer::db_user = Config('db_user');
+$NicToolServer::db_pass = Config('db_pass');
 
-my $dbh = NicToolServer::dbh();
+my $dbh = NicToolServer->dbh();
 ok( $dbh, 'dbh handle' );
 #warn Data::Dumper::Dumper($dbh);
 #isa_ok( $dbih, 'DBI::db' );
