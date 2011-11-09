@@ -1,6 +1,3 @@
-# vim: set expandtab:
-#
-# $Id: nt_group.sql,v 1.2 2004/04/03 20:25:49 matt Exp $
 #
 # Copyright 2001 Dajoba, LLC - <info@dajoba.com>
 

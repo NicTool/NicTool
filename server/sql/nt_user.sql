@@ -1,7 +1,3 @@
-# vim: set expandtab ts=4:
-#
-# $Id: nt_user.sql 1108 2010-06-22 23:29:36Z matt $
-#
 #
 # NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
 # NicTool v2.01 Copyright 2004 The Network People, Inc.
