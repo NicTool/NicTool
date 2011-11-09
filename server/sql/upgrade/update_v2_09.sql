@@ -39,5 +39,3 @@ ALTER TABLE nt_user DROP COLUMN is_admin;
 
 DROP TABLE IF EXISTS nt_zone_ns_log;
 
-ALTER TABLE nt_zone ADD column `last_modified` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER 'deleted';
-

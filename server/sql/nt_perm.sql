@@ -60,7 +60,7 @@ CREATE TABLE nt_perm(
     usable_ns9      SMALLINT UNSIGNED NOT NULL DEFAULT '0',
 
     deleted             ENUM('0','1') DEFAULT '0' NOT NULL
-);
+) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 CREATE INDEX nt_perm_idx1 on nt_perm(nt_group_id,nt_user_id);
 CREATE INDEX nt_perm_idx2 on nt_perm(nt_user_id);
 

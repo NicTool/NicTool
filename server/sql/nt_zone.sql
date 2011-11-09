@@ -1,6 +1,3 @@
-# vim: set expandtab:
-#
-# $Id: nt_zone.sql 694 2008-10-16 07:38:33Z rob@bsdfreaks.nl $
 #
 # NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
 # NicTool v2.01 Copyright 2004 The Network People, Inc.
@@ -19,9 +16,10 @@
 #
 
 
+
 DROP TABLE IF EXISTS nt_zone;
 CREATE TABLE nt_zone(
-    nt_zone_id             INT UNSIGNED AUTO_INCREMENT NOT NULL PRIMARY KEY,
+    nt_zone_id          INT UNSIGNED AUTO_INCREMENT NOT NULL PRIMARY KEY,
     nt_group_id         INT UNSIGNED NOT NULL,
     zone                VARCHAR(255) NOT NULL,
     mailaddr            VARCHAR(127),
@@ -42,8 +40,9 @@ CREATE TABLE nt_zone(
     ns7                 SMALLINT UNSIGNED NOT NULL DEFAULT '0',
     ns8                 SMALLINT UNSIGNED NOT NULL DEFAULT '0',
     ns9                 SMALLINT UNSIGNED NOT NULL DEFAULT '0',
+    last_modified       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted             ENUM('0','1') DEFAULT '0' NOT NULL
-);
+) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 CREATE INDEX nt_zone_idx1 on nt_zone(nt_group_id);
 CREATE INDEX nt_zone_idx2 on nt_zone(deleted);
 CREATE INDEX nt_zone_idx3 on nt_zone(zone); 
@@ -80,10 +79,10 @@ CREATE TABLE nt_zone_log(
     expire              INT UNSIGNED,
     minimum             INT UNSIGNED,
     ttl                 INT UNSIGNED
-);
-CREATE INDEX nt_zone_log_idx1 on nt_zone_log(timestamp); # for update_djb
-CREATE INDEX nt_zone_log_idx2 on nt_zone_log(nt_zone_id); # for update_djb
-CREATE INDEX nt_zone_log_idx3 on nt_zone_log(action); # for update_djb
+) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+CREATE INDEX nt_zone_log_idx1 on nt_zone_log(timestamp);
+CREATE INDEX nt_zone_log_idx2 on nt_zone_log(nt_zone_id);
+CREATE INDEX nt_zone_log_idx3 on nt_zone_log(action);
 
 
 DROP TABLE IF EXISTS nt_zone_record;
@@ -99,7 +98,7 @@ CREATE TABLE nt_zone_record(
     priority            SMALLINT UNSIGNED,
     other               VARCHAR(255),
     deleted             ENUM('0','1') DEFAULT '0' NOT NULL
-);
+) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 CREATE INDEX nt_zone_record_idx1 on nt_zone_record(name); # for searching
 CREATE INDEX nt_zone_record_idx2 on nt_zone_record(address); # for searching
 CREATE INDEX nt_zone_record_idx3 on nt_zone_record(nt_zone_id); # for lots of backend searches..
@@ -122,9 +121,9 @@ CREATE TABLE nt_zone_record_log(
     weight              SMALLINT UNSIGNED,
     priority            SMALLINT UNSIGNED,
     other               VARCHAR(255)
-);
+) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 CREATE INDEX nt_zone_record_log_idx1 on nt_zone_record_log(timestamp);
 CREATE INDEX nt_zone_record_log_idx2 on nt_zone_record_log(nt_zone_record_id);
 CREATE INDEX nt_zone_record_log_idx3 on nt_zone_record_log(nt_zone_id);
-CREATE INDEX nt_zone_record_log_idx4 on nt_zone_record_log(action); # for update_djb
+CREATE INDEX nt_zone_record_log_idx4 on nt_zone_record_log(action);
 

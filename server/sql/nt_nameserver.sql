@@ -14,7 +14,7 @@ CREATE TABLE nt_nameserver(
     datadir             VARCHAR(255),
     export_interval     SMALLINT UNSIGNED,
     deleted             enum('0','1') DEFAULT '0' NOT NULL
-);
+) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 CREATE INDEX nt_nameserver_idx1 on nt_nameserver(name);
 CREATE INDEX nt_nameserver_idx2 on nt_nameserver(deleted);
 
@@ -34,7 +34,7 @@ CREATE TABLE nt_nameserver_log(
     logdir              VARCHAR(255),
     datadir             VARCHAR(255),
     export_interval     SMALLINT UNSIGNED
-);
+) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 CREATE INDEX nt_nameserver_log_idx1 on nt_nameserver_log(nt_nameserver_id);
 CREATE INDEX nt_nameserver_log_idx2 on nt_nameserver_log(timestamp);
 
@@ -64,7 +64,7 @@ CREATE TABLE nt_nameserver_qlog(
     query                   VARCHAR(255) NOT NULL, # what they asked for
     r_size                  SMALLINT UNSIGNED,
     q_size                  SMALLINT UNSIGNED
-);
+) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 CREATE INDEX nt_nameserver_qlog_idx1 on nt_nameserver_qlog(query); # for searching
 CREATE INDEX nt_nameserver_qlog_idx2 on nt_nameserver_qlog(nt_zone_id); # for search as well
 CREATE INDEX nt_nameserver_qlog_idx3 on nt_nameserver_qlog(nt_zone_record_id); # for searching ..
@@ -79,7 +79,7 @@ CREATE TABLE nt_nameserver_qlogfile(
     line_count                  INT UNSIGNED,
     insert_count                INT UNSIGNED,
     took                        SMALLINT UNSIGNED
-);
+) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 CREATE INDEX nt_nameserver_qlogfile_idx1 on nt_nameserver_qlogfile(filename); # for search from grab_logs.pl
 CREATE INDEX nt_nameserver_qlogfile_idx2 on nt_nameserver_qlogfile(nt_nameserver_id); # for searching
 
@@ -93,7 +93,7 @@ CREATE TABLE nt_nameserver_export_log(
     message                         VARCHAR(256) NULL DEFAULT NULL,
     success                         tinyint(3) UNSIGNED NULL DEFAULT NULL,
     partial                         tinyint(3) UNSIGNED NOT NULL DEFAULT '0'
-);
+) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 CREATE INDEX nt_nameserver_export_log_idx1 on nt_nameserver_export_log(nt_nameserver_id);
 
 DROP TABLE IF EXISTS nt_nameserver_export_procstatus;
@@ -101,5 +101,5 @@ CREATE TABLE nt_nameserver_export_procstatus(
     nt_nameserver_id                SMALLINT UNSIGNED NOT NULL PRIMARY KEY,
     timestamp                       INT UNSIGNED NOT NULL,
     status                          VARCHAR(255)
-);
+) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 

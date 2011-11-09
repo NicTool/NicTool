@@ -7,7 +7,7 @@ CREATE TABLE nt_group (
     parent_group_id     INT UNSIGNED NOT NULL,
     name                VARCHAR(255) NOT NULL,
     deleted             enum('0','1') DEFAULT '0' NOT NULL
-);
+) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 CREATE INDEX nt_group_idx1 on nt_group(parent_group_id); 
 CREATE INDEX nt_group_idx2 on nt_group(name); # for searching
 CREATE INDEX nt_group_idx3 on nt_group(deleted); 
@@ -23,7 +23,7 @@ CREATE TABLE nt_group_log(
     modified_group_id   INT UNSIGNED NOT NULL,
     parent_group_id     INT UNSIGNED,
     name                VARCHAR(255)
-);
+) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 CREATE INDEX nt_group_log_idx1 on nt_group_log(nt_group_id); 
 CREATE INDEX nt_group_log_idx2 on nt_group_log(timestamp);
 
@@ -33,7 +33,7 @@ CREATE TABLE nt_group_subgroups(
     nt_group_id         INT UNSIGNED NOT NULL,
     nt_subgroup_id      INT UNSIGNED NOT NULL,
     rank                INT UNSIGNED NOT NULL
-);
+) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 CREATE INDEX nt_group_subgroups_idx1 on nt_group_subgroups(nt_group_id);
 CREATE INDEX nt_group_subgroups_idx2 on nt_group_subgroups(nt_subgroup_id);
 

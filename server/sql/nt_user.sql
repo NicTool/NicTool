@@ -26,7 +26,7 @@ CREATE TABLE nt_user(
     password            VARCHAR(128) NOT NULL,
     email               VARCHAR(100) NOT NULL,
     deleted             ENUM('0','1') DEFAULT '0' NOT NULL
-);
+) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 CREATE INDEX nt_user_idx1 on nt_user(username, password);
 CREATE INDEX nt_user_idx2 on nt_user(deleted);
 
@@ -43,7 +43,7 @@ CREATE TABLE nt_user_log(
     username           VARCHAR(50),
     password           VARCHAR(128),
     email              VARCHAR(100)
-);
+) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 
 DROP TABLE IF EXISTS nt_user_session;
@@ -52,7 +52,7 @@ CREATE TABLE nt_user_session(
     nt_user_id               INT UNSIGNED NOT NULL,
     nt_user_session	     VARCHAR(100) NOT NULL,
     last_access              INT UNSIGNED NOT NULL
-);
+) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 CREATE INDEX nt_user_session_idx1 on nt_user_session(nt_user_id, nt_user_session);
 
 DROP TABLE IF EXISTS nt_user_session_log;
@@ -63,7 +63,7 @@ CREATE TABLE nt_user_session_log(
     timestamp                INT UNSIGNED NOT NULL,
     nt_user_session_id       INT UNSIGNED,
     nt_user_session	     VARCHAR(100)
-);
+) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 DROP TABLE IF EXISTS nt_user_global_log;
 CREATE TABLE nt_user_global_log(
@@ -79,5 +79,5 @@ CREATE TABLE nt_user_global_log(
     log_entry_id            INT UNSIGNED NOT NULL,
     title                   VARCHAR(255),
     description             VARCHAR(255)
-);
+) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 CREATE INDEX nt_user_global_log_idx1 on nt_user_global_log(nt_user_id);
