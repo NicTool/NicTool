@@ -85,11 +85,6 @@ sub get_group_nameservers {
             quicksearch => 0,
             field       => 'nt_nameserver.address'
         },
-        service_type => {
-            timefield   => 0,
-            quicksearch => 0,
-            field       => 'nt_nameserver.service_type'
-        },
         output_format => {
             timefield   => 0,
             quicksearch => 0,
@@ -259,7 +254,7 @@ sub new_nameserver {
     my ( $self, $data ) = @_;
 
     my @columns = qw/ nt_group_id nt_nameserver_id name ttl description 
-        address service_type output_format logdir datadir export_interval /;
+        address output_format logdir datadir export_interval /;
 
     my $sql = "INSERT INTO nt_nameserver(" . join( ',', @columns ) . ") VALUES("
         . join( ',', map( $self->{dbh}->quote( $data->{$_} ), @columns ) ) . ")";
@@ -286,7 +281,8 @@ sub edit_nameserver {
 
     my $dbh = $self->{dbh};
     my @columns = grep { exists $data->{$_} }
-        qw(nt_group_id nt_nameserver_id name ttl description address service_type output_format logdir datadir export_interval);
+        qw/ nt_group_id nt_nameserver_id name ttl description address 
+            output_format logdir datadir export_interval /;
 
     my $prev_data = $self->find_nameserver( $data->{'nt_nameserver_id'} );
 
@@ -347,7 +343,7 @@ sub log_nameserver {
 
     my $dbh = $self->{'dbh'};
     my @columns = qw/ nt_group_id nt_user_id action timestamp nt_nameserver_id
-    name ttl description address service_type output_format logdir datadir export_interval /;
+    name ttl description address output_format logdir datadir export_interval /;
 
     my $user = $data->{'user'};
     $data->{'nt_user_id'} = $user->{'nt_user_id'};

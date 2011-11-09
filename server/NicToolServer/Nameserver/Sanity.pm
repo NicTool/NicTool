@@ -78,14 +78,6 @@ sub new_nameserver {
         }
     }
 
-    # check that service type is valid
-    unless ( $data->{'service_type'} eq "hosted"
-        || $data->{'service_type'} eq "data-only" )
-    {
-        $self->{'errors'}->{'service_type'} = 1;
-        push( @{ $self->{'error_messages'} }, "Invalid service type." );
-    }
-
     # check that output_format is valid
     unless ( $data->{'output_format'} eq "djb"
         || $data->{'output_format'} eq "bind"
@@ -185,16 +177,6 @@ sub edit_nameserver {
         }
     }
 
-    # check that service type is valid
-    if ( exists $data->{'service_type'} ) {
-        unless ( $data->{'service_type'} eq "hosted"
-            || $data->{'service_type'} eq "data-only" )
-        {
-            $self->{'errors'}->{'service_type'} = 1;
-            push( @{ $self->{'error_messages'} }, "Invalid service type." );
-        }
-    }
-
     # check that output_format is valid
     if ( exists $data->{'output_format'} ) {
         unless ( $data->{'output_format'} eq "djb"
@@ -247,7 +229,7 @@ sub get_group_nameservers {
     my ( $self, $data ) = @_;
 
     $self->search_params_sanity_check( $data,
-        qw(name description address service_type output_format status group_name)
+        qw(name description address output_format status group_name)
     );
     return $self->throw_sanity_error if ( $self->{'errors'} );
     return $self->SUPER::get_group_nameservers($data);

@@ -22,7 +22,7 @@ use TestConfig;
 use TestSupport;
 use Test;
 
-BEGIN { plan tests => 584 }
+BEGIN { plan tests => 541 }
 
 ####################
 # The plan
@@ -107,7 +107,6 @@ sub doit {
         nt_group_id   => '',
         name          => 'ns.somewhere.com.',
         address       => '1.2.3.4',
-        service_type  => 'hosted',
         output_format => 'djb'
     );
     noerrok( $res, 301 );
@@ -123,7 +122,6 @@ sub doit {
         nt_group_id   => 'abc',                 #not integer
         name          => 'ns.somewhere.com.',
         address       => '1.2.3.4',
-        service_type  => 'hosted',
         output_format => 'djb'
     );
     noerrok( $res, 302 );
@@ -139,7 +137,6 @@ sub doit {
         nt_group_id   => '0',                   #not valid id
         name          => 'ns.somewhere.com.',
         address       => '1.2.3.4',
-        service_type  => 'hosted',
         output_format => 'djb'
     );
     noerrok( $res, 302 );
@@ -155,7 +152,6 @@ sub doit {
 
         #name=>'ns.somewhere.com',
         address       => '1.2.3.4',
-        service_type  => 'hosted',
         output_format => 'djb'
     );
     noerrok( $res, 301 );
@@ -174,7 +170,6 @@ sub doit {
         $res = $group1->new_nameserver(
             name          => 'a.b${_}d.com.',
             address       => '1.2.3.4',
-            service_type  => 'hosted',
             output_format => 'djb'
         );
         noerrok( $res, 300, "char $_" );
@@ -191,7 +186,6 @@ sub doit {
     $res = $group1->new_nameserver(
         name          => 'ns..somewhere.com.',
         address       => '1.2.3.4',
-        service_type  => 'hosted',
         output_format => 'djb'
     );
     noerrok( $res, 300 );
@@ -206,7 +200,6 @@ sub doit {
     $res = $group1->new_nameserver(
         name          => 'ns.-something.com.',
         address       => '1.2.3.4',
-        service_type  => 'hosted',
         output_format => 'djb'
     );
     noerrok( $res, 300 );
@@ -222,7 +215,6 @@ sub doit {
     $res = $group1->new_nameserver(
         name          => 'ns.abc.com',
         address       => '1.2.3.4',
-        service_type  => 'hosted',
         output_format => 'djb'
     );
     noerrok( $res, 300 );
@@ -240,7 +232,6 @@ sub doit {
 
         #address=>'1.2.3.4',
         name          => 'ns.somewhere.com.',
-        service_type  => 'hosted',
         output_format => 'djb'
     );
     noerrok( $res, 301 );
@@ -260,7 +251,6 @@ sub doit {
         $res = $group1->new_nameserver(
             address       => $_,
             name          => 'ns.somewhere.com.',
-            service_type  => 'hosted',
             output_format => 'djb'
         );
         noerrok( $res, 300, "address $_" );
@@ -272,46 +262,12 @@ sub doit {
         }
     }
 
-    #service_type missing
-    $res = $group1->new_nameserver(
-        name    => 'ns.somewhere.com.',
-        address => '1.2.3.4',
-
-        #service_type=>'hosted',
-        output_format => 'djb'
-    );
-    noerrok( $res, 301 );
-    ok( $res->get('error_msg')  => 'service_type' );
-    ok( $res->get('error_desc') => qr/Required parameters missing/ );
-    if ( !$res->is_error ) {
-        $res = $user->delete_nameserver(
-            nt_nameserver_id => $res->get('nt_nameserver_id') );
-    }
-
-    #service_type invalid
-    for (qw(host dataonly HOSTED DATA-ONLY)) {
-        $res = $group1->new_nameserver(
-            name          => 'ns.somewhere.com.',
-            address       => '1.2.3.4',
-            service_type  => $_,
-            output_format => 'djb'
-        );
-        noerrok( $res, 300, "service_type $_" );
-        ok( $res->get('error_msg')  => qr/Invalid service type/ );
-        ok( $res->get('error_desc') => qr/Sanity error/ );
-        if ( !$res->is_error ) {
-            $res = $user->delete_nameserver(
-                nt_nameserver_id => $res->get('nt_nameserver_id') );
-        }
-    }
 
     #no output_format
     $res = $group1->new_nameserver(
         name         => 'ns.somewhere.com.',
         address      => '1.2.3.4',
-        service_type => 'hosted',
-
-        #output_format=>'djb',
+       #output_format=>'djb',
     );
     noerrok( $res, 301 );
     ok( $res->get('error_msg')  => 'output_format' );
@@ -327,7 +283,6 @@ sub doit {
         $res = $group1->new_nameserver(
             name          => 'ns.somewhere.com.',
             address       => '1.2.3.4',
-            service_type  => 'hosted',
             output_format => $_
         );
         noerrok( $res, 300, "output_format $_" );
@@ -345,7 +300,6 @@ sub doit {
         $res = $group1->new_nameserver(
             name          => 'ns.somewhere.com.',
             address       => '1.2.3.4',
-            service_type  => 'hosted',
             output_format => 'bind',
             ttl           => $_
         );
@@ -365,7 +319,6 @@ sub doit {
     $res = $group1->new_nameserver(
         name          => 'ns.somewhere.com.',
         address       => '1.2.3.4',
-        service_type  => 'hosted',
         output_format => 'bind',
         ttl           => 86400
     );
@@ -377,7 +330,6 @@ sub doit {
     $res = $group1->new_nameserver(
         name          => 'ns2.somewhere.com.',
         address       => '1.2.3.5',
-        service_type  => 'data-only',
         output_format => 'djb',
         ttl           => 86401
     );
@@ -418,7 +370,6 @@ sub doit {
             and ok( $ns1->id, $nsid1 );
     ok( $ns1->get('name')          => 'ns.somewhere.com.' );
     ok( $ns1->get('address')       => '1.2.3.4' );
-    ok( $ns1->get('service_type')  => 'hosted' );
     ok( $ns1->get('output_format') => 'bind' );
     ok( $ns1->get('ttl')           => '86400' );
 
@@ -428,13 +379,11 @@ sub doit {
             and ok( $ns2->id, $nsid2 );
     ok( $ns2->get('name')          => 'ns2.somewhere.com.' );
     ok( $ns2->get('address')       => '1.2.3.5' );
-    ok( $ns2->get('service_type')  => 'data-only' );
     ok( $ns2->get('output_format') => 'djb' );
     ok( $ns2->get('ttl')           => '86401' );
 
     %name = ( $nsid1 => 'ns.somewhere.com.', $nsid2 => 'ns2.somewhere.com.' );
     %address       = ( $nsid1 => '1.2.3.4', $nsid2 => '1.2.3.5' );
-    %service_type  = ( $nsid1 => 'hosted',  $nsid2 => 'data-only' );
     %output_format = ( $nsid1 => 'bind',    $nsid2 => 'djb' );
     %ttl           = ( $nsid1 => '86400',   $nsid2 => '86401' );
 
@@ -474,8 +423,6 @@ sub doit {
         ok( $u[1]->get('name')          => $name{ $u[1]->id } );
         ok( $u[0]->get('address')       => $address{ $u[0]->id } );
         ok( $u[1]->get('address')       => $address{ $u[1]->id } );
-        ok( $u[0]->get('service_type')  => $service_type{ $u[0]->id } );
-        ok( $u[1]->get('service_type')  => $service_type{ $u[1]->id } );
         ok( $u[0]->get('output_format') => $output_format{ $u[0]->id } );
         ok( $u[1]->get('output_format') => $output_format{ $u[1]->id } );
         ok( $u[0]->get('ttl')           => $ttl{ $u[0]->id } );
@@ -493,7 +440,6 @@ sub doit {
         @u = $res->list;
         ok( $u[0]->get('name')          => $name{$nsid1} );
         ok( $u[0]->get('address')       => $address{$nsid1} );
-        ok( $u[0]->get('service_type')  => $service_type{$nsid1} );
         ok( $u[0]->get('output_format') => $output_format{$nsid1} );
         ok( $u[0]->get('ttl')           => $ttl{$nsid1} );
     }
@@ -509,7 +455,6 @@ sub doit {
         @u = $res->list;
         ok( $u[0]->get('name')          => $name{$nsid2} );
         ok( $u[0]->get('address')       => $address{$nsid2} );
-        ok( $u[0]->get('service_type')  => $service_type{$nsid2} );
         ok( $u[0]->get('output_format') => $output_format{$nsid2} );
         ok( $u[0]->get('ttl')           => $ttl{$nsid2} );
     }
@@ -554,8 +499,6 @@ sub doit {
         ok( $u[1]->get('name')          => $name{ $u[1]->id } );
         ok( $u[0]->get('address')       => $address{ $u[0]->id } );
         ok( $u[1]->get('address')       => $address{ $u[1]->id } );
-        ok( $u[0]->get('service_type')  => $service_type{ $u[0]->id } );
-        ok( $u[1]->get('service_type')  => $service_type{ $u[1]->id } );
         ok( $u[0]->get('output_format') => $output_format{ $u[0]->id } );
         ok( $u[1]->get('output_format') => $output_format{ $u[1]->id } );
         ok( $u[0]->get('ttl')           => $ttl{ $u[0]->id } );
@@ -638,8 +581,6 @@ sub doit {
         ok( $u[1]->get('name')          => $name{ $u[1]->id } );
         ok( $u[0]->get('address')       => $address{ $u[0]->id } );
         ok( $u[1]->get('address')       => $address{ $u[1]->id } );
-        ok( $u[0]->get('service_type')  => $service_type{ $u[0]->id } );
-        ok( $u[1]->get('service_type')  => $service_type{ $u[1]->id } );
         ok( $u[0]->get('output_format') => $output_format{ $u[0]->id } );
         ok( $u[1]->get('output_format') => $output_format{ $u[1]->id } );
         ok( $u[0]->get('ttl')           => $ttl{ $u[0]->id } );
@@ -724,14 +665,6 @@ sub doit {
         ok( $res->get('error_desc') => qr/Sanity error/,       "address $_" );
     }
 
-    #service_type invalid
-    for (qw(host dataonly HOSTED DATA-ONLY)) {
-        $res = $ns1->edit_nameserver( service_type => $_, );
-        noerrok( $res, 300, "service_type $_" );
-        ok( $res->get('error_msg')  => qr/Invalid service type/ );
-        ok( $res->get('error_desc') => qr/Sanity error/ );
-    }
-
     for (qw(bin djbs DJB BIND NT)) {
 
         #invalid output_format
@@ -761,7 +694,6 @@ sub doit {
     $name{$nsid1} = 'ns3.somewhere.com.';
     ok( $ns1->get('name')          => $name{$nsid1} );
     ok( $ns1->get('address')       => $address{$nsid1} );
-    ok( $ns1->get('service_type')  => $service_type{$nsid1} );
     ok( $ns1->get('output_format') => $output_format{$nsid1} );
     ok( $ns1->get('ttl')           => $ttl{$nsid1} );
 
@@ -772,18 +704,13 @@ sub doit {
     $address{$nsid1} = '1.2.3.6';
     ok( $ns1->get('name')          => $name{$nsid1} );
     ok( $ns1->get('address')       => $address{$nsid1} );
-    ok( $ns1->get('service_type')  => $service_type{$nsid1} );
     ok( $ns1->get('output_format') => $output_format{$nsid1} );
     ok( $ns1->get('ttl')           => $ttl{$nsid1} );
 
-    $res = $ns1->edit_nameserver( service_type => "data-only" );
-    noerrok($res);
     $ns1 = $user->get_nameserver( nt_nameserver_id => $nsid1 );
     noerrok($ns1);
-    $service_type{$nsid1} = 'data-only';
     ok( $ns1->get('name')          => $name{$nsid1} );
     ok( $ns1->get('address')       => $address{$nsid1} );
-    ok( $ns1->get('service_type')  => $service_type{$nsid1} );
     ok( $ns1->get('output_format') => $output_format{$nsid1} );
     ok( $ns1->get('ttl')           => $ttl{$nsid1} );
 
@@ -794,7 +721,6 @@ sub doit {
     $output_format{$nsid1} = 'djb';
     ok( $ns1->get('name')          => $name{$nsid1} );
     ok( $ns1->get('address')       => $address{$nsid1} );
-    ok( $ns1->get('service_type')  => $service_type{$nsid1} );
     ok( $ns1->get('output_format') => $output_format{$nsid1} );
     ok( $ns1->get('ttl')           => $ttl{$nsid1} );
 
@@ -805,7 +731,6 @@ sub doit {
     $ttl{$nsid1} = '86402';
     ok( $ns1->get('name')          => $name{$nsid1} );
     ok( $ns1->get('address')       => $address{$nsid1} );
-    ok( $ns1->get('service_type')  => $service_type{$nsid1} );
     ok( $ns1->get('output_format') => $output_format{$nsid1} );
     ok( $ns1->get('ttl')           => $ttl{$nsid1} );
 

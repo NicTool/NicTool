@@ -1375,7 +1375,6 @@ sub security {
     $res = $user->new_nameserver(
         name          => 'ns2.somewhere.com.',
         address       => '1.2.3.5',
-        service_type  => 'data-only',
         output_format => 'djb',
         ttl           => 86401
     );
@@ -1466,7 +1465,6 @@ sub security {
         nt_group_id   => $user->get('nt_group_id'),
         name          => 'ns2.somewhere.test.',
         address       => '4.4.4.4',
-        service_type  => 'data-only',
         output_format => 'djb',
         ttl           => 86404
     );
@@ -1759,7 +1757,6 @@ sub security {
         nt_group_id   => $gid2,
         name          => 'ns2.somewhere.test.',
         address       => '4.4.4.4',
-        service_type  => 'data-only',
         output_format => 'djb',
         ttl           => 86404
     );

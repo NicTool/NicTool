@@ -22,7 +22,7 @@ use TestConfig;
 use TestSupport;
 use Test;
 
-BEGIN { plan tests => 4658 }
+BEGIN { plan tests => 4656 }
 
 ####################
 # The plan
@@ -407,7 +407,6 @@ sub test_create {
     $res = $tuser->new_nameserver(
         name          => 'ns.somewhere.com.',
         address       => '1.2.3.4',
-        service_type  => 'hosted',
         output_format => 'bind',
         ttl           => 86400
     );
@@ -425,7 +424,6 @@ sub test_create {
     $res = $tuser->new_nameserver(
         name          => 'ns.somewhere.com.',
         address       => '1.2.3.4',
-        service_type  => 'hosted',
         output_format => 'bind',
         ttl           => 86400
     );
@@ -865,7 +863,6 @@ sub test_modify {
         name          => 'ns.somewhere.com.',
         description   => 'blah blah blah',
         address       => '1.2.3.4',
-        service_type  => 'hosted',
         output_format => 'djb',
     );
     $res = $tuser->new_nameserver(%ns);
@@ -879,7 +876,6 @@ sub test_modify {
         name             => 'ns2.somewhere.com.',
         description      => 'new nameserver addr',
         address          => '1.2.3.5',
-        service_type     => 'data-only',
         output_format    => 'bind',
     );
 
@@ -906,7 +902,6 @@ sub test_modify {
         name          => 'ns2.somewhere.com.',
         description   => 'new nameserver addr',
         address       => '1.2.3.5',
-        service_type  => 'data-only',
         output_format => 'bind',
     );
 
@@ -1240,7 +1235,6 @@ sub test_delete {
         name          => 'ns.somewhere.com.',
         description   => 'blah blah blah',
         address       => '1.2.3.4',
-        service_type  => 'hosted',
         output_format => 'djb',
     );
     $res = $tuser->new_nameserver(%ns);

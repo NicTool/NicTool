@@ -1,8 +1,5 @@
 #!/usr/bin/perl
 #
-# $Id: group_nameservers.cgi 635 2008-09-13 04:03:07Z matt $
-#
-#
 # NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
 # NicTool v2.01 Copyright 2004 The Network People, Inc.
 #
@@ -35,7 +32,7 @@ sub main {
 
     if ($user) {
         print $q->header;
-        &display( $nt_obj, $q, $user );
+        display( $nt_obj, $q, $user );
     }
 }
 
@@ -61,14 +58,14 @@ sub display {
     if ( $q->param('new') ) {
         if ( $q->param('Create') ) {
             my @fields
-                = qw(nt_group_id name ttl description address service_type output_format logdir datadir export_interval);
+                = qw(nt_group_id name ttl description address output_format logdir datadir export_interval);
             my %data;
             foreach my $x (@fields) {
                 $data{$x} = $q->param($x);
             }
             my $error = $nt_obj->new_nameserver(%data);
             if ( $error->{'error_code'} != 200 ) {
-                &display_edit_nameserver( $nt_obj, $user, $q, $error, 'new' );
+                display_edit_nameserver( $nt_obj, $user, $q, $error, 'new' );
             }
         }
         elsif ( $q->param('Cancel') ) {
@@ -76,21 +73,20 @@ sub display {
             # do nothing
         }
         else {
-            &display_edit_nameserver( $nt_obj, $user, $q, '', 'new' );
+            display_edit_nameserver( $nt_obj, $user, $q, '', 'new' );
         }
     }
     if ( $q->param('edit') ) {
         if ( $q->param('Save') ) {
             my @fields
-                = qw(nt_group_id nt_nameserver_id name ttl description address service_type output_format logdir datadir export_interval);
+                = qw(nt_group_id nt_nameserver_id name ttl description address output_format logdir datadir export_interval);
             my %data;
             foreach my $x (@fields) {
                 $data{$x} = $q->param($x);
             }
             my $error = $nt_obj->edit_nameserver(%data);
             if ( $error->{'error_code'} != 200 ) {
-                &display_edit_nameserver( $nt_obj, $user, $q, $error,
-                    'edit' );
+                display_edit_nameserver( $nt_obj, $user, $q, $error, 'edit' );
             }
         }
         elsif ( $q->param('Cancel') ) {
@@ -98,7 +94,7 @@ sub display {
             # do nothing
         }
         else {
-            &display_edit_nameserver( $nt_obj, $user, $q, '', 'edit' );
+            display_edit_nameserver( $nt_obj, $user, $q, '', 'edit' );
         }
     }
 
@@ -114,7 +110,7 @@ sub display {
 
     my $group = $nt_obj->get_group( nt_group_id => $q->param('nt_group_id') );
 
-    &display_list( $nt_obj, $q, $group, $user );
+    display_list( $nt_obj, $q, $group, $user );
 
     $nt_obj->parse_template($NicToolClient::end_html_template);
 }
@@ -132,9 +128,7 @@ sub display_list {
         name        => 'Name',
         description => 'Description',
         address     => 'Address',
-
-        #        service_type    => 'Service Type',
-        #        output_format   => 'Output Format',
+       #output_format=> 'Output Format',
         status     => 'Export Status',
         group_name => 'Group'
     );
@@ -373,7 +367,7 @@ sub display_edit_nameserver {
         }
         else {
             my @fields
-                = qw(nt_nameserver_id name ttl description address service_type output_format logdir datadir export_interval);
+                = qw(nt_nameserver_id name ttl description address output_format logdir datadir export_interval);
             foreach (@fields) {
                 $q->param( $_, $nameserver->{$_} );
             }
@@ -383,10 +377,6 @@ sub display_edit_nameserver {
         = $user->{'nameserver_write'}
         && ( !exists $nameserver->{'delegate_write'}
         || $nameserver->{'delegate_write'} );
-    my $service_type_values  = [ sort keys %{ $nt_obj->ns_service_types() } ];
-    my $service_type_labels  = $nt_obj->ns_service_types();
-    my $service_type_default = $q->param('service_type');
-
     my $output_format_values
         = [ sort keys %{ $nt_obj->ns_output_formats() } ];
     my $output_format_labels  = $nt_obj->ns_output_formats();
@@ -438,21 +428,6 @@ sub display_edit_nameserver {
             -maxlength => 15
             )
         : $nameserver->{'address'}
-        ),
-        "</td></tr>";
-
-    print "<tr bgcolor=$NicToolClient::light_grey>";
-    print "<td align=right>", "Service Type:</td>";
-    print "<td width=80%>\n",
-        (
-        $modifyperm
-        ? $q->popup_menu(
-            -name    => 'service_type',
-            -values  => $service_type_values,
-            -default => $service_type_default,
-            -labels  => $service_type_labels
-            )
-        : $service_type_labels->{ $nameserver->{'service_type'} }
         ),
         "</td></tr>";
 

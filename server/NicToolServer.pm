@@ -535,7 +535,6 @@ sub api_commands {
                     { 'access' => 'read', required => 1, type => 'GROUP' },
                 'address'       => { required => 1 },
                 'name'          => { required => 1 },
-                'service_type'  => { required => 1 },
                 'output_format' => { required => 1 },
             },
         },
@@ -1584,8 +1583,10 @@ sub get_group_branches {
 
 sub dbh {
     #warn Data::Dumper::Dumper(\@_);
-    my $self = shift;
-    my $dsn = shift || $NicToolServer::dsn or die "missing DSN!";
+    my ($self, $dsn) = @_;
+    if ( ! $dsn || $dsn !~ /^DBI/ ) {
+        $dsn = $NicToolServer::dsn or die "missing DSN!";
+    };
     my $dbh = DBI->connect( $dsn, $NicToolServer::db_user, $NicToolServer::db_pass);
 
     unless ($dbh) {

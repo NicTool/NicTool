@@ -100,7 +100,6 @@ sub doit {
     $res = $group1->new_nameserver(
         name          => 'ns.somewhere.com.',
         address       => '1.2.3.4',
-        service_type  => 'hosted',
         output_format => 'bind',
         ttl           => 86400
     );
@@ -112,7 +111,6 @@ sub doit {
     $res = $group1->new_nameserver(
         name          => 'ns2.somewhere.com.',
         address       => '1.2.3.5',
-        service_type  => 'data-only',
         output_format => 'djb',
         ttl           => 86401
     );

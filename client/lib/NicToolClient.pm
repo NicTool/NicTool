@@ -80,14 +80,8 @@ sub rr_reverse_types {
 
 sub ns_output_formats {
     {
-
-       #        'bind'      => 'BIND (ISC\'s Berkeley Internet Named Daemon)',
-        'djb' => 'DJBDNS (D. J. Bernstein\'s DNS Software)', };
-}
-
-sub ns_service_types {
-    {   'hosted'    => 'NicTool Virtual Nameserver',
-        'data-only' => 'Data Storage Only (External Nameserver)'
+        'bind' => 'BIND (ISC\'s Berkeley Internet Named Daemon)',
+        'djb'  => 'tinydns (part of DJBDNS)',
     };
 }
 
