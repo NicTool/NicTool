@@ -44,7 +44,7 @@ sub get_usable_nameservers {
 
     my $sql
         = "SELECT * FROM nt_nameserver "
-        . " WHERE deleted = '0' AND (nt_group_id IN ("
+        . " WHERE deleted=0 AND (nt_group_id IN ("
         . join( ",", @groups )
         . ")"
         . (
@@ -85,10 +85,10 @@ sub get_group_nameservers {
             quicksearch => 0,
             field       => 'nt_nameserver.address'
         },
-        output_format => {
+        export_format => {
             timefield   => 0,
             quicksearch => 0,
-            field       => 'nt_nameserver.output_format'
+            field       => 'nt_nameserver.export_format'
         },
         status => {
             timefield   => 0,
@@ -118,7 +118,7 @@ sub get_group_nameservers {
 
     my $sql = "SELECT COUNT(*) AS count FROM nt_nameserver "
         . "INNER JOIN nt_group ON nt_nameserver.nt_group_id = nt_group.nt_group_id "
-        . "WHERE nt_nameserver.deleted = '0' "
+        . "WHERE nt_nameserver.deleted=0 "
         . "AND nt_nameserver.nt_group_id IN("
         . join( ',', @group_list ) . ")"
         . ( @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
@@ -145,7 +145,7 @@ sub get_group_nameservers {
         . "FROM nt_nameserver "
         . "INNER JOIN nt_group ON nt_nameserver.nt_group_id = nt_group.nt_group_id "
         . "LEFT JOIN nt_nameserver_export_procstatus ON nt_nameserver.nt_nameserver_id = nt_nameserver_export_procstatus.nt_nameserver_id "
-        . "WHERE nt_nameserver.deleted = '0' "
+        . "WHERE nt_nameserver.deleted=0 "
         . "AND nt_group.nt_group_id IN("
         . join( ',', @group_list ) . ") ";
     $sql .= 'AND (' . join( ' ', @$conditions ) . ') ' if @$conditions;
@@ -177,7 +177,7 @@ sub get_nameserver_list {
 
 # my %groups = map { $_, 1 } ($data->{'user'}->{'nt_group_id'}, @{ $self->get_subgroup_ids($data->{'user'}->{'nt_group_id'}) });
 
-    my $sql = "SELECT * FROM nt_nameserver WHERE deleted = '0' AND nt_nameserver_id IN(??) ORDER BY name";
+    my $sql = "SELECT * FROM nt_nameserver WHERE deleted=0 AND nt_nameserver_id IN(??) ORDER BY name";
 
     my @ns_list = split(',', $data->{'nameserver_list'} );
     my $nameservers = $self->exec_query( $sql, [ @ns_list ] )
@@ -254,7 +254,7 @@ sub new_nameserver {
     my ( $self, $data ) = @_;
 
     my @columns = qw/ nt_group_id nt_nameserver_id name ttl description 
-        address output_format logdir datadir export_interval /;
+        address export_format logdir datadir export_interval /;
 
     my $sql = "INSERT INTO nt_nameserver(" . join( ',', @columns ) . ") VALUES("
         . join( ',', map( $self->{dbh}->quote( $data->{$_} ), @columns ) ) . ")";
@@ -282,7 +282,7 @@ sub edit_nameserver {
     my $dbh = $self->{dbh};
     my @columns = grep { exists $data->{$_} }
         qw/ nt_group_id nt_nameserver_id name ttl description address 
-            output_format logdir datadir export_interval /;
+            export_format logdir datadir export_interval /;
 
     my $prev_data = $self->find_nameserver( $data->{'nt_nameserver_id'} );
 
@@ -313,7 +313,7 @@ sub delete_nameserver {
     my %error = ( 'error_code' => 200, 'error_msg' => 'OK' );
 
     my $nsid = $dbh->quote( $data->{'nt_nameserver_id'} );
-    my $sql = "SELECT nt_zone_id FROM nt_zone WHERE deleted = '0'"
+    my $sql = "SELECT nt_zone_id FROM nt_zone WHERE deleted=0"
         . " AND (ns0 = $nsid OR ns1 = $nsid OR ns2 = $nsid OR ns3 = $nsid"
         . " OR ns4 = $nsid OR ns5 = $nsid OR ns6 = $nsid OR ns7 = $nsid"
         . " OR ns8 = $nsid OR ns9 = $nsid)";
@@ -329,7 +329,7 @@ sub delete_nameserver {
     my $ns_data = $self->find_nameserver( $data->{'nt_nameserver_id'} );
     $ns_data->{'user'} = $data->{'user'};
 
-    $sql = "UPDATE nt_nameserver SET deleted = '1' WHERE nt_nameserver_id = ?";
+    $sql = "UPDATE nt_nameserver SET deleted=1 WHERE nt_nameserver_id = ?";
     $self->exec_query( $sql, $data->{'nt_nameserver_id'} )
         or return $self->error_response( 600, $dbh->errstr );
 
@@ -343,7 +343,7 @@ sub log_nameserver {
 
     my $dbh = $self->{'dbh'};
     my @columns = qw/ nt_group_id nt_user_id action timestamp nt_nameserver_id
-    name ttl description address output_format logdir datadir export_interval /;
+    name ttl description address export_format logdir datadir export_interval /;
 
     my $user = $data->{'user'};
     $data->{'nt_user_id'} = $user->{'nt_user_id'};

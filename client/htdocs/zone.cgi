@@ -99,7 +99,7 @@ sub display_properties {
             my %data;
             foreach (@fields) { $data{$_} = $q->param($_); }
             $data{'nameservers'} = join( ',', $q->param('nameservers') );
-            $data{'deleted'} = '0' if $q->param('undelete');
+            $data{'deleted'} = 0 if $q->param('undelete');
 
             #warn "nameservers: ".$data{'nameservers'};
             #warn "data: ".join(":",map {$_."=".$data{$_}} keys %data);
@@ -1009,7 +1009,7 @@ sub display_edit_record {
             $q->hidden( -name => 'nt_zone_id' ), "\n";
         print $q->hidden( -name => 'nt_zone_record_id' ) if $edit eq 'edit';
         print $q->hidden( -name => 'nt_zone_record_log_id' );
-        print $q->hidden( -name => 'deleted', -value => '0' )
+        print $q->hidden( -name => 'deleted', -value => 0 )
             if $action eq 'Recover';
 
         foreach ( @{ $nt_obj->paging_fields } ) {

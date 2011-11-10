@@ -97,7 +97,7 @@ get_group_permissions returns the permissions structure for a certain group
 =cut
 
     my $gid = $data->{'nt_group_id'};
-    my $sql = "SELECT * FROM nt_perm WHERE deleted != '1' "
+    my $sql = "SELECT * FROM nt_perm WHERE deleted != 1 "
         . "AND nt_group_id = ?";
     my $perms = $self->exec_query( $sql, $gid )
         or return $self->error_response( 505, $self->{dbh}->errstr );
@@ -122,15 +122,15 @@ user's inherit from their parent groups
 =cut
 
     my $uid = $data->{nt_user_id};
-    my $sql = "SELECT * FROM nt_perm WHERE deleted != '1' AND nt_user_id = ?";
+    my $sql = "SELECT * FROM nt_perm WHERE deleted != 1 AND nt_user_id = ?";
     my $perms = $self->exec_query( $sql, $uid )
         or return $self->error_response( 505, $self->{dbh}->errstr );
 
     my $perm = $perms->[0];
     if ( !$perm ) {
         $sql
-            = "SELECT nt_perm.* FROM nt_perm,nt_user WHERE nt_perm.deleted != '1' "
-            . "AND nt_user.deleted != '1' "
+            = "SELECT nt_perm.* FROM nt_perm,nt_user WHERE nt_perm.deleted!=1 "
+            . "AND nt_user.deleted != 1 "
             . "AND nt_user.nt_user_id = ?"
             . "AND nt_perm.nt_group_id = nt_user.nt_group_id";
         $perms = $self->exec_query( $sql, $uid )
@@ -237,7 +237,7 @@ sub delegate_objects {
 
     my %objs = map { $_ => 0 } split( /,/, $data->{nt_object_id_list} );
     my $sql = "SELECT * FROM nt_delegate
-        WHERE deleted = '0' 
+        WHERE deleted=0
          AND nt_group_id = ?
          AND nt_object_type = ?
          AND nt_object_id IN (" . $data->{'nt_object_id_list'} . ") ";
@@ -335,7 +335,7 @@ sub delete_object_delegation {
     my $dbh = $self->{'dbh'};
 
     my $sql
-        = "SELECT * FROM nt_delegate WHERE deleted = '0' "
+        = "SELECT * FROM nt_delegate WHERE deleted=0 "
         . "AND nt_object_id = ?"
         . " AND nt_object_type = ?"
         . " AND nt_group_id = ?";
@@ -435,8 +435,8 @@ sub delegated_objects_from_group {
             . "INNER JOIN nt_delegate ON $table.$idname=nt_delegate.nt_object_id "
             . "AND nt_delegate.nt_object_type='$type' "
             . "INNER JOIN nt_group ON $table.nt_group_id=nt_group.nt_group_id "
-            . "WHERE nt_delegate.deleted = '0' "
-            . "AND $table.deleted = '0' "
+            . "WHERE nt_delegate.deleted=0 "
+            . "AND $table.deleted=0 "
             . "AND nt_delegate.nt_group_id = "
             . $data->{'nt_group_id'} . " "
             . "AND nt_delegate.nt_object_id = $table.$idname ";
@@ -489,8 +489,8 @@ sub delegated_objects_by_type {
             . "INNER JOIN nt_group ON nt_group.nt_group_id = nt_zone.nt_group_id "
         : "INNER JOIN nt_group ON $table.nt_group_id=nt_group.nt_group_id "
         )
-        . "WHERE nt_delegate.deleted = '0' "
-        . "AND $table.deleted = '0' "
+        . "WHERE nt_delegate.deleted=0 "
+        . "AND $table.deleted=0 "
         . "AND nt_delegate.nt_group_id = ?";
 
     my $objects = $self->exec_query( $sql, $data->{'nt_group_id'} )
@@ -537,8 +537,8 @@ sub get_object_delegates {
         . " FROM nt_delegate"
         . " INNER JOIN nt_group"
         . "       on nt_delegate.nt_group_id=nt_group.nt_group_id"
-        . " WHERE nt_delegate.deleted = '0' "
-        . " AND nt_group.deleted = '0' "
+        . " WHERE nt_delegate.deleted=0 "
+        . " AND nt_group.deleted=0 "
         . " AND nt_object_id = ?"
         . " AND nt_object_type = ?";
 
@@ -597,7 +597,7 @@ sub edit_object_delegation {
                 $data->{'nt_object_id'} );
     ##end sanity checks
 
-    my $sql = "SELECT * FROM nt_delegate WHERE deleted='0'
+    my $sql = "SELECT * FROM nt_delegate WHERE deleted=0
         AND nt_group_id=? AND nt_object_id=? AND nt_object_type=?";
 
     my $delegates = $self->exec_query( $sql, 
@@ -633,7 +633,7 @@ sub edit_object_delegation {
     $sql = "UPDATE nt_delegate set "
         . join( ",",
         map { "$_ = " . $dbh->quote( $params{$_} ) } keys %params )
-        . " WHERE deleted='0'
+        . " WHERE deleted=0
               AND nt_group_id=?
               AND nt_object_id=?
               AND nt_object_type=?";

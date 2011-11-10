@@ -314,8 +314,8 @@ sub test_create {
 
     $res = $tuser->new_zone(
         zone        => 'test.com',
-        serial      => '0',
-        ttl         => '86400',
+        serial      => 0,
+        ttl         => 86400,
         description => "test delete me",
         mailaddr    => "somebody.somewhere.com",
         refresh     => 10,
@@ -336,8 +336,8 @@ sub test_create {
 
     $res = $tuser->new_zone(
         zone        => 'test.com',
-        serial      => '0',
-        ttl         => '86400',
+        serial      => 0,
+        ttl         => 86400,
         description => "test delete me",
         mailaddr    => "somebody.somewhere.com",
         refresh     => 10,
@@ -407,7 +407,7 @@ sub test_create {
     $res = $tuser->new_nameserver(
         name          => 'ns.somewhere.com.',
         address       => '1.2.3.4',
-        output_format => 'bind',
+        export_format => 'bind',
         ttl           => 86400
     );
 
@@ -424,7 +424,7 @@ sub test_create {
     $res = $tuser->new_nameserver(
         name          => 'ns.somewhere.com.',
         address       => '1.2.3.4',
-        output_format => 'bind',
+        export_format => 'bind',
         ttl           => 86400
     );
 
@@ -478,8 +478,8 @@ sub test_create {
 
     $res = $tuser->new_zone(
         zone        => 'test.com',
-        serial      => '0',
-        ttl         => '86400',
+        serial      => 0,
+        ttl         => 86400,
         description => "test delete me",
         mailaddr    => "somebody.somewhere.com",
         refresh     => 10,
@@ -552,8 +552,8 @@ sub test_modify {
 
     %zoneorig = (
         zone        => 'test.com',
-        serial      => '0',
-        ttl         => '86400',
+        serial      => 0,
+        ttl         => 86400,
         description => "test delete me",
         mailaddr    => "somebody.somewhere.com",
         refresh     => 10,
@@ -863,7 +863,7 @@ sub test_modify {
         name          => 'ns.somewhere.com.',
         description   => 'blah blah blah',
         address       => '1.2.3.4',
-        output_format => 'djb',
+        export_format => 'djb',
     );
     $res = $tuser->new_nameserver(%ns);
 
@@ -876,7 +876,7 @@ sub test_modify {
         name             => 'ns2.somewhere.com.',
         description      => 'new nameserver addr',
         address          => '1.2.3.5',
-        output_format    => 'bind',
+        export_format    => 'bind',
     );
 
     noerrok( $res, 404, "no nameserver_write perms" );
@@ -902,7 +902,7 @@ sub test_modify {
         name          => 'ns2.somewhere.com.',
         description   => 'new nameserver addr',
         address       => '1.2.3.5',
-        output_format => 'bind',
+        export_format => 'bind',
     );
 
     $res = $tuser->edit_nameserver(
@@ -996,8 +996,8 @@ sub test_delete {
 
     %zoneorig = (
         zone        => 'test.com',
-        serial      => '0',
-        ttl         => '86400',
+        serial      => 0,
+        ttl         => 86400,
         description => "test delete me",
         mailaddr    => "somebody.somewhere.com",
         refresh     => 10,
@@ -1162,7 +1162,7 @@ sub test_delete {
     ####################
     %zoneorig = (
         zone        => 'test.com',
-        serial      => '0',
+        serial      => 0,
         ttl         => '86400',
         description => "test delete me",
         mailaddr    => "somebody.somewhere.com",
@@ -1235,7 +1235,7 @@ sub test_delete {
         name          => 'ns.somewhere.com.',
         description   => 'blah blah blah',
         address       => '1.2.3.4',
-        output_format => 'djb',
+        export_format => 'djb',
     );
     $res = $tuser->new_nameserver(%ns);
 

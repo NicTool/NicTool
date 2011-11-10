@@ -6,7 +6,7 @@ CREATE TABLE nt_group (
     nt_group_id         INT UNSIGNED AUTO_INCREMENT NOT NULL PRIMARY KEY,
     parent_group_id     INT UNSIGNED NOT NULL,
     name                VARCHAR(255) NOT NULL,
-    deleted             enum('0','1') DEFAULT '0' NOT NULL
+    deleted             TINYINT(1) UNSIGNED DEFAULT 0 NOT NULL
 ) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 CREATE INDEX nt_group_idx1 on nt_group(parent_group_id); 
 CREATE INDEX nt_group_idx2 on nt_group(name); # for searching

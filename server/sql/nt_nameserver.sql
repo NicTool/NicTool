@@ -9,11 +9,12 @@ CREATE TABLE nt_nameserver(
     ttl                 INT UNSIGNED,
     description         VARCHAR(255),
     address             VARCHAR(127) NOT NULL,
-    output_format       enum('djb','bind','nt') NOT NULL,
+    export_format       enum('djb','bind') NOT NULL,
     logdir              VARCHAR(255),
     datadir             VARCHAR(255),
     export_interval     SMALLINT UNSIGNED,
-    deleted             enum('0','1') DEFAULT '0' NOT NULL
+    export_serials      tinyint(1) UNSIGNED NOT NULL DEFAULT '1',
+    deleted             TINYINT(1) UNSIGNED DEFAULT 0 NOT NULL
 ) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 CREATE INDEX nt_nameserver_idx1 on nt_nameserver(name);
 CREATE INDEX nt_nameserver_idx2 on nt_nameserver(deleted);
@@ -30,7 +31,7 @@ CREATE TABLE nt_nameserver_log(
     ttl                 INT UNSIGNED,
     description         VARCHAR(255),
     address             VARCHAR(127),
-    output_format       enum('djb','bind','nt'),
+    export_format       enum('djb','bind'),
     logdir              VARCHAR(255),
     datadir             VARCHAR(255),
     export_interval     SMALLINT UNSIGNED
@@ -39,10 +40,10 @@ CREATE INDEX nt_nameserver_log_idx1 on nt_nameserver_log(nt_nameserver_id);
 CREATE INDEX nt_nameserver_log_idx2 on nt_nameserver_log(timestamp);
 
 INSERT INTO nt_nameserver(nt_group_id, name, ttl, description, address,
-  output_format, logdir, datadir, export_interval) values (1,'ns2.nictool.com.',86400,'ns west',
+  export_format, logdir, datadir, export_interval) values (1,'ns2.nictool.com.',86400,'ns west',
   '216.133.235.6','djb','/etc/tinydns-ns2/log/main/','/etc/tinydns-ns2/root/',120);
 INSERT INTO nt_nameserver(nt_group_id, name, ttl, description, address, 
-  output_format, logdir, datadir, export_interval) values (1,'ns1.nictool.com.',86400,'ns east',
+  export_format, logdir, datadir, export_interval) values (1,'ns1.nictool.com.',86400,'ns east',
   '198.93.97.188','djb','/etc/tinydns-ns1/log/main/',
   '/etc/tinydns-ns1/root/',120);
 INSERT INTO nt_nameserver_log(nt_group_id,nt_user_id, action, timestamp, nt_nameserver_id) VALUES (1,1,'added',UNIX_TIMESTAMP(), 1);
@@ -91,8 +92,8 @@ CREATE TABLE nt_nameserver_export_log(
     date_end                        timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP  on update CURRENT_TIMESTAMP,
     result_id                       int NULL DEFAULT NULL,
     message                         VARCHAR(256) NULL DEFAULT NULL,
-    success                         tinyint(3) UNSIGNED NULL DEFAULT NULL,
-    partial                         tinyint(3) UNSIGNED NOT NULL DEFAULT '0'
+    success                         tinyint(2) UNSIGNED NULL DEFAULT NULL,
+    partial                         tinyint(1) UNSIGNED NOT NULL DEFAULT 0
 ) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 CREATE INDEX nt_nameserver_export_log_idx1 on nt_nameserver_export_log(nt_nameserver_id);
 

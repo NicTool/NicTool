@@ -192,7 +192,7 @@ sub new_or_edit_basic_verify {
 sub record_exists {
     my ( $self, $record, $record_type, $zone_id, $rid ) = @_;
 
-    my $sql = "SELECT * FROM nt_zone_record WHERE deleted = '0' AND type = ?
+    my $sql = "SELECT * FROM nt_zone_record WHERE deleted=0 AND type = ?
          AND nt_zone_id = ? AND name = ?";
     if ($rid) {
         $sql .= " AND nt_zone_record_id <> $rid";

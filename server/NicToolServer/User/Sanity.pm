@@ -151,7 +151,7 @@ sub _username_exists {
 
     $data->{'groupname'} = $groups->[0]{name};
 
-    $sql = "SELECT nt_group_id FROM nt_group WHERE name = ? AND deleted='0'";
+    $sql = "SELECT nt_group_id FROM nt_group WHERE name = ? AND deleted=0";
     $groups = $self->exec_query( $sql, $groups->[0]{name} );
 
     my @groups;
@@ -160,12 +160,12 @@ sub _username_exists {
     }
 
     if ( $data->{'nt_user_id'} ) {
-        $sql = "SELECT nt_user_id FROM nt_user WHERE deleted = '0' AND nt_group_id IN ("
+        $sql = "SELECT nt_user_id FROM nt_user WHERE deleted=0 AND nt_group_id IN ("
             . join( ',', @groups )
             . ") AND nt_user_id != $data->{'nt_user_id'} AND username=?";
     }
     else {
-        $sql = "SELECT nt_user_id FROM nt_user WHERE deleted = '0' AND nt_group_id IN ("
+        $sql = "SELECT nt_user_id FROM nt_user WHERE deleted=0 AND nt_group_id IN ("
             . join( ',', @groups )
             . ") AND username=?"
     }

@@ -101,7 +101,7 @@ sub doit {
     }
 
     #no nt_group_id
-    $res = $user->new_group( name => 'test_delete_me1', nt_group_id => '0' )
+    $res = $user->new_group( name => 'test_delete_me1', nt_group_id => 0 )
         ;    #invalid id
     noerrok( $res, 302 );
     ok( $res->get('error_msg')  => 'nt_group_id' );
@@ -208,7 +208,7 @@ sub doit {
     ok( $group1->get('error_desc') => qr/Some parameters were invalid/ );
 
     #no nt_group_id
-    $group1 = $user->get_group( nt_group_id => '0' );      # not valid id
+    $group1 = $user->get_group( nt_group_id => 0 );      # not valid id
     noerrok( $group1, 302 );
     ok( $group1->get('error_msg')  => 'nt_group_id' );
     ok( $group1->get('error_desc') => qr/Some parameters were invalid/ );
@@ -244,7 +244,7 @@ sub doit {
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
 
     #no nt_group_id
-    $res = $user->get_group_subgroups( nt_group_id => '0' );    # not valid id
+    $res = $user->get_group_subgroups( nt_group_id => 0 );    # not valid id
     noerrok( $res, 302 );
     ok( $res->get('error_msg')  => 'nt_group_id' );
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
@@ -292,7 +292,7 @@ sub doit {
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
 
     #no nt_group_id
-    $res = $user->get_group_groups( nt_group_id => '0' );      #not valid id
+    $res = $user->get_group_groups( nt_group_id => 0 );      #not valid id
     noerrok( $res, 302 );
     ok( $res->get('error_msg')  => 'nt_group_id' );
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
@@ -340,7 +340,7 @@ sub doit {
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
 
     #no nt_group_id
-    $res = $user->get_group_branch( nt_group_id => '0' );      # not valid id
+    $res = $user->get_group_branch( nt_group_id => 0 );      # not valid id
     noerrok( $res, 302 );
     ok( $res->get('error_msg')  => 'nt_group_id' );
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
@@ -388,7 +388,7 @@ sub doit {
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
 
     #no group id
-    $res = $group1->edit_group( nt_group_id => '0' );      #not valid id
+    $res = $group1->edit_group( nt_group_id => 0 );      #not valid id
     noerrok( $res, 302 );
     ok( $res->get('error_msg')  => 'nt_group_id' );
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
@@ -468,7 +468,7 @@ sub doit {
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
 
     #no group id
-    $res = $user->delete_group( nt_group_id => '0' );      #invalid id
+    $res = $user->delete_group( nt_group_id => 0 );      #invalid id
     noerrok( $res, 302 );
     ok( $res->get('error_msg')  => 'nt_group_id' );
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );

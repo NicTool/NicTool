@@ -105,8 +105,8 @@ sub groups_with_children {
     #
     $res = $group1->new_zone(
         zone        => 'test.com',
-        serial      => '0',
-        ttl         => '86400',
+        serial      => 0,
+        ttl         => 86400,
         description => "test delete me",
         mailaddr    => "somebody.somewhere.com",
         refresh     => 10,
@@ -254,7 +254,7 @@ sub nameserver_with_zones {
     $res = $user->new_nameserver(
         name          => 'ns.somewhere.com.',
         address       => '1.2.3.4',
-        output_format => 'bind',
+        export_format => 'bind',
         ttl           => 86400
     );
     noerrok($res);
@@ -263,8 +263,8 @@ sub nameserver_with_zones {
     #make new zone
     $res = $group1->new_zone(
         zone        => 'test.com',
-        serial      => '0',
-        ttl         => '86400',
+        serial      => 0,
+        ttl         => 86400,
         description => "test delete me",
         mailaddr    => "somebody.somewhere.com",
         refresh     => 10,
@@ -279,8 +279,8 @@ sub nameserver_with_zones {
     #make new zone
     $res = $group1->new_zone(
         zone        => 'test2.com',
-        serial      => '0',
-        ttl         => '86400',
+        serial      => 0,
+        ttl         => 86400,
         description => "test delete me",
         mailaddr    => "somebody.somewhere.com",
         refresh     => 10,
@@ -340,8 +340,8 @@ sub deleted_zones {
 
     $res = $group1->new_zone(
         zone        => 'test.com',
-        serial      => '0',
-        ttl         => '86400',
+        serial      => 0,
+        ttl         => 86400,
         description => "test delete me",
         mailaddr    => "somebody.somewhere.com",
         refresh     => 10,
@@ -419,8 +419,8 @@ sub deleted_records {
 
     $res = $group1->new_zone(
         zone        => 'test.com',
-        serial      => '0',
-        ttl         => '86400',
+        serial      => 0,
+        ttl         => 86400,
         description => "test delete me",
         mailaddr    => "somebody.somewhere.com",
         refresh     => 10,
@@ -518,7 +518,7 @@ sub deleted_nameservers {
     $res = $group1->new_nameserver(
         name          => 'ns2.somewhere.com.',
         address       => '1.2.3.5',
-        output_format => 'djb',
+        export_format => 'djb',
         ttl           => 86401,
     );
     noerrok($res);
@@ -565,7 +565,7 @@ sub deleted_groups {
         nt_group_id   => $gid2,
         name          => 'ns2.somewhere.com.',
         address       => '1.2.3.5',
-        output_format => 'djb',
+        export_format => 'djb',
         ttl           => 86401,
     );
     noerrok($res);
@@ -600,7 +600,7 @@ sub deleted_groups {
         nt_group_id   => $gid2,
         name          => 'ns3.somewhere.com.',
         address       => '1.2.3.5',
-        output_format => 'djb',
+        export_format => 'djb',
         ttl           => 86401,
     );
     noerrok( $res, 300 );
@@ -631,8 +631,8 @@ sub deleted_groups {
     $res = $user->new_zone(
         nt_group_id => $gid2,
         zone        => 'test.com',
-        serial      => '0',
-        ttl         => '86400',
+        serial      => 0,
+        ttl         => 86400,
         description => "test delete me",
         mailaddr    => "somebody.somewhere.com",
         refresh     => 10,
@@ -679,8 +679,8 @@ sub deleted_objects_delegation {
 
     $res = $group1->new_zone(
         zone        => 'test.com',
-        serial      => '0',
-        ttl         => '86400',
+        serial      => 0,
+        ttl         => 86400,
         description => "test delete me",
         mailaddr    => "somebody.somewhere.com",
         refresh     => 10,

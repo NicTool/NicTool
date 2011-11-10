@@ -65,7 +65,7 @@ sub new_group {
 
     my %error = ( 'error_code' => 200, 'error_msg' => 'OK' );
 
-    my $sql = "SELECT COUNT(*) AS count FROM nt_group WHERE deleted = '0' "
+    my $sql = "SELECT COUNT(*) AS count FROM nt_group WHERE deleted=0 "
         . "AND parent_group_id = ? AND name = ?";
 
     my $groups = $self->exec_query( $sql, [ $data->{nt_group_id}, $data->{name} ] );
@@ -273,7 +273,7 @@ sub delete_group {
     my %error = ( 'error_code' => 200, 'error_msg' => 'OK' );
 
     my $sql = "SELECT COUNT(*) AS count FROM nt_zone 
-        WHERE deleted = '0' AND nt_group_id = ?";
+        WHERE deleted=0 AND nt_group_id = ?";
     my $c = $self->exec_query( $sql, $data->{nt_group_id} );
 
     if ( $c->[0]->{count} > 0 ) {
@@ -283,7 +283,7 @@ sub delete_group {
     }
 
     $sql = "SELECT COUNT(*) AS count FROM nt_user 
-    WHERE deleted = '0' AND nt_group_id = ?";
+    WHERE deleted=0 AND nt_group_id = ?";
     $c = $self->exec_query( $sql, $data->{nt_group_id} );
     if ( $c->[0]->{count} > 0 ) {
         return $self->error_response( 600,
@@ -291,7 +291,7 @@ sub delete_group {
         );
     }
 
-    $sql = "SELECT COUNT(*) AS count FROM nt_group WHERE deleted = '0' AND parent_group_id = ?";
+    $sql = "SELECT COUNT(*) AS count FROM nt_group WHERE deleted=0 AND parent_group_id = ?";
     $c = $self->exec_query( $sql, $data->{nt_group_id} );
     if ( $c->[0]->{count} > 0 ) {
         return $self->error_response( 600,
@@ -302,7 +302,7 @@ sub delete_group {
     my $group_data = $self->find_group( $data->{'nt_group_id'} );
     $group_data->{'user'} = $data->{'user'};
 
-    $sql = "UPDATE nt_group SET deleted = '1' WHERE nt_group_id = ?";
+    $sql = "UPDATE nt_group SET deleted=1 WHERE nt_group_id = ?";
     $self->exec_query( $sql, $data->{nt_group_id} ) 
         or return $self->error_response( 600, $self->{dbh}->errstr );
 
@@ -336,7 +336,7 @@ sub get_group {
     }
 
     if ( $rv{'nt_group_id'} ) {
-        $sql = "SELECT COUNT(*) AS count FROM nt_group WHERE deleted='0' AND parent_group_id = ?";
+        $sql = "SELECT COUNT(*) AS count FROM nt_group WHERE deleted=0 AND parent_group_id = ?";
         my $r = $self->exec_query( $sql, $rv{'nt_group_id'} );
         $rv{'has_children'} = $r->[0]->{count};
     };
@@ -352,7 +352,7 @@ sub get_group_groups {
     my $sql
         = "SELECT nt_group.*, "
         . $self->perm_fields_select
-        . " FROM nt_group,nt_perm WHERE nt_group.deleted = '0' AND nt_perm.deleted='0' AND nt_group.parent_group_id = ?"
+        . " FROM nt_group,nt_perm WHERE nt_group.deleted=0 AND nt_perm.deleted=0 AND nt_group.parent_group_id = ?"
         . " AND nt_perm.nt_group_id = nt_group.nt_group_id ORDER BY nt_group.name";
     my $rows = $self->exec_query( $sql, $data->{'nt_group_id'} );
     my $r_data = { error_code => 200, error_msg => 'OK' };
@@ -371,7 +371,7 @@ sub get_group_groups {
 
     if ( ref( $r_data->{'groups'} ) ) {
         foreach ( @{ $r_data->{'groups'} } ) {
-            $sql = "SELECT COUNT(*) AS count FROM nt_group WHERE deleted = '0' AND parent_group_id = ?";
+            $sql = "SELECT COUNT(*) AS count FROM nt_group WHERE deleted=0 AND parent_group_id = ?";
             my $c = $self->exec_query( $_->{'nt_group_id'} );
             $_->{'has_children'} = $c->[0]->{count};
         }
@@ -411,7 +411,7 @@ sub get_group_subgroups {
     my $r_data = { error_code => 200, error_msg => 'OK', groups => [] };
 
     my $sql = "SELECT COUNT(*) AS count FROM nt_group ";
-    $sql .= "WHERE deleted = '0' AND nt_group.parent_group_id IN("
+    $sql .= "WHERE deleted=0 AND nt_group.parent_group_id IN("
         . join( ',', @group_list ) . ") "
         . ( @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
 
@@ -427,7 +427,7 @@ sub get_group_subgroups {
     }
 
     $sql = "SELECT nt_group.* FROM nt_group "
-        . "WHERE deleted = '0' AND nt_group.parent_group_id IN("
+        . "WHERE deleted=0 AND nt_group.parent_group_id IN("
         . join( ',', @group_list ) . ") ";
     $sql .= 'AND (' . join( ' ', @$conditions ) . ') ' if @$conditions;
     $sql .= "ORDER BY " . join( ', ', @$sortby ) . " " if (@$sortby);
@@ -437,7 +437,7 @@ sub get_group_subgroups {
     if ( $group_rows ) {
         my %groups;
         foreach my $row ( @$group_rows ) {
-            $sql = "SELECT COUNT(*) AS count FROM nt_group WHERE deleted = '0' AND parent_group_id = ?";
+            $sql = "SELECT COUNT(*) AS count FROM nt_group WHERE deleted=0 AND parent_group_id = ?";
             $c = $self->exec_query( $sql, $row->{'nt_group_id'} )
                 or return $self->error_response( 505, $self->{dbh}->errstr );
             $row->{'has_children'} = $c->[0]->{count};
@@ -571,7 +571,7 @@ sub get_group_branch {
     my %rv = ( error_code => 200, error_msg => 'OK', groups => [] );
 
     while ( $last_group != $user_group ) {
-        my $sql = "SELECT * FROM nt_group WHERE deleted = '0' AND nt_group_id = ?";
+        my $sql = "SELECT * FROM nt_group WHERE deleted=0 AND nt_group_id = ?";
         my $groups = $self->exec_query( $sql, $cur_group ) 
             or return {
                 error_code => 600,

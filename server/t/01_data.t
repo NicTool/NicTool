@@ -39,7 +39,7 @@ ok( $dbh, 'dbh handle' );
 $nts = NicToolServer->new(undef,undef,$dbh);
 #warn Data::Dumper::Dumper($nts);
 
-my $r = $nts->exec_query( "SELECT email FROM nt_user WHERE deleted='0'" );
+my $r = $nts->exec_query( "SELECT email FROM nt_user WHERE deleted=0" );
 ok( scalar @$r, "select users: ".scalar @$r );
 #warn Data::Dumper::Dumper($r->[0]);
 
@@ -47,7 +47,7 @@ $r = $nts->exec_query( "SELECT emailf FROM nt_user" );
 ok( ! $r, "invalid select" );
 
 
-my $zid = $nts->exec_query( "INSERT INTO nt_zone SET zone='testing.com',deleted='1'");
+my $zid = $nts->exec_query( "INSERT INTO nt_zone SET zone='testing.com',deleted=1");
 ok( $zid, "Insert zone ID $zid" );
 #warn Data::Dumper::Dumper($r);
 
@@ -62,7 +62,7 @@ $r = $nts->exec_query( "DELETE FROM nt_zone WHERE nt_zone_id=?", $zid);
 ok( $r, "Delete zone $zid");
 
 
-$r = $nts->exec_query( "INSERT INTO nt_zone SET zonef='testing.com',deleted='1'");
+$r = $nts->exec_query( "INSERT INTO nt_zone SET zonef='testing.com',deleted=1");
 ok( ! $r, "Insert zone fail" );
 #warn Data::Dumper::Dumper($r);
 

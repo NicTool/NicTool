@@ -30,18 +30,18 @@ CREATE TABLE nt_zone(
     expire              INT UNSIGNED,
     minimum             INT UNSIGNED,
     ttl                 INT UNSIGNED,
-    ns0                 SMALLINT UNSIGNED NOT NULL DEFAULT '0',
-    ns1                 SMALLINT UNSIGNED NOT NULL DEFAULT '0',
-    ns2                 SMALLINT UNSIGNED NOT NULL DEFAULT '0',
-    ns3                 SMALLINT UNSIGNED NOT NULL DEFAULT '0',
-    ns4                 SMALLINT UNSIGNED NOT NULL DEFAULT '0',
-    ns5                 SMALLINT UNSIGNED NOT NULL DEFAULT '0',
-    ns6                 SMALLINT UNSIGNED NOT NULL DEFAULT '0',
-    ns7                 SMALLINT UNSIGNED NOT NULL DEFAULT '0',
-    ns8                 SMALLINT UNSIGNED NOT NULL DEFAULT '0',
-    ns9                 SMALLINT UNSIGNED NOT NULL DEFAULT '0',
+    ns0                 SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    ns1                 SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    ns2                 SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    ns3                 SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    ns4                 SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    ns5                 SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    ns6                 SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    ns7                 SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    ns8                 SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    ns9                 SMALLINT UNSIGNED NOT NULL DEFAULT 0,
     last_modified       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    deleted             ENUM('0','1') DEFAULT '0' NOT NULL
+    deleted             TINYINT(1) UNSIGNED DEFAULT 0 NOT NULL
 ) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 CREATE INDEX nt_zone_idx1 on nt_zone(nt_group_id);
 CREATE INDEX nt_zone_idx2 on nt_zone(deleted);
@@ -90,14 +90,14 @@ CREATE TABLE nt_zone_record(
     nt_zone_record_id   INT UNSIGNED AUTO_INCREMENT NOT NULL PRIMARY KEY,
     nt_zone_id          INT UNSIGNED NOT NULL,
     name                VARCHAR(255) NOT NULL,
-    ttl                 INT UNSIGNED NOT NULL DEFAULT '0',
+    ttl                 INT UNSIGNED NOT NULL DEFAULT 0,
     description         VARCHAR(255),
     type                ENUM('A','AAAA','MX','PTR','NS','TXT','CNAME','SRV'),
     address             VARCHAR(255) NOT NULL,
     weight              SMALLINT UNSIGNED,
     priority            SMALLINT UNSIGNED,
     other               VARCHAR(255),
-    deleted             ENUM('0','1') DEFAULT '0' NOT NULL
+    deleted             TINYINT(1) UNSIGNED DEFAULT 0 NOT NULL
 ) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 CREATE INDEX nt_zone_record_idx1 on nt_zone_record(name); # for searching
 CREATE INDEX nt_zone_record_idx2 on nt_zone_record(address); # for searching

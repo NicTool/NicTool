@@ -78,12 +78,12 @@ sub new_nameserver {
         }
     }
 
-    # check that output_format is valid
-    unless ( $data->{'output_format'} eq "djb"
-        || $data->{'output_format'} eq "bind"
-        || $data->{'output_format'} eq "nt" )
+    # check that export_format is valid
+    unless ( $data->{'export_format'} eq "djb"
+        || $data->{'export_format'} eq "bind"
+        || $data->{'export_format'} eq "nt" )
     {
-        $self->{'errors'}->{'output_format'} = 1;
+        $self->{'errors'}->{'export_format'} = 1;
         push( @{ $self->{'error_messages'} }, "Invalid output format." );
     }
 
@@ -177,13 +177,13 @@ sub edit_nameserver {
         }
     }
 
-    # check that output_format is valid
-    if ( exists $data->{'output_format'} ) {
-        unless ( $data->{'output_format'} eq "djb"
-            || $data->{'output_format'} eq "bind"
-            || $data->{'output_format'} eq "nt" )
+    # check that export_format is valid
+    if ( exists $data->{'export_format'} ) {
+        unless ( $data->{'export_format'} eq "djb"
+            || $data->{'export_format'} eq "bind"
+            || $data->{'export_format'} eq "nt" )
         {
-            $self->{'errors'}->{'output_format'} = 1;
+            $self->{'errors'}->{'export_format'} = 1;
             push( @{ $self->{'error_messages'} }, "Invalid output format." );
         }
     }
@@ -229,7 +229,7 @@ sub get_group_nameservers {
     my ( $self, $data ) = @_;
 
     $self->search_params_sanity_check( $data,
-        qw(name description address output_format status group_name)
+        qw(name description address export_format status group_name)
     );
     return $self->throw_sanity_error if ( $self->{'errors'} );
     return $self->SUPER::get_group_nameservers($data);

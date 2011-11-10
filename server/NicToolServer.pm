@@ -535,7 +535,7 @@ sub api_commands {
                     { 'access' => 'read', required => 1, type => 'GROUP' },
                 'address'       => { required => 1 },
                 'name'          => { required => 1 },
-                'output_format' => { required => 1 },
+                'export_format' => { required => 1 },
             },
         },
         'edit_nameserver' => {
@@ -927,14 +927,14 @@ sub get_group_id {
 
 sub get_group_permissions {
     my ( $self, $groupid ) = @_;
-    my $sql = "SELECT * FROM nt_perm WHERE nt_group_id=? AND nt_user_id=0 AND deleted != '1'";
+    my $sql = "SELECT * FROM nt_perm WHERE nt_group_id=? AND nt_user_id=0 AND deleted!=1";
     my $perms = $self->exec_query( $sql, $groupid );
     return $perms->[0];
 }
 
 sub get_user_permissions {
     my ( $self, $userid ) = @_;
-    my $sql = "SELECT * FROM nt_perm WHERE nt_group_id = '0' AND nt_user_id=? AND deleted != '1'";
+    my $sql = "SELECT * FROM nt_perm WHERE nt_group_id=0 AND nt_user_id=? AND deleted!=1";
     my $perms = $self->exec_query( $sql, $userid );
     return $perms->[0];
 }
@@ -1504,7 +1504,7 @@ sub get_group_map {
         . "WHERE nt_group_subgroups.nt_subgroup_id IN("
         . join( ',', @$groups ) . ") "
         . "AND nt_group.nt_group_id = nt_group_subgroups.nt_group_id "
-        . "AND nt_group.deleted = '0' "
+        . "AND nt_group.deleted=0 "
         . "ORDER BY nt_group_subgroups.nt_subgroup_id, nt_group_subgroups.rank DESC";
 
     my $subgroups = $self->exec_query( $sql );

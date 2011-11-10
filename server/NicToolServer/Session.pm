@@ -59,7 +59,7 @@ sub verify_login {
     my $sql
         = "SELECT nt_user.*, nt_group.name AS groupname FROM nt_user, nt_group "
         . "WHERE nt_user.nt_group_id = nt_group.nt_group_id AND "
-        . "nt_user.deleted = '0' AND nt_user.nt_group_id IN ("
+        . "nt_user.deleted=0 AND nt_user.nt_group_id IN ("
         . join( ',', @{ $data->{'groups'} } )
         . ") AND nt_user.username = ?";
 
@@ -88,7 +88,7 @@ sub verify_login {
     $data->{'user'}->{'nt_user_session'} = $self->session_id;
 
     $sql = "SELECT * FROM nt_perm "
-        . "WHERE deleted = '0' AND nt_user_id = ?";
+        . "WHERE deleted=0 AND nt_user_id = ?";
     my $perms = $self->exec_query( $sql, $data->{user}{nt_user_id} )
         or return $self->error_response( 505, $dbh->errstr );
 
@@ -97,8 +97,8 @@ sub verify_login {
 
     $sql = "SELECT nt_perm.* FROM nt_perm"
         . " INNER JOIN nt_user ON nt_perm.nt_group_id = nt_user.nt_group_id "
-        . " WHERE ( nt_perm.deleted = '0' "
-        . " AND nt_user.deleted = '0' "
+        . " WHERE ( nt_perm.deleted=0 "
+        . " AND nt_user.deleted=0 "
         . " AND nt_user.nt_user_id = ?"
         . " )";
     $perms = $self->exec_query( $sql, $data->{user}{nt_user_id} )
@@ -155,7 +155,7 @@ sub verify_session {
         = "SELECT nt_user.*, nt_user_session.*, nt_group.name as groupname FROM nt_user_session, nt_user, nt_group "
         . "WHERE nt_user_session.nt_user_id = nt_user.nt_user_id "
         . "AND nt_user.nt_group_id = nt_group.nt_group_id "
-        . "AND nt_user.deleted = '0' "
+        . "AND nt_user.deleted=0 "
         . "AND nt_user_session.nt_user_session = ?";
 
     my $sessions = $self->exec_query( $sql, $data->{nt_user_session} )
@@ -175,7 +175,7 @@ sub verify_session {
     # delete session and log logout if LOGOUT
     return $self->logout if $data->{'action'} eq 'LOGOUT';
 
-    $sql = "SELECT * FROM nt_perm WHERE deleted = '0' AND nt_user_id = ?";
+    $sql = "SELECT * FROM nt_perm WHERE deleted=0 AND nt_user_id = ?";
     my $perms = $self->exec_query( $sql, $data->{user}{nt_user_id} )
         or return $self->error_response( 505, $dbh->errstr );
 
@@ -184,8 +184,8 @@ sub verify_session {
 
     $sql = "SELECT nt_perm.* FROM nt_perm"
         . " INNER JOIN nt_user ON nt_perm.nt_group_id = nt_user.nt_group_id "
-        . " WHERE ( nt_perm.deleted = '0' "
-        . " AND nt_user.deleted = '0' "
+        . " WHERE ( nt_perm.deleted=0 "
+        . " AND nt_user.deleted=0 "
         . " AND nt_user.nt_user_id = ? )";
     $perms = $self->exec_query( $sql, $data->{user}{nt_user_id} )
         or return $self->error_response( 505, $dbh->errstr );
@@ -261,12 +261,12 @@ sub populate_groups {
     my $sql;
     if ( $data->{'username'} =~ /(.+)\@(.+)/ ) {
         $data->{'username'} = $1;
-        $sql = "SELECT nt_group_id FROM nt_group WHERE deleted = '0' AND name = ?";
+        $sql = "SELECT nt_group_id FROM nt_group WHERE deleted=0 AND name = ?";
         $ids = $self->exec_query( $sql, $2 );
     }
     else {
         return 0 unless @NicToolServer::default_groups;
-        $sql = "SELECT nt_group_id FROM nt_group WHERE deleted = '0' AND name IN (??)";
+        $sql = "SELECT nt_group_id FROM nt_group WHERE deleted=0 AND name IN (??)";
         $ids = $self->exec_query( $sql, [ @NicToolServer::default_groups ] );
     }
 

@@ -100,7 +100,7 @@ sub doit {
     $res = $group1->new_nameserver(
         name          => 'ns.somewhere.com.',
         address       => '1.2.3.4',
-        output_format => 'bind',
+        export_format => 'bind',
         ttl           => 86400
     );
     die "couldn't make test nameserver"
@@ -111,7 +111,7 @@ sub doit {
     $res = $group1->new_nameserver(
         name          => 'ns2.somewhere.com.',
         address       => '1.2.3.5',
-        output_format => 'djb',
+        export_format => 'djb',
         ttl           => 86401
     );
     die "couldn't make test nameserver"
@@ -131,8 +131,8 @@ sub doit {
     $res = $group1->new_zone(
         nt_group_id => '',
         zone        => 'test.com',
-        serial      => '0',
-        ttl         => '86400',
+        serial      => 0,
+        ttl         => 86400,
         nameservers => "$nsid1,$nsid2",
         description => "test delete me",
     );
@@ -149,8 +149,8 @@ sub doit {
     $res = $group1->new_zone(
         nt_group_id => 'abc',
         zone        => 'test.com',
-        serial      => '0',
-        ttl         => '86400',
+        serial      => 0,
+        ttl         => 86400,
         nameservers => "$nsid1,$nsid2",
         description => "test delete me",
     );
@@ -165,9 +165,9 @@ sub doit {
 
     #nt_group_id not valid
     $res = $group1->new_zone(
-        nt_group_id => '0',
+        nt_group_id => 0,
         zone        => 'test.com',
-        serial      => '0',
+        serial      => 0,
         ttl         => '86400',
         nameservers => "$nsid1,$nsid2",
         description => "test delete me",
@@ -184,7 +184,7 @@ sub doit {
     #nameservers not int
     $res = $group1->new_zone(
         zone        => 'test.com',
-        serial      => '0',
+        serial      => 0,
         ttl         => '86400',
         nameservers => "abc,def",
         description => "test delete me",
@@ -201,7 +201,7 @@ sub doit {
     #nameservers not valid
     $res = $group1->new_zone(
         zone        => 'test.com',
-        serial      => '0',
+        serial      => 0,
         ttl         => '86400',
         nameservers => "0",
         description => "test delete me",
@@ -218,7 +218,7 @@ sub doit {
     #nameservers not valid
     $res = $group1->new_zone(
         zone        => 'test.com',
-        serial      => '0',
+        serial      => 0,
         ttl         => '86400',
         nameservers => "-1",
         description => "test delete me",
@@ -236,8 +236,8 @@ sub doit {
     $res = $group1->new_zone(
 
         #zone=>'test.com',
-        serial      => '0',
-        ttl         => '86400',
+        serial      => 0,
+        ttl         => 86400,
         nameservers => "$nsid1,$nsid2",
         description => "test delete me",
     );
@@ -257,8 +257,8 @@ sub doit {
         #invalid character in zone
         $res = $group1->new_zone(
             zone        => "thisis${_}atest.com",
-            serial      => '0',
-            ttl         => '86400',
+            serial      => 0,
+            ttl         => 86400,
             nameservers => "$nsid1,$nsid2",
             description => "test delete me",
         );
@@ -278,8 +278,8 @@ sub doit {
         #not domain name
         $res = $group1->new_zone(
             zone        => $_,
-            serial      => '0',
-            ttl         => '86400',
+            serial      => 0,
+            ttl         => 86400,
             nameservers => "$nsid1,$nsid2",
             description => "test delete me",
         );
@@ -299,7 +299,7 @@ sub doit {
         #invalid ttl
         $res = $group1->new_zone(
             zone        => "something.com",
-            serial      => '0',
+            serial      => 0,
             ttl         => $_,
             nameservers => "$nsid1,$nsid2",
             description => "test delete me",
@@ -321,7 +321,7 @@ sub doit {
 
     %z1 = (
         zone        => 'test.com',
-        serial      => '0',
+        serial      => 0,
         ttl         => '86400',
         nameservers => "$nsid1,$nsid2",
         description => "test delete me",
@@ -339,8 +339,8 @@ sub doit {
 
     %z2 = (
         zone        => 'anothertest.com',
-        serial      => '1',
-        ttl         => '86401',
+        serial      => 1,
+        ttl         => 86401,
         nameservers => "$nsid1,$nsid2",
         description => "test delete me also",
         mailaddr    => "somebodyelse.somewhere.com",
@@ -361,8 +361,8 @@ sub doit {
 
     $res = $group1->new_zone(
         zone        => 'test.com',
-        serial      => '0',
-        ttl         => '86400',
+        serial      => 0,
+        ttl         => 86400,
         nameservers => "$nsid1,$nsid2",
         description => "test delete me",
     );
@@ -393,7 +393,7 @@ sub doit {
     ok( $res->get('error_msg')  => 'nt_zone_id' );
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
 
-    $res = $user->get_zone( nt_zone_id => '0' );
+    $res = $user->get_zone( nt_zone_id => 0 );
     noerrok( $res, 302 );
     ok( $res->get('error_msg')  => 'nt_zone_id' );
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
@@ -464,7 +464,7 @@ sub doit {
     ok( $res->get('error_msg')  => 'zone_list' );
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
 
-    $res = $user->get_zone_list( zone_list => '0' );
+    $res = $user->get_zone_list( zone_list => 0 );
     noerrok( $res, 302 );
     ok( $res->get('error_msg')  => 'zone_list' );
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
@@ -534,7 +534,7 @@ sub doit {
     ok( $res->get('error_msg')  => 'nt_group_id' );
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
 
-    $res = $group1->get_group_zones( nt_group_id => '0' );
+    $res = $group1->get_group_zones( nt_group_id => 0 );
     noerrok( $res, 302 );
     ok( $res->get('error_msg')  => 'nt_group_id' );
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
@@ -595,7 +595,7 @@ sub doit {
     ok( $res->get('error_msg')  => 'nt_zone_id' );
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
 
-    $res = $zone1->edit_zone( nt_zone_id => '0' );
+    $res = $zone1->edit_zone( nt_zone_id => 0 );
     noerrok( $res, 302 );
     ok( $res->get('error_msg')  => 'nt_zone_id' );
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
@@ -668,7 +668,7 @@ sub doit {
     ok( $res->get('error_msg')  => 'zone_list' );
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
 
-    $res = $group2->move_zones( zone_list => '0' );
+    $res = $group2->move_zones( zone_list => 0 );
     noerrok( $res, 302 );
     ok( $res->get('error_msg')  => 'zone_list' );
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
@@ -690,7 +690,7 @@ sub doit {
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
 
     $res = $group2->move_zones(
-        nt_group_id => '0',
+        nt_group_id => 0,
         zone_list   => [ $zid1, $zid2 ]
     );
     noerrok( $res, 302 );
@@ -730,7 +730,7 @@ sub doit {
     ok( $res->get('error_msg')  => 'zone_list' );
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
 
-    $res = $user->delete_zones( zone_list => '0' );
+    $res = $user->delete_zones( zone_list => 0 );
     noerrok( $res, 302 );
     ok( $res->get('error_msg')  => 'zone_list' );
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );

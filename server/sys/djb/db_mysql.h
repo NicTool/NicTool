@@ -22,9 +22,9 @@
 #include "nt_export_db.h"
 
 
-#define NS_QUERY        "SELECT nt_nameserver_id, name, ttl FROM nt_nameserver where deleted!='1'"
+#define NS_QUERY        "SELECT nt_nameserver_id, name, ttl FROM nt_nameserver where deleted!=1"
 
-#define ZONE_QUERY_FORMAT "SELECT z.nt_zone_id,z.zone,z.mailaddr,z.serial,z.refresh,z.retry,z.expire,z.minimum,z.ttl,z.ns0,z.ns1,z.ns2,z.ns3,z.ns4,z.ns5,z.ns6,z.ns7,z.ns8,z.ns9,r.nt_zone_record_id,r.name,r.ttl,r.type,r.address,r.weight,r.priority,r.other FROM nt_zone z,nt_zone_record r WHERE z.nt_zone_id = r.nt_zone_id AND (ns0 = %1$s OR ns1 = %1$s OR ns2 = %1$s OR ns3 = %1$s OR ns4 = %1$s OR ns5 = %1$s OR ns6 = %1$s OR ns7 = %1$s OR ns8 = %1$s OR ns9 = %1$s) AND (z.deleted !='1') AND (r.deleted != '1')"
+#define ZONE_QUERY_FORMAT "SELECT z.nt_zone_id,z.zone,z.mailaddr,z.serial,z.refresh,z.retry,z.expire,z.minimum,z.ttl,z.ns0,z.ns1,z.ns2,z.ns3,z.ns4,z.ns5,z.ns6,z.ns7,z.ns8,z.ns9,r.nt_zone_record_id,r.name,r.ttl,r.type,r.address,r.weight,r.priority,r.other FROM nt_zone z,nt_zone_record r WHERE z.nt_zone_id = r.nt_zone_id AND (ns0 = %1$s OR ns1 = %1$s OR ns2 = %1$s OR ns3 = %1$s OR ns4 = %1$s OR ns5 = %1$s OR ns6 = %1$s OR ns7 = %1$s OR ns8 = %1$s OR ns9 = %1$s) AND (z.deleted!=1) AND (r.deleted!=1)"
 
 
 // for simple 'keyed' access to rows returned from the above query

@@ -104,7 +104,7 @@ sub doit {
     $res = $group1->new_nameserver(
         name          => 'ns.somewhere.com.',
         address       => '1.2.3.4',
-        output_format => 'bind',
+        export_format => 'bind',
         ttl           => 86400
     );
     die "couldn't make test nameserver"
@@ -115,7 +115,7 @@ sub doit {
     $res = $group1->new_nameserver(
         name          => 'ns2.somewhere.com.',
         address       => '1.2.3.5',
-        output_format => 'djb',
+        export_format => 'djb',
         ttl           => 86401
     );
     die "couldn't make test nameserver"
@@ -125,8 +125,8 @@ sub doit {
 
     $res = $group1->new_zone(
         zone        => 'test.com',
-        serial      => '0',
-        ttl         => '86400',
+        serial      => 0,
+        ttl         => 86400,
         nameservers => "$nsid1,$nsid2",
         description => "test delete me",
         mailaddr    => "somebody.somewhere.com",
@@ -203,7 +203,7 @@ sub doit {
 
     #invalid zone_id
     $res = $zone1->new_zone_record(
-        nt_zone_id => '0',
+        nt_zone_id => 0,
         name       => 'a',
         type       => 'A',
         ttl        => 86400,
@@ -708,7 +708,7 @@ sub doit {
     ok( $res->get('error_msg')  => 'nt_zone_record_id' );
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
 
-    $res = $user->get_zone_record( nt_zone_record_id => '0' );
+    $res = $user->get_zone_record( nt_zone_record_id => 0 );
     noerrok( $res, 302 );
     ok( $res->get('error_msg')  => 'nt_zone_record_id' );
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
@@ -731,7 +731,7 @@ sub doit {
     ok( $res->get('error_msg')  => 'nt_zone_id' );
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
 
-    $res = $zone1->get_zone_records( nt_zone_id => '0' );
+    $res = $zone1->get_zone_records( nt_zone_id => 0 );
     noerrok( $res, 302 );
     ok( $res->get('error_msg')  => 'nt_zone_id' );
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
@@ -808,7 +808,7 @@ sub doit {
 
     #invalid zone_id
     $res = $zr1->edit_zone_record(
-        nt_zone_record_id => '0',
+        nt_zone_record_id => 0,
         name              => 'c',
         type              => 'A',
         ttl               => 86403,
@@ -1221,7 +1221,7 @@ sub doit {
     ok( $res->get('error_msg')  => 'nt_zone_record_id' );
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
 
-    $res = $user->delete_zone_record( nt_zone_record_id => '0' );
+    $res = $user->delete_zone_record( nt_zone_record_id => 0 );
     noerrok( $res, 302 );
     ok( $res->get('error_msg')  => 'nt_zone_record_id' );
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );

@@ -190,7 +190,7 @@ sub doit {
 
     #nt_group_id invalid id
     $res = $group1->new_user(
-        nt_group_id => '0',
+        nt_group_id => 0,
         username    => 'blah',
         email       => 'blah@blah.com',
         password    => 'something',
@@ -357,7 +357,7 @@ sub doit {
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
 
     #nt_user_id not valid id
-    $res = $nt_obj->get_user( nt_user_id => '0' );
+    $res = $nt_obj->get_user( nt_user_id => 0 );
     noerrok( $res, 302 );
     ok( $res->get('error_msg')  => 'nt_user_id' );
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
@@ -400,7 +400,7 @@ sub doit {
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
 
     #user id not valid id
-    $res = $user1->edit_user( nt_user_id => '0' );
+    $res = $user1->edit_user( nt_user_id => 0 );
     noerrok( $res, 302 );
     ok( $res->get('error_msg')  => 'nt_user_id' );
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
@@ -600,7 +600,7 @@ sub doit {
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
 
     #nt_group_id not valid id
-    $res = $group1->get_group_users( nt_group_id => '0' );
+    $res = $group1->get_group_users( nt_group_id => 0 );
     noerrok( $res, 302 );
     ok( $res->get('error_msg')  => 'nt_group_id' );
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
@@ -671,7 +671,7 @@ sub doit {
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
 
     #nt_group_id not valid
-    $res = $group2->move_users( nt_group_id => '0',
+    $res = $group2->move_users( nt_group_id => 0,
         user_list => "$uid1,$uid2" );
     noerrok( $res, 302 );
     ok( $res->get('error_msg')  => 'nt_group_id' );

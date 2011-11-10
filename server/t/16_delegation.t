@@ -211,8 +211,8 @@ sub start {
     #make new zone
     $res = $user->new_zone(
         zone        => 'highlevel.com',
-        serial      => '0',
-        ttl         => '86400',
+        serial      => 0,
+        ttl         => 86400,
         description => "delegation test delete me",
         mailaddr    => "root.somewhere.com",
         refresh     => 10,
@@ -289,8 +289,8 @@ sub start {
 
     $res = $group1->new_zone(
         zone        => 'test.com',
-        serial      => '0',
-        ttl         => '86400',
+        serial      => 0,
+        ttl         => 86400,
         description => "test delete me",
         mailaddr    => "somebody.somewhere.com",
         refresh     => 10,
@@ -303,8 +303,8 @@ sub start {
 
     $res = $group1->new_zone(
         zone        => 'test2.com',
-        serial      => '0',
-        ttl         => '86401',
+        serial      => 0,
+        ttl         => 86401,
         description => "test delete me also",
         mailaddr    => "other.somewhere.com",
         refresh     => 11,
@@ -375,7 +375,7 @@ sub test_api_funcs {
 
     #zone list not valid
     $res = $tuser->delegate_zones(
-        zone_list   => '0',
+        zone_list   => 0,
         nt_group_id => $gid2,
         %dpermsfull,
     );
@@ -406,7 +406,7 @@ sub test_api_funcs {
     #group id invalid
     $res = $tuser->delegate_zones(
         zone_list   => $zid1,
-        nt_group_id => '0',
+        nt_group_id => 0,
         %dpermsfull,
     );
     noerrok( $res, 302, "group id invalid" );
@@ -542,7 +542,7 @@ sub test_api_funcs {
 
     #zone list not valid
     $res = $tuser->delegate_zone_records(
-        zonerecord_list => '0',
+        zonerecord_list => 0,
         nt_group_id     => $gid2,
         %dpermsfull,
     );
@@ -573,7 +573,7 @@ sub test_api_funcs {
     #group id invalid
     $res = $tuser->delegate_zone_records(
         zonerecord_list => $zrid1,
-        nt_group_id     => '0',
+        nt_group_id     => 0,
         %dpermsfull,
     );
     noerrok( $res, 302, "group id invalid" );
@@ -723,7 +723,7 @@ sub test_api_funcs {
     #group id invalid
     $res = $tuser->edit_zone_delegation(
         nt_zone_id  => $zid1,
-        nt_group_id => '0',
+        nt_group_id => 0,
         %perms,
     );
     noerrok( $res, 302 );
@@ -752,7 +752,7 @@ sub test_api_funcs {
 
     #zone_list invalid
     $res = $tuser->edit_zone_delegation(
-        nt_zone_id  => '0',
+        nt_zone_id  => 0,
         nt_group_id => $gid2,
         %perms,
     );
@@ -831,7 +831,7 @@ sub test_api_funcs {
     #group id invalid
     $res = $tuser->edit_zone_record_delegation(
         nt_zone_record_id => $zrid1,
-        nt_group_id       => '0',
+        nt_group_id       => 0,
         %perms,
     );
     noerrok( $res, 302 );
@@ -860,7 +860,7 @@ sub test_api_funcs {
 
     #zonerecord_list invalid
     $res = $tuser->edit_zone_record_delegation(
-        nt_zone_record_id => '0',
+        nt_zone_record_id => 0,
         nt_group_id       => $gid2,
         %perms,
     );
@@ -947,7 +947,7 @@ sub test_api_funcs {
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
 
     $res = $tuser->delete_zone_delegation(
-        nt_group_id => '0',
+        nt_group_id => 0,
         nt_zone_id  => $zid1,
     );
     noerrok( $res, 302 );
@@ -972,7 +972,7 @@ sub test_api_funcs {
 
     $res = $tuser->delete_zone_delegation(
         nt_group_id => $gid2,
-        nt_zone_id  => '0',
+        nt_zone_id  => 0,
     );
     noerrok( $res, 302 );
     ok( $res->get('error_msg')  => 'nt_zone_id' );
@@ -1040,7 +1040,7 @@ sub test_api_funcs {
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
 
     $res = $tuser->delete_zone_delegation(
-        nt_group_id => '0',
+        nt_group_id => 0,
         nt_zone_id  => $zid1,
     );
     noerrok( $res, 302 );
@@ -1065,7 +1065,7 @@ sub test_api_funcs {
 
     $res = $tuser->delete_zone_delegation(
         nt_group_id => $gid2,
-        nt_zone_id  => '0',
+        nt_zone_id  => 0,
     );
     noerrok( $res, 302 );
     ok( $res->get('error_msg')  => 'nt_zone_id' );
@@ -1111,7 +1111,7 @@ sub test_api_funcs {
     ok( $res->get('error_msg')  => 'nt_group_id' );
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
 
-    $res = $tuser->get_delegated_zones( nt_group_id => '0' );
+    $res = $tuser->get_delegated_zones( nt_group_id => 0 );
     noerrok( $res, 302 );
     ok( $res->get('error_msg')  => 'nt_group_id' );
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
@@ -1193,7 +1193,7 @@ sub test_api_funcs {
     ok( $res->get('error_msg')  => 'nt_group_id' );
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
 
-    $res = $tuser->get_delegated_zone_records( nt_group_id => '0' );
+    $res = $tuser->get_delegated_zone_records( nt_group_id => 0 );
     noerrok( $res, 302 );
     ok( $res->get('error_msg')  => 'nt_group_id' );
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
@@ -1281,7 +1281,7 @@ sub test_api_funcs {
     ok( $res->get('error_msg')  => 'nt_zone_id' );
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
 
-    $res = $tuser->get_zone_delegates( nt_zone_id => '0' );
+    $res = $tuser->get_zone_delegates( nt_zone_id => 0 );
     noerrok( $res, 302 );
     ok( $res->get('error_msg')  => 'nt_zone_id' );
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
@@ -1363,7 +1363,7 @@ sub test_api_funcs {
     ok( $res->get('error_msg')  => 'nt_zone_record_id' );
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
 
-    $res = $tuser->get_zone_record_delegates( nt_zone_record_id => '0' );
+    $res = $tuser->get_zone_record_delegates( nt_zone_record_id => 0 );
     noerrok( $res, 302 );
     ok( $res->get('error_msg')  => 'nt_zone_record_id' );
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );

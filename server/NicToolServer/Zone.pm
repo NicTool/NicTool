@@ -535,14 +535,14 @@ sub get_zone_records {
         $sql = "SELECT COUNT(*) AS count FROM nt_zone_record "
             . "LEFT JOIN nt_delegate ON (nt_delegate.nt_group_id=$group_id AND nt_delegate.nt_object_id=nt_zone_record.nt_zone_record_id AND nt_delegate.nt_object_type='ZONERECORD' ) "
             . "WHERE nt_zone_record.nt_zone_id = $data->{'nt_zone_id'} "
-            . "AND nt_zone_record.deleted = '0' "
-            . "AND nt_delegate.deleted = '0' "
+            . "AND nt_zone_record.deleted=0 "
+            . "AND nt_delegate.deleted=0 "
             . (
             @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
     }
     else {
         $sql = "SELECT COUNT(*) AS count FROM nt_zone_record 
-            WHERE nt_zone_record.deleted = '0' AND nt_zone_record.nt_zone_id = $data->{'nt_zone_id'}"
+            WHERE nt_zone_record.deleted=0 AND nt_zone_record.nt_zone_id = $data->{'nt_zone_id'}"
             . ( @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
     }
     my $c = $self->exec_query( $sql );
@@ -596,8 +596,8 @@ sub get_zone_records {
         FROM nt_zone_record
          $join JOIN nt_delegate ON (nt_delegate.nt_group_id=$group_id AND nt_delegate.nt_object_id=nt_zone_record.nt_zone_record_id AND nt_delegate.nt_object_type='ZONERECORD' )
         WHERE nt_zone_record.nt_zone_id = $data->{'nt_zone_id'}
-          AND nt_zone_record.deleted = '0'
-          AND ( nt_delegate.deleted = '0' OR nt_delegate.deleted IS NULL ) ";
+          AND nt_zone_record.deleted=0
+          AND ( nt_delegate.deleted=0 OR nt_delegate.deleted IS NULL ) ";
     $sql .= 'AND (' . join( ' ', @$conditions ) . ') ' if @$conditions;
     $sql .= "ORDER BY " . join( ', ', @$sortby ) . " " if (@$sortby);
     $sql .= "LIMIT " . ( $r_data->{'start'} - 1 ) . ", $r_data->{'limit'}";
@@ -963,7 +963,7 @@ sub delete_zones {
     foreach my $zone_data ( @$zones_data ) {
         next if ! ( $groups{ $zone_data->{'nt_group_id'} } );
 
-        $sql = "UPDATE nt_zone SET deleted = '1' WHERE nt_zone_id = ?";
+        $sql = "UPDATE nt_zone SET deleted=1 WHERE nt_zone_id = ?";
         $zone_data->{'user'} = $data->{'user'};
         $self->exec_query( $sql, $zone_data->{nt_zone_id} ) or do {
             $error{'error_code'} = 600;
@@ -976,7 +976,7 @@ sub delete_zones {
         next;
 
         # delete associated zone_record records
-        $sql = "SELECT * from nt_zone_record where deleted = '0' AND nt_zone_id = ?";
+        $sql = "SELECT * from nt_zone_record where deleted=0 AND nt_zone_id = ?";
         my $zrecs = $self->exec_query( $sql, $zone_data->{nt_zone_id} );
         foreach my $zr ( @$zrecs ) {
             $zr->{'user'} = $data->{'user'};
@@ -1035,7 +1035,7 @@ sub get_zone_list {
 
 #my %groups = map { $_, 1 } ($data->{'user'}->{'nt_group_id'}, @{ $self->get_subgroup_ids($data->{'user'}->{'nt_group_id'}) });
 
-    my $sql = "SELECT * FROM nt_zone WHERE deleted = '0' 
+    my $sql = "SELECT * FROM nt_zone WHERE deleted=0 
         AND nt_zone_id IN(" . $data->{zone_list} .") ORDER BY zone";
 
     my $ntzones = $self->exec_query( $sql ) or return {
@@ -1083,7 +1083,7 @@ sub find_zone {
 sub zone_exists {
     my ( $self, $zone, $zid ) = @_;
 
-    my $sql = "SELECT nt_zone_id,nt_group_id FROM nt_zone WHERE deleted = '0' 
+    my $sql = "SELECT nt_zone_id,nt_group_id FROM nt_zone WHERE deleted=0 
         AND nt_zone_id != ? AND zone = ?";
 
     my $zones = $self->exec_query( $sql, [ $zid, $zone ] );

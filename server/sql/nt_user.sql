@@ -25,7 +25,7 @@ CREATE TABLE nt_user(
     username            VARCHAR(50) NOT NULL,
     password            VARCHAR(128) NOT NULL,
     email               VARCHAR(100) NOT NULL,
-    deleted             ENUM('0','1') DEFAULT '0' NOT NULL
+    deleted             TINYINT(1) UNSIGNED DEFAULT 0 NOT NULL
 ) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 CREATE INDEX nt_user_idx1 on nt_user(username, password);
 CREATE INDEX nt_user_idx2 on nt_user(deleted);

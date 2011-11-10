@@ -48,23 +48,23 @@ CREATE TABLE nt_perm(
 
     self_write              TINYINT UNSIGNED NOT NULL DEFAULT 0,
 
-    usable_ns0      SMALLINT UNSIGNED NOT NULL DEFAULT '0',
-    usable_ns1      SMALLINT UNSIGNED NOT NULL DEFAULT '0',
-    usable_ns2      SMALLINT UNSIGNED NOT NULL DEFAULT '0',
-    usable_ns3      SMALLINT UNSIGNED NOT NULL DEFAULT '0',
-    usable_ns4      SMALLINT UNSIGNED NOT NULL DEFAULT '0',
-    usable_ns5      SMALLINT UNSIGNED NOT NULL DEFAULT '0',
-    usable_ns6      SMALLINT UNSIGNED NOT NULL DEFAULT '0',
-    usable_ns7      SMALLINT UNSIGNED NOT NULL DEFAULT '0',
-    usable_ns8      SMALLINT UNSIGNED NOT NULL DEFAULT '0',
-    usable_ns9      SMALLINT UNSIGNED NOT NULL DEFAULT '0',
+    usable_ns0      SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    usable_ns1      SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    usable_ns2      SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    usable_ns3      SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    usable_ns4      SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    usable_ns5      SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    usable_ns6      SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    usable_ns7      SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    usable_ns8      SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    usable_ns9      SMALLINT UNSIGNED NOT NULL DEFAULT 0,
 
-    deleted             ENUM('0','1') DEFAULT '0' NOT NULL
+    deleted             TINYINT(1) UNSIGNED DEFAULT 0 NOT NULL
 ) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 CREATE INDEX nt_perm_idx1 on nt_perm(nt_group_id,nt_user_id);
 CREATE INDEX nt_perm_idx2 on nt_perm(nt_user_id);
 
-INSERT into nt_perm VALUES(1,1,0,NULL,NULL,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,0,0,0,0,0,0,0,0,'0');
+INSERT into nt_perm VALUES(1,1,0,NULL,NULL,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,0,0,0,0,0,0,0,0,0);
 
 DROP TABLE IF EXISTS nt_delegate;
 CREATE TABLE nt_delegate(
@@ -102,11 +102,8 @@ CREATE TABLE nt_delegate(
     zonerecord_perm_modify_weight   TINYINT UNSIGNED DEFAULT 1 NOT NULL,
     zonerecord_perm_modify_ttl      TINYINT UNSIGNED DEFAULT 1 NOT NULL,
     zonerecord_perm_modify_desc     TINYINT UNSIGNED DEFAULT 1 NOT NULL,
-
-    #delegating groups: not implemented yet
-    #group_perm_modify_name              TINYINT UNSIGNED DEFAULT 1 NOT NULL, 
     
-    deleted             ENUM('0','1') DEFAULT '0' NOT NULL
+    deleted             TINYINT(1) UNSIGNED DEFAULT 0 NOT NULL
 );
 CREATE INDEX nt_delegate_idx1 on nt_delegate(nt_group_id,nt_object_id,nt_object_type);
 CREATE INDEX nt_delegate_idx2 on nt_delegate(nt_object_id,nt_object_type);

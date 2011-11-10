@@ -458,7 +458,7 @@ sub api_commands {
                     { 'access' => 'read', required => 1, type => 'GROUP' },
                 'address'       => { required => 1 },
                 'name'          => { required => 1 },
-                'output_format' => { required => 1 },
+                'export_format' => { required => 1 },
             },
         },
         'edit_nameserver' => {

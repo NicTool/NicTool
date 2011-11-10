@@ -116,7 +116,7 @@ sub delete_zone_record {
     $self->exec_query( $sql, [ $new_serial, $zrs->[0]{nt_zone_id} ] );
 
     my %error = ( 'error_code' => 200, 'error_msg' => 'OK' );
-    $sql = "UPDATE nt_zone_record set deleted = '1' WHERE nt_zone_record_id = ?";
+    $sql = "UPDATE nt_zone_record set deleted=1 WHERE nt_zone_record_id = ?";
 
     my $zr_data = $self->find_zone_record( $data->{'nt_zone_record_id'} );
     $zr_data->{'user'} = $data->{'user'};

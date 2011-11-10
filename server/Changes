@@ -123,7 +123,7 @@ NOTICE: this version requires updating your SQL tables! Something like this shou
         save_zone - DEPRECATED (see new_zone edit_zone)
         new_zone  - 'nt_group_id' and 'zone' required (optional 'nameservers' list of nameservers to publish to)
         edit_zone - nt_zone_id required (optional 'nameservers' list of nameserver ids)
-                  - parameter "deleted" = '0' means undelete a deleted zone
+                  - parameter "deleted" = 0 means undelete a deleted zone
 
         get_zone_application_log REMOVED (it was never implemented but was enabled)
 
@@ -133,7 +133,7 @@ NOTICE: this version requires updating your SQL tables! Something like this shou
         
 
         save_nameserver - DEPRECATED (use new_nameserver and edit_nameserver)
-        new_nameserver - 'nt_nameserver_id','address','name','service_type','output_format' are required
+        new_nameserver - 'nt_nameserver_id','address','name','service_type','export_format' are required
         edit_nameserver - only 'nt_zone_record_id' is required
         
         get_group_zones - parameter "search_deleted" = '1' means only look for 

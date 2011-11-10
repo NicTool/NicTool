@@ -58,7 +58,7 @@ sub display {
     if ( $q->param('new') ) {
         if ( $q->param('Create') ) {
             my @fields
-                = qw(nt_group_id name ttl description address output_format logdir datadir export_interval);
+                = qw(nt_group_id name ttl description address export_format logdir datadir export_interval);
             my %data;
             foreach my $x (@fields) {
                 $data{$x} = $q->param($x);
@@ -79,7 +79,7 @@ sub display {
     if ( $q->param('edit') ) {
         if ( $q->param('Save') ) {
             my @fields
-                = qw(nt_group_id nt_nameserver_id name ttl description address output_format logdir datadir export_interval);
+                = qw(nt_group_id nt_nameserver_id name ttl description address export_format logdir datadir export_interval);
             my %data;
             foreach my $x (@fields) {
                 $data{$x} = $q->param($x);
@@ -128,7 +128,7 @@ sub display_list {
         name        => 'Name',
         description => 'Description',
         address     => 'Address',
-       #output_format=> 'Output Format',
+       #export_format=> 'Export Format',
         status     => 'Export Status',
         group_name => 'Group'
     );
@@ -367,7 +367,7 @@ sub display_edit_nameserver {
         }
         else {
             my @fields
-                = qw(nt_nameserver_id name ttl description address output_format logdir datadir export_interval);
+                = qw(nt_nameserver_id name ttl description address export_format logdir datadir export_interval);
             foreach (@fields) {
                 $q->param( $_, $nameserver->{$_} );
             }
@@ -377,10 +377,10 @@ sub display_edit_nameserver {
         = $user->{'nameserver_write'}
         && ( !exists $nameserver->{'delegate_write'}
         || $nameserver->{'delegate_write'} );
-    my $output_format_values
-        = [ sort keys %{ $nt_obj->ns_output_formats() } ];
-    my $output_format_labels  = $nt_obj->ns_output_formats();
-    my $output_format_default = $q->param('output_format');
+    my $export_format_values
+        = [ sort keys %{ $nt_obj->ns_export_formats() } ];
+    my $export_format_labels  = $nt_obj->ns_export_formats();
+    my $export_format_default = $q->param('export_format');
 
     my $ttl;
     $ttl = $q->param('ttl') || $NicToolClient::default_nameserver_ttl;
@@ -437,12 +437,12 @@ sub display_edit_nameserver {
         (
         $modifyperm
         ? $q->popup_menu(
-            -name    => 'output_format',
-            -values  => $output_format_values,
-            -default => $output_format_default,
-            -labels  => $output_format_labels
+            -name    => 'export_format',
+            -values  => $export_format_values,
+            -default => $export_format_default,
+            -labels  => $export_format_labels
             )
-        : $output_format_labels->{ $nameserver->{'output_format'} }
+        : $export_format_labels->{ $nameserver->{'export_format'} }
         ),
         "</td></tr>";
 

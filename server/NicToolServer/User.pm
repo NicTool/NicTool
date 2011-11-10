@@ -87,7 +87,7 @@ sub get_user {
     $rv{'password'} = '' if exists $rv{'password'};
 
     $sql = "SELECT " . $self->perm_fields_select
-        . " FROM nt_perm WHERE deleted = '0'"
+        . " FROM nt_perm WHERE deleted=0"
         . " AND nt_user_id = ?";
     my $perms = $self->exec_query( $sql, $data->{nt_user_id} )
         or return $self->error_response( 505, $self->{dbh}->errstr );
@@ -98,8 +98,8 @@ sub get_user {
         . $self->perm_fields_select
         . " FROM nt_perm"
         . " INNER JOIN nt_user ON nt_perm.nt_group_id = nt_user.nt_group_id "
-        . " WHERE ( nt_perm.deleted = '0' "
-        . " AND nt_user.deleted = '0' "
+        . " WHERE ( nt_perm.deleted=0 "
+        . " AND nt_user.deleted=0 "
         . " AND nt_user.nt_user_id = ?)";
     my $perms = $self->exec_query( $sql, $data->{'nt_user_id'} ) 
         or return $self->error_response( 505, $self->{dbh}->errstr );
@@ -376,7 +376,7 @@ sub delete_users {
     foreach my $user ( @$users ) {
         next unless ( $groups{ $user->{'nt_group_id'} } );
 
-        $sql = "UPDATE nt_user SET deleted = '1' WHERE nt_user_id = ?";
+        $sql = "UPDATE nt_user SET deleted=1 WHERE nt_user_id = ?";
         $self->exec_query( $sql, $user->{nt_user_id} ) or next;
 
         my %user = ( %$user, user => $data->{'user'} );
@@ -429,7 +429,7 @@ sub get_group_users {
 
     my $sql = "SELECT COUNT(*) AS count FROM nt_user 
     INNER JOIN nt_group ON nt_user.nt_group_id = nt_group.nt_group_id 
-    WHERE nt_user.deleted = '0' 
+    WHERE nt_user.deleted=0 
       AND nt_user.nt_group_id IN("
         . join( ',', @group_list ) . ")"
         . ( @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
@@ -452,7 +452,7 @@ sub get_group_users {
         	   nt_group.name as group_name
         FROM nt_user
         INNER JOIN nt_group ON nt_user.nt_group_id = nt_group.nt_group_id
-        WHERE nt_user.deleted = '0' 
+        WHERE nt_user.deleted=0 
         AND nt_group.nt_group_id IN("
         . join( ',', @group_list ) . ") ";
     $sql .= 'AND (' . join( ' ', @$conditions ) . ') ' if @$conditions;
@@ -530,7 +530,7 @@ sub get_user_list {
     );
 
     my $sql
-        = "SELECT * FROM nt_user WHERE deleted = '0' AND nt_user_id IN("
+        = "SELECT * FROM nt_user WHERE deleted=0 AND nt_user_id IN("
         . $data->{'user_list'}
         . ") ORDER BY username";
 

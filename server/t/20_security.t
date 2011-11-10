@@ -254,8 +254,8 @@ sub delegation {
     $res = $user->new_zone(
         nt_group_id => $gid1,
         zone        => 'highlevel.com',
-        serial      => '0',
-        ttl         => '86400',
+        serial      => 0,
+        ttl         => 86400,
         description => "delegation security test delete me",
         mailaddr    => "root.somewhere.com",
         refresh     => 10,
@@ -1308,8 +1308,8 @@ sub security {
 
     $res = $user->new_zone(
         zone        => 'highlevel.com',
-        serial      => '0',
-        ttl         => '86400',
+        serial      => 0,
+        ttl         => 86400,
         description => "security test delete me",
         mailaddr    => "root.somewhere.com",
         refresh     => 10,
@@ -1375,7 +1375,7 @@ sub security {
     $res = $user->new_nameserver(
         name          => 'ns2.somewhere.com.',
         address       => '1.2.3.5',
-        output_format => 'djb',
+        export_format => 'djb',
         ttl           => 86401
     );
     die "couldn't make test nameserver"
@@ -1411,8 +1411,8 @@ sub security {
     $res = $tuser->new_zone(
         nt_group_id => $user->get('nt_group_id'),
         zone        => 'atahigherlevel.test',
-        serial      => '0',
-        ttl         => '86400',
+        serial      => 0,
+        ttl         => 86400,
         description => "test delete me",
         mailaddr    => "root.somewhere.com",
         refresh     => 10,
@@ -1465,7 +1465,7 @@ sub security {
         nt_group_id   => $user->get('nt_group_id'),
         name          => 'ns2.somewhere.test.',
         address       => '4.4.4.4',
-        output_format => 'djb',
+        export_format => 'djb',
         ttl           => 86404
     );
 
@@ -1703,8 +1703,8 @@ sub security {
     $res = $tuser->new_zone(
         nt_group_id => $gid2,
         zone        => 'atahigherlevel.test',
-        serial      => '0',
-        ttl         => '86400',
+        serial      => 0,
+        ttl         => 86400,
         description => "test delete me",
         mailaddr    => "root.somewhere.com",
         refresh     => 10,
@@ -1757,7 +1757,7 @@ sub security {
         nt_group_id   => $gid2,
         name          => 'ns2.somewhere.test.',
         address       => '4.4.4.4',
-        output_format => 'djb',
+        export_format => 'djb',
         ttl           => 86404
     );
 

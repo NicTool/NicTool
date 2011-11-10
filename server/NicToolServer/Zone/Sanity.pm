@@ -248,7 +248,7 @@ sub record_exists_within_zone {
     my $base_name = $name;
     $base_name =~ s/\..*$//;
     $name .= "." unless ( $name =~ /\.$/ );
-    my $sql = "SELECT * FROM nt_zone_record WHERE deleted = '0'
+    my $sql = "SELECT * FROM nt_zone_record WHERE deleted=0
         AND nt_zone_id = ? AND ( name = ? OR name = ? )";
     my $zrs = $self->exec_query( $sql, [ $zid, $name, $base_name ] ); 
     return ref $zrs->[0] ? 1 : 0;
