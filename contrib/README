@@ -1,11 +1,9 @@
 
-Enclosed are examples of how to use the NicTool API. 
-
-Some are old and many are embarrassing. 
+Enclosed are examples of how to use the NicTool API. Some use NicToolTest, which is a very, very basic framework for using NicTool. Instead, use NicTool, from NicToolServer/sys/client/  instead.
 
 DNS.pm is a good example of how to encapsulate NicTool API methods for automated use.
 
-For a modern high(er) quality example, look at the NicTool module in Provision::Unix.
+For a modern high(er) quality example, look at the NicTool module on Provision::Unix. You can find Provision::Unix on CPAN.
 
 Matt
 

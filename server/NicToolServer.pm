@@ -23,7 +23,7 @@ use RPC::XML;
 use Data::Dumper;
 use Net::IP;
 
-$NicToolServer::VERSION = '2.09';
+$NicToolServer::VERSION = '2.10';
 
 $NicToolServer::MIN_PROTOCOL_VERSION = '1.0';
 $NicToolServer::MAX_PROTOCOL_VERSION = '1.0';
@@ -2044,8 +2044,6 @@ sub push_sanity_error {
 }
 
 ### serial number routines
-#
-# bump_serial is the only publicly-used method
 
 sub bump_serial {
     my ( $self, $nt_zone_id, $current_serial ) = @_;

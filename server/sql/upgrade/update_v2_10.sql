@@ -1,5 +1,5 @@
 
-ALTER TABLE nt_zone ADD column `last_modified` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER `deleted`;
+ALTER TABLE nt_zone ADD column `last_modified` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP AFTER `deleted`;
 ALTER TABLE `nt_nameserver` DROP column `service_type`;
 ALTER TABLE `nt_nameserver` ADD `export_serials` tinyint(1) UNSIGNED NOT NULL DEFAULT '1'  AFTER `export_interval`;
 ALTER TABLE `nt_nameserver` CHANGE `output_format` `export_format` enum('djb','bind') NOT NULL;

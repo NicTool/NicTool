@@ -2,14 +2,7 @@
  2.10 - 2011.
     * ripped out service_type
     * removed more legacy RCS $Id: headers (comments)
-    * SQL; renamed nt_zone.output_format to export_format
-    * SQL: converted deleted database fields from enum to tinyint(1)
-      (enums are evil. Their contents are strings. Having to quote numeric 
-       values in every query has ALWAYS irritated me about NicTool. ENUM is 
-       MySQL proprietary, and they often don't behave as expected). 
-    * SQL: added nt_nameesrver.export_serials (controls export of serial nums
-      for tinydns export).
-    * removed the quotes from many integers. Someone wasn't thinking...
+    see also server/Changes
 
  2.09 - 2011.10
     * removed all summary code (unused)

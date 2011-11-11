@@ -1,10 +1,20 @@
-Revision history for Perl extension NicToolServer.
+Revision history for NicToolServer
 
-2.09 - Oct 2011
+2.10    2011.11.
+    * SQL: renamed nt_zone.output_format to export_format
+    * SQL: converted deleted database fields from enum to tinyint(1)
+      (enums are evil. Their contents are strings. Having to quote numeric
+      values in every query has ALWAYS irritated me about NicTool. ENUM is
+      MySQL proprietary, and they often don't behave as expected).
+    * SQL: added nt_nameesrver.export_serials
+      (controls export of serial nums for tinydns export).
+    * removed the quotes from many integers. Someone wasn't thinking...
+
+2.09    2011.10
     * added nt_options database table (and db_version value). Expect the
       contents of nictoolserver.conf and nictoolclient.conf to be here.
 
-2.08 - Mar 2010
+2.08    2010.03
 
     * added support for encrypted passwords in nt_user table 
         see http://www.tnpi.net/support/forums/index.php/topic,902.0.html
@@ -20,14 +30,14 @@ Revision history for Perl extension NicToolServer.
       when it shouldn't have been. This was causing tests to fail.
     * Restrictions on passwords were imposed but the test weren't updated. Fixed.
 
-2.07 - Sep 2008
+2.07     2008.09
 
     * Updated the export routine to djbdns so it supports Ipv6 adresses
     * Add the option to add IPv6 AAAA addresses checked by Net::IP
     * fixed a bug that prevented Advanced Search feature from working
     * removed 28 lines of redundant code (thanks, maxv)
 
-2.06 - Oct 2007
+2.06     2007.10
 
     * fixed a bug in nt_export_djb.pl ($UID)
         (https://www.tnpi.net/support/forums/index.php/topic,821.0.html)
@@ -50,7 +60,7 @@ Revision history for Perl extension NicToolServer.
        - disabled some superfluous db logging that is not used.
        - nicer formatting of the "export status" message
 
-2.05 - Feb 2007
+2.05     2007.02
 
 NOTICE: this version requires updating your SQL tables! Something like this should work:
      mysql -u nictool -p nictool < sql/upgrade/update_v2_05.sql
@@ -69,21 +79,21 @@ NOTICE: this version requires updating your SQL tables! Something like this shou
     * bin/install_deps.sh - tries to install perl modules NicTool requires
 
 
-2.04 - Jan 2007
+2.04     2007.01
 
     - added "use Apache2::SOAP to nictoolserver.conf (mps)
     - djbdns/nameserver/install.pl updates (rl)
 
-2.03 - Apr 2005
+2.03    2005.04
 
     - NicToolServer/Zone/Record/Sanity.pm - allow / character in TXT records (for SPF)
     - NicToolServer/Zone/Record/Sanity.pm - replace any : characters in TXT records with \072 since : is a field delimiter in tinydns data files.
 
-2.02 - Oct 2004
+2.02    2004.10
 
     - NicToolServer/Response.pm - added mod_perl 2 check and use content_type instead of send_http_header if mod_perl 2.
 
-2.01 - Sep 2004
+2.01    2004.09
 
     - Added Copyright and Affero GPL license text to all source files
     - Added files LICENSE & COPYING
@@ -92,7 +102,7 @@ NOTICE: this version requires updating your SQL tables! Something like this shou
     - consistent password among the variety of config files, now you can grep for it and change it everywhere at once.
     - Added support for TXT records, now you can set up SPF records for email
  
-2.00 - Feb 2002
+2.00    2002.02
     -Protocol version is now specified via the "nt_protocol_version" parameter.  This is an optional parameter.  If specified NicToolServer will require that the version string is allowed
     -Protocol version changed to 1.0.  Only this version is supported in NicToolServer version 2.00.
     -Permissions
@@ -186,7 +196,7 @@ NOTICE: this version requires updating your SQL tables! Something like this shou
 1.06x ???
     -err, somebody forgot to list the changes -gws
 
-0.01  Fri Jan 26 10:42:19 2001
+0.01    2001.01.26
 	- original version; created by h2xs 1.20 with options
 		-X -n NicToolServer
 

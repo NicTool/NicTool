@@ -16,7 +16,6 @@
 #
 
 
-
 DROP TABLE IF EXISTS nt_zone;
 CREATE TABLE nt_zone(
     nt_zone_id          INT UNSIGNED AUTO_INCREMENT NOT NULL PRIMARY KEY,
@@ -41,7 +40,7 @@ CREATE TABLE nt_zone(
     ns8                 SMALLINT UNSIGNED NOT NULL DEFAULT 0,
     ns9                 SMALLINT UNSIGNED NOT NULL DEFAULT 0,
     location            VARCHAR(2) DEFAULT NULL,
-    last_modified       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_modified       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP,
     deleted             TINYINT(1) UNSIGNED DEFAULT 0 NOT NULL
 ) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 CREATE INDEX nt_zone_idx1 on nt_zone(nt_group_id);

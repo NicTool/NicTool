@@ -37,6 +37,7 @@ $export->get_dbh(
     user => Config('db_user'),
     pass => Config('db_pass'),
 );
+$export->preflight();  # check if export can succeed
 #warn Data::Dumper::Dumper($export);
 
 my $logid = $export->get_log_id( success=>1 ); # create a NT export log entry

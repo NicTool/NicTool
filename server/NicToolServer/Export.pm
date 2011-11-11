@@ -7,12 +7,16 @@ use Data::Dumper;
 use DBIx::Simple;
 use Params::Validate  qw/ :all /;
 
-# Methods for writing exports of DNS data from NicTool
+# Methods for exporting DNS data from NicTool to authoritative DNS servers
 #
 # this class will support the creation of nt_export_djb.pl, nt_export_bind.pl,
 # and ease the creation of export scripts for other DNS servers.
 #
-# maybe TODO: append DB ids (why?)
+# TODO: subclass the DNS server specific methods
+#    NTS::Export::zr_djb_a  -> NTS:Export:DJB:zr_a
+#    NTS::Export::zr_djb_ns -> NTS:Export:DJB:zr_ns
+#    .....
+# maybe TODO: append DB ids (but why?)
 
 sub new {
     my $class = shift;
@@ -20,6 +24,7 @@ sub new {
             ns_id     => { type => SCALAR },
             debug     => { type => BOOLEAN, optional => 1 },
             debug_sql => { type => BOOLEAN, optional => 1 },
+            force     => { type => BOOLEAN, optional => 1 },
         } );
 
     bless {
@@ -28,10 +33,35 @@ sub new {
         dbix_w => undef,
         debug_sql => defined $p{debug_sql} ? $p{debug_sql} : 0,
         export_serials => undef,  # export serials for this nsid?
+        force  => $p{force},
         log_id => undef,          # current log ID
         active_ns_ids => undef,   # nsids for a zone
     },
     $class;
+};
+
+sub elog {
+    my $self = shift;
+    my $message = shift;
+    my %p = validate(@_, { 
+            success => { type => BOOLEAN, optional => 1 },
+            partial => { type => BOOLEAN, optional => 1 },
+        } );
+    my $logid = $self->get_log_id();
+    my $query = "UPDATE nt_nameserver_export_log 
+    SET message=CONCAT_WS(', ',message,?)";
+
+    my @args = $message;
+    foreach ( qw/ success partial / ) {
+        if ( defined $p{$_} ) {
+            $query .= ",$_=?";
+            push @args, $p{$_};
+        };
+    };
+
+    push @args, $self->{ns_id}, $logid;
+    $query .= "WHERE nt_nameserver_id=? AND nt_nameserver_export_log_id=?";
+    $self->exec_query( $query, \@args ); 
 };
 
 sub exec_query {
@@ -289,28 +319,20 @@ sub get_active_nameservers {
     return $self->{active_ns};
 };
 
-sub elog {
+sub preflight {
     my $self = shift;
-    my $message = shift;
-    my %p = validate(@_, { 
-            success => { type => BOOLEAN, optional => 1 },
-            partial => { type => BOOLEAN, optional => 1 },
-        } );
-    my $logid = $self->get_log_id();
-    my $query = "UPDATE nt_nameserver_export_log 
-    SET message=CONCAT_WS(', ',message,?)";
+# bail out if no export required
+#    get timestamp of last successful export
+#    see if any zones for this nameserver have updates more recent than last successful export
+# determine export directory
+# make sure it's writable
+};
 
-    my @args = $message;
-    foreach ( qw/ success partial / ) {
-        if ( defined $p{$_} ) {
-            $query .= ",$_=?";
-            push @args, $p{$_};
-        };
-    };
-
-    push @args, $self->{ns_id}, $logid;
-    $query .= "WHERE nt_nameserver_id=? AND nt_nameserver_export_log_id=?";
-    $self->exec_query( $query, \@args ); 
+sub postflight {
+# is data newer than data.old?
+# compile data -> data.cdb
+# rsync file into place
+# mark export successful
 };
 
 sub zr_soa {
