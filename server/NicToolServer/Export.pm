@@ -4,58 +4,140 @@ use strict;
 use warnings;
 
 use Data::Dumper;
+use DBIx::Simple;
 use Params::Validate  qw/ :all /;
 
-#
 # Methods for writing exports of DNS data from NicTool
 #
 # this class will support the creation of nt_export_djb.pl, nt_export_bind.pl,
 # and ease the creation of export scripts for other DNS servers.
-
-# nt_nameserver_export
-#   nt_nameserver_id
-#   timestamp
-#   status
-#   timestamp_last_success
-#   
+#
+# maybe TODO: append DB ids (why?)
 
 sub new {
-    die "please pass in a NicToolServer object" if ref $_[1] ne 'NicToolServer';
+    my $class = shift;
+    my %p = validate(@_, { 
+            ns_id     => { type => SCALAR },
+            debug     => { type => BOOLEAN, optional => 1 },
+            debug_sql => { type => BOOLEAN, optional => 1 },
+        } );
+
     bless {
-        'dbix_r' => undef,
-        'dbix_w' => undef,
-        'nsid'   => $_[2],
-        'server' => $_[1],
+        ns_id  => $p{ns_id},      # current nameserver ID
+        dbix_r => undef,
+        dbix_w => undef,
+        debug_sql => defined $p{debug_sql} ? $p{debug_sql} : 0,
+        export_serials => undef,  # export serials for this nsid?
+        log_id => undef,          # current log ID
+        active_ns_ids => undef,   # nsids for a zone
     },
-    $_[0];
+    $class;
+};
+
+sub exec_query {
+    my $self = shift;
+    my ( $query, $params, $extra ) = @_;
+    
+    my @caller = caller;
+    my $err = sprintf( "exec_query called by %s, %s\n", $caller[0], $caller[2] );
+    $err .= "\t$query\n\t";
+        
+    die "invalid arguments to exec_query!" if $extra;
+
+    my @params;
+    if ( defined $params ) {  # dereference $params into @params
+        @params = ref $params eq 'ARRAY' ? @$params : $params;
+        $err .= join(', ', @params) . "\n";
+    };
+    
+    warn $err if $self->{debug_sql}; 
+    my $dbix_r = $self->{dbix_r};
+    my $dbix_w = $self->{dbix_w};
+
+    if ( $query =~ /^INSERT INTO/ ) {
+        my ( $table ) = $query =~ /INSERT INTO (\w+)[\s\(]/;
+        eval { $dbix_w->query( $query, @params ); };
+        if ($@ or $dbix_w->error ne 'DBI error: ') {
+            warn $err . $dbix_w->error if $self->{debug_sql};
+            return;
+        };
+        return $dbix_w->last_insert_id(undef,undef,$table,undef);
+# don't test the value of last_insert_id. If the table doesn't have an
+# autoincrement field, the value is always zero
+    }
+    elsif ( $query =~ /^DELETE|UPDATE/ ) {
+        eval { $dbix_w->query( $query, @params ) };
+        if ($@ or $dbix_w->error ne 'DBI error: ') {
+            warn $err . $dbix_w->error if $self->debug_sql;
+            return; 
+        };
+        return $dbix_w->query("SELECT ROW_COUNT()")->list;
+    };      
+            
+    my $r;
+    eval { $r = $dbix_r->query( $query, @params )->hashes; };
+    warn "$err\t$@" if $@; #&& $self->{debug_sql} );
+    return $r;
 };
 
 sub export {
     my $self = shift;
-    my %p = validate(@_, { ns_id => { type => SCALAR } } );
 
     $self->get_active_nameservers();
-    my $zones = $self->get_ns_zones( %p );
+    my $zones = $self->get_ns_zones();
 
     foreach my $z ( @$zones ) {
-        print $self->zr_soa( %p, zone=>$z );
-        print $self->zr_ns ( %p, zone=>$z );
+        print $self->zr_soa( zone=>$z );
+        print $self->zr_ns ( zone=>$z );
         my $records = $self->get_zone_records( zone => $z );
-        $self->zr_dispatch( %p, zone=>$z, records=>$records );
+        $self->zr_dispatch(  zone=>$z, records=>$records );
     };
     $self->elog( "exported" );
     return 1;
 };
 
+sub get_dbh {
+    my $self = shift;
+    my %p = validate(@_, {
+            dsn    => { type => SCALAR },
+            user   => { type => SCALAR },
+            pass   => { type => SCALAR },
+            dsn_w  => { type => SCALAR, optional => 1 },
+            user_w => { type => SCALAR, optional => 1 },
+            pass_w => { type => SCALAR, optional => 1 },
+        }
+    );
+
+# get database handles (r/w and r/o) used by the export processes
+#
+# the read handle is the default handle. If a second write DSN is provided,
+# it is used for INSERT/UPDATE/DELETE queries. This is useful for sites 
+# with one-way replicated database servers with a local db slave.
+
+    die "invalid DSN!" if $p{dsn} !~ /^DBI/;
+
+    $self->{dbix_r} = DBIx::Simple->connect( $p{dsn}, $p{user}, $p{pass} )
+        or die DBIx::Simple->error;
+
+    if ( $p{dsn_w} ) {
+        $self->{dbix_w} = DBIx::Simple->connect( 
+            $p{dsn_w}, $p{user_w} || $p{user}, $p{pass_w} || $p{pass} )
+                or die DBIx::Simple->error;
+    }
+    else {
+        $self->{dbix_w} = $self->{dbix_r};
+    };
+    return $self->{dbix_r};
+}
+
 sub get_last_ns_export {
     my $self = shift;
     my %p = validate(@_, {
-            ns_id     => { type => SCALAR },
             success   => { type => BOOLEAN, optional => 1 },
             partial   => { type => BOOLEAN, optional => 1 },
         });
 
-    my @args = $p{ns_id};
+    my @args = $self->{ns_id};
     my $query = "SELECT nt_nameserver_export_log_id AS id, 
         date_start, date_end, message
       FROM nt_nameserver_export_log
@@ -70,25 +152,8 @@ sub get_last_ns_export {
 
     $query .= " ORDER BY date_start DESC LIMIT 1";
 
-    my $logs = $self->{server}->exec_query( $query, \@args );
+    my $logs = $self->exec_query( $query, \@args );
     return $logs->[0];
-};
-
-sub get_dbh {
-    my ($self, $dsn) = @_;
-
-    $self->{dbh} = $self->{server}->dbh($dsn);
-# get database handles (r/w and r/o) used by the export processes
-#
-# if a r/o handle is provided, use it for reading zone data. This is useful
-# for sites with replicated mysql servers and a local db slave.
-#
-# The write handle is used for all other purposes. If a specific DSN 
-# is provided in the nt_nameserver table, use it. Else use the settings in
-# nictoolserver.conf.
-#
-# 
- 
 };
 
 sub get_ns_id {
@@ -104,31 +169,30 @@ sub get_ns_id {
     die "An id, ip, or name must be passed to get_ns_id\n"
         if ( ! $p{id} && ! $p{name} && ! $p{id} );
 
-    my @q_args;
+    my @args;
     my $query = "SELECT nt_nameserver_id AS id FROM nt_nameserver 
         WHERE deleted=0";
 
     if ( defined $p{id} ) {
         $query .= " AND nt_nameserver_id=?";
-        push @q_args, $p{id};
+        push @args, $p{id};
     };
     if ( defined $p{ip} ) {
         $query .= " AND address=?";
-        push @q_args, $p{ip};
+        push @args, $p{ip};
     };
     if ( defined $p{name} ) {
         $query .= " AND name=?";
-        push @q_args, $p{name};
+        push @args, $p{name};
     };
 
-    my $nameservers = $self->{server}->exec_query($query, \@q_args);
+    my $nameservers = $self->exec_query($query, \@args);
     return $nameservers->[0]->{id};
 };
 
 sub get_ns_zones {
     my $self = shift;
     my %p = validate(@_, {
-            ns_id         => { type => SCALAR },
             last_modified => { type => SCALAR, optional => 1 },
         },
     );
@@ -138,15 +202,20 @@ sub get_ns_zones {
 FROM nt_zone 
     WHERE deleted=0";
 
-    my @ns_ids;
-    if ( $p{ns_id} != 0 ) {
-        for ( 0 .. 9 ) { push @ns_ids, $p{ns_id} };
+    my @args;
+    if ( $p{last_modified} ) {
+        $sql .= " AND last_modified > ?";
+        push @args, $p{last_modified};
+    };
+
+    if ( $self->{ns_id} != 0 ) {
+        for ( 0 .. 9 ) { push @args, $self->{ns_id} };
         $sql .= " AND (ns0 = ? OR ns1 = ? OR ns2 = ? OR ns3 = ? OR ns4 = ? OR ns5 = ? 
             OR  ns6 = ? OR ns7 = ? OR ns8 = ? OR ns9 = ?) ";
     };
     $sql .= " LIMIT 10";
 
-    my $r = $self->{server}->exec_query( $sql, \@ns_ids );
+    my $r = $self->exec_query( $sql, \@args );
     $self->elog( "retrieved ".scalar @$r." zones");
     return $r;
 };
@@ -162,7 +231,7 @@ sub get_log_id {
     my $query = "INSERT INTO nt_nameserver_export_log 
         SET nt_nameserver_id=?, date_start=CURRENT_TIMESTAMP(), message=?";
 
-    my @args = ( $self->{nsid}, $message );
+    my @args = ( $self->{ns_id}, $message );
     foreach ( qw/ success partial / ) {
         if ( defined $p{$_} ) {
             $query .= ",$_=?";
@@ -170,7 +239,7 @@ sub get_log_id {
         };
     };
 
-    $self->{log_id} = $self->{server}->exec_query( $query, \@args );
+    $self->{log_id} = $self->exec_query( $query, \@args );
     return $self->{log_id};
 };
 
@@ -199,7 +268,7 @@ sub get_zone_records {
         FROM nt_zone_record
          WHERE deleted=0 AND nt_zone_id=?";
 
-    return $self->{server}->exec_query( $query, $zid );
+    return $self->exec_query( $query, $zid );
 };
 
 sub get_active_nameservers {
@@ -207,7 +276,7 @@ sub get_active_nameservers {
     return $self->{active_ns} if defined $self->{active_ns};
 
     my $query = "SELECT * FROM nt_nameserver WHERE deleted=0";
-    $self->{active_ns} = $self->{server}->exec_query( $query );  # populated
+    $self->{active_ns} = $self->exec_query( $query );  # populated
 
     foreach my $r ( @{ $self->{active_ns} } ) {
         $self->{active_ns_ids}{$r->{nt_nameserver_id}} = $r;
@@ -239,19 +308,16 @@ sub elog {
         };
     };
 
-    push @args, $self->{nsid}, $logid;
+    push @args, $self->{ns_id}, $logid;
     $query .= "WHERE nt_nameserver_id=? AND nt_nameserver_export_log_id=?";
-    $self->{server}->exec_query( $query, \@args ); 
+    $self->exec_query( $query, \@args ); 
 };
 
 sub zr_soa {
     my $self = shift;
-    my %p = validate(@_, { 
-            ns_id => { type => SCALAR },
-            zone  => { type => HASHREF },
-        } );
+    my %p = validate(@_, { zone  => { type => HASHREF } } );
 
-    my $ns_ref = $self->{active_ns_ids}{$p{ns_id}};
+    my $ns_ref = $self->{active_ns_ids}{ $self->{ns_id} };
     my $format = $ns_ref->{export_format};  # djb, bind, etc...
     my $method = "zr_${format}_soa";
     my $r = $self->$method(%p);     # format record for nameserver type
@@ -260,12 +326,9 @@ sub zr_soa {
 
 sub zr_ns {
     my $self = shift;
-    my %p = validate(@_, { 
-            ns_id => { type => SCALAR },
-            zone  => { type => HASHREF },
-        } );
+    my %p = validate(@_, { zone  => { type => HASHREF } } );
 
-    my $this_ns = $self->{active_ns_ids}{$p{ns_id}};
+    my $this_ns = $self->{active_ns_ids}{ $self->{ns_id} };
 
     my $zone = $p{zone};
 
@@ -295,13 +358,11 @@ sub zr_ns {
 sub zr_dispatch {
     my $self = shift;
     my %p = validate(@_, { 
-            ns_id  => { type => SCALAR },
             zone   => { type => HASHREF },
             records =>{ type => ARRAYREF },
         } );
 
-    my $this_ns = $self->{active_ns_ids}{$p{ns_id}};
-    my $format = $this_ns->{export_format};
+    my $format = $self->{active_ns_ids}{$self->{ns_id}}{export_format};
     $self->{zone_name} = $p{zone}{zone}; # for reference by ->qualify
 
     foreach my $r ( @{ $p{records} } ) {
@@ -414,16 +475,13 @@ sub zr_djb_ptr {
 
 sub zr_djb_soa {
     my $self = shift;
-    my %p = validate(@_, { 
-            ns_id => { type => SCALAR },
-            zone  => { type => HASHREF },
-        } );
+    my %p = validate(@_, { zone  => { type => HASHREF } } );
 
     my $z = $p{zone};
 
     my $ns_ids = $self->get_zone_ns_ids( $z );
     my $primary_ns = $self->{active_ns_ids}{ $ns_ids->[0] }{name};
-    my $serial = $self->{active_ns_ids}{ $p{ns_id} }{export_serials} ? $z->{serial} : '';
+    my $serial = $self->{active_ns_ids}{ $self->{ns_id} }{export_serials} ? $z->{serial} : '';
     my $location = $z->{location} || 'ex';
 
     return 'Z'
@@ -439,7 +497,6 @@ sub zr_djb_soa {
         . ":"                # timestamp
         . ":$location"       # location
         . "\n";
-# maybe TODO: append DB ids (why?)
 };
 
 sub zr_djb_spf {
