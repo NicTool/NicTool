@@ -1,8 +1,0 @@
-
- 1.02 - matt - removed everything that was redundant with NicToolServer/sys/client
-             - removed bits of NicTool/Zones/*.pm that has was integrated into
-               NicToolClient (template support).
- 1.01 - matt - Added zones.pl
-             - NicTool/Zones/*.pm
-
- 1.00 - 
