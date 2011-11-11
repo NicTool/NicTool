@@ -40,6 +40,7 @@ CREATE TABLE nt_zone(
     ns7                 SMALLINT UNSIGNED NOT NULL DEFAULT 0,
     ns8                 SMALLINT UNSIGNED NOT NULL DEFAULT 0,
     ns9                 SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    location            VARCHAR(2) DEFAULT NULL,
     last_modified       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted             TINYINT(1) UNSIGNED DEFAULT 0 NOT NULL
 ) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
@@ -97,6 +98,7 @@ CREATE TABLE nt_zone_record(
     weight              SMALLINT UNSIGNED,
     priority            SMALLINT UNSIGNED,
     other               VARCHAR(255),
+    location            VARCHAR(2) DEFAULT NULL,
     deleted             TINYINT(1) UNSIGNED DEFAULT 0 NOT NULL
 ) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 CREATE INDEX nt_zone_record_idx1 on nt_zone_record(name); # for searching

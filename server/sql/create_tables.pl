@@ -38,7 +38,7 @@ print "
 $db_host = answer("database hostname", $db_host);
 
 system "stty -echo";
-$db_root_pw = answer("database root password");
+$db_root_pw = answer("mysql root password");
 system "stty echo";
 print "\n";
 

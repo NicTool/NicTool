@@ -6,6 +6,12 @@
 . Fix bug: login returns nt_perm_id and perm_name in user hash, and
 should not.
 
+. Be consistent with use of strings and ints.
+
+. Support any database backend: 
+..  remove all ENUM columns from database
+
+
 ==== COMPLETED =====
 
 . Crypt the user passwords (requires schema changes)
