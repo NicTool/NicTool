@@ -125,12 +125,8 @@ sub nt_create_zone {
     my %p = validate(
         @_,
         {   'zone'     => { type => SCALAR },
-            'group_id' => { type => SCALAR, optional => 1, default => 11 },
-
-            # group 11 is the NicTool->loadbalanced.net->vpslink->customers id
-            description => { type => SCALAR },
-
-            # description is the modernbill client ID
+            'group_id' => { type => SCALAR, optional => 1, default => 1 },
+            'description' => { type => SCALAR },
             'contact' => { type => SCALAR, optional => 1 },
             'ttl'     => { type => SCALAR, optional => 1, default => 86400 },
             'refresh' => { type => SCALAR, optional => 1, default => 16384 },
