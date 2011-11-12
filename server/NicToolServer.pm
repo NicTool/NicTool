@@ -59,43 +59,46 @@ sub handler {
 
 # process session verification, login or logouts by just responding with the user hash
 
-    my $error = NicToolServer::Session->new( $r, $client_obj, $dbh )->verify();
+    my $error
+        = NicToolServer::Session->new( $r, $client_obj, $dbh )->verify();
     warn "request: " . Data::Dumper::Dumper( $client_obj->data )
         if $self->debug_request;
     warn "request: error: " . Data::Dumper::Dumper($error)
         if $self->debug_request and $error;
     return $response_obj->respond($error) if $error;
-    my $action = uc( $client_obj->data()->{'action'} );
+    my $action = uc( $client_obj->data()->{action} );
     if (   $action eq 'LOGIN'
         or $action eq 'VERIFY_SESSION'
         or $action eq 'LOGOUT' )
     {
 
-#warn "result of session verify: ".Data::Dumper::Dumper($client_obj->data->{'user'});
-        return $response_obj->respond( $client_obj->data()->{'user'} );
-    };
+#warn "result of session verify: ".Data::Dumper::Dumper($client_obj->data->{user});
+        return $response_obj->respond( $client_obj->data()->{user} );
+    }
 
-    $self->{'user'} = $client_obj->data()->{'user'};
+    $self->{user} = $client_obj->data()->{user};
 
-    my $cmd = $self->api_commands->{ $action } or do {
+    my $cmd = $self->api_commands->{$action} or do {
+
         # fart on unknown actions
         warn "unknown NicToolServer action: $action\n" if $self->debug;
         $response_obj->respond( $self->error_response( 500, $action ) );
     };
 
     # check permissions
-    $error = $self->verify_obj_usage( $cmd, $client_obj->data(), $action);
+    $error = $self->verify_obj_usage( $cmd, $client_obj->data(), $action );
     return $response_obj->respond($error) if $error;
 
     # create obj, call method, return response
-    my $class = 'NicToolServer::' . $cmd->{'class'};
+    my $class = 'NicToolServer::' . $cmd->{class};
     my $obj   = $class->new(
-        $self->{'Apache'}, $self->{'client'}, $self->{'dbh'},
-        $self->{'meta'},   $self->{'user'}
+        $self->{Apache}, $self->{client}, $self->{dbh},
+        $self->{meta},   $self->{user}
     );
-    my $method = $cmd->{'method'};
-    warn "calling NicToolServer action: $cmd->{'class'}::$cmd->{'method'} ("
-        . $action . ")\n" if $self->debug;
+    my $method = $cmd->{method};
+    warn "calling NicToolServer action: $cmd->{class}::$cmd->{method} ("
+        . $action . ")\n"
+        if $self->debug;
     my $res;
     eval { $res = $obj->$method( $client_obj->data() ) };
     warn "result: " . Data::Dumper::Dumper($res) if $self->debug_result;
@@ -111,7 +114,7 @@ sub handler {
 #check the protocol version if included
 sub ver_check {
     my $self = shift;
-    my $pv   = $self->{'client'}->protocol_version;
+    my $pv   = $self->{client}->protocol_version;
     return undef unless $pv;
     return $self->error_response( 510,
         "This server requires at least protocol version $NicToolServer::MIN_PROTOCOL_VERSION. You have specified protocol version $pv"
@@ -394,13 +397,6 @@ sub api_commands {
                     { 'access' => 'read', required => 1, type => 'ZONE' },
             },
         },
-
-      #'get_zone_application_log' => {
-      #'class'     => 'Zone',
-      #'method'    => 'get_zone_application_log',
-      #'parameters'=>{'nt_zone_id'=>{access=>'read',required=>1,type=>'ZONE'},
-      #},
-      #},
         'move_zones' => {
             'class'      => 'Zone::Sanity',
             'method'     => 'move_zones',
@@ -513,10 +509,10 @@ sub api_commands {
                 503, 'get_nameserver_tree.  Use get_usable_nameservers.'
             ),
 
- #'class'     => 'Nameserver',
- #'method'    => 'get_usable_nameservers',
- #'parameters'=>{ 'nt_group_id'=>{'access'=>'read',required=>1,type=>'GROUP'},
- #},
+   #'class'     => 'Nameserver',
+   #'method'    => 'get_usable_nameservers',
+   #'parameters'=>{ 'nt_group_id'=>{access=>'read',required=>1,type=>'GROUP'},
+   #},
         },
         'get_usable_nameservers' => {
             'class'      => 'Nameserver',
@@ -630,10 +626,10 @@ sub api_commands {
 #},
 #},
         'delegate_zones' => {
-            'class'      => 'Permission',
-            'method'     => 'delegate_zones',
-            'parameters' => {
-                'zone_list' => {
+            class      => 'Permission',
+            method     => 'delegate_zones',
+            parameters => {
+                zone_list => {
                     list     => 1,
                     access   => 'delegate',
                     delegate => 'perm_delegate',
@@ -903,7 +899,8 @@ sub get_group_id {
         $rid = $ids->[0]->{'nt_group_id'} if $ids;
     }
     elsif ( $key eq 'nt_zone_record_id' or uc($type) eq 'ZONERECORD' ) {
-        $sql = "SELECT nt_zone.nt_group_id FROM nt_zone_record,nt_zone "
+        $sql
+            = "SELECT nt_zone.nt_group_id FROM nt_zone_record,nt_zone "
             . "WHERE nt_zone_record.nt_zone_record_id = ? "
             . "AND nt_zone.nt_zone_id=nt_zone_record.nt_zone_id";
         my $ids = $self->exec_query( $sql, $id );
@@ -911,7 +908,7 @@ sub get_group_id {
     }
     elsif ( $key eq 'nt_nameserver_id' or uc($type) eq 'NAMESERVER' ) {
         $sql = "SELECT nt_group_id FROM nt_nameserver "
-             . "WHERE nt_nameserver_id = ?";
+            . "WHERE nt_nameserver_id = ?";
         my $ids = $self->exec_query( $sql, $id );
         $rid = $ids->[0]->{'nt_group_id'} if $ids;
     }
@@ -927,19 +924,22 @@ sub get_group_id {
 
 sub get_group_permissions {
     my ( $self, $groupid ) = @_;
-    my $sql = "SELECT * FROM nt_perm WHERE nt_group_id=? AND nt_user_id=0 AND deleted!=1";
+    my $sql
+        = "SELECT * FROM nt_perm WHERE nt_group_id=? AND nt_user_id=0 AND deleted!=1";
     my $perms = $self->exec_query( $sql, $groupid );
     return $perms->[0];
 }
 
 sub get_user_permissions {
     my ( $self, $userid ) = @_;
-    my $sql = "SELECT * FROM nt_perm WHERE nt_group_id=0 AND nt_user_id=? AND deleted!=1";
+    my $sql
+        = "SELECT * FROM nt_perm WHERE nt_group_id=0 AND nt_user_id=? AND deleted!=1";
     my $perms = $self->exec_query( $sql, $userid );
     return $perms->[0];
 }
 
 sub get_access_permission {
+
 # return 1 if user has $access permissions on the object $id of type $type, else 0
     my ( $self, $type, $id, $access ) = @_;
     warn "##############################\nget_access_permission ("
@@ -949,6 +949,7 @@ sub get_access_permission {
         #"      params: ".Data::Dumper::Dumper($params).""
         if $self->debug_permissions;
     my @error = $self->check_permission( '', $id, $access, $type );
+
     #warn "get_access_permission: @error returning " . ( $error[0] ? 0 : 1 );
     return $error[0] ? 0 : 1;
 }
@@ -1107,12 +1108,14 @@ sub check_permission {
                 if ( !$del->{"perm_$access"} ) {
                     warn "NO delegate '$access': $debug"
                         if $self->debug_permissions;
+
                     #warn Data::Dumper::Dumper($del);
                     return ( '404',
                         "You have no '$access' permission for the delegated object"
                     );
                 }
                 else {
+
                     #warn Data::Dumper::Dumper($del);
                     warn "YES delegate '$access': $debug"
                         if $self->debug_permissions;
@@ -1211,7 +1214,7 @@ sub get_zonerecord_delegate_access {
         . " INNER JOIN nt_zone on nt_zone.nt_zone_id=nt_delegate.nt_object_id AND nt_delegate.nt_object_type='ZONE'"
         . " INNER JOIN nt_zone_record on nt_zone_record.nt_zone_id= nt_zone.nt_zone_id"
         . " INNER JOIN nt_group on nt_zone.nt_group_id = nt_group.nt_group_id"
-       . " WHERE nt_zone_record.nt_zone_record_id=?";
+        . " WHERE nt_zone_record.nt_zone_record_id=?";
     $r = $self->exec_query( $sql, $id );
     return $r->[0];
 }
@@ -1265,8 +1268,10 @@ sub verify_obj_usage {
         return $self->error_response( 301, join( " ", @missing ) );
     }
     my @invalid;
-    foreach my $p ( grep { exists $data->{$_} and $$params{$_}->{'type'} }
-        keys %$params )
+    foreach my $p (
+        grep { exists $data->{$_} and $$params{$_}->{'type'} }
+        keys %$params
+        )
     {
         next
             if $$params{$p}->{'empty'}
@@ -1307,8 +1312,10 @@ sub verify_obj_usage {
     }
 
     #verify that appropriate permission level is available for all objects
-    foreach my $f ( grep { exists $data->{$_} and $$params{$_}->{'type'} }
-        keys %$params )
+    foreach my $f (
+        grep { exists $data->{$_} and $$params{$_}->{'type'} }
+        keys %$params
+        )
     {
 
         next unless $$params{$f}->{'access'};
@@ -1360,7 +1367,8 @@ sub verify_obj_usage {
 }
 
 sub get_param_meta {
-#gets keyed data for a certain parameter of the function call
+
+    #gets keyed data for a certain parameter of the function call
     my $self  = shift;
     my $param = shift;
     my $key   = shift;
@@ -1370,7 +1378,8 @@ sub get_param_meta {
 }
 
 sub set_param_meta {
-#Sets keyed info about a parameter for the function call
+
+    #Sets keyed info about a parameter for the function call
     my $self  = shift;
     my $param = shift;
     my $key   = shift;
@@ -1507,12 +1516,12 @@ sub get_group_map {
         . "AND nt_group.deleted=0 "
         . "ORDER BY nt_group_subgroups.nt_subgroup_id, nt_group_subgroups.rank DESC";
 
-    my $subgroups = $self->exec_query( $sql );
+    my $subgroups = $self->exec_query($sql);
 
-    if ( $subgroups ) {
+    if ($subgroups) {
         my $skipping = 0;
 
-        foreach my $r ( @$subgroups ) {
+        foreach my $r (@$subgroups) {
 
             if ( $r->{'nt_group_id'} == $top_group_id ) {
                 $skipping = $r->{'nt_subgroup_id'};
@@ -1544,25 +1553,27 @@ sub get_subgroup_ids {
     my $subgroups = $self->exec_query( $sql, $nt_group_id );
 
     my @list;
-    foreach ( @$subgroups ) { push( @list, $_->{nt_subgroup_id} ); };
+    foreach (@$subgroups) { push( @list, $_->{nt_subgroup_id} ); }
     return \@list;
 }
 
 sub get_parentgroup_ids {
     my ( $self, $nt_group_id ) = @_;
 
-    my $sql = "SELECT nt_group_id FROM nt_group_subgroups WHERE nt_subgroup_id = ?";
+    my $sql
+        = "SELECT nt_group_id FROM nt_group_subgroups WHERE nt_subgroup_id = ?";
     my $subgroups = $self->exec_query( $sql, $nt_group_id );
 
     my @list;
-    foreach ( @$subgroups ) { push( @list, $_->{nt_group_id} ); };
+    foreach (@$subgroups) { push( @list, $_->{nt_group_id} ); }
     return \@list;
 }
 
 sub is_subgroup {
     my ( $self, $nt_group_id, $gid ) = @_;
 
-    my $sql = "SELECT COUNT(*) AS count FROM nt_group_subgroups WHERE nt_group_id = ?"
+    my $sql
+        = "SELECT COUNT(*) AS count FROM nt_group_subgroups WHERE nt_group_id = ?"
         . " AND nt_subgroup_id = ?";
     my $subgroups = $self->exec_query( $sql, [ $nt_group_id, $gid ] )
         or return 0;
@@ -1574,7 +1585,8 @@ sub get_group_branches {
     my @groups;
     my $nextgroup = $nt_group_id;
     while ($nextgroup) {
-        my $sql = "SELECT parent_group_id FROM nt_group WHERE nt_group_id = ?";
+        my $sql
+            = "SELECT parent_group_id FROM nt_group WHERE nt_group_id = ?";
         my $ids = $self->exec_query( $sql, $nextgroup );
         unshift @groups, $nextgroup if $ids->[0];
         $nextgroup = $ids->[0]->{'parent_group_id'};
@@ -1582,15 +1594,17 @@ sub get_group_branches {
 }
 
 sub dbh {
-    #warn Data::Dumper::Dumper(\@_);
-    my ($self, $dsn) = @_;
-    if ( ! $dsn || $dsn !~ /^DBI/ ) {
-        $dsn = $NicToolServer::dsn or die "missing DSN!";
-    };
 
-    my $dbh = 
-        DBI->connect( $dsn, $NicToolServer::db_user, $NicToolServer::db_pass)
-            or die "unable to connect to database: " . $DBI::errstr . "\n";
+    #warn Data::Dumper::Dumper(\@_);
+    my ( $self, $dsn ) = @_;
+    if ( !$dsn || $dsn !~ /^DBI/ ) {
+        $dsn = $NicToolServer::dsn or die "missing DSN!";
+    }
+
+    my $dbh
+        = DBI->connect( $dsn, $NicToolServer::db_user,
+        $NicToolServer::db_pass )
+        or die "unable to connect to database: " . $DBI::errstr . "\n";
 
     return $dbh;
 }
@@ -1598,7 +1612,7 @@ sub dbh {
 sub dbix {
     my $self = shift;
     return $self->{dbix} if $self->{dbix};
-    $self->{dbix} = DBIx::Simple->connect( $self->{dbh} ) 
+    $self->{dbix} = DBIx::Simple->connect( $self->{dbh} )
         or die DBIx::Simple->error;
     return $self->{dbix};
 }
@@ -1614,47 +1628,49 @@ sub exec_query {
     my ( $query, $params, $extra ) = @_;
 
     my @caller = caller;
-    my $err = sprintf( "exec_query called by %s, %s\n", $caller[0], $caller[2] );
+    my $err
+        = sprintf( "exec_query called by %s, %s\n", $caller[0], $caller[2] );
     $err .= "\t$query\n\t";
 
     die "invalid arguments to exec_query!" if $extra;
 
     my @params;
-    if ( defined $params ) {  # dereference $params into @params
+    if ( defined $params ) {    # dereference $params into @params
         @params = ref $params eq 'ARRAY' ? @$params : $params;
-        $err .= join(', ', @params) . "\n";
-    };
+        $err .= join( ', ', @params ) . "\n";
+    }
 
     warn $err if $self->debug_sql;
 
-    my $dbix = DBIx::Simple->connect( $self->{dbh} ) 
+    my $dbix = DBIx::Simple->connect( $self->{dbh} )
         or die DBIx::Simple->error;
 
     if ( $query =~ /^INSERT INTO/ ) {
-        my ( $table ) = $query =~ /INSERT INTO (\w+)[\s\(]/;
+        my ($table) = $query =~ /INSERT INTO (\w+)[\s\(]/;
         eval { $dbix->query( $query, @params ); };
-        if ($@ or $dbix->error ne 'DBI error: ') {
+        if ( $@ or $dbix->error ne 'DBI error: ' ) {
             warn $err . $dbix->error if $self->debug_sql;
             return;
-        };
-        return $dbix->last_insert_id(undef,undef,$table,undef);
-# don't test the value of last_insert_id. If the table doesn't have an
-# autoincrement field, the value is always zero
+        }
+        return $dbix->last_insert_id( undef, undef, $table, undef );
+
+        # don't test the value of last_insert_id. If the table doesn't have an
+        # autoincrement field, the value is always zero
     }
     elsif ( $query =~ /^DELETE|UPDATE/ ) {
         eval { $dbix->query( $query, @params ) };
-        if ($@ or $dbix->error ne 'DBI error: ') {
+        if ( $@ or $dbix->error ne 'DBI error: ' ) {
             warn $err . $dbix->error if $self->debug_sql;
             return;
-        };
+        }
         return $dbix->query("SELECT ROW_COUNT()")->list;
-    };
+    }
 
     my $r;
     eval { $r = $dbix->query( $query, @params )->hashes; };
-    warn "$err\t$@" if $@; #&& $self->debug_sql );
+    warn "$err\t$@" if $@;    #&& $self->debug_sql );
     return $r;
-};
+}
 
 sub check_object_deleted {
     my ( $self, $otype, $oid ) = @_;
@@ -1669,9 +1685,10 @@ sub check_object_deleted {
     );
 
     if ( my $dbst = $map{ lc($otype) } ) {
-        my $sql = "SELECT deleted FROM $dbst->{'table'} WHERE $dbst->{'field'} = ?";
+        my $sql
+            = "SELECT deleted FROM $dbst->{table} WHERE $dbst->{field} = ?";
         my $deletes = $self->exec_query( $sql, $oid );
-        return $deletes->[0]->{'deleted'} if $deletes->[0];
+        return $deletes->[0]->{deleted} if $deletes->[0];
     }
 }
 
@@ -1705,8 +1722,8 @@ sub get_title {
     }
 
     my $titles = $self->exec_query( $sql, $oid );
-    return "($otype)" if ! $titles;
-    return $titles->[0]->{'title'};
+    return "($otype)" if !$titles;
+    return $titles->[0]->{title};
 }
 
 sub diff_changes {
@@ -1772,30 +1789,29 @@ sub throw_sanity_error {
     my $self = shift;
 
     my $return = $self->error_response( 300,
-        join( " AND ", @{ $self->{'error_messages'} } ) );
-    $return->{'sanity_err'} = $self->{'errors'};
-    $return->{'sanity_msg'} = $self->{'error_messages'};
+        join( " AND ", @{ $self->{error_messages} } ) );
+    $return->{sanity_err} = $self->{errors};
+    $return->{sanity_msg} = $self->{error_messages};
     return $return;
 }
 
 sub format_search_conditions {
     my ( $self, $data, $field_map ) = @_;
 
-    my $dbh = $self->{'dbh'};
+    my $dbh = $self->{dbh};
 
     my @conditions;
-    if ( $data->{'Search'} ) {
+    if ( $data->{Search} ) {
         for ( 1 .. 5 ) {
             next unless $data->{ $_ . '_field' };
             $data->{ $_ . '_option' } = 'CONTAINS'
                 unless exists $data->{ $_ . '_option' };
             my $cond
                 = $_ == 1 ? '' : uc( $data->{ $_ . '_inclusive' } ) . ' ';
-            $cond .= $field_map->{ $data->{ $_ . '_field' } }->{'field'};
+            $cond .= $field_map->{ $data->{ $_ . '_field' } }->{field};
 
             if ( uc( $data->{ $_ . "_option" } ) eq 'EQUALS' ) {
-                if ( $field_map->{ $data->{ $_ . '_field' } }->{'timefield'} )
-                {
+                if ( $field_map->{ $data->{ $_ . '_field' } }->{timefield} ) {
                     $cond
                         .= "="
                         . "UNIX_TIMESTAMP("
@@ -1806,8 +1822,7 @@ sub format_search_conditions {
                 }
             }
             elsif ( uc( $data->{ $_ . "_option" } ) eq 'CONTAINS' ) {
-                if ( $field_map->{ $data->{ $_ . '_field' } }->{'timefield'} )
-                {
+                if ( $field_map->{ $data->{ $_ . '_field' } }->{timefield} ) {
                     $cond
                         .= "="
                         . "UNIX_TIMESTAMP("
@@ -1821,8 +1836,7 @@ sub format_search_conditions {
                 }
             }
             elsif ( uc( $data->{ $_ . "_option" } ) eq 'STARTS WITH' ) {
-                if ( $field_map->{ $data->{ $_ . '_field' } }->{'timefield'} )
-                {
+                if ( $field_map->{ $data->{ $_ . '_field' } }->{timefield} ) {
                     $cond
                         .= "="
                         . "UNIX_TIMESTAMP("
@@ -1835,8 +1849,7 @@ sub format_search_conditions {
                 }
             }
             elsif ( uc( $data->{ $_ . "_option" } ) eq 'ENDS WITH' ) {
-                if ( $field_map->{ $data->{ $_ . '_field' } }->{'timefield'} )
-                {
+                if ( $field_map->{ $data->{ $_ . '_field' } }->{timefield} ) {
                     $cond
                         .= "="
                         . "UNIX_TIMESTAMP("
@@ -1849,8 +1862,7 @@ sub format_search_conditions {
                 }
             }
             else {
-                if ( $field_map->{ $data->{ $_ . '_field' } }->{'timefield'} )
-                {
+                if ( $field_map->{ $data->{ $_ . '_field' } }->{timefield} ) {
                     $cond
                         .= $data->{ $_ . "_option" }
                         . "UNIX_TIMESTAMP("
@@ -1866,23 +1878,23 @@ sub format_search_conditions {
         }
     }
 
-    if ( $data->{'quick_search'} ) {
-        my $value = $dbh->quote( $data->{'search_value'} );
-        $value =~ s/^'/'%/ unless $data->{'exact_match'};
-        $value =~ s/'$/%'/ unless $data->{'exact_match'};
+    if ( $data->{quick_search} ) {
+        my $value = $dbh->quote( $data->{search_value} );
+        $value =~ s/^'/'%/ unless $data->{exact_match};
+        $value =~ s/'$/%'/ unless $data->{exact_match};
 
         my $x = 1;
         foreach ( keys %$field_map ) {
-            if ( $field_map->{$_}->{'quicksearch'} ) {
-                unless ( $data->{'exact_match'} ) {
+            if ( $field_map->{$_}->{quicksearch} ) {
+                unless ( $data->{exact_match} ) {
                     push( @conditions,
                         ( $x++ == 1 ? " " : " OR " )
-                            . "$field_map->{$_}->{'field'} LIKE $value" );
+                            . "$field_map->{$_}->{field} LIKE $value" );
                 }
                 else {
                     push( @conditions,
                         ( $x++ == 1 ? " " : " OR " )
-                            . "$field_map->{$_}->{'field'} = $value" );
+                            . "$field_map->{$_}->{field} = $value" );
                 }
             }
         }
@@ -1896,12 +1908,12 @@ sub format_sort_conditions {
 
     my @sortby;
 
-    if ( $data->{'Sort'} ) {
+    if ( $data->{Sort} ) {
         foreach ( 1 .. 3 ) {
             if ( $data->{ $_ . '_sortfield' } ) {
                 push(
                     @sortby,
-                    $field_map->{ $data->{ $_ . '_sortfield' } }->{'field'}
+                    $field_map->{ $data->{ $_ . '_sortfield' } }->{field}
                         . (
                         uc( $data->{ $_ . '_sortmod' } ) eq 'ASCENDING'
                         ? ''
@@ -1912,6 +1924,7 @@ sub format_sort_conditions {
         }
     }
     else {
+
         # if no default specified, return empty arrayref
         push( @sortby, $default ) if $default;
     }
@@ -1922,16 +1935,15 @@ sub format_sort_conditions {
 sub set_paging_vars {
     my ( $self, $data, $r_data ) = @_;
 
-    if ( $data->{'limit'} !~ /^\d+$/ ) {
-        $r_data->{'limit'} = 20;
+    if ( $data->{limit} !~ /^\d+$/ ) {
+        $r_data->{limit} = 20;
     }
     else {
-        $r_data->{'limit'}
-            = ( $data->{'limit'} <= 255 ? $data->{'limit'} : 255 );
+        $r_data->{limit} = ( $data->{limit} <= 255 ? $data->{limit} : 255 );
     }
 
-    if ( $data->{'page'} && ( $data->{'page'} =~ /^\d+$/ ) ) {
-        $r_data->{'start'} = ( $data->{'page'} - 1 ) * $r_data->{'limit'} + 1;
+    if ( $data->{page} && ( $data->{page} =~ /^\d+$/ ) ) {
+        $r_data->{start} = ( $data->{page} - 1 ) * $r_data->{limit} + 1;
     }
     elsif ( $data->{'start'} && ( $data->{'start'} =~ /^\d+$/ ) ) {
         $r_data->{'start'} = $data->{'start'};
@@ -2049,7 +2061,6 @@ sub push_sanity_error {
     $self->{'errors'}->{$param} = 1;
     push( @{ $self->{'error_messages'} }, $message );
 }
-
 
 1;
 __END__

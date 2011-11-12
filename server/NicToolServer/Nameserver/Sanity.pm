@@ -117,7 +117,7 @@ sub edit_nameserver {
     $self->push_sanity_error( 'nt_nameserver_id',
         'Cannot edit deleted nameserver!' )
         if $self->check_object_deleted( 'nameserver',
-                $data->{'nt_nameserver_id'} );
+        $data->{'nt_nameserver_id'} );
 
     my $dataobj = $self->get_nameserver($data);
     return $dataobj if $self->is_error_response($dataobj);
@@ -229,8 +229,7 @@ sub get_group_nameservers {
     my ( $self, $data ) = @_;
 
     $self->search_params_sanity_check( $data,
-        qw(name description address export_format status group_name)
-    );
+        qw(name description address export_format status group_name) );
     return $self->throw_sanity_error if ( $self->{'errors'} );
     return $self->SUPER::get_group_nameservers($data);
 }

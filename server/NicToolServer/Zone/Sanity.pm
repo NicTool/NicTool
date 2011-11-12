@@ -183,9 +183,9 @@ sub move_zones {
         'Cannot move zones to a deleted group!' )
         if $self->check_object_deleted( 'group', $data->{'nt_group_id'} );
 
-    if ( my @deld
-        = grep { $self->check_object_deleted( 'zone', $_ ) }
-        split( /,/, $data->{'zone_list'} ) )
+    if (my @deld = grep { $self->check_object_deleted( 'zone', $_ ) }
+        split( /,/, $data->{'zone_list'} )
+        )
     {
         $self->push_sanity_error( 'nt_zone_id',
             'Cannot move deleted zones: ' . join( ",", @deld ) );
@@ -250,9 +250,8 @@ sub record_exists_within_zone {
     $name .= "." unless ( $name =~ /\.$/ );
     my $sql = "SELECT * FROM nt_zone_record WHERE deleted=0
         AND nt_zone_id = ? AND ( name = ? OR name = ? )";
-    my $zrs = $self->exec_query( $sql, [ $zid, $name, $base_name ] ); 
+    my $zrs = $self->exec_query( $sql, [ $zid, $name, $base_name ] );
     return ref $zrs->[0] ? 1 : 0;
 }
-
 
 1;

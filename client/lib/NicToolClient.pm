@@ -79,8 +79,7 @@ sub rr_reverse_types {
 }
 
 sub ns_export_formats {
-    {
-        'bind' => 'BIND (ISC\'s Berkeley Internet Named Daemon)',
+    {   'bind' => 'BIND (ISC\'s Berkeley Internet Named Daemon)',
         'djb'  => 'tinydns (part of DJBDNS)',
     };
 }
@@ -585,12 +584,12 @@ sub display_nameserver_options {
     if ( $user->{'nameserver_create'} ) {
         push( @options,
             "<a href=group_nameservers.cgi?nt_group_id=$group_id&edit=1>New Nameserver</a>"
-        ) if ! $in_ns_summary;
+        ) if !$in_ns_summary;
     }
     else {
         push( @options,
             "<font color=$NicToolClient::disabled_color>New Nameserver</font>"
-        ) if ! $in_ns_summary;
+        ) if !$in_ns_summary;
     }
 
     print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
@@ -630,7 +629,9 @@ sub paging_fields {
 }
 
 sub prepare_search_params {
-    my ( $self, $q, $field_labels, $params, $sort_fields, $default_limit, $moreparams ) = @_;
+    my ( $self, $q, $field_labels, $params, $sort_fields, $default_limit,
+        $moreparams )
+        = @_;
 
     $default_limit ||= 20;
 
@@ -666,9 +667,10 @@ sub prepare_search_params {
     if ( $q->param('change_sortorder') || $params->{'Search'} ) {
         foreach ( 1 .. 3 ) {
             if ( $q->param( $_ . '_sortfield' ) ne '--' ) {
-                $sort_fields->{ $q->param( $_ . '_sortfield' ) }
-                    = { 'order' => $_,
-                    'mod' => $q->param( $_ . '_sortmod' ) };
+                $sort_fields->{ $q->param( $_ . '_sortfield' ) } = {
+                    'order' => $_,
+                    'mod'   => $q->param( $_ . '_sortmod' )
+                };
 
                 $params->{'Sort'} = 1;
                 $params->{ $_ . '_sortfield' }
@@ -730,8 +732,11 @@ sub display_search_rows {
         print $q->hidden( -name => $_ );
     }
     print "<td>$NicToolClient::font";
-    print $q->textfield( -name => 'search_value', -size => 30,
-        -override => 1 );
+    print $q->textfield(
+        -name     => 'search_value',
+        -size     => 30,
+        -override => 1
+    );
     print $q->hidden(
         -name     => 'quick_search',
         -value    => 'Enter',
@@ -951,10 +956,10 @@ sub display_advanced_search {
     print
         "<tr bgcolor=$NicToolClient::light_grey><td colspan=2>$NicToolClient::font",
         $q->checkbox(
-        -name  => 'include_subgroups',
-        -value => 1,
-        -label => 'include sub-groups',
-        -checked=>$NicToolClient::include_subgroups_checked,
+        -name    => 'include_subgroups',
+        -value   => 1,
+        -label   => 'include sub-groups',
+        -checked => $NicToolClient::include_subgroups_checked,
         ),
         "</font></td></tr>";
 
@@ -1165,7 +1170,9 @@ sub display_group_list {
                     (
                     uc( $sort_fields{$_}->{'mod'} ) eq 'ASCENDING'
                     ? 'up.gif'
-                    : 'down.gif' ), "></tD>";
+                    : 'down.gif'
+                    ),
+                    "></tD>";
                 print "</tr></table></td>";
 
             }
@@ -1652,9 +1659,11 @@ sub display_nice_error {
             </tr>
             <tr>
                 <td align=right bgcolor=$NicToolClient::dark_grey>$NicToolClient::font)
-        . ( $back
+        . (
+        $back
         ? '<form><input type=submit value="Back" onClick="javascript:history.go(-1)"></form>'
-        : '&nbsp;' )
+        : '&nbsp;'
+        )
         . qq(<font color=$NicToolClient::dark_color>\($error->{'error_code'}\)</font></font></td>
             </tr>
         </table>
@@ -1697,7 +1706,7 @@ sub zone_record_template {
 
     print "zone_record_template: $id, $zone, $template\n" if $debug;
 
-    #               basic template 
+    #               basic template
     #       zone.com.        IN     A      xx.xxx.xx.xx
     #       zone.com.        IN  10 MX     zone.com.
     #       mail             IN     A      xx.xxx.xx.xx

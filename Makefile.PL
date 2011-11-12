@@ -24,6 +24,6 @@ WriteMakefile(
     'VERSION_FROM' => 'client/lib/NicToolClient.pm',
     'LICENSE'      => 'affero-gpl',
     'ABSTRACT'     => 'DNS management solution',
-    'AUTHOR'       => 'Damon Edwards, Abe Shelton, Greg Schueler, Matt Simerson',
+    'AUTHOR' => 'Damon Edwards, Abe Shelton, Greg Schueler, Matt Simerson',
 );
 

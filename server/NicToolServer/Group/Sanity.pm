@@ -73,7 +73,7 @@ sub edit_group {
     $self->push_sanity_error( 'nt_group_id',
         'Cannot edit group in a deleted group!' )
         if $self->check_object_deleted( 'group',
-                $dataobj->{'parent_group_id'} );
+        $dataobj->{'parent_group_id'} );
 
     $self->push_sanity_error( 'nt_group_id', 'Cannot edit a deleted group!' )
         if $self->check_object_deleted( 'group', $data->{'nt_group_id'} );
@@ -137,8 +137,10 @@ sub get_global_application_log {
 sub group_exists {
     my ( $self, $data ) = @_;
 
-    my $sql = "SELECT * FROM nt_group WHERE deleted=0 AND parent_group_id = ? AND name = ?";
-    my $groups = $self->exec_query( $sql, [ $data->{nt_group_id}, $data->{name} ] );
+    my $sql
+        = "SELECT * FROM nt_group WHERE deleted=0 AND parent_group_id = ? AND name = ?";
+    my $groups
+        = $self->exec_query( $sql, [ $data->{nt_group_id}, $data->{name} ] );
 
     return ref $groups->[0] ? 1 : 0;
 }
@@ -152,7 +154,8 @@ sub group_exists_edit {
         . "AND nt_group.nt_group_id != g.nt_group_id "
         . "WHERE nt_group.deleted=0 AND g.nt_group_id = ?"
         . "AND nt_group.name = ?";
-    my $groups = $self->exec_query( $sql, [ $data->{nt_group_id}, $data->{'name'} ] );
+    my $groups = $self->exec_query( $sql,
+        [ $data->{nt_group_id}, $data->{'name'} ] );
     return ref $groups->[0] ? 1 : 0;
 }
 

@@ -36,19 +36,20 @@ sub new_zone_record {
             unless $del->{'zone_perm_add_records'};
     }
 
-
     # bump the zone's serial number
     my $new_serial = $self->bump_serial( $data->{nt_zone_id}, $z->{serial} );
     my $sql = "UPDATE nt_zone SET serial = ? WHERE nt_zone_id = ?";
     $self->exec_query( $sql, [ $new_serial, $data->{nt_zone_id} ] );
 
-    $sql = "INSERT INTO nt_zone_record("
+    $sql
+        = "INSERT INTO nt_zone_record("
         . join( ',', @columns )
         . ") VALUES("
-        . join( ',', map( $self->{dbh}->quote( $data->{$_} ), @columns ) ) . ")";
+        . join( ',', map( $self->{dbh}->quote( $data->{$_} ), @columns ) )
+        . ")";
 
-    my $insertid = $self->exec_query( $sql );
-    if ( ! $insertid ) {
+    my $insertid = $self->exec_query($sql);
+    if ( !$insertid ) {
         $error{'error_code'} = 600;
         $error{'error_msg'}  = $self->{dbh}->errstr;
     }
@@ -82,9 +83,11 @@ sub edit_zone_record {
     my $log_action = $prev_data->{'deleted'} ? 'recovered' : 'modified';
     $data->{'deleted'} = 0;
     $sql = "UPDATE nt_zone_record SET "
-        . join( ',',
-        map( "$_ = " . $self->{dbh}->quote( $data->{$_} ), ( @columns, 'deleted' ) ) )
-        . " WHERE nt_zone_record_id = ?";
+        . join(
+        ',',
+        map( "$_ = " . $self->{dbh}->quote( $data->{$_} ),
+            ( @columns, 'deleted' ) )
+        ) . " WHERE nt_zone_record_id = ?";
 
     if ( $self->exec_query( $sql, $data->{nt_zone_record_id} ) ) {
         $error{'nt_zone_record_id'} = $data->{'nt_zone_record_id'};
@@ -102,13 +105,15 @@ sub edit_zone_record {
 sub delete_zone_record {
     my ( $self, $data, $zone ) = @_;
 
-    if ( my $del = $self->get_param_meta( 'nt_zone_record_id', 'delegate' ) ) {
+    if ( my $del = $self->get_param_meta( 'nt_zone_record_id', 'delegate' ) )
+    {
         return $self->error_response( 404,
             "Not allowed to delete delegated record." )
             unless $del->{'pseudo'} && $del->{'zone_perm_delete_records'};
     }
 
-    my $sql = "SELECT nt_zone_id FROM nt_zone_record WHERE nt_zone_record_id = ?";
+    my $sql
+        = "SELECT nt_zone_id FROM nt_zone_record WHERE nt_zone_record_id = ?";
     my $zrs = $self->exec_query( $sql, $data->{nt_zone_record_id} );
 
     my $new_serial = $self->bump_serial( $zrs->[0]{nt_zone_id} );
@@ -145,21 +150,22 @@ sub log_zone_record {
     $data->{'timestamp'}  = time();
 
     # get zone_id if not provided.
-    if ( ! $data->{'nt_zone_id'} ) {
+    if ( !$data->{'nt_zone_id'} ) {
         my $db_data = $self->find_zone_record( $data->{'nt_zone_record_id'} );
         $data->{'nt_zone_id'} = $db_data->{'nt_zone_id'};
     }
 
     my $dbh = $self->{'dbh'};
-    my $sql = "INSERT INTO nt_zone_record_log("
+    my $sql
+        = "INSERT INTO nt_zone_record_log("
         . join( ',', @columns )
         . ") VALUES("
         . join( ',', map( $dbh->quote( $data->{$_} ), @columns ) ) . ")";
 
-    my $insertid = $self->exec_query( $sql );
+    my $insertid = $self->exec_query($sql);
 
     my @g_columns = qw/ nt_user_id timestamp action object object_id
-            log_entry_id title description /;
+        log_entry_id title description /;
 
     $data->{'object'}       = 'zone_record';
     $data->{'log_entry_id'} = $insertid;
@@ -194,11 +200,12 @@ sub log_zone_record {
             = "recovered previous settings ($data->{'type'} $data->{'weight'} $data->{'address'})";
     }
 
-    $sql = "INSERT INTO nt_user_global_log("
+    $sql
+        = "INSERT INTO nt_user_global_log("
         . join( ',', @g_columns )
         . ") VALUES("
         . join( ',', map( $dbh->quote( $data->{$_} ), @g_columns ) ) . ")";
-    $self->exec_query( $sql );
+    $self->exec_query($sql);
 }
 
 sub get_zone_record {
@@ -210,8 +217,8 @@ sub get_zone_record {
          ORDER BY $data->{'sortby'}";
     my $zrs = $self->exec_query( $sql, $data->{nt_zone_record_id} )
         or return {
-            error_code => 600,
-            error_msg  => $self->{dbh}->errstr,
+        error_code => 600,
+        error_msg  => $self->{dbh}->errstr,
         };
 
     my %rv = (
@@ -220,7 +227,8 @@ sub get_zone_record {
         error_msg  => 'OK',
     );
 
-    if ( my $del = $self->get_param_meta( 'nt_zone_record_id', 'delegate' ) ) {
+    if ( my $del = $self->get_param_meta( 'nt_zone_record_id', 'delegate' ) )
+    {
 
 # this info comes from NicToolServer.pm when it checks for access perms to the objects
         my %mapping = (
@@ -248,12 +256,13 @@ sub get_zone_record_log_entry {
         . "   WHERE nt_zone_record_log.nt_zone_record_log_id = ?"
         . "   AND nt_zone_record.nt_zone_record_id=?";
 
-    my $zr_logs = $self->exec_query( $sql, 
+    my $zr_logs
+        = $self->exec_query( $sql,
         [ $data->{nt_zone_record_log_id}, $data->{nt_zone_record_id} ] )
-            or $self->error_response( 600, $self->{dbh}->errstr );
+        or $self->error_response( 600, $self->{dbh}->errstr );
 
     $self->error_response( 600, 'No such log entry exists' )
-        if ! $zr_logs->[0];
+        if !$zr_logs->[0];
 
     return {
         error_code => 200,

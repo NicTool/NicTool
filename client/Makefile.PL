@@ -27,14 +27,14 @@ WriteMakefile(
         'RPC::XML'       => 1,
         'SOAP::Lite'     => 0,
     },    # e.g., Module::Name => 1.1
-    'LICENSE'      => 'affero-gpl',
-    'ABSTRACT'     => 'DNS management solution',
-    'AUTHOR'       => 'Damon Edwards, Abe Shelton, Greg Schueler, Matt Simerson',
+    'LICENSE'  => 'affero-gpl',
+    'ABSTRACT' => 'DNS management solution',
+    'AUTHOR'   => 'Damon Edwards, Abe Shelton, Greg Schueler, Matt Simerson',
 );
 
 sub MY::postamble {
-'
+    '
 deps:
 	perl bin/install_deps.pl
 ';
-};
+}

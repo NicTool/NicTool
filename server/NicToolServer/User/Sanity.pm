@@ -52,7 +52,7 @@ sub edit_user {
         'Cannot edit user in a deleted group!' )
         if $self->check_object_deleted( 'group', $dataobj->{'nt_group_id'} );
 
-    $self->_valid_email($data) if exists $data->{'email'};
+    $self->_valid_email($data)    if exists $data->{'email'};
     $self->_valid_username($data) if exists $data->{'username'};
 
     if ( exists $data->{'password'} && $data->{'password'} ne '' ) {
@@ -119,15 +119,16 @@ sub get_user_global_log {
 sub _check_current_password {
     my ( $self, $data ) = @_;
 
-    my $sql = "SELECT password,username FROM nt_user WHERE nt_user_id = ?";
+    my $sql   = "SELECT password,username FROM nt_user WHERE nt_user_id = ?";
     my $users = $self->exec_query( $sql, $data->{nt_user_id} );
-    my $user = $users->[0];
+    my $user  = $users->[0];
 
-    my ($db_pass,$db_user) = ( $user->{password}, $user->{username} );
+    my ( $db_pass, $db_user ) = ( $user->{password}, $user->{username} );
 
     # RCC - Handle HMAC passwords
-    if ($db_pass =~ /[0-9a-f]{40}/) {
-        $data->{'current_password'} = hmac_sha1_hex($data->{'current_password'}, $db_user);
+    if ( $db_pass =~ /[0-9a-f]{40}/ ) {
+        $data->{'current_password'}
+            = hmac_sha1_hex( $data->{'current_password'}, $db_user );
     }
 
     return $db_pass eq $data->{'current_password'} ? 1 : 0;
@@ -139,14 +140,15 @@ sub _username_exists {
     my ( $sql, $groups );
 
     if ( exists $data->{'nt_user_id'} ) {
-        $sql = "SELECT name FROM nt_group INNER JOIN nt_user "
+        $sql
+            = "SELECT name FROM nt_group INNER JOIN nt_user "
             . "ON nt_user.nt_group_id=nt_group.nt_group_id "
             . "WHERE nt_user.nt_user_id = ?";
         $groups = $self->exec_query( $sql, $data->{nt_user_id} );
     }
     else {
         $sql = "SELECT name FROM nt_group WHERE nt_group_id = ?";
-        $groups = $self->exec_query($sql, $data->{nt_group_id} );
+        $groups = $self->exec_query( $sql, $data->{nt_group_id} );
     }
 
     $data->{'groupname'} = $groups->[0]{name};
@@ -155,19 +157,21 @@ sub _username_exists {
     $groups = $self->exec_query( $sql, $groups->[0]{name} );
 
     my @groups;
-    foreach my $row ( @$groups ) {
+    foreach my $row (@$groups) {
         push( @groups, $row->{nt_group_id} );
     }
 
     if ( $data->{'nt_user_id'} ) {
-        $sql = "SELECT nt_user_id FROM nt_user WHERE deleted=0 AND nt_group_id IN ("
+        $sql
+            = "SELECT nt_user_id FROM nt_user WHERE deleted=0 AND nt_group_id IN ("
             . join( ',', @groups )
             . ") AND nt_user_id != $data->{'nt_user_id'} AND username=?";
     }
     else {
-        $sql = "SELECT nt_user_id FROM nt_user WHERE deleted=0 AND nt_group_id IN ("
+        $sql
+            = "SELECT nt_user_id FROM nt_user WHERE deleted=0 AND nt_group_id IN ("
             . join( ',', @groups )
-            . ") AND username=?"
+            . ") AND username=?";
     }
 
     my $users = $self->exec_query( $sql, $data->{username} );
@@ -246,27 +250,30 @@ sub _valid_password {
     }
 
     my $username = $data->{'username'};
-    if ( ! $username ) {
+    if ( !$username ) {
         $self->{'errors'}->{'password'} = 1;
-        push( @{ $self->{'error_messages'} },
+        push(
+            @{ $self->{'error_messages'} },
             "Internal error. Missing username in password update request."
         );
     }
     else {
         if ( $data->{'password'} eq $username ) {
             $self->{'errors'}->{'password'} = 1;
-            push( @{ $self->{'error_messages'} },
+            push(
+                @{ $self->{'error_messages'} },
                 "Password cannot be the same as username!."
             );
         }
 
         if ( $data->{'password'} =~ m/$username/ ) {
             $self->{'errors'}->{'password'} = 1;
-            push( @{ $self->{'error_messages'} },
+            push(
+                @{ $self->{'error_messages'} },
                 "Password cannot contain your username!."
             );
         }
-    };
+    }
 
     if ( $data->{'password'} ne $data->{'password2'} ) {
         $self->{'errors'}->{'password'} = $self->{'errors'}->{'password2'}

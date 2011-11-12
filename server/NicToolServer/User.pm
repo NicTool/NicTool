@@ -74,8 +74,8 @@ sub get_user {
     my $sql = "SELECT * FROM nt_user WHERE nt_user_id = ?";
     my $users = $self->exec_query( $sql, $data->{'nt_user_id'} )
         or return {
-            error_code => 600,
-            error_msg  => $self->{dbh}->errstr,
+        error_code => 600,
+        error_msg  => $self->{dbh}->errstr,
         };
 
     my %rv = (
@@ -86,7 +86,9 @@ sub get_user {
 
     $rv{'password'} = '' if exists $rv{'password'};
 
-    $sql = "SELECT " . $self->perm_fields_select
+    $sql
+        = "SELECT "
+        . $self->perm_fields_select
         . " FROM nt_perm WHERE deleted=0"
         . " AND nt_user_id = ?";
     my $perms = $self->exec_query( $sql, $data->{nt_user_id} )
@@ -94,14 +96,15 @@ sub get_user {
 
     my $perm = $perms->[0];
 
-    $sql = "SELECT "
+    $sql
+        = "SELECT "
         . $self->perm_fields_select
         . " FROM nt_perm"
         . " INNER JOIN nt_user ON nt_perm.nt_group_id = nt_user.nt_group_id "
         . " WHERE ( nt_perm.deleted=0 "
         . " AND nt_user.deleted=0 "
         . " AND nt_user.nt_user_id = ?)";
-    my $perms = $self->exec_query( $sql, $data->{'nt_user_id'} ) 
+    my $perms = $self->exec_query( $sql, $data->{'nt_user_id'} )
         or return $self->error_response( 505, $self->{dbh}->errstr );
     my $groupperm = $perms->[0];
 
@@ -149,14 +152,16 @@ sub new_user {
 #push(@columns, 'password') if (exists($data->{'password'}) && $data->{'password'} ne '');
 
     # RCC - use hmac to store the password using the username as a key
-    $data->{'password'} = hmac_sha1_hex($data->{'password'}, $data->{'username'});
+    $data->{'password'}
+        = hmac_sha1_hex( $data->{'password'}, $data->{'username'} );
 
-    my $sql = "INSERT INTO nt_user("
+    my $sql
+        = "INSERT INTO nt_user("
         . join( ',', @columns )
         . ") VALUES("
         . join( ',', map( $dbh->quote( $data->{$_} ), @columns ) ) . ")";
 
-    my $insertid = $self->exec_query( $sql );
+    my $insertid = $self->exec_query($sql);
 
     if ( defined $insertid ) {
         $error{'nt_user_id'} = $insertid;
@@ -181,7 +186,8 @@ sub new_user {
             $data->{$_} = 0 unless $self->{'user'}->{$_};
         }
 
-        $sql = "INSERT INTO nt_perm("
+        $sql
+            = "INSERT INTO nt_perm("
             . join( ',', 'nt_group_id', 'nt_user_id', @permcols, @ns )
             . ") VALUES("
             . join( ',',
@@ -189,7 +195,7 @@ sub new_user {
             @usable )
             . ")";
 
-        $self->exec_query( $sql ) or do {
+        $self->exec_query($sql) or do {
             $error{'error_code'} = 600;
             $error{'error_msg'}  = $dbh->errstr;
         };
@@ -210,22 +216,29 @@ sub edit_user {
         qw/ nt_group_id first_name last_name username email /;
 
     # only update the password and username fields are not NULL
-    if (    exists $data->{password} && $data->{password} ne ''
-         && exists $data->{username} && $data->{username} ne '' ) {
+    if (   exists $data->{password}
+        && $data->{password} ne ''
+        && exists $data->{username}
+        && $data->{username} ne '' )
+    {
         push( @columns, 'password' );
 
         # RCC - use hmac to store the password using the username as a key
-        $data->{'password'} = hmac_sha1_hex($data->{'password'}, $data->{'username'} );
-    };
+        $data->{'password'}
+            = hmac_sha1_hex( $data->{'password'}, $data->{'username'} );
+    }
 
-    my ($sql, $action);
+    my ( $sql, $action );
 
-    my $prev_data = $self->get_user( { nt_user_id => $data->{'nt_user_id'} } );
+    my $prev_data
+        = $self->get_user( { nt_user_id => $data->{'nt_user_id'} } );
     return $prev_data if $self->is_error_response($prev_data);
 
     if (@columns) {
-        $sql = "UPDATE nt_user SET "
-            . join( ',', map( "$_ = " . $dbh->quote( $data->{$_} ), @columns ) )
+        $sql
+            = "UPDATE nt_user SET "
+            . join( ',',
+            map( "$_ = " . $dbh->quote( $data->{$_} ), @columns ) )
             . " WHERE nt_user_id = ?";
         $action = 'modified';
         if ( $self->exec_query( $sql, $data->{'nt_user_id'} ) ) {
@@ -234,7 +247,7 @@ sub edit_user {
         else {
             $error{'error_code'} = 600;
             $error{'error_msg'}  = $dbh->errstr;
-        };
+        }
     }
 
 #XXX may want to let this happen ?
@@ -247,7 +260,8 @@ sub edit_user {
     #so we will not rollback if something goes wrong now
 
     #perms the current user doesn't have.
-    my %nonperm = map { $_ => 1 } grep { !$data->{user}{$_} } $self->perm_fields;
+    my %nonperm
+        = map { $_ => 1 } grep { !$data->{user}{$_} } $self->perm_fields;
     my @permcols = grep { exists $data->{$_} && $data->{'user'}->{$_} }
         $self->perm_fields;
 
@@ -268,7 +282,8 @@ sub edit_user {
         if ( $data->{'inherit_group_permissions'} ) {
 
 #make sure moving from explicit perms to inherited perms doesn't restrict a permission that the executing user doesn't have the right to modify
-            $sql = "SELECT nt_perm.*,nt_user.nt_group_id as group_id"
+            $sql
+                = "SELECT nt_perm.*,nt_user.nt_group_id as group_id"
                 . " FROM nt_perm"
                 . " INNER JOIN nt_user ON nt_perm.nt_group_id = nt_user.nt_group_id"
                 . " AND nt_user.nt_user_id = ?";
@@ -280,10 +295,11 @@ sub edit_user {
                     return $self->error_response( 404,
                         "You do not have permission to restrict the $k permission of that user."
                     ) if !$group->{$k} && $prev_data->{$k};
-                };
+                }
 
 #things are good, we will now delete the user perms and perms will then be inherited automatically.
-                $sql = "DELETE FROM nt_perm WHERE nt_user_id = " . $data->{'nt_user_id'};
+                $sql = "DELETE FROM nt_perm WHERE nt_user_id = "
+                    . $data->{'nt_user_id'};
             }
             else {
 
@@ -324,7 +340,8 @@ sub edit_user {
     {
 
         #no preexisting permissions. insert into db
-        $sql = "INSERT INTO nt_perm("
+        $sql
+            = "INSERT INTO nt_perm("
             . join( ',', 'nt_group_id', 'nt_user_id', @permcols, @nskeys )
             . ") VALUES("
             . join( ',',
@@ -344,10 +361,12 @@ sub edit_user {
         }
     }
     else {
-# perms are inherited and inherit_group_permissions is 1: do nothing
+
+        # perms are inherited and inherit_group_permissions is 1: do nothing
     }
 
-    $data->{nt_group_id} = $prev_data->{nt_group_id} unless $data->{nt_group_id};
+    $data->{nt_group_id} = $prev_data->{nt_group_id}
+        unless $data->{nt_group_id};
     if ($action) {
         $self->log_user( $data, $action, $prev_data );
     }
@@ -365,15 +384,15 @@ sub delete_users {
         @{ $self->get_subgroup_ids( $data->{user}{nt_group_id} ) }
     );
 
-    my @userlist = split(',', $data->{'user_list'} );
-    my $sql = "SELECT * FROM nt_user WHERE nt_user_id IN(??)";
-    my $users = $self->exec_query( $sql, [ @userlist ] ) 
+    my @userlist = split( ',', $data->{'user_list'} );
+    my $sql      = "SELECT * FROM nt_user WHERE nt_user_id IN(??)";
+    my $users    = $self->exec_query( $sql, [@userlist] )
         or return {
-            error_code =>  600,
-            error_msg  => $self->{dbh}->errstr,
+        error_code => 600,
+        error_msg  => $self->{dbh}->errstr,
         };
 
-    foreach my $user ( @$users ) {
+    foreach my $user (@$users) {
         next unless ( $groups{ $user->{'nt_group_id'} } );
 
         $sql = "UPDATE nt_user SET deleted=1 WHERE nt_user_id = ?";
@@ -434,7 +453,7 @@ sub get_group_users {
         . join( ',', @group_list ) . ")"
         . ( @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
 
-    my $c = $self->exec_query( $sql )
+    my $c = $self->exec_query($sql)
         or return $self->error_response( 600, $self->{dbh}->errstr );
 
     $r_data->{'total'} = $c->[0]->{count};
@@ -459,10 +478,10 @@ sub get_group_users {
     $sql .= "ORDER BY " . join( ', ', @$sortby ) . " " if (@$sortby);
     $sql .= "LIMIT " . ( $r_data->{'start'} - 1 ) . ", $r_data->{'limit'}";
 
-    my $group_users = $self->exec_query( $sql );
-    if ( $group_users ) {
+    my $group_users = $self->exec_query($sql);
+    if ($group_users) {
         my %groups;
-        foreach my $u ( @$group_users ) {
+        foreach my $u (@$group_users) {
             push( @{ $r_data->{'list'} }, $u );
             $groups{ $u->{'nt_group_id'} } = 1;
         }
@@ -493,17 +512,18 @@ sub move_users {
         FROM nt_user, nt_group 
         WHERE nt_user.nt_group_id = nt_group.nt_group_id AND nt_user_id IN("
         . $data->{'user_list'} . ")";
-    my $users = $self->exec_query( $sql ) 
+    my $users = $self->exec_query($sql)
         or return {
-            error_code => 600,
-            error_msg  => $self->{dbh}->errstr,
+        error_code => 600,
+        error_msg  => $self->{dbh}->errstr,
         };
 
-    foreach my $row ( @$users ) {
+    foreach my $row (@$users) {
         next unless ( $groups{ $row->{'nt_group_id'} } );
 
         $sql = "UPDATE nt_user SET nt_group_id = ? WHERE nt_user_id = ?";
-        $self->exec_query( $sql, [ $data->{nt_group_id}, $row->{nt_user_id} ] ) 
+        $self->exec_query( $sql,
+            [ $data->{nt_group_id}, $row->{nt_user_id} ] )
             or next;
 
         my %user = ( %$row, user => $data->{'user'} );
@@ -514,8 +534,8 @@ sub move_users {
     }
 
     return {
-        'error_code' => 200, 
-        'error_msg' => 'OK',
+        'error_code' => 200,
+        'error_msg'  => 'OK',
     };
 }
 
@@ -534,13 +554,13 @@ sub get_user_list {
         . $data->{'user_list'}
         . ") ORDER BY username";
 
-    my $users = $self->exec_query( $sql ) 
+    my $users = $self->exec_query($sql)
         or return {
-            error_code => 600,
-            error_msg  => $self->{dbh}->errstr,
+        error_code => 600,
+        error_msg  => $self->{dbh}->errstr,
         };
 
-    foreach my $row ( @$users ) {
+    foreach my $row (@$users) {
         next unless ( $groups{ $row->{'nt_group_id'} } );
         $row->{'password'} = '' if exists $row->{'password'};
         push( @{ $rv{'list'} }, $row );
@@ -594,7 +614,7 @@ sub get_user_global_log {
         . $dbh->quote( $data->{'nt_user_id'} ) . " "
         . ( @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
 
-    my $c = $self->exec_query( $sql );
+    my $c = $self->exec_query($sql);
     $r_data->{'total'} = $c->[0]->{count};
 
     $self->set_paging_vars( $data, $r_data );
@@ -610,9 +630,9 @@ sub get_user_global_log {
     $sql .= "ORDER BY " . join( ', ', @$sortby ) . " " if (@$sortby);
     $sql .= "LIMIT " . ( $r_data->{'start'} - 1 ) . ", $r_data->{'limit'}";
 
-    my $r = $self->exec_query( $sql );
-    if ( $r ) {
-        foreach my $row ( @$r ) {
+    my $r = $self->exec_query($sql);
+    if ($r) {
+        foreach my $row (@$r) {
             push( @{ $r_data->{'list'} }, $row );
         }
     }
@@ -672,13 +692,14 @@ sub log_user {
             = "moved from $data->{'old_group_name'} to $data->{'group_name'}";
     }
 
-    $sql = "INSERT INTO nt_user_global_log("
+    $sql
+        = "INSERT INTO nt_user_global_log("
         . join( ',', @g_columns )
         . ") VALUES("
         . join( ',', map( $dbh->quote( $data->{$_} ), @g_columns ) ) . ")";
 
     warn "$sql\n" if $self->debug_logs;
-    $self->exec_query( $sql );
+    $self->exec_query($sql);
 }
 
 sub find_user {

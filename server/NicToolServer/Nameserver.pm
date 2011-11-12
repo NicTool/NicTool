@@ -45,21 +45,20 @@ sub get_usable_nameservers {
     my $sql
         = "SELECT * FROM nt_nameserver "
         . " WHERE deleted=0 AND (nt_group_id IN ("
-        . join( ",", @groups )
-        . ")"
+        . join( ",", @groups ) . ")"
         . (
         @usable
         ? " OR " . "nt_nameserver_id IN (" . join( ",", @usable ) . " )"
         : ''
         ) . " ) ";
 
-    my $nameservers = $self->exec_query( $sql )
+    my $nameservers = $self->exec_query($sql)
         or return {
-            error_code => 600,
-            error_msg  => $self->{dbh}->errstr,
-        }; 
+        error_code => 600,
+        error_msg  => $self->{dbh}->errstr,
+        };
 
-    foreach my $row ( @$nameservers ) {
+    foreach my $row (@$nameservers) {
         push( @{ $r_data->{'nameservers'} }, $row );
     }
 
@@ -116,13 +115,14 @@ sub get_group_nameservers {
 
     my $r_data = { 'error_code' => 200, 'error_msg' => 'OK', list => [] };
 
-    my $sql = "SELECT COUNT(*) AS count FROM nt_nameserver "
+    my $sql
+        = "SELECT COUNT(*) AS count FROM nt_nameserver "
         . "INNER JOIN nt_group ON nt_nameserver.nt_group_id = nt_group.nt_group_id "
         . "WHERE nt_nameserver.deleted=0 "
         . "AND nt_nameserver.nt_group_id IN("
         . join( ',', @group_list ) . ")"
         . ( @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
-    my $c = $self->exec_query( $sql );
+    my $c = $self->exec_query($sql);
 
     $r_data->{'total'} = $c->[0]{count};
 
@@ -139,7 +139,8 @@ sub get_group_nameservers {
             "nt_nameserver.name" );
     }
 
-    $sql = "SELECT nt_nameserver.*, "
+    $sql
+        = "SELECT nt_nameserver.*, "
         . " nt_group.name as group_name, "
         . " nt_nameserver_export_procstatus.status as status "
         . "FROM nt_nameserver "
@@ -152,20 +153,20 @@ sub get_group_nameservers {
     $sql .= "ORDER BY " . join( ', ', @$sortby ) . " " if (@$sortby);
     $sql .= "LIMIT " . ( $r_data->{'start'} - 1 ) . ", $r_data->{'limit'}";
 
-    my $nameservers = $self->exec_query( $sql )
+    my $nameservers = $self->exec_query($sql)
         or return {
-            error_code => '600',
-            error_msg  => $self->{dbh}->errstr,
+        error_code => '600',
+        error_msg  => $self->{dbh}->errstr,
         };
 
     my %groups;
-    foreach my $row ( @$nameservers ) {
+    foreach my $row (@$nameservers) {
         push( @{ $r_data->{'list'} }, $row );
         $groups{ $row->{'nt_group_id'} } = 1;
     }
 
-    $r_data->{group_map} = $self->get_group_map( $data->{nt_group_id},
-        [ keys %groups ] );
+    $r_data->{group_map}
+        = $self->get_group_map( $data->{nt_group_id}, [ keys %groups ] );
 
     return $r_data;
 }
@@ -177,17 +178,18 @@ sub get_nameserver_list {
 
 # my %groups = map { $_, 1 } ($data->{'user'}->{'nt_group_id'}, @{ $self->get_subgroup_ids($data->{'user'}->{'nt_group_id'}) });
 
-    my $sql = "SELECT * FROM nt_nameserver WHERE deleted=0 AND nt_nameserver_id IN(??) ORDER BY name";
+    my $sql
+        = "SELECT * FROM nt_nameserver WHERE deleted=0 AND nt_nameserver_id IN(??) ORDER BY name";
 
-    my @ns_list = split(',', $data->{'nameserver_list'} );
-    my $nameservers = $self->exec_query( $sql, [ @ns_list ] )
+    my @ns_list = split( ',', $data->{'nameserver_list'} );
+    my $nameservers = $self->exec_query( $sql, [@ns_list] )
         or return {
-            error_code => 600,
-            error_msg  => $self->{dbh}->errstr,
-            list       => [],
+        error_code => 600,
+        error_msg  => $self->{dbh}->errstr,
+        list       => [],
         };
 
-    foreach my $ns ( @$nameservers ) {
+    foreach my $ns (@$nameservers) {
         push( @{ $rv{list} }, $ns );
     }
 
@@ -207,21 +209,25 @@ sub move_nameservers {
     my $new_group
         = $self->NicToolServer::Group::find_group( $data->{'nt_group_id'} );
 
-    my $sql = "SELECT nt_nameserver.*, nt_group.name as old_group_name FROM nt_nameserver, nt_group "
+    my $sql
+        = "SELECT nt_nameserver.*, nt_group.name as old_group_name FROM nt_nameserver, nt_group "
         . "WHERE nt_nameserver.nt_group_id = nt_group.nt_group_id AND nt_nameserver_id IN(??)";
 
-    my @ns_list = split(',', $data->{'nameserver_list'} );
-    my $nameservers = $self->exec_query( $sql, [ @ns_list ] )
+    my @ns_list = split( ',', $data->{'nameserver_list'} );
+    my $nameservers = $self->exec_query( $sql, [@ns_list] )
         or return {
-            error_code => 600,
-            error_msg  => $self->{dbh}->errstr,
+        error_code => 600,
+        error_msg  => $self->{dbh}->errstr,
         };
 
-    foreach my $row ( @$nameservers ) {
+    foreach my $row (@$nameservers) {
         next unless $groups{ $row->{nt_group_id} };
 
-        $sql = "UPDATE nt_nameserver SET nt_group_id = ? WHERE nt_nameserver_id = ?";
-        $self->exec_query( $sql, [ $data->{nt_group_id}, $row->{nt_nameserver_id} ] ) or next;
+        $sql
+            = "UPDATE nt_nameserver SET nt_group_id = ? WHERE nt_nameserver_id = ?";
+        $self->exec_query( $sql,
+            [ $data->{nt_group_id}, $row->{nt_nameserver_id} ] )
+            or next;
 
         my %ns = ( %$row, user => $data->{'user'} );
         $ns{'nt_group_id'} = $data->{'nt_group_id'};
@@ -239,8 +245,8 @@ sub get_nameserver {
     my $sql = "SELECT * FROM nt_nameserver WHERE nt_nameserver_id = ?";
     my $nameservers = $self->exec_query( $sql, $data->{nt_nameserver_id} )
         or return {
-            error_code => 600,
-            error_msg  => $self->{dbh}->errstr,
+        error_code => 600,
+        error_msg  => $self->{dbh}->errstr,
         };
 
     return {
@@ -253,26 +259,32 @@ sub get_nameserver {
 sub new_nameserver {
     my ( $self, $data ) = @_;
 
-    my @columns = qw/ nt_group_id nt_nameserver_id name ttl description 
+    my @columns = qw/ nt_group_id nt_nameserver_id name ttl description
         address export_format logdir datadir export_interval /;
 
-    my $sql = "INSERT INTO nt_nameserver(" . join( ',', @columns ) . ") VALUES("
-        . join( ',', map( $self->{dbh}->quote( $data->{$_} ), @columns ) ) . ")";
+    my $sql
+        = "INSERT INTO nt_nameserver("
+        . join( ',', @columns )
+        . ") VALUES("
+        . join( ',', map( $self->{dbh}->quote( $data->{$_} ), @columns ) )
+        . ")";
     my $action = 'added';
 
-    my $insertid = $self->exec_query( $sql ) 
+    my $insertid = $self->exec_query($sql)
         or return {
-            error_code => 600,
-            error_msg  => $self->{dbh}->errstr,
+        error_code => 600,
+        error_msg  => $self->{dbh}->errstr,
         };
 
     $data->{'nt_nameserver_id'} = $insertid;
     $self->log_nameserver( $data, $action );
 
     return {
-        error_code => 200, 
-        error_msg  => 'OK',
-        nt_nameserver_id => $action == 'added' ? $insertid : $data->{nt_nameserver_id},
+        error_code       => 200,
+        error_msg        => 'OK',
+        nt_nameserver_id => $action == 'added'
+        ? $insertid
+        : $data->{nt_nameserver_id},
     };
 }
 
@@ -281,26 +293,27 @@ sub edit_nameserver {
 
     my $dbh = $self->{dbh};
     my @columns = grep { exists $data->{$_} }
-        qw/ nt_group_id nt_nameserver_id name ttl description address 
-            export_format logdir datadir export_interval /;
+        qw/ nt_group_id nt_nameserver_id name ttl description address
+        export_format logdir datadir export_interval /;
 
     my $prev_data = $self->find_nameserver( $data->{'nt_nameserver_id'} );
 
-    my $sql = "UPDATE nt_nameserver SET "
+    my $sql
+        = "UPDATE nt_nameserver SET "
         . join( ',', map( "$_ = " . $dbh->quote( $data->{$_} ), @columns ) )
         . " WHERE nt_nameserver_id = ?";
 
     $self->exec_query( $sql, $data->{'nt_nameserver_id'} )
         or return {
-            error_code => 600,
-            error_msg  => $dbh->errstr,
+        error_code => 600,
+        error_msg  => $dbh->errstr,
         };
 
     $self->log_nameserver( $data, 'modified', $prev_data );
 
     return {
-        error_code => 200,
-        error_msg  => 'OK',
+        error_code       => 200,
+        error_msg        => 'OK',
         nt_nameserver_id => $data->{nt_nameserver_id},
     };
 }
@@ -339,20 +352,22 @@ sub delete_nameserver {
 sub log_nameserver {
     my ( $self, $data, $action, $prev_data ) = @_;
 
-    my $dbh = $self->{'dbh'};
+    my $dbh     = $self->{'dbh'};
     my @columns = qw/ nt_group_id nt_user_id action timestamp nt_nameserver_id
-    name ttl description address export_format logdir datadir export_interval /;
+        name ttl description address export_format logdir datadir export_interval /;
 
     my $user = $data->{'user'};
     $data->{'nt_user_id'} = $user->{'nt_user_id'};
     $data->{'action'}     = $action;
     $data->{'timestamp'}  = time();
 
-    my $sql = "INSERT INTO nt_nameserver_log(" . join( ',', @columns )
+    my $sql
+        = "INSERT INTO nt_nameserver_log("
+        . join( ',', @columns )
         . ") VALUES("
         . join( ',', map( $dbh->quote( $data->{$_} ), @columns ) ) . ")";
 
-    my $insertid = $self->exec_query( $sql );
+    my $insertid = $self->exec_query($sql);
 
     my @g_columns = qw/ nt_user_id timestamp action object object_id
         log_entry_id title description /;
@@ -376,17 +391,19 @@ sub log_nameserver {
             = "moved from $data->{'old_group_name'} to $data->{'group_name'}";
     }
 
-    $sql = "INSERT INTO nt_user_global_log("
+    $sql
+        = "INSERT INTO nt_user_global_log("
         . join( ',', @g_columns )
         . ") VALUES("
         . join( ',', map( $dbh->quote( $data->{$_} ), @g_columns ) ) . ")";
-    $self->exec_query( $sql );
+    $self->exec_query($sql);
 }
 
 sub find_nameserver {
     my ( $self, $nt_nameserver_id ) = @_;
     my $sql = "SELECT * FROM nt_nameserver WHERE nt_nameserver_id = ?";
-    my $nameservers = $self->exec_query( $sql, $nt_nameserver_id ) or return {};
+    my $nameservers = $self->exec_query( $sql, $nt_nameserver_id )
+        or return {};
     return $nameservers->[0];
 }
 
