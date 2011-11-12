@@ -1,7 +1,3 @@
-# vim: set expandtab ts=4:
-#
-# $Id: upgrade106.sql,v 1.2 2004/10/05 00:09:26 matt Exp $
-#
 #
 # NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
 # NicTool v2.01 Copyright 2004 The Network People, Inc.

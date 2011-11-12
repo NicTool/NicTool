@@ -1,7 +1,5 @@
 #!/usr/bin/perl
 #
-# $Id: nt_export_djb.pl 968 2009-10-28 00:44:28Z matt $
-#
 # NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
 # NicTool v2.01 Copyright 2004 The Network People, Inc.
 #

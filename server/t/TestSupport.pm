@@ -1,9 +1,6 @@
 ##########
 # TestSupport.pm
-# Helpful functions for testing nictool
-# $Id: TestSupport.pm 639 2008-09-13 04:43:46Z matt $
-##########
-#
+# Functions for testing nictool
 #
 # NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
 # NicTool v2.01 Copyright 2004 The Network People, Inc.

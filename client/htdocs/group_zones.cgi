@@ -1,7 +1,5 @@
 #!/usr/bin/perl
 #
-# $Id: group_zones.cgi 635 2008-09-13 04:03:07Z matt $
-#
 # NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
 # NicTool v2.01 Copyright 2004 The Network People, Inc.
 #

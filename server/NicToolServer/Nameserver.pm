@@ -312,15 +312,13 @@ sub delete_nameserver {
 
     my %error = ( 'error_code' => 200, 'error_msg' => 'OK' );
 
-    my $nsid = $dbh->quote( $data->{'nt_nameserver_id'} );
-    my $sql = "SELECT nt_zone_id FROM nt_zone WHERE deleted=0"
-        . " AND (ns0 = $nsid OR ns1 = $nsid OR ns2 = $nsid OR ns3 = $nsid"
-        . " OR ns4 = $nsid OR ns5 = $nsid OR ns6 = $nsid OR ns7 = $nsid"
-        . " OR ns8 = $nsid OR ns9 = $nsid)";
+    my $sql = "SELECT z.nt_zone_id FROM nt_zone z
+        LEFT JOIN nt_zone_nameserver n ON z.nt_zone_id = n.nt_zone_id
+          WHERE z.deleted=0 AND n.nt_nameserver_id=?";
 
-    my $zones = $self->exec_query( $sql );
+    my $zones = $self->exec_query( $sql, $data->{nt_nameserver_id} );
 
-    if ( scalar @$zones ) {
+    if ( $zones && scalar @$zones ) {
         return $self->error_response( 600,
             "You can't delete this nameserver until you delete all of its zones"
         );

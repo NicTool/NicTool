@@ -23,7 +23,7 @@ use strict;
 sub get_zone {
     my ( $self, $data ) = @_;
 
-    my $sql = "SELECT nt_zone.* FROM nt_zone WHERE nt_zone_id = ?";
+    my $sql = "SELECT * FROM nt_zone WHERE nt_zone_id = ?";
     my $zones = $self->exec_query( $sql, $data->{nt_zone_id} )
         or return {
             error_code => 600,
@@ -64,27 +64,15 @@ sub get_zone {
 sub pack_nameservers {
     my ( $self, $data ) = @_;
 
-    my @temp;
-    for ( my $i = 0; $i < 10; $i++ ) {
-        push( @temp, $data->{ 'ns' . $i } ) if ( $data->{ 'ns' . $i } );
-        delete( $data->{ 'ns' . $i } );
-    }
-    unless (@temp) {
-        $data->{'nameservers'} = [];
-        return [];
-    }
+    # $data = { ns0=>?, ns1=>?, ns2....};
+    my $query = "SELECT nt_nameserver_id FROM nt_zone_nameserver WHERE nt_zone_id=?";
+    my @nsids = $self->dbix->query( $query, $data->{nt_zone_id} )->flat;
+    return [] if scalar @nsids == 0;
 
     my $sql = "SELECT nt_nameserver.*,nt_zone.nt_zone_id FROM nt_nameserver,nt_zone 
-        WHERE nt_nameserver.nt_nameserver_id IN ("
-        . join( ',', @temp )
+        WHERE nt_nameserver.nt_nameserver_id IN (" . join( ',', @nsids )
         . ") AND nt_zone.nt_zone_id = ?";
-    my $nameservers = $self->exec_query( $sql, $data->{nt_zone_id} );
-    my @ns;
-    foreach my $data ( @$nameservers ) {
-        push( @ns, $data );
-    }
-
-    $data->{'nameservers'} = \@ns;
+    $data->{'nameservers'} = $self->exec_query( $sql, $data->{nt_zone_id} );
 }
 
 sub get_zone_log {
@@ -738,9 +726,6 @@ sub new_zone {
     my $prev_data;
     my $default_serial = 0;
 
-    $self->unpack_nameservers( $data, \@columns )
-        if ( $data->{'nameservers'} );
-
     if ( $data->{'serial'} eq '' ) {
         $data->{'serial'} = $self->bump_serial('new');
         $default_serial = 1;
@@ -760,6 +745,13 @@ sub new_zone {
     $error{'nt_zone_id'} = $data->{'nt_zone_id'} = $insertid;
 
     $self->log_zone( $data, 'added', $prev_data, $default_serial );
+
+    foreach my $ns ( split ',', $data->{nameservers} ) {
+        $self->exec_query( 
+            "INSERT INTO nt_zone_nameserver SET nt_zone_id=?, nt_nameserver_id=?",
+            [ $insertid, $ns ],
+        );
+    };
 
     return \%error;
 }
@@ -789,8 +781,6 @@ sub edit_zone {
     my $prev_data;
     my $default_serial = 0;
 
-    #$self->unpack_nameservers($data,\@columns) if ($data->{'nameservers'});
-
     $prev_data  = $self->find_zone( $data->{'nt_zone_id'} );
     my $log_action = $prev_data->{'deleted'}
         && ( $data->{'deleted'} eq '0' ) ? 'recovered' : 'modified';
@@ -798,32 +788,25 @@ sub edit_zone {
     my %ns;
     if ( exists $data->{'nameservers'} ) {
 
-        #my $nss=$self->NicToolServer::Nameserver::get_usable_nameservers;
-        #return $nss if $nss->{'error_code'} ne 200;
-        #warn Data::Dumper::Dumper($nss);
         my %datans = map { $_ => 1 } split /,/, $data->{'nameservers'};
 
-       #my %userns =map{$_->{'nt_nameserver_id'}=>1} @{$nss->{'nameservers'}};
-        my @oldns = map { $prev_data->{$_} }
+        my @oldns  = map { $prev_data->{$_} }
             grep { $prev_data->{$_} } map {"ns$_"} ( 0 .. 9 );
         my %zonens = map { $_ => 1 } @oldns;
         my %newns;
         foreach my $n ( keys %datans, keys %zonens ) {
             if ( $self->get_access_permission( 'NAMESERVER', $n, 'read' ) ) {
                 if ( !$datans{$n} ) {
-
                     #warn "YES: can read NAMESERVER $n: DELETE newns $n";
                     delete $newns{$n};
                 }
                 else {
-
                     #warn "YES: can read NAMESERVER $n: SET newns $n to 1";
                     $newns{$n} = 1;
                 }
             }
             else {
                 $newns{$n} = $zonens{$n} if $zonens{$n};
-
                 #warn "NO: leaving zonens as $zonens{$n}";
             }
         }
@@ -831,10 +814,11 @@ sub edit_zone {
         %newns = map { $_ => 1 } grep { $newns{$_} } keys %newns;
 
         my @newns = keys %newns;
-        @newns = map { $newns[$_] ? $newns[$_] : 0 } ( 0 .. 9 );
+        $self->set_zone_nameservers( $data->{nt_zone_id}, \@newns );
+#        @newns = map { $newns[$_] ? $newns[$_] : 0 } ( 0 .. 9 );
 
         #warn "SET: newns is ".join(" ",@newns);
-        %ns = map { ( "ns$_" => $newns[$_] ) } ( 0 .. 9 );
+#        %ns = map { ( "ns$_" => $newns[$_] ) } ( 0 .. 9 );
     }
 
     if ( $data->{'serial'} eq '' ) {
@@ -846,7 +830,8 @@ sub edit_zone {
     $sql = "UPDATE nt_zone SET "
         . join( ',',
         map( "$_ = " . $dbh->quote( $data->{$_} ), @columns ),
-        map( "$_ = " . $ns{$_},                    keys %ns ) )
+        #map( "$_ = " . $ns{$_},                    keys %ns )
+        )
         . " WHERE nt_zone_id = ?";
     my $r = $self->exec_query( $sql, $data->{nt_zone_id} );
 
@@ -861,22 +846,6 @@ sub edit_zone {
     $self->log_zone( $data, $log_action, $prev_data, $default_serial );
 
     return \%error;
-}
-
-sub unpack_nameservers {
-    my ( $self, $data, $columns ) = @_;
-
-    my @temp = split( ',', $data->{'nameservers'} );
-    for ( 0 .. 9 ) {
-        $data->{ 'ns' . $_ } = 0;
-        push( @{$columns}, 'ns' . $_ );
-    }
-    my $i = 0;
-    foreach my $ns (@temp) {
-        $data->{ 'ns' . $i } = "$ns";
-        $i++;
-    }
-
 }
 
 sub log_zone {
@@ -900,7 +869,7 @@ sub log_zone {
         $data->{$_} = $prev_data->{$_} unless $data->{$_};
     }
 
-    my $dbh = $self->{'dbh'};
+    my $dbh = $self->{dbh};
     my $sql = "INSERT INTO nt_zone_log("
         . join( ',', @columns )
         . ") VALUES("
@@ -957,8 +926,8 @@ sub delete_zones {
         . $data->{'zone_list'} . ")";
     my $zones_data = $self->exec_query( $sql );
 
-    my $record_obj = new NicToolServer::Zone::Record( $self->{'Apache'},
-        $self->{'client'}, $self->{'dbh'} );
+    my $record_obj = NicToolServer::Zone::Record->new( $self->{'Apache'},
+        $self->{'client'}, $self->{dbh} );
 
     foreach my $zone_data ( @$zones_data ) {
         next if ! ( $groups{ $zone_data->{'nt_group_id'} } );
@@ -1079,6 +1048,22 @@ sub find_zone {
     my $zones = $self->exec_query( $sql, $nt_zone_id );
     return $zones->[0] || {};
 }
+
+sub set_zone_nameservers {
+    my $self = shift;
+    my ( $zone_id, $nsids ) = @_;
+
+    $self->exec_query( 
+        "DELETE FROM nt_zone_nameserver WHERE nt_zone_id=?", $zone_id 
+    );
+
+    foreach my $ns ( @$nsids ) {
+        $self->exec_query(
+            "INSERT INTO nt_zone_nameserver SET nt_zone_id=?, nt_nameserver_id=?",
+            [ $zone_id, $ns ],
+        );
+    };
+};
 
 sub zone_exists {
     my ( $self, $zone, $zid ) = @_;

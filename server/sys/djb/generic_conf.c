@@ -1,8 +1,5 @@
 /*
  *
- * $Id: generic_conf.c 615 2008-07-01 15:28:56Z rob@bsdfreaks.nl $
- *
- *
  * NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
  * NicTool v2.01 Copyright 2004 The Network People, Inc.
  *

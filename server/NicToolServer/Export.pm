@@ -167,12 +167,12 @@ sub get_last_ns_export {
             partial   => { type => BOOLEAN, optional => 1 },
         });
 
-    my @args = $self->{ns_id};
     my $query = "SELECT nt_nameserver_export_log_id AS id, 
         date_start, date_end, message
       FROM nt_nameserver_export_log
         WHERE nt_nameserver_id=?";
 
+    my @args = $self->{ns_id};
     foreach my $f ( qw/ success partial / ) {
         if ( defined $p{$f} ) {
             $query .= " AND $f=?";
@@ -227,25 +227,29 @@ sub get_ns_zones {
         },
     );
 
-    my $sql = "SELECT nt_zone_id, zone, mailaddr, serial, refresh, retry, expire, minimum, ttl, 
-        ns0, ns1, ns2, ns3, ns4, ns5, ns6, ns7, ns8, ns9, last_modified
-FROM nt_zone 
-    WHERE deleted=0";
+    my $sql = "SELECT z.nt_zone_id, z.zone, z.mailaddr, z.serial, z.refresh, z.retry, 
+        z.expire, z.minimum, z.ttl, z.last_modified
+FROM nt_zone z";
 
     my @args;
+    if ( $self->{ns_id} != 0 ) {
+        $sql .= "
+  LEFT JOIN nt_zone_nameserver n ON z.nt_zone_id=n.nt_zone_id
+    WHERE n.nt_nameserver_id=? AND z.deleted=0";
+        push @args, $self->{ns_id};
+    }
+    else {
+        $sql .= " AND z.deleted=0";
+    };
+
     if ( $p{last_modified} ) {
-        $sql .= " AND last_modified > ?";
+        $sql .= " AND z.last_modified > ?";
         push @args, $p{last_modified};
     };
 
-    if ( $self->{ns_id} != 0 ) {
-        for ( 0 .. 9 ) { push @args, $self->{ns_id} };
-        $sql .= " AND (ns0 = ? OR ns1 = ? OR ns2 = ? OR ns3 = ? OR ns4 = ? OR ns5 = ? 
-            OR  ns6 = ? OR ns7 = ? OR ns8 = ? OR ns9 = ?) ";
-    };
     $sql .= " LIMIT 10";
 
-    my $r = $self->exec_query( $sql, \@args );
+    my $r = $self->exec_query( $sql, \@args ) or return [];
     $self->elog( "retrieved ".scalar @$r." zones");
     return $r;
 };
@@ -273,20 +277,33 @@ sub get_log_id {
     return $self->{log_id};
 };
 
+sub get_modified_zones {
+    my $self = shift;
+    my %p = validate( @_, {
+        since => { type => SCALAR|UNDEF },
+    } );
+
+    return 1 if ! defined $p{since}; # something changed...
+
+    my $query = "SELECT COUNT(*) AS count FROM nt_zone
+    WHERE last_modified > ?";
+
+    my $r = $self->exec_query( $query, $p{since} );
+    return $r->[0]{count};
+};
+
 sub get_zone_ns_ids {
     my $self = shift;
     my $zone = shift or die "missing zone";
     ref $zone or die "invalid zone object";
 
-    my @ns_ids;
-    for ( 0..9 ) { 
-        next if ! $zone->{"ns$_"};
-        my $this_nsid = $zone->{"ns$_"};
-        push @ns_ids, $this_nsid if $self->{active_ns_ids}{$this_nsid};
-    };
-
-    #warn Dumper(\@ns_ids);
-    return \@ns_ids;
+    return $self->{dbix_r}->query( 
+        "SELECT zn.nt_nameserver_id 
+          FROM nt_zone_nameserver zn
+            LEFT JOIN nt_nameserver n ON zn.nt_nameserver_id=n.nt_nameserver_id
+                WHERE zn.nt_zone_id=? AND n.deleted=0",
+        $zone->{nt_zone_id}
+    )->flat;
 };
 
 sub get_zone_records {
@@ -323,9 +340,14 @@ sub preflight {
     my $self = shift;
 # bail out if no export required
 #    get timestamp of last successful export
+    my $export = $self->get_last_ns_export( success=>1 );
+    my $ts_success = $export->{date_start};
 #    see if any zones for this nameserver have updates more recent than last successful export
+    my $last_zone_update = $self->get_modified_zones( since => $ts_success );
+
 # determine export directory
 # make sure it's writable
+    return 1;
 };
 
 sub postflight {
@@ -351,18 +373,11 @@ sub zr_ns {
     my %p = validate(@_, { zone  => { type => HASHREF } } );
 
     my $this_ns = $self->{active_ns_ids}{ $self->{ns_id} };
-
     my $zone = $p{zone};
-
-    my @selected_ns;
-    for my $i ( 0..9 ) {
-        push @selected_ns, $zone->{'ns'.$i} if $zone->{'ns'.$i};
-    };
-
     my $format = $this_ns->{export_format};
 
     my $r;
-    foreach my $nsid ( @selected_ns ) {
+    foreach my $nsid ( $self->get_zone_ns_ids($zone) ) {
         my $method = 'zr_' . $format . '_ns';
 
         $r .= $self->$method( 
@@ -501,8 +516,8 @@ sub zr_djb_soa {
 
     my $z = $p{zone};
 
-    my $ns_ids = $self->get_zone_ns_ids( $z );
-    my $primary_ns = $self->{active_ns_ids}{ $ns_ids->[0] }{name};
+    my @ns_ids = $self->get_zone_ns_ids( $z );
+    my $primary_ns = $self->{active_ns_ids}{ $ns_ids[0] }{name};
     my $serial = $self->{active_ns_ids}{ $self->{ns_id} }{export_serials} ? $z->{serial} : '';
     my $location = $z->{location} || 'ex';
 

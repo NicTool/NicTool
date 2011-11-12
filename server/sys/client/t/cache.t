@@ -1,8 +1,4 @@
 ##########
-# vim: syn=perl
-##########
-# $Id: cache.t 270 2004-04-03 20:36:43Z matt $
-# cache.t
 # test cache mechanism
 ##########
 

@@ -29,16 +29,6 @@ CREATE TABLE nt_zone(
     expire              INT UNSIGNED,
     minimum             INT UNSIGNED,
     ttl                 INT UNSIGNED,
-    ns0                 SMALLINT UNSIGNED NOT NULL DEFAULT 0,
-    ns1                 SMALLINT UNSIGNED NOT NULL DEFAULT 0,
-    ns2                 SMALLINT UNSIGNED NOT NULL DEFAULT 0,
-    ns3                 SMALLINT UNSIGNED NOT NULL DEFAULT 0,
-    ns4                 SMALLINT UNSIGNED NOT NULL DEFAULT 0,
-    ns5                 SMALLINT UNSIGNED NOT NULL DEFAULT 0,
-    ns6                 SMALLINT UNSIGNED NOT NULL DEFAULT 0,
-    ns7                 SMALLINT UNSIGNED NOT NULL DEFAULT 0,
-    ns8                 SMALLINT UNSIGNED NOT NULL DEFAULT 0,
-    ns9                 SMALLINT UNSIGNED NOT NULL DEFAULT 0,
     location            VARCHAR(2) DEFAULT NULL,
     last_modified       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP,
     deleted             TINYINT(1) UNSIGNED DEFAULT 0 NOT NULL
@@ -46,16 +36,6 @@ CREATE TABLE nt_zone(
 CREATE INDEX nt_zone_idx1 on nt_zone(nt_group_id);
 CREATE INDEX nt_zone_idx2 on nt_zone(deleted);
 CREATE INDEX nt_zone_idx3 on nt_zone(zone); 
-CREATE INDEX nt_zone_idxns0 on nt_zone(ns0);
-CREATE INDEX nt_zone_idxns1 on nt_zone(ns1);
-CREATE INDEX nt_zone_idxns2 on nt_zone(ns2);
-CREATE INDEX nt_zone_idxns3 on nt_zone(ns3);
-CREATE INDEX nt_zone_idxns4 on nt_zone(ns4);
-CREATE INDEX nt_zone_idxns5 on nt_zone(ns5);
-CREATE INDEX nt_zone_idxns6 on nt_zone(ns6);
-CREATE INDEX nt_zone_idxns7 on nt_zone(ns7);
-CREATE INDEX nt_zone_idxns8 on nt_zone(ns8);
-CREATE INDEX nt_zone_idxns9 on nt_zone(ns9);
 
 # show index from nt_zone
 # speedup: myisamchk --sort-index --sort-records=14 nt_zone
@@ -127,4 +107,9 @@ CREATE INDEX nt_zone_record_log_idx1 on nt_zone_record_log(timestamp);
 CREATE INDEX nt_zone_record_log_idx2 on nt_zone_record_log(nt_zone_record_id);
 CREATE INDEX nt_zone_record_log_idx3 on nt_zone_record_log(nt_zone_id);
 CREATE INDEX nt_zone_record_log_idx4 on nt_zone_record_log(action);
+
+CREATE TABLE nt_zone_nameserver (
+    nt_zone_id           smallint(5) unsigned NOT NULL,
+    nt_nameserver_id     smallint(5) unsigned NOT NULL
+) DEFAULT CHARSET=utf8;
 

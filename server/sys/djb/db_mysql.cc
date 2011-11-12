@@ -1,7 +1,5 @@
 /*
  *
- * $Id: db_mysql.cc 696 2008-10-16 09:11:36Z rob@bsdfreaks.nl $
- *
  * NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
  * NicTool v2.01 Copyright 2004 The Network People, Inc.
  *

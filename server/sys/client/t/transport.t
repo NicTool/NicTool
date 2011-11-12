@@ -1,7 +1,5 @@
 ##########
-# vim: syn=perl
 ##########
-# $Id: transport.t 270 2004-04-03 20:36:43Z matt $
 # transport.t
 # see that transport protocol loading works
 ##########

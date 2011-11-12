@@ -1,7 +1,5 @@
 #!/usr/bin/perl
 #
-# $Id: zone.cgi 1048 2010-04-01 20:01:05Z matt $
-#
 # NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
 # NicTool v2.01+ Copyright 2004-2008 The Network People, Inc.
 #

@@ -15,10 +15,14 @@
 # Suite 225, San Francisco, CA 94107, USA
 #
 ##########
+use strict;
+
 use lib ".";
 use lib "t";
 use TestConfig;
 use Test::More tests => 13;
+use Data::Dumper;
+
 
 BEGIN {
     use_ok( 'DBIx::Simple' );
@@ -38,6 +42,10 @@ ok( $dbh, 'dbh handle' );
 
 $nts = NicToolServer->new(undef,undef,$dbh);
 #warn Data::Dumper::Dumper($nts);
+
+my $dbix = $nts->dbix();
+ok( $dbix, "DBIx::Simple handle");
+#warn Dumper($dbix);
 
 my $r = $nts->exec_query( "SELECT email FROM nt_user WHERE deleted=0" );
 ok( scalar @$r, "select users: ".scalar @$r );
@@ -75,6 +83,18 @@ ok( ! $r, "is_subgroup ($r)");
 
 #$r = $nts->is_subgroup(1,320);
 #ok( $r, "is_subgroup ($r)");
+
+#my $dbix = DBIx::Simple->connect( $nts->{dbh} );
+#my $query = "SELECT nt_nameserver_id FROM nt_zone_nameserver WHERE nt_zone_id=?";
+#my @nsids = $dbix->query( $query, 25 )->flat;
+#warn Dumper(\@nsids);
+
+use NicToolServer::Zone;
+#my $ntz = NicToolServer::Zone->new();
+#$ntz->{dbh} = $dbh;
+#$ntz->{dbix} = $dbix;
+$r = NicToolServer::Zone::pack_nameservers( undef, { nt_zone_id=>25 } );
+warn Dumper($r);
 
 diag( "Testing NicToolServer $NicToolServer::VERSION, Perl $], $^X" );
 

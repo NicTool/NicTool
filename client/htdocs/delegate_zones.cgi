@@ -1,8 +1,5 @@
 #!/usr/bin/perl
 #
-# $Id: delegate_zones.cgi 1043 2010-03-26 00:52:03Z matt $
-#
-#
 # NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
 # NicTool v2.05+ Copyright 2004-2008 The Network People, Inc.
 #

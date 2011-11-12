@@ -1,8 +1,4 @@
 ##########
-# vim: syn=perl
-##########
-# $Id: nictool.t 270 2004-04-03 20:36:43Z matt $
-# nictool.t
 # test some of the actual nictool calls
 ##########
 

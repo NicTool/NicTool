@@ -9,6 +9,16 @@ Revision history for NicToolServer
     * SQL: added nt_nameesrver.export_serials
       (controls export of serial nums for tinydns export).
     * removed the quotes from many integers. Someone wasn't thinking...
+    * SQL: Fixed the data model for zone nameservers. Replaced the abhorrent
+      nt_zone.ns0..nt_zone.ns9 columns with the table nt_zone_nameervers. 
+      * there's no limit on how many nameservers a zone can publish to
+      * queries are much simpler
+      * deleted unpack_nameservers (no longer necessary)
+      * added set_zone_nameservers
+      * now I can run a relatively inexpensive query to determine if any
+        zones that publish to a given NS have modification dates greater
+        than the last successful export
+
 
 2.09    2011.10
     * added nt_options database table (and db_version value). Expect the

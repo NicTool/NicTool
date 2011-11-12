@@ -1,8 +1,4 @@
 ##########
-# vim: syn=perl
-##########
-# $Id: protocol.t 270 2004-04-03 20:36:43Z matt $
-# protocol.t
 # test using the protocol version
 ##########
 

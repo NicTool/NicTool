@@ -1,8 +1,5 @@
 ##########
-# vim: syn=perl
 ##########
-# list.t
-# $Id: list.t 270 2004-04-03 20:36:43Z matt $
 # test the NicTool::List class
 ##########
 # (C) 2002 Dajoba LLc

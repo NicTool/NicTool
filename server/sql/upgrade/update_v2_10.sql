@@ -1,4 +1,22 @@
 
+CREATE TABLE nt_zone_nameserver (
+    nt_zone_id           smallint(5) unsigned NOT NULL,
+    nt_nameserver_id     smallint(5) unsigned NOT NULL
+) DEFAULT CHARSET=utf8;
+
+/* TODO: import NS settings from existing nt_zone table, and then:
+ALTER TABLE nt_zone DROP column ns0;
+ALTER TABLE nt_zone DROP column ns1;
+ALTER TABLE nt_zone DROP column ns2;
+ALTER TABLE nt_zone DROP column ns3;
+ALTER TABLE nt_zone DROP column ns4;
+ALTER TABLE nt_zone DROP column ns5;
+ALTER TABLE nt_zone DROP column ns6;
+ALTER TABLE nt_zone DROP column ns7;
+ALTER TABLE nt_zone DROP column ns8;
+ALTER TABLE nt_zone DROP column ns9;
+*/
+
 ALTER TABLE nt_zone ADD column `last_modified` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP AFTER `deleted`;
 ALTER TABLE `nt_nameserver` DROP column `service_type`;
 ALTER TABLE `nt_nameserver` ADD `export_serials` tinyint(1) UNSIGNED NOT NULL DEFAULT '1'  AFTER `export_interval`;

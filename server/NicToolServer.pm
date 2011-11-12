@@ -1587,13 +1587,20 @@ sub dbh {
     if ( ! $dsn || $dsn !~ /^DBI/ ) {
         $dsn = $NicToolServer::dsn or die "missing DSN!";
     };
-    my $dbh = DBI->connect( $dsn, $NicToolServer::db_user, $NicToolServer::db_pass);
 
-    unless ($dbh) {
-        die "unable to connect to database: " . $DBI::errstr . "\n";
-    }
+    my $dbh = 
+        DBI->connect( $dsn, $NicToolServer::db_user, $NicToolServer::db_pass)
+            or die "unable to connect to database: " . $DBI::errstr . "\n";
 
     return $dbh;
+}
+
+sub dbix {
+    my $self = shift;
+    return $self->{dbix} if $self->{dbix};
+    $self->{dbix} = DBIx::Simple->connect( $self->{dbh} ) 
+        or die DBIx::Simple->error;
+    return $self->{dbix};
 }
 
 sub escape {
@@ -2043,117 +2050,6 @@ sub push_sanity_error {
     push( @{ $self->{'error_messages'} }, $message );
 }
 
-### serial number routines
-
-sub bump_serial {
-    my ( $self, $nt_zone_id, $current_serial ) = @_;
-
-    my $serial;
-
-    if ( $nt_zone_id eq 'new' ) {
-        $serial = $self->new_serial;
-    }
-    else {
-        if ( $current_serial eq '' ) {
-            my $sql = "SELECT serial FROM nt_zone WHERE nt_zone_id = ?";
-            my $serials = $self->exec_query( $sql, $nt_zone_id);
-            $current_serial = $serials->[0]->{serial};
-        }
-        $serial = $self->serial_increment($current_serial);
-    }
-
-    return $serial;
-}
-
-sub serial_increment {
-    my ( $self, $serial_current ) = @_;
-
-    my $serial_new;
-
-    if (    ( length($serial_current) == 10 )
-        and $serial_current > 1970000000
-        and ( $serial_current =~ /^(\d{4,4})(\d{2,2})(\d{2,2})(\d{2,2})$/ ) )
-    {
-
-        # dated serials have 10 chars in form YYYYMMDDxx
-        my $s_year  = $1;
-        my $s_month = $2;
-        my $s_day   = $3;
-        my $s_digit = $4;
-
-        my $serial_str = $s_year . $s_month . $s_day;
-        my $new_str    = $self->serial_date_str;
-
-        if ( $serial_str < $new_str ) {
-            $serial_new = $new_str . '00';
-        }
-        else {
-
-            # serial_str >= new_str, so do serial number math, jumping
-            # into the next day/month/year as neccessary to keep incrementing
-
-            $s_digit += 1;
-
-            if ( $s_digit > 99 ) {
-                $s_digit = '00';
-                $s_day += 1;
-                if ( $s_day > 99 ) {
-                    $s_day = '01';
-                    $s_month += 1;
-                    if ( $s_month > 99 ) {
-                        $s_month = '01';
-                        $s_year = sprintf( "%04d", $s_year + 1 );
-                    }
-                    $s_month = sprintf( "%02d", $s_month );
-                }
-                $s_day = sprintf( "%02d", $s_day );
-            }
-            $s_digit = sprintf( "%02d", $s_digit );
-
-            $serial_new = $s_year . $s_month . $s_day . $s_digit;
-        }
-
-    }
-    else {
-        $serial_new = $serial_current + 1;
-    }
-
-    if ( $serial_new > ( ( 2**32 ) - 1 ) ) {
-        $serial_new = 1;
-
-        # 4294967295 is the max. (32-bit int minus 1)
-        # when we hit this, we have to roll over
-    }
-
-    return $serial_new;
-}
-
-sub new_serial {
-    my $self = shift;
-
-    my $serial;
-    if ( $NicToolServer::serial_format eq 'dated' ) {
-        my ( $year, $month, $day ) = $self->serial_date_str;
-        $serial = $year . $month . $day . '00';
-    }
-    else {
-        $serial = '1';
-    }
-
-    return $serial;
-}
-
-sub serial_date_str {
-    my $self = shift;
-
-    my @datestr = localtime(time);
-
-    my $year  = $datestr[5] + 1900;
-    my $month = sprintf( "%02d", $datestr[4] + 1 );
-    my $day   = sprintf( "%02d", $datestr[3] );
-
-    return ( $year . $month . $day );
-}
 
 1;
 __END__
