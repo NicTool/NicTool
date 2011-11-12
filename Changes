@@ -1,8 +1,8 @@
 
- 2.10 - 2011.
+ 2.10 - 2011.11
+    see also server/Changes
     * ripped out service_type
     * removed more legacy RCS $Id: headers (comments)
-    see also server/Changes
 
  2.09 - 2011.10
     * removed all summary code (unused)
@@ -11,8 +11,8 @@
 
  2.01 - 2004.09.24
 
-   Added Makefile.PL to create package and simplify publishing
-   Added CHANGES to track changes made to docs
-   Added VERSION
-   cleaned up HTML formatting in changes.htm
+   * Added Makefile.PL to create package and simplify publishing
+   * Added CHANGES to track changes made to docs
+   * Added VERSION
+   * cleaned up HTML formatting in changes.htm
 

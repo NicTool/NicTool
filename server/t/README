@@ -2,32 +2,29 @@ Tue Apr 16 15:10:51 PDT 2002
 -gws
 
 (These test scripts require that the NicTool client library be installed on the
-system or be located in the directory "../client" relative to the directory this
-README is located in.)
+system or be located in the directory "../sys/client" relative to the directory
+this README is located in.)
 
 NOTE: 
-    In order to run the NicToolServer test scripts you must modify the file
-test.cfg in this directory.  It specifies how to connect to your NicToolServer
-and what the username and password should be.
-    The username/password should probably be that of the root user.  I think it
-would be OK to use a user who has full access permissions in some subgroup, but
-it may be assumed in some test that the user you specify here is root.  
+    To run the test scripts you must modify the file test.cfg in this directory.
+It specifies how to connect to your NicToolServer and what the username and 
+password should be.
+    The username/password should probably be that of the root user. It is assumed
+in some tests that the user you specify here is root.  
 
     In either case, the username is used to log in to your server and perform a
 multitude of tests. 
 
 NOTE: The scripts will create and delete a LOT of objects, which remain in the
-database. So after you successfully test your server, you might want to just
-reload the database tables from the SQL scripts included with the NicToolServer
-installation package, or from your data backup.
+database. After testing, you might want to reload the database tables from the
+included SQL scripts or from your backups.
 
     Each script is good about cleaning up after itself even if there is some error
-which causes a failure at some point.  However, it may happen that a failure
-will cause residual objects to be left on the server.  If this is the case, you
-can just delete the objects manually, or use the enclosed "cleanup.pl"
-script to recursively delete all the objects in an entire subgroup.  Since it
-will not ask you if you are sure you want to do so, be SURE that the nt_group_id
-you give to it is the one you want to delete.  
+which causes a failure at some point.  However, some failures may cause residual 
+objects to be left on the server. You can delete the objects manually or use the
+enclosed "cleanup.pl" script to recursively delete all the objects in an entire 
+subgroup. Since it will not ask you if you are sure you want to do so, be SURE 
+that the nt_group_id you give to it is the one you want to delete.  
 
     There are some things which currently have no test script written for them,
 these are probably listed in the TODO document.  Feel free to add more to the

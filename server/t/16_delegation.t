@@ -1,5 +1,3 @@
-##########
-#
 # NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
 # NicTool v2.01 Copyright 2004 The Network People, Inc.
 #
@@ -14,35 +12,29 @@
 # You should have received a copy of the Affero General Public License
 # along with this program; if not, write to Affero Inc., 521 Third St,
 # Suite 225, San Francisco, CA 94107, USA
-#
-##########
+
+=head1 PLAN
+
+ x test delegation API calls
+ x create zone + record(s)
+ x create sub group
+ x try delegation without delgation perms
+ x try delegation with perms
+ x log in to sub group and verify delegation perms correct
+ x zones - redelegation, deletion, modification, record add, record del
+         - no inappropriate access to "pseudo" delegated records
+ x records - modify, delete, redelegate
+          - no inappropriate access to "pseudo" delegated zones
+
+=cut
+
 use lib ".";
 use lib "t";
-use TestConfig;
-use TestSupport;
+use NicToolTest;
+use NicTool;
 use Test;
 
 BEGIN { plan tests => 896 }
-
-####################
-# The plan
-# x test delegation API calls
-# x create zone + record(s)
-# x create sub group
-# x try delegation without delgation perms
-# x try delegation with perms
-# x log in to sub group and verify delegation perms correct
-# x zones - redelegation, deletion, modification, record add, record del
-#         - no inappropriate access to "pseudo" delegated records
-# x records - modify, delete, redelegate
-#           - no inappropriate access to "pseudo" delegated zones
-####################
-
-use NicTool;
-
-####################
-# runup            #
-####################
 
 #no group permissions
 %permsnone = (

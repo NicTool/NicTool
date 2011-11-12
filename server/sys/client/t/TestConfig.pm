@@ -8,22 +8,23 @@ sub import {
     my $pkg = shift;
     my $cnt = shift;
 
-    if ( -f "test.cfg" ) {
-        my $file = "test.cfg";
-        open( F, "<$file" );
-        my $c;
-        local $/ = '';
-        $c = <F>;
-        close(F);
-        my $s = eval $c;
-        if (   $s->{'server_host'}
-            && $s->{'server_port'}
-            && $s->{'data_protocol'}
-            && $s->{'username'}
-            && $s->{'password'} )
-        {
-            $settings = $s;
-        }
+    my $file = "test.cfg";
+    -f $file or $file = "t/test.cfg";
+    -f $file or die "could not find your test.cfg file in t/test.cfg\n";
+
+    open( F, "<$file" );
+    my $c;
+    local $/ = '';
+    $c = <F>;
+    close(F);
+    my $s = eval $c;
+    if (   $s->{'server_host'}
+        && $s->{'server_port'}
+        && $s->{'data_protocol'}
+        && $s->{'username'}
+        && $s->{'password'} )
+    {
+        $settings = $s;
     }
 
     my $conf = sub {

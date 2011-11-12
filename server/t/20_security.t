@@ -1,5 +1,3 @@
-##########
-#
 # NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
 # NicTool v2.01 Copyright 2004 The Network People, Inc.
 #
@@ -14,19 +12,6 @@
 # You should have received a copy of the Affero General Public License
 # along with this program; if not, write to Affero Inc., 521 Third St,
 # Suite 225, San Francisco, CA 94107, USA
-#
-##########
-use lib ".";
-use lib "t";
-use TestConfig;
-use TestSupport;
-use Test;
-
-BEGIN { plan tests => 291 }
-
-=head1 NAME
-
-t/security.pl
 
 =head1 DESCRIPTION
 
@@ -42,7 +27,13 @@ exception: they can be read by anybody.
 
 =cut
 
+use lib ".";
+use lib "t";
+use NicToolTest;
 use NicTool;
+use Test;
+
+BEGIN { plan tests => 291 }
 
 #full group permissions
 %permsfull = (

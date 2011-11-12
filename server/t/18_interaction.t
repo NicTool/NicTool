@@ -1,5 +1,3 @@
-##########
-#
 # NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
 # NicTool v2.01 Copyright 2004 The Network People, Inc.
 #
@@ -14,40 +12,33 @@
 # You should have received a copy of the Affero General Public License
 # along with this program; if not, write to Affero Inc., 521 Third St,
 # Suite 225, San Francisco, CA 94107, USA
-#
-##########
+
+=head1 PLAN
+
+ Test interaction between different objects in the system
+
+ 1. Deleting a Group which still contains child objects
+   A. Zones
+   B. User
+   C. Group
+
+ 2. Deleting a Nameserver which still has zones attached
+
+ 3. Add and Modify Records to a deleted Zone
+
+ 4. Delegation of deleted objects and to deleted groups
+
+ 5. Moving yourself, changing permissions for yourself, deleting yourself.
+
+=cut
+
 use lib ".";
 use lib "t";
-use TestConfig;
-use TestSupport;
+use NicToolTest;
+use NicTool;
 use Test;
 
 BEGIN { plan tests => 200 }
-
-#
-# The plan
-#
-# Test interaction between different objects in the system
-#
-# 1. Deleting a Group which still contains child objects
-#   A. Zones
-#   B. User
-#   C. Group
-#
-# 2. Deleting a Nameserver which still has zones attached
-#
-# 3. Add and Modify Records to a deleted Zone
-#
-# 4. Delegation of deleted objects and to deleted groups
-#
-# 5. Moving yourself, changing permissions for yourself, deleting yourself.
-#
-
-use NicTool;
-
-#
-# runup            #
-#
 
 $user = new NicTool(
     cache_users  => 0,

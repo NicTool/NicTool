@@ -1,6 +1,5 @@
-##########
-#
-# NicTool v2.09 Copyright 2011 The Network People, Inc.
+# NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
+# NicTool v2.01 Copyright 2004 The Network People, Inc.
 #
 # NicTool is free software; you can redistribute it and/or modify it under
 # the terms of the Affero General Public License as published by Affero,
@@ -13,15 +12,13 @@
 # You should have received a copy of the Affero General Public License
 # along with this program; if not, write to Affero Inc., 521 Third St,
 # Suite 225, San Francisco, CA 94107, USA
-#
-##########
+
 use strict;
 use warnings;
 
 use lib ".";
 use lib "t";
-use TestConfig;
-use TestSupport;
+use NicToolTest;
 use Test::More;
 $Data::Dumper::Sortkeys=1;
 
@@ -37,8 +34,9 @@ $export->get_dbh(
     user => Config('db_user'),
     pass => Config('db_pass'),
 );
+
 $export->preflight();  # check if export can succeed
-#warn Data::Dumper::Dumper($export);
+exit;
 
 my $logid = $export->get_log_id( success=>1 ); # create a NT export log entry
 undef $export->{log_id};

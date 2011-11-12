@@ -1,6 +1,5 @@
-##########
-#
-# NicTool v2.09 Copyright 2011 The Network People, Inc.
+# NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
+# NicTool v2.01+ Copyright 2011 The Network People, Inc.
 #
 # NicTool is free software; you can redistribute it and/or modify it under
 # the terms of the Affero General Public License as published by Affero,
@@ -13,14 +12,13 @@
 # You should have received a copy of the Affero General Public License
 # along with this program; if not, write to Affero Inc., 521 Third St,
 # Suite 225, San Francisco, CA 94107, USA
-#
-##########
+
 use strict;
 
-use lib ".";
-use lib "t";
-use TestConfig;
-use Test::More tests => 13;
+use lib '.';
+use lib 't';
+use NicToolTest;
+use Test::More tests => 14;
 use Data::Dumper;
 
 
@@ -77,9 +75,7 @@ ok( ! $r, "Insert zone fail" );
 $r = $nts->exec_query( "DELETE FROM nt_zonef WHERE nt_zone_id=?", $r );
 ok( ! $r, "Delete zone fail");
 
-
-$r = $nts->is_subgroup(1,1);
-ok( ! $r, "is_subgroup ($r)");
+ok( ! $nts->is_subgroup(1,1), 'is_subgroup');
 
 #$r = $nts->is_subgroup(1,320);
 #ok( $r, "is_subgroup ($r)");
@@ -89,12 +85,12 @@ ok( ! $r, "is_subgroup ($r)");
 #my @nsids = $dbix->query( $query, 25 )->flat;
 #warn Dumper(\@nsids);
 
-use NicToolServer::Zone;
+#use NicToolServer::Zone;
 #my $ntz = NicToolServer::Zone->new();
 #$ntz->{dbh} = $dbh;
 #$ntz->{dbix} = $dbix;
-$r = NicToolServer::Zone::pack_nameservers( undef, { nt_zone_id=>25 } );
-warn Dumper($r);
+#$r = NicToolServer::Zone::pack_nameservers( undef, { nt_zone_id=>25 } );
+#warn Dumper($r);
 
 diag( "Testing NicToolServer $NicToolServer::VERSION, Perl $], $^X" );
 

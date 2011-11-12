@@ -1,5 +1,3 @@
-##########
-#
 # NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
 # NicTool v2.01 Copyright 2004 The Network People, Inc.
 #
@@ -14,32 +12,31 @@
 # You should have received a copy of the Affero General Public License
 # along with this program; if not, write to Affero Inc., 521 Third St,
 # Suite 225, San Francisco, CA 94107, USA
-#
-##########
-use lib ".";
-use lib "t";
-use TestConfig;
-use TestSupport;
+
+=head1 PLAN
+
+ create groups for support
+ create new nameservers inside the group
+ test all the nameserver related API calls
+ delete the nameservers
+ delete the groups
+
+=head1 TODO 
+
+ get_group_nameservers search stuff
+
+=cut
+
+#use strict;
+use warnings;
+
+use lib '.';
+use lib 't';
+use NicToolTest;
+use NicTool;
 use Test;
 
 BEGIN { plan tests => 541 }
-
-####################
-# The plan
-# create groups for support
-# create new nameservers inside the group
-# test all the nameserver related API calls
-# delete the nameservers
-# delete the groups
-####################
-# TODO  get_group_nameservers search stuff
-####################
-
-use NicTool;
-
-####################
-# runup            #
-####################
 
 $user = new NicTool(
     cache_users  => 0,

@@ -1,5 +1,3 @@
-##########
-#
 # NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
 # NicTool v2.01 Copyright 2004 The Network People, Inc.
 #
@@ -14,32 +12,28 @@
 # You should have received a copy of the Affero General Public License
 # along with this program; if not, write to Affero Inc., 521 Third St,
 # Suite 225, San Francisco, CA 94107, USA
-#
-##########
-use lib ".";
-use lib "t";
-use TestConfig;
-use TestSupport;
+
+=head1 PLAN
+
+ create 2 groups
+ test all the group related API calls
+ delete the groups
+
+=head1 TODO
+
+ get_global_application_log
+ search params for get_group_subgroups,get_global_application_log
+
+=cut
+
+
+use lib '.';
+use lib 't';
+use NicToolTest;
+use NicTool;
 use Test;
 
 BEGIN { plan tests => 325 }
-
-####################
-# The plan
-# create 2 groups
-# test all the group related API calls
-# delete the groups
-####################
-#      TODO
-# get_global_application_log
-# search params for get_group_subgroups,get_global_application_log
-####################
-
-use NicTool;
-
-####################
-# runup            #
-####################
 
 my $user = new NicTool(
     server_host => Config('server_host'),

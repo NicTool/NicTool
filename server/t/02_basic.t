@@ -1,5 +1,5 @@
-##########
-#
+# ABSTRACT: basic NicTool API login tests
+
 # NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
 # NicTool v2.01 Copyright 2004 The Network People, Inc.
 #
@@ -14,15 +14,15 @@
 # You should have received a copy of the Affero General Public License
 # along with this program; if not, write to Affero Inc., 521 Third St,
 # Suite 225, San Francisco, CA 94107, USA
-#
-##########
+
+
 use lib ".";
 use lib "t";
-use TestConfig;
+use NicToolTest;
+use NicTool;
 use Test;
 BEGIN { plan tests => 7 }
 
-use NicTool;
 ok(1);
 
 #basic login test
