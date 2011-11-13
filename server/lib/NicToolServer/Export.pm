@@ -48,6 +48,15 @@ sub new {
     return $self;
 }
 
+sub daemon {
+    my $self = shift;
+    my $start = time;
+    $self->export();
+    my $end = time;
+    my $waitleft = $self->{ns_ref}{export_interval} - ( $end - $start );
+    sleep $waitleft if $waitleft > 0;
+};
+
 sub elog {
     my $self    = shift;
     my $message = shift;
@@ -191,29 +200,41 @@ sub get_export_dir {
 
     $self->get_active_nameservers();  # populate $self->{ns_ref}
 
-    # try the directory defined in nt_nameserver.datadir
-    my $dir = $self->{ns_ref}{datadir};
-    if ( $dir && -d $dir ) {
-        if ( -w $dir && ( ! -e "$dir/data" || -w "$dir/data" ) ) {
-            $self->{export_dir} = $dir;
-            #$self->elog("using $dir");
-            return $dir;
-        };
-        $self->elog("export dir ($dir) not writable");
-    };
+    my $dir;
 
-    # try the local working directory
-    $dir = getcwd . '/data-' . $self->{ns_ref}{name};
-    $dir =~ s/\.$//;   # strip off any trailing dot
-    if ( -d $dir ) {
-        if ( -w $dir ) {
-            #$self->elog("using $dir");
+    if ( $self->{ns_ref} ) {
+
+        # try the directory defined in nt_nameserver.datadir
+        $dir = $self->{ns_ref}{datadir};
+        if ( $dir && -d $dir ) {
+            if ( -w $dir && ( ! -e "$dir/data" || -w "$dir/data" ) ) {
+                $self->{export_dir} = $dir;
+                #$self->elog("using $dir");
+                return $dir;
+            };
+            $self->elog("export dir ($dir) not writable");
+        };
+
+        # try the local working directory
+        $dir = getcwd . '/data-' . $self->{ns_ref}{name};
+        $dir =~ s/\.$//;   # strip off any trailing dot
+        if ( -d $dir ) {
+            if ( -w $dir ) {
+                #$self->elog("using $dir");
+                $self->{export_dir} = $dir;
+                return $dir;
+            };
+            $self->elog("export dir ($dir) not writable");
+            return;
+        }
+    }
+    else {
+        $dir = getcwd . '/data-all';  # special nsid = 0 (all) specified
+        if ( -d $dir ) {
             $self->{export_dir} = $dir;
             return $dir;
         };
-        $self->elog("export dir ($dir) not writable");
-        return;
-    }
+    };
 
     eval { mkpath( $dir, { mode => 0755 } ); };
     if ( -d $dir ) {     # mkpath just created it
@@ -233,8 +254,6 @@ sub get_export_file {
     my $filename = $dir . '/data';
     if ( -e $filename ) {
         move( $filename, "$filename.orig" );
-        move( "$filename.md5", "$filename.md5.orig" ) 
-            if -f "$filename.md5";
     };
 
     open my $FH, '>', $filename
@@ -322,7 +341,7 @@ FROM nt_zone z";
 
     my @args;
     if ( $self->{ns_id} == 0 ) {
-        $sql .= " AND z.deleted=0";  # all zones, regardless of NS pref
+        $sql .= " WHERE z.deleted=0";  # all zones, regardless of NS pref
     }
     else {
         $sql .= "
@@ -336,8 +355,7 @@ FROM nt_zone z";
         push @args, $p{last_modified};
     }
 
-    $sql .= " LIMIT 10";
-
+warn "$sql";
     my $r = $self->exec_query( $sql, \@args ) or return [];
     $self->elog( "retrieved " . scalar @$r . " zones" );
     return $r;
@@ -370,21 +388,19 @@ sub get_log_id {
 
 sub get_modified_zones {
     my $self = shift;
-    my %p = validate( @_, { since => { type => SCALAR | UNDEF }, } );
-
-    return 1 if !defined $p{since};    # something changed...
+    my %p = validate( @_, { since => { type => SCALAR | UNDEF, optional => 1 }, } );
 
     my $sql = "SELECT COUNT(*) AS count FROM nt_zone z WHERE 1=1";
     my @args;
 
-    if ( defined $self->{ns_id} && $self->{ns_id} == 0 ) {
+    if ( defined $self->{ns_id} && $self->{ns_id} != 0 ) {
         $sql = "SELECT COUNT(*) AS count FROM nt_zone_nameserver zn
         LEFT JOIN nt_zone z ON zn.nt_zone_id=z.nt_zone_id
         WHERE zn.nt_nameserver_id=?";
         @args = $self->{ns_id};
     };
 
-    if ( $p{since} ) {
+    if ( defined $p{since} ) {
         $sql .= " AND z.last_modified>?";
         push @args, $p{since};
     };
@@ -469,10 +485,8 @@ sub preflight {
 sub postflight {
     my $self = shift;
 
-    if ( 'djb' eq $self->{ns_ref}{export_format} ) {
-
-        # is data different than data.old?
-# TODO
+    my $export_format = $self->{ns_ref}{export_format} || 'djb';
+    if ( 'djb' eq $export_format ) {
 
         # compile data to data.cdb
         $self->compile_cdb or return;
@@ -536,6 +550,8 @@ sub rsync_cdb {
 
     my $dir = $self->{export_dir};
 
+    return 1 if ! $self->{ns_ref};
+
     if ( -e "$dir/Makefile" && ! `grep remote $dir/Makefile` ) {
         my $ns = $self->{ns_ref};
         my $ns_datadir = $ns->{datadir};
@@ -566,7 +582,8 @@ sub zr_soa {
     my $self = shift;
     my %p = validate( @_, { zone => { type => HASHREF } } );
 
-    my $format = $self->{ns_ref}{export_format};       # djb, bind, etc...
+# TODO: what about BIND and nsid=0?
+    my $format = $self->{ns_ref}{export_format} || 'djb'; # djb, bind, etc...
     my $method = "zr_${format}_soa";
     my $r = $self->$method(%p);    # format record for nameserver type
     return $r;
@@ -577,7 +594,8 @@ sub zr_ns {
     my %p = validate( @_, { zone => { type => HASHREF } } );
 
     my $zone    = $p{zone};
-    my $format  = $self->{ns_ref}{export_format};
+    my $format  = $self->{ns_ref}{export_format} || 'djb';
+# TODO: what about BIND and nsid=0?
 
     my $r;
     foreach my $nsid ( $self->get_zone_ns_ids($zone) ) {
@@ -607,7 +625,8 @@ sub zr_dispatch {
         }
     );
 
-    my $format = $self->{ns_ref}{export_format};
+    my $format = $self->{ns_ref}{export_format} || 'djb';
+# TODO: what about BIND and nsid=0?
 
     my $FH = $self->{export_file};
     foreach my $r ( @{ $p{records} } ) {

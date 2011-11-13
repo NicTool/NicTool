@@ -19,21 +19,32 @@ use warnings;
 use lib '.';
 use lib 't';
 use lib 'lib';
+use Data::Dumper;
 use NicToolTest;
+use NicToolServer::Export;
 use Test::More;
 $Data::Dumper::Sortkeys=1;
 
-BEGIN { plan 'no_plan'  }
 
-use_ok( 'NicToolServer::Export' );
-
-my $nsid = 1;
+my $nsid = 0;
 my $export = NicToolServer::Export->new( ns_id=>$nsid );
 $export->get_dbh( 
     dsn  => Config('dsn'),
     user => Config('db_user'),
     pass => Config('db_pass'),
 );
+
+my $count = $export->get_modified_zones();
+
+if ( $count == 0 ) {
+    plan skip_all => "no zones!";
+}
+else {
+    plan 'no_plan';
+};
+
+ok( $export, 'loaded NicToolServer::Export');
+ok( $count, "found $count zones");
 
 #ok( $export->preflight, 'preflight');  # check if export can succeed
 #undef $export->{log_id};  # expire log_id
