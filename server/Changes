@@ -1,6 +1,10 @@
 Revision history for NicToolServer
 
 2.10    2011.11.  - by Matt the Ripper
+    * subclassed the tinydns portions of NTS::Export into NTS::Export::djb
+    * added support for exporting nsid=0 (all nameservers). Exports every
+      zone, regardless of NS preference. Useful for virtual nameservers and
+      the tinydns multiip patch.
     * ripped out all the https support from NicTool (server, client, API)
         Approximately 0% of installs use this feature. Anyone inclined to use
         it would likely use stunnel or ssh -L instead.

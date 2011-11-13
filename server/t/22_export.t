@@ -54,7 +54,7 @@ ok( $r, "export (nsid $nsid)");
 
 $r = $export->get_last_ns_export();
 ok( $r, "get_last_ns_export, $nsid");
-warn Data::Dumper::Dumper($r);
+#warn Data::Dumper::Dumper($r);
 exit;
 
 #my $logid = $export->get_log_id( success=>1 );

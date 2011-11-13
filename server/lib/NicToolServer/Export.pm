@@ -1,5 +1,5 @@
 package NicToolServer::Export;
-# ABSTRACT: exporting DNS data to authoritative DNS servers
+# ABSTRACT: export DNS data to authoritative DNS servers
 
 use strict;
 use warnings;
@@ -7,18 +7,14 @@ use warnings;
 use Cwd;
 use Data::Dumper;
 use DBIx::Simple;
-use File::Copy;
 use File::Path;
 use Params::Validate qw/ :all /;
 
+use lib 'lib';
+use NicToolServer::Export::djb;
+
 # this class supports nt_export_djb.pl, nt_export_bind.pl,
 # and eases the creation of export scripts for other DNS servers.
-#
-# TODO: subclass the DNS server specific methods
-#    NTS::Export::zr_djb_a  -> NTS:Export:DJB:zr_a
-#    NTS::Export::zr_djb_ns -> NTS:Export:DJB:zr_ns
-#    .....
-# maybe TODO: append DB ids (but why?)
 
 sub new {
     my $class = shift;
@@ -36,7 +32,9 @@ sub new {
         dbix_r => undef,
         dbix_w => undef,
         debug_sql => defined $p{debug_sql} ? $p{debug_sql} : 0,
+        export_class => undef,
         export_dir => undef,
+        export_format => 'djb',
         export_required => 1,
         export_serials => undef,       # export serials for this nsid?
         log_id         => undef,       # current log ID
@@ -45,6 +43,7 @@ sub new {
         },
         $class;
 
+    $self->{export_class} = NicToolServer::Export::djb->new($self);
     return $self;
 }
 
@@ -53,7 +52,10 @@ sub daemon {
     my $start = time;
     $self->export();
     my $end = time;
-    my $waitleft = $self->{ns_ref}{export_interval} - ( $end - $start );
+    my $waitleft = 60;
+    if ( defined $self->{ns_ref}{export_interval} ) {
+        $waitleft = $self->{ns_ref}{export_interval} - ( $end - $start );
+    };
     sleep $waitleft if $waitleft > 0;
 };
 
@@ -138,8 +140,9 @@ sub export {
     $self->preflight or return;
     $self->get_active_nameservers;
 
-# TODO: BIND will prefer one file per zone.
-    my $fh = $self->get_export_file or return;
+    my $fh = $self->{export_file}
+        = $self->{export_class}->get_export_file( $self->get_export_dir )
+            or return;
 
     foreach my $z ( @{ $self->get_ns_zones() } ) {
         $self->{zone_name} = $z->{zone};
@@ -202,7 +205,7 @@ sub get_export_dir {
 
     my $dir;
 
-    if ( $self->{ns_ref} ) {
+    if ( defined $self->{ns_ref}{datadir} ) {
 
         # try the directory defined in nt_nameserver.datadir
         $dir = $self->{ns_ref}{datadir};
@@ -244,24 +247,6 @@ sub get_export_dir {
     };
     $self->elog("unable to create dir ($dir): $@");
     return;
-};
-
-sub get_export_file {
-    my $self = shift;
-
-    # tinydns specific 
-    my $dir = $self->get_export_dir or return;
-    my $filename = $dir . '/data';
-    if ( -e $filename ) {
-        move( $filename, "$filename.orig" );
-    };
-
-    open my $FH, '>', $filename
-        or die $self->elog("failed to open $filename");
-
-    $self->{export_file} = $FH;
-    return $FH;
-# TODO: create BIND version of this method
 };
 
 sub get_last_ns_export {
@@ -355,7 +340,6 @@ FROM nt_zone z";
         push @args, $p{last_modified};
     }
 
-warn "$sql";
     my $r = $self->exec_query( $sql, \@args ) or return [];
     $self->elog( "retrieved " . scalar @$r . " zones" );
     return $r;
@@ -452,7 +436,19 @@ sub get_active_nameservers {
     }
 
     #warn Dumper( $self->{active_ns} );
-    $self->{ns_ref} = $self->{active_ns_ids}{$self->{ns_id}};
+    if ( $self->{ns_id} ) {
+        $self->{ns_ref} = $self->{active_ns_ids}{$self->{ns_id}};
+    }
+    else {
+        my $first = $self->{active_ns_ids}{ $self->{active_ns}[0] };
+        #warn Data::Dumper::Dumper($first);
+        $self->{export_format} = $first->{export_format} if $first->{export_format};
+        if ( $self->{export_format} ne 'djb' ) {
+            my $subclass = "NicToolServer::Export::$self->{export_format}";
+            require $subclass;
+            $self->{export_class} = $subclass->new( $self );
+        };
+    };
     return $self->{active_ns};
 }
 
@@ -485,123 +481,39 @@ sub preflight {
 sub postflight {
     my $self = shift;
 
-    my $export_format = $self->{ns_ref}{export_format} || 'djb';
-    if ( 'djb' eq $export_format ) {
-
-        # compile data to data.cdb
-        $self->compile_cdb or return;
-
-        # rsync file into place
-        $self->rsync_cdb or return;
-    };
+    $self->{export_class}->postflight or return;
 
     # mark export successful
     $self->elog("complete", success=>1);
 }
 
-sub compile_cdb {
-    my $self = shift;
-
-    # compile data -> data.cdb
-    my $export_dir = $self->{export_dir};
-
-    if ( ! -e "$export_dir/Makefile" ) {
-        my $ns = $self->{ns_ref};
-        my $ns_datadir = $ns->{datadir};
-        $ns_datadir =~ s/\/$//;  # strip off any trailing /
-        open my $M, '>', "$export_dir/Makefile";
-        print $M <<MAKE
-# compiles data.cdb using the tinydns-data program.
-# make sure the path to tinydns-data is correct
-# test this target by running 'make data.cdb' in this directory
-data.cdb: data
-\t/usr/local/bin/tinydns-data
-
-# copies the data file to the remote host. The address is the nameservers IP
-# as defined in the NicTool database. Adjust it if necessary. Add additional
-# rsync lines to copy to additional hosts.
-remote: data.cdb
-\trsync -az data.cdb tinydns\@$ns->{address}:$ns_datadir/data.cdb
-
-# If the DNS server is running locally and rsync is not necessary, trick
-# the export process into thinking it worked by setting the 'remote' make
-# target to any system command that will succeed. An example is provided.
-# test by running the 'make remote' target and make sure it succeeds:
-#   make test && echo "it worked"
-noremote: data.cdb
-\ttest 1
-MAKE
-;
-        close $M;
-    };
-    chdir $export_dir;
-    my $before = time;
-    system ('make data.cdb') == 0
-        or die $self->elog("unable to compile cdb: $?");
-    my $elapsed = time - $before;
-    my $message = "compiled";
-    $message .= ( $elapsed > 5 ) ? " ($elapsed secs)" : '';
-    $self->elog($message);
-    return 1;
-};
-
-sub rsync_cdb {
-    my $self = shift;
-
-    my $dir = $self->{export_dir};
-
-    return 1 if ! $self->{ns_ref};
-
-    if ( -e "$dir/Makefile" && ! `grep remote $dir/Makefile` ) {
-        my $ns = $self->{ns_ref};
-        my $ns_datadir = $ns->{datadir};
-        $ns_datadir =~ s/\/$//;  # strip off any trailing /
-        open my $M, '>>', "$dir/Makefile";
-        print $M <<MAKE
-# copies the data file to the remote host. The address is the nameservers IP
-# as defined in the NicTool database. Adjust it if necessary. Add additional
-# rsync lines to copy to additional hosts.
-remote: data.cdb
-\trsync -az data.cdb tinydns\@$ns->{address}:$ns_datadir/data.cdb
-MAKE
-;
-        close $M;
-    };
-
-    my $before = time;
-    system ('make remote') == 0
-        or die $self->elog("unable to rsync cdb: $?");
-    my $elapsed = time - $before;
-    my $message = "copied";
-    $message .= " ($elapsed secs)" if $elapsed > 5;
-    $self->elog($message);
-    return 1;
-};
-
 sub zr_soa {
     my $self = shift;
     my %p = validate( @_, { zone => { type => HASHREF } } );
 
-# TODO: what about BIND and nsid=0?
-    my $format = $self->{ns_ref}{export_format} || 'djb'; # djb, bind, etc...
-    my $method = "zr_${format}_soa";
-    my $r = $self->$method(%p);    # format record for nameserver type
+    my $z  = $p{zone};
+    my @ns_ids     = $self->get_zone_ns_ids( $z );
+    my $primary_ns = $self->{active_ns_ids}{ $ns_ids[0] }{name};
+    my $serial     = $self->{ns_ref}{export_serials} ? $z->{serial} : '';
+    my $location   = $z->{location} || '';
+
+    my $r = $self->{export_class}->zr_soa(%p,
+        serial => $serial,
+        nsname => $primary_ns,
+        location => $location,
+    );
     return $r;
 }
 
-sub zr_ns {
+sub zr_ns { 
     my $self = shift;
     my %p = validate( @_, { zone => { type => HASHREF } } );
 
     my $zone    = $p{zone};
-    my $format  = $self->{ns_ref}{export_format} || 'djb';
-# TODO: what about BIND and nsid=0?
 
     my $r;
     foreach my $nsid ( $self->get_zone_ns_ids($zone) ) {
-        my $method = 'zr_' . $format . '_ns';
-
-        $r .= $self->$method(
+        $r .= $self->{export_class}->zr_ns(
             record => {
                 name    => $zone->{zone},
                 address => $self->qualify(
@@ -625,228 +537,13 @@ sub zr_dispatch {
         }
     );
 
-    my $format = $self->{ns_ref}{export_format} || 'djb';
-# TODO: what about BIND and nsid=0?
-
     my $FH = $self->{export_file};
     foreach my $r ( @{ $p{records} } ) {
         my $type   = lc( $r->{type} );
-        my $method = "zr_${format}_${type}";
+        my $method = "zr_${type}";
         $r->{location} ||= '';
-        print $FH $self->$method( record => $r );
+        print $FH $self->{export_class}->$method( record => $r );
     }
-}
-
-sub zr_djb_a {
-    my $self = shift;
-    my %p = validate( @_, { record => { type => HASHREF }, } );
-
-    my $r = $p{record};
-
-    #warn Data::Dumper::Dumper($r);
-
-    return '+'                            # special char
-        . $self->qualify( $r->{name} )    # fqdn
-        . ':' . $r->{address}             # ip
-        . ':' . $r->{ttl}                 # ttl
-        . ':'                             # timestamp
-        . ':' . $r->{location}            # location
-        . "\n";
-}
-
-sub zr_djb_cname {
-    my $self = shift;
-    my %p = validate( @_, { record => { type => HASHREF } } );
-
-    my $r = $p{record};
-
-    #warn Data::Dumper::Dumper($r);
-
-    return 'C'                                     # special char
-        . $self->qualify( $r->{name} )             # fqdn
-        . ':' . $self->qualify( $r->{address} )    # p   (host/domain name)
-        . ':' . $r->{ttl}                          # ttl
-        . ':'                                      # timestamp
-        . ':' . $r->{location}                     # lo
-        . "\n";
-}
-
-sub zr_djb_mx {
-    my $self = shift;
-    my %p = validate( @_, { record => { type => HASHREF } } );
-
-    my $r = $p{record};
-
-    return '@'                                     # special char
-        . $self->qualify( $r->{name} )             # fqdn
-        . ':'                                      # ip
-        . ':' . $self->qualify( $r->{address} )    # x
-        . ':' . $r->{weight}                       # distance
-        . ':' . $r->{ttl}                          # ttl
-        . ':'                                      # timestamp
-        . ':' . $r->{location}                     # lo
-        . "\n";
-}
-
-sub zr_djb_txt {
-    my $self = shift;
-    my %p = validate( @_, { record => { type => HASHREF } } );
-
-    my $r = $p{record};
-
-    #warn Data::Dumper::Dumper($r);
-
-    return "'"                                     # special char '
-        . $self->qualify( $r->{name} )             # fqdn
-        . ':' . $self->escape( $r->{address} )     # s
-        . ':' . $r->{ttl}                          # ttl
-        . ':'                                      # timestamp
-        . ':' . $r->{location}                     # lo
-        . "\n";
-}
-
-sub zr_djb_ns {
-    my $self = shift;
-    my %p = validate( @_, { record => { type => HASHREF } } );
-
-    my $r = $p{record};
-
-    #warn Data::Dumper::Dumper($r);
-
-    return '&'                                     # special char
-        . $self->qualify( $r->{name} )             # fqdn
-        . ':'                                      # ip
-        . ':' . $self->qualify( $r->{address} )    # x (hostname)
-        . ':' . $r->{ttl}                          # ttl
-        . ':'                                      # timestamp
-        . ':' . $r->{location}                     # lo
-        . "\n";
-}
-
-sub zr_djb_ptr {
-    my $self = shift;
-    my %p = validate( @_, { record => { type => HASHREF } } );
-
-    my $r = $p{record};
-
-    #warn Data::Dumper::Dumper($r);
-
-    return '^'                                     # special char
-        . $self->qualify( $r->{name} )             # fqdn
-        . ':' . $r->{address}                      # p
-        . ':' . $r->{ttl}                          # ttl
-        . ':'                                      # timestamp
-        . ':' . $r->{location}                     # lo
-        . "\n";
-}
-
-sub zr_djb_soa {
-    my $self = shift;
-    my %p = validate( @_, { zone => { type => HASHREF } } );
-
-    my $z = $p{zone};
-
-    my @ns_ids     = $self->get_zone_ns_ids($z);
-    my $primary_ns = $self->{active_ns_ids}{ $ns_ids[0] }{name};
-    my $serial     = $self->{ns_ref}{export_serials} ? $z->{serial} : '';
-    my $location   = $z->{location} || '';
-
-    return 'Z' . "$z->{zone}"    # fqdn
-        . ":$primary_ns"          # mname
-        . ":$z->{mailaddr}"       # rname
-        . ":$serial"              # serial
-        . ":$z->{refresh}"        # refresh
-        . ":$z->{retry}"          # retry
-        . ":$z->{expire}"         # expire
-        . ":$z->{minimum}"        # min
-        . ":$z->{ttl}"            # ttl
-        . ":"                     # timestamp
-        . ":$location"            # location
-        . "\n";
-}
-
-sub zr_djb_spf {
-    my $self = shift;
-    my %p = validate( @_, { record => { type => HASHREF } } );
-
-    my $r = $p{record};
-
-    #warn Data::Dumper::Dumper($r);
-
-    return ":"                                    # special char
-        . $self->qualify( $r->{name} )            # fqdn
-        . '99'                                    # n
-        . ':' . $self->escape( $r->{address} )    # rdata
-        . ':' . $r->{ttl}                         # ttl
-        . ':'                                     # timestamp
-        . ':' . $r->{location}                    # lo
-        . "\n";
-}
-
-sub zr_djb_srv {
-    my $self = shift;
-    my %p = validate( @_, { record => { type => HASHREF } } );
-
-    my $r = $p{record};
-
-    #warn Data::Dumper::Dumper($r);
-
-    # :fqdn:n:rdata:ttl:timestamp:lo (Generic record)
-    my $priority = escapeNumber( $self->is_ip_port( $r->{priority} ) );
-    my $weight   = escapeNumber( $self->is_ip_port( $r->{weight} ) );
-    my $port     = escapeNumber( $self->is_ip_port( $r->{other} ) );
-
-# SRV
-# :sip.tcp.example.com:33:\000\001\000\002\023\304\003pbx\007example\003com\000
-
-    my $target = "";
-    my @chunks = split /\./, $self->qualify( $r->{address} );
-    foreach my $chunk (@chunks) {
-        $target .= characterCount($chunk) . $chunk;
-    }
-
-    return ':'                                      # special char (generic)
-        . escape( $self->qualify( $r->{name} ) )    # fqdn
-        . ':33'                                     # n
-        . ':' . $priority . $weight . $port . $target . "\\000"    # rdata
-        . ':' . $r->{ttl}                                          # ttl
-        . ':'                                                      # timestamp
-        . ':' . $r->{location}                                     # lo
-        . "\n";
-}
-
-sub zr_djb_aaaa {
-    my $self = shift;
-    my %p = validate( @_, { record => { type => HASHREF } } );
-
-    my $r = $p{record};
-
-# :fqdn:n:rdata:ttl:timestamp:lo (generic record format)
-# ffff:1234:5678:9abc:def0:1234:0:0
-# :example.com:28:\377\377\022\064\126\170\232\274\336\360\022\064\000\000\000\000
-
-    my ( $a, $b, $c, $d, $e, $f, $g, $h ) = split /:/, $r->{address};
-    if ( !defined $h ) {
-        die "Didn't get a valid-looking IPv6 address\n";
-    }
-
-    $a = escapeHex( sprintf "%04s", $a );
-    $b = escapeHex( sprintf "%04s", $b );
-    $c = escapeHex( sprintf "%04s", $c );
-    $d = escapeHex( sprintf "%04s", $d );
-    $e = escapeHex( sprintf "%04s", $e );
-    $f = escapeHex( sprintf "%04s", $f );
-    $g = escapeHex( sprintf "%04s", $g );
-    $h = escapeHex( sprintf "%04s", $h );
-
-    return ':'                            # generic record format
-        . $self->qualify( $r->{name} )    # fqdn
-        . ':28'                           # n
-        . ':' . "$a$b$c$d$e$f$g$h"        # rdata
-        . ':' . $r->{ttl}                 # ttl
-        . ':'                             # timestamp
-        . ':'                             # location
-        . "\n";
 }
 
 sub is_ip_port {
@@ -865,66 +562,6 @@ sub qualify {
     return "$record.$zone"                    # append missing zone name
 }
 
-# 4 following subs based on http://www.anders.com/projects/sysadmin/djbdnsRecordBuilder/
-sub escape {
-    my $line = pop @_;
-    my $out;
-
-    foreach my $char ( split //, $line ) {
-        if ( $char =~ /[\r\n\t: \\\/]/ ) {
-            $out .= sprintf "\\%.3lo", ord $char;
-        }
-        else {
-            $out .= $char;
-        }
-    }
-    return $out;
-}
-
-sub escapeHex {
-
-    # takes a 4 character hex value and converts it to two escaped numbers
-    my $line = pop @_;
-    my @chars = split //, $line;
-
-    my $out = sprintf "\\%.3lo", hex "$chars[0]$chars[1]";
-    $out .= sprintf "\\%.3lo", hex "$chars[2]$chars[3]";
-
-    return $out;
-}
-
-sub escapeNumber {
-    my $number     = pop @_;
-    my $highNumber = 0;
-
-    if ( $number - 256 >= 0 ) {
-        $highNumber = int( $number / 256 );
-        $number = $number - ( $highNumber * 256 );
-    }
-    my $out = sprintf "\\%.3lo", $highNumber;
-    $out .= sprintf "\\%.3lo", $number;
-
-    return $out;
-}
-
-sub characterCount {
-    my $line  = pop @_;
-    my @chars = split //, $line;
-    my $count = @chars;
-    return ( sprintf "\\%.3lo", $count );
-}
-
-#  A          =>  + fqdn : ip : ttl:timestamp:lo
-#  CNAME      =>  C fqdn :  p : ttl:timestamp:lo
-#  MX         =>  @ fqdn : ip : x:dist:ttl:timestamp:lo
-#  TXT        =>  ' fqdn :  s : ttl:timestamp:lo
-#  NS         =>  & fqdn : ip : x:ttl:timestamp:lo
-#  PTR        =>  ^ fqdn :  p : ttl:timestamp:lo
-#  SOA        =>  Z fqdn:mname:rname:ser:ref:ret:exp:min:ttl:time:lo
-#  'A,PTR'    =>  = fqdn : ip : ttl:timestamp:lo
-#  'SOA,NS,A' =>  . fqdn : ip : x:ttl:timestamp:lo
-#  GENERIC    =>  : fqdn : n  : rdata:ttl:timestamp:lo
-#  IGNORE     =>  - fqdn : ip : ttl:timestamp:lo
 
 1;
 
