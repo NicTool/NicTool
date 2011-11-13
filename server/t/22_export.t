@@ -35,11 +35,8 @@ $export->get_dbh(
     pass => Config('db_pass'),
 );
 
-ok( $export->preflight, 'preflight');  # check if export can succeed
-
-#my $logid = $export->get_log_id( success=>1 );
-#undef $export->{log_id};
-#$logid = $export->get_log_id( success=>1,partial=>1 );
+#ok( $export->preflight, 'preflight');  # check if export can succeed
+#undef $export->{log_id};  # expire log_id
 
 my $r = $export->export();
 ok( $r, "export (nsid $nsid)");
@@ -48,6 +45,9 @@ $r = $export->get_last_ns_export();
 ok( $r, "get_last_ns_export, $nsid");
 warn Data::Dumper::Dumper($r);
 exit;
+
+#my $logid = $export->get_log_id( success=>1 );
+#$logid = $export->get_log_id( success=>1,partial=>1 );
 
 $r = $export->get_last_ns_export( success=>1 );
 ok( $r, "get_last_ns_export, $nsid, success");

@@ -385,15 +385,10 @@ sub rsync_cdb {
         $rsync_fail = 0;
         for ( my $limit = 0; $limit < 3; $limit++ ) {
             warn "rsync try #$limit ..\n" if $DEBUG;
-            $ret
-                = system(
-                "$rsync_path -az -e ssh data.cdb tinydns\@$rhost:$ns->{'datadir'}/data.cdb"
-                );
-            warn
-                "$rsync_path -az -e ssh data.cdb tinydns\@$rhost:$ns->{'datadir'}/data.cdb\n"
-                if $DEBUG;
-            warn "($ns->{'name'}) rsync ret = $ret! ($limit)\n"
-                unless ( $ret == 0 );
+			my $cmd = "$rsync_path -az -e ssh data.cdb tinydns\@$rhost:$ns->{'datadir'}/data.cdb";
+            $ret = system $cmd;
+            warn $cmd if $DEBUG;
+            warn "($ns->{'name'}) rsync ret = $ret! ($limit)\n" if $ret != 0;
             $rsync_fail = 1 if $ret != 0;
             $limit = 3
                 if ( $ret == 0 || $ret == 5120 )

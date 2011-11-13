@@ -7,6 +7,7 @@ use warnings;
 use Cwd;
 use Data::Dumper;
 use DBIx::Simple;
+use File::Copy;
 use File::Path;
 use Params::Validate qw/ :all /;
 
@@ -36,6 +37,7 @@ sub new {
         dbix_w => undef,
         debug_sql => defined $p{debug_sql} ? $p{debug_sql} : 0,
         export_dir => undef,
+        export_required => 1,
         export_serials => undef,       # export serials for this nsid?
         log_id         => undef,       # current log ID
         active_ns_ids  => undef,       # nsids for a zone
@@ -70,6 +72,7 @@ sub elog {
     push @args, $self->{ns_id}, $logid;
     $sql .= "WHERE nt_nameserver_id=? AND nt_nameserver_export_log_id=?";
     $self->exec_query( $sql, \@args );
+    return $message;
 }
 
 sub exec_query {
@@ -123,16 +126,24 @@ sub exec_query {
 sub export {
     my $self = shift;
 
-    $self->get_active_nameservers();
-    my $zones = $self->get_ns_zones();
+    $self->preflight or return;
+    $self->get_active_nameservers;
 
-    foreach my $z (@$zones) {
-        print $self->zr_soa( zone => $z );
-        print $self->zr_ns( zone => $z );
+# TODO: BIND will prefer one file per zone.
+    my $fh = $self->get_export_file or return;
+
+    foreach my $z ( @{ $self->get_ns_zones() } ) {
+        $self->{zone_name} = $z->{zone};
+        print $fh $self->zr_soa( zone => $z );
+        print $fh $self->zr_ns( zone => $z );
         my $records = $self->get_zone_records( zone => $z );
         $self->zr_dispatch( zone => $z, records => $records );
     }
+    close $fh;
+
+# TODO: detect and delete BIND zone files deleted in NicTool
     $self->elog("exported");
+    $self->postflight or return;
     return 1;
 }
 
@@ -176,6 +187,8 @@ sub get_dbh {
 sub get_export_dir {
     my $self = shift;
 
+    return $self->{export_dir} if $self->{export_dir};
+
     $self->get_active_nameservers();  # populate $self->{ns_ref}
 
     # try the directory defined in nt_nameserver.datadir
@@ -187,7 +200,6 @@ sub get_export_dir {
             return $dir;
         };
         $self->elog("export dir ($dir) not writable");
-        return;
     };
 
     # try the local working directory
@@ -196,6 +208,7 @@ sub get_export_dir {
     if ( -d $dir ) {
         if ( -w $dir ) {
             #$self->elog("using $dir");
+            $self->{export_dir} = $dir;
             return $dir;
         };
         $self->elog("export dir ($dir) not writable");
@@ -205,10 +218,31 @@ sub get_export_dir {
     eval { mkpath( $dir, { mode => 0755 } ); };
     if ( -d $dir ) {     # mkpath just created it
         $self->elog("created $dir");
+        $self->{export_dir} = $dir;
         return $dir;     # I have write permission
     };
     $self->elog("unable to create dir ($dir): $@");
     return;
+};
+
+sub get_export_file {
+    my $self = shift;
+
+    # tinydns specific 
+    my $dir = $self->get_export_dir or return;
+    my $filename = $dir . '/data';
+    if ( -e $filename ) {
+        move( $filename, "$filename.orig" );
+        move( "$filename.md5", "$filename.md5.orig" ) 
+            if -f "$filename.md5";
+    };
+
+    open my $FH, '>', $filename
+        or die $self->elog("failed to open $filename");
+
+    $self->{export_file} = $FH;
+    return $FH;
+# TODO: create BIND version of this method
 };
 
 sub get_last_ns_export {
@@ -236,7 +270,9 @@ sub get_last_ns_export {
     $sql .= " ORDER BY date_start DESC LIMIT 1";
 
     my $logs = $self->exec_query( $sql, \@args );
-    $self->elog("no previous export") if scalar @$logs == 0;
+    my $message = "no previous export";
+    $message = "no previous successful export" if defined $p{success} && $p{success} == 1;
+    $self->elog( $message ) if scalar @$logs == 0;
     return $logs->[0];
 }
 
@@ -276,25 +312,23 @@ sub get_ns_id {
 
 sub get_ns_zones {
     my $self = shift;
-    my %p
-        = validate( @_,
+    my %p = validate( @_,
         { last_modified => { type => SCALAR, optional => 1 }, },
         );
 
-    my $sql
-        = "SELECT z.nt_zone_id, z.zone, z.mailaddr, z.serial, z.refresh, z.retry, 
-        z.expire, z.minimum, z.ttl, z.last_modified
+    my $sql = "SELECT z.nt_zone_id, z.zone, z.mailaddr, z.serial, z.refresh,
+        z.retry, z.expire, z.minimum, z.ttl, z.last_modified
 FROM nt_zone z";
 
     my @args;
-    if ( $self->{ns_id} != 0 ) {
+    if ( $self->{ns_id} == 0 ) {
+        $sql .= " AND z.deleted=0";  # all zones, regardless of NS pref
+    }
+    else {
         $sql .= "
   LEFT JOIN nt_zone_nameserver n ON z.nt_zone_id=n.nt_zone_id
     WHERE n.nt_nameserver_id=? AND z.deleted=0";
         push @args, $self->{ns_id};
-    }
-    else {
-        $sql .= " AND z.deleted=0";
     }
 
     if ( $p{last_modified} ) {
@@ -409,22 +443,23 @@ sub get_active_nameservers {
 sub preflight {
     my $self = shift;
 
+    return 1 if $self->{export_required} == 0; # already called
+
     $self->get_log_id;
-    my $export_required = 1;
 
     # bail out if no export required
     #    get timestamp of last successful export
     my $export = $self->get_last_ns_export( success => 1 );
-    my $ts_success = $export->{date_start};
-
-    if ( $ts_success ) {
+    if ( $export ) {
+        my $ts_success = $export->{date_start};
+        if ( $ts_success ) {
 # do any zones for this nameserver have updates more recent than last successful export?
-        if ( 0 == $self->get_modified_zones( since => $ts_success ) ) {
-            $self->elog("no changes.");
-            return 1; # no mods, all done
+            my $c = $self->get_modified_zones( since => $ts_success );
+            $self->{export_required} = 0 if $c == 0;
+            $self->elog("$c changed zones");
         };
     };
-    $self->elog("export required");
+    $self->elog("export required") if $self->{export_required};
 
     # determine export directory
     $self->get_export_dir or return;
@@ -432,12 +467,100 @@ sub preflight {
 }
 
 sub postflight {
+    my $self = shift;
 
-    # is data newer than data.old?
-    # compile data -> data.cdb
-    # rsync file into place
+    if ( 'djb' eq $self->{ns_ref}{export_format} ) {
+
+        # is data different than data.old?
+# TODO
+
+        # compile data to data.cdb
+        $self->compile_cdb or return;
+
+        # rsync file into place
+        $self->rsync_cdb or return;
+    };
+
     # mark export successful
+    $self->elog("complete", success=>1);
 }
+
+sub compile_cdb {
+    my $self = shift;
+
+    # compile data -> data.cdb
+    my $export_dir = $self->{export_dir};
+
+    if ( ! -e "$export_dir/Makefile" ) {
+        my $ns = $self->{ns_ref};
+        my $ns_datadir = $ns->{datadir};
+        $ns_datadir =~ s/\/$//;  # strip off any trailing /
+        open my $M, '>', "$export_dir/Makefile";
+        print $M <<MAKE
+# compiles data.cdb using the tinydns-data program.
+# make sure the path to tinydns-data is correct
+# test this target by running 'make data.cdb' in this directory
+data.cdb: data
+\t/usr/local/bin/tinydns-data
+
+# copies the data file to the remote host. The address is the nameservers IP
+# as defined in the NicTool database. Adjust it if necessary. Add additional
+# rsync lines to copy to additional hosts.
+remote: data.cdb
+\trsync -az data.cdb tinydns\@$ns->{address}:$ns_datadir/data.cdb
+
+# If the DNS server is running locally and rsync is not necessary, trick
+# the export process into thinking it worked by setting the 'remote' make
+# target to any system command that will succeed. An example is provided.
+# test by running the 'make remote' target and make sure it succeeds:
+#   make test && echo "it worked"
+noremote: data.cdb
+\ttest 1
+MAKE
+;
+        close $M;
+    };
+    chdir $export_dir;
+    my $before = time;
+    system ('make data.cdb') == 0
+        or die $self->elog("unable to compile cdb: $?");
+    my $elapsed = time - $before;
+    my $message = "compiled";
+    $message .= ( $elapsed > 5 ) ? " ($elapsed secs)" : '';
+    $self->elog($message);
+    return 1;
+};
+
+sub rsync_cdb {
+    my $self = shift;
+
+    my $dir = $self->{export_dir};
+
+    if ( -e "$dir/Makefile" && ! `grep remote $dir/Makefile` ) {
+        my $ns = $self->{ns_ref};
+        my $ns_datadir = $ns->{datadir};
+        $ns_datadir =~ s/\/$//;  # strip off any trailing /
+        open my $M, '>>', "$dir/Makefile";
+        print $M <<MAKE
+# copies the data file to the remote host. The address is the nameservers IP
+# as defined in the NicTool database. Adjust it if necessary. Add additional
+# rsync lines to copy to additional hosts.
+remote: data.cdb
+\trsync -az data.cdb tinydns\@$ns->{address}:$ns_datadir/data.cdb
+MAKE
+;
+        close $M;
+    };
+
+    my $before = time;
+    system ('make remote') == 0
+        or die $self->elog("unable to rsync cdb: $?");
+    my $elapsed = time - $before;
+    my $message = "copied";
+    $message .= " ($elapsed secs)" if $elapsed > 5;
+    $self->elog($message);
+    return 1;
+};
 
 sub zr_soa {
     my $self = shift;
@@ -485,13 +608,13 @@ sub zr_dispatch {
     );
 
     my $format = $self->{ns_ref}{export_format};
-    $self->{zone_name} = $p{zone}{zone};    # for reference by ->qualify
 
+    my $FH = $self->{export_file};
     foreach my $r ( @{ $p{records} } ) {
         my $type   = lc( $r->{type} );
         my $method = "zr_${format}_${type}";
         $r->{location} ||= '';
-        print $self->$method( record => $r );
+        print $FH $self->$method( record => $r );
     }
 }
 
@@ -607,9 +730,9 @@ sub zr_djb_soa {
     my @ns_ids     = $self->get_zone_ns_ids($z);
     my $primary_ns = $self->{active_ns_ids}{ $ns_ids[0] }{name};
     my $serial     = $self->{ns_ref}{export_serials} ? $z->{serial} : '';
-    my $location   = $z->{location} || 'ex';
+    my $location   = $z->{location} || '';
 
-    return 'Z' . ":$z->{zone}"    # fqdn
+    return 'Z' . "$z->{zone}"    # fqdn
         . ":$primary_ns"          # mname
         . ":$z->{mailaddr}"       # rname
         . ":$serial"              # serial
