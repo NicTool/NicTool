@@ -16,8 +16,9 @@
 use strict;
 use warnings;
 
-use lib ".";
-use lib "t";
+use lib '.';
+use lib 't';
+use lib 'lib';
 use NicToolTest;
 use Test::More;
 $Data::Dumper::Sortkeys=1;
@@ -25,7 +26,6 @@ $Data::Dumper::Sortkeys=1;
 BEGIN { plan 'no_plan'  }
 
 use_ok( 'NicToolServer::Export' );
-
 
 my $nsid = 1;
 my $export = NicToolServer::Export->new( ns_id=>$nsid );
@@ -35,26 +35,26 @@ $export->get_dbh(
     pass => Config('db_pass'),
 );
 
-$export->preflight();  # check if export can succeed
-exit;
+ok( $export->preflight, 'preflight');  # check if export can succeed
 
-my $logid = $export->get_log_id( success=>1 ); # create a NT export log entry
-undef $export->{log_id};
-$logid = $export->get_log_id( success=>1,partial=>1 );
+#my $logid = $export->get_log_id( success=>1 );
+#undef $export->{log_id};
+#$logid = $export->get_log_id( success=>1,partial=>1 );
 
 my $r = $export->export();
-ok( $r, "export ($nsid)");
+ok( $r, "export (nsid $nsid)");
 
 $r = $export->get_last_ns_export();
 ok( $r, "get_last_ns_export, $nsid");
-#warn Data::Dumper::Dumper($r);
+warn Data::Dumper::Dumper($r);
+exit;
 
 $r = $export->get_last_ns_export( success=>1 );
 ok( $r, "get_last_ns_export, $nsid, success");
 #warn Data::Dumper::Dumper($r);
 
 $r = $export->get_last_ns_export( success=>1, partial=>1 );
-ok( $r, "get_last_ns_export, $nsid, success, partial");
+ok( $r, "get_last_ns_export, nsid $nsid, success, partial");
 #warn Data::Dumper::Dumper($r);
 
 #$r = $export->get_zone_list( ns_id=> 0 );

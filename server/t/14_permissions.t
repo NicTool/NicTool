@@ -26,8 +26,9 @@
 
 =cut
 
-use lib ".";
-use lib "t";
+use lib '.';
+use lib 't';
+use lib 'lib';
 use NicToolTest;
 use NicTool;
 use Test;

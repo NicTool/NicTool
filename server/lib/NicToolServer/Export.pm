@@ -4,8 +4,10 @@ package NicToolServer::Export;
 use strict;
 use warnings;
 
+use Cwd;
 use Data::Dumper;
 use DBIx::Simple;
+use File::Path;
 use Params::Validate qw/ :all /;
 
 # this class supports nt_export_djb.pl, nt_export_bind.pl,
@@ -33,9 +35,11 @@ sub new {
         dbix_r => undef,
         dbix_w => undef,
         debug_sql => defined $p{debug_sql} ? $p{debug_sql} : 0,
+        export_dir => undef,
         export_serials => undef,       # export serials for this nsid?
         log_id         => undef,       # current log ID
         active_ns_ids  => undef,       # nsids for a zone
+        ns_ref => undef,
         },
         $class;
 
@@ -168,6 +172,44 @@ sub get_dbh {
     }
     return $self->{dbix_r};
 }
+
+sub get_export_dir {
+    my $self = shift;
+
+    $self->get_active_nameservers();  # populate $self->{ns_ref}
+
+    # try the directory defined in nt_nameserver.datadir
+    my $dir = $self->{ns_ref}{datadir};
+    if ( $dir && -d $dir ) {
+        if ( -w $dir && ( ! -e "$dir/data" || -w "$dir/data" ) ) {
+            $self->{export_dir} = $dir;
+            #$self->elog("using $dir");
+            return $dir;
+        };
+        $self->elog("export dir ($dir) not writable");
+        return;
+    };
+
+    # try the local working directory
+    $dir = getcwd . '/data-' . $self->{ns_ref}{name};
+    $dir =~ s/\.$//;   # strip off any trailing dot
+    if ( -d $dir ) {
+        if ( -w $dir ) {
+            #$self->elog("using $dir");
+            return $dir;
+        };
+        $self->elog("export dir ($dir) not writable");
+        return;
+    }
+
+    eval { mkpath( $dir, { mode => 0755 } ); };
+    if ( -d $dir ) {     # mkpath just created it
+        $self->elog("created $dir");
+        return $dir;     # I have write permission
+    };
+    $self->elog("unable to create dir ($dir): $@");
+    return;
+};
 
 sub get_last_ns_export {
     my $self = shift;
@@ -360,6 +402,7 @@ sub get_active_nameservers {
     }
 
     #warn Dumper( $self->{active_ns} );
+    $self->{ns_ref} = $self->{active_ns_ids}{$self->{ns_id}};
     return $self->{active_ns};
 }
 
@@ -384,7 +427,7 @@ sub preflight {
     $self->elog("export required");
 
     # determine export directory
-    # make sure it's writable
+    $self->get_export_dir or return;
     return 1;
 }
 
@@ -400,8 +443,7 @@ sub zr_soa {
     my $self = shift;
     my %p = validate( @_, { zone => { type => HASHREF } } );
 
-    my $ns_ref = $self->{active_ns_ids}{ $self->{ns_id} };
-    my $format = $ns_ref->{export_format};                 # djb, bind, etc...
+    my $format = $self->{ns_ref}{export_format};       # djb, bind, etc...
     my $method = "zr_${format}_soa";
     my $r = $self->$method(%p);    # format record for nameserver type
     return $r;
@@ -411,9 +453,8 @@ sub zr_ns {
     my $self = shift;
     my %p = validate( @_, { zone => { type => HASHREF } } );
 
-    my $this_ns = $self->{active_ns_ids}{ $self->{ns_id} };
     my $zone    = $p{zone};
-    my $format  = $this_ns->{export_format};
+    my $format  = $self->{ns_ref}{export_format};
 
     my $r;
     foreach my $nsid ( $self->get_zone_ns_ids($zone) ) {
@@ -427,7 +468,7 @@ sub zr_ns {
                     $zone->{zone}
                 ),
                 ttl      => $self->{active_ns_ids}{$nsid}{ttl},
-                location => $this_ns->{location} || '',
+                location => $self->{ns_ref}{location} || '',
             },
         );
     }
@@ -443,7 +484,7 @@ sub zr_dispatch {
         }
     );
 
-    my $format = $self->{active_ns_ids}{ $self->{ns_id} }{export_format};
+    my $format = $self->{ns_ref}{export_format};
     $self->{zone_name} = $p{zone}{zone};    # for reference by ->qualify
 
     foreach my $r ( @{ $p{records} } ) {
@@ -565,11 +606,8 @@ sub zr_djb_soa {
 
     my @ns_ids     = $self->get_zone_ns_ids($z);
     my $primary_ns = $self->{active_ns_ids}{ $ns_ids[0] }{name};
-    my $serial
-        = $self->{active_ns_ids}{ $self->{ns_id} }{export_serials}
-        ? $z->{serial}
-        : '';
-    my $location = $z->{location} || 'ex';
+    my $serial     = $self->{ns_ref}{export_serials} ? $z->{serial} : '';
+    my $location   = $z->{location} || 'ex';
 
     return 'Z' . ":$z->{zone}"    # fqdn
         . ":$primary_ns"          # mname

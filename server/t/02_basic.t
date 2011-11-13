@@ -16,8 +16,9 @@
 # Suite 225, San Francisco, CA 94107, USA
 
 
-use lib ".";
-use lib "t";
+use lib '.';
+use lib 't';
+use lib 'lib';
 use NicToolTest;
 use NicTool;
 use Test;

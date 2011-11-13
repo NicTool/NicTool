@@ -17,6 +17,7 @@ use strict;
 
 use lib '.';
 use lib 't';
+use lib 'lib';
 use NicToolTest;
 use Test::More tests => 14;
 use Data::Dumper;
