@@ -18,6 +18,7 @@ Revision history for NicToolServer
       * now I can run a relatively inexpensive query to determine if any
         zones that publish to a given NS have modification dates greater
         than the last successful export
+    * ripped out SSL certificate management (great idea, but unused)
 
 
 2.09    2011.10

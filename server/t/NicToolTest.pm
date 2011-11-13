@@ -9,8 +9,8 @@ our @ISA    = qw(Exporter);
 our @EXPORT = qw(diffhtok noerrok errtext nowarn yeswarn);
 
 use Test;
-use lib '../sys/client';
-use lib 'sys/client';
+use lib 'api/lib';
+use lib '../api/lib';
 
 our $warn = 1;
 sub nowarn  { $warn = 0 }

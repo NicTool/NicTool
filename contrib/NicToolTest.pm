@@ -16,7 +16,7 @@ sub _conf{
 	'use_https_authentication' => 0,	
 	'client_certificate_file' => "/usr/local/apache/conf/clientcert/client.crt",
 	'client_key_file' => "/usr/local/apache/conf/clientcert/client.key",
-
+ 
 #Note https peer authentication (of server to client) is ALPHA in Crypt::SSLeay .29 so may not work
 	'use_https_peer_authentication' => 0,
 	'ca_certificate_file' => "/usr/local/apache/conf/ssl.crt/ca-bundle2.crt",
@@ -48,7 +48,7 @@ sub check_setup {
     $message = "ERROR: server_host not set in NicToolTest.pm" unless( $self->{server_host} );
     $message = "ERROR: server_port not set in NicToolTest.pm" unless( $self->{server_port} );
     if($self->{use_https_authentication}){
-    	$message = "ERROR: client certificate not set in NicToolTest.pm" unless( $self->{client_certificate_file} );
+        $message = "ERROR: client certificate not set in NicToolTest.pm" unless( $self->{client_certificate_file} );
     	$message = "ERROR: client key file not set in NicToolTest.pm" unless( $self->{client_key_file} );
     	if($self->{use_https_peer_authentication}){
     		$message = "ERROR: CA certificate or dir not set in NicToolTest.pm" unless( $self->{ca_certificate_path} || $self->{ca_certificate_file});
@@ -88,15 +88,16 @@ sub send_soap_request{
 	my $self = shift;
 	my $url = shift;
 	my %vars = @_;
-	if($self->{use_https_authentication}) {
-    	#set up https authentication vars
-    	$ENV{HTTPS_CERT_FILE} = $self->{client_certificate_file};
-    	$ENV{HTTPS_KEY_FILE} = $self->{client_key_file};
-		if ($self->{use_https_peer_authentication}){
-	    	$ENV{HTTPS_CA_FILE} = $self->{ca_certificate_file}; 
-			$ENV{HTTPS_CA_DIR} = $self->{ca_certificate_path};
-		}
-    	}
+    if($self->{use_https_authentication}) {
+        #set up https authentication vars
+        $ENV{HTTPS_CERT_FILE} = $self->{client_certificate_file};
+        $ENV{HTTPS_KEY_FILE} = $self->{client_key_file};
+        if ($self->{use_https_peer_authentication}){
+            $ENV{HTTPS_CA_FILE} = $self->{ca_certificate_file}; 
+            $ENV{HTTPS_CA_DIR} = $self->{ca_certificate_path};
+        }
+    }
+
 	my $func = $vars{action};
 	delete $vars{action};
 	foreach (keys %vars){

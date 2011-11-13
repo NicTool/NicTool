@@ -145,11 +145,11 @@ sub verify_session {
     my $dbh  = $self->{'dbh'};
 
     my $sql
-        = "SELECT nt_user.*, nt_user_session.*, nt_group.name as groupname FROM nt_user_session, nt_user, nt_group "
-        . "WHERE nt_user_session.nt_user_id = nt_user.nt_user_id "
-        . "AND nt_user.nt_group_id = nt_group.nt_group_id "
-        . "AND nt_user.deleted=0 "
-        . "AND nt_user_session.nt_user_session = ?";
+        = "SELECT nt_user.*, nt_user_session.*, nt_group.name as groupname FROM nt_user_session, nt_user, nt_group 
+        WHERE nt_user_session.nt_user_id = nt_user.nt_user_id
+          AND nt_user.nt_group_id = nt_group.nt_group_id
+          AND nt_user.deleted=0
+          AND nt_user_session.nt_user_session = ?";
 
     my $sessions = $self->exec_query( $sql, $data->{nt_user_session} )
         or return $self->error_response( 505, $dbh->errstr );
