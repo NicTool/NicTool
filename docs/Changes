@@ -1,0 +1,8 @@
+
+ 2.01 - 2004.09.24
+
+   * Added Makefile.PL to create package and simplify publishing
+   * Added CHANGES to track changes made to docs
+   * Added VERSION
+   * cleaned up HTML formatting in changes.htm
+
