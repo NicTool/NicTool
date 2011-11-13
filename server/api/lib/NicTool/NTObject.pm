@@ -1,8 +1,5 @@
 #!/usr/bin/perl
 ###
-# NTObject.pm
-###
-#
 # NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
 # NicTool v2.01 Copyright 2004 The Network People, Inc.
 #

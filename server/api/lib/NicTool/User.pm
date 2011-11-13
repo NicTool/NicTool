@@ -1,6 +1,5 @@
 #!/usr/bin/perl
 ###
-#
 # NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
 # NicTool v2.01 Copyright 2004 The Network People, Inc.
 #
@@ -15,7 +14,6 @@
 # You should have received a copy of the Affero General Public License
 # along with this program; if not, write to Affero Inc., 521 Third St,
 # Suite 225, San Francisco, CA 94107, USA
-#
 ###
 
 package NicTool::User;

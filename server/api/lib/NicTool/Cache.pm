@@ -1,6 +1,5 @@
 #!/usr/bin/perl
 ###
-# Cache.pm
 # a simple path based cache
 ###
 #

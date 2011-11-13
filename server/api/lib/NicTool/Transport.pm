@@ -1,7 +1,5 @@
-#!/usr/bin/perl
-###
-# Support class and factory for different Transport types
-###
+package NicTool::Transport;
+# ABSTRACT: support class and factory for different Transport types
 #
 # NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
 # NicTool v2.01 Copyright 2004 The Network People, Inc.
@@ -19,8 +17,6 @@
 # Suite 225, San Francisco, CA 94107, USA
 #
 ###
-
-package NicTool::Transport;
 
 sub new {
     my $pkg = shift;
@@ -107,4 +103,5 @@ sub _send_request {
         };
     }
 }
+
 1;

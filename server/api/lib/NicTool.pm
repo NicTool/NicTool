@@ -544,11 +544,40 @@ sub AUTOLOAD {
     }
 }
 
-=pod
+=head1 AUTHORS
+
+=over 4
+
+=item *
+
+Matt Simerson <msimerson@cpan.org>
+
+=item *
+
+Damon Edwards
+
+=item *
+
+Abe Shelton
+
+=item *
+
+Greg Schueler
 
 =back
 
+=head1 COPYRIGHT AND LICENSE
+
+This software is Copyright (c) 2011 by The Network People, Inc. This software is Copyright (c) 2001 by Damon Edwards, Abe Shelton, Greg Schueler.
+
+This is free software, licensed under:
+
+  The GNU Affero General Public License, Version 3, November 2007
+
+
 =head1 SEE ALSO
+
+=over
 
 =item *
 
@@ -590,6 +619,7 @@ L<SOAP::Lite>
 
 L<Crypt::SSLeay>
 
+=back
 
 =cut
 
