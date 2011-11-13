@@ -206,12 +206,12 @@ sub get_group_nameservers {
 sub is_valid_ttl {
     my ($self, $data) = @_;
 
-    return if ! exists( $data->{'ttl'};
+    return if ! exists $data->{ttl};
 
-    if ( $data->{'ttl'} < 300 || $data->{'ttl'} > 2592000 ) ) {
-        $self->{'errors'}->{'ttl'} = 1;
+    if ( $data->{ttl} < 300 || $data->{ttl} > 2592000 ) {
+        $self->{errors}{ttl} = 1;
         push(
-            @{ $self->{'error_messages'} },
+            @{ $self->{error_messages} },
             "Invalid TTL -- ttl must be > 300 and < 2,592,000"
         );
     }

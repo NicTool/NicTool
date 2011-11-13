@@ -10,6 +10,9 @@ should not.
 
 . Support other databases: 
 ..  remove all ENUM columns from database
+...  nt_zone_record.type should be a code from related table resource_record_type
+
+. Support for NAPTR records: http://tools.ietf.org/html/rfc3403
 
 
 ==== COMPLETED =====

@@ -96,8 +96,7 @@ sub delete_zone_record {
             unless $del->{'pseudo'} && $del->{'zone_perm_delete_records'};
     }
 
-    my $sql
-        = "SELECT nt_zone_id FROM nt_zone_record WHERE nt_zone_record_id = ?";
+    my $sql = "SELECT nt_zone_id FROM nt_zone_record WHERE nt_zone_record_id=?";
     my $zrs = $self->exec_query( $sql, $data->{nt_zone_record_id} );
 
     my $new_serial = $self->bump_serial( $zrs->[0]{nt_zone_id} );
@@ -107,7 +106,7 @@ sub delete_zone_record {
     my %error = ( 'error_code' => 200, 'error_msg' => 'OK' );
     $sql = "UPDATE nt_zone_record set deleted=1 WHERE nt_zone_record_id = ?";
 
-    my $zr_data = $self->find_zone_record( $data->{'nt_zone_record_id'} );
+    my $zr_data = $self->find_zone_record( $data->{nt_zone_record_id} );
     $zr_data->{'user'} = $data->{'user'};
 
     $self->exec_query( $sql, $data->{nt_zone_record_id} ) or do {
@@ -197,7 +196,7 @@ sub get_zone_record {
 
     $data->{'sortby'} ||= 'name';
 
-    my $sql = "SELECT * FROM nt_zone_record WHERE nt_zone_record_id = ?
+    my $sql = "SELECT * FROM nt_zone_record WHERE nt_zone_record_id=?
          ORDER BY $data->{'sortby'}";
     my $zrs = $self->exec_query( $sql, $data->{nt_zone_record_id} )
         or return {
@@ -211,22 +210,21 @@ sub get_zone_record {
         error_msg  => 'OK',
     );
 
-    if ( my $del = $self->get_param_meta( 'nt_zone_record_id', 'delegate' ) )
-    {
+    my $del = $self->get_param_meta( 'nt_zone_record_id', 'delegate' )
+        or return \%rv;
 
 # this info comes from NicToolServer.pm when it checks for access perms to the objects
-        my %mapping = (
-            delegated_by_id   => 'delegated_by_id',
-            delegated_by_name => 'delegated_by_name',
-            pseudo            => 'pseudo',
-            perm_write        => 'delegate_write',
-            perm_delete       => 'delegate_delete',
-            perm_delegate     => 'delegate_delegate',
-            group_name        => 'group_name'
-        );
-        foreach my $key ( keys %mapping ) {
-            $rv{ $mapping{$key} } = $del->{$key};
-        }
+    my %mapping = (
+        delegated_by_id   => 'delegated_by_id',
+        delegated_by_name => 'delegated_by_name',
+        pseudo            => 'pseudo',
+        perm_write        => 'delegate_write',
+        perm_delete       => 'delegate_delete',
+        perm_delegate     => 'delegate_delegate',
+        group_name        => 'group_name'
+    );
+    foreach my $key ( keys %mapping ) {
+        $rv{ $mapping{$key} } = $del->{$key};
     }
     return \%rv;
 }

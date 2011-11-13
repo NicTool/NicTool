@@ -1,7 +1,6 @@
 package NicToolServer::Permission;
 # ABSTRACT: 
 
-
 use strict;
 
 @NicToolServer::Permission::ISA = qw(NicToolServer);
@@ -61,18 +60,13 @@ sub delegate_fields_select {
 
 sub delegate_fields_select_as {
 
-    "nt_delegate.delegated_by_id, " . "nt_delegate.delegated_by_name, "
-
-        #.   "nt_delegate.perm_read as delegate_read, "
-        . "nt_delegate.perm_write as delegate_write, "
-        . "nt_delegate.perm_delete as delegate_delete, "
-        . "nt_delegate.perm_delegate as delegate_delegate, "
-        . "nt_delegate.zone_perm_add_records as delegate_add_records, "
-        . "nt_delegate.zone_perm_delete_records as delegate_delete_records, "
-
-        #.   "nt_delegate.perm_move as delegate_move, "
-        #.   "nt_delegate.perm_full as delegate_full, "
-
+    "nt_delegate.delegated_by_id, 
+    nt_delegate.delegated_by_name, 
+    nt_delegate.perm_write AS delegate_write, 
+    nt_delegate.perm_delete AS delegate_delete, 
+    nt_delegate.perm_delegate AS delegate_delegate, 
+    nt_delegate.zone_perm_add_records AS delegate_add_records, 
+    nt_delegate.zone_perm_delete_records AS delegate_delete_records, "
 }
 
 sub get_group_permissions {
@@ -460,9 +454,9 @@ sub delegated_objects_from_group {
 sub delegated_objects_by_type {
     my ( $self, $data ) = @_;
 
-    my @params = grep { exists $data->{$_} } qw(nt_group_id nt_object_type);
-    my $id     = $data->{'nt_object_id'};
-    my $type   = $data->{'nt_object_type'};
+    my @params = grep { exists $data->{$_} } qw/ nt_group_id nt_object_type /;
+    my $id     = $data->{nt_object_id};
+    my $type   = $data->{nt_object_type};
 
     my $vals = {
         'GROUP' => { 'table' => 'nt_group', 'id' => 'nt_group_id' },
@@ -476,22 +470,20 @@ sub delegated_objects_by_type {
     my $table  = $vals->{$type}->{'table'};
     my $idname = $vals->{$type}->{'id'};
 
-    my $sql
-        = "SELECT $table.*, "
-        . $self->delegate_fields_select_as
-        . "nt_group.name as group_name "
-        . "FROM $table "
-        . "INNER JOIN nt_delegate ON $table.$idname=nt_delegate.nt_object_id "
-        . "AND nt_delegate.nt_object_type='$type' "
+    my $sql = "SELECT $table.*, 
+        $self->delegate_fields_select_as nt_group.name AS group_name 
+FROM $table 
+  INNER JOIN nt_delegate ON $table.$idname=nt_delegate.nt_object_id 
+  AND nt_delegate.nt_object_type='$type' "
         . (
         $type eq 'ZONERECORD'
-        ? "INNER JOIN nt_zone ON nt_zone.nt_zone_id=nt_delegate.nt_object_id "
-            . "INNER JOIN nt_group ON nt_group.nt_group_id = nt_zone.nt_group_id "
+        ? "INNER JOIN nt_zone ON nt_zone.nt_zone_id=nt_delegate.nt_object_id 
+           INNER JOIN nt_group ON nt_group.nt_group_id = nt_zone.nt_group_id "
         : "INNER JOIN nt_group ON $table.nt_group_id=nt_group.nt_group_id "
         )
-        . "WHERE nt_delegate.deleted=0 "
-        . "AND $table.deleted=0 "
-        . "AND nt_delegate.nt_group_id = ?";
+        . "WHERE nt_delegate.deleted=0 
+        AND $table.deleted=0 
+        AND nt_delegate.nt_group_id=?";
 
     my $objects = $self->exec_query( $sql, $data->{'nt_group_id'} )
         or return $self->error_response( 505,

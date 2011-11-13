@@ -1,6 +1,8 @@
 Revision history for NicToolServer
 
 2.10    2011.11.  - by Matt the Ripper
+    * do not replace : chars in the database. No longer necessary because
+      export routines handle encoding of : during export.
     * subclassed the tinydns portions of NTS::Export into NTS::Export::djb
     * added support for exporting nsid=0 (all nameservers). Exports every
       zone, regardless of NS preference. Useful for virtual nameservers and
@@ -10,7 +12,7 @@ Revision history for NicToolServer
         it would likely use stunnel or ssh -L instead.
     * ripped out SSL certificate management (great idea, but unused)
     * SQL: Fixed the data model for zone nameservers. Replaced the abhorrent
-      nt_zone.ns0..nt_zone.ns9 columns with the table nt_zone_nameervers. 
+      nt_zone.ns0..nt_zone.ns9 columns with the table nt_zone_nameservers. 
       * there's no limit on how many nameservers a zone can publish to
       * queries are much simpler
       * deleted unpack_nameservers (no longer necessary)

@@ -925,35 +925,24 @@ sub delete_zones {
     );
 
     my $sql = "SELECT * FROM nt_zone WHERE nt_zone.nt_zone_id IN("
-        . $data->{'zone_list'} . ")";
+        . $data->{'zone_list'} . ')';
     my $zones_data = $self->exec_query($sql);
 
-    my $record_obj = NicToolServer::Zone::Record->new( $self->{'Apache'},
-        $self->{'client'}, $self->{dbh} );
+    my $record_obj = NicToolServer::Zone::Record->new( $self->{Apache},
+        $self->{client}, $self->{dbh} );
 
     foreach my $zone_data (@$zones_data) {
-        next if !( $groups{ $zone_data->{'nt_group_id'} } );
+        next if !( $groups{ $zone_data->{nt_group_id} } );
 
-        $sql = "UPDATE nt_zone SET deleted=1 WHERE nt_zone_id = ?";
-        $zone_data->{'user'} = $data->{'user'};
+        $sql = "UPDATE nt_zone SET deleted=1 WHERE nt_zone_id=?";
+        $zone_data->{user} = $data->{user};
         $self->exec_query( $sql, $zone_data->{nt_zone_id} ) or do {
-            $error{'error_code'} = 600;
-            $error{'error_msg'}  = $self->{dbh}->errstr;
+            $error{error_code} = 600;
+            $error{error_msg}  = $self->{dbh}->errstr;
             next;
         };
 
         $self->log_zone( $zone_data, 'deleted', $zone_data, 0 );
-
-        next;
-
-        # delete associated zone_record records
-        $sql
-            = "SELECT * from nt_zone_record where deleted=0 AND nt_zone_id = ?";
-        my $zrecs = $self->exec_query( $sql, $zone_data->{nt_zone_id} );
-        foreach my $zr (@$zrecs) {
-            $zr->{'user'} = $data->{'user'};
-            $record_obj->delete_zone_record( $zr, $zone_data );
-        }
     }
 
     return \%error;

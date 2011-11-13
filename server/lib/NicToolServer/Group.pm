@@ -49,29 +49,24 @@ sub new_group {
 
     my %error = ( 'error_code' => 200, 'error_msg' => 'OK' );
 
-    my $sql = "SELECT COUNT(*) AS count FROM nt_group WHERE deleted=0 "
-        . "AND parent_group_id = ? AND name = ?";
+    my $sql = "SELECT COUNT(*) AS count FROM nt_group 
+        WHERE deleted=0 AND parent_group_id=? AND name=?";
 
     my $groups
         = $self->exec_query( $sql, [ $data->{nt_group_id}, $data->{name} ] );
 
-    if ( $groups->[0]->{count} > 0 ) {
+    if ( $groups->[0]{count} > 0 ) {
         return $self->error_response( 600,
             'A group with that name already exists.' );
     }
 
-    $data->{'parent_group_id'} = $data->{'nt_group_id'};
-
-    my ( $action, $prev_data );
+    $data->{parent_group_id} = $data->{nt_group_id};
 
     $sql = "INSERT INTO nt_group (parent_group_id, name) VALUES(??)";
 
-    my $insertid = $self->exec_query( $sql,
-        [ $data->{parent_group_id}, $data->{name} ] );
-    $action = 'added';
-    $error{'nt_group_id'} = $insertid;
-
-    return $self->error_response( 505, $self->{dbh}->errstr ) if !$insertid;
+    my $insertid = $error{'nt_group_id'} = $self->exec_query( $sql,
+        [ $data->{parent_group_id}, $data->{name} ] )
+            or return $self->error_response( 505, $self->{dbh}->errstr );
 
     $data->{'modified_group_id'} = $insertid;
 
@@ -116,7 +111,7 @@ sub new_group {
 
     $self->add_to_group_subgroups( $insertid, $data->{nt_group_id}, 1000 );
 
-    $self->log_group( $data, $action, $prev_data );
+    $self->log_group( $data, 'added', undef);
 
     return \%error;
 }

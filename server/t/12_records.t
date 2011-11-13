@@ -311,8 +311,7 @@ sub doit {
             address => '1.1.1.1'
         );
         noerrok( $res, 300, "name $_" );
-        ok( $res->get('error_msg') =>
-                qr/absolute host names are NOT allowed/ );
+        ok( $res->get('error_msg') => qr/absolute host names are NOT allowed/ );
         ok( $res->get('error_desc') => qr/Sanity error/ );
         if ( !$res->is_error ) {
             $res = $user->delete_zone_record(

@@ -1,8 +1,18 @@
 
+DROP TABLE IF EXISTS nt_zone_nameserver;
 CREATE TABLE nt_zone_nameserver (
     nt_zone_id           smallint(5) unsigned NOT NULL,
     nt_nameserver_id     smallint(5) unsigned NOT NULL
 ) DEFAULT CHARSET=utf8;
+
+DROP TABLE IF EXISTS resource_record_type;
+CREATE TABLE resource_record_type (
+    id              smallint(2) unsigned NOT NULL AUTO_INCREMENT,
+    name            varchar(10) NOT NULL,
+PRIMARY KEY (`id`)
+) DEFAULT CHARSET=utf8;
+
+INSERT INTO resource_record_type VALUES (2,'NS'),(5,'CNAME'),(6,'SOA'),(12,'PTR'),(15,'MX'),(28,'AAAA'),(33,'SRV'),(99,'SPF'),(252,'AXFR'),(1,'A'),(16,'TXT'),(48,'DNSKEY'),(43,'DS'),(25,'KEY');
 
 /* TODO: import NS settings from existing nt_zone table, and then:
 ALTER TABLE nt_zone DROP column ns0;
