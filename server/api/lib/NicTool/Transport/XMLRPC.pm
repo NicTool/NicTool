@@ -43,16 +43,6 @@ sub send_request {
     my $ua = new LWP::UserAgent;
     my $req = HTTP::Request->new( 'POST', $url );
 
-    if ($NicToolServerAPI::use_https_authentication) {
-
-        #set up https authentication vars
-        $ENV{HTTPS_CERT_FILE} = $NicToolServerAPI::client_certificate_file;
-        $ENV{HTTPS_KEY_FILE}  = $NicToolServerAPI::client_key_file;
-        if ($NicToolServerAPI::use_https_peer_authentication) {
-            $ENV{HTTPS_CA_FILE} = $NicToolServerAPI::ca_certificate_file;
-            $ENV{HTTPS_CA_DIR}  = $NicToolServerAPI::ca_certificate_path;
-        }
-    }
     $ua->agent("NicTool Client Framework v$NicTool::VERSION");
     $req->content_type('text/xml');
     $req->content($command);

@@ -30,39 +30,14 @@ sub check_setup {
         = "ERROR: protocol_version not set in $NicToolClient::app_dir/lib/NicToolServerAPI.pm"
         unless ($NicToolServerAPI::protocol_version);
 
-    if ($NicToolServerAPI::use_https_authentication) {
-        $message
-            = "ERROR: client certificate not set in $NicToolClient::app_dir/lib/NicToolServerAPI.pm"
-            unless ($NicToolServerAPI::client_certificate_file);
-        $message
-            = "ERROR: client key file not set in $NicToolClient::app_dir/lib/NicToolServerAPI.pm"
-            unless ($NicToolServerAPI::client_key_file);
-        if ($NicToolServerAPI::use_https_peer_authentication) {
-            $message
-                = "ERROR: CA certificate or dir not set in $NicToolClient::app_dir/lib/NicTooServerAPI.pm"
-                unless ( $NicToolServerAPI::ca_certificate_path
-                || $NicToolServerAPI::ca_certificate_file );
-        }
-    }
-
     return $message;
 }
 
 sub send_request {
     my $self = shift;
-    my $url;
-    if ($NicToolServerAPI::use_https_authentication) {
-        $url
-            = 'https://'
-            . $NicToolServerAPI::server_host . ':'
-            . $NicToolServerAPI::https_server_port;
-    }
-    else {
-        $url
-            = 'http://'
-            . $NicToolServerAPI::server_host . ':'
-            . $NicToolServerAPI::server_port;
-    }
+    my $url = 'http://'
+		. $NicToolServerAPI::server_host . ':'
+		. $NicToolServerAPI::server_port;
     my $func = 'send_' . $NicToolServerAPI::data_protocol . '_request';
     if ( $self->can($func) ) {
         return $self->$func( $url, @_ );
@@ -80,16 +55,7 @@ sub send_soap_request {
     my $self = shift;
     my $url  = shift;
     my %vars = @_;
-    if ($NicToolServerAPI::use_https_authentication) {
 
-        #set up https authentication vars
-        $ENV{HTTPS_CERT_FILE} = $NicToolServerAPI::client_certificate_file;
-        $ENV{HTTPS_KEY_FILE}  = $NicToolServerAPI::client_key_file;
-        if ($NicToolServerAPI::use_https_peer_authentication) {
-            $ENV{HTTPS_CA_FILE} = $NicToolServerAPI::ca_certificate_file;
-            $ENV{HTTPS_CA_DIR}  = $NicToolServerAPI::ca_certificate_path;
-        }
-    }
     my $func = $vars{action};
     delete $vars{action};
     foreach ( keys %vars ) {
@@ -171,16 +137,6 @@ sub send_xml_rpc_request {
     my $ua = new LWP::UserAgent;
     my $req = HTTP::Request->new( 'POST', $url );
 
-    if ($NicToolServerAPI::use_https_authentication) {
-
-        #set up https authentication vars
-        $ENV{HTTPS_CERT_FILE} = $NicToolServerAPI::client_certificate_file;
-        $ENV{HTTPS_KEY_FILE}  = $NicToolServerAPI::client_key_file;
-        if ($NicToolServerAPI::use_https_peer_authentication) {
-            $ENV{HTTPS_CA_FILE} = $NicToolServerAPI::ca_certificate_file;
-            $ENV{HTTPS_CA_DIR}  = $NicToolServerAPI::ca_certificate_path;
-        }
-    }
     $ua->agent("NicToolClient v$NicToolServerAPI::VERSION");
     $req->content_type('text/xml');
     $req->content($command);

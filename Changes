@@ -1,8 +1,11 @@
 
  2.10 - 2011.11
     see also server/Changes
-    * ripped out service_type
+    * ripped out nt_nameserver.service_type
     * removed more legacy RCS $Id: headers (comments)
+    * ripped out all the https support from NicTool (server, client, API)
+      Approximately 0% of installs use this feature. Anyone inclined to use
+      it would likely use stunnel or ssh -L instead.
 
  2.09 - 2011.10
     * removed all summary code (unused)

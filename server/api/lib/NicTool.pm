@@ -135,39 +135,6 @@ Flag telling whether calls to I<get_nameserver> should cache the
 results. (Nameservers probably won't be changed behind your back.)
 (Default TRUE)
     
-=item server_https_port
-
-The port for HTTPS connections, used if use_https_authentication is
-TRUE.
-
-=item use_https_authentication
-
-A flag indicating whether HTTPS authentication should be used.  
-If TRUE, client_certificate_file and client_key_file need to be
-specified. (Default FALSE)
-
-=item client_certificate_file
-
-The path to the client certificate file.
-
-=item client_key_file
-
-The path to the client key file.
-
-=item use_https_peer_authentication
-
-A flag indicating whether the client should authenticate to the server
-over the secure connection. If TRUE, either ca_certifcate_file or
-ca_certificate_path need to specified. (Default FALSE)
-
-=item ca_certificate_file
-
-The path to the Certificate Authority certificate file.
-
-=item ca_certificate_path
-
-The path to the directory containing CA certificates.
-
 =back
 
 All of these parameters are optional for the constructor.  Instead they
@@ -253,16 +220,7 @@ sub _should_cache {
 sub _conf {
     {   'server_host'              => "localhost",
         'server_port'              => "8082",
-        'server_https_port'        => "8043",
         'data_protocol'            => "soap",
-        'use_https_authentication' => 0,
-        'client_certificate_file'  => "",
-        'client_key_file'          => "",
-
-#Note https peer authentication (of server to client) is ALPHA in Crypt::SSLeay .29 so may not work
-        'use_https_peer_authentication' => 0,
-        'ca_certificate_file'           => "",
-        'ca_certificate_path'           => "",
         'nt_user_session'               => undef,
         'use_protocol_version'          => 0,
         'nt_protocol_version'           => '1.0',

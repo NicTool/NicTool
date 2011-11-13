@@ -1,0 +1,13 @@
+
+NicTool is a free DNS management suite.
+
+Once installed and set up, NicTool takes the headaches out of managing DNS. NicTool includes:
+  an attractive web interface for users, admins, and clients
+  a rich API for provisioning systems
+  validation of all DNS entries before acceptance
+  logging of all DNS changes (who did what & when)
+  granular permissions, for delegating the management of users, groups, zones, and even zone records to third parties.
+
+DNS data is stored in a database and is exported by scripts to the DNS server of choice (tinydns, BIND, PowerDNS).
+
+NicTool is the holy grail of DNS management packages. It works great for managing one zone, or a million of them.

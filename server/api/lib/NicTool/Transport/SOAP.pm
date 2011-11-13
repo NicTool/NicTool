@@ -30,16 +30,6 @@ sub send_request {
     my $url  = shift;
     my %vars = @_;
     $url .= "/soap";
-    if ( $self->_nt->{use_https_authentication} ) {
-
-        #set up https authentication vars
-        $ENV{HTTPS_CERT_FILE} = $self->_nt->{client_certificate_file};
-        $ENV{HTTPS_KEY_FILE}  = $self->_nt->{client_key_file};
-        if ( $self->_nt->{use_https_peer_authentication} ) {
-            $ENV{HTTPS_CA_FILE} = $self->_nt->{ca_certificate_file};
-            $ENV{HTTPS_CA_DIR}  = $self->_nt->{ca_certificate_path};
-        }
-    }
     my $func = $vars{action};
     delete $vars{action};
     foreach ( keys %vars ) {

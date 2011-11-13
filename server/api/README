@@ -28,3 +28,13 @@ NicTool::Result::is_error   -   returns TRUE if the error code is not '200'
 
 Every type of object is a subclass of NicTool::Result 
 
+2011 - UPDATE
+
+In the contrib directory are examples of how to use the NicTool API.
+
+DNS.pm is a good example of how to encapsulate NicTool API methods for automated use.
+
+For a modern high(er) quality example, check out the NicTool module from Provision::Unix. You can find Provision::Unix on CPAN.
+
+Matt
+

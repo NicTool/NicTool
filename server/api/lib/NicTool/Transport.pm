@@ -53,43 +53,22 @@ sub _check_setup {
         unless ( $self->_nt->{server_host} );
     $message = "ERROR: server_port not set"
         unless ( $self->_nt->{server_port} );
-    if ( $self->_nt->{use_https_authentication} ) {
-        $message
-            = "ERROR: client certificate (client_certificate_file) not set"
-            unless ( $self->_nt->{client_certificate_file} );
-        $message = "ERROR: client key file (client_key_file) not set"
-            unless ( $self->_nt->{client_key_file} );
-        if ( $self->_nt->{use_https_peer_authentication} ) {
-            $message
-                = "ERROR: CA certificate file or directory (ca_certificate_path or ca_certificate_file) not set"
-                unless ( $self->_nt->{ca_certificate_path}
-                || $self->_nt->{ca_certificate_file} );
-        }
-    }
 
     return $message;
 }
 
 sub _send_request {
     my $self = shift;
-    my $url;
     my $msg = $self->_check_setup;
 
     if ( $msg ne 'OK' ) {
         return { 'error_code' => 'XXX', 'error_msg' => $msg };
     }
-    if ( $self->_nt->{use_https_authentication} ) {
-        $url
-            = 'https://'
-            . $self->_nt->{server_host} . ':'
-            . $self->_nt->{server_https_port};
-    }
-    else {
-        $url
-            = 'http://'
-            . $self->_nt->{server_host} . ':'
-            . $self->_nt->{server_port};
-    }
+
+    my $url
+        = 'http://'
+        . $self->_nt->{server_host} . ':'
+        . $self->_nt->{server_port};
 
     #my $func = 'send_'.$self->_nt->{data_protocol}.'_request';
     if ( $self->can('send_request') ) {

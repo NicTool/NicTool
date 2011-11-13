@@ -1,14 +1,10 @@
 Revision history for NicToolServer
 
-2.10    2011.11.
-    * SQL: renamed nt_zone.output_format to export_format
-    * SQL: converted deleted database fields from enum to tinyint(1)
-      (enums are evil. Their contents are strings. Having to quote numeric
-      values in every query has ALWAYS irritated me about NicTool. ENUM is
-      MySQL proprietary, and they often don't behave as expected).
-    * SQL: added nt_nameesrver.export_serials
-      (controls export of serial nums for tinydns export).
-    * removed the quotes from many integers. Someone wasn't thinking...
+2.10    2011.11.  - by Matt the Ripper
+    * ripped out all the https support from NicTool (server, client, API)
+        Approximately 0% of installs use this feature. Anyone inclined to use
+        it would likely use stunnel or ssh -L instead.
+    * ripped out SSL certificate management (great idea, but unused)
     * SQL: Fixed the data model for zone nameservers. Replaced the abhorrent
       nt_zone.ns0..nt_zone.ns9 columns with the table nt_zone_nameervers. 
       * there's no limit on how many nameservers a zone can publish to
@@ -18,8 +14,16 @@ Revision history for NicToolServer
       * now I can run a relatively inexpensive query to determine if any
         zones that publish to a given NS have modification dates greater
         than the last successful export
-    * ripped out SSL certificate management (great idea, but unused)
-
+    * SQL: renamed nt_zone.output_format to export_format
+    * SQL: converted deleted database fields from enum to tinyint(1)
+      (enums are evil. Their contents are strings. Having to quote numeric
+      values in every query has ALWAYS irritated me about NicTool. ENUM is
+      MySQL proprietary, and they often don't behave as expected).
+    * SQL: added nt_nameserver.export_serials
+      (controls export of serial nums for tinydns export).
+    * removed the quotes from many integers. Someone wasn't thinking...
+    * ripped out nt_nameserver.service_type
+    * removed all summary code (unused)
 
 2.09    2011.10
     * added nt_options database table (and db_version value). Expect the
