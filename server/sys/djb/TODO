@@ -1,0 +1,9 @@
+
+These legacy exports are broken. Sorry. -matt (2011.11.13).
+
+They are broken is because of the database schema changes in v2.10. Previous to these changes, NS selections were stored in the nt_zone table, in columns ns0..ns9. Those columns are now gone, replaced by the table nt_zone_nameservers. That table contains a simple mapping of nt_zone_ids and nt_nameserver_ids. SELECT based on zone ids to get a list of nameervers. Select on nt_nameserver_ids and get a list of zones IDs published to that nameerver.
+
+The solution to fixing these legacy exports is half done. I have edited db_mysql.h and inserted a new query. That query contains a subselect that populates a field named 'nsids' with a comma separated list of NS ids that a zone is published to. Essentially the same information that was spread across ns0..ns9 packed into a single column. There are two places in db_mysql.cc where the nameserver information is accessed. Fix those two spots and voila, everything should be hunky-dory.
+
+
+
