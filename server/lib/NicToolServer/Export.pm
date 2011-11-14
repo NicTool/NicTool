@@ -11,10 +11,11 @@ use File::Path;
 use Params::Validate qw/ :all /;
 
 use lib 'lib';
-use NicToolServer::Export::djb;
+use NicToolServer::Export::tinydns;
+use NicToolServer::Export::BIND;
 
-# this class supports nt_export_djb.pl, nt_export_bind.pl,
-# and eases the creation of export scripts for other DNS servers.
+# this class and subclasses support nt_export.pl
+# subclasses (see tinydns & BIND ^^) have logic to export to them
 
 sub new {
     my $class = shift;
@@ -34,7 +35,7 @@ sub new {
         debug_sql => defined $p{debug_sql} ? $p{debug_sql} : 0,
         export_class => undef,
         export_dir => undef,
-        export_format => 'djb',
+        export_format => 'tinydns',
         export_required => 1,
         export_serials => undef,       # export serials for this nsid?
         log_id         => undef,       # current log ID
@@ -43,7 +44,7 @@ sub new {
         },
         $class;
 
-    $self->{export_class} = NicToolServer::Export::djb->new($self);
+    $self->{export_class} = NicToolServer::Export::tinydns->new($self);
     return $self;
 }
 
@@ -178,7 +179,7 @@ sub get_dbh {
    # it is used for INSERT/UPDATE/DELETE queries. This is useful for sites
    # with one-way replicated database servers with a local db slave.
 
-    die "invalid DSN!" if $p{dsn} !~ /^DBI/;
+    die "invalid DSN! ($p{dsn})" if $p{dsn} !~ /^DBI/;
 
     $self->{dbix_r} = DBIx::Simple->connect( $p{dsn}, $p{user}, $p{pass} )
         or die DBIx::Simple->error;
@@ -432,7 +433,7 @@ sub get_active_nameservers {
 
         # tinydns can autogenerate serial numbers based on data file
         # timestamp. Make sure it's enabled for everyone else.
-        $r->{export_serials}++ if $r->{export_format} ne 'djb';
+        $r->{export_serials}++ if $r->{export_format} ne 'tinydns';
     }
 
     #warn Dumper( $self->{active_ns} );
@@ -443,10 +444,11 @@ sub get_active_nameservers {
         my $first = $self->{active_ns_ids}{ $self->{active_ns}[0] };
         #warn Data::Dumper::Dumper($first);
         $self->{export_format} = $first->{export_format} if $first->{export_format};
-        if ( $self->{export_format} ne 'djb' ) {
-            my $subclass = "NicToolServer::Export::$self->{export_format}";
-            require $subclass;
-            $self->{export_class} = $subclass->new( $self );
+        if ( $self->{export_format} eq 'bind' ) {
+            $self->{export_class} = NicToolServer::Export::BIND->new( $self );
+        }
+        else {
+            $self->{export_class} = NicToolServer::Export::tinydns->new( $self );
         };
     };
     return $self->{active_ns};

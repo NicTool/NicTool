@@ -105,7 +105,7 @@ sub doit {
         nt_group_id   => '',
         name          => 'ns.somewhere.com.',
         address       => '1.2.3.4',
-        export_format => 'djb'
+        export_format => 'tinydns'
     );
     noerrok( $res, 301 );
     ok( $res->get('error_msg')  => 'nt_group_id' );
@@ -120,7 +120,7 @@ sub doit {
         nt_group_id   => 'abc',                 #not integer
         name          => 'ns.somewhere.com.',
         address       => '1.2.3.4',
-        export_format => 'djb'
+        export_format => 'tinydns'
     );
     noerrok( $res, 302 );
     ok( $res->get('error_msg')  => 'nt_group_id' );
@@ -135,7 +135,7 @@ sub doit {
         nt_group_id   => 0,                   #not valid id
         name          => 'ns.somewhere.com.',
         address       => '1.2.3.4',
-        export_format => 'djb'
+        export_format => 'tinydns'
     );
     noerrok( $res, 302 );
     ok( $res->get('error_msg')  => 'nt_group_id' );
@@ -150,7 +150,7 @@ sub doit {
 
         #name=>'ns.somewhere.com',
         address       => '1.2.3.4',
-        export_format => 'djb'
+        export_format => 'tinydns'
     );
     noerrok( $res, 301 );
     ok( $res->get('error_msg')  => 'name' );
@@ -168,7 +168,7 @@ sub doit {
         $res = $group1->new_nameserver(
             name          => 'a.b${_}d.com.',
             address       => '1.2.3.4',
-            export_format => 'djb'
+            export_format => 'tinydns'
         );
         noerrok( $res, 300, "char $_" );
         ok( $res->get('error_msg') =>
@@ -184,7 +184,7 @@ sub doit {
     $res = $group1->new_nameserver(
         name          => 'ns..somewhere.com.',
         address       => '1.2.3.4',
-        export_format => 'djb'
+        export_format => 'tinydns'
     );
     noerrok( $res, 300 );
     ok( $res->get('error_msg')  => qr/Nameserver name must be a valid host/ );
@@ -198,7 +198,7 @@ sub doit {
     $res = $group1->new_nameserver(
         name          => 'ns.-something.com.',
         address       => '1.2.3.4',
-        export_format => 'djb'
+        export_format => 'tinydns'
     );
     noerrok( $res, 300 );
     ok( $res->get('error_msg') =>
@@ -213,7 +213,7 @@ sub doit {
     $res = $group1->new_nameserver(
         name          => 'ns.abc.com',
         address       => '1.2.3.4',
-        export_format => 'djb'
+        export_format => 'tinydns'
     );
     noerrok( $res, 300 );
     ok( $res->get('error_msg') =>
@@ -230,7 +230,7 @@ sub doit {
 
         #address=>'1.2.3.4',
         name          => 'ns.somewhere.com.',
-        export_format => 'djb'
+        export_format => 'tinydns'
     );
     noerrok( $res, 301 );
     ok( $res->get('error_msg')  => 'address' );
@@ -249,7 +249,7 @@ sub doit {
         $res = $group1->new_nameserver(
             address       => $_,
             name          => 'ns.somewhere.com.',
-            export_format => 'djb'
+            export_format => 'tinydns'
         );
         noerrok( $res, 300, "address $_" );
         ok( $res->get('error_msg')  => qr/Invalid IP address/, "address $_" );
@@ -265,7 +265,7 @@ sub doit {
     $res = $group1->new_nameserver(
         name         => 'ns.somewhere.com.',
         address      => '1.2.3.4',
-       #export_format=>'djb',
+       #export_format=>'tinydns',
     );
     noerrok( $res, 301 );
     ok( $res->get('error_msg')  => 'export_format' );
@@ -328,7 +328,7 @@ sub doit {
     $res = $group1->new_nameserver(
         name          => 'ns2.somewhere.com.',
         address       => '1.2.3.5',
-        export_format => 'djb',
+        export_format => 'tinydns',
         ttl           => 86401
     );
     die "couldn't make test nameserver"
@@ -377,12 +377,12 @@ sub doit {
             and ok( $ns2->id, $nsid2 );
     ok( $ns2->get('name')          => 'ns2.somewhere.com.' );
     ok( $ns2->get('address')       => '1.2.3.5' );
-    ok( $ns2->get('export_format') => 'djb' );
+    ok( $ns2->get('export_format') => 'tinydns' );
     ok( $ns2->get('ttl')           => '86401' );
 
     %name = ( $nsid1 => 'ns.somewhere.com.', $nsid2 => 'ns2.somewhere.com.' );
     %address       = ( $nsid1 => '1.2.3.4', $nsid2 => '1.2.3.5' );
-    %export_format = ( $nsid1 => 'bind',    $nsid2 => 'djb' );
+    %export_format = ( $nsid1 => 'bind',    $nsid2 => 'tinydns' );
     %ttl           = ( $nsid1 => '86400',   $nsid2 => '86401' );
 
 ####################
@@ -708,11 +708,11 @@ sub doit {
     ok( $ns1->get('export_format') => $export_format{$nsid1} );
     ok( $ns1->get('ttl')           => $ttl{$nsid1} );
 
-    $res = $ns1->edit_nameserver( export_format => "djb" );
+    $res = $ns1->edit_nameserver( export_format => "tinydns" );
     noerrok($res);
     $ns1 = $user->get_nameserver( nt_nameserver_id => $nsid1 );
     noerrok($ns1);
-    $export_format{$nsid1} = 'djb';
+    $export_format{$nsid1} = 'tinydns';
     ok( $ns1->get('name')          => $name{$nsid1} );
     ok( $ns1->get('address')       => $address{$nsid1} );
     ok( $ns1->get('export_format') => $export_format{$nsid1} );

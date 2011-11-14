@@ -2,6 +2,8 @@ Revision history for NicToolServer
 
 2.10    2011.11.  - by Matt the Ripper
 
+    * added NicToolServer::Export::BIND
+    * SQL: renamed nt_nameserver.export_format='djb' -> 'tinydns'
     * SQL: added nt_zone_record.timestamp field. See the timestamp description
       on the tinydns-data page. Allows start/stop times for records.
     * added location support to database and tinydns exports. See
@@ -12,7 +14,7 @@ Revision history for NicToolServer
     * added addserver and zone2nic in api/contrib (from Adrian)
     * do not replace : chars in record addresses. No longer necessary because
       export routines handle encoding of : during export.
-    * subclassed the tinydns portions of NTS::Export into NTS::Export::djb
+    * subclassed the tinydns portions of NTS::Export into NTS::Export::tinydns
     * added support for exporting nsid=0 (all nameservers). Exports every
       zone, regardless of NS preference. Useful for virtual nameservers and
       the tinydns multiip patch.

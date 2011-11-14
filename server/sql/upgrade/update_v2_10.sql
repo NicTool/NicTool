@@ -38,14 +38,14 @@ ALTER TABLE nt_zone_record ADD `timestamp` timestamp NULL DEFAULT NULL AFTER `lo
 /* nt_nameserver */
 ALTER TABLE nt_nameserver DROP column `service_type`;
 ALTER TABLE nt_nameserver ADD `export_serials` tinyint(1) UNSIGNED NOT NULL DEFAULT '1'  AFTER `export_interval`;
-UPDATE nt_nameserver SET output_format='djb' WHERE output_format='nt';
-ALTER TABLE nt_nameserver CHANGE `output_format` `export_format` enum('djb','bind') NOT NULL;
+UPDATE nt_nameserver SET output_format='tinydns' WHERE output_format='nt';
+ALTER TABLE nt_nameserver CHANGE `output_format` `export_format` enum('tinydns','bind') NOT NULL;
 
 /* nt_nameserver_log */
 ALTER TABLE nt_nameserver_log DROP column `service_type`;
 ALTER TABLE nt_nameserver_log ADD `export_serials` tinyint(1) UNSIGNED NOT NULL DEFAULT '1'  AFTER `export_interval`;
-UPDATE nt_nameserver_log SET output_format='djb' WHERE output_format='nt';
-ALTER TABLE nt_nameserver_log CHANGE `output_format` `export_format` enum('djb','bind') NOT NULL;
+UPDATE nt_nameserver_log SET output_format='tinydns' WHERE output_format='nt';
+ALTER TABLE nt_nameserver_log CHANGE `output_format` `export_format` enum('tinydns','bind') NOT NULL;
 
 /* nt_nameserver_export_log */
 ALTER TABLE nt_nameserver_export_log ADD `result_id` int NULL DEFAULT NULL  AFTER `date_finish`;

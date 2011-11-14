@@ -1,4 +1,7 @@
 
 * expose nt_nameserver.export_serials for editing
 
+* expose nt_zone_record.timestamp for editing
+
+* restore nameserver export status
 

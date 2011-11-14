@@ -56,7 +56,7 @@ sub new_nameserver {
     }
 
     # check that export_format is valid
-    unless ( $data->{'export_format'} eq "djb"
+    unless ( $data->{'export_format'} eq "tinydns"
         || $data->{'export_format'} eq "bind"
         || $data->{'export_format'} eq "nt" )
     {
@@ -148,7 +148,7 @@ sub edit_nameserver {
 
     # check that export_format is valid
     if ( exists $data->{'export_format'} ) {
-        unless ( $data->{'export_format'} eq "djb"
+        unless ( $data->{'export_format'} eq "tinydns"
             || $data->{'export_format'} eq "bind"
             || $data->{'export_format'} eq "nt" )
         {

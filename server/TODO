@@ -1,10 +1,10 @@
 ----NEW----
-. Support tinydns locations and/or BIND views
+
+. Support tinydns locations and/or BIND views (SQL & export portions completed 2011.11.14 -mps)
 
 . If a user does not have delete permission for a zone/zone record, they should also not have restore permissions (https://www.tnpi.net/support/forums/index.php/topic,797.0.html)
 
-. Fix bug: login returns nt_perm_id and perm_name in user hash, and
-should not.
+. Fix bug: login returns nt_perm_id and perm_name in user hash, and should not.
 
 . Be consistent with use of strings and ints.
 
@@ -13,6 +13,8 @@ should not.
 ...  nt_zone_record.type should be a code from related table resource_record_type
 
 . Support for NAPTR records: http://tools.ietf.org/html/rfc3403
+
+. SQL migration query to populate nt_zone_nameservers from nt_zone.ns0..ns9
 
 
 ==== COMPLETED =====

@@ -65,7 +65,7 @@ sub rr_reverse_types {
 
 sub ns_export_formats {
     {   'bind' => 'BIND (ISC\'s Berkeley Internet Named Daemon)',
-        'djb'  => 'tinydns (part of DJBDNS)',
+        'tinydns'  => 'tinydns (part of DJBDNS)',
     };
 }
 
