@@ -60,7 +60,7 @@ sub delegate_fields_select {
 
 sub delegate_fields_select_as {
 
-    "nt_delegate.delegated_by_id, 
+    " nt_delegate.delegated_by_id, 
     nt_delegate.delegated_by_name, 
     nt_delegate.perm_write AS delegate_write, 
     nt_delegate.perm_delete AS delegate_delete, 
@@ -423,16 +423,16 @@ sub delegated_objects_from_group {
         my $sql
             = "SELECT $table.*, "
             . $self->delegate_fields_select_as
-            . "nt_group.name as group_name "
-            . "FROM $table "
-            . "INNER JOIN nt_delegate ON $table.$idname=nt_delegate.nt_object_id "
-            . "AND nt_delegate.nt_object_type='$type' "
-            . "INNER JOIN nt_group ON $table.nt_group_id=nt_group.nt_group_id "
-            . "WHERE nt_delegate.deleted=0 "
-            . "AND $table.deleted=0 "
-            . "AND nt_delegate.nt_group_id = "
-            . $data->{'nt_group_id'} . " "
-            . "AND nt_delegate.nt_object_id = $table.$idname ";
+            . "nt_group.name as group_name 
+            FROM $table 
+            INNER JOIN nt_delegate ON $table.$idname=nt_delegate.nt_object_id 
+              AND nt_delegate.nt_object_type='$type' 
+            INNER JOIN nt_group ON $table.nt_group_id=nt_group.nt_group_id 
+              WHERE nt_delegate.deleted=0 
+                AND $table.deleted=0 
+                AND nt_delegate.nt_group_id = "
+             . $data->{'nt_group_id'}
+            . " AND nt_delegate.nt_object_id = $table.$idname ";
 
         my $objects = $self->exec_query($sql);
         if ($objects) {
@@ -470,8 +470,9 @@ sub delegated_objects_by_type {
     my $table  = $vals->{$type}->{'table'};
     my $idname = $vals->{$type}->{'id'};
 
-    my $sql = "SELECT $table.*, 
-        $self->delegate_fields_select_as nt_group.name AS group_name 
+    my $sql = "SELECT $table.*, "
+        . $self->delegate_fields_select_as
+        . " nt_group.name AS group_name 
 FROM $table 
   INNER JOIN nt_delegate ON $table.$idname=nt_delegate.nt_object_id 
   AND nt_delegate.nt_object_type='$type' "
@@ -527,15 +528,15 @@ sub get_object_delegates {
     my $sql
         = "SELECT "
         . $self->delegate_fields_select_as
-        . "       nt_group.nt_group_id,"
-        . "       nt_group.name as group_name"
-        . " FROM nt_delegate"
-        . " INNER JOIN nt_group"
-        . "       on nt_delegate.nt_group_id=nt_group.nt_group_id"
-        . " WHERE nt_delegate.deleted=0 "
-        . " AND nt_group.deleted=0 "
-        . " AND nt_object_id = ?"
-        . " AND nt_object_type = ?";
+        . " nt_group.nt_group_id,
+            nt_group.name AS group_name
+         FROM nt_delegate
+         INNER JOIN nt_group
+               ON nt_delegate.nt_group_id=nt_group.nt_group_id
+         WHERE nt_delegate.deleted=0 
+           AND nt_group.deleted=0
+           AND nt_object_id = ?
+           AND nt_object_type = ?";
 
     my $rows
         = $self->exec_query( $sql,
