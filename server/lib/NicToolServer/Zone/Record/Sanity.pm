@@ -348,7 +348,7 @@ sub _valid_cname {
 
     @args[1] = 'MX';
     if ( $self->record_exists( @args ) ) {
-        $self->_error( 'name', "record $data->{'name'} already exists within zone as a Mail Exchanger (MX) record: RFC 1034.");
+        $self->_error( 'name', "record $data->{'name'} already exists as a Mail Exchanger (MX) record: RFC 1034.");
         return;
     };
 }
@@ -393,6 +393,13 @@ sub _valid_mx {
     if ($self->record_exists( $data->{address}, 'CNAME', 
             $data->{nt_zone_id}, $data->{nt_zone_record_id} ) ) {
         $self->_error( 'address', "MX records must not point to a CNAME: RFC 2181" );
+        return;
+    };
+
+    # MX records cannot share a name with a CNAME
+    if ($self->record_exists( $data->{name}, 'CNAME', 
+            $data->{nt_zone_id}, $data->{nt_zone_record_id} ) ) {
+        $self->_error( 'name', "MX records must not exist as a CNAME: RFC 1034" );
         return;
     };
 }

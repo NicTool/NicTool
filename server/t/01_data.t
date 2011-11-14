@@ -50,7 +50,7 @@ my $r = $nts->exec_query( "SELECT email FROM nt_user WHERE deleted=0" );
 ok( scalar @$r, "select users: ".scalar @$r );
 #warn Data::Dumper::Dumper($r->[0]);
 
-$r = $nts->exec_query( "SELECT emailf FROM nt_user" );
+$r = $nts->exec_query( "SELECT testfake FROM nt_user" );
 ok( ! $r, "invalid select" );
 
 
@@ -61,7 +61,7 @@ ok( $zid, "Insert zone ID $zid" );
 $r = $nts->exec_query( "UPDATE nt_zone SET description='delete me' WHERE nt_zone_id=?", $zid);
 ok( $r, "Update zone $zid description" );
 
-$r = $nts->exec_query( "UPDATE nt_zone SET descriptionf='delete me' WHERE nt_zone_id=?", $zid);
+$r = $nts->exec_query( "UPDATE nt_zone SET fake='delete me' WHERE nt_zone_id=?", $zid);
 ok( ! $r, "Update zone error" );
 
 #exit;
@@ -69,11 +69,11 @@ $r = $nts->exec_query( "DELETE FROM nt_zone WHERE nt_zone_id=?", $zid);
 ok( $r, "Delete zone $zid");
 
 
-$r = $nts->exec_query( "INSERT INTO nt_zone SET zonef='testing.com',deleted=1");
+$r = $nts->exec_query( "INSERT INTO nt_zone SET fake='testing.com',deleted=1");
 ok( ! $r, "Insert zone fail" );
 #warn Data::Dumper::Dumper($r);
 
-$r = $nts->exec_query( "DELETE FROM nt_zonef WHERE nt_zone_id=?", $r );
+$r = $nts->exec_query( "DELETE FROM nt_fake WHERE nt_zone_id=?", $r );
 ok( ! $r, "Delete zone fail");
 
 ok( ! $nts->is_subgroup(1,1), 'is_subgroup');

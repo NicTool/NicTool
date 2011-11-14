@@ -1,7 +1,12 @@
 Revision history for NicToolServer
 
 2.10    2011.11.  - by Matt the Ripper
-    * do not replace : chars in the database. No longer necessary because
+
+    * added RFC 2181 tests. CNAME records cannot coexist with any other record
+      type (except DNSSEC). NS and MX must not point to a CNAME.
+    * SQL: added record record types to database: DS, DNSKEY, KEY (not used yet)
+    * added addserver and zone2nic in api/contrib (from Adrian)
+    * do not replace : chars in record addresses. No longer necessary because
       export routines handle encoding of : during export.
     * subclassed the tinydns portions of NTS::Export into NTS::Export::djb
     * added support for exporting nsid=0 (all nameservers). Exports every
@@ -32,6 +37,7 @@ Revision history for NicToolServer
     * removed all summary code (unused)
 
 2.09    2011.10
+
     * added nt_options database table (and db_version value). Expect the
       contents of nictoolserver.conf and nictoolclient.conf to be here.
 
