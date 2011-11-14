@@ -321,7 +321,7 @@ sub get_ns_zones {
         );
 
     my $sql = "SELECT z.nt_zone_id, z.zone, z.mailaddr, z.serial, z.refresh,
-        z.retry, z.expire, z.minimum, z.ttl, z.last_modified
+        z.retry, z.expire, z.minimum, z.ttl, z.location, z.last_modified
 FROM nt_zone z";
 
     my @args;
@@ -412,8 +412,8 @@ sub get_zone_records {
     my %p = validate( @_, { zone => { type => HASHREF } } );
 
     my $zid = $p{zone}->{nt_zone_id};
-    my $sql
-        = "SELECT name,ttl,description,type,address,weight,priority,other
+    my $sql = "SELECT name, ttl, description, type, address, weight, 
+    priority, other, location, UNIX_TIMESTAMP(timestamp) AS timestamp
         FROM nt_zone_record
          WHERE deleted=0 AND nt_zone_id=?";
 
@@ -492,16 +492,14 @@ sub zr_soa {
     my %p = validate( @_, { zone => { type => HASHREF } } );
 
     my $z  = $p{zone};
-    my @ns_ids     = $self->get_zone_ns_ids( $z );
-    my $primary_ns = $self->{active_ns_ids}{ $ns_ids[0] }{name};
-    my $serial     = $self->{ns_ref}{export_serials} ? $z->{serial} : '';
-    my $location   = $z->{location} || '';
 
-    my $r = $self->{export_class}->zr_soa(%p,
-        serial => $serial,
-        nsname => $primary_ns,
-        location => $location,
-    );
+    my @ns_ids       = $self->get_zone_ns_ids( $z );
+    $z->{timestamp}  = '';       # does it make sense to?
+    $z->{location} ||= '';
+    $z->{nsname}     = $self->{active_ns_ids}{ $ns_ids[0] }{name};
+    $z->{serial}     = $self->{ns_ref}{export_serials} ? $z->{serial} : '',
+
+    my $r = $self->{export_class}->zr_soa( zone => $z );
     return $r;
 }
 
@@ -509,19 +507,17 @@ sub zr_ns {
     my $self = shift;
     my %p = validate( @_, { zone => { type => HASHREF } } );
 
-    my $zone    = $p{zone};
-
+    my $z = $p{zone};
     my $r;
-    foreach my $nsid ( $self->get_zone_ns_ids($zone) ) {
+    foreach my $nsid ( $self->get_zone_ns_ids( $z ) ) {
+        my $ns_ref = $self->{active_ns_ids}{$nsid};
         $r .= $self->{export_class}->zr_ns(
             record => {
-                name    => $zone->{zone},
-                address => $self->qualify(
-                    $self->{active_ns_ids}{$nsid}{name},
-                    $zone->{zone}
-                ),
-                ttl      => $self->{active_ns_ids}{$nsid}{ttl},
+                name     => $z->{zone},
+                address  => $self->qualify( $ns_ref->{name}, $z->{zone} ),
+                ttl      => $ns_ref->{ttl},
                 location => $self->{ns_ref}{location} || '',
+                timestamp => '',
             },
         );
     }
@@ -541,7 +537,8 @@ sub zr_dispatch {
     foreach my $r ( @{ $p{records} } ) {
         my $type   = lc( $r->{type} );
         my $method = "zr_${type}";
-        $r->{location} ||= '';
+        $r->{location}  ||= '';
+        $r->{timestamp} = $r->{timestamp} ? $self->{export_class}->format_timestamp($r->{timestamp}) : '';
         print $FH $self->{export_class}->$method( record => $r );
     }
 }

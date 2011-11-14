@@ -8,6 +8,7 @@ use Cwd;
 use Data::Dumper;
 use File::Copy;
 use Params::Validate qw/ :all /;
+use Time::TAI64 qw/ unixtai64 /;
 
 # maybe TODO: append DB ids (but why?)
 
@@ -143,7 +144,7 @@ sub zr_a {
         . $self->qualify( $r->{name} )    # fqdn
         . ':' . $r->{address}             # ip
         . ':' . $r->{ttl}                 # ttl
-        . ':'                             # timestamp
+        . ':' . $r->{timestamp}           # timestamp
         . ':' . $r->{location}            # location
         . "\n";
 }
@@ -160,7 +161,7 @@ sub zr_cname {
         . $self->qualify( $r->{name} )             # fqdn
         . ':' . $self->qualify( $r->{address} )    # p   (host/domain name)
         . ':' . $r->{ttl}                          # ttl
-        . ':'                                      # timestamp
+        . ':' . $r->{timestamp}                    # timestamp
         . ':' . $r->{location}                     # lo
         . "\n";
 }
@@ -177,7 +178,7 @@ sub zr_mx {
         . ':' . $self->qualify( $r->{address} )    # x
         . ':' . $r->{weight}                       # distance
         . ':' . $r->{ttl}                          # ttl
-        . ':'                                      # timestamp
+        . ':' . $r->{timestamp}                    # timestamp
         . ':' . $r->{location}                     # lo
         . "\n";
 }
@@ -194,7 +195,7 @@ sub zr_txt {
         . $self->qualify( $r->{name} )             # fqdn
         . ':' . $self->escape( $r->{address} )     # s
         . ':' . $r->{ttl}                          # ttl
-        . ':'                                      # timestamp
+        . ':' . $r->{timestamp}                    # timestamp
         . ':' . $r->{location}                     # lo
         . "\n";
 }
@@ -212,7 +213,7 @@ sub zr_ns {
         . ':'                                      # ip
         . ':' . $self->qualify( $r->{address} )    # x (hostname)
         . ':' . $r->{ttl}                          # ttl
-        . ':'                                      # timestamp
+        . ':' . $r->{timestamp}                    # timestamp
         . ':' . $r->{location}                     # lo
         . "\n";
 }
@@ -229,33 +230,28 @@ sub zr_ptr {
         . $self->qualify( $r->{name} )             # fqdn
         . ':' . $r->{address}                      # p
         . ':' . $r->{ttl}                          # ttl
-        . ':'                                      # timestamp
+        . ':' . $r->{timestamp}                    # timestamp
         . ':' . $r->{location}                     # lo
         . "\n";
 }
 
 sub zr_soa {
     my $self = shift;
-    my %p = validate( @_, 
-        {   zone     => { type => HASHREF },
-            serial   => { type => SCALAR  },
-            nsname   => { type => SCALAR  },
-            location => { type => SCALAR  },
-        } );
+    my %p = validate( @_, { zone => { type => HASHREF } } );
 
     my $z = $p{zone};
 
-    return 'Z' . "$z->{zone}"    # fqdn
-        . ":$p{nsname}"           # mname
+    return 'Z' . "$z->{zone}"     # fqdn
+        . ":$z->{nsname}"         # mname
         . ":$z->{mailaddr}"       # rname
-        . ":$p{serial}"           # serial
+        . ":$z->{serial}"         # serial
         . ":$z->{refresh}"        # refresh
         . ":$z->{retry}"          # retry
         . ":$z->{expire}"         # expire
         . ":$z->{minimum}"        # min
         . ":$z->{ttl}"            # ttl
-        . ":"                     # timestamp
-        . ":$p{location}"         # location
+        . ":$z->{timestamp}"      # timestamp
+        . ":$z->{location}"       # location
         . "\n";
 }
 
@@ -272,7 +268,7 @@ sub zr_spf {
         . '99'                                    # n
         . ':' . $self->escape( $r->{address} )    # rdata
         . ':' . $r->{ttl}                         # ttl
-        . ':'                                     # timestamp
+        . ':' . $r->{timestamp}                   # timestamp
         . ':' . $r->{location}                    # lo
         . "\n";
 }
@@ -286,9 +282,9 @@ sub zr_srv {
     #warn Data::Dumper::Dumper($r);
 
     # :fqdn:n:rdata:ttl:timestamp:lo (Generic record)
-    my $priority = escapeNumber( $self->is_ip_port( $r->{priority} ) );
-    my $weight   = escapeNumber( $self->is_ip_port( $r->{weight} ) );
-    my $port     = escapeNumber( $self->is_ip_port( $r->{other} ) );
+    my $priority = escapeNumber( $self->{nte}->is_ip_port( $r->{priority} ) );
+    my $weight   = escapeNumber( $self->{nte}->is_ip_port( $r->{weight} ) );
+    my $port     = escapeNumber( $self->{nte}->is_ip_port( $r->{other} ) );
 
 # SRV
 # :sip.tcp.example.com:33:\000\001\000\002\023\304\003pbx\007example\003com\000
@@ -304,7 +300,7 @@ sub zr_srv {
         . ':33'                                     # n
         . ':' . $priority . $weight . $port . $target . "\\000"    # rdata
         . ':' . $r->{ttl}                                          # ttl
-        . ':'                                                      # timestamp
+        . ':' . $r->{timestamp}                                    # timestamp
         . ':' . $r->{location}                                     # lo
         . "\n";
 }
@@ -338,8 +334,8 @@ sub zr_aaaa {
         . ':28'                           # n
         . ':' . "$a$b$c$d$e$f$g$h"        # rdata
         . ':' . $r->{ttl}                 # ttl
-        . ':'                             # timestamp
-        . ':'                             # location
+        . ':' . $r->{timestamp}           # timestamp
+        . ':' . $r->{location}            # location
         . "\n";
 }
 
@@ -350,6 +346,13 @@ sub qualify {
     return $record if $record =~ /$zone$/;    # ends in zone, just no .
     return "$record.$zone"                    # append missing zone name
 }
+
+sub format_timestamp {
+    my ($self, $ts) = @_;
+    return '' if ! $ts;
+    #warn "timestamp: $ts\n";
+    return substr unixtai64( $ts ), 1;
+};
 
 # 4 following subs based on http://www.anders.com/projects/sysadmin/djbdnsRecordBuilder/
 sub escape {

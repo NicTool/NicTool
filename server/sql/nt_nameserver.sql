@@ -9,9 +9,9 @@ CREATE TABLE nt_nameserver(
     ttl                 INT UNSIGNED,
     description         VARCHAR(255),
     address             VARCHAR(127) NOT NULL,
-    export_format       enum('djb','bind') NOT NULL,
     logdir              VARCHAR(255),
     datadir             VARCHAR(255),
+    export_format       enum('djb','bind') NOT NULL,
     export_interval     SMALLINT UNSIGNED,
     export_serials      tinyint(1) UNSIGNED NOT NULL DEFAULT '1',
     deleted             TINYINT(1) UNSIGNED DEFAULT 0 NOT NULL
@@ -31,10 +31,11 @@ CREATE TABLE nt_nameserver_log(
     ttl                 INT UNSIGNED,
     description         VARCHAR(255),
     address             VARCHAR(127),
-    export_format       enum('djb','bind'),
     logdir              VARCHAR(255),
     datadir             VARCHAR(255),
-    export_interval     SMALLINT UNSIGNED
+    export_format       enum('djb','bind'),
+    export_interval     SMALLINT UNSIGNED,
+    export_serials      tinyint(1) UNSIGNED NOT NULL DEFAULT '1'
 ) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 CREATE INDEX nt_nameserver_log_idx1 on nt_nameserver_log(nt_nameserver_id);
 CREATE INDEX nt_nameserver_log_idx2 on nt_nameserver_log(timestamp);
@@ -92,7 +93,7 @@ CREATE TABLE nt_nameserver_export_log(
     date_end                        timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP  on update CURRENT_TIMESTAMP,
     result_id                       int NULL DEFAULT NULL,
     message                         VARCHAR(256) NULL DEFAULT NULL,
-    success                         tinyint(2) UNSIGNED NULL DEFAULT NULL,
+    success                         tinyint(1) UNSIGNED NULL DEFAULT NULL,
     partial                         tinyint(1) UNSIGNED NOT NULL DEFAULT 0
 ) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 CREATE INDEX nt_nameserver_export_log_idx1 on nt_nameserver_export_log(nt_nameserver_id);

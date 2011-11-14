@@ -14,6 +14,10 @@ PRIMARY KEY (`id`)
 
 INSERT INTO resource_record_type VALUES (2,'NS'),(5,'CNAME'),(6,'SOA'),(12,'PTR'),(15,'MX'),(28,'AAAA'),(33,'SRV'),(99,'SPF'),(252,'AXFR'),(1,'A'),(16,'TXT'),(48,'DNSKEY'),(43,'DS'),(25,'KEY');
 
+/* nt_zone */
+ALTER TABLE nt_zone ADD column `location` VARCHAR(2) DEFAULT NULL  AFTER `ttl`;
+ALTER TABLE nt_zone ADD column `last_modified` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP AFTER `location`;
+
 /* TODO: import NS settings from existing nt_zone table, and then:
 ALTER TABLE nt_zone DROP column ns0;
 ALTER TABLE nt_zone DROP column ns1;
@@ -27,19 +31,31 @@ ALTER TABLE nt_zone DROP column ns8;
 ALTER TABLE nt_zone DROP column ns9;
 */
 
-ALTER TABLE nt_zone ADD column `last_modified` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP AFTER `deleted`;
-ALTER TABLE `nt_nameserver` DROP column `service_type`;
-ALTER TABLE `nt_nameserver` ADD `export_serials` tinyint(1) UNSIGNED NOT NULL DEFAULT '1'  AFTER `export_interval`;
-ALTER TABLE `nt_nameserver` CHANGE `output_format` `export_format` enum('djb','bind') NOT NULL;
+/* nt_zone_record */
+ALTER TABLE nt_zone_record ADD `location` VARCHAR(2) DEFAULT NULL  AFTER `other`;
+ALTER TABLE nt_zone_record ADD `timestamp` timestamp NULL DEFAULT NULL AFTER `location`;
 
-ALTER TABLE `nt_nameserver_export_log` ADD `result_id` int NULL DEFAULT NULL  AFTER `date_finish`;
-ALTER TABLE `nt_nameserver_export_log` ADD `message` varchar(256) NULL DEFAULT NULL  AFTER `result_id`;
-ALTER TABLE `nt_nameserver_export_log` ADD `success` tinyint(2) UNSIGNED NULL DEFAULT NULL  AFTER `message`;
-ALTER TABLE `nt_nameserver_export_log` ADD `partial` tinyint(1) UNSIGNED NOT NULL DEFAULT 0  AFTER `success`;
-ALTER TABLE `nt_nameserver_export_log` CHANGE `date_start` `date_start` timestamp(10) NULL DEFAULT NULL;
-ALTER TABLE `nt_nameserver_export_log` CHANGE `date_finish` `date_end` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP  on update CURRENT_TIMESTAMP;
+/* nt_nameserver */
+ALTER TABLE nt_nameserver DROP column `service_type`;
+ALTER TABLE nt_nameserver ADD `export_serials` tinyint(1) UNSIGNED NOT NULL DEFAULT '1'  AFTER `export_interval`;
+UPDATE nt_nameserver SET output_format='djb' WHERE output_format='nt';
+ALTER TABLE nt_nameserver CHANGE `output_format` `export_format` enum('djb','bind') NOT NULL;
 
-/* change deleted values from enum to tinyint(1) */
+/* nt_nameserver_log */
+ALTER TABLE nt_nameserver_log DROP column `service_type`;
+ALTER TABLE nt_nameserver_log ADD `export_serials` tinyint(1) UNSIGNED NOT NULL DEFAULT '1'  AFTER `export_interval`;
+UPDATE nt_nameserver_log SET output_format='djb' WHERE output_format='nt';
+ALTER TABLE nt_nameserver_log CHANGE `output_format` `export_format` enum('djb','bind') NOT NULL;
+
+/* nt_nameserver_export_log */
+ALTER TABLE nt_nameserver_export_log ADD `result_id` int NULL DEFAULT NULL  AFTER `date_finish`;
+ALTER TABLE nt_nameserver_export_log ADD `message` varchar(256) NULL DEFAULT NULL  AFTER `result_id`;
+ALTER TABLE nt_nameserver_export_log ADD `success` tinyint(1) UNSIGNED NULL DEFAULT NULL  AFTER `message`;
+ALTER TABLE nt_nameserver_export_log ADD `partial` tinyint(1) UNSIGNED NOT NULL DEFAULT 0  AFTER `success`;
+ALTER TABLE nt_nameserver_export_log CHANGE `date_start` `date_start` timestamp NULL DEFAULT NULL;
+ALTER TABLE nt_nameserver_export_log CHANGE `date_finish` `date_end` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP  on update CURRENT_TIMESTAMP;
+
+/* GLOBALLY change table.deleted columns from enum to tinyint(1) */
 ALTER TABLE `nt_zone_record` CHANGE `deleted` `deleted` tinyint(1) UNSIGNED NOT NULL DEFAULT 0;
 /* and then decrement the values, because enums are evil */
 UPDATE nt_zone_record SET deleted=deleted-1;

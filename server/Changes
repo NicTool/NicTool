@@ -2,9 +2,13 @@ Revision history for NicToolServer
 
 2.10    2011.11.  - by Matt the Ripper
 
+    * SQL: added nt_zone_record.timestamp field. See the timestamp description
+      on the tinydns-data page. Allows start/stop times for records.
+    * added location support to database and tinydns exports. See
+      https://www.tnpi.net/support/forums/index.php/topic,1004.0.html
     * added RFC 2181 tests. CNAME records cannot coexist with any other record
       type (except DNSSEC). NS and MX must not point to a CNAME.
-    * SQL: added record record types to database: DS, DNSKEY, KEY (not used yet)
+    * SQL: added record types to database: DS, DNSKEY, KEY (not used yet)
     * added addserver and zone2nic in api/contrib (from Adrian)
     * do not replace : chars in record addresses. No longer necessary because
       export routines handle encoding of : during export.
@@ -17,14 +21,16 @@ Revision history for NicToolServer
         it would likely use stunnel or ssh -L instead.
     * ripped out SSL certificate management (great idea, but unused)
     * SQL: Fixed the data model for zone nameservers. Replaced the abhorrent
-      nt_zone.ns0..nt_zone.ns9 columns with the table nt_zone_nameservers. 
+      nt_zone.ns0..ns9 columns with the table nt_zone_nameservers. 
       * there's no limit on how many nameservers a zone can publish to
       * queries are much simpler
       * deleted unpack_nameservers (no longer necessary)
       * added set_zone_nameservers
-      * now I can run a relatively inexpensive query to determine if any
+      * now we can run a simple, inexpensive query to determine if any
         zones that publish to a given NS have modification dates greater
-        than the last successful export
+        than the last successful export. Yah.
+      * I broke the old nt_export_djb.c program. Boo. Any c++ programmers want
+        to help? Read the TODO file in sys/djb and send a patch.
     * SQL: renamed nt_zone.output_format to export_format
     * SQL: converted deleted database fields from enum to tinyint(1)
       (enums are evil. Their contents are strings. Having to quote numeric
