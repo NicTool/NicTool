@@ -1,6 +1,7 @@
 
 2.10    2011.11.12
   - packaging changes.
+  - default export_interval is 120s (was $ttl)
 
 2.08    2010.03
   - display more than 20 groups in group tree

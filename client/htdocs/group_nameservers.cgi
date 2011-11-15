@@ -194,161 +194,161 @@ sub display_list {
     $nt_obj->display_search_rows( $q, $rv, \%params, $cgi, ['nt_group_id'],
         $include_subgroups );
 
-    if (@$list) {
-        $nt_obj->display_move_javascript( 'move_nameservers.cgi',
-            'nameserver' );
+    if (! @$list ) {
+        return print $q->endform;
+    };
 
-        print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-        print "<tr bgcolor=$NicToolClient::dark_grey>";
+    $nt_obj->display_move_javascript( 'move_nameservers.cgi', 'nameserver' );
 
-        if ( $user_group->{'has_children'} ) {
-            print "<td align=center>";
+    print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
+    print "<tr bgcolor=$NicToolClient::dark_grey>";
 
-            print "<table cellpadding=0 cellspacing=0 border=0>";
-            print "<tr><td></td>";
-            print $q->endform . "\n";
-            print $q->startform(
-                -action => 'move_users.cgi',
-                -method => 'POST',
-                -name   => 'list_form',
-                -target => 'move_win'
-            ) . "\n";
-            print "<td></td></tr>";
-            print "</table>";
+    if ( $user_group->{'has_children'} ) {
+        print "<td align=center>";
 
-            print "",
-                (
-                $rv->{'total'} == 1 ? '&nbsp;' : $q->checkbox(
-                    -name  => 'select_all_or_none',
-                    -label => '',
-                    -onClick =>
-                        'selectAllorNone(document.list_form.obj_list, this.checked)',
-                    -override => 1
-                )
-                ),
-                "</td>";
-        }
-
-        foreach (@columns) {
-            if ( $sort_fields{$_} ) {
-                print
-                    "<td bgcolor=$NicToolClient::dark_color align=center><table cellpadding=0 cellspacing=0 border=0>";
-                print "<tr>";
-                print "<td><font color=white>$labels{$_}</font></td>";
-                print "<td>&nbsp; &nbsp; <font color=white>",
-                    $sort_fields{$_}->{'order'}, "</font></td>";
-                print "<td><img src=$NicToolClient::image_dir/",
-                    (
-                    uc( $sort_fields{$_}->{'mod'} ) eq 'ASCENDING'
-                    ? 'up.gif'
-                    : 'down.gif' ), "></tD>";
-                print "</tr></table></td>";
-
-            }
-            else {
-                print "<td align=center>", "$labels{$_}</td>";
-            }
-        }
-        print
-            "<td width=1%><img src=$NicToolClient::image_dir/trash.gif></td>";
-        print "</tr>";
-
-        my $x     = 0;
-        my $width = int( 100 / @columns ) . '%';
-
-        foreach my $obj (@$list) {
-            print "<tr bgcolor="
-                . ( $x++ % 2 == 0 ? $NicToolClient::light_grey : 'white' )
-                . ">";
-            if ($user->{'nameserver_write'}
-                && ( !exists $obj->{'delegate_write'}
-                    || $obj->{'delegate_write'} )
-                )
-            {
-                print "<td width=1% align=center>",
-                    $q->checkbox(
-                    -name  => 'obj_list',
-                    -value => $obj->{'nt_nameserver_id'},
-                    -label => ''
-                    ),
-                    "</td>"
-                    if ( $user_group->{'has_children'} );
-            }
-            else {
-                print
-                    "<td width=1% align=center><img src=$NicToolClient::image_dir/nobox.gif></td>"
-                    if ( $user_group->{'has_children'} );
-            }
-
-            if ($include_subgroups) {
-                print
-                    "<td width=$width><table cellpadding=0 cellspacing=0 border=0><tr>";
-                print
-                    "<td><img src=$NicToolClient::image_dir/group.gif></td>";
-                if ($map) {
-                    print "<td>",
-                        join(
-                        ' / ',
-                        map("<a href=group.cgi?nt_group_id=$_->{'nt_group_id'}>$_->{'name'}</a>",
-                            (   @{ $map->{ $obj->{'nt_group_id'} } },
-                                {   nt_group_id => $obj->{'nt_group_id'},
-                                    name        => $obj->{'group_name'}
-                                }
-                                ) )
-                        ),
-                        "</td>";
-                }
-                else {
-                    print "<td>",
-                        join(
-                        ' / ',
-                        map("<a href=group.cgi?nt_group_id=$_->{'nt_group_id'}>$_->{'name'}</a>",
-                            (   {   nt_group_id => $obj->{'nt_group_id'},
-                                    name        => $obj->{'group_name'}
-                                }
-                                ) )
-                        ),
-                        "</td>";
-                }
-                print "</tr></table></td>";
-            }
-
-            print
-                "<td width=$width><table cellpadding=0 cellspacing=0 border=0>";
-            print "<tr>";
-            print
-                "<td><a href=$cgi?nt_nameserver_id=$obj->{'nt_nameserver_id'}&nt_group_id=$obj->{'nt_group_id'}&edit=1><img src=$NicToolClient::image_dir/nameserver.gif border=0></a></td>";
-            print
-                "<td><a href=$cgi?nt_nameserver_id=$obj->{'nt_nameserver_id'}&nt_group_id=$obj->{'nt_group_id'}&edit=1>",
-                $obj->{'name'}, "</a></td>";
-            print "</tr></table></td>";
-
-            foreach (qw(description address status)) {
-                print "<td width=$width>",
-                    ( $obj->{$_} ? $obj->{$_} : '&nbsp;' ), "</td>";
-            }
-
-            if ($user->{'nameserver_delete'}
-                && ( !exists $obj->{'delegate_delete'}
-                    || $obj->{'delegate_delete'} )
-                )
-            {
-                print "<td width=1%><a href=$cgi?"
-                    . join( '&', @state_fields )
-                    . "&nt_group_id="
-                    . $q->param('nt_group_id')
-                    . "&delete=1&nt_nameserver_id=$obj->{'nt_nameserver_id'} onClick=\"return confirm('Delete nameserver $obj->{'name'}?');\"><img src=$NicToolClient::image_dir/trash.gif border=0></a></td>";
-            }
-            else {
-                print
-                    "<td width=1%><img src=$NicToolClient::image_dir/trash-disabled.gif border=0></td>";
-            }
-            print "</tr>";
-        }
-
+        print "<table cellpadding=0 cellspacing=0 border=0>";
+        print "<tr><td></td>";
+        print $q->endform . "\n";
+        print $q->startform(
+            -action => 'move_users.cgi',
+            -method => 'POST',
+            -name   => 'list_form',
+            -target => 'move_win'
+        ) . "\n";
+        print "<td></td></tr>";
         print "</table>";
+
+        print "",
+            (
+            $rv->{'total'} == 1 ? '&nbsp;' : $q->checkbox(
+                -name  => 'select_all_or_none',
+                -label => '',
+                -onClick =>
+                    'selectAllorNone(document.list_form.obj_list, this.checked)',
+                -override => 1
+            )
+            ),
+            "</td>";
     }
 
+    foreach (@columns) {
+        if ( $sort_fields{$_} ) {
+            print
+                "<td bgcolor=$NicToolClient::dark_color align=center><table cellpadding=0 cellspacing=0 border=0>";
+            print "<tr>";
+            print "<td><font color=white>$labels{$_}</font></td>";
+            print "<td>&nbsp; &nbsp; <font color=white>",
+                $sort_fields{$_}->{'order'}, "</font></td>";
+            print "<td><img src=$NicToolClient::image_dir/",
+                (
+                uc( $sort_fields{$_}->{'mod'} ) eq 'ASCENDING'
+                ? 'up.gif'
+                : 'down.gif' ), "></tD>";
+            print "</tr></table></td>";
+
+        }
+        else {
+            print "<td align=center>", "$labels{$_}</td>";
+        }
+    }
+    print
+        "<td width=1%><img src=$NicToolClient::image_dir/trash.gif></td>";
+    print "</tr>";
+
+    my $x     = 0;
+    my $width = int( 100 / @columns ) . '%';
+
+    foreach my $obj (@$list) {
+        print "<tr bgcolor="
+            . ( $x++ % 2 == 0 ? $NicToolClient::light_grey : 'white' )
+            . ">";
+        if ($user->{'nameserver_write'}
+            && ( !exists $obj->{'delegate_write'}
+                || $obj->{'delegate_write'} )
+            )
+        {
+            print "<td width=1% align=center>",
+                $q->checkbox(
+                -name  => 'obj_list',
+                -value => $obj->{'nt_nameserver_id'},
+                -label => ''
+                ),
+                "</td>"
+                if ( $user_group->{'has_children'} );
+        }
+        else {
+            print
+                "<td width=1% align=center><img src=$NicToolClient::image_dir/nobox.gif></td>"
+                if ( $user_group->{'has_children'} );
+        }
+
+        if ($include_subgroups) {
+            print
+                "<td width=$width><table cellpadding=0 cellspacing=0 border=0><tr>";
+            print
+                "<td><img src=$NicToolClient::image_dir/group.gif></td>";
+            if ($map) {
+                print "<td>",
+                    join(
+                    ' / ',
+                    map("<a href=group.cgi?nt_group_id=$_->{'nt_group_id'}>$_->{'name'}</a>",
+                        (   @{ $map->{ $obj->{'nt_group_id'} } },
+                            {   nt_group_id => $obj->{'nt_group_id'},
+                                name        => $obj->{'group_name'}
+                            }
+                            ) )
+                    ),
+                    "</td>";
+            }
+            else {
+                print "<td>",
+                    join(
+                    ' / ',
+                    map("<a href=group.cgi?nt_group_id=$_->{'nt_group_id'}>$_->{'name'}</a>",
+                        (   {   nt_group_id => $obj->{'nt_group_id'},
+                                name        => $obj->{'group_name'}
+                            }
+                            ) )
+                    ),
+                    "</td>";
+            }
+            print "</tr></table></td>";
+        }
+
+        print
+            "<td width=$width><table cellpadding=0 cellspacing=0 border=0>";
+        print "<tr>";
+        print
+            "<td><a href=$cgi?nt_nameserver_id=$obj->{'nt_nameserver_id'}&nt_group_id=$obj->{'nt_group_id'}&edit=1><img src=$NicToolClient::image_dir/nameserver.gif border=0></a></td>";
+        print
+            "<td><a href=$cgi?nt_nameserver_id=$obj->{'nt_nameserver_id'}&nt_group_id=$obj->{'nt_group_id'}&edit=1>",
+            $obj->{'name'}, "</a></td>";
+        print "</tr></table></td>";
+
+        foreach (qw(description address status)) {
+            print "<td width=$width>",
+                ( $obj->{$_} ? $obj->{$_} : '&nbsp;' ), "</td>";
+        }
+
+        if ($user->{'nameserver_delete'}
+            && ( !exists $obj->{'delegate_delete'}
+                || $obj->{'delegate_delete'} )
+            )
+        {
+            print "<td width=1%><a href=$cgi?"
+                . join( '&', @state_fields )
+                . "&nt_group_id="
+                . $q->param('nt_group_id')
+                . "&delete=1&nt_nameserver_id=$obj->{'nt_nameserver_id'} onClick=\"return confirm('Delete nameserver $obj->{'name'}?');\"><img src=$NicToolClient::image_dir/trash.gif border=0></a></td>";
+        }
+        else {
+            print
+                "<td width=1%><img src=$NicToolClient::image_dir/trash-disabled.gif border=0></td>";
+        }
+        print "</tr>";
+    }
+
+    print "</table>";
     print $q->endform;
 }
 
@@ -498,7 +498,7 @@ sub display_edit_nameserver {
             -name      => 'export_interval',
             -size      => 10,
             -maxlength => 10,
-            -default   => $ttl
+            -default   => 120,
             )
         : $nameserver->{'export_interval'}
         ),
