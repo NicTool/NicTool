@@ -27,7 +27,7 @@ sub get_export_file {
     my $dir = shift || $self->{nte}->get_export_dir or return;
     my $zone = shift or die $self->{nte}->elog("missing zone");
 
-    my $file = "$dir/$zone.conf";
+    my $file = "$dir/$zone";
     open my $FH, '>', $file
         or die $self->{nte}->elog("unable to open $file");
     return $FH;
@@ -56,9 +56,9 @@ sub zr_a {
 sub zr_cname {
     my $self = shift;
     my %p = validate( @_, { record => { type => HASHREF } } );
-
     my $r = $p{record};
-# name  ttl  class  type  type-specific-data
+
+# name  ttl  class   rr     canonical name
     return "$r->{name}	$r->{ttl}	CNAME	$r->{address}\n";
 }
 
@@ -67,8 +67,8 @@ sub zr_mx {
     my %p = validate( @_, { record => { type => HASHREF } } );
 
     my $r = $p{record};
-# name  ttl  class  type  type-specific-data
-    return "$r->{name}	$r->{ttl}	MX	$r->{address}	$r->{weight}\n";
+#name           ttl  class   rr  pref name
+    return "$r->{name}	$r->{ttl}	MX	$r->{weight}	$r->{address}\n";
 }
 
 sub zr_txt {
@@ -76,8 +76,8 @@ sub zr_txt {
     my %p = validate( @_, { record => { type => HASHREF } } );
 
     my $r = $p{record};
-# name  ttl  class  type  type-specific-data
-    return "$r->{name}	$r->{ttl}	TXT	$r->{address}\n";
+# name  ttl  class   rr     text
+    return "$r->{name}	$r->{ttl}	TXT	\"$r->{address}\"\n";
 }
 
 sub zr_ns {
@@ -86,7 +86,7 @@ sub zr_ns {
 
     my $r = $p{record};
 # name  ttl  class  type  type-specific-data
-    return "$r->{name}	$r->{ttl}	NS	$r->{address}\n";
+    return "$r->{name}.	$r->{ttl}	NS	$r->{address}\n";
 }
 
 sub zr_ptr {
@@ -105,7 +105,7 @@ sub zr_soa {
     my $z = $p{zone};
 
 # name        ttl class rr    name-server email-addr  (sn ref ret ex min)
-    return "$z->{zone}.		$z->{ttl}	IN	SOA	$z->{nsname}    $z->{mailaddr}. (
+    return "$z->{zone}.		$z->{ttl}	IN	SOA	$z->{nsname}    $z->{mailaddr} (
 					$z->{serial}    ; serial
 					$z->{refresh}   ; refresh
 					$z->{retry}     ; retry

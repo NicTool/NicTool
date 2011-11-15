@@ -2,7 +2,9 @@ Revision history for NicToolServer
 
 2.10    2011.11.  - by Matt the Ripper
 
-    * added NicToolServer::Export::BIND
+    * if nt_export.pl was not provided a nsid, shows a list of active NSs
+      before asking for a selection.
+    * added NicToolServer::Export::BIND. Tested with BIND 9.6
     * SQL: renamed nt_nameserver.export_format='djb' -> 'tinydns'
     * SQL: added nt_zone_record.timestamp field. See the timestamp description
       on the tinydns-data page. Allows start/stop times for records.

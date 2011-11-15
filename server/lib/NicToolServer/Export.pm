@@ -27,7 +27,7 @@ sub new {
         }
     );
 
-    my $self = bless {
+    return bless {
         ns_id  => $p{ns_id},           # current nameserver ID
         force  => $p{force},
         dbix_r => undef,
@@ -43,9 +43,6 @@ sub new {
         ns_ref => undef,
         },
         $class;
-
-    $self->{export_class} = NicToolServer::Export::tinydns->new($self);
-    return $self;
 }
 
 sub daemon {
@@ -141,18 +138,18 @@ sub export {
     $self->preflight or return;
     $self->get_active_nameservers;
 
-    my $fh = $self->{export_file}
-        = $self->{export_class}->get_export_file( $self->get_export_dir )
-            or return;
-
+    my $fh;
     foreach my $z ( @{ $self->get_ns_zones() } ) {
+        $fh = $self->{export_class}->get_export_file( $self->get_export_dir, $z->{zone} ) 
+            or last && return;
         $self->{zone_name} = $z->{zone};
         print $fh $self->zr_soa( zone => $z );
         print $fh $self->zr_ns( zone => $z );
         my $records = $self->get_zone_records( zone => $z );
-        $self->zr_dispatch( zone => $z, records => $records );
+        $self->zr_dispatch( zone => $z, records => $records, fh=>$fh );
+        close $fh if $self->{export_format} eq 'bind';
     }
-    close $fh;
+    close $fh if $self->{export_format} eq 'tinydns';
 
 # TODO: detect and delete BIND zone files deleted in NicTool
     $self->elog("exported");
@@ -432,24 +429,26 @@ sub get_active_nameservers {
         $self->{active_ns_ids}{ $r->{nt_nameserver_id} } = $r;
 
         # tinydns can autogenerate serial numbers based on data file
-        # timestamp. Make sure it's enabled for everyone else.
+        # timestamp. Export serials for everyone else.
         $r->{export_serials}++ if $r->{export_format} ne 'tinydns';
     }
 
     #warn Dumper( $self->{active_ns} );
+    my $export_format;
     if ( $self->{ns_id} ) {
         $self->{ns_ref} = $self->{active_ns_ids}{$self->{ns_id}};
+        $self->{export_format} = $self->{ns_ref}{export_format};
     }
     else {
         my $first = $self->{active_ns_ids}{ $self->{active_ns}[0] };
-        #warn Data::Dumper::Dumper($first);
         $self->{export_format} = $first->{export_format} if $first->{export_format};
-        if ( $self->{export_format} eq 'bind' ) {
-            $self->{export_class} = NicToolServer::Export::BIND->new( $self );
-        }
-        else {
-            $self->{export_class} = NicToolServer::Export::tinydns->new( $self );
-        };
+    };
+
+    if ( $self->{export_format} eq 'bind' ) {
+        $self->{export_class} = NicToolServer::Export::BIND->new( $self );
+    }
+    else {
+        $self->{export_class} = NicToolServer::Export::tinydns->new( $self );
     };
     return $self->{active_ns};
 }
@@ -530,12 +529,13 @@ sub zr_dispatch {
     my $self = shift;
     my %p    = validate(
         @_,
-        {   zone    => { type => HASHREF },
+        {   zone    => { type => HASHREF  },
             records => { type => ARRAYREF },
+            fh      => { type => HANDLE   },
         }
     );
 
-    my $FH = $self->{export_file};
+    my $FH = $p{fh};
     foreach my $r ( @{ $p{records} } ) {
         my $type   = lc( $r->{type} );
         my $method = "zr_${type}";

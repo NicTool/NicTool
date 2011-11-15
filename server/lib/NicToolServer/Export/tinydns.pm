@@ -17,6 +17,7 @@ sub new {
 
     my $self = bless {
         nte => shift,
+        FH  => undef,
     },
     $class;
 
@@ -29,6 +30,10 @@ sub get_export_file {
     my $self = shift;
     my $dir = shift || $self->{nte}->get_export_dir or return;
 
+    # reuse the same file handle for every zone.
+    return $self->{FH} if $self->{FH};
+
+    # not opened yet, move old file aside
     my $filename = $dir . '/data';
     if ( -e $filename ) {
         move( $filename, "$filename.orig" );
@@ -37,6 +42,7 @@ sub get_export_file {
     open my $FH, '>', $filename
         or die $self->{nte}->elog("failed to open $filename");
 
+    $self->{FH} = $FH;
     return $FH;
 };
 
