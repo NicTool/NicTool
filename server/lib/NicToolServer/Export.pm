@@ -140,8 +140,9 @@ sub export {
 
     my $fh;
     foreach my $z ( @{ $self->get_ns_zones() } ) {
-        $fh = $self->{export_class}->get_export_file( $self->get_export_dir, $z->{zone} ) 
-            or last && return;
+        $fh = $self->{export_class}->get_export_file( 
+            $self->get_export_dir, $z->{zone} ) 
+                or die "unable to figure out export name for zone $z->{zone}\n";
         $self->{zone_name} = $z->{zone};
         print $fh $self->zr_soa( zone => $z );
         print $fh $self->zr_ns( zone => $z );
@@ -321,6 +322,13 @@ sub get_ns_zones {
     my $sql = "SELECT z.nt_zone_id, z.zone, z.mailaddr, z.serial, z.refresh,
         z.retry, z.expire, z.minimum, z.ttl, z.location, z.last_modified
 FROM nt_zone z";
+
+# TODO: It may prove faster to collect the NSIDs now, similar to how the old 
+# nt_export_djb.c app did. But I'll save optimization for when it's necessary
+# because premature optimization is the root of all evil... If we did want to,
+# something like this would do it:
+# (SELECT GROUP_CONCAT(nt_nameserver_id) FROM nt_zone_nameserver n WHERE
+# n.nt_zone_id=z.nt_zone_id) AS nsids
 
     my @args;
     if ( $self->{ns_id} == 0 ) {

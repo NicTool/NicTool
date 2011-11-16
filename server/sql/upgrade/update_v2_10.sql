@@ -1,10 +1,26 @@
 
-DROP TABLE IF EXISTS nt_zone_nameserver;
+/* 
+** If only I knew how to check nt_options.db_version and throw an
+** exception with a nice error message if the version is not '2.09'. 
+**
+** This SELECT will work because the nt_options table won't exist unless the
+** v2.09 database patch has been applied.
+*/
+SELECT option_name FROM nt_options WHERE option_value='2.09';
+
+/*
+** By continuing with a CREATE TABLE, we can be assured that the
+** script won't accidentally be run twice. The CREATE TABLE with throw an
+** error upon attempt #2 and discontinue processing the script 
+**
+** DROP TABLE IF EXISTS nt_zone_nameserver;  
+*/
 CREATE TABLE nt_zone_nameserver (
     nt_zone_id           smallint(5) unsigned NOT NULL,
     nt_nameserver_id     smallint(5) unsigned NOT NULL
 ) DEFAULT CHARSET=utf8;
 
+/* New database table, replacing nt_zone_record.type ENUM */
 DROP TABLE IF EXISTS resource_record_type;
 CREATE TABLE resource_record_type (
     id              smallint(2) unsigned NOT NULL AUTO_INCREMENT,
@@ -14,11 +30,42 @@ PRIMARY KEY (`id`)
 
 INSERT INTO resource_record_type VALUES (2,'NS'),(5,'CNAME'),(6,'SOA'),(12,'PTR'),(15,'MX'),(28,'AAAA'),(33,'SRV'),(99,'SPF'),(252,'AXFR'),(1,'A'),(16,'TXT'),(48,'DNSKEY'),(43,'DS'),(25,'KEY');
 
+
+/* GLOBALLY change table.deleted columns from enum to tinyint(1) */
+ALTER TABLE `nt_zone_record` CHANGE `deleted` `deleted` tinyint(1) UNSIGNED NOT NULL DEFAULT 0;
+/* and then decrement the values because enums are evil */
+UPDATE nt_zone_record SET deleted=deleted-1;
+ALTER TABLE `nt_zone` CHANGE `deleted` `deleted` tinyint(1) UNSIGNED NOT NULL DEFAULT 0;
+UPDATE nt_zone SET deleted=deleted-1;
+ALTER TABLE `nt_user` CHANGE `deleted` `deleted` tinyint(1) UNSIGNED NOT NULL DEFAULT 0;
+UPDATE nt_user SET deleted=deleted-1;
+ALTER TABLE `nt_perm` CHANGE `deleted` `deleted` tinyint(1) UNSIGNED NOT NULL DEFAULT 0;
+UPDATE nt_perm SET deleted=deleted-1;
+ALTER TABLE `nt_nameserver` CHANGE `deleted` `deleted` tinyint(1) UNSIGNED NOT NULL DEFAULT 0;
+UPDATE nt_nameserver SET deleted=deleted-1;
+ALTER TABLE `nt_nameserver` CHANGE `export_serials` `export_serials` tinyint(1) UNSIGNED NOT NULL DEFAULT '1';
+ALTER TABLE `nt_group` CHANGE `deleted` `deleted` tinyint(1) UNSIGNED NOT NULL DEFAULT 0;
+UPDATE nt_group SET deleted=deleted-1;
+ALTER TABLE `nt_delegate` CHANGE `deleted` `deleted` tinyint(1) UNSIGNED NOT NULL DEFAULT 0;
+UPDATE nt_delegate SET deleted=deleted-1;
+
+
 /* nt_zone */
 ALTER TABLE nt_zone ADD column `location` VARCHAR(2) DEFAULT NULL  AFTER `ttl`;
 ALTER TABLE nt_zone ADD column `last_modified` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP AFTER `location`;
 
-/* TODO: import NS settings from existing nt_zone table, and then:
+/* import NS settings from existing nt_zone.ns0..ns9 */
+REPLACE INTO nt_zone_nameserver (nt_zone_id,nt_nameserver_id) SELECT nt_zone_id,ns0 FROM nt_zone WHERE deleted=0 AND ns0 IS NOT NULL;
+REPLACE INTO nt_zone_nameserver (nt_zone_id,nt_nameserver_id) SELECT nt_zone_id,ns1 FROM nt_zone WHERE deleted=0 AND ns1 IS NOT NULL;
+REPLACE INTO nt_zone_nameserver (nt_zone_id,nt_nameserver_id) SELECT nt_zone_id,ns2 FROM nt_zone WHERE deleted=0 AND ns2 IS NOT NULL;
+REPLACE INTO nt_zone_nameserver (nt_zone_id,nt_nameserver_id) SELECT nt_zone_id,ns3 FROM nt_zone WHERE deleted=0 AND ns3 IS NOT NULL;
+REPLACE INTO nt_zone_nameserver (nt_zone_id,nt_nameserver_id) SELECT nt_zone_id,ns4 FROM nt_zone WHERE deleted=0 AND ns4 IS NOT NULL;
+REPLACE INTO nt_zone_nameserver (nt_zone_id,nt_nameserver_id) SELECT nt_zone_id,ns5 FROM nt_zone WHERE deleted=0 AND ns5 IS NOT NULL;
+REPLACE INTO nt_zone_nameserver (nt_zone_id,nt_nameserver_id) SELECT nt_zone_id,ns6 FROM nt_zone WHERE deleted=0 AND ns6 IS NOT NULL;
+REPLACE INTO nt_zone_nameserver (nt_zone_id,nt_nameserver_id) SELECT nt_zone_id,ns7 FROM nt_zone WHERE deleted=0 AND ns7 IS NOT NULL;
+REPLACE INTO nt_zone_nameserver (nt_zone_id,nt_nameserver_id) SELECT nt_zone_id,ns8 FROM nt_zone WHERE deleted=0 AND ns8 IS NOT NULL;
+REPLACE INTO nt_zone_nameserver (nt_zone_id,nt_nameserver_id) SELECT nt_zone_id,ns9 FROM nt_zone WHERE deleted=0 AND ns9 IS NOT NULL;
+/* and then kiss them columns goodbye. And don't let the door hit your ... */:
 ALTER TABLE nt_zone DROP column ns0;
 ALTER TABLE nt_zone DROP column ns1;
 ALTER TABLE nt_zone DROP column ns2;
@@ -29,7 +76,6 @@ ALTER TABLE nt_zone DROP column ns6;
 ALTER TABLE nt_zone DROP column ns7;
 ALTER TABLE nt_zone DROP column ns8;
 ALTER TABLE nt_zone DROP column ns9;
-*/
 
 /* nt_zone_record */
 ALTER TABLE nt_zone_record ADD `location` VARCHAR(2) DEFAULT NULL  AFTER `other`;
@@ -54,24 +100,6 @@ ALTER TABLE nt_nameserver_export_log ADD `success` tinyint(1) UNSIGNED NULL DEFA
 ALTER TABLE nt_nameserver_export_log ADD `partial` tinyint(1) UNSIGNED NOT NULL DEFAULT 0  AFTER `success`;
 ALTER TABLE nt_nameserver_export_log CHANGE `date_start` `date_start` timestamp NULL DEFAULT NULL;
 ALTER TABLE nt_nameserver_export_log CHANGE `date_finish` `date_end` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP  on update CURRENT_TIMESTAMP;
-
-/* GLOBALLY change table.deleted columns from enum to tinyint(1) */
-ALTER TABLE `nt_zone_record` CHANGE `deleted` `deleted` tinyint(1) UNSIGNED NOT NULL DEFAULT 0;
-/* and then decrement the values, because enums are evil */
-UPDATE nt_zone_record SET deleted=deleted-1;
-ALTER TABLE `nt_zone` CHANGE `deleted` `deleted` tinyint(1) UNSIGNED NOT NULL DEFAULT 0;
-UPDATE nt_zone SET deleted=deleted-1;
-ALTER TABLE `nt_user` CHANGE `deleted` `deleted` tinyint(1) UNSIGNED NOT NULL DEFAULT 0;
-UPDATE nt_user SET deleted=deleted-1;
-ALTER TABLE `nt_perm` CHANGE `deleted` `deleted` tinyint(1) UNSIGNED NOT NULL DEFAULT 0;
-UPDATE nt_perm SET deleted=deleted-1;
-ALTER TABLE `nt_nameserver` CHANGE `deleted` `deleted` tinyint(1) UNSIGNED NOT NULL DEFAULT 0;
-UPDATE nt_nameserver SET deleted=deleted-1;
-ALTER TABLE `nt_nameserver` CHANGE `export_serials` `export_serials` tinyint(1) UNSIGNED NOT NULL DEFAULT '1';
-ALTER TABLE `nt_group` CHANGE `deleted` `deleted` tinyint(1) UNSIGNED NOT NULL DEFAULT 0;
-UPDATE nt_group SET deleted=deleted-1;
-ALTER TABLE `nt_delegate` CHANGE `deleted` `deleted` tinyint(1) UNSIGNED NOT NULL DEFAULT 0;
-UPDATE nt_delegate SET deleted=deleted-1;
 
 /* Convert all character encodings to UTF8 bin. */
 ALTER TABLE `nt_delegate` CHARACTER SET = utf8;
@@ -167,7 +195,7 @@ ALTER TABLE `nt_zone_log` TYPE = InnoDB;
 ALTER TABLE `nt_zone_record` TYPE = InnoDB;
 ALTER TABLE `nt_zone_record_log` TYPE = InnoDB;
 
-When the time to switch to InnoDB comes, these constraints may prove beneficial
+When switched to InnoDB, these constraints will be beneficial
 
 ALTER TABLE `nt_nameserver_export_log` ADD FOREIGN KEY (`result_id`) REFERENCES `nt_nameserver_export_result` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
 ALTER TABLE `nt_zone_log` ADD FOREIGN KEY (`nt_zone_id`) REFERENCES `nt_zone` (`nt_zone_id`) ON DELETE CASCADE ON UPDATE CASCADE;
@@ -190,5 +218,4 @@ ALTER TABLE `nt_group_subgroups` ADD FOREIGN KEY (`nt_group_id`) REFERENCES `nt_
 ALTER TABLE `nt_group_log` ADD FOREIGN KEY (`nt_group_id`) REFERENCES `nt_group` (`nt_group_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 ALTER TABLE `nt_delegate` ADD FOREIGN KEY (`nt_group_id`) REFERENCES `nt_group` (`nt_group_id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
 */

@@ -115,24 +115,21 @@ if(open(F,">$0.cache")){
 
 my $dbh;
 if(!$test_run){
-$dbh = DBI->connect("dbi:mysql:host=$db_host", "root", $root_pw);
+    $dbh = DBI->connect("dbi:mysql:host=$db_host", "root", $root_pw);
 
-print "Granting privleges to $db_user...\n";
-$dbh->do("GRANT ALL PRIVILEGES ON $db.* TO $db_user\@$db_host IDENTIFIED BY '$db_pass'");
-$dbh->disconnect;
-
+    print "Granting privleges to $db_user...\n";
+    $dbh->do("GRANT ALL PRIVILEGES ON $db.* TO $db_user\@$db_host IDENTIFIED BY '$db_pass'");
+    $dbh->disconnect;
 }
 
-
-
-print "Running upgrade106.sql on database $db ...\n"; 
+print "Running update_v1_06.sql on database $db ...\n"; 
 my $res;
+my $cmd = "mysql -u $db_user -p$db_pass -h $db_host $db < update_v1_06.sql";
 if(!$test_run){
-	$res = system("mysql -u $db_user -p$db_pass -h $db_host $db < upgrade106.sql"); 
-	print "done.\n" unless $res ne 0;
-	print "FAILED($res)\n" if $res ne 0;
+	$res = system( $cmd ) and print "FAILED($res)\n";
+	print "done.\n" if $res==0;
 }else{
-	print("mysql -u $db_user -p$db_pass -h $db_host $db < upgrade106.sql"); 
+	print( $cmd ); 
 	print "TEST\n";
 }
 

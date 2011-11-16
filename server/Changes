@@ -2,6 +2,11 @@ Revision history for NicToolServer
 
 2.10    2011.11.  - by Matt the Ripper
 
+    * SQL: added resource_record_types table. IDs are the IETF record type
+      number and the name is the IETF record type. Using a related table moves
+      the data out of the database schema (ENUM(blah,blah)) and into rows, 
+      where it belongs. It also means adding new record types won't require 
+      altering db tables.
     * if nt_export.pl was not provided a nsid, shows a list of active NSs
       before asking for a selection.
     * added NicToolServer::Export::BIND. Tested with BIND 9.6

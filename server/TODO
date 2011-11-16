@@ -1,6 +1,9 @@
 ----NEW----
 
-. Support tinydns locations and/or BIND views (SQL & export portions completed 2011.11.14 -mps)
+. Support tinydns locations and/or BIND views
+    (SQL & tinydns export portions completed 2011.11.14 -mps)
+
+. Support BIND views
 
 . If a user does not have delete permission for a zone/zone record, they should also not have restore permissions (https://www.tnpi.net/support/forums/index.php/topic,797.0.html)
 
@@ -10,7 +13,7 @@
 
 . Support other databases: 
 ..  remove all ENUM columns from database
-...  nt_zone_record.type should be a code from related table resource_record_type
+...  nt_zone_record.type should be a numeric code from the resource_record_type table
 
 . Support for NAPTR records: http://tools.ietf.org/html/rfc3403
 
