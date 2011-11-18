@@ -48,6 +48,7 @@ sub rr_forward_types {
         'CNAME' => 'Canonical Name (CNAME)',
         'TXT'   => 'Text (TXT)',
         'SRV'   => 'Service (SRV)',
+        'SPF'   => 'Sender Permitted From (SPF)',
     };
 }
 
@@ -64,8 +65,8 @@ sub rr_reverse_types {
 }
 
 sub ns_export_formats {
-    {   'bind' => 'BIND (ISC\'s Berkeley Internet Named Daemon)',
-        'tinydns'  => 'tinydns (part of DJBDNS)',
+    {   'bind'    => 'BIND (ISC\'s Berkeley Internet Named Daemon)',
+        'tinydns' => 'tinydns (part of DJBDNS)',
     };
 }
 

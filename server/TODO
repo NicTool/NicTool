@@ -1,7 +1,8 @@
 ----NEW----
 
 . Support tinydns locations and/or BIND views
-    (SQL & tinydns export portions completed 2011.11.14 -mps)
+    SQL & tinydns export portions completed 2011.11.14. See
+    https://www.tnpi.net/support/forums/index.php/topic,1004.0.html
 
 . Support BIND views
 
@@ -17,10 +18,15 @@
 
 . Support for NAPTR records: http://tools.ietf.org/html/rfc3403
 
-. SQL migration query to populate nt_zone_nameservers from nt_zone.ns0..ns9
-
+. SPF records: when creating or editing a SPF record, check for an TXT record. If it doesn't exist, automatically create it. If exists, update it with the SPF record: RFC 4408 ("recommends to always provide a TXT based SPF RR...and duplicate the information from the TXT")
 
 ==== COMPLETED =====
+
+. Support for SPF record type
+
+. Collate a useful export report and DROP nictool.nt_nameserver_export_procstatus.
+
+. SQL migration query to populate nt_zone_nameservers from nt_zone.ns0..ns9
 
 . Crypt the user passwords (requires schema changes)
 

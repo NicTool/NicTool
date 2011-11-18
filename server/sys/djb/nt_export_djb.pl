@@ -78,7 +78,6 @@ my $start_time      = time();
 my $dbh_read        = &db_object_read;
 my $dbh_write       = &db_object_write;
 my $ns              = &get_ns($nsid);
-my $ns_status_exist = 0;
 
 $ns->{'name'} =~ s/\.$//;
 my $last_export_status = &get_export_status( $ns, $dbh_read );
@@ -432,8 +431,7 @@ sub finish_export_log {
 
 sub get_export_status {
     my ( $ns, $dbh ) = @_;
-    my $sql
-        = "SELECT status FROM nt_nameserver_export_procstatus WHERE nt_nameserver_id = "
+    my $sql = "SELECT export_status FROM nt_nameserver WHERE nt_nameserver_id = "
         . $dbh->quote( $ns->{nt_nameserver_id} );
     my $sth = $dbh->prepare($sql);
     warn "$sql\n" if $DEBUG_SQL;
@@ -448,38 +446,8 @@ sub get_export_status {
 
 sub set_export_status {
     my ( $ns, $dbh, $status ) = @_;
-    my $sql;
-    unless ($ns_status_exist) {
-        $sql
-            = "SELECT nt_nameserver_id FROM nt_nameserver_export_procstatus WHERE nt_nameserver_id = "
-            . $dbh->quote( $ns->{nt_nameserver_id} );
-        my $sth = $dbh->prepare($sql);
-        warn "$sql\n" if $DEBUG_SQL;
-        $sth->execute;
-        if ( my $nshash = $sth->fetchrow_hashref ) {
-            $sql
-                = "UPDATE nt_nameserver_export_procstatus set timestamp = "
-                . time()
-                . ", status = "
-                . $dbh->quote($status)
-                . " WHERE nt_nameserver_id = $ns->{nt_nameserver_id}";
-        }
-        else {
-            $sql
-                = "INSERT INTO nt_nameserver_export_procstatus(nt_nameserver_id, timestamp, status) VALUES ($ns->{nt_nameserver_id},"
-                . time() . ","
-                . $dbh->quote($status) . ")";
-        }
-        $ns_status_exist = 1;
-    }
-    else {
-        $sql
-            = "UPDATE nt_nameserver_export_procstatus set timestamp = "
-            . time()
-            . ", status = "
-            . $dbh->quote($status)
+    my $sql = "UPDATE nt_nameserver SET export_status " . $dbh->quote($status)
             . " WHERE nt_nameserver_id = $ns->{nt_nameserver_id}";
-    }
     $dbh->do($sql);
     warn "$sql\n" if $DEBUG_SQL;
 }

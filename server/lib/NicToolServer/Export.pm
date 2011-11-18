@@ -41,18 +41,18 @@ sub new {
         log_id         => undef,       # current log ID
         active_ns_ids  => undef,       # nsids for a zone
         ns_ref => undef,
+        time_start => time,
         },
         $class;
 }
 
 sub daemon {
     my $self = shift;
-    my $start = time;
     $self->export();
     my $end = time;
     my $waitleft = 60;
     if ( defined $self->{ns_ref}{export_interval} ) {
-        $waitleft = $self->{ns_ref}{export_interval} - ( $end - $start );
+        $waitleft = $self->{ns_ref}{export_interval} - ( $end - $self->{time_start} );
     };
     sleep $waitleft if $waitleft > 0;
 };
@@ -82,6 +82,13 @@ sub elog {
     $sql .= "WHERE nt_nameserver_id=? AND nt_nameserver_export_log_id=?";
     $self->exec_query( $sql, \@args );
     return $message;
+}
+
+sub set_status {
+    my $self    = shift;
+    my $message = shift;
+    my $sql = "UPDATE nt_nameserver SET export_status=?  WHERE nt_nameserver_id=?";
+    $self->exec_query( $sql, [ $message, $self->{ns_id} ] );
 }
 
 sub exec_query {
@@ -137,6 +144,13 @@ sub export {
 
     $self->preflight or return;
     $self->get_active_nameservers;
+
+    if ( ! $self->{export_required} ) {
+        $self->elog("exit");
+        $self->set_status("no changes.");
+        exit;
+    };
+    $self->set_status("exporting from DB");
 
     my $fh;
     foreach my $z ( @{ $self->get_ns_zones() } ) {
@@ -492,9 +506,25 @@ sub postflight {
 
     $self->{export_class}->postflight or return;
 
+    $self->update_status();
+
     # mark export successful
     $self->elog("complete", success=>1);
 }
+
+sub update_status {
+    my $self = shift;
+    my $run_time = time - $self->{time_start};
+    my $waitleft = $self->{ns_ref}{export_interval} - $run_time;
+    if ( $run_time < $self->{ns_ref}{export_interval} ) {
+        my $tstring = localtime( $self->{time_start} + $run_time + $waitleft );
+        $tstring = substr( $tstring, 4, 15 );
+        $self->set_status( "last:SUCCESS, next:$tstring" );
+    }
+    else {
+        $self->set_status( "last: SUCCESS" );
+    };
+};
 
 sub zr_soa {
     my $self = shift;

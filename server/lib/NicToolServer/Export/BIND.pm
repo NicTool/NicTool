@@ -118,6 +118,7 @@ sub zr_spf {
     my $self = shift;
     my %p = validate( @_, { record => { type => HASHREF } } );
 
+# SPF record support was added in BIND v9.4.0
     my $r = $p{record};
 # name  ttl  class  type  type-specific-data
     return "$r->{name}	$r->{ttl}	SPF	$r->{address}\n";

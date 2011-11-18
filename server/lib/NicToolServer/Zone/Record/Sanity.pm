@@ -195,6 +195,7 @@ sub rr_types {
         'PTR'   => 'Pointer (PTR)',
         'TXT'   => 'Text (TXT)',
         'SRV'   => 'Service (SRV)',
+        'SPF'   => 'Sender Permitted From (SPF)',
     };
 }
 
@@ -278,13 +279,10 @@ sub _valid_address_chars {
 
     my ( $self, $data, $zone_text ) = @_;
 
-    if ( $data->{'type'} eq "TXT" ) {
+    if ( $data->{'type'} =~ /^TXT|SPF$/ ) {
         # any character is valid in TXT records - see RFC 1464
+        # SPF format is same as TXT record - RFC 4408
         return;
-        # colon ':' is reserved in tinydns data file, substitute with \072
-        #$data->{address} =~ s/:/\\072/g if $data->{address} =~ /:/;
-# this is no longer needed. The new export routines handle character
-# encoding during the export.
     }
 
     my $valid_chars = "[^a-zA-Z0-9\-\.]";

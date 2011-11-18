@@ -95,8 +95,11 @@ MAKE
     };
     chdir $export_dir;
     my $before = time;
-    system ('make data.cdb') == 0
-        or die $self->{nte}->elog("unable to compile cdb: $?");
+    $self->{nte}->set_status("compiling cdb");
+    system ('make data.cdb') == 0 or do {
+        $self->{nte}->set_status("last: FAILED compiling cdb: $?");
+        die $self->{nte}->elog("unable to compile cdb: $?");
+    };
     my $elapsed = time - $before;
     my $message = "compiled";
     $message .= ( $elapsed > 5 ) ? " ($elapsed secs)" : '';
@@ -128,9 +131,12 @@ MAKE
         close $M;
     };
 
+    $self->{nte}->set_status("remote rsync");
     my $before = time;
-    system ('make remote') == 0
-        or die $self->{nte}->elog("unable to rsync cdb: $?");
+    system ('make remote') == 0 or do {
+        $self->{nte}->set_status("last: FAILED rsync: $?");
+        die $self->{nte}->elog("unable to rsync cdb: $?");
+    };
     my $elapsed = time - $before;
     my $message = "copied";
     $message .= " ($elapsed secs)" if $elapsed > 5;
@@ -271,7 +277,7 @@ sub zr_spf {
 
     return ":"                                    # special char
         . $self->qualify( $r->{name} )            # fqdn
-        . '99'                                    # n
+        . ':99'                                   # n
         . ':' . $self->escape( $r->{address} )    # rdata
         . ':' . $r->{ttl}                         # ttl
         . ':' . $r->{timestamp}                   # timestamp
@@ -409,6 +415,7 @@ sub characterCount {
     return ( sprintf "\\%.3lo", $count );
 }
 
+# tinydns-data format: http://cr.yp.to/djbdns/tinydns-data.html
 #  A          =>  + fqdn : ip : ttl:timestamp:lo
 #  CNAME      =>  C fqdn :  p : ttl:timestamp:lo
 #  MX         =>  @ fqdn : ip : x:dist:ttl:timestamp:lo

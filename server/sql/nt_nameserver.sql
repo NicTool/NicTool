@@ -14,6 +14,7 @@ CREATE TABLE nt_nameserver(
     export_format       enum('tinydns','bind') NOT NULL,
     export_interval     SMALLINT UNSIGNED,
     export_serials      tinyint(1) UNSIGNED NOT NULL DEFAULT '1',
+    export_status       varchar(255) NULL DEFAULT NULL,
     deleted             TINYINT(1) UNSIGNED DEFAULT 0 NOT NULL
 ) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 CREATE INDEX nt_nameserver_idx1 on nt_nameserver(name);
@@ -101,11 +102,4 @@ CREATE TABLE nt_nameserver_export_log(
     partial                         tinyint(1) UNSIGNED NOT NULL DEFAULT 0
 ) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 CREATE INDEX nt_nameserver_export_log_idx1 on nt_nameserver_export_log(nt_nameserver_id);
-
-DROP TABLE IF EXISTS nt_nameserver_export_procstatus;
-CREATE TABLE nt_nameserver_export_procstatus(
-    nt_nameserver_id                SMALLINT UNSIGNED NOT NULL PRIMARY KEY,
-    timestamp                       INT UNSIGNED NOT NULL,
-    status                          VARCHAR(255)
-) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 

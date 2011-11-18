@@ -76,7 +76,7 @@ sub get_group_nameservers {
         status => {
             timefield   => 0,
             quicksearch => 0,
-            field       => 'nt_nameserver_export_procstatus.status'
+            field       => 'nt_nameserver.export_status'
         },
     );
 
@@ -123,16 +123,13 @@ sub get_group_nameservers {
             "nt_nameserver.name" );
     }
 
-    $sql
-        = "SELECT nt_nameserver.*, "
-        . " nt_group.name as group_name, "
-        . " nt_nameserver_export_procstatus.status as status "
-        . "FROM nt_nameserver "
-        . "INNER JOIN nt_group ON nt_nameserver.nt_group_id = nt_group.nt_group_id "
-        . "LEFT JOIN nt_nameserver_export_procstatus ON nt_nameserver.nt_nameserver_id = nt_nameserver_export_procstatus.nt_nameserver_id "
-        . "WHERE nt_nameserver.deleted=0 "
-        . "AND nt_group.nt_group_id IN("
-        . join( ',', @group_list ) . ") ";
+    $sql = "SELECT nt_nameserver.*, 
+        g.name AS group_name,
+        nt_nameserver.export_status AS status
+    FROM nt_nameserver 
+        INNER JOIN nt_group g ON nt_nameserver.nt_group_id = g.nt_group_id
+    WHERE nt_nameserver.deleted=0
+    AND g.nt_group_id IN(" . join( ',', @group_list ) . ") ";
     $sql .= 'AND (' . join( ' ', @$conditions ) . ') ' if @$conditions;
     $sql .= "ORDER BY " . join( ', ', @$sortby ) . " " if (@$sortby);
     $sql .= "LIMIT " . ( $r_data->{'start'} - 1 ) . ", $r_data->{'limit'}";

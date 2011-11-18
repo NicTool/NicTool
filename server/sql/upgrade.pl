@@ -132,6 +132,9 @@ sub _sql_2_10 {
 /* nt_zone_record */
 ALTER TABLE nt_zone_record ADD `location` VARCHAR(2) DEFAULT NULL  AFTER `other`;
 ALTER TABLE nt_zone_record ADD `timestamp` timestamp NULL DEFAULT NULL AFTER `location`;
+ALTER TABLE nt_zone_record MODIFY type enum('A','AAAA','MX','PTR','NS','TXT','CNAME','SRV','SPF') NOT NULL;
+ALTER TABLE nt_zone_record_log MODIFY type enum('A','AAAA','MX','PTR','NS','TXT','CNAME','SRV','SPF');
+
 
 /* this will throw an error upon subsequent attempts. To avoid destroying
 ** data (like dropping that table after the ns0..9 fields are dropped) if 
@@ -153,20 +156,20 @@ INSERT INTO resource_record_type VALUES (2,'NS'),(5,'CNAME'),(6,'SOA'),(12,'PTR'
 
 
 /* GLOBALLY change table.deleted columns from enum to tinyint(1) */
-ALTER TABLE `nt_zone_record` CHANGE `deleted` `deleted` tinyint(1) UNSIGNED NOT NULL DEFAULT 0;
+ALTER TABLE `nt_zone_record` MODIFY deleted tinyint(1) UNSIGNED NOT NULL DEFAULT 0;
 /* and then decrement the values because enums are evil */
 UPDATE nt_zone_record SET deleted=deleted-1;
-ALTER TABLE `nt_zone` CHANGE `deleted` `deleted` tinyint(1) UNSIGNED NOT NULL DEFAULT 0;
+ALTER TABLE `nt_zone` MODIFY deleted tinyint(1) UNSIGNED NOT NULL DEFAULT 0;
 UPDATE nt_zone SET deleted=deleted-1;
-ALTER TABLE `nt_user` CHANGE `deleted` `deleted` tinyint(1) UNSIGNED NOT NULL DEFAULT 0;
+ALTER TABLE `nt_user` MODIFY deleted tinyint(1) UNSIGNED NOT NULL DEFAULT 0;
 UPDATE nt_user SET deleted=deleted-1;
-ALTER TABLE `nt_perm` CHANGE `deleted` `deleted` tinyint(1) UNSIGNED NOT NULL DEFAULT 0;
+ALTER TABLE `nt_perm` MODIFY deleted tinyint(1) UNSIGNED NOT NULL DEFAULT 0;
 UPDATE nt_perm SET deleted=deleted-1;
-ALTER TABLE `nt_nameserver` CHANGE `deleted` `deleted` tinyint(1) UNSIGNED NOT NULL DEFAULT 0;
+ALTER TABLE `nt_nameserver` MODIFY deleted tinyint(1) UNSIGNED NOT NULL DEFAULT 0;
 UPDATE nt_nameserver SET deleted=deleted-1;
-ALTER TABLE `nt_group` CHANGE `deleted` `deleted` tinyint(1) UNSIGNED NOT NULL DEFAULT 0;
+ALTER TABLE `nt_group` MODIFY deleted tinyint(1) UNSIGNED NOT NULL DEFAULT 0;
 UPDATE nt_group SET deleted=deleted-1;
-ALTER TABLE `nt_delegate` CHANGE `deleted` `deleted` tinyint(1) UNSIGNED NOT NULL DEFAULT 0;
+ALTER TABLE `nt_delegate` MODIFY deleted tinyint(1) UNSIGNED NOT NULL DEFAULT 0;
 UPDATE nt_delegate SET deleted=deleted-1;
 
 
@@ -200,7 +203,8 @@ ALTER TABLE nt_zone DROP column ns9;
 /* nt_nameserver */
 ALTER TABLE nt_nameserver DROP column `service_type`;
 ALTER TABLE nt_nameserver ADD `export_serials` tinyint(1) UNSIGNED NOT NULL DEFAULT '1'  AFTER `export_interval`;
-ALTER TABLE nt_nameserver CHANGE `output_format` `output_format` enum('tinydns','djb','nt','bind') NOT NULL;
+ALTER TABLE nt_nameserver ADD `export_status` varchar(255) NULL DEFAULT NULL  AFTER `export_serials`;
+ALTER TABLE nt_nameserver MODIFY output_format enum('tinydns','djb','nt','bind') NOT NULL;
 UPDATE nt_nameserver SET output_format='tinydns' WHERE output_format='nt';
 UPDATE nt_nameserver SET output_format='tinydns' WHERE output_format='djb';
 ALTER TABLE nt_nameserver CHANGE `output_format` `export_format` enum('tinydns','bind') NOT NULL;
@@ -208,7 +212,7 @@ ALTER TABLE nt_nameserver CHANGE `output_format` `export_format` enum('tinydns',
 /* nt_nameserver_log */
 ALTER TABLE nt_nameserver_log DROP column `service_type`;
 ALTER TABLE nt_nameserver_log ADD `export_serials` tinyint(1) UNSIGNED NOT NULL DEFAULT '1'  AFTER `export_interval`;
-ALTER TABLE nt_nameserver_log CHANGE `output_format` `output_format` enum('djb','tinydns','bind','nt') NOT NULL;
+ALTER TABLE nt_nameserver_log MODIFY output_format enum('djb','tinydns','bind','nt') NOT NULL;
 UPDATE nt_nameserver_log SET output_format='tinydns' WHERE output_format='nt';
 UPDATE nt_nameserver_log SET output_format='tinydns' WHERE output_format='djb';
 ALTER TABLE nt_nameserver_log CHANGE `output_format` `export_format` enum('tinydns','bind') NOT NULL;
@@ -218,8 +222,10 @@ ALTER TABLE nt_nameserver_export_log ADD `result_id` int NULL DEFAULT NULL  AFTE
 ALTER TABLE nt_nameserver_export_log ADD `message` varchar(256) NULL DEFAULT NULL  AFTER `result_id`;
 ALTER TABLE nt_nameserver_export_log ADD `success` tinyint(1) UNSIGNED NULL DEFAULT NULL  AFTER `message`;
 ALTER TABLE nt_nameserver_export_log ADD `partial` tinyint(1) UNSIGNED NOT NULL DEFAULT 0  AFTER `success`;
-ALTER TABLE nt_nameserver_export_log CHANGE `date_start` `date_start` timestamp NULL DEFAULT NULL;
+ALTER TABLE nt_nameserver_export_log MODIFY date_start timestamp NULL DEFAULT NULL;
 ALTER TABLE nt_nameserver_export_log CHANGE `date_finish` `date_end` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP  on update CURRENT_TIMESTAMP;
+
+DROP TABLE IF EXISTS nt_nameserver_export_procstatus;
 
 /* Convert all character encodings to UTF8 bin. */
 ALTER TABLE `nt_delegate` CHARACTER SET = utf8;
@@ -520,8 +526,7 @@ CREATE TABLE nt_delegate_log(
 
 
 ALTER TABLE nt_user_global_log 
-    CHANGE action 
-    	action ENUM('added','deleted','modified','moved','recovered','delegated','modified delegation','removed delegation') NOT NULL;
+    MODIFY action ENUM('added','deleted','modified','moved','recovered','delegated','modified delegation','removed delegation') NOT NULL;
 ALTER TABLE nt_user_global_log 
     ADD target 
 	    ENUM('zone','group','user','nameserver','zone_record') 
