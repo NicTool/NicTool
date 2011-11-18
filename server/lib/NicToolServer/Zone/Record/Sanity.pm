@@ -195,7 +195,7 @@ sub rr_types {
         'PTR'   => 'Pointer (PTR)',
         'TXT'   => 'Text (TXT)',
         'SRV'   => 'Service (SRV)',
-        'SPF'   => 'Sender Permitted From (SPF)',
+        'SPF'   => 'Sender Policy Framework (SPF)',
     };
 }
 

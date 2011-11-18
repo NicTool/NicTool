@@ -48,7 +48,7 @@ sub rr_forward_types {
         'CNAME' => 'Canonical Name (CNAME)',
         'TXT'   => 'Text (TXT)',
         'SRV'   => 'Service (SRV)',
-        'SPF'   => 'Sender Permitted From (SPF)',
+        'SPF'   => 'Sender Policy Framework (SPF)',
     };
 }
 
