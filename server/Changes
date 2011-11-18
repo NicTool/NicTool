@@ -2,6 +2,9 @@ Revision history for NicToolServer
 
 2.10    2011.11.  - by Matt the Ripper
 
+    * beefed up bin/nt_install_deps.pl. 
+    * SQL: added sql/upgrade.pl It logs into a NicTool database, determines 
+       which updates are required, and runs them.
     * SQL: added resource_record_types table. IDs are the IETF record type
       number and the name is the IETF record type. Using a related table moves
       the data out of the database schema (ENUM(blah,blah)) and into rows, 

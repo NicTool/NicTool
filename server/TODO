@@ -87,11 +87,11 @@ finishing NicTool
 - double check that everything from network is dbh->quoted
 - transaction queueing layer, examine possible failure points, solutions
 - make dist should clean out developer-specific DB usernames/passes, etc (*.sql)
-- DES encrypt client-local messages (to thawt cross-site scripting hacks)
+- DES encrypt client-local messages (to thwart cross-site scripting hacks)
 - standardization of error/response codes
 - multiple xml-rpc/SOAP per-connection -- keep-alive: possible?
 - SSL layer testing
-- user documentationa
+- user documentation
 - soft errors/warnings
 - nameserver permission check (need to define exact policy first)
 - client/server versions could differ, but should be displayed by client
