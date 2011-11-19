@@ -50,7 +50,7 @@ sub get_nsid {
     my $nslist = $export->get_active_nameservers();
     printf( "\n%5s   %25s   %9s\n", 'nsid', 'name', 'format' );
     my $format = "%5.0f   %25s   %9s\n";
-    foreach my $ns (@$nslist) {
+    foreach my $ns (sort @$nslist) {
         printf $format, $ns->{nt_nameserver_id}, $ns->{name}, $ns->{export_format};
     };
     die "\nERROR: missing nsid. Try this:
