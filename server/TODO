@@ -20,6 +20,8 @@
 
 . SPF records: when creating or editing a SPF record, check for an TXT record. If it doesn't exist, automatically create it. If exists, update it with the SPF record: RFC 4408 ("recommends to always provide a TXT based SPF RR...and duplicate the information from the TXT")
 
+. Limit the num of export logs retained. Perhaps 1 week, or 100 records per NS, or some similar method.
+
 ==== COMPLETED =====
 
 . Support for SPF record type
