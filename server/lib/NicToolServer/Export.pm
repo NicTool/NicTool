@@ -56,7 +56,7 @@ sub daemon {
         $waitleft = $self->{ns_ref}{export_interval} - ( $end - $self->{time_start} );
     };
     if ( $waitleft > 0 ) {
-        print "sleeping $waitleft seconds\n";
+        print ", sleeping $waitleft seconds\n";
         sleep $waitleft;
     };
 };
@@ -85,7 +85,7 @@ sub elog {
     push @args, $self->{ns_id}, $logid;
     $sql .= "WHERE nt_nameserver_id=? AND nt_nameserver_export_log_id=?";
     $self->exec_query( $sql, \@args );
-    warn $message if $self->{debug};
+    print ", $message";
     return $message;
 }
 
@@ -152,9 +152,8 @@ sub export {
 
     if ( ! $self->{export_required} && ! $self->{force} ) {
         $self->set_status("no changes.");
-        $self->elog("no changes. exiting.");
-        return if $self->{daemon};  # sleep before exit
-        exit;
+        $self->elog("exiting");
+        return;
     };
     $self->set_status("exporting from DB");
 

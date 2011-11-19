@@ -43,7 +43,7 @@ $export->get_dbh( dsn => $dsn, user => $db_user, pass => $db_pass,)
 defined $nsid || get_nsid();
 
 my $count = $export->get_modified_zones();
-print "found $count zones\n";
+print "found $count zones";
 if ( $daemon ) { $export->daemon(); }
 else           { $export->export(); };
 
