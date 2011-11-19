@@ -153,6 +153,7 @@ sub export {
     if ( ! $self->{export_required} && ! $self->{force} ) {
         $self->set_status("no changes.");
         $self->elog("no changes. exiting.");
+        return if $self->{daemon};  # sleep before exit
         exit;
     };
     $self->set_status("exporting from DB");
@@ -542,8 +543,19 @@ sub write_runfile {
     open my $F, '>', 'run' or return;
     print $F <<EORUN
 #!/bin/sh
+#
+# direct STDERR to STDOUT
 exec 2>&1
-exec setuidgid nictool ./nt_export.pl -nsid $self->{ns_id}
+#
+# if run file is started by something like init, upstart, or daemontools,
+# setuidgid to the 'nictool' user, and run the export, logging to syslog.
+#exec setuidgid nictool ./nt_export.pl -nsid $self->{ns_id} -daemon | logger
+#
+# if run by cron, at, or interactively by a human who is logged in as the
+# 'nictool' user, this will work well. The -force option is included because
+# odds are, if you are running this by hand, you'll want the export to be
+# triggered, regardless of any DB changes.
+exec ./nt_export.pl -nsid $self->{ns_id} -force
 EORUN
 ;
     close $F;

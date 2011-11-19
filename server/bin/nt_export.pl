@@ -44,7 +44,10 @@ defined $nsid || get_nsid();
 
 my $count = $export->get_modified_zones();
 print "found $count zones\n";
-my $r = $export->export();
+if ( $daemon ) { $export->daemon(); }
+else           { $export->export(); };
+
+exit 0;
 
 sub get_nsid {
     my $nslist = $export->get_active_nameservers();
