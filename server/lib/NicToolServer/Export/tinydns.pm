@@ -63,13 +63,48 @@ sub compile_cdb {
 
     # compile data -> data.cdb
     my $export_dir = $self->{nte}{export_dir};
+    $self->write_makefile() if ! -e "$export_dir/Makefile";
 
-    if ( ! -e "$export_dir/Makefile" ) {
-        my $address = $self->{nte}{ns_ref}{address} || '127.0.0.1';
-        my $datadir = $self->{nte}{ns_ref}{datadir} || getcwd . '/data-all';
-        $datadir =~ s/\/$//;  # strip off any trailing /
-        open my $M, '>', "$export_dir/Makefile";
-        print $M <<MAKE
+    chdir $export_dir;
+    my $before = time;
+    $self->{nte}->set_status("compiling cdb");
+    system ('make data.cdb') == 0 or do {
+        $self->{nte}->set_status("last: FAILED compiling cdb: $?");
+        die $self->{nte}->elog("unable to compile cdb: $?");
+    };
+    my $elapsed = time - $before;
+    my $message = "compiled";
+    $message .= ( $elapsed > 5 ) ? " ($elapsed secs)" : '';
+    $self->{nte}->elog($message);
+    return 1;
+};
+
+sub append_makefile {
+    my $self = shift;
+    my $export_dir = $self->{nte}{export_dir};
+    my $address = $self->{nte}{ns_ref}{address} || '127.0.0.1';
+    my $datadir = $self->{nte}{ns_ref}{datadir} || getcwd . '/data-all';
+    $datadir =~ s/\/$//;  # strip off any trailing /
+    open my $M, '>>', "$export_dir/Makefile";
+    print $M <<MAKE
+# copies the data file to the remote host. The address is the nameservers IP
+# as defined in the NicTool database. Adjust it if necessary. Add additional
+# rsync lines to copy to additional hosts.
+remote: data.cdb
+\trsync -az data.cdb tinydns\@$address:$datadir/data.cdb
+MAKE
+;
+    close $M;
+};
+
+sub write_makefile {
+    my $self = shift;
+    my $export_dir = $self->{nte}{export_dir};
+    my $address = $self->{nte}{ns_ref}{address} || '127.0.0.1';
+    my $datadir = $self->{nte}{ns_ref}{datadir} || getcwd . '/data-all';
+    $datadir =~ s/\/$//;  # strip off any trailing /
+    open my $M, '>', "$export_dir/Makefile";
+    print $M <<MAKE
 # compiles data.cdb using the tinydns-data program.
 # make sure the path to tinydns-data is correct
 # test this target by running 'make data.cdb' in this directory
@@ -91,20 +126,7 @@ noremote: data.cdb
 \ttest 1
 MAKE
 ;
-        close $M;
-    };
-    chdir $export_dir;
-    my $before = time;
-    $self->{nte}->set_status("compiling cdb");
-    system ('make data.cdb') == 0 or do {
-        $self->{nte}->set_status("last: FAILED compiling cdb: $?");
-        die $self->{nte}->elog("unable to compile cdb: $?");
-    };
-    my $elapsed = time - $before;
-    my $message = "compiled";
-    $message .= ( $elapsed > 5 ) ? " ($elapsed secs)" : '';
-    $self->{nte}->elog($message);
-    return 1;
+    close $M;
 };
 
 sub rsync_cdb {
@@ -113,22 +135,9 @@ sub rsync_cdb {
     my $dir = $self->{nte}{export_dir};
 
     return 1 if ! defined $self->{nte}{ns_ref}{address};  # no rsync
-    #warn Dumper($self->{nte});
 
     if ( -e "$dir/Makefile" && ! `grep remote $dir/Makefile` ) {
-        my $address = $self->{nte}{ns_ref}{address} || '127.0.0.1';
-        my $datadir = $self->{nte}{ns_ref}{datadir} || getcwd . '/data-all';
-        $datadir =~ s/\/$//;  # strip off any trailing /
-        open my $M, '>>', "$dir/Makefile";
-        print $M <<MAKE
-# copies the data file to the remote host. The address is the nameservers IP
-# as defined in the NicTool database. Adjust it if necessary. Add additional
-# rsync lines to copy to additional hosts.
-remote: data.cdb
-\trsync -az data.cdb tinydns\@$address:$datadir/data.cdb
-MAKE
-;
-        close $M;
+        $self->append_makefile();
     };
 
     $self->{nte}->set_status("remote rsync");

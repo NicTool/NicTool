@@ -21,9 +21,9 @@ sub new {
     my $class = shift;
     my %p     = validate(
         @_,
-        {   ns_id     => { type => SCALAR },
-            debug_sql => { type => BOOLEAN, optional => 1 },
-            force     => { type => BOOLEAN, optional => 1 },
+        {   ns_id => { type => SCALAR },
+            debug => { type => BOOLEAN, optional => 1 },
+            force => { type => BOOLEAN|UNDEF, optional => 1 },
         }
     );
 
@@ -32,7 +32,7 @@ sub new {
         force  => $p{force},
         dbix_r => undef,
         dbix_w => undef,
-        debug_sql => defined $p{debug_sql} ? $p{debug_sql} : 0,
+        debug  => defined $p{debug} ? $p{debug} : 0,
         export_class => undef,
         export_dir => undef,
         export_format => 'tinydns',
@@ -42,6 +42,7 @@ sub new {
         active_ns_ids  => undef,       # nsids for a zone
         ns_ref => undef,
         time_start => time,
+        dir_orig => Cwd::getcwd,
         },
         $class;
 }
@@ -54,7 +55,10 @@ sub daemon {
     if ( defined $self->{ns_ref}{export_interval} ) {
         $waitleft = $self->{ns_ref}{export_interval} - ( $end - $self->{time_start} );
     };
-    sleep $waitleft if $waitleft > 0;
+    if ( $waitleft > 0 ) {
+        print "sleeping $waitleft seconds\n";
+        sleep $waitleft;
+    };
 };
 
 sub elog {
@@ -81,6 +85,7 @@ sub elog {
     push @args, $self->{ns_id}, $logid;
     $sql .= "WHERE nt_nameserver_id=? AND nt_nameserver_export_log_id=?";
     $self->exec_query( $sql, \@args );
+    warn $message if $self->{debug};
     return $message;
 }
 
@@ -108,7 +113,7 @@ sub exec_query {
         $err .= join( ', ', @params ) . "\n";
     }
 
-    warn $err if $self->{debug_sql};
+    warn $err if $self->{debug};
     my $dbix_r = $self->{dbix_r};
     my $dbix_w = $self->{dbix_w};
 
@@ -116,7 +121,7 @@ sub exec_query {
         my ($table) = $sql =~ /INSERT INTO (\w+)[\s\(]/;
         eval { $dbix_w->query( $sql, @params ); };
         if ( $@ or $dbix_w->error ne 'DBI error: ' ) {
-            warn $err . $dbix_w->error if $self->{debug_sql};
+            warn $err . $dbix_w->error if $self->{debug};
             return;
         }
         return $dbix_w->last_insert_id( undef, undef, $table, undef );
@@ -127,7 +132,7 @@ sub exec_query {
     elsif ( $sql =~ /^DELETE|UPDATE/ ) {
         eval { $dbix_w->query( $sql, @params ) };
         if ( $@ or $dbix_w->error ne 'DBI error: ' ) {
-            warn $err . $dbix_w->error if $self->debug_sql;
+            warn $err . $dbix_w->error if $self->debug;
             return;
         }
         return $dbix_w->query("SELECT ROW_COUNT()")->list;
@@ -135,7 +140,7 @@ sub exec_query {
 
     my $r;
     eval { $r = $dbix_r->query( $sql, @params )->hashes; };
-    warn "$err\t$@" if $@;    #&& $self->{debug_sql} );
+    warn "$err\t$@" if $@;    #&& $self->{debug} );
     return $r;
 }
 
@@ -145,9 +150,9 @@ sub export {
     $self->preflight or return;
     $self->get_active_nameservers;
 
-    if ( ! $self->{export_required} ) {
-        $self->elog("exit");
+    if ( ! $self->{export_required} && ! $self->{force} ) {
         $self->set_status("no changes.");
+        $self->elog("no changes. exiting.");
         exit;
     };
     $self->set_status("exporting from DB");
@@ -185,7 +190,7 @@ sub get_dbh {
         }
     );
 
-   # get database handles (r/w and r/o) used by the export processes
+   # get database handles (r/w and r/o)
    #
    # the read handle is the default handle. If a second write DSN is provided,
    # it is used for INSERT/UPDATE/DELETE queries. This is useful for sites
@@ -196,16 +201,11 @@ sub get_dbh {
     $self->{dbix_r} = DBIx::Simple->connect( $p{dsn}, $p{user}, $p{pass} )
         or die DBIx::Simple->error;
 
-    if ( $p{dsn_w} ) {
-        $self->{dbix_w} = DBIx::Simple->connect(
-            $p{dsn_w},
-            $p{user_w} || $p{user},
-            $p{pass_w} || $p{pass}
-        ) or die DBIx::Simple->error;
-    }
-    else {
-        $self->{dbix_w} = $self->{dbix_r};
-    }
+    $self->{dbix_w} = DBIx::Simple->connect(
+        $p{dsn_w}  || $p{dsn},
+        $p{user_w} || $p{user},
+        $p{pass_w} || $p{pass}
+    ) or die DBIx::Simple->error;
     return $self->{dbix_r};
 }
 
@@ -480,6 +480,11 @@ sub preflight {
 
     return 1 if $self->{export_required} == 0; # already called
 
+# TODO: test when last export attempted. If less than export_interval seconds,
+# sleep until ready. This will prevent a rightously zealous init/supervise
+# program from causing a vicious loop. Allow override with -force on the 
+# command line.
+
     $self->get_log_id;
 
     # bail out if no export required
@@ -508,6 +513,8 @@ sub postflight {
 
     $self->update_status();
 
+    $self->write_runfile();
+
     # mark export successful
     $self->elog("complete", success=>1);
 }
@@ -524,6 +531,22 @@ sub update_status {
     else {
         $self->set_status( "last: SUCCESS" );
     };
+};
+
+sub write_runfile {
+    my $self = shift;
+
+    chdir $self->{dir_orig};
+    return if -f 'run';
+    open my $F, '>', 'run' or return;
+    print $F <<EORUN
+#!/bin/sh
+exec 2>&1
+exec setuidgid nictool ./nt_export.pl -nsid $self->{ns_id}
+EORUN
+;
+    close $F;
+    CORE::chmod( oct('0644'), 'run' );
 };
 
 sub zr_soa {

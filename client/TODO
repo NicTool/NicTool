@@ -3,5 +3,6 @@
 
 * expose nt_zone_record.timestamp for editing
 
-* restore nameserver export status
+============  DONE ===============
+* restore nameserver export status (2011.11.18)
 
