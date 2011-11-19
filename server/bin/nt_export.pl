@@ -14,12 +14,13 @@ use NicToolServer::Export;
 
 # process command line options
 Getopt::Long::GetOptions(
-    'force'     => \my $force,
     'daemon'    => \my $daemon,
     'dsn=s'     => \my $dsn,
+    'force'     => \my $force,
+    'nsid=i'    => \my $nsid,
     'user=s'    => \my $db_user,
     'pass=s'    => \my $db_pass,
-    'nsid=i'    => \my $nsid,
+    'verbose'   => \my $verbose,
 ) or die "error parsing command line options";
 
 if ( ! defined $dsn || ! defined $db_user || ! defined $db_pass ) {
@@ -31,7 +32,11 @@ $dsn     = ask( "database DSN", default  =>
 $db_user = ask( "database user", default => 'root' ) if ! $db_user;
 $db_pass = ask( "database pass", password => 1 ) if ! $db_pass;
 
-my $export = NicToolServer::Export->new( ns_id=>$nsid || 0 );
+my $export = NicToolServer::Export->new( 
+    ns_id => $nsid || 0,
+    force => $force || 0,
+    debug => $verbose || 0,
+    );
 $export->get_dbh( dsn => $dsn, user => $db_user, pass => $db_pass,) 
     or die "database connection failed";
 
@@ -74,7 +79,7 @@ PROMPT:
     system "stty echo" if $pass;
     chomp $response;
 
-    return $response if length $response  > 0;         # if they typed something, return it
+    return $response if length $response  > 0; # they typed something, return it
     return $default if defined $default;   # return the default, if available
     return '';                             # return empty handed
 }

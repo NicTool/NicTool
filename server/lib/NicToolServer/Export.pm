@@ -23,7 +23,7 @@ sub new {
         @_,
         {   ns_id => { type => SCALAR },
             debug => { type => BOOLEAN, optional => 1 },
-            force => { type => BOOLEAN|UNDEF, optional => 1 },
+            force => { type => BOOLEAN, optional => 1 },
         }
     );
 
