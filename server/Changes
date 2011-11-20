@@ -2,6 +2,7 @@ Revision history for NicToolServer
 
 2.10    2011.11.  - by Matt the Ripper
 
+    * added IPv6 address expansion (from djbdnsRecordBuilder)
     * SQL: moved nt_nameserver_export_procstatus.status to 
         nt_nameserver.export_status and dropped nt_nameserver_export_procstatus
     * SPF record support (in addition to TXT SPF records)

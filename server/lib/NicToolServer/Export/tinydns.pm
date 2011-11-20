@@ -282,12 +282,12 @@ sub zr_spf {
 
     my $r = $p{record};
 
-    #warn Data::Dumper::Dumper($r);
-
-    return ":"                                    # special char
+# assistance from djbdnsRecordBuilder
+    return ":"                                    # special char (none = generic)
         . $self->qualify( $r->{name} )            # fqdn
         . ':99'                                   # n
-        . ':' . $self->escape( $r->{address} )    # rdata
+        . ':' . $self->characterCount($r->{address}) 
+              . $self->escape( $r->{address} )    # rdata
         . ':' . $r->{ttl}                         # ttl
         . ':' . $r->{timestamp}                   # timestamp
         . ':' . $r->{location}                    # lo
@@ -307,7 +307,7 @@ sub zr_srv {
     my $weight   = escapeNumber( $self->{nte}->is_ip_port( $r->{weight} ) );
     my $port     = escapeNumber( $self->{nte}->is_ip_port( $r->{other} ) );
 
-# SRV
+# SRV - from djbdnsRecordBuilder
 # :sip.tcp.example.com:33:\000\001\000\002\023\304\003pbx\007example\003com\000
 
     my $target = "";
@@ -332,9 +332,13 @@ sub zr_aaaa {
 
     my $r = $p{record};
 
-# :fqdn:n:rdata:ttl:timestamp:lo (generic record format)
+# AAAA - from djbdnsRecordBuilder
 # ffff:1234:5678:9abc:def0:1234:0:0
 # :example.com:28:\377\377\022\064\126\170\232\274\336\360\022\064\000\000\000\000
+
+    my $colons = $r->{address} =~ tr/:/:/;
+# insert any compressed colons (there has to be a joke here somewhere..)
+    if ($colons < 7) { $r->{address} =~ s/::/':' x (9-$colons)/e; }
 
     my ( $a, $b, $c, $d, $e, $f, $g, $h ) = split /:/, $r->{address};
     if ( !defined $h ) {
@@ -375,7 +379,7 @@ sub format_timestamp {
     return substr unixtai64( $ts ), 1;
 };
 
-# 4 following subs based on http://www.anders.com/projects/sysadmin/djbdnsRecordBuilder/
+# next 4 subs based on http://www.anders.com/projects/sysadmin/djbdnsRecordBuilder/
 sub escape {
     my $line = pop @_;
     my $out;
@@ -420,8 +424,7 @@ sub escapeNumber {
 sub characterCount {
     my $line  = pop @_;
     my @chars = split //, $line;
-    my $count = @chars;
-    return ( sprintf "\\%.3lo", $count );
+    return sprintf "\\%.3lo", scalar @chars;
 }
 
 # tinydns-data format: http://cr.yp.to/djbdns/tinydns-data.html
