@@ -50,10 +50,10 @@ sub new_or_edit_basic_verify {
             "Cannot create/edit records in a deleted zone." );
     }
 
-    my $zone_text = $z->{'zone'};
+    my $zone_text = $z->{zone};
 
-    if ( $data->{'name'} eq "*" ) {    # fully qualify the * record
-        $data->{'name'} = '*' . ".$zone_text.";
+    if ( $data->{name} eq "*" ) {    # fully qualify the * record
+        $data->{name} = '*' . ".$zone_text.";
     }
 
     $self->_expand_shortcuts( $data, $zone_text );  # expand @ and & shortcuts
@@ -61,10 +61,10 @@ sub new_or_edit_basic_verify {
     $self->_valid_address_chars( $data, $zone_text );
     $self->_valid_rr_type($data);
 
-    if ( $data->{'name'} =~ /([a-zA-Z0-9\-\.]+)\.$zone_text\.$/ ) {
+    if ( $data->{name} =~ /([a-zA-Z0-9\-\.]+)\.$zone_text\.$/ ) {
 
         # strip domain from end. records should NOT be stored as absolute
-        $data->{'name'} = $1;
+        $data->{name} = $1;
     }
 
     $self->_valid_cname($data, $zone_text);
@@ -73,32 +73,23 @@ sub new_or_edit_basic_verify {
     $self->_valid_srv($data);
 
 # TODO make this check that record exists within nictool, or that it's absolute.
-    if (   $data->{'type'} eq 'MX'
-        || $data->{'type'} eq 'NS'
-        || $data->{'type'} eq 'CNAME'
-        || $data->{'type'} eq 'PTR'
-        || $data->{'type'} eq 'SRV' )
-    {
+    if ( $data->{type} =~ /^MX|NS|CNAME|PTR|SRV$/ ) {
 
-        my @parts = split( /\./, $data->{'address'} );
+        my @parts = split( /\./, $data->{address} );
         foreach my $address (@parts) {
             if ( $address !~ /[a-zA-Z0-9\-\.\/]+/ ) {
-                $self->{'errors'}->{'address'} = 1;
-                push(
-                    @{ $self->{'error_messages'} },
-                    "Address for $data->{'type'} records must be a valid host."
+                $self->_error( 'address', 
+                    "Address for $data->{type} records must be a valid host."
                 );
             }
             if ( $address =~ /^[-\/]/ ) {    # can't start with a dash
-                $self->{'errors'}->{'address'} = 1;
-                push(
-                    @{ $self->{'error_messages'} },
-                    "Address for $data->{'type'} cannot start with a dash or slash."
+                $self->_error( 'address', 
+                    "Address for $data->{type} cannot start with a dash or slash."
                 );
             }
         }
-        $data->{'address'} = $data->{'address'} . ".$zone_text."
-            unless $data->{'address'} =~ /\.$/;
+        $data->{address} = $data->{address} . ".$zone_text."
+            unless $data->{address} =~ /\.$/;
     }
 
     $self->_valid_fqdn( $data, $zone_text );
@@ -107,33 +98,29 @@ sub new_or_edit_basic_verify {
 
     # invalid ip is: if first octet if < 1 || > 255, for rest, if < 0 or > 255
     # we get rid of "07" or "001" garbage here too.
-    if ( $data->{'type'} eq 'A' ) {
-        unless ( $self->valid_ip_address( $data->{'address'} ) ) {
-            $self->{'errors'}->{'address'} = 1;
-            push(
-                @{ $self->{'error_messages'} },
+    if ( $data->{type} eq 'A' ) {
+        unless ( $self->valid_ip_address( $data->{address} ) ) {
+            $self->_error( 'address', 
                 'Address for A records must be a valid IP address.'
             );
         }
     }
 
-    if ( $data->{'type'} eq 'AAAA' ) {
-        unless ( $self->valid_ip_address( $data->{'address'} ) ) {
-            $self->{'errors'}->{'address'} = 1;
-            push(
-                @{ $self->{'error_messages'} },
+    if ( $data->{type} eq 'AAAA' ) {
+        unless ( $self->valid_ip_address( $data->{address} ) ) {
+            $self->_error( 'address', 
                 'Address for AAAA records must be a valid IP IPv6 address.'
             );
         }
     }
 
 # check to make sure a sub-domain in zones doesn't clobber a record that user is trying to add/edit..
-    if ( $data->{'name'} !~ /$zone_text\.$/ ) {
+    if ( $data->{name} !~ /$zone_text\.$/ ) {
 
 # if zone is zone.com., it's the origin, which should have already been checked
 # for subdomain collisions. If it isn't, go check ...
 # oh - and split input up in case it's like blah.blah.blah.zone.com and blah.blah.zone.com exists as a domain..
-        my @nparts = split( /\./, $data->{'name'} );
+        my @nparts = split( /\./, $data->{name} );
         my @tocheck;
         my $basestr = $zone_text;
         while ( my $x = pop(@nparts) ) {
@@ -145,10 +132,8 @@ sub new_or_edit_basic_verify {
 
             #warn "checking if exists $name";
             if ( $self->zone_exists( $name, 0 ) ) {
-                $self->{'errors'}->{'name'} = 1;
-                push(
-                    @{ $self->{'error_messages'} },
-                    "Cannot create/edit Record '$data->{'name'}' in zone '$z->{'zone'}': it conflicts with existing zone '$name'."
+                $self->_error( 'name', 
+                    "Cannot create/edit Record '$data->{name}' in zone '$z->{zone}': it conflicts with existing zone '$name'."
                 );
                 last;
             }
@@ -156,21 +141,19 @@ sub new_or_edit_basic_verify {
     }    # TODO - make the above not so nasty
 
     # check the record's TTL
-    if ( !$data->{'ttl'} && !$data->{'nt_zone_record_id'} )
+    if ( !$data->{ttl} && !$data->{nt_zone_record_id} )
     {    # if new entry, and no default TTL, set default.
-        $data->{'ttl'} = 86400;
+        $data->{ttl} = 86400;
     }
-    if ( defined( $data->{'ttl'} )
-        && ( $data->{'ttl'} < 300 || $data->{'ttl'} > 2592000 ) )
+    if ( defined $data->{ttl} 
+        && ( $data->{ttl} < 300 || $data->{ttl} > 2592000 ) )
     {
-        $self->{'errors'}->{'ttl'} = 1;
-        push(
-            @{ $self->{'error_messages'} },
+        $self->_error( 'ttl', 
             "Invalid TTL -- ttl must be >= 300 and <= 2,592,000"
         );
     }
 
-    return $self->throw_sanity_error if ( $self->{'errors'} );
+    return $self->throw_sanity_error if $self->{errors};
 }
 
 sub record_exists {
@@ -201,7 +184,7 @@ sub rr_types {
 
 sub _error {
     my ($self, $type, $message) = @_;
-    $self->{errors}{$type} = 1;
+    $self->{errors}{$type} = 1 if $type;
     push @{ $self->{error_messages} }, $message;
 };
 
@@ -210,31 +193,31 @@ sub _expand_shortcuts {
     my ( $self, $data, $zone_text ) = @_;
 
     # expand any @ symbol shortcuts
-    if ( $data->{'name'} =~ /\.\@$/ )
+    if ( $data->{name} =~ /\.\@$/ )
     {    # replace something.@ with something.zone name
-        $data->{'name'} =~ s/\.\@$//;
-        $data->{'name'} = $data->{'name'} . ".$zone_text.";
+        $data->{name} =~ s/\.\@$//;
+        $data->{name} = $data->{name} . ".$zone_text.";
     }
 
-    if ( $data->{'name'} =~ /^\@$/ ) {    # replace @ with zone name
-        $data->{'name'} = "$zone_text.";
+    if ( $data->{name} =~ /^\@$/ ) {    # replace @ with zone name
+        $data->{name} = "$zone_text.";
     }
 
-    if ( $data->{'address'} =~ /\.\@$/ )
+    if ( $data->{address} =~ /\.\@$/ )
     {    # replace something.@ with something.zone name
-        $data->{'address'} =~ s/\.\@$//;
-        $data->{'address'} = $data->{'address'} . ".$zone_text.";
+        $data->{address} =~ s/\.\@$//;
+        $data->{address} = $data->{address} . ".$zone_text.";
     }
 
-    if ( $data->{'address'} =~ /^\@$/ ) {    # replace @ with zone name
-        $data->{'address'} = "$zone_text.";
+    if ( $data->{address} =~ /^\@$/ ) {    # replace @ with zone name
+        $data->{address} = "$zone_text.";
     }
 
     # expand the & shortcut
-    if ( $data->{'address'} =~ /\.\&$/ )
+    if ( $data->{address} =~ /\.\&$/ )
     {    # replace something.& with something.in-addr.arpa.
-        $data->{'address'} =~ s/\.\&$//;
-        $data->{'address'} = $data->{'address'} . ".in-addr.arpa.";
+        $data->{address} =~ s/\.\&$//;
+        $data->{address} = $data->{address} . ".in-addr.arpa.";
     }
 
     # no need to return anything, the changes are made to the original
@@ -245,8 +228,8 @@ sub _valid_name_chars {
 
     my ( $self, $data, $zone_text ) = @_;
 
-    if ( $data->{'name'} =~ /([^a-zA-Z0-9\-\.])/ ) {    # abnormal characters
-        if ( $data->{'name'} =~ /^(\*$|\*\.)/ ) {
+    if ( $data->{name} =~ /([^a-zA-Z0-9\-\.])/ ) {    # abnormal characters
+        if ( $data->{name} =~ /^(\*$|\*\.)/ ) {
 
             # wildcard * or *.something is OK
         }
@@ -255,7 +238,7 @@ sub _valid_name_chars {
             # allow _ character in name field of TXT and SRV records
         }
         else {
-            if ( $data->{'name'} =~ /\*/ ) {
+            if ( $data->{name} =~ /\*/ ) {
                 $self->_error('name',
                     "only *.something or * (by itself) is a valid wildcard record"
                 );
@@ -273,13 +256,28 @@ sub _valid_name_chars {
             $self->_error('name', "absolute host names are NOT allowed. Remove the dot and the host will automatically live within the current zone.");
         }
     }
+
+# If these restrictions cause anyone problems, it may make sense to add a
+# new NicTool preferences that disable the restrictions on various checks. 
+    if ( length $data->{name} > 255 ) {
+        $self->_error('name', "A full domain name is limited to 255 octets (characters): RFC 2181");
+    };
+
+    foreach my $label ( split(/\./, $data->{name} ) ) {
+        if ( length $label > 63 ) {
+            $self->_error('name', "Max length of a label (the bits of a domain name between the dots) is 63 octets (characters): RFC 2181");
+        };
+        if ( length $label < 1 ) {
+            $self->_error('name', "Minimum length of a label (the bits of a domain name between the dots) is 1 octet (character): RFC 2181");
+        };
+    };
 }
 
 sub _valid_address_chars {
 
     my ( $self, $data, $zone_text ) = @_;
 
-    if ( $data->{'type'} =~ /^TXT|SPF$/ ) {
+    if ( $data->{type} =~ /^TXT|SPF$/ ) {
         # any character is valid in TXT records - see RFC 1464
         # SPF format is same as TXT record - RFC 4408
         return;
@@ -288,7 +286,7 @@ sub _valid_address_chars {
     my $valid_chars = "[^a-zA-Z0-9\-\.]";
 
     # https://www.tnpi.net/support/forums/index.php/topic,990.0.html
-    if ( $data->{'type'} eq "AAAA" ) {
+    if ( $data->{type} eq "AAAA" ) {
         $valid_chars = "[^a-zA-Z0-9\-\.:]";  # allow : char for AAAA (IPv6)
     };
 
@@ -312,7 +310,7 @@ sub _valid_rr_type {
 
     # the form is upper case. The following checks catch
     # the correct type, even if user f's with form input
-    $data->{'type'} =~ tr/a-z/A-Z/; 
+    $data->{type} =~ tr/a-z/A-Z/; 
 
     my $valid_type = 0;
     foreach my $rrt ( keys %{ $self->rr_types } ) {
@@ -340,13 +338,13 @@ sub _valid_cname {
 
     @args[1] = 'A';
     if ( $self->record_exists( @args ) ) {
-        $self->_error( 'name', "record $data->{'name'} already exists within zone as an Address (A) record: RFC 1034");
+        $self->_error( 'name', "record $data->{name} already exists within zone as an Address (A) record: RFC 1034 & 2181");
         return;
     };
 
     @args[1] = 'MX';
     if ( $self->record_exists( @args ) ) {
-        $self->_error( 'name', "record $data->{'name'} already exists as a Mail Exchanger (MX) record: RFC 1034.");
+        $self->_error( 'name', "record $data->{name} already exists as a Mail Exchanger (MX) record: RFC 1034 & 2181");
         return;
     };
 }
@@ -354,21 +352,21 @@ sub _valid_cname {
 sub _valid_a {
     my ( $self, $data ) = @_;
 
-    return if $data->{'type'} ne 'A';
+    return if $data->{type} ne 'A';
 
     if ( $self->record_exists( 
         $data->{name}, 'CNAME', $data->{nt_zone_id}, $data->{nt_zone_record_id} ) ) {
-            $self->_error( 'name', "record $data->{'name'} already exists within zone as an Alias (CNAME) record." );
+            $self->_error( 'name', "record $data->{name} already exists within zone as an Alias (CNAME) record." );
     };
 }
 
 sub _valid_aaaa {
     my ( $self, $data ) = @_;
 
-    return if $data->{'type'} ne 'AAAA';
+    return if $data->{type} ne 'AAAA';
 
     $self->_error( 'name',
-        "record $data->{'name'} already exists within zone as an Alias (CNAME) record."
+        "record $data->{name} already exists within zone as an Alias (CNAME) record."
         ) if ( $self->record_exists(
                 $data->{name}, 'CNAME',
                 $data->{nt_zone_id}, $data->{nt_zone_record_id}
@@ -382,8 +380,8 @@ sub _valid_mx {
     return if $data->{type} ne 'MX';
 
     # weight must be 16 bit integer
-    if ( !$self->_is_16bit_int( $data->{'weight'} ) ) {
-        push @{ $self->{'error_messages'} },
+    if ( !$self->_is_16bit_int( $data->{weight} ) ) {
+        push @{ $self->{error_messages} },
             "Weight is required to be a 16bit integer";
     }
 
@@ -397,7 +395,7 @@ sub _valid_mx {
     # MX records cannot share a name with a CNAME
     if ($self->record_exists( $data->{name}, 'CNAME', 
             $data->{nt_zone_id}, $data->{nt_zone_record_id} ) ) {
-        $self->_error( 'name', "MX records must not exist as a CNAME: RFC 1034" );
+        $self->_error( 'name', "MX records must not exist as a CNAME: RFCs 1034, 2181" );
         return;
     };
 }
@@ -443,7 +441,7 @@ sub _valid_fqdn {
             "Address for $data->{type} cannot be an IP address (RFC 1035)." );
     }
 
-    if ( $data->{'address'} !~ /\.$/ ) {    # if it does not end in .
+    if ( $data->{address} !~ /\.$/ ) {    # if it does not end in .
         $self->_error('address',
             "Address for $data->{type} must point to a Fully Qualified Domain Name (with a '.' at the end) (RFC 1035).  You can use the '\@' character to stand for the zone this record belongs to." );
     }
@@ -452,7 +450,7 @@ sub _valid_fqdn {
 sub _valid_srv {
     my ( $self, $data ) = @_;
 
-    return if $data->{'type'} ne 'SRV';
+    return if $data->{type} ne 'SRV';
 
     # weight, priority, and port must all be 16 bit integers
     my %values_to_check = (
@@ -463,8 +461,9 @@ sub _valid_srv {
 
     foreach my $check ( keys %values_to_check ) {
         if ( !$self->_is_16bit_int( $data->{$check} ) ) {
-            push @{ $self->{'error_messages'} },
-                "$values_to_check{$check} is required to be a 16bit integer, see RFC 2782";
+            $self->_error( undef,
+                "$values_to_check{$check} is required to be a 16bit integer, see RFC 2782"
+            );
         }
     }
 }
@@ -476,17 +475,13 @@ sub _is_16bit_int {
 
     #   check for non-digits
     if ( $value =~ /\D/ ) {
-        $self->{'errors'}->{'name'} = 1;
-        push @{ $self->{'error_messages'} },
-            "Non-numeric digits are not allowed. ($value)";
+        $self->_error( 'name', "Non-numeric digits are not allowed. ($value)" );
         $exit_code = 0;
     }
 
     #   make sure it is >= 0 and < 65536
     if ( $value < 0 || $value > 65535 ) {
-        $self->{'errors'}->{'name'} = 1;
-        push @{ $self->{'error_messages'} },
-            "$value is out of range (0-65535)";
+        $self->_error( 'name', "$value is out of range (0-65535)" );
         $exit_code = 0;
     }
 
