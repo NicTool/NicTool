@@ -1,7 +1,8 @@
 Revision history for NicToolServer
 
-2.10    2011.11.  - by Matt the Ripper
+2.10    2011.11.21  - mps
 
+    * added RFC 2181 domain name length restrictions
     * added IPv6 address expansion (from djbdnsRecordBuilder)
     * SQL: moved nt_nameserver_export_procstatus.status to 
         nt_nameserver.export_status and dropped nt_nameserver_export_procstatus
