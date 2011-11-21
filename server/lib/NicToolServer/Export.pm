@@ -153,7 +153,7 @@ sub export {
     if ( ! $self->{export_required} && ! $self->{force} ) {
         $self->set_status("no changes.");
         $self->elog("exiting");
-        return;
+        return 1;
     };
 
     $self->set_status("exporting from DB");

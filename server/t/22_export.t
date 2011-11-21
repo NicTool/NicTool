@@ -1,5 +1,4 @@
-# NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
-# NicTool v2.01 Copyright 2004 The Network People, Inc.
+# NicTool v2.10 Copyright 2011 The Network People, Inc.
 #
 # NicTool is free software; you can redistribute it and/or modify it under
 # the terms of the Affero General Public License as published by Affero,
