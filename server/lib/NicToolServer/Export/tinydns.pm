@@ -153,6 +153,28 @@ sub rsync_cdb {
     return 1;
 };
 
+sub export_db {
+    my $self = shift;
+
+    my $fh = $self->get_export_file() or return;
+
+    foreach my $z ( @{ $self->{nte}->get_ns_zones() } ) {
+        $self->{nte}{zone_name} = $z->{zone};
+        print $fh $self->{nte}->zr_soa( zone => $z );
+        print $fh $self->{nte}->zr_ns( zone => $z );
+
+        my $records = $self->{nte}->get_zone_records( zone => $z );
+        foreach my $r ( @$records ) {
+            my $type   = lc( $r->{type} );
+            my $method = "zr_${type}";
+            $r->{location}  ||= '';
+            $r->{timestamp} = $self->format_timestamp($r->{timestamp}),
+            print $fh $self->$method( record => $r );
+        }
+    }   
+    close $fh;
+};
+
 sub zr_a {
     my $self = shift;
     my %p = validate( @_, { record => { type => HASHREF }, } );

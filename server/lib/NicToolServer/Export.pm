@@ -155,21 +155,9 @@ sub export {
         $self->elog("exiting");
         return;
     };
-    $self->set_status("exporting from DB");
 
-    my $fh;
-    foreach my $z ( @{ $self->get_ns_zones() } ) {
-        $fh = $self->{export_class}->get_export_file( 
-            $self->get_export_dir, $z->{zone} ) 
-                or die "unable to figure out export name for zone $z->{zone}\n";
-        $self->{zone_name} = $z->{zone};
-        print $fh $self->zr_soa( zone => $z );
-        print $fh $self->zr_ns( zone => $z );
-        my $records = $self->get_zone_records( zone => $z );
-        $self->zr_dispatch( zone => $z, records => $records, fh=>$fh );
-        close $fh if $self->{export_format} eq 'bind';
-    }
-    close $fh if $self->{export_format} eq 'tinydns';
+    $self->set_status("exporting from DB");
+    $self->{export_class}->export_db();
 
 # TODO: detect and delete BIND zone files deleted in NicTool
     $self->elog("exported");
@@ -523,8 +511,9 @@ sub postflight {
 sub update_status {
     my $self = shift;
     my $run_time = time - $self->{time_start};
-    my $waitleft = $self->{ns_ref}{export_interval} - $run_time;
-    if ( $run_time < $self->{ns_ref}{export_interval} ) {
+    my $interval = $self->{ns_ref}{export_interval} || 60;
+    my $waitleft = $interval - $run_time;
+    if ( $run_time < $interval ) {
         my $tstring = localtime( $self->{time_start} + $run_time + $waitleft );
         $tstring = substr( $tstring, 4, 15 );
         $self->set_status( "last:SUCCESS, next:$tstring" );
@@ -596,26 +585,6 @@ sub zr_ns {
         );
     }
     return $r;
-}
-
-sub zr_dispatch {
-    my $self = shift;
-    my %p    = validate(
-        @_,
-        {   zone    => { type => HASHREF  },
-            records => { type => ARRAYREF },
-            fh      => { type => HANDLE   },
-        }
-    );
-
-    my $FH = $p{fh};
-    foreach my $r ( @{ $p{records} } ) {
-        my $type   = lc( $r->{type} );
-        my $method = "zr_${type}";
-        $r->{location}  ||= '';
-        $r->{timestamp} = $r->{timestamp} ? $self->{export_class}->format_timestamp($r->{timestamp}) : '';
-        print $FH $self->{export_class}->$method( record => $r );
-    }
 }
 
 sub is_ip_port {

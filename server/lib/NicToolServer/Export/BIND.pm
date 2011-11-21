@@ -22,6 +22,29 @@ sub new {
     return $self;
 }
 
+sub export_db {
+    my $self = shift;
+
+    foreach my $z ( @{ $self->{nte}->get_ns_zones() } ) {
+        my $fh = $self->get_export_file(
+            $self->{nte}->get_export_dir, $z->{zone} )
+                or die "unable to figure out export name for zone $z->{zone}\n";
+        $self->{nte}{zone_name} = $z->{zone};
+        print $fh $self->{nte}->zr_soa( zone => $z );
+        print $fh $self->{nte}->zr_ns( zone => $z );
+
+        my $records = $self->{nte}->get_zone_records( zone => $z );
+        foreach my $r ( @$records ) {
+            my $type   = lc( $r->{type} );
+            my $method = "zr_${type}";
+            $r->{location}  ||= '';
+            print $fh $self->$method( record => $r );
+        }
+
+        close $fh;
+    }   
+};
+
 sub get_export_file {
     my $self = shift;
     my $dir = shift || $self->{nte}->get_export_dir or return;
@@ -147,11 +170,6 @@ sub zr_aaaa {
 # name  ttl  class  type  type-specific-data
     return "$r->{name}	$r->{ttl}	AAAA	$r->{address}\n";
 }
-
-sub format_timestamp {
-    my ($self, $ts) = @_;
-    return $ts;
-};
 
 
 1;
