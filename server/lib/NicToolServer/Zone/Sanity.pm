@@ -15,11 +15,11 @@ sub new_zone {
         if $self->check_object_deleted( 'group', $data->{nt_group_id} );
 
     if ( $data->{zone} =~ /([^\/a-zA-Z0-9\-\.])/ ) {
-        $self->_error( 'zone', "invalid character in zone -- $1" );
+        $self->error( 'zone', "invalid character in zone -- $1" );
     }
 
     if ( $data->{zone} !~ /in-addr.arpa$/i && $data->{zone} =~ /\// ) {
-        $self->_error( 'zone', 
+        $self->error( 'zone', 
             "invalid character in zone '/'. Only allowed in reverse-lookup zones"
         );
     }
@@ -33,14 +33,16 @@ sub new_zone {
 #    }
 
     if ( $data->{zone} !~ /.+\..+$/ ) {
-        $self->_error( 'zone', 
+        $self->error( 'zone', 
             "Zone must be a valid domain name -- something.something"
         );
     }
 
+    $self->valid_label( 'zone', $data->{zone} );
+
     # check if zone exists
     if ( $self->zone_exists( $data->{zone}, 0 ) ) {
-        $self->_error( 'zone', 'Zone is already taken' );
+        $self->error( 'zone', 'Zone is already taken' );
     }
 
     #check subdomains
@@ -49,13 +51,12 @@ sub new_zone {
     my $z = $data->{zone};
     $z =~ tr/A-Z/a-z/;
     my @zparts = split( /\./, $z );
-    if ( $z =~ /[a-z0-9\-\/]+\.[a-z0-9\-\/]+$/ )
-    {    # zone must have a least one dot
+    if ( $z =~ /[a-z0-9\-\/]+\.[a-z0-9\-\/]+$/ ) {  # zone has at least one dot
         my $zstr = pop(@zparts);
         my @zonestocheck;
         while ( my $x = pop(@zparts) ) {
             $zstr = $x . "." . $zstr;
-            push( @zonestocheck, $zstr );
+            push @zonestocheck, $zstr;
         }
         foreach my $orig_zone (@zonestocheck) {
             if ( my $zref = $self->zone_exists( $orig_zone, 0 ) ) {
@@ -64,15 +65,11 @@ sub new_zone {
                 my @error = $self->check_permission( 'nt_zone_id',
                     $zref->{nt_zone_id}, 'read', 'ZONE' );
                 if ( defined $error[0] ) {
-                    $self->_error( 'zone', "Sub-domain creation not allowed: Access to zone $orig_zone denied: $error[1]"
+                    $self->error( 'zone', "Sub-domain creation not allowed: Access to zone $orig_zone denied: $error[1]"
                     );
                 }
-                if ($self->record_exists_within_zone(
-                        $zref->{nt_zone_id}, $z
-                    )
-                    )
-                {
-                    $self->_error( 'zone', "A record within $orig_zone named $z already exists. Delete or rename the record and then you can add $z as a sub-domain.\n"
+                if ($self->record_exists_within_zone( $zref->{nt_zone_id}, $z )) {
+                    $self->error( 'zone', "A record within $orig_zone named $z already exists. Delete or rename the record and then you can add $z as a sub-domain.\n"
                     );
                 }
 
@@ -81,14 +78,10 @@ sub new_zone {
         }
     }
 
-    # check the zone's the TTL
+    # check the zone's TTL
     $data->{ttl} ||= 86400;
 
-    if ( $data->{ttl} < 300 || $data->{ttl} > 2592000 ) {
-        $self->_error( 'zone', 
-            "Invalid TTL -- ttl must be >= 300 and <= 2,592,000"
-        );
-    }
+    $self->valid_ttl( $data->{ttl} );
 
     return $self->throw_sanity_error if ( $self->{errors} );
     $self->SUPER::new_zone($data);
@@ -110,20 +103,15 @@ sub edit_zone {
         'Cannot edit zone in a deleted group!' )
         if $self->check_object_deleted( 'group', $dataobj->{nt_group_id} );
 
-    # check the zone's the TTL
-    if ( defined( $data->{ttl} )
-        && ( $data->{ttl} < 300 || $data->{ttl} > 2592000 ) )
-    {
-        $self->_error( 'ttl',
-            "Invalid TTL -- ttl must be >= 300 and <= 2,592,000"
-        );
-    }
+    # check the zone's TTL
+    $self->valid_ttl( $data->{ttl} ) if defined $data->{ttl};
+
     my $zone = $self->find_zone( $data->{nt_zone_id} );
 
     if (    $data->{deleted} eq '0'
         and $self->zone_exists( $zone->{zone}, $zone->{nt_zone_id} ) )
     {
-        $self->_error( 'ttl', "Can't undelete the zone '$zone->{zone}' because another zone called '$zone->{zone}' now exists"
+        $self->error( 'zone', "Can't undelete the zone '$zone->{zone}' because another zone called '$zone->{zone}' now exists"
         );
     }
 
@@ -150,12 +138,6 @@ sub move_zones {
 
     return $self->SUPER::move_zones($data);
 }
-
-sub _error {
-    my ($self, $type, $message) = @_;
-    $self->{errors}{$type}++;
-    push @{ $self->{error_messages} }, $message;
-};
 
 sub get_zone_record_log {
     my ( $self, $data ) = @_;

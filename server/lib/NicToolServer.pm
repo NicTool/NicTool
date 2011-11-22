@@ -849,6 +849,12 @@ sub is_error_response {
     return ( !exists $data->{'error_code'} or $data->{'error_code'} != 200 );
 }
 
+sub error {
+    my ($self, $type, $message) = @_;
+    $self->{errors}{$type}++ if $type;
+    push @{ $self->{error_messages} }, $message;
+};
+
 sub verify_required {
     my ( $self, $req, $data ) = @_;
     my @missing;
@@ -1392,12 +1398,27 @@ sub valid_integer {
     return !1 unless $int < 4500000000;
     return !1 unless $int >= 0;
 
-    #warn "valid integer: $int";
-    #if ($int =~ /^\d+$/ && $int < 4500000000 && $int >= 0) {
     return 1;
+}
 
-    #}
-    #return 0;
+sub valid_16bit_int {
+    my ( $self, $type, $value ) = @_;
+    
+    my $rc = 1;
+
+    #   check for non-digits
+    if ( $value =~ /\D/ ) {
+        $self->error( $type, "Non-numeric digits are not allowed. ($value)" );
+        $rc = 0;
+    }
+
+    #   make sure it is >= 0 and < 65536
+    if ( $value < 0 || $value > 65535 ) {
+        $self->error( $type, "$type must be a 16bit integer (in the range 0-65535)" );
+        $rc = 0;
+    }
+
+    return $rc;
 }
 
 sub valid_reverse_lookup {
@@ -1418,21 +1439,6 @@ sub valid_reverse_lookup {
         return 0;
     }
 
-}
-
-sub valid_hostname {
-    my ( $self, $hostname ) = @_;
-    my @h = split( /\./, $hostname );
-
-    #$hostname=~s/\.$//;
-    #XXX have to change for multi-byte charsets
-    foreach (@h) {
-        return 0
-            unless /^[a-zA-Z][-0-9a-zA-Z]*/
-                and /[a-zA-Z0-9]$/;
-    }
-    return 0 unless @h gt 1;
-    return 1;
 }
 
 sub valid_ip_address {
@@ -1461,6 +1467,15 @@ sub valid_ip_address {
         return join( ".", @x );
     }
 }
+
+sub valid_ttl {
+    my $self = shift;
+    my $ttl = shift or die "missing TTL\n";
+    
+    return if ( $ttl >= 300 && $ttl <= 2592000 );
+
+    $self->error( 'ttl', "Invalid TTL -- ttl must be >= 300 and <= 2,592,000" );
+};
 
 sub group_usage_ok {
     my ( $self, $id ) = @_;

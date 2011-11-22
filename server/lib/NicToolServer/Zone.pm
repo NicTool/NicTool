@@ -1081,6 +1081,31 @@ sub zone_exists {
     return ref $href ? $href : 0;
 }
 
+sub valid_label {
+    my $self = shift;
+    my $type = shift or die "invalid type\n";
+    my $name = shift or die "invalid name\n";
+
+    if ( length $name > 255 ) {
+        $self->error($type, "A full domain name is limited to 255 octets (characters): RFC 2181");
+    };
+
+    my $label_explain = "(the bits of a domain between the dots)";
+    foreach my $label ( split(/\./, $name) ) {
+        if ( length $label > 63 ) {
+            $self->error($type, "Max length of a label $label_explain is 63 octets (characters): RFC 2181");
+        }; 
+
+        if ( length $label < 1 ) {
+            $self->error($type, "Minimum length of a label $label_explain is 1 octet (character): RFC 2181");
+        };
+
+        if ( substr($name, 0,1) eq '-' || substr($name, -1,1) eq '-' ) {
+            $self->error($type, "Labels $label_explain cannot begin or end with a hyphen (-): RFC 1035");
+        };
+    };
+};
+
 ### serial number routines
 sub bump_serial {
     my ( $self, $nt_zone_id, $current_serial ) = @_;

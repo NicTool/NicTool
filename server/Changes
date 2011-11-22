@@ -2,6 +2,10 @@ Revision history for NicToolServer
 
 2.10    2011.11.21  - mps
 
+    * added NicToolServer::Zone::valid_label (RFC validation of domain name)
+    * added NicToolServer::valid_ttl, and removed 6 duplicated instances
+    * deleted unused NicToolServer::valid_hostname
+    * consolidated duplicated definitions of _error into NicToolServer::error
     * added RFC 2181 domain name length restrictions
     * added IPv6 address expansion (from djbdnsRecordBuilder)
     * SQL: moved nt_nameserver_export_procstatus.status to 

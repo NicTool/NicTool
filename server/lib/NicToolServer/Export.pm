@@ -484,8 +484,13 @@ sub preflight {
         if ( $ts_success ) {
 # do any zones for this nameserver have updates more recent than last successful export?
             my $c = $self->get_modified_zones( since => $ts_success );
-            $self->{export_required} = 0 if $c == 0;
-            $self->elog("$c changed zones");
+            if ( $c == 0 ) {
+                $self->{export_required} = 0;
+                $self->elog("No changed zones");
+            }
+            else {
+                $self->elog("$c changed zones");
+            };
         };
     };
     $self->elog("export required") if $self->{export_required};

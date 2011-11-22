@@ -12,11 +12,9 @@ sub new_nameserver {
         'Cannot add nameserver to a deleted group!' )
         if $self->check_object_deleted( 'group', $data->{'nt_group_id'} );
 
-    # check the nameserver's the TTL
-    if ( !exists $data->{'ttl'} ) {   # if new and no default, set default.
-        $data->{'ttl'} = 86400;
-    }
-    $self->is_valid_ttl( $data ); # check the TTL
+    $data->{'ttl'} ||= 86400; # if unset, set default.
+
+    $self->valid_ttl( $data->{ttl} );
 
     # check characters
     if ( $data->{'name'} =~ /([^a-zA-Z0-9\-\.])/ ) {
@@ -103,7 +101,7 @@ sub edit_nameserver {
         'Cannot edit nameserver in a deleted group!' )
         if $self->check_object_deleted( 'group', $dataobj->{'nt_group_id'} );
 
-    $self->is_valid_ttl( $data ); # check the TTL
+    $self->valid_ttl( $data->{ttl} ); # check the TTL
 
     if ( exists $data->{'name'} ) {
 
@@ -203,19 +201,6 @@ sub get_group_nameservers {
     return $self->SUPER::get_group_nameservers($data);
 }
 
-sub is_valid_ttl {
-    my ($self, $data) = @_;
-
-    return if ! exists $data->{ttl};
-
-    if ( $data->{ttl} < 300 || $data->{ttl} > 2592000 ) {
-        $self->{errors}{ttl} = 1;
-        push(
-            @{ $self->{error_messages} },
-            "Invalid TTL -- ttl must be > 300 and < 2,592,000"
-        );
-    }
-};
 
 1;
 
