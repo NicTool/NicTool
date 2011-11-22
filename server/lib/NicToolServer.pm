@@ -1399,11 +1399,15 @@ sub valid_ip_address {
 
 sub valid_ttl {
     my $self = shift;
-    my $ttl = shift or die "missing TTL\n";
+    my $ttl = shift;
+
+    $self->error( 'ttl', "Invalid TTL -- required" ) if ! defined $ttl;
+    $self->error( 'ttl', "Invalid TTL -- must be numeric" ) if $ttl =~ /\D/;
     
-    return if ( $ttl >= 300 && $ttl <= 2592000 );
+    return 1 if ( $ttl >= 300 && $ttl <= 2592000 );
 
     $self->error( 'ttl', "Invalid TTL -- ttl must be >= 300 and <= 2,592,000" );
+    return;
 };
 
 sub group_usage_ok {

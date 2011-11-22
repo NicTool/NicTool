@@ -100,19 +100,17 @@ sub new_or_edit_basic_verify {
     # invalid ip is: if first octet if < 1 || > 255, for rest, if < 0 or > 255
     # we get rid of "07" or "001" garbage here too.
     if ( $data->{type} eq 'A' ) {
-        unless ( $self->valid_ip_address( $data->{address} ) ) {
+        $self->valid_ip_address( $data->{address} ) or 
             $self->error( 'address', 
                 'Address for A records must be a valid IP address.'
             );
-        }
     }
 
     if ( $data->{type} eq 'AAAA' ) {
-        unless ( $self->valid_ip_address( $data->{address} ) ) {
+        $self->valid_ip_address( $data->{address} ) or
             $self->error( 'address', 
-                'Address for AAAA records must be a valid IP IPv6 address.'
+                'Address for AAAA records must be a valid IPv6 address.'
             );
-        }
     }
 
 # check to make sure a sub-domain in zones doesn't clobber a record that user is trying to add/edit..
@@ -179,7 +177,6 @@ sub rr_types {
 }
 
 sub _expand_shortcuts {
-
     my ( $self, $data, $zone_text ) = @_;
 
     # expand any @ symbol shortcuts
@@ -210,16 +207,19 @@ sub _expand_shortcuts {
         $data->{address} = $data->{address} . ".in-addr.arpa.";
     }
 
-    # no need to return anything, the changes are made to the original
-    # hash via it's reference
+    # no return, changes are made to the original hash via its reference
 }
 
 sub _valid_name_chars {
 
     my ( $self, $data, $zone_text ) = @_;
 
+    return if ! defined $data->{name};  # an edit may not have this defined
+
     # normal domain characters: RFC 1035 (a-z, 0-9, and hyphen)
-    return if $data->{name} =~ /([^a-zA-Z0-9\-\.])/; 
+    return if $data->{name} =~ /^([a-zA-Z0-9\-\.]+)$/;  # no ickies
+
+    $data->{name} =~ /([^a-zA-Z0-9\-\.])/;  # match ickies
 
     if ( $data->{name} =~ /^(\*$|\*\.)/ ) {
 
@@ -236,9 +236,7 @@ sub _valid_name_chars {
             );
         }
         else {
-            $self->error('name',
-                "invalid character or string in record name -- $1"
-            );
+            $self->error('name', "invalid character or string in record name -- $1");
         }
     }
 }
@@ -246,6 +244,8 @@ sub _valid_name_chars {
 sub _valid_name {
 
     my ( $self, $data, $zone_text ) = @_;
+
+    return if ! defined $data->{name};  # edit may not include 'name'
 
     if ( $data->{name} =~ /\.$/ ) {               # ends with .
         if ( $data->{name} !~ /$zone_text\.$/ ) { # ends with zone.com.

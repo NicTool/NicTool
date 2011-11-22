@@ -1084,7 +1084,13 @@ sub zone_exists {
 sub valid_label {
     my $self = shift;
     my $type = shift or die "invalid type\n";
-    my $name = shift or die "invalid name\n";
+    my $name = shift;
+
+    $self->error($type, "missing label") if ! defined $name;
+
+    if ( length $name < 1 ) {
+        $self->error($type, "A domain name must have at least 1 octets (character): RFC 2181");
+    };
 
     if ( length $name > 255 ) {
         $self->error($type, "A full domain name is limited to 255 octets (characters): RFC 2181");
@@ -1100,8 +1106,12 @@ sub valid_label {
             $self->error($type, "Minimum length of a label $label_explain is 1 octet (character): RFC 2181");
         };
 
-        if ( substr($name, 0,1) eq '-' || substr($name, -1,1) eq '-' ) {
-            $self->error($type, "Labels $label_explain cannot begin or end with a hyphen (-): RFC 1035");
+        if ( substr($label, 0,1) eq '-' ) {
+            $self->error($type, "Labels $label_explain cannot begin (or end) with a hyphen (-): RFC 1035");
+        };
+
+        if ( substr($label, -1,1) eq '-' ) {
+            $self->error($type, "Labels $label_explain cannot end (or begin) with a hyphen (-): RFC 1035");
         };
     };
 };

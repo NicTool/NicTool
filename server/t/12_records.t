@@ -38,7 +38,7 @@ use NicToolTest;
 use NicTool;
 use Test;
 
-BEGIN { plan tests => 2453 }
+BEGIN { plan tests => 2501 }
 
 $user = new NicTool(
     cache_users  => 0,
@@ -879,6 +879,23 @@ sub doit {
         }
     }
 
+    for $type ( qw/A MX NS CNAME/ ) {
+        for ( qw/ -invalid.com invalid-.com invalid.-com invalid.com- / ) {
+            # invalid domain labels
+            $res = $zr1->edit_zone_record(
+                name    => $_,
+                address => "something",
+                type    => $type,
+                ttl     => 86399,
+            );
+            noerrok( $res, 300, "type $type name $_" );
+            ok( $res->get('error_msg') => qr/cannot .* with a hyphen/ );
+            ok( $res->get('error_desc') => qr/Sanity error/ );
+        };
+    };
+
+
+
     for (qw(blah x Y P Q R S TU VW XYZ 1 23)) {
 
         #invalid type
@@ -919,10 +936,8 @@ sub doit {
             address => 'fully.ok.name.'
         );
         noerrok($res);
-        for (
-            qw(-blah -blah.something - something.-something /blah.something blah./something.com)
-            )
-        {
+        for (  qw( -blah -blah.something - something.-something /blah.something
+                    blah./something.com) ) {
 
             #invalid address for preset type
             $res = $zr1->edit_zone_record( address => $_ );

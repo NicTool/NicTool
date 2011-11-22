@@ -12,7 +12,7 @@ sub new_nameserver {
         'Cannot add nameserver to a deleted group!' )
         if $self->check_object_deleted( 'group', $data->{nt_group_id} );
 
-    $data->{ttl} ||= 86400; # if unset, set default.
+    defined $data->{ttl} or $data->{ttl} = 86400; # if unset, set default.
 
     $self->valid_ttl( $data->{ttl} );
 
@@ -88,7 +88,7 @@ sub edit_nameserver {
         'Cannot edit nameserver in a deleted group!' )
         if $self->check_object_deleted( 'group', $dataobj->{nt_group_id} );
 
-    $self->valid_ttl( $data->{ttl} ); # check the TTL
+    $self->valid_ttl( $data->{ttl} ) if defined $data->{ttl};
 
     if ( exists $data->{name} ) {
 
@@ -170,7 +170,6 @@ sub get_group_nameservers {
     return $self->throw_sanity_error if $self->{errors};
     return $self->SUPER::get_group_nameservers($data);
 }
-
 
 1;
 

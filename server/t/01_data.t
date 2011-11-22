@@ -19,7 +19,7 @@ use lib '.';
 use lib 't';
 use lib 'lib';
 use NicToolTest;
-use Test::More tests => 14;
+use Test::More tests => 20;
 use Data::Dumper;
 
 
@@ -77,6 +77,12 @@ $r = $nts->exec_query( "DELETE FROM nt_fake WHERE nt_zone_id=?", $r );
 ok( ! $r, "Delete zone fail");
 
 ok( ! $nts->is_subgroup(1,1), 'is_subgroup');
+
+foreach ( qw/ 299 2592001 0 1 3000000 oops / ) {
+    ok( ! $nts->valid_ttl( $_ ), "valid_ttl: $_");
+};
+
+
 
 #$r = $nts->is_subgroup(1,320);
 #ok( $r, "is_subgroup ($r)");

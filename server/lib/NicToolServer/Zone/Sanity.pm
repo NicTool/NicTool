@@ -45,8 +45,6 @@ sub new_zone {
         $self->error( 'zone', 'Zone is already taken' );
     }
 
-    #check subdomains
-
     # sub-domain checks .. kinda nasty, but I think it has to be.
     my $z = $data->{zone};
     $z =~ tr/A-Z/a-z/;

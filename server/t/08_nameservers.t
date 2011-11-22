@@ -37,7 +37,7 @@ use NicToolTest;
 use NicTool;
 use Test;
 
-BEGIN { plan tests => 541 }
+BEGIN { plan tests => 544 }
 
 $user = new NicTool(
     cache_users  => 0,
@@ -275,7 +275,7 @@ sub doit {
             nt_nameserver_id => $res->get('nt_nameserver_id') );
     }
 
-    for (qw(bin djbs DJB BIND NT)) {
+    for ( qw/ bin djbs DJB BIND NT / ) {
 
         #invalid export_format
         $res = $group1->new_nameserver(
@@ -292,7 +292,7 @@ sub doit {
         }
     }
 
-    for (qw(299 2592001 0 1 3000000)) {
+    for ( 299, 2592001, 0, 1, 3000000, 'oops' ) {
 
         #invalid ttl
         $res = $group1->new_nameserver(
@@ -668,7 +668,7 @@ sub doit {
         ok( $res->get('error_desc') => qr/Sanity error/ );
     }
 
-    for (qw(299 2592001 0 1 3000000)) {
+    for ( qw/ 299 2592001 0 1 3000000 / ) {
 
         #invalid ttl
         $res = $ns1->edit_nameserver( ttl => $_ );
