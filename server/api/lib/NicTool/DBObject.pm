@@ -85,7 +85,7 @@ Returns the result of the last API function call.
 =cut
 
 sub result {
-    return $_[0]->{'nt'}->result;
+    return $_[0]->{nt}->result;
 }
 
 =item nt_user_session
@@ -95,7 +95,7 @@ Returns the session string for the session.
 =cut
 
 sub nt_user_session {
-    return $_[0]->{'nt'}->nt_user_session;
+    return $_[0]->{nt}->nt_user_session;
 }
 
 sub _api_call {
@@ -116,34 +116,34 @@ sub _call {
     if ( $self->is_error ) {
         confess "Attempting to call method $method on an error result";
     }
-    if ( $self->_api->{$method}->{'sully'} ) {
-        $self->{'nt'}->_cache_sully_object($self);
+    if ( $self->_api->{$method}->{sully} ) {
+        $self->{nt}->_cache_sully_object($self);
     }
-    if ( $self->_api->{$method}->{'includeid'} ) {
+    if ( $self->_api->{$method}->{includeid} ) {
         $data{ $self->_id_name } = $self->id
             unless exists $data{ $self->_id_name };
     }
-    foreach ( @{ $self->_api->{$method}->{'include'} } ) {
+    foreach ( @{ $self->_api->{$method}->{include} } ) {
         $data{$_} = $self->get($_) unless exists $data{$_};
     }
-    foreach ( keys %{ $self->_api->{$method}->{'includeas'} } ) {
-        $data{$_} = $self->get( $self->_api->{$method}->{'includeas'}->{$_} )
+    foreach ( keys %{ $self->_api->{$method}->{includeas} } ) {
+        $data{$_} = $self->get( $self->_api->{$method}->{includeas}->{$_} )
             unless exists $data{$_};
     }
-    my $apimethod = $self->_api->{$method}->{'function'} || $method;
+    my $apimethod = $self->_api->{$method}->{function} || $method;
 
     #check cache for object
     my $obj;
-    if ( $self->{'nt'}->_should_cache->{$method} ) {
-        $obj = $self->{'nt'}->_cache_get(
+    if ( $self->{nt}->_should_cache->{$method} ) {
+        $obj = $self->{nt}->_cache_get(
             NicTool::API->result_type($apimethod),
-            $data{ $self->{'nt'}->_should_cache->{$method} }
+            $data{ $self->{nt}->_should_cache->{$method} }
         );
         return $obj if $obj;
     }
-    $obj = $self->{'nt'}->_dispatch( $apimethod, %data );
-    if ( $self->{'nt'}->_should_cache->{$method} ) {
-        $self->{'nt'}->_cache_object($obj) if !$obj->is_error;
+    $obj = $self->{nt}->_dispatch( $apimethod, %data );
+    if ( $self->{nt}->_should_cache->{$method} ) {
+        $self->{nt}->_cache_object($obj) if !$obj->is_error;
     }
     return $obj;
 }
@@ -160,10 +160,10 @@ sub refresh {
     my $obj  = $self->_get_self;
     return $obj if $obj->is_error;
 
-    #$self->{'store'}=undef;
-    $self->{'store'} = $obj->{'store'};
+    #$self->{store}=undef;
+    $self->{store} = $obj->{store};
 
-    #foreach(keys %{$obj->{'store'}}){
+    #foreach(keys %{$obj->{store}}){
     #$self->set($_,$obj->get($_));
     #}
     $obj = undef;

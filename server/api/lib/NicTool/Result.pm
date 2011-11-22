@@ -44,8 +44,8 @@ sub new {
     $self->set( 'error_desc', '' )    unless $self->has('error_desc');
     my $type = $pkg;
     $type =~ s/.*:://;
-    $self->{'type'} = $type;
-    $self->{'nt'}   = $nt;
+    $self->{type} = $type;
+    $self->{nt}   = $nt;
     $self = bless $self, $pkg;
     $self->_init;
     return $self;

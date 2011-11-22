@@ -23,9 +23,9 @@ sub new {
         $r->read( $content, $conlen ) if ( $conlen gt 0 );
     }
 
-    $self{'data'} = {};
-    $self{'data'} = decode_data( $content, $r->headers_in->{'Content-Type'} );
-    $self{'protocol_version'} = $self{'data'}->{'nt_protocol_version'};
+    $self{data} = {};
+    $self{data} = decode_data( $content, $r->headers_in->{'Content-Type'} );
+    $self{protocol_version} = $self{data}{nt_protocol_version};
 
     bless \%self, $class;
 }
@@ -49,15 +49,15 @@ sub decode_xml_rpc_data {
 
         # TODO if you want multiple arguments, map $req->args and return array
         my $href = $req->args->[0]->value;
-        $href->{'action'} = $req->name;
+        $href->{action} = $req->name;
         return $href;
     }
 
     return NicToolServer::error_response( 502, $req );
 }
 
-sub protocol_version { $_[0]->{'protocol_version'} }
-sub data             { $_[0]->{'data'} }
+sub protocol_version { $_[0]->{protocol_version} }
+sub data             { $_[0]->{data} }
 
 1;
 

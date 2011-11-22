@@ -150,7 +150,7 @@ sub new {
     foreach ( keys %conf ) {
         $self->{$_} = $conf{$_} if exists $self->{$_};
     }
-    $self->{'cache'} = NicTool::Cache->new;
+    $self->{cache} = NicTool::Cache->new;
     return $self;
 }
 
@@ -207,12 +207,12 @@ sub _api {
 
 sub _should_cache {
     my $self = shift;
-    +{  get_group => $self->{'cache_groups'} ? 'nt_group_id' : '',
-        get_user  => $self->{'cache_users'}  ? 'nt_user_id'  : '',
-        get_zone  => $self->{'cache_zones'}  ? 'nt_zone_id'  : '',
-        get_zone_record => $self->{'cache_records'} ? 'nt_zone_record_id'
+    +{  get_group => $self->{cache_groups} ? 'nt_group_id' : '',
+        get_user  => $self->{cache_users}  ? 'nt_user_id'  : '',
+        get_zone  => $self->{cache_zones}  ? 'nt_zone_id'  : '',
+        get_zone_record => $self->{cache_records} ? 'nt_zone_record_id'
         : '',
-        get_nameserver => $self->{'cache_nameservers'} ? 'nt_nameserver_id'
+        get_nameserver => $self->{cache_nameservers} ? 'nt_nameserver_id'
         : '',
     };
 }
@@ -290,18 +290,18 @@ sub _cache_sully {
     my $self = shift;
     my $type = shift;
     my $id   = shift;
-    $self->{'cache'}->del( lc($type), $id );
+    $self->{cache}->del( lc($type), $id );
 }
 
 sub _cache_object {
     my $self = shift;
     my $obj  = shift;
-    $self->{'cache'}->add( $obj, lc( $obj->type ), $obj->id );
+    $self->{cache}->add( $obj, lc( $obj->type ), $obj->id );
 }
 
 sub _cache_get {
     my ( $self, $type, $id ) = @_;
-    my $res = $self->{'cache'}->get( lc($type), $id );
+    my $res = $self->{cache}->get( lc($type), $id );
     if ( $res && $self->{debug_cache_hit} ) {
         print "\t\tcache_hit: " . lc($type) . ":$id\n";
     }
@@ -441,7 +441,7 @@ sub _dispatch {
         $self->{cache} = NicTool::Cache->new;
     }
 
-    #$obj->{'nt'}=$self if $obj;
+    #$obj->{nt}=$self if $obj;
     $self->{result} = $obj;
     return $obj;
 }
@@ -485,13 +485,13 @@ sub AUTOLOAD {
 
     $AUTOLOAD =~ s/.*:://;
 
-    my $res = $self->{'user'} ? $self->{'user'}->$AUTOLOAD(@_) : undef;
+    my $res = $self->{user} ? $self->{user}->$AUTOLOAD(@_) : undef;
     unless ( defined $res ) {
         if ( $self->_api_call($AUTOLOAD) ) {
             return $self->_dispatch( $AUTOLOAD, @_ );
         }
         elsif ( $AUTOLOAD =~ /can_([^:]+)$/ ) {
-            return $self->{'user'}->get($1);
+            return $self->{user}->get($1);
         }
         else {
             croak "No such method '$AUTOLOAD'";

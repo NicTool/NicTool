@@ -10,21 +10,21 @@ sub get_usable_nameservers {
 
     my @groups;
     my @usable;
-    if ( $data->{'nt_group_id'} ) {
+    if ( $data->{nt_group_id} ) {
 
         my $res = $self->NicToolServer::Group::get_group_branch($data);
         return $res if $self->is_error_response($res);
-        @groups = map { $_->{'nt_group_id'} } @{ $res->{'groups'} };
+        @groups = map { $_->{nt_group_id} } @{ $res->{groups} };
     }
 
-    push @groups, $self->{'user'}->{'nt_group_id'};
+    push @groups, $self->{user}{nt_group_id};
     foreach ( 0 .. 9 ) {
-        push @usable, $self->{'user'}->{"usable_ns$_"}
-            if $self->{'user'}->{"usable_ns$_"} ne 0;
+        push @usable, $self->{user}{"usable_ns$_"}
+            if $self->{user}->{"usable_ns$_"} ne 0;
     }
 
     my $r_data = $self->error_response(200);
-    $r_data->{'nameservers'} = [];
+    $r_data->{nameservers} = [];
 
     my $sql
         = "SELECT * FROM nt_nameserver "
@@ -43,7 +43,7 @@ sub get_usable_nameservers {
         };
 
     foreach my $row (@$nameservers) {
-        push( @{ $r_data->{'nameservers'} }, $row );
+        push( @{ $r_data->{nameservers} }, $row );
     }
 
     return $r_data;
@@ -80,21 +80,21 @@ sub get_group_nameservers {
         },
     );
 
-    $field_map{'group_name'}
+    $field_map{group_name}
         = { timefield => 0, quicksearch => 0, field => 'nt_group.name' }
-        if $data->{'include_subgroups'};
+        if $data->{include_subgroups};
 
     my $conditions = $self->format_search_conditions( $data, \%field_map );
 
     my @group_list;
-    if ( $data->{'include_subgroups'} ) {
+    if ( $data->{include_subgroups} ) {
         @group_list = (
-            $data->{'nt_group_id'},
-            @{ $self->get_subgroup_ids( $data->{'nt_group_id'} ) }
+            $data->{nt_group_id},
+            @{ $self->get_subgroup_ids( $data->{nt_group_id} ) }
         );
     }
     else {
-        @group_list = ( $data->{'nt_group_id'} );
+        @group_list = ( $data->{nt_group_id} );
     }
 
     my $r_data = { 'error_code' => 200, 'error_msg' => 'OK', list => [] };
@@ -108,14 +108,14 @@ sub get_group_nameservers {
         . ( @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
     my $c = $self->exec_query($sql);
 
-    $r_data->{'total'} = $c->[0]{count};
+    $r_data->{total} = $c->[0]{count};
 
     $self->set_paging_vars( $data, $r_data );
 
     my $sortby;
-    return $r_data if $r_data->{'total'} == 0;
+    return $r_data if $r_data->{total} == 0;
 
-    if ( $r_data->{'total'} > 10000 ) {
+    if ( $r_data->{total} > 10000 ) {
         $sortby = $self->format_sort_conditions( $data, \%field_map, "" );
     }
     else {
@@ -132,7 +132,7 @@ sub get_group_nameservers {
     AND g.nt_group_id IN(" . join( ',', @group_list ) . ") ";
     $sql .= 'AND (' . join( ' ', @$conditions ) . ') ' if @$conditions;
     $sql .= "ORDER BY " . join( ', ', @$sortby ) . " " if (@$sortby);
-    $sql .= "LIMIT " . ( $r_data->{'start'} - 1 ) . ", $r_data->{'limit'}";
+    $sql .= "LIMIT " . ( $r_data->{start} - 1 ) . ", $r_data->{limit}";
 
     my $nameservers = $self->exec_query($sql)
         or return {
@@ -142,8 +142,8 @@ sub get_group_nameservers {
 
     my %groups;
     foreach my $row (@$nameservers) {
-        push( @{ $r_data->{'list'} }, $row );
-        $groups{ $row->{'nt_group_id'} } = 1;
+        push( @{ $r_data->{list} }, $row );
+        $groups{ $row->{nt_group_id} } = 1;
     }
 
     $r_data->{group_map}
@@ -157,12 +157,12 @@ sub get_nameserver_list {
 
     my %rv = ( 'error_code' => 200, 'error_msg' => 'OK', list => [] );
 
-# my %groups = map { $_, 1 } ($data->{'user'}->{'nt_group_id'}, @{ $self->get_subgroup_ids($data->{'user'}->{'nt_group_id'}) });
+# my %groups = map { $_, 1 } ($data->{user}{nt_group_id}, @{ $self->get_subgroup_ids($data->{user}{nt_group_id}) });
 
     my $sql
         = "SELECT * FROM nt_nameserver WHERE deleted=0 AND nt_nameserver_id IN(??) ORDER BY name";
 
-    my @ns_list = split( ',', $data->{'nameserver_list'} );
+    my @ns_list = split( ',', $data->{nameserver_list} );
     my $nameservers = $self->exec_query( $sql, [@ns_list] )
         or return {
         error_code => 600,
@@ -183,18 +183,18 @@ sub move_nameservers {
     my %rv = ( 'error_code' => 200, 'error_msg' => 'OK' );
 
     my %groups = map { $_, 1 } (
-        $data->{'user'}->{'nt_group_id'},
-        @{ $self->get_subgroup_ids( $data->{'user'}->{'nt_group_id'} ) }
+        $data->{user}{nt_group_id},
+        @{ $self->get_subgroup_ids( $data->{user}{nt_group_id} ) }
     );
 
     my $new_group
-        = $self->NicToolServer::Group::find_group( $data->{'nt_group_id'} );
+        = $self->NicToolServer::Group::find_group( $data->{nt_group_id} );
 
     my $sql
         = "SELECT nt_nameserver.*, nt_group.name as old_group_name FROM nt_nameserver, nt_group "
         . "WHERE nt_nameserver.nt_group_id = nt_group.nt_group_id AND nt_nameserver_id IN(??)";
 
-    my @ns_list = split( ',', $data->{'nameserver_list'} );
+    my @ns_list = split( ',', $data->{nameserver_list} );
     my $nameservers = $self->exec_query( $sql, [@ns_list] )
         or return {
         error_code => 600,
@@ -210,9 +210,9 @@ sub move_nameservers {
             [ $data->{nt_group_id}, $row->{nt_nameserver_id} ] )
             or next;
 
-        my %ns = ( %$row, user => $data->{'user'} );
-        $ns{'nt_group_id'} = $data->{'nt_group_id'};
-        $ns{'group_name'}  = $new_group->{'name'};
+        my %ns = ( %$row, user => $data->{user} );
+        $ns{nt_group_id} = $data->{nt_group_id};
+        $ns{group_name}  = $new_group->{name};
 
         $self->log_nameserver( \%ns, 'moved', $row );
     }
@@ -257,7 +257,7 @@ sub new_nameserver {
         error_msg  => $self->{dbh}->errstr,
         };
 
-    $data->{'nt_nameserver_id'} = $insertid;
+    $data->{nt_nameserver_id} = $insertid;
     $self->log_nameserver( $data, $action );
 
     return {
@@ -277,14 +277,14 @@ sub edit_nameserver {
         qw/ nt_group_id nt_nameserver_id name ttl description address
         export_format logdir datadir export_interval /;
 
-    my $prev_data = $self->find_nameserver( $data->{'nt_nameserver_id'} );
+    my $prev_data = $self->find_nameserver( $data->{nt_nameserver_id} );
 
     my $sql
         = "UPDATE nt_nameserver SET "
         . join( ',', map( "$_ = " . $dbh->quote( $data->{$_} ), @columns ) )
         . " WHERE nt_nameserver_id = ?";
 
-    $self->exec_query( $sql, $data->{'nt_nameserver_id'} )
+    $self->exec_query( $sql, $data->{nt_nameserver_id} )
         or return {
         error_code => 600,
         error_msg  => $dbh->errstr,
@@ -302,7 +302,7 @@ sub edit_nameserver {
 sub delete_nameserver {
     my ( $self, $data ) = @_;
 
-    my $dbh = $self->{'dbh'};
+    my $dbh = $self->{dbh};
 
     my %error = ( 'error_code' => 200, 'error_msg' => 'OK' );
 
@@ -318,11 +318,11 @@ sub delete_nameserver {
         );
     }
 
-    my $ns_data = $self->find_nameserver( $data->{'nt_nameserver_id'} );
-    $ns_data->{'user'} = $data->{'user'};
+    my $ns_data = $self->find_nameserver( $data->{nt_nameserver_id} );
+    $ns_data->{user} = $data->{user};
 
     $sql = "UPDATE nt_nameserver SET deleted=1 WHERE nt_nameserver_id = ?";
-    $self->exec_query( $sql, $data->{'nt_nameserver_id'} )
+    $self->exec_query( $sql, $data->{nt_nameserver_id} )
         or return $self->error_response( 600, $dbh->errstr );
 
     $self->log_nameserver( $ns_data, 'deleted' );
@@ -333,14 +333,14 @@ sub delete_nameserver {
 sub log_nameserver {
     my ( $self, $data, $action, $prev_data ) = @_;
 
-    my $dbh     = $self->{'dbh'};
+    my $dbh     = $self->{dbh};
     my @columns = qw/ nt_group_id nt_user_id action timestamp nt_nameserver_id
         name ttl description address export_format logdir datadir export_interval /;
 
-    my $user = $data->{'user'};
-    $data->{'nt_user_id'} = $user->{'nt_user_id'};
-    $data->{'action'}     = $action;
-    $data->{'timestamp'}  = time();
+    my $user = $data->{user};
+    $data->{nt_user_id} = $user->{nt_user_id};
+    $data->{action}     = $action;
+    $data->{timestamp}  = time();
 
     my $sql
         = "INSERT INTO nt_nameserver_log("
@@ -353,23 +353,23 @@ sub log_nameserver {
     my @g_columns = qw/ nt_user_id timestamp action object object_id
         log_entry_id title description /;
 
-    $data->{'object'}       = 'nameserver';
-    $data->{'log_entry_id'} = $insertid;
-    $data->{'title'}        = $data->{'name'};
-    $data->{'object_id'}    = $data->{'nt_nameserver_id'};
+    $data->{object}       = 'nameserver';
+    $data->{log_entry_id} = $insertid;
+    $data->{title}        = $data->{name};
+    $data->{object_id}    = $data->{nt_nameserver_id};
 
     if ( $action eq 'modified' ) {
-        $data->{'description'} = $self->diff_changes( $data, $prev_data );
+        $data->{description} = $self->diff_changes( $data, $prev_data );
     }
     elsif ( $action eq 'deleted' ) {
-        $data->{'description'} = 'deleted nameserver';
+        $data->{description} = 'deleted nameserver';
     }
     elsif ( $action eq 'added' ) {
-        $data->{'description'} = 'initial nameserver creation';
+        $data->{description} = 'initial nameserver creation';
     }
     elsif ( $action eq 'moved' ) {
-        $data->{'description'}
-            = "moved from $data->{'old_group_name'} to $data->{'group_name'}";
+        $data->{description}
+            = "moved from $data->{old_group_name} to $data->{group_name}";
     }
 
     $sql

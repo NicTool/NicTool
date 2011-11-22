@@ -25,7 +25,7 @@ sub new {
 }
 
 sub _nt {
-    return $_[0]->{'nt'};
+    return $_[0]->{nt};
 }
 
 sub get_transport_agent {

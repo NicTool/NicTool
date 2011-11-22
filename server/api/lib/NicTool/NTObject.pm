@@ -67,11 +67,11 @@ Returns the type of the object.
 =cut
 
 sub type {
-    return $_[0]->{'type'};
+    return $_[0]->{type};
 }
 
 sub parent {
-    return $_[0]->{'parent'};
+    return $_[0]->{parent};
 }
 
 =item get(KEY,...)
@@ -86,7 +86,7 @@ of the attributes in the same order.
 sub get {
     my $self = shift;
     if ( @_ gt 1 ) {
-        my @r = @{ %{ $self->{'store'} } }{@_};
+        my @r = @{ %{ $self->{store} } }{@_};
         return @r;
     }
     else {
@@ -96,7 +96,7 @@ sub get {
                 "package $package at line $line called NTObject::get with invalid parameters!\n";
             return undef;
         }
-        return $self->{'store'}->{ $_[0] };
+        return $self->{store}->{ $_[0] };
     }
 }
 
@@ -110,7 +110,7 @@ sub set {
     my $self = shift;
     while ( @_ gt 0 && @_ % 2 == 0 ) {
         unless ( defined $_[-1] && defined $_[-2] ) { pop @_; pop @_; next; }
-        $self->{'store'}->{ $_[-2] } = $_[-1];
+        $self->{store}->{ $_[-2] } = $_[-1];
         pop @_;
         pop @_;
     }
@@ -124,12 +124,12 @@ Returns a TRUE value if an attribute named KEY exists.
 
 sub has {
     my $self = shift;
-    return exists $self->{'store'}->{ $_[0] };
+    return exists $self->{store}{ $_[0] };
 }
 
 sub sob {
     my $self = shift;
-    foreach ( keys %{ $self->{'store'} } ) {
+    foreach ( keys %{ $self->{store} } ) {
         print "$_ = " . Data::Dumper::Dumper( $self->get($_) );
     }
 

@@ -885,26 +885,26 @@ sub log_zone {
     $data->{object}       = 'zone';
     $data->{log_entry_id} = $insertid;
     $data->{title}        = $data->{zone} || $prev_data->{zone};
-    $data->{'object_id'}    = $data->{'nt_zone_id'};
+    $data->{object_id}    = $data->{nt_zone_id};
 
     if ( $action eq 'modified' ) {
-        $data->{'description'} = $self->diff_changes( $data, $prev_data );
+        $data->{description} = $self->diff_changes( $data, $prev_data );
     }
     elsif ( $action eq 'deleted' ) {
-        $data->{'description'} = 'deleted zone and all associated records';
+        $data->{description} = 'deleted zone and all associated records';
     }
     elsif ( $action eq 'added' ) {
-        $data->{'description'} = 'initial creation';
+        $data->{description} = 'initial creation';
     }
     elsif ( $action eq 'moved' ) {
-        $data->{'description'}
-            = "moved from $data->{'old_group_name'} to $data->{'group_name'}";
+        $data->{description}
+            = "moved from $data->{old_group_name} to $data->{group_name}";
     }
     elsif ( $action eq 'recovered' ) {
 
      #TODO add 'recovered' to the enum for global_application_log action field
-     #$data->{'action'}='added';
-        $data->{'description'} = "recovered zone from deleted bin";
+     #$data->{action}='added';
+        $data->{description} = "recovered zone from deleted bin";
     }
 
     $sql
@@ -921,12 +921,12 @@ sub delete_zones {
     my %error = ( 'error_code' => 200, 'error_msg' => 'OK' );
 
     my %groups = map { $_, 1 } (
-        $data->{'user'}->{'nt_group_id'},
-        @{ $self->get_subgroup_ids( $data->{'user'}->{'nt_group_id'} ) }
+        $data->{user}{nt_group_id},
+        @{ $self->get_subgroup_ids( $data->{user}{nt_group_id} ) }
     );
 
     my $sql = "SELECT * FROM nt_zone WHERE nt_zone.nt_zone_id IN("
-        . $data->{'zone_list'} . ')';
+        . $data->{zone_list} . ')';
     my $zones_data = $self->exec_query($sql);
 
     my $record_obj = NicToolServer::Zone::Record->new( $self->{Apache},
@@ -955,17 +955,17 @@ sub move_zones {
     my %rv = ( 'error_code' => 200, 'error_msg' => 'OK' );
 
     my %groups = map { $_, 1 } (
-        $data->{'user'}->{'nt_group_id'},
-        @{ $self->get_subgroup_ids( $data->{'user'}->{'nt_group_id'} ) }
+        $data->{user}{nt_group_id},
+        @{ $self->get_subgroup_ids( $data->{user}{nt_group_id} ) }
     );
 
     my $new_group
-        = $self->NicToolServer::Group::find_group( $data->{'nt_group_id'} );
+        = $self->NicToolServer::Group::find_group( $data->{nt_group_id} );
 
     my $sql = "SELECT nt_zone.*, nt_group.name as old_group_name 
         FROM nt_zone, nt_group 
        WHERE nt_zone.nt_group_id = nt_group.nt_group_id 
-         AND nt_zone_id IN(" . $data->{'zone_list'} . ")";
+         AND nt_zone_id IN(" . $data->{zone_list} . ")";
 
     my $zrecs = $self->exec_query($sql)
         or return {
@@ -974,7 +974,7 @@ sub move_zones {
         };
 
     foreach my $row (@$zrecs) {
-        next if !$groups{ $row->{'nt_group_id'} };
+        next if !$groups{ $row->{nt_group_id} };
 
         $sql = "UPDATE nt_zone SET nt_group_id = ?" . " WHERE nt_zone_id = ?";
 
@@ -983,9 +983,9 @@ sub move_zones {
             )
             )
         {
-            my %zone = ( %$row, user => $data->{'user'} );
-            $zone{'nt_group_id'} = $data->{'nt_group_id'};
-            $zone{'group_name'}  = $new_group->{'name'};
+            my %zone = ( %$row, user => $data->{user} );
+            $zone{nt_group_id} = $data->{nt_group_id};
+            $zone{group_name}  = $new_group->{name};
 
             $self->log_zone( \%zone, 'moved', $row, 0 );
         }
@@ -999,7 +999,7 @@ sub get_zone_list {
 
     my %rv = ( 'error_code' => 200, 'error_msg' => 'OK' );
 
-#my %groups = map { $_, 1 } ($data->{'user'}->{'nt_group_id'}, @{ $self->get_subgroup_ids($data->{'user'}->{'nt_group_id'}) });
+#my %groups = map { $_, 1 } ($data->{user}{nt_group_id}, @{ $self->get_subgroup_ids($data->{user}{nt_group_id}) });
 
     my $sql = "SELECT * FROM nt_zone WHERE deleted=0 
         AND nt_zone_id IN(" . $data->{zone_list} . ") ORDER BY zone";
@@ -1030,17 +1030,17 @@ sub get_zone_list {
     foreach my $row (@$ntzones) {
 
         if (my $del = $self->get_param_meta(
-                "zone_list:$row->{'nt_zone_id'}", 'delegate'
+                "zone_list:$row->{nt_zone_id}", 'delegate'
             )
             )
         {
             foreach my $key ( keys %delegatemapping ) {
                 $row->{ $delegatemapping{$key} } = $del->{$key};
 
-                #next unless( $groups{ $row->{'nt_group_id'} } );
+                #next unless( $groups{ $row->{nt_group_id} } );
             }
         }
-        push( @{ $rv{'zones'} }, $row );
+        push( @{ $rv{zones} }, $row );
     }
 
     return \%rv;

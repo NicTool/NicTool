@@ -12,15 +12,15 @@ sub new_zone_record {
 
     # do any new_zone_record specific checks here
 
-    return $self->throw_sanity_error if ( $self->{'errors'} );
+    return $self->throw_sanity_error if $self->{errors};
     return $self->SUPER::new_zone_record($data);
 }
 
 sub edit_zone_record {
     my ( $self, $data ) = @_;
     my $zr = $self->get_zone_record($data);
-    return $zr if $zr->{'error_code'} ne 200;
-    $data->{'nt_zone_id'} = $zr->{'nt_zone_id'};
+    return $zr if $zr->{error_code} ne 200;
+    $data->{nt_zone_id} = $zr->{nt_zone_id};
     foreach (qw(type address)) {
         $data->{$_} = $zr->{$_} unless exists $data->{$_};
     }
@@ -31,9 +31,9 @@ sub edit_zone_record {
     $self->push_sanity_error( 'nt_zone_record_id',
         "Cannot edit deleted record!" )
         if $self->check_object_deleted( 'zonerecord',
-                $data->{'nt_zone_record_id'} )
-            and $data->{'deleted'} ne '0';
-    return $self->throw_sanity_error if ( $self->{'errors'} );
+                $data->{nt_zone_record_id} )
+            and $data->{deleted} ne '0';
+    return $self->throw_sanity_error if $self->{errors};
 
     return $self->SUPER::edit_zone_record($data);
 }
@@ -41,11 +41,11 @@ sub edit_zone_record {
 sub new_or_edit_basic_verify {
     my ( $self, $data ) = @_;
 
-    my $z = $self->find_zone( $data->{'nt_zone_id'} ) or do {
+    my $z = $self->find_zone( $data->{nt_zone_id} ) or do {
         $self->{errors}{nt_zone_id} = 1;
         push( @{ $self->{error_messages} }, 'invalid zone_id' );
     };
-    if ( $self->check_object_deleted( 'zone', $data->{'nt_zone_id'} ) ) {
+    if ( $self->check_object_deleted( 'zone', $data->{nt_zone_id} ) ) {
         $self->push_sanity_error( 'nt_zone_id',
             "Cannot create/edit records in a deleted zone." );
     }

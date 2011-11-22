@@ -12,8 +12,8 @@ use constant MP2 => $mod_perl::VERSION >= 1.99;
 sub respond {
     my ( $self, $data ) = @_;
 
-    my $r      = $self->{'Apache'};
-    my $client = $self->{'client'};
+    my $r      = $self->{Apache};
+    my $client = $self->{client};
 
     if (MP2) {
         $r->content_type('text/xml');     # for mod_perl 2
@@ -28,7 +28,7 @@ sub respond {
 sub send_error {
     my ( $self, $error ) = @_;
 
-    my $r = $self->{'Apache'};
+    my $r = $self->{Apache};
 
     #XML-RPC fault
     if (MP2) {

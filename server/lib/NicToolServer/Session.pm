@@ -15,14 +15,14 @@ sub verify {
     # return of 0 = sucess, return of anything else = error
     my $self = shift;
 
-    my $data = $self->{'client'}->data();
-    $data->{'action'} = uc( $data->{'action'} );
+    my $data = $self->{client}->data();
+    $data->{action} = uc( $data->{action} );
 
     my $vcheck = $self->ver_check;
     return $vcheck if $vcheck;
 
-    #warn "action is ".$data->{'action'};
-    return $self->verify_login if $data->{'action'} eq 'LOGIN';
+    #warn "action is ".$data->{action};
+    return $self->verify_login if $data->{action} eq 'LOGIN';
     return $self->verify_session;    # just verify the session
 }
 
@@ -34,8 +34,8 @@ sub verify_login {
     # $NicToolServer::session_timeout. This is easier to setup
     $self->timeout_sessions;
 
-    my $data = $self->{'client'}->data();
-    my $dbh  = $self->{'dbh'};
+    my $data = $self->{client}->data();
+    my $dbh  = $self->{dbh};
 
     my $error_msg = 'Invalid username and/or password.';
 
@@ -46,21 +46,21 @@ sub verify_login {
         = "SELECT nt_user.*, nt_group.name AS groupname FROM nt_user, nt_group "
         . "WHERE nt_user.nt_group_id = nt_group.nt_group_id AND "
         . "nt_user.deleted=0 AND nt_user.nt_group_id IN ("
-        . join( ',', @{ $data->{'groups'} } )
+        . join( ',', @{ $data->{groups} } )
         . ") AND nt_user.username = ?";
 
-    my $users = $self->exec_query( $sql, $data->{'username'} )
+    my $users = $self->exec_query( $sql, $data->{username} )
         or return $self->error_response( 505, $dbh->errstr );
 
     return $self->auth_error('no such username') if !$users;
     return $self->auth_error('invalid username') if scalar @$users > 1;
 
-    my $attempted_pass = $data->{'password'};
-    delete( $data->{'password'} );
+    my $attempted_pass = $data->{password};
+    delete( $data->{password} );
 
 # delete the hashkey or perl maintains attempted_pass as a ref to the hash key's lvalue
 
-    $data->{'user'} = $users->[0];
+    $data->{user} = $users->[0];
 
     # RCC - Handle HMAC passwords
     if ( $data->{user}{password} =~ /[0-9a-f]{40}/ ) {
@@ -72,7 +72,7 @@ sub verify_login {
 
     $self->clean_user_data;
 
-    $data->{'user'}->{'nt_user_session'} = $self->session_id;
+    $data->{user}{nt_user_session} = $self->session_id;
 
     $sql = "SELECT * FROM nt_perm " . "WHERE deleted=0 AND nt_user_id = ?";
     my $perms = $self->exec_query( $sql, $data->{user}{nt_user_id} )
@@ -93,10 +93,10 @@ sub verify_login {
 
     if ( !$perm ) {
         $perm = $groupperm;
-        $perm->{'inherit_group_permissions'} = 1;
+        $perm->{inherit_group_permissions} = 1;
     }
     else {
-        $perm->{'inherit_group_permissions'} = 0;
+        $perm->{inherit_group_permissions} = 0;
 
         #for now usable_ns settings are always inherited from the group
         for ( 0 .. 9 ) {
@@ -110,13 +110,13 @@ sub verify_login {
                 . $data->{user}{nt_user_id}
                 . ")" );
     }
-    delete $perm->{'nt_user_id'};
-    delete $perm->{'nt_group_id'};
-    delete $perm->{'nt_perm_id'};
-    delete $perm->{'nt_perm_name'};
+    delete $perm->{nt_user_id};
+    delete $perm->{nt_group_id};
+    delete $perm->{nt_perm_id};
+    delete $perm->{nt_perm_name};
 
     foreach ( keys %$perm ) {
-        $data->{'user'}->{$_} = $perm->{$_};
+        $data->{user}{$_} = $perm->{$_};
     }
 
     $sql
@@ -141,8 +141,8 @@ sub verify_login {
 sub verify_session {
     my $self = shift;
 
-    my $data = $self->{'client'}->data();
-    my $dbh  = $self->{'dbh'};
+    my $data = $self->{client}->data();
+    my $dbh  = $self->{dbh};
 
     my $sql
         = "SELECT nt_user.*, nt_user_session.*, nt_group.name as groupname FROM nt_user_session, nt_user, nt_group 
@@ -157,7 +157,7 @@ sub verify_session {
     return $self->auth_error('Your session has expired. Please login again')
         if !$sessions;
 
-    $data->{'user'} = $sessions->[0];
+    $data->{user} = $sessions->[0];
 
     my $max_age = time() - $NicToolServer::session_timeout;
     if ( $max_age >= $data->{user}{last_access} ) {
@@ -166,7 +166,7 @@ sub verify_session {
     }
 
     # delete session and log logout if LOGOUT
-    return $self->logout if $data->{'action'} eq 'LOGOUT';
+    return $self->logout if $data->{action} eq 'LOGOUT';
 
     $sql = "SELECT * FROM nt_perm WHERE deleted=0 AND nt_user_id = ?";
     my $perms = $self->exec_query( $sql, $data->{user}{nt_user_id} )
@@ -199,15 +199,15 @@ sub verify_session {
     if ( !$perm ) {
         return $self->error_response( 507,
                   "Could not find permissions for user ("
-                . $data->{'user'}->{'nt_user_id'}
+                . $data->{user}{nt_user_id}
                 . ")" );
     }
-    delete $perm->{'nt_user_id'};
-    delete $perm->{'nt_group_id'};
+    delete $perm->{nt_user_id};
+    delete $perm->{nt_group_id};
 
-    #@{$data->{'user'}}{sort keys %$perm} = @{$perm}{sort keys %$perm};
+    #@{$data->{user}}{sort keys %$perm} = @{$perm}{sort keys %$perm};
     foreach ( keys %$perm ) {
-        $data->{'user'}->{$_} = $perm->{$_};
+        $data->{user}{$_} = $perm->{$_};
     }
 
     $sql = "UPDATE nt_user_session SET last_access = ?"
@@ -225,7 +225,7 @@ sub logout {
     $msg ||= 'logout';
 
     #warn "calling Session::logout ... ".join(" ",caller);
-    my $data = $self->{'client'}->data();
+    my $data = $self->{client}->data();
 
     my $sql = "DELETE FROM nt_user_session WHERE nt_user_session_id = ?";
     $self->exec_query( $sql, $data->{user}{nt_user_session_id} );
@@ -252,16 +252,16 @@ sub logout {
 sub populate_groups {
     my $self = shift;
 
- # return true on successful population of @$data->{'groups'}, otherwise false
+ # return true on successful population of @$data->{groups}, otherwise false
 
-    my $data = $self->{'client'}->data();
+    my $data = $self->{client}->data();
 
     my $ids;
-    $data->{'groups'} = [];
+    $data->{groups} = [];
 
     my $sql;
-    if ( $data->{'username'} =~ /(.+)\@(.+)/ ) {
-        $data->{'username'} = $1;
+    if ( $data->{username} =~ /(.+)\@(.+)/ ) {
+        $data->{username} = $1;
         $sql
             = "SELECT nt_group_id FROM nt_group WHERE deleted=0 AND name = ?";
         $ids = $self->exec_query( $sql, $2 );
@@ -275,7 +275,7 @@ sub populate_groups {
 
     my $i = 0;
     foreach (@$ids) {
-        push( @{ $data->{'groups'} }, $_->{nt_group_id} );
+        push( @{ $data->{groups} }, $_->{nt_group_id} );
         $i++;
     }
 
@@ -296,16 +296,16 @@ sub timeout_sessions {
 
         # delete the dead session
         $sql = "DELETE FROM nt_user_session WHERE nt_user_session_id = ?";
-        $self->exec_query( $sql, $s->{'nt_user_session_id'} );
+        $self->exec_query( $sql, $s->{nt_user_session_id} );
 
         # log that the session was auto_logged out
         $sql
             = "INSERT INTO nt_user_session_log(nt_user_id, action, timestamp, nt_user_session, nt_user_session_id) VALUES (??)";
         $self->exec_query(
             $sql,
-            [   $s->{'nt_user_id'}, 'timeout',
-                time(),             $s->{'nt_user_session'},
-                $s->{'nt_user_session_id'}
+            [   $s->{nt_user_id}, 'timeout',
+                time(),             $s->{nt_user_session},
+                $s->{nt_user_session_id}
             ]
         );
     }
@@ -316,13 +316,13 @@ sub clean_user_data {
     # delete unused and password data from DB-returned user hash
     my $self = shift;
 
-    my $data = $self->{'client'}->data();
+    my $data = $self->{client}->data();
 
     my @fields = qw(password deleted nt_user_session_id last_access);
 
     foreach my $f (@fields) {
-        delete( $data->{'user'}->{$f} )
-            if ( exists( $data->{'user'}->{$f} ) );
+        delete( $data->{user}->{$f} )
+            if ( exists( $data->{user}->{$f} ) );
     }
 
 }

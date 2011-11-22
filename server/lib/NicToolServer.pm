@@ -593,23 +593,6 @@ sub api_commands {
                     { access => 'read', required => 1, type => 'USER' },
             },
         },
-
-#delegation
-#'delegate_objects'=> {
-#'class' =>  'Permission',
-#'method'=>  'delegate_objects',
-#'parameters'=>{'nt_object_id_list'=>{list=>1,access=>'delegate',required=>1,type=>'parameters:nt_object_type'},
-#'nt_object_type'=>{required=>1},
-#'nt_group_id'=>{'access'=>'read',required=>1,type=>'GROUP'},
-#},
-#},
-#'delegate_groups'=> {
-#'class' =>  'Permission',
-#'method'=>  'delegate_groups',
-#'parameters'=>{'group_list'=>{list=>1,access=>'delegate',required=>1,type=>'GROUP'},
-#'nt_group_id'=>{'access'=>'read',required=>1,type=>'GROUP'},
-#},
-#},
         'delegate_zones' => {
             class      => 'Permission',
             method     => 'delegate_zones',
@@ -642,22 +625,6 @@ sub api_commands {
                     { 'access' => 'read', required => 1, type => 'GROUP' },
             },
         },
-
-#'delegate_nameservers'=> {
-#'class' =>  'Permission',
-#'method'=>  'delegate_nameservers',
-#'parameters'=>{'nameserver_list'=>{list=>1,access=>'delegate',required=>1,type=>'NAMESERVER'},
-#'nt_group_id'=>{'access'=>'read',required=>1,type=>'GROUP'},
-#},
-#},
-
-#'edit_group_delegation'=> {
-#'class' =>  'Permission',
-#'method'=>  'edit_group_delegation',
-#'parameters'=>{'delegate_nt_group_id'=>{access=>'delegate',required=>1,type=>'GROUP'},
-#'nt_group_id'=>{'access'=>'read',required=>1,type=>'GROUP'},
-#},
-#},
         'edit_zone_delegation' => {
             'class'      => 'Permission',
             'method'     => 'edit_zone_delegation',
@@ -688,30 +655,6 @@ sub api_commands {
                     { 'access' => 'read', required => 1, type => 'GROUP' },
             },
         },
-
-#'edit_nameserver_delegation'=> {
-#'class' =>  'Permission',
-#'method'=>  'edit_nameserver_delegation',
-#'parameters'=>{'nt_nameserver_id'=>{access=>'delegate',required=>1,type=>'NAMESERVER'},
-#'nt_group_id'=>{'access'=>'read',required=>1,type=>'GROUP'},
-#},
-#},
-
-#'delete_object_delegation'=> {
-#'class' =>  'Permission',
-#'method'=>  'delete_object_delegation',
-#'parameters'=>{'nt_object_id'=>{access=>'delete',required=>1,type=>'parameters:nt_object_type'},
-#'nt_object_type'=>{required=>1},
-#'nt_group_id'=>{'access'=>'read',required=>1,type=>'GROUP'},
-#},
-#},
-#'delete_group_delegation'=> {
-#'class' =>  'Permission',
-#'method'=>  'delete_group_delegation',
-#'parameters'=>{'delegate_nt_group_id'=>{access=>'delete',required=>1,type=>'GROUP'},
-        ##'nt_group_id'=>{'access'=>'read',required=>1,type=>'GROUP'},
-        #},
-        #},
         'delete_zone_delegation' => {
             'class'      => 'Permission',
             'method'     => 'delete_zone_delegation',
@@ -742,20 +685,6 @@ sub api_commands {
                     { 'access' => 'read', required => 1, type => 'GROUP' },
             },
         },
-
-#'delete_nameserver_delegation'=> {
-#'class' =>  'Permission',
-#'method'=>  'delete_nameserver_delegation',
-#'parameters'=>{'nt_nameserver_id'=>{access=>'delete',required=>1,type=>'NAMESERVER'},
-#'nt_group_id'=>{'access'=>'read',required=>1,type=>'GROUP'},
-#},
-#},
-#'get_delegated_groups'=> {
-#'class' =>  'Permission',
-#'method'=>  'get_delegated_groups',
-#'parameters'=>{ 'nt_group_id'=>{'access'=>'read',required=>1,type=>'GROUP'},
-#},
-#},
         'get_delegated_zones' => {
             'class'      => 'Permission',
             'method'     => 'get_delegated_zones',
@@ -846,7 +775,7 @@ sub error_response {
 
 sub is_error_response {
     my ( $self, $data ) = @_;
-    return ( !exists $data->{'error_code'} or $data->{'error_code'} != 200 );
+    return ( !exists $data->{error_code} or $data->{error_code} != 200 );
 }
 
 sub error {
@@ -881,13 +810,13 @@ sub get_group_id {
     if ( $key eq 'nt_group_id' or uc($type) eq 'GROUP' ) {
         $sql = "SELECT parent_group_id FROM nt_group WHERE nt_group_id = ?";
         my $ids = $self->exec_query( $sql, $id );
-        my $rid = $ids->[0]->{'parent_group_id'};
+        my $rid = $ids->[0]->{parent_group_id};
         $rid = 1 if $rid eq 0;
     }
     elsif ( $key eq 'nt_zone_id' or uc($type) eq 'ZONE' ) {
         $sql = "SELECT nt_group_id FROM nt_zone WHERE nt_zone_id = ?";
         my $ids = $self->exec_query( $sql, $id );
-        $rid = $ids->[0]->{'nt_group_id'} if $ids;
+        $rid = $ids->[0]->{nt_group_id} if $ids;
     }
     elsif ( $key eq 'nt_zone_record_id' or uc($type) eq 'ZONERECORD' ) {
         $sql
@@ -895,18 +824,18 @@ sub get_group_id {
             . "WHERE nt_zone_record.nt_zone_record_id = ? "
             . "AND nt_zone.nt_zone_id=nt_zone_record.nt_zone_id";
         my $ids = $self->exec_query( $sql, $id );
-        $rid = $ids->[0]->{'nt_group_id'} if $ids;
+        $rid = $ids->[0]->{nt_group_id} if $ids;
     }
     elsif ( $key eq 'nt_nameserver_id' or uc($type) eq 'NAMESERVER' ) {
         $sql = "SELECT nt_group_id FROM nt_nameserver "
             . "WHERE nt_nameserver_id = ?";
         my $ids = $self->exec_query( $sql, $id );
-        $rid = $ids->[0]->{'nt_group_id'} if $ids;
+        $rid = $ids->[0]->{nt_group_id} if $ids;
     }
     elsif ( $key eq 'nt_user_id' or uc($type) eq 'USER' ) {
         $sql = "SELECT nt_group_id FROM nt_user WHERE nt_user_id = ?";
         my $ids = $self->exec_query( $sql, $id );
-        $rid = $ids->[0]->{'nt_group_id'} if $ids;
+        $rid = $ids->[0]->{nt_group_id} if $ids;
     }
 
     #warn "returning ID $rid";
@@ -950,17 +879,17 @@ sub check_permission {
         $islist, $creation, $delegate, $pseudo
     ) = @_;
 
-    #my $access = $api->{'parameters'}->{$key}->{'access'};
-    #my $creation = $api->{'creation'};
+    #my $access = $api->{parameters}{$key}{access};
+    #my $creation = $api->{creation};
 
-    my $user_id  = $self->{'user'}->{'nt_user_id'};
-    my $group_id = $self->{'user'}->{'nt_group_id'};
+    my $user_id  = $self->{user}{nt_user_id};
+    my $group_id = $self->{user}{nt_group_id};
     my $obj_group_id
         = $type =~ /group/i ? $id : $self->get_group_id( $key, $id, $type );
 
     my $group_ok = $self->group_usage_ok($obj_group_id);
 
-    my $permissions = $self->{'user'};
+    my $permissions = $self->{user};
 
     my $debug
         = "key:$key,id:$id,type:$type,access:$access,creation:$creation,obj_group_id:$obj_group_id,group_ok:$group_ok,delegate:$delegate,pseudo:$pseudo:("
@@ -1051,7 +980,7 @@ sub check_permission {
         if ($del) {
             $self->set_param_meta( $islist ? "$key:$id" : $key,
                 delegate => $del );
-            if ( $del->{'pseudo'} and $pseudo ) {
+            if ( $del->{pseudo} and $pseudo ) {
                 if ( $pseudo eq 'none' ) {
                     warn "NO pseudo '$pseudo': $debug"
                         if $self->debug_permissions;
@@ -1130,8 +1059,8 @@ sub check_permission {
 
 sub get_delegate_access {
     my ( $self, $id, $type ) = @_;
-    my $user_id  = $self->{'user'}->{'nt_user_id'};
-    my $group_id = $self->{'user'}->{'nt_group_id'};
+    my $user_id  = $self->{user}{nt_user_id};
+    my $group_id = $self->{user}{nt_group_id};
 
     #check delegation
 
@@ -1167,7 +1096,7 @@ sub get_delegate_access {
             my $r = $self->exec_query( $sql, [ $group_id, $id ] );
             my $result = $r->[0];
 
-            if ( $result && $result->{'count'} gt 0 ) {
+            if ( $result && $result->{count} gt 0 ) {
                 return +{
                     pseudo                     => 1,
                     'perm_write'               => 0,
@@ -1175,7 +1104,7 @@ sub get_delegate_access {
                     'perm_delegate'            => 0,
                     'zone_perm_add_records'    => 0,
                     'zone_perm_delete_records' => 0,
-                    'group_name'               => $result->{'group_name'},
+                    'group_name'               => $result->{group_name},
                 };
             }
 
@@ -1186,8 +1115,8 @@ sub get_delegate_access {
 
 sub get_zonerecord_delegate_access {
     my ( $self, $id, $type ) = @_;
-    my $user_id  = $self->{'user'}->{'nt_user_id'};
-    my $group_id = $self->{'user'}->{'nt_group_id'};
+    my $user_id  = $self->{user}{nt_user_id};
+    my $group_id = $self->{user}{nt_group_id};
 
     #check delegation
     my $sql
@@ -1214,8 +1143,8 @@ sub verify_obj_usage {
     my ( $self, $api, $data, $cmd ) = @_;
 
     my @error;
-    return $api->{'result'} if exists $api->{'result'};
-    my $params = $api->{'parameters'};
+    return $api->{result} if exists $api->{result};
+    my $params = $api->{parameters};
 
     warn
         "##############################\n$cmd VERIFY OBJECT USAGE\n##############################\n"
@@ -1225,13 +1154,13 @@ sub verify_obj_usage {
 
     #verify that required parameters are present
     my @missing;
-    foreach my $p ( grep { $$params{$_}->{'required'} } keys %$params ) {
+    foreach my $p ( grep { $$params{$_}->{required} } keys %$params ) {
 
         #warn "parameter $p exists:".exists $data->{$p};
         if ( ( !exists $data->{$p} ) or ( $data->{$p} eq '' ) ) {
             push @missing, $p;
         }
-        elsif ( $$params{$p}->{'list'} ) {
+        elsif ( $$params{$p}->{list} ) {
 
             #warn "got list in call ".Data::Dumper::Dumper($data);
             if ( ref $data->{$p} eq 'ARRAY' ) {
@@ -1260,16 +1189,16 @@ sub verify_obj_usage {
     }
     my @invalid;
     foreach my $p (
-        grep { exists $data->{$_} and $$params{$_}->{'type'} }
+        grep { exists $data->{$_} and $$params{$_}->{type} }
         keys %$params
         )
     {
         next
-            if $$params{$p}->{'empty'}
+            if $$params{$p}->{empty}
                 and ( !defined $data->{$p} or $data->{$p} eq '' );   #empty ok
             #warn "data is ".Data::Dumper::Dumper($data->{$p});
-            #warn "checking value of $p.  is list? ".$$params{$p}->{'list'};
-        if ( $$params{$p}->{'list'} ) {
+            #warn "checking value of $p.  is list? ".$$params{$p}->{list};
+        if ( $$params{$p}->{list} ) {
             if ( ref $data->{$p} eq 'ARRAY' ) {
 
           #warn "got array ref $p in call ".Data::Dumper::Dumper($data->{$p});
@@ -1304,18 +1233,18 @@ sub verify_obj_usage {
 
     #verify that appropriate permission level is available for all objects
     foreach my $f (
-        grep { exists $data->{$_} and $$params{$_}->{'type'} }
+        grep { exists $data->{$_} and $$params{$_}->{type} }
         keys %$params
         )
     {
 
-        next unless $$params{$f}->{'access'};
-        my $type = $$params{$f}->{'type'};
+        next unless $$params{$f}->{access};
+        my $type = $$params{$f}->{type};
 
         #if($type=~s/^parameters://){
         #$type=$data->{$type};
         #}
-        if ( $$params{$f}->{'list'} ) {
+        if ( $$params{$f}->{list} ) {
             if ( ref $data->{$f} eq 'ARRAY' ) {
                 $data->{$f} = join( ",", @{ $data->{$f} } );
             }
@@ -1324,12 +1253,12 @@ sub verify_obj_usage {
                 @error = $self->check_permission(
                     $f,
                     $i,
-                    $api->{'parameters'}->{$f}->{'access'},
+                    $api->{parameters}{$f}{access},
                     $type,
                     1,
-                    $api->{'creation'},
-                    $$params{$f}->{'delegate'},
-                    $$params{$f}->{'pseudo'}
+                    $api->{creation},
+                    $$params{$f}->{delegate},
+                    $$params{$f}->{pseudo}
                 );
 
                 #warn @error if defined $error[0];
@@ -1341,12 +1270,12 @@ sub verify_obj_usage {
             @error = $self->check_permission(
                 $f,
                 $data->{$f},
-                $api->{'parameters'}->{$f}->{'access'},
+                $api->{parameters}{$f}{access},
                 $type,
                 0,
-                $api->{'creation'},
-                $$params{$f}->{'delegate'},
-                $$params{$f}->{'pseudo'}
+                $api->{creation},
+                $$params{$f}->{delegate},
+                $$params{$f}->{pseudo}
             );
         }
 
@@ -1364,8 +1293,8 @@ sub get_param_meta {
     my $param = shift;
     my $key   = shift;
 
-    #warn Data::Dumper::Dumper($self->{'meta'});
-    return $self->{'meta'}->{$param}->{$key};
+    #warn Data::Dumper::Dumper($self->{meta});
+    return $self->{meta}{$param}{$key};
 }
 
 sub set_param_meta {
@@ -1377,11 +1306,11 @@ sub set_param_meta {
     my $value = shift;
 
     #warn "setting param meta: param $param, key $key, value $value";
-    #$self->{'meta'}={} unless exists $self->{'meta'};
-    $self->{'meta'}->{$param} = {} unless exists $self->{'meta'}->{$param};
-    $self->{'meta'}->{$param}->{$key} = $value;
+    #$self->{meta}={} unless exists $self->{meta};
+    $self->{meta}{$param} = {} unless exists $self->{meta}{$param};
+    $self->{meta}{$param}{$key} = $value;
 
-#warn "final param meta: param $param, key $key, value ".Data::Dumper::Dumper($self->{'meta'});;
+#warn "final param meta: param $param, key $key, value ".Data::Dumper::Dumper($self->{meta});;
 
 }
 
@@ -1480,15 +1409,15 @@ sub valid_ttl {
 sub group_usage_ok {
     my ( $self, $id ) = @_;
 
-    my $user = $self->{'user'};
+    my $user = $self->{user};
     my $res  = 0;
-    if (   $user->{'nt_group_id'} == $id
-        || $self->is_subgroup( $user->{'nt_group_id'}, $id ) )
+    if (   $user->{nt_group_id} == $id
+        || $self->is_subgroup( $user->{nt_group_id}, $id ) )
     {
         $res = 1;
     }
     warn
-        "::::group_usage_ok: $id subgroup of group $user->{'nt_group_id'} ? : $res"
+        "::::group_usage_ok: $id subgroup of group $user->{nt_group_id} ? : $res"
         if $self->debug_permissions;
     return $res;
 }
@@ -1523,14 +1452,14 @@ sub get_group_map {
 
         foreach my $r (@$subgroups) {
 
-            if ( $r->{'nt_group_id'} == $top_group_id ) {
-                $skipping = $r->{'nt_subgroup_id'};
+            if ( $r->{nt_group_id} == $top_group_id ) {
+                $skipping = $r->{nt_subgroup_id};
             }
-            elsif ( $r->{'nt_subgroup_id'} == $top_group_id ) {
+            elsif ( $r->{nt_subgroup_id} == $top_group_id ) {
                 next;
             }
             elsif ($skipping) {
-                if ( $skipping != $r->{'nt_subgroup_id'} ) {
+                if ( $skipping != $r->{nt_subgroup_id} ) {
                     $skipping = 0;
                 }
                 else {
@@ -1538,7 +1467,7 @@ sub get_group_map {
                 }
             }
 
-            unshift( @{ $map{ $r->{'nt_subgroup_id'} } }, $r );
+            unshift( @{ $map{ $r->{nt_subgroup_id} } }, $r );
         }
     }
 
@@ -1589,7 +1518,7 @@ sub get_group_branches {
             = "SELECT parent_group_id FROM nt_group WHERE nt_group_id = ?";
         my $ids = $self->exec_query( $sql, $nextgroup );
         unshift @groups, $nextgroup if $ids->[0];
-        $nextgroup = $ids->[0]->{'parent_group_id'};
+        $nextgroup = $ids->[0]->{parent_group_id};
     }
 }
 
@@ -1943,33 +1872,33 @@ sub set_paging_vars {
     if ( $data->{page} && ( $data->{page} =~ /^\d+$/ ) ) {
         $r_data->{start} = ( $data->{page} - 1 ) * $r_data->{limit} + 1;
     }
-    elsif ( $data->{'start'} && ( $data->{'start'} =~ /^\d+$/ ) ) {
-        $r_data->{'start'} = $data->{'start'};
+    elsif ( $data->{start} && ( $data->{start} =~ /^\d+$/ ) ) {
+        $r_data->{start} = $data->{start};
     }
     else {
-        $r_data->{'start'} = 1;
+        $r_data->{start} = 1;
     }
 
-    if ( $r_data->{'start'} >= $r_data->{'total'} ) {
-        if ( $r_data->{'total'} % $r_data->{'limit'} ) {
-            $r_data->{'start'}
-                = int( $r_data->{'total'} / $r_data->{'limit'} )
-                * $r_data->{'limit'} + 1;
+    if ( $r_data->{start} >= $r_data->{total} ) {
+        if ( $r_data->{total} % $r_data->{limit} ) {
+            $r_data->{start}
+                = int( $r_data->{total} / $r_data->{limit} )
+                * $r_data->{limit} + 1;
         }
         else {
-            $r_data->{'start'} = $r_data->{'total'} - $r_data->{'limit'} + 1;
+            $r_data->{start} = $r_data->{total} - $r_data->{limit} + 1;
         }
     }
 
-    $r_data->{'end'} = ( $r_data->{'start'} + $r_data->{'limit'} ) - 1;
-    $r_data->{'page'}
-        = $r_data->{'end'} % $r_data->{'limit'}
-        ? int( $r_data->{'end'} / $r_data->{'limit'} ) + 1
-        : $r_data->{'end'} / $r_data->{'limit'};
-    $r_data->{'total_pages'}
-        = $r_data->{'total'} % $r_data->{'limit'}
-        ? int( $r_data->{'total'} / $r_data->{'limit'} ) + 1
-        : $r_data->{'total'} / $r_data->{'limit'};
+    $r_data->{end} = ( $r_data->{start} + $r_data->{limit} ) - 1;
+    $r_data->{page}
+        = $r_data->{end} % $r_data->{limit}
+        ? int( $r_data->{end} / $r_data->{limit} ) + 1
+        : $r_data->{end} / $r_data->{limit};
+    $r_data->{total_pages}
+        = $r_data->{total} % $r_data->{limit}
+        ? int( $r_data->{total} / $r_data->{limit} ) + 1
+        : $r_data->{total} / $r_data->{limit};
 }
 
 sub search_params_sanity_check {
@@ -1983,7 +1912,7 @@ sub search_params_sanity_check {
     my %i = map { $_ => 1 } ( 'and', 'or' );
 
     #search stuff
-    if ( $data->{'Search'} ) {
+    if ( $data->{Search} ) {
         foreach my $int ( 1 .. 5 ) {
             next unless exists $data->{ $int . "_field" };
             foreach (qw(option value)) {
@@ -2023,14 +1952,14 @@ sub search_params_sanity_check {
             ) unless exists $i{ lc( $data->{ $int . "_inclusive" } ) };
         }
     }
-    elsif ( $data->{'quick_search'} ) {
+    elsif ( $data->{quick_search} ) {
         $self->push_sanity_error( "search_value",
             "Must include parameter 'search_value' with 'quick_search'." )
-            unless exists $data->{'search_value'};
+            unless exists $data->{search_value};
     }
 
     #sort stuff
-    if ( $data->{'Sort'} ) {
+    if ( $data->{Sort} ) {
         foreach my $int ( 1 .. 3 ) {
             next unless exists $data->{ $int . "_sortfield" };
             $self->push_sanity_error(
@@ -2056,8 +1985,8 @@ sub search_params_sanity_check {
 
 sub push_sanity_error {
     my ( $self, $param, $message ) = @_;
-    $self->{'errors'}->{$param} = 1;
-    push( @{ $self->{'error_messages'} }, $message );
+    $self->{errors}->{$param} = 1;
+    push( @{ $self->{error_messages} }, $message );
 }
 
 1;

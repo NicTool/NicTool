@@ -13,13 +13,13 @@ sub new_user {
 
     $self->push_sanity_error( 'nt_group_id',
         'Cannot add user to a deleted group!' )
-        if $self->check_object_deleted( 'group', $data->{'nt_group_id'} );
+        if $self->check_object_deleted( 'group', $data->{nt_group_id} );
 
     $self->_valid_username($data);
     $self->_valid_email($data);
     $self->_valid_password($data);
 
-    return $self->throw_sanity_error if ( $self->{'errors'} );
+    return $self->throw_sanity_error if $self->{errors};
     $self->SUPER::new_user($data);
 }
 
@@ -27,26 +27,24 @@ sub edit_user {
     my ( $self, $data ) = @_;
 
     $self->push_sanity_error( 'nt_user_id', 'Cannot edit deleted user!' )
-        if $self->check_object_deleted( 'user', $data->{'nt_user_id'} );
+        if $self->check_object_deleted( 'user', $data->{nt_user_id} );
 
     my $dataobj = $self->get_user($data);
     return $dataobj if $self->is_error_response($dataobj);
 
     $self->push_sanity_error( 'nt_user_id',
         'Cannot edit user in a deleted group!' )
-        if $self->check_object_deleted( 'group', $dataobj->{'nt_group_id'} );
+        if $self->check_object_deleted( 'group', $dataobj->{nt_group_id} );
 
-    $self->_valid_email($data)    if exists $data->{'email'};
-    $self->_valid_username($data) if exists $data->{'username'};
+    $self->_valid_email($data)    if exists $data->{email};
+    $self->_valid_username($data) if exists $data->{username};
 
-    if ( exists $data->{'password'} && $data->{'password'} ne '' ) {
+    if ( exists $data->{password} && $data->{password} ne '' ) {
 
-        unless ( exists $data->{'current_password'}
+        unless ( exists $data->{current_password}
             && $self->_check_current_password($data) )
         {
-            $self->{'errors'}->{'current_password'} = 1;
-            push(
-                @{ $self->{'error_messages'} },
+            $self->error('current_password', 
                 "You must enter the correct current password to change a user's password."
             );
         }
@@ -54,30 +52,30 @@ sub edit_user {
         $self->_valid_password($data);
     }
 
-    return $self->throw_sanity_error if ( $self->{'errors'} );
+    return $self->throw_sanity_error if $self->{errors};
     $self->SUPER::edit_user($data);
 }
 
 sub move_users {
     my ( $self, $data ) = @_;
     my $me = 0;
-    foreach ( split( /,/, $data->{'user_list'} ) ) {
-        $me = 1 if $_ eq $self->{'user'}->{'nt_user_id'};
+    foreach ( split( /,/, $data->{user_list} ) ) {
+        $me = 1 if $_ eq $self->{user}{nt_user_id};
     }
     $self->push_sanity_error( 'user_list',
         'Cannot move yourself to another group!' )
         if $me;
 
-    return $self->throw_sanity_error if ( $self->{'errors'} );
+    return $self->throw_sanity_error if $self->{errors};
     return $self->SUPER::move_users($data);
 }
 
 sub get_user_list {
     my ( $self, $data ) = @_;
     $self->push_sanity_error( 'user_list', 'user_list cannot be empty' )
-        if $data->{'user_list'} eq '';
+        if $data->{user_list} eq '';
 
-    return $self->throw_sanity_error if ( $self->{'errors'} );
+    return $self->throw_sanity_error if $self->{errors};
     return $self->SUPER::get_user_list($data);
 }
 
@@ -86,7 +84,7 @@ sub get_group_users {
 
     $self->search_params_sanity_check( $data,
         qw(username first_name last_name email) );
-    return $self->throw_sanity_error if ( $self->{'errors'} );
+    return $self->throw_sanity_error if $self->{errors};
     return $self->SUPER::get_group_users($data);
 }
 
@@ -95,7 +93,7 @@ sub get_user_global_log {
 
     $self->search_params_sanity_check( $data,
         qw(timestamp title action object description) );
-    return $self->throw_sanity_error if ( $self->{'errors'} );
+    return $self->throw_sanity_error if $self->{errors};
     return $self->SUPER::get_user_global_log($data);
 }
 
@@ -111,11 +109,11 @@ sub _check_current_password {
 
     # RCC - Handle HMAC passwords
     if ( $db_pass =~ /[0-9a-f]{40}/ ) {
-        $data->{'current_password'}
-            = hmac_sha1_hex( $data->{'current_password'}, $db_user );
+        $data->{current_password}
+            = hmac_sha1_hex( $data->{current_password}, $db_user );
     }
 
-    return $db_pass eq $data->{'current_password'} ? 1 : 0;
+    return $db_pass eq $data->{current_password} ? 1 : 0;
 }
 
 sub _username_exists {
@@ -123,7 +121,7 @@ sub _username_exists {
 
     my ( $sql, $groups );
 
-    if ( exists $data->{'nt_user_id'} ) {
+    if ( exists $data->{nt_user_id} ) {
         $sql
             = "SELECT name FROM nt_group INNER JOIN nt_user "
             . "ON nt_user.nt_group_id=nt_group.nt_group_id "
@@ -135,7 +133,7 @@ sub _username_exists {
         $groups = $self->exec_query( $sql, $data->{nt_group_id} );
     }
 
-    $data->{'groupname'} = $groups->[0]{name};
+    $data->{groupname} = $groups->[0]{name};
 
     $sql = "SELECT nt_group_id FROM nt_group WHERE name = ? AND deleted=0";
     $groups = $self->exec_query( $sql, $groups->[0]{name} );
@@ -145,11 +143,11 @@ sub _username_exists {
         push( @groups, $row->{nt_group_id} );
     }
 
-    if ( $data->{'nt_user_id'} ) {
+    if ( $data->{nt_user_id} ) {
         $sql
             = "SELECT nt_user_id FROM nt_user WHERE deleted=0 AND nt_group_id IN ("
             . join( ',', @groups )
-            . ") AND nt_user_id != $data->{'nt_user_id'} AND username=?";
+            . ") AND nt_user_id != $data->{nt_user_id} AND username=?";
     }
     else {
         $sql
@@ -166,37 +164,25 @@ sub _username_exists {
 sub _valid_username {
     my ( $self, $data ) = @_;
 
-    my $username = $data->{'username'};
+    my $username = $data->{username};
 
     if ( length($username) < 3 ) {
-        $self->{'errors'}->{'username'} = 1;
-        push(
-            @{ $self->{'error_messages'} },
-            "Username must be at least 3 characters."
-        );
+        $self->error( 'username', "Username must be at least 3 characters." );
     }
 
     if ( length($username) > 50 ) {
-        $self->{'errors'}->{'username'} = 1;
-        push(
-            @{ $self->{'error_messages'} },
-            "Username cannot exceed 50 characters."
-        );
+        $self->error( 'username', "Username cannot exceed 50 characters." );
     }
 
     if ( $username =~ /([^a-zA-Z0-9 \-\_\.])/ ) {
-        $self->{'errors'}->{'username'} = 1;
-        push(
-            @{ $self->{'error_messages'} },
+        $self->error( 'username',
             "Username contains an invalid character - \"$1\". Only A-Z, 0-9, _, -, . and [space] are allowed."
         );
     }
 
     if ( $self->_username_exists($data) ) {
-        $self->{'errors'}->{'username'} = 1;
-        push(
-            @{ $self->{'error_messages'} },
-            "Username $data->{'username'}\@$data->{'groupname'} is not unique. Please choose a different username or put the user in a different group."
+        $self->error( 'username',
+            "Username $data->{username}\@$data->{groupname} is not unique. Please choose a different username or put the user in a different group."
         );
     }
 }
@@ -204,65 +190,49 @@ sub _valid_username {
 sub _valid_email {
     my ( $self, $data ) = @_;
 
-    if ( $data->{'email'} !~ /^[^@]+@[^@.]+\..+$/ ) {
-        $self->{'errors'}->{'email'} = 1;
-        push(
-            @{ $self->{'error_messages'} },
-            "Email must be a valid email address."
-        );
-
+    if ( $data->{email} !~ /^[^@]+@[^@.]+\..+$/ ) {
+        $self->error( 'email', "Email must be a valid email address.");
     }
 }
 
 sub _valid_password {
     my ( $self, $data ) = @_;
 
-    if ( length( $data->{'password'} ) < 6 ) {
-        $self->{'errors'}->{'password'} = 1;
-        push(
-            @{ $self->{'error_messages'} },
+    if ( length( $data->{password} ) < 6 ) {
+        $self->error( 'password',
             "Password too short, must be 6-30 characters long."
         );
     }
 
-    if ( length( $data->{'password'} ) > 30 ) {
-        $self->{'errors'}->{'password'} = 1;
-        push(
-            @{ $self->{'error_messages'} },
+    if ( length( $data->{password} ) > 30 ) {
+        $self->error( 'password',
             "Password too long, must be 6-30 characters long."
         );
     }
 
-    my $username = $data->{'username'};
+    my $username = $data->{username};
     if ( !$username ) {
-        $self->{'errors'}->{'password'} = 1;
-        push(
-            @{ $self->{'error_messages'} },
+        $self->error( 'password',
             "Internal error. Missing username in password update request."
         );
     }
     else {
-        if ( $data->{'password'} eq $username ) {
-            $self->{'errors'}->{'password'} = 1;
-            push(
-                @{ $self->{'error_messages'} },
+        if ( $data->{password} eq $username ) {
+            $self->error( 'password',
                 "Password cannot be the same as username!."
             );
         }
 
-        if ( $data->{'password'} =~ m/$username/ ) {
-            $self->{'errors'}->{'password'} = 1;
-            push(
-                @{ $self->{'error_messages'} },
+        if ( $data->{password} =~ m/$username/ ) {
+            $self->error( 'password',
                 "Password cannot contain your username!."
             );
         }
     }
 
-    if ( $data->{'password'} ne $data->{'password2'} ) {
-        $self->{'errors'}->{'password'} = $self->{'errors'}->{'password2'}
-            = 1;
-        push( @{ $self->{'error_messages'} }, 'Passwords must match.' );
+    if ( $data->{password} ne $data->{password2} ) {
+        $self->{errors}{password} = $self->{errors}{password2} = 1;
+        push( @{ $self->{error_messages} }, 'Passwords must match.' );
     }
 }
 

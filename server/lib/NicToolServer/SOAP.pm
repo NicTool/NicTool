@@ -10,13 +10,13 @@ use vars qw/ $AUTOLOAD /;
 sub _dispatch {
     my ( $class, $action, $data ) = @_;
 
-    $data->{'action'} = $action;
+    $data->{action} = $action;
 
     my $dbh    = &NicToolServer::dbh;
     my $client = NicToolServer::Client::SOAP->new($data);
     my $self   = NicToolServer->new( undef, $client, $dbh, {} );
 
-    $self->{'data'} = $data;
+    $self->{data} = $data;
 
     my $error = NicToolServer::Session->new( undef, $client, $dbh )->verify();
 
@@ -27,14 +27,14 @@ sub _dispatch {
         or uc($action) eq 'VERIFY_SESSION'
         or uc($action) eq 'LOGOUT' )
     {
-        my $h = $data->{'user'};
-        $h->{'password'} = '' if exists $h->{'password'};
+        my $h = $data->{user};
+        $h->{password} = '' if exists $h->{password};
 
         #warn "result of session verify: ".Data::Dumper::Dumper($h);
         return $h;
     }
 
-    $self->{'user'} = $client->data()->{'user'};
+    $self->{user} = $client->data()->{user};
     warn "request: " . Data::Dumper::Dumper( $client->data )
         if $self->debug_result;
 
@@ -42,19 +42,19 @@ sub _dispatch {
 
         #warn "data is: ".Data::Dumper::Dumper($data);
 
-        #$error = $self->verify_required($cmd->{'required'},$data);
+        #$error = $self->verify_required($cmd->{required},$data);
         #return $error if $error;
         eval { $error = $self->verify_obj_usage( $cmd, $data, $action ); };
         return $self->error_response( 508, $@ ) if $@;
         return $error if $error;
 
         #$@=undef;
-        my $class = 'NicToolServer::' . $cmd->{'class'};
-        my $obj   = $class->new( undef, undef, $dbh, $self->{'meta'},
-            $self->{'user'} );
-        my $method = $cmd->{'method'};
+        my $class = 'NicToolServer::' . $cmd->{class};
+        my $obj   = $class->new( undef, undef, $dbh, $self->{meta},
+            $self->{user} );
+        my $method = $cmd->{method};
         warn
-            "calling NicToolServer action: $cmd->{'class'}::$cmd->{'method'} ("
+            "calling NicToolServer action: $cmd->{class}::$cmd->{method} ("
             . lc($action) . ")\n"
             if $self->debug;
         my $res;

@@ -61,7 +61,7 @@ and the 'nt_group_id' parameter will be supplied automatically.
 use NicTool::DBObject;
 our @ISA = qw(NicTool::DBObject);
 
-sub _id_name {'nt_user_id'}
+sub _id_name {nt_user_id}
 
 sub _api {
     +{  _get_self    => { 'function' => 'get_user', 'includeid' => 1 },

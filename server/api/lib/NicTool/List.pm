@@ -112,8 +112,8 @@ use Data::Dumper;
 our @ISA = qw(NicTool::Result);
 my $iterate = sub {
     my $self = shift;
-    my $i    = $self->{'iterator'};
-    $self->{'iterator'} = $i + 1 if $self->more;
+    my $i    = $self->{iterator};
+    $self->{iterator} = $i + 1 if $self->more;
     return $i;
 };
 
@@ -128,10 +128,10 @@ refs suitable for turning into NicTool objects.
 sub new {
     my ( $pkg, $nt, $itype, $listparam, @rest ) = @_;
     my $self = $pkg->SUPER::new( $nt, @rest );
-    $self->{'type'}       = 'List';
-    $self->{'list_param'} = $listparam;
-    $self->{'iterator'}   = 0;
-    $self->{'item_type'}  = $itype;
+    $self->{type}       = 'List';
+    $self->{list_param} = $listparam;
+    $self->{iterator}   = 0;
+    $self->{item_type}  = $itype;
 
     my @list;
     my $obj;
@@ -142,7 +142,7 @@ sub new {
         }
     }
     $self->set( $listparam, \@list );
-    $self->{'nt'} = $nt;
+    $self->{nt} = $nt;
     return bless $self, $pkg;
 }
 
@@ -154,7 +154,7 @@ Returns the name of the parameter which contains the list objects
 
 sub list_param {
     my $self = shift;
-    return $self->{'list_param'};
+    return $self->{list_param};
 }
 
 =item item_type
@@ -166,7 +166,7 @@ objects can be determined by prepending "NicTool::" to the 'type'.
 
 sub item_type {
     my $self = shift;
-    return $self->{'item_type'};
+    return $self->{item_type};
 }
 
 =item size
@@ -188,7 +188,7 @@ Returns a TRUE value if more items are available via the I<next> method.
 
 sub more {
     my $self = shift;
-    return ( $self->size gt 0 ) && ( $self->size gt( $self->{'iterator'} ) );
+    return ( $self->size gt 0 ) && ( $self->size gt( $self->{iterator} ) );
 }
 
 =item next
@@ -202,7 +202,7 @@ sub next {
     local *NicTool::List::iterate = $iterate;
     if ( $self->more ) {
 
-        #$self->{'iterator'} = $self->{'iterator'} + 1;
+        #$self->{iterator} = $self->{iterator} + 1;
         return ${ $self->get( $self->list_param ) }[ $self->iterate ];
     }
     else {
@@ -220,7 +220,7 @@ I<next> will return the first object in the list.
 
 sub reset {
     my $self = shift;
-    $self->{'iterator'} = 0;
+    $self->{iterator} = 0;
 }
 
 =item list
