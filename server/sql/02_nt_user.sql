@@ -48,26 +48,31 @@ CREATE TABLE nt_user_log(
 
 DROP TABLE IF EXISTS nt_user_session;
 CREATE TABLE nt_user_session(
-    nt_user_session_id       INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    nt_user_session_id       INT UNSIGNED NOT NULL AUTO_INCREMENT,
     nt_user_id               INT UNSIGNED NOT NULL,
     nt_user_session	     VARCHAR(100) NOT NULL,
-    last_access              INT UNSIGNED NOT NULL
+    last_access              INT UNSIGNED NOT NULL,
+    PRIMARY KEY (`nt_user_session_id`),
+    KEY `nt_user_session_idx1` (`nt_user_id`,`nt_user_session`)
+    /* CONSTRAINT `nt_user_session_ibfk_1` FOREIGN KEY (`nt_user_id`) REFERENCES `nt_user` (`nt_user_id`) ON DELETE CASCADE ON UPDATE CASCADE */
 ) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-CREATE INDEX nt_user_session_idx1 on nt_user_session(nt_user_id, nt_user_session);
 
 DROP TABLE IF EXISTS nt_user_session_log;
 CREATE TABLE nt_user_session_log(
-    nt_user_session_log_id   INT UNSIGNED AUTO_INCREMENT NOT NULL PRIMARY KEY,
+    nt_user_session_log_id   INT UNSIGNED AUTO_INCREMENT NOT NULL,
     nt_user_id               INT UNSIGNED NOT NULL,
     action                   ENUM('login','logout','timeout') NOT NULL,
     timestamp                INT UNSIGNED NOT NULL,
     nt_user_session_id       INT UNSIGNED,
-    nt_user_session	     VARCHAR(100)
+    nt_user_session	     VARCHAR(100),
+    PRIMARY KEY (`nt_user_session_log_id`),
+    KEY `nt_user_id` (`nt_user_id`)
+    /* CONSTRAINT `nt_user_session_log_ibfk_1` FOREIGN KEY (`nt_user_id`) REFERENCES `nt_user` (`nt_user_id`) ON DELETE CASCADE ON UPDATE CASCADE */
 ) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 DROP TABLE IF EXISTS nt_user_global_log;
 CREATE TABLE nt_user_global_log(
-    nt_user_global_log_id   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    nt_user_global_log_id   INT UNSIGNED NOT NULL AUTO_INCREMENT,
     nt_user_id              INT UNSIGNED NOT NULL,
     timestamp               INT UNSIGNED NOT NULL,
     action                  ENUM('added','deleted','modified','moved','recovered','delegated','modified delegation','removed delegation') NOT NULL,
@@ -78,6 +83,8 @@ CREATE TABLE nt_user_global_log(
     target_name             VARCHAR(255),
     log_entry_id            INT UNSIGNED NOT NULL,
     title                   VARCHAR(255),
-    description             VARCHAR(255)
+    description             VARCHAR(255),
+    PRIMARY KEY (`nt_user_global_log_id`),
+    KEY `nt_user_global_log_idx1` (`nt_user_id`)
+    /* CONSTRAINT `nt_user_global_log_ibfk_1` FOREIGN KEY (`nt_user_id`) REFERENCES `nt_user` (`nt_user_id`) ON DELETE CASCADE ON UPDATE CASCADE */
 ) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-CREATE INDEX nt_user_global_log_idx1 on nt_user_global_log(nt_user_id);

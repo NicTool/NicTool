@@ -3,7 +3,7 @@
 
 DROP TABLE IF EXISTS nt_nameserver;
 CREATE TABLE nt_nameserver(
-    nt_nameserver_id    SMALLINT UNSIGNED AUTO_INCREMENT NOT NULL PRIMARY KEY,
+    nt_nameserver_id    SMALLINT UNSIGNED AUTO_INCREMENT NOT NULL,
     nt_group_id         INT UNSIGNED NOT NULL,
     name                VARCHAR(127) NOT NULL,
     ttl                 INT UNSIGNED,
@@ -15,10 +15,13 @@ CREATE TABLE nt_nameserver(
     export_interval     SMALLINT UNSIGNED,
     export_serials      tinyint(1) UNSIGNED NOT NULL DEFAULT '1',
     export_status       varchar(255) NULL DEFAULT NULL,
-    deleted             TINYINT(1) UNSIGNED DEFAULT 0 NOT NULL
+    deleted             TINYINT(1) UNSIGNED DEFAULT 0 NOT NULL,
+    PRIMARY KEY (`nt_nameserver_id`),
+    KEY `nt_nameserver_idx1` (`name`),
+    KEY `nt_nameserver_idx2` (`deleted`),
+    KEY `nt_group_id` (`nt_group_id`)
+    /* CONSTRAINT `nt_nameserver_ibfk_1` FOREIGN KEY (`nt_group_id`) REFERENCES `nt_group` (`nt_group_id`) ON DELETE CASCADE ON UPDATE CASCADE */
 ) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-CREATE INDEX nt_nameserver_idx1 on nt_nameserver(name);
-CREATE INDEX nt_nameserver_idx2 on nt_nameserver(deleted);
 
 DROP TABLE IF EXISTS nt_nameserver_log;
 CREATE TABLE nt_nameserver_log(
@@ -94,9 +97,8 @@ DROP TABLE IF EXISTS nt_nameserver_export_log;
 CREATE TABLE nt_nameserver_export_log(
     nt_nameserver_export_log_id     INT UNSIGNED AUTO_INCREMENT NOT NULL PRIMARY KEY,
     nt_nameserver_id                SMALLINT UNSIGNED NOT NULL,
-    date_start                      timestamp(10) NULL DEFAULT NULL,
+    date_start                      timestamp NULL DEFAULT NULL,
     date_end                        timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP  on update CURRENT_TIMESTAMP,
-    result_id                       int NULL DEFAULT NULL,
     message                         VARCHAR(256) NULL DEFAULT NULL,
     success                         tinyint(1) UNSIGNED NULL DEFAULT NULL,
     partial                         tinyint(1) UNSIGNED NOT NULL DEFAULT 0

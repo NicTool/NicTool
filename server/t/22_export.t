@@ -38,6 +38,16 @@ my $count = $export->get_modified_zones();
 isa_ok( $export, 'NicToolServer::Export');
 ok( defined $count, "found $count zones");
 
+
+is( $export->get_record_type('A'), 1, "get_record_type, A");
+is( $export->get_record_type('NS'),  2, "get_record_type, NS");
+is( $export->get_record_type('MX'), 15, "get_record_type, MX");
+is( $export->get_record_type('SRV'), 33, "get_record_type, SRV");
+is( $export->get_record_type(1), 'A', "get_record_type, 1");
+is( $export->get_record_type(2), 'NS', "get_record_type, 2");
+is( $export->get_record_type(15), 'MX', "get_record_type, 15");
+is( $export->get_record_type(33), 'SRV', "get_record_type, 33");
+
 done_testing();
 exit;
 
@@ -48,6 +58,7 @@ ok( $export->preflight, 'preflight');  # check if export can succeed
 ok( $export->export(), "export (nsid $nsid)");
 
 #warn Dumper($r);
+done_testing();
 exit;
 
 #$r = $export->get_last_ns_export();

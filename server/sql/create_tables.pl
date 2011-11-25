@@ -118,7 +118,7 @@ opendir(DIR, "./") || warn "unable to open dir: $!\n";
 
 my $sql;
 my $res;
-foreach( readdir(DIR) ) {
+foreach( sort readdir(DIR) ) {
     next if /^\./;
     next if -d "./$_";
     next unless /\.sql$/;

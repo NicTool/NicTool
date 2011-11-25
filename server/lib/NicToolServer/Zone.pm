@@ -569,6 +569,7 @@ sub get_zone_records {
     }
 
     $sql = "SELECT nt_zone_record.*,
+               rrt.name AS type,
                nt_delegate.delegated_by_id,
                nt_delegate.delegated_by_name,
                nt_delegate.perm_write as delegate_write,
@@ -578,6 +579,7 @@ sub get_zone_records {
                nt_delegate.zone_perm_delete_records as delegate_delete_records
         FROM nt_zone_record
          $join JOIN nt_delegate ON (nt_delegate.nt_group_id=$group_id AND nt_delegate.nt_object_id=nt_zone_record.nt_zone_record_id AND nt_delegate.nt_object_type='ZONERECORD' )
+         LEFT JOIN resource_record_type rrt ON nt_zone_record.type_id=rrt.id
         WHERE nt_zone_record.nt_zone_id = $data->{nt_zone_id}
           AND nt_zone_record.deleted=0
           AND ( nt_delegate.deleted=0 OR nt_delegate.deleted IS NULL ) ";
@@ -1127,9 +1129,9 @@ sub bump_serial {
     }
     else {
         if ( $current_serial eq '' ) {
-            my $sql = "SELECT serial FROM nt_zone WHERE nt_zone_id = ?";
-            my $serials = $self->exec_query( $sql, $nt_zone_id );
-            $current_serial = $serials->[0]->{serial};
+            my $serials = $self->exec_query( 
+                "SELECT serial FROM nt_zone WHERE nt_zone_id=?", $nt_zone_id );
+            $current_serial = $serials->[0]{serial};
         }
         $serial = $self->serial_increment($current_serial);
     }

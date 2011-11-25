@@ -153,11 +153,15 @@ sub new_or_edit_basic_verify {
 sub record_exists {
     my ( $self, $record, $record_type, $zone_id, $rid ) = @_;
 
-    my $sql = "SELECT * FROM nt_zone_record WHERE deleted=0 AND type=?
-         AND nt_zone_id = ? AND name = ?";
-    if ($rid) {
-        $sql .= " AND nt_zone_record_id <> $rid";
-    }
+    my $sql = "SELECT r.*, t.name AS type
+    FROM nt_zone_record r
+    LEFT JOIN resource_record_type t ON r.type_id=t.id
+      WHERE r.deleted=0 
+        AND t.name=?
+        AND r.nt_zone_id = ? 
+        AND r.name = ?";
+
+    $sql .= " AND r.nt_zone_record_id <> $rid" if $rid;
     my $zrs = $self->exec_query( $sql, [ $record_type, $zone_id, $record ] );
 
     return ref( $zrs->[0] ) ? 1 : 0;

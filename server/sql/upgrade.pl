@@ -30,7 +30,7 @@ prompt_last_chance();
 my $dbh  = DBIx::Simple->connect( $dsn, $db_user, $db_pass )
             or die DBIx::Simple->error;
 
-my @versions = qw/ 2.00 2.05 2.08 2.09 2.10 /;
+my @versions = qw/ 2.00 2.05 2.08 2.09 2.10 2.11 /;
 
 foreach my $version ( @versions ) { 
 # first, run a DB test query 
@@ -50,48 +50,17 @@ foreach my $version ( @versions ) {
     $q_string =~ s/[\s]{2,}/ /g;          # condense whitespace
     foreach my $q ( split(';', $q_string )  ) { # split string into queries
         next if $q =~ /^\s+$/;            # skip blank entries
-        print "$q\n";                     # show the query to user
+        print "$q;\n";                    # show the query to user
         sleep 1;                          # give 'em time to read it
         $dbh->query( $q ) or die DBIx::Simple->error;   # run it!
     };
     print "\n";
 };
 
-
-
 sub _sql_2_some_fine_day {
     return <<EO_SOME_DAY
-/* Converting to InnoDB brings us foreign key constraints. It is the
-** default database format in mysql 5.5. The only reason I can think of
-** for not doing this now is that InnoDB performance is 1/3 to 1/4 the
-** speed of MyISAM on mysql 5.1. InnoDB performance in 5.5 is improving.
-** mps - Nov 09, 2011 */
-
-ALTER TABLE `nt_delegate` TYPE = InnoDB;
-ALTER TABLE `nt_delegate_log` TYPE = InnoDB;
-ALTER TABLE `nt_group` TYPE = InnoDB;
-ALTER TABLE `nt_group_log` TYPE = InnoDB;
-ALTER TABLE `nt_group_subgroups` TYPE = InnoDB;
-ALTER TABLE `nt_nameserver` TYPE = InnoDB;
-ALTER TABLE `nt_nameserver_log` TYPE = InnoDB;
-ALTER TABLE `nt_nameserver_export_log` TYPE = InnoDB;
-ALTER TABLE `nt_nameserver_qlog` TYPE = InnoDB;
-ALTER TABLE `nt_nameserver_qlogfile` TYPE = InnoDB;
-ALTER TABLE `nt_options` TYPE = InnoDB;
-ALTER TABLE `nt_perm` TYPE = InnoDB;
-ALTER TABLE `nt_user` TYPE = InnoDB;
-ALTER TABLE `nt_user_log` TYPE = InnoDB;
-ALTER TABLE `nt_user_global_log` TYPE = InnoDB;
-ALTER TABLE `nt_user_session` TYPE = InnoDB;
-ALTER TABLE `nt_user_session_log` TYPE = InnoDB;
-ALTER TABLE `nt_zone` TYPE = InnoDB;
-ALTER TABLE `nt_zone_log` TYPE = InnoDB;
-ALTER TABLE `nt_zone_record` TYPE = InnoDB;
-ALTER TABLE `nt_zone_record_log` TYPE = InnoDB;
-
 /* When switched to InnoDB, these constraints can be added */
 
-ALTER TABLE `nt_nameserver_export_log` ADD FOREIGN KEY (`result_id`) REFERENCES `nt_nameserver_export_result` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
 ALTER TABLE `nt_zone_log` ADD FOREIGN KEY (`nt_zone_id`) REFERENCES `nt_zone` (`nt_zone_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE `nt_zone_log` ADD FOREIGN KEY (`nt_group_id`) REFERENCES `nt_group` (`nt_group_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE `nt_zone_log` ADD FOREIGN KEY (`nt_user_id`) REFERENCES `nt_user` (`nt_user_id`) ON DELETE CASCADE ON UPDATE CASCADE;
@@ -101,19 +70,78 @@ ALTER TABLE `nt_zone_record_log` ADD FOREIGN KEY (`nt_user_id`) REFERENCES `nt_u
 ALTER TABLE `nt_zone_record_log` ADD FOREIGN KEY (`nt_zone_record_id`) REFERENCES `nt_zone_record` (`nt_zone_record_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 ALTER TABLE `nt_user_session_log` ADD FOREIGN KEY (`nt_user_id`) REFERENCES `nt_user` (`nt_user_id`) ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE `nt_user_session_log` ADD FOREIGN KEY (`nt_user_session_id`) REFERENCES `nt_user_session` (`nt_user_session_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE `nt_user_session` ADD FOREIGN KEY (`nt_user_id`) REFERENCES `nt_user` (`nt_user_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE `nt_user_global_log` ADD FOREIGN KEY (`nt_user_id`) REFERENCES `nt_user` (`nt_user_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
-ALTER TABLE `nt_nameserver_export_log` ADD FOREIGN KEY (`result_id`) REFERENCES `nt_nameserver_export_result` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
 ALTER TABLE `nt_nameserver` ADD FOREIGN KEY (`nt_group_id`) REFERENCES `nt_group` (`nt_group_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 ALTER TABLE `nt_group_subgroups` ADD FOREIGN KEY (`nt_group_id`) REFERENCES `nt_group` (`nt_group_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE `nt_group_log` ADD FOREIGN KEY (`nt_group_id`) REFERENCES `nt_group` (`nt_group_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 ALTER TABLE `nt_delegate` ADD FOREIGN KEY (`nt_group_id`) REFERENCES `nt_group` (`nt_group_id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
 EO_SOME_DAY
+;
+};
+
+
+sub _sql_test_2_11 {
+    my $r = $dbh->query( 'SELECT option_value FROM nt_options WHERE option_value="2.10"' )->list;
+    return 1 if ! defined $r;   # query failed
+    return 1 if $r ne '2.10';
+    return;   # do the update
+};
+
+sub _sql_2_11 {
+
+    my @tables = qw/ nt_delegate  nt_delegate_log    nt_perm                  nt_options 
+        nt_group            nt_group_log             nt_group_subgroups  
+        nt_nameserver       nt_nameserver_log        nt_nameserver_export_log nt_nameserver_qlog nt_nameserver_qlogfile
+        nt_user             nt_user_global_log       nt_user_log              
+        nt_user_session     nt_user_session_log
+        nt_zone             nt_zone_log              nt_zone_nameserver       
+        nt_zone_record      nt_zone_record_log       resource_record_type     /;
+
+    my $convert_to_innodb = engine_innodb( @tables );
+    my $encode_utf8 = encode_utf8( @tables );
+
+    return <<EO_211
+/* convert nt_zone_record.type to type_id (related to resource_record_type) */
+ALTER TABLE nt_zone_record ADD `type_id` smallint(2) UNSIGNED NOT NULL AFTER `type`;
+UPDATE nt_zone_record SET type_id=1 WHERE type='A';
+UPDATE nt_zone_record SET type_id=2 WHERE type='NS';
+UPDATE nt_zone_record SET type_id=5 WHERE type='CNAME';
+UPDATE nt_zone_record SET type_id=12 WHERE type='PTR';
+UPDATE nt_zone_record SET type_id=15 WHERE type='MX';
+UPDATE nt_zone_record SET type_id=16 WHERE type='TXT';
+UPDATE nt_zone_record SET type_id=28 WHERE type='AAAA';
+UPDATE nt_zone_record SET type_id=33 WHERE type='SRV';
+UPDATE nt_zone_record SET type_id=99 WHERE type='SPF';
+ALTER TABLE nt_zone_record DROP `type`;
+
+ALTER TABLE nt_zone_record_log ADD `type_id` smallint(2) UNSIGNED NOT NULL AFTER `type`;
+UPDATE nt_zone_record_log SET type_id=1 WHERE type='A';
+UPDATE nt_zone_record_log SET type_id=2 WHERE type='NS';
+UPDATE nt_zone_record_log SET type_id=5 WHERE type='CNAME';
+UPDATE nt_zone_record_log SET type_id=12 WHERE type='PTR';
+UPDATE nt_zone_record_log SET type_id=15 WHERE type='MX';
+UPDATE nt_zone_record_log SET type_id=16 WHERE type='TXT';
+UPDATE nt_zone_record_log SET type_id=28 WHERE type='AAAA';
+UPDATE nt_zone_record_log SET type_id=33 WHERE type='SRV';
+UPDATE nt_zone_record_log SET type_id=99 WHERE type='SPF';
+ALTER TABLE nt_zone_record_log DROP `type`;
+
+/* InnoDB is the default database format in mysql 5.5. You want to upgrade
+** MySQL to 5.5 due to significant InnoDB performance gains. Don't forget to
+** adjust my.cnf for optimal performance. */
+
+$convert_to_innodb
+$encode_utf8
+
+ALTER TABLE nt_nameserver_export_log DROP `result_id`;
+ALTER TABLE resource_record_type ADD UNIQUE `name` (`name`);
+
+UPDATE nt_options SET option_value='2.11' WHERE option_name='db_version';
+EO_211
 ;
 };
 
@@ -125,6 +153,15 @@ sub _sql_test_2_10 {
 };
 
 sub _sql_2_10 {
+
+    my @tables = qw/ nt_delegate nt_delegate_log nt_options nt_perm
+        nt_group nt_group_log nt_group_subgroups nt_nameserver nt_nameserver_log
+        nt_nameserver_export_log nt_nameserver_qlog nt_nameserver_qlogfile
+        nt_user nt_user_log nt_user_global_log nt_user_session nt_user_session_log
+        nt_zone nt_zone_log nt_zone_record nt_zone_record_log /;
+
+    my $encode_utf8 = encode_utf8( @tables );
+
     <<EO_SQL_2_10
 /* Alter the nt_zone_record table first, which will fail early if the
 ** 2.05 update hasn't already been applied. */
@@ -228,68 +265,7 @@ ALTER TABLE nt_nameserver_export_log CHANGE `date_finish` `date_end` timestamp N
 DROP TABLE IF EXISTS nt_nameserver_export_procstatus;
 
 /* Convert all character encodings to UTF8 bin. */
-ALTER TABLE `nt_delegate` CHARACTER SET = utf8;
-ALTER TABLE `nt_delegate` COLLATE = utf8_bin;
-
-ALTER TABLE `nt_delegate_log` CHARACTER SET = utf8;
-ALTER TABLE `nt_delegate_log` COLLATE = utf8_bin;
-
-ALTER TABLE `nt_group` CHARACTER SET = utf8;
-ALTER TABLE `nt_group` COLLATE = utf8_bin;
-
-ALTER TABLE `nt_group_log` CHARACTER SET = utf8;
-ALTER TABLE `nt_group_log` COLLATE = utf8_bin;
-
-ALTER TABLE `nt_group_subgroups` CHARACTER SET = utf8;
-ALTER TABLE `nt_group_subgroups` COLLATE = utf8_bin;
-
-ALTER TABLE `nt_nameserver` CHARACTER SET = utf8;
-ALTER TABLE `nt_nameserver` COLLATE = utf8_bin;
-
-ALTER TABLE `nt_nameserver_log` CHARACTER SET = utf8;
-ALTER TABLE `nt_nameserver_log` COLLATE = utf8_bin;
-
-ALTER TABLE `nt_nameserver_export_log` CHARACTER SET = utf8;
-ALTER TABLE `nt_nameserver_export_log` COLLATE = utf8_bin;
-
-ALTER TABLE `nt_nameserver_qlog` CHARACTER SET = utf8;
-ALTER TABLE `nt_nameserver_qlog` COLLATE = utf8_bin;
-
-ALTER TABLE `nt_nameserver_qlogfile` CHARACTER SET = utf8;
-ALTER TABLE `nt_nameserver_qlogfile` COLLATE = utf8_bin;
-
-ALTER TABLE `nt_options` CHARACTER SET = utf8;
-ALTER TABLE `nt_options` COLLATE = utf8_bin;
-
-ALTER TABLE `nt_perm` CHARACTER SET = utf8;
-ALTER TABLE `nt_perm` COLLATE = utf8_bin;
-
-ALTER TABLE `nt_user` CHARACTER SET = utf8;
-ALTER TABLE `nt_user` COLLATE = utf8_bin;
-
-ALTER TABLE `nt_user_log` CHARACTER SET = utf8;
-ALTER TABLE `nt_user_log` COLLATE = utf8_bin;
-
-ALTER TABLE `nt_user_global_log` CHARACTER SET = utf8;
-ALTER TABLE `nt_user_global_log` COLLATE = utf8_bin;
-
-ALTER TABLE `nt_user_session` CHARACTER SET = utf8;
-ALTER TABLE `nt_user_session` COLLATE = utf8_bin;
-
-ALTER TABLE `nt_user_session_log` CHARACTER SET = utf8;
-ALTER TABLE `nt_user_session_log` COLLATE = utf8_bin;
-
-ALTER TABLE `nt_zone` CHARACTER SET = utf8;
-ALTER TABLE `nt_zone` COLLATE = utf8_bin;
-
-ALTER TABLE `nt_zone_log` CHARACTER SET = utf8;
-ALTER TABLE `nt_zone_log` COLLATE = utf8_bin;
-
-ALTER TABLE `nt_zone_record` CHARACTER SET = utf8;
-ALTER TABLE `nt_zone_record` COLLATE = utf8_bin;
-
-ALTER TABLE `nt_zone_record_log` CHARACTER SET = utf8;
-ALTER TABLE `nt_zone_record_log` COLLATE = utf8_bin;
+$encode_utf8
 
 UPDATE nt_options SET option_value='2.10' WHERE option_name='db_version';
 
@@ -572,6 +548,32 @@ PROMPT:
     return $default if defined $default;   # return the default, if available
     return '';                             # return empty handed
 }
+
+sub encode_utf8 {
+    my @table_names = @_;
+
+    my $string = '';
+    foreach my $table_name ( @_ ) {
+        $string .= "ALTER TABLE $table_name CHARACTER SET = utf8;\n";
+        $string .= "ALTER TABLE $table_name COLLATE = utf8_bin;\n";
+    };
+
+    return $string;
+};
+
+sub engine_innodb {
+    my @table_names = @_;
+
+    my $string = '';
+    foreach my $table_name ( @_ ) {
+        # MySQL 4.1 and prior
+        #$string .= "ALTER TABLE $table_name TYPE = InnoDB;\n";
+
+        # MySQL 4.1+
+        $string .= "ALTER TABLE $table_name ENGINE = InnoDB;\n";
+    };
+    return $string;
+};
 
 sub get_db_creds_from_nictoolserver_conf {
 

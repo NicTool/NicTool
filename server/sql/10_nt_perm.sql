@@ -103,10 +103,11 @@ CREATE TABLE nt_delegate(
     zonerecord_perm_modify_ttl      TINYINT UNSIGNED DEFAULT 1 NOT NULL,
     zonerecord_perm_modify_desc     TINYINT UNSIGNED DEFAULT 1 NOT NULL,
     
-    deleted             TINYINT(1) UNSIGNED DEFAULT 0 NOT NULL
+    deleted             TINYINT(1) UNSIGNED DEFAULT 0 NOT NULL,
+    KEY `nt_delegate_idx1` (`nt_group_id`,`nt_object_id`,`nt_object_type`),
+    KEY `nt_delegate_idx2` (`nt_object_id`,`nt_object_type`)
+    /* CONSTRAINT `nt_delegate_ibfk_1` FOREIGN KEY (`nt_group_id`) REFERENCES `nt_group` (`nt_group_id`) ON DELETE CASCADE ON UPDATE CASCADE */
 );
-CREATE INDEX nt_delegate_idx1 on nt_delegate(nt_group_id,nt_object_id,nt_object_type);
-CREATE INDEX nt_delegate_idx2 on nt_delegate(nt_object_id,nt_object_type);
 
 
 DROP TABLE IF EXISTS nt_delegate_log; 

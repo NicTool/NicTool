@@ -8,11 +8,6 @@ use strict;
 sub new_zone_record {
     my ( $self, $data ) = @_;
 
-    my %error = ( 'error_code' => 200, 'error_msg' => 'OK' );
-
-    my @columns
-        = qw(nt_zone_id name ttl description type address weight priority other);
-
     my $z = $self->find_zone( $data->{nt_zone_id} );
     if ( my $del = $self->get_param_meta( 'nt_zone_id', 'delegate' ) ) {
         return $self->error_response( 404,
@@ -22,30 +17,39 @@ sub new_zone_record {
 
     # bump the zone's serial number
     my $new_serial = $self->bump_serial( $data->{nt_zone_id}, $z->{serial} );
-    my $sql = "UPDATE nt_zone SET serial = ? WHERE nt_zone_id = ?";
-    $self->exec_query( $sql, [ $new_serial, $data->{nt_zone_id} ] );
+    $self->exec_query( "UPDATE nt_zone SET serial = ? WHERE nt_zone_id = ?",
+        [ $new_serial, $data->{nt_zone_id} ] );
 
-    $sql
-        = "INSERT INTO nt_zone_record("
-        . join( ',', @columns )
-        . ") VALUES("
-        . join( ',', map( $self->{dbh}->quote( $data->{$_} ), @columns ) )
-        . ")";
+    my $col_string = 'nt_zone_id';
+    my @values = $data->{nt_zone_id};
+    foreach my $c ( qw/name ttl description type address weight priority other/ ) {
+        next if ! defined $data->{$c};
+        if ( $c eq 'type' ) {
+            $col_string .= ", type_id";
+            $data->{type_id} = $self->get_record_type( delete $data->{type} );
+            push @values, $data->{type_id};
+        }
+        else {
+            $col_string .= ", $c";
+            push @values, $data->{$c};
+        };
+    };
 
-    my $insertid = $self->exec_query($sql);
-    if ( !$insertid ) {
-        $error{error_code} = 600;
-        $error{error_msg}  = $self->{dbh}->errstr;
-    }
-    else {
-        $error{nt_zone_record_id} = $insertid;
-    }
+    my $insertid = $self->exec_query( 
+        "INSERT INTO nt_zone_record($col_string) VALUES(??)", \@values)
+            or return {
+                error_code => 600,
+                error_msg  => $self->{dbh}->errstr,
+            };
 
     $data->{nt_zone_record_id} = $insertid;
-
     $self->log_zone_record( $data, 'added', undef, $z );
 
-    return \%error;
+    return {
+        error_code => 200, 
+        error_msg => 'OK',
+        nt_zone_record_id => $insertid,
+    };
 }
 
 sub edit_zone_record {
@@ -53,27 +57,42 @@ sub edit_zone_record {
 
     my %error = ( 'error_code' => 200, 'error_msg' => 'OK' );
 
-    my @columns = grep { exists $data->{$_} }
-        qw(name ttl description type address weight priority other);
-
     my $z = $self->find_zone( $data->{nt_zone_id} );
 
     # bump the zone's serial number
-    my $new_serial = $self->bump_serial( $data->{nt_zone_id}, $z->{serial} );
-    my $sql = "UPDATE nt_zone SET serial = ? WHERE nt_zone_id = ?";
-    $self->exec_query( $sql, [ $new_serial, $data->{nt_zone_id} ] );
+    $self->exec_query( "UPDATE nt_zone SET serial = ? WHERE nt_zone_id = ?", 
+        [ $self->bump_serial( $data->{nt_zone_id}, $z->{serial} ),
+          $data->{nt_zone_id} 
+        ] );
 
     my $prev_data = $self->find_zone_record( $data->{nt_zone_record_id} );
     my $log_action = $prev_data->{deleted} ? 'recovered' : 'modified';
     $data->{deleted} = 0;
-    $sql = "UPDATE nt_zone_record SET "
-        . join(
-        ',',
-        map( "$_ = " . $self->{dbh}->quote( $data->{$_} ),
-            ( @columns, 'deleted' ) )
-        ) . " WHERE nt_zone_record_id = ?";
 
-    if ( $self->exec_query( $sql, $data->{nt_zone_record_id} ) ) {
+    my $sql = "UPDATE nt_zone_record SET ";
+    my @values;
+    my @columns = qw/ name ttl description type address weight priority other
+                      location timestamp deleted /;
+
+    my $i = 0;
+    foreach my $c ( @columns ) {
+        next if ! defined $data->{$c};
+        $sql .= "," if $i > 0;
+        if ( $c eq 'type' ) {
+            $sql .= "type_id = ?";
+            push @values, $self->get_record_type( $data->{$c} );
+        }
+        else {
+            $sql .= "$c = ?";
+            push @values, $data->{$c};
+        };
+        $i++;
+    };
+
+    $sql .= " WHERE nt_zone_record_id = ?";
+    push @values, $data->{nt_zone_record_id};
+
+    if ( $self->exec_query( $sql, \@values ) ) {
         $error{nt_zone_record_id} = $data->{nt_zone_record_id};
     }
     else {
@@ -124,9 +143,6 @@ sub log_zone_record {
 
     $zone ||= $self->find_zone( $data->{nt_zone_id} );
 
-    my @columns = qw/ nt_zone_id nt_zone_record_id nt_user_id action timestamp
-        name ttl description type address weight priority other /;
-
     my $user = $data->{user};
     $data->{nt_user_id} = $user->{nt_user_id};
     $data->{action}     = $action;
@@ -138,23 +154,26 @@ sub log_zone_record {
         $data->{nt_zone_id} = $db_data->{nt_zone_id};
     }
 
-    my $dbh = $self->{dbh};
-    my $sql
-        = "INSERT INTO nt_zone_record_log("
-        . join( ',', @columns )
-        . ") VALUES("
-        . join( ',', map( $dbh->quote( $data->{$_} ), @columns ) ) . ")";
 
-    my $insertid = $self->exec_query($sql);
+    my $col_string = 'nt_zone_id';
+    my @values = $data->{nt_zone_id};
+    foreach my $c ( qw/ nt_zone_record_id nt_user_id action timestamp name
+        ttl description type_id address weight priority other location / )
+    {
+        next if ! defined $data->{$c};
+        $col_string .= ", $c";
+        push @values, $data->{$c};
+    };
 
-    my @g_columns = qw/ nt_user_id timestamp action object object_id
-        log_entry_id title description /;
+    my $insertid = $self->exec_query( 
+        "INSERT INTO nt_zone_record_log($col_string) VALUES(??)", \@values);
+
 
     $data->{object}       = 'zone_record';
     $data->{log_entry_id} = $insertid;
     $data->{object_id}    = $data->{nt_zone_record_id};
 
-    if ( uc( $data->{type} ) ne 'MX' || uc( $data->{type} ) ne 'SRV' ) {
+    if ( uc( $data->{type} ) !~ /^MX|SRV$/ ) {   # match MX or SRV
         delete $data->{weight};
     }
     if ( uc( $data->{type} ) ne 'SRV' ) {
@@ -183,12 +202,10 @@ sub log_zone_record {
             = "recovered previous settings ($data->{type} $data->{weight} $data->{address})";
     }
 
-    $sql
-        = "INSERT INTO nt_user_global_log("
-        . join( ',', @g_columns )
-        . ") VALUES("
-        . join( ',', map( $dbh->quote( $data->{$_} ), @g_columns ) ) . ")";
-    $self->exec_query($sql);
+    my @g_columns = qw/ nt_user_id timestamp action object object_id log_entry_id title description /;
+    my $col_string = join(',', @g_columns);
+    my @values = map( $data->{$_}, @g_columns );
+    $self->exec_query( "INSERT INTO nt_user_global_log($col_string) VALUES(??)", \@values );
 }
 
 sub get_zone_record {
@@ -196,8 +213,11 @@ sub get_zone_record {
 
     $data->{sortby} ||= 'name';
 
-    my $sql = "SELECT * FROM nt_zone_record WHERE nt_zone_record_id=?
-         ORDER BY $data->{sortby}";
+    my $sql = "SELECT r.*, t.name AS type
+    FROM nt_zone_record r 
+      LEFT JOIN resource_record_type t ON r.type_id=t.id
+        WHERE r.nt_zone_record_id=?
+         ORDER BY r.$data->{sortby}";
     my $zrs = $self->exec_query( $sql, $data->{nt_zone_record_id} )
         or return {
         error_code => 600,
@@ -258,6 +278,25 @@ sub find_zone_record {
     my $zrs = $self->exec_query( $sql, $nt_zone_record_id );
     return $zrs->[0] || {};
 }
+
+sub get_record_type {
+    my $self = shift;
+    my $lookup = shift;
+
+    if ( ! $self->{record_types} ) {
+        my $sql = "SELECT id,name,description,reverse,forward FROM resource_record_type";
+        my $types = $self->exec_query($sql);
+        foreach my $t ( @$types ) {
+            $self->{record_types}{$t->{id}} = $t;   # lookup by IETF code #
+            $self->{record_types}{$t->{name}} = $t; # lookup by name (A,MX, )
+        }
+    };
+
+    if ( $lookup =~ /^\d+$/ ) {   # all numeric
+        return $self->{record_types}{$lookup}{name}; # return type name
+    };
+    return $self->{record_types}{$lookup}{id};  # got a type, return ID
+};
 
 1;
 

@@ -44,7 +44,7 @@ CREATE INDEX nt_zone_idx3 on nt_zone(zone);
 
 DROP TABLE IF EXISTS nt_zone_log;
 CREATE TABLE nt_zone_log(
-    nt_zone_log_id      INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    nt_zone_log_id      INT UNSIGNED NOT NULL AUTO_INCREMENT,
     nt_group_id         INT UNSIGNED NOT NULL,
     nt_user_id          INT UNSIGNED NOT NULL,
     action              ENUM('added','modified','deleted','moved','recovered') NOT NULL,
@@ -58,56 +58,69 @@ CREATE TABLE nt_zone_log(
     retry               INT UNSIGNED,
     expire              INT UNSIGNED,
     minimum             INT UNSIGNED,
-    ttl                 INT UNSIGNED
+    ttl                 INT UNSIGNED,
+    PRIMARY KEY (`nt_zone_log_id`),
+    KEY `nt_zone_log_idx1` (`timestamp`),
+    KEY `nt_zone_log_idx2` (`nt_zone_id`),
+    KEY `nt_zone_log_idx3` (`action`),
+    KEY `nt_group_id` (`nt_group_id`),
+    KEY `nt_user_id` (`nt_user_id`)
+    /* CONSTRAINT `nt_zone_log_ibfk_3` FOREIGN KEY (`nt_user_id`) REFERENCES `nt_user` (`nt_user_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    ** CONSTRAINT `nt_zone_log_ibfk_1` FOREIGN KEY (`nt_zone_id`) REFERENCES `nt_zone` (`nt_zone_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    ** CONSTRAINT `nt_zone_log_ibfk_2` FOREIGN KEY (`nt_group_id`) REFERENCES `nt_group` (`nt_group_id`) ON DELETE CASCADE ON UPDATE CASCADE */
 ) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-CREATE INDEX nt_zone_log_idx1 on nt_zone_log(timestamp);
-CREATE INDEX nt_zone_log_idx2 on nt_zone_log(nt_zone_id);
-CREATE INDEX nt_zone_log_idx3 on nt_zone_log(action);
 
 
 DROP TABLE IF EXISTS nt_zone_record;
 CREATE TABLE nt_zone_record(
-    nt_zone_record_id   INT UNSIGNED AUTO_INCREMENT NOT NULL PRIMARY KEY,
+    nt_zone_record_id   INT UNSIGNED AUTO_INCREMENT NOT NULL,
     nt_zone_id          INT UNSIGNED NOT NULL,
     name                VARCHAR(255) NOT NULL,
     ttl                 INT UNSIGNED NOT NULL DEFAULT 0,
     description         VARCHAR(255),
-    type                ENUM('A','AAAA','MX','PTR','NS','TXT','CNAME','SRV','SPF'),
+    type_id             SMALLINT(2) UNSIGNED NOT NULL,
     address             VARCHAR(255) NOT NULL,
     weight              SMALLINT UNSIGNED,
     priority            SMALLINT UNSIGNED,
     other               VARCHAR(255),
     location            VARCHAR(2) DEFAULT NULL,
     timestamp           timestamp NULL DEFAULT NULL,
-    deleted             TINYINT(1) UNSIGNED DEFAULT 0 NOT NULL
+    deleted             TINYINT(1) UNSIGNED DEFAULT 0 NOT NULL,
+    PRIMARY KEY (`nt_zone_record_id`),
+    KEY `nt_zone_record_idx1` (`name`),
+    KEY `nt_zone_record_idx2` (`address`),
+    KEY `nt_zone_record_idx3` (`nt_zone_id`),
+    KEY `nt_zone_record_idx4` (`deleted`)
+    /* CONSTRAINT `nt_zone_record_ibfk_1` FOREIGN KEY (`nt_zone_id`) REFERENCES `nt_zone` (`nt_zone_id`) ON DELETE CASCADE ON UPDATE CASCADE */
 ) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-CREATE INDEX nt_zone_record_idx1 on nt_zone_record(name); # for searching
-CREATE INDEX nt_zone_record_idx2 on nt_zone_record(address); # for searching
-CREATE INDEX nt_zone_record_idx3 on nt_zone_record(nt_zone_id); # for lots of backend searches..
-CREATE INDEX nt_zone_record_idx4 on nt_zone_record(deleted);
 
 
 DROP TABLE IF EXISTS nt_zone_record_log;
 CREATE TABLE nt_zone_record_log(
-    nt_zone_record_log_id   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    nt_zone_record_log_id   INT UNSIGNED NOT NULL AUTO_INCREMENT,
     nt_zone_id          INT UNSIGNED NOT NULL,
     nt_user_id          INT UNSIGNED NOT NULL,
-    action             ENUM('added','modified','deleted','recovered') NOT NULL,
+    action              ENUM('added','modified','deleted','recovered') NOT NULL,
     timestamp           INT UNSIGNED NOT NULL,
     nt_zone_record_id   INT UNSIGNED NOT NULL,
     name                VARCHAR(255),
     ttl                 INT UNSIGNED,
     description         VARCHAR(255),
-    type                ENUM('A','AAAA','MX','PTR','NS','TXT','CNAME','SRV','SPF'),
+    type_id             SMALLINT(2) UNSIGNED NOT NULL,
     address             VARCHAR(255),
     weight              SMALLINT UNSIGNED,
     priority            SMALLINT UNSIGNED,
-    other               VARCHAR(255)
+    other               VARCHAR(255),
+    PRIMARY KEY (`nt_zone_record_log_id`),
+    KEY `nt_zone_record_log_idx1` (`timestamp`),
+    KEY `nt_zone_record_log_idx2` (`nt_zone_record_id`),
+    KEY `nt_zone_record_log_idx3` (`nt_zone_id`),
+    KEY `nt_zone_record_log_idx4` (`action`),
+    KEY `nt_user_id` (`nt_user_id`),
+    /* CONSTRAINT `nt_zone_record_log_ibfk_3` FOREIGN KEY (`nt_zone_record_id`) REFERENCES `nt_zone_record` (`nt_zone_record_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    ** CONSTRAINT `nt_zone_record_log_ibfk_1` FOREIGN KEY (`nt_zone_id`) REFERENCES `nt_zone` (`nt_zone_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    ** CONSTRAINT `nt_zone_record_log_ibfk_2` FOREIGN KEY (`nt_user_id`) REFERENCES `nt_user` (`nt_user_id`) ON DELETE CASCADE ON UPDATE CASCADE */
 ) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-CREATE INDEX nt_zone_record_log_idx1 on nt_zone_record_log(timestamp);
-CREATE INDEX nt_zone_record_log_idx2 on nt_zone_record_log(nt_zone_record_id);
-CREATE INDEX nt_zone_record_log_idx3 on nt_zone_record_log(nt_zone_id);
-CREATE INDEX nt_zone_record_log_idx4 on nt_zone_record_log(action);
 
 CREATE TABLE nt_zone_nameserver (
     nt_zone_id           smallint(5) unsigned NOT NULL,

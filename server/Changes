@@ -1,5 +1,17 @@
 Revision history for NicToolServer
 
+
+2.11    2011.
+
+    * SQL: replaced nt_zone_record.type with nt_zone_record.type_id, which
+      references resource_record_type.id. While this does make some queries 
+      slightly more complex, it greatly simplifies adding new RR types.
+    * SQL: foreign key constraints are defined but not enabled by default.
+      The test suite passes with them enabled. You must be using the InnoDB
+      engine for FKC to work. InnoDB is the default engine in MySQL 5.5+
+    * renamed SQL import files. With foreign key constraints, order matters.
+
+
 2.10    2011.11.21  - mps
 
     * added NicToolServer::Zone::valid_label (RFC validation of domain name)
