@@ -167,19 +167,6 @@ sub record_exists {
     return ref( $zrs->[0] ) ? 1 : 0;
 }
 
-sub rr_types {
-    {   'NS'    => 'Name Server (NS)',
-        'MX'    => 'Mail Exchanger (MX)',
-        'A'     => 'Address (A)',
-        'AAAA'  => 'Address IPv6 (AAAA)',
-        'CNAME' => 'Canonical Name (CNAME)',
-        'PTR'   => 'Pointer (PTR)',
-        'TXT'   => 'Text (TXT)',
-        'SRV'   => 'Service (SRV)',
-        'SPF'   => 'Sender Policy Framework (SPF)',
-    };
-}
-
 sub _expand_shortcuts {
     my ( $self, $data, $zone_text ) = @_;
 
@@ -293,21 +280,19 @@ sub _valid_rr_type {
 
     my ( $self, $data ) = @_;
 
-    return if ! $data->{type};
+    return if ! $data->{type};  # edit may not change type
+
+    # the get_record_type will match numeric record IDs and convert them to
+    # their codes. For validation here, exclude that ability.
+    $self->error('type', "Invalid record type $data->{type}" ) 
+        if $data->{type} =~ /^\d+$/;
 
     # the form is upper case. The following checks catch
     # the correct type, even if user f's with form input
     $data->{type} =~ tr/a-z/A-Z/; 
 
-    my $valid_type = 0;
-    foreach my $rrt ( keys %{ $self->rr_types } ) {
-        if ( $data->{type} eq $rrt ) {
-            $valid_type = 1;
-        }
-    }
-    unless ($valid_type) {
-        $self->error('type', "Invalid record type $data->{type}" );
-    }
+    $self->error('type', "Invalid record type $data->{type}" ) 
+        if ! $self->get_record_type( { type => $data->{type} } );
 }
 
 sub _valid_cname {

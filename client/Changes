@@ -1,4 +1,7 @@
 
+2.11    2011.11.18
+  - zone record types are fetched via NicTool API (not statically coded). 
+
 2.10    2011.11.18
   - packaging changes.
   - default export_interval is 120s (was $ttl)

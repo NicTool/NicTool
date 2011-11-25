@@ -5,7 +5,7 @@ use strict;
 use vars qw/ $AUTOLOAD /;
 use NicToolServerAPI();
 
-$NicToolClient::VERSION = '2.10';
+$NicToolClient::VERSION = '2.11';
 $NicToolClient::NTURL   = 'http://www.nictool.com/';
 $NicToolClient::LICENSE = 'http://www.affero.org/oagpl.html';
 $NicToolClient::SRCURL  = 'http://www.nictool.com/download/NicTool.tar.gz';
@@ -38,30 +38,9 @@ sub help_link {
     }
 }
 
-sub rr_forward_types {
-
-    # no valid reason to offer PTR records here
-    {   'NS'    => 'Name Server (NS)',
-        'MX'    => 'Mail Exchanger (MX)',
-        'A'     => 'Address (A)',
-        'AAAA'  => 'Address IPv6 (AAAA)',
-        'CNAME' => 'Canonical Name (CNAME)',
-        'TXT'   => 'Text (TXT)',
-        'SRV'   => 'Service (SRV)',
-        'SPF'   => 'Sender Policy Framework (SPF)',
-    };
-}
-
-sub rr_reverse_types {
-
-    # TXT records are legal and occasionally used here as are
-    # LOC records (if/when we add support )
-    # IPSECKEY    (if/when we add support)
-    {   'NS'    => 'Name Server (NS)',
-        'CNAME' => 'Canonical Name (CNAME)',
-        'PTR'   => 'Pointer (PTR)',
-        'TXT'   => 'Text (TXT)',
-    };
+sub rr_types {
+    my $self = shift;
+    return $self->get_record_type(type=>'ALL');
 }
 
 sub ns_export_formats {

@@ -10,7 +10,7 @@ use SOAP::Lite;
 use XML::Parser();
 use Data::Dumper;
 
-$NicToolServerAPI::VERSION          = '2.08';
+$NicToolServerAPI::VERSION          = '2.11';
 $NicToolServerAPI::protocol_version = "1.0";
 
 sub new { bless {}, $_[0] }

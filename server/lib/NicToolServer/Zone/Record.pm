@@ -26,7 +26,7 @@ sub new_zone_record {
         next if ! defined $data->{$c};
         if ( $c eq 'type' ) {
             $col_string .= ", type_id";
-            $data->{type_id} = $self->get_record_type( delete $data->{type} );
+            $data->{type_id} = $self->get_record_type( { type => $data->{type} } );
             push @values, $data->{type_id};
         }
         else {
@@ -80,7 +80,7 @@ sub edit_zone_record {
         $sql .= "," if $i > 0;
         if ( $c eq 'type' ) {
             $sql .= "type_id = ?";
-            push @values, $self->get_record_type( $data->{$c} );
+            push @values, $self->get_record_type( { type=>$data->{$c} } );
         }
         else {
             $sql .= "$c = ?";
@@ -280,21 +280,37 @@ sub find_zone_record {
 }
 
 sub get_record_type {
-    my $self = shift;
-    my $lookup = shift;
+    my ( $self, $data ) = @_;
+    my $lookup = $data->{type};
 
     if ( ! $self->{record_types} ) {
-        my $sql = "SELECT id,name,description,reverse,forward FROM resource_record_type";
+        my $sql = "SELECT id,name,description,reverse,forward 
+            FROM resource_record_type WHERE description IS NOT NULL";
         my $types = $self->exec_query($sql);
         foreach my $t ( @$types ) {
-            $self->{record_types}{$t->{id}} = $t;   # lookup by IETF code #
-            $self->{record_types}{$t->{name}} = $t; # lookup by name (A,MX, )
+            $self->{record_types}{$t->{id}} = $t;   # index by IETF code #
+            $self->{record_types}{$t->{name}} = $t; # index by name (A,MX, )
         }
+        $self->{record_types}{'ALL'} = $types;
     };
 
     if ( $lookup =~ /^\d+$/ ) {   # all numeric
         return $self->{record_types}{$lookup}{name}; # return type name
+    }
+    elsif ( $lookup eq 'reverse' ) {
+        my %hash = map { $_->{name} => "$_->{description} ($_->{name})" }
+            grep( $_->{reverse} == 1, @{ $self->{record_types}{'ALL'} } );
+        return \%hash;
+    }
+    elsif ( $lookup eq 'forward' ) {
+        my %hash = map { $_->{name} => "$_->{description} ($_->{name})" }
+            grep( $_->{forward} == 1, @{ $self->{record_types}{'ALL'} } );
+        return \%hash;
+    }
+    elsif ( $lookup eq 'ALL' ) {
+        return $self->{record_types}{'ALL'};
     };
+
     return $self->{record_types}{$lookup}{id};  # got a type, return ID
 };
 

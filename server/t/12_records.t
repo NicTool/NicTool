@@ -342,7 +342,7 @@ sub doit {
         }
     }
 
-    for (qw(blah x Y P Q R S TU VW XYZ 1 23)) {
+    for ( qw/blah x Y P Q R S TU VW XYZ 1 23 / ) {
 
         #invalid type
         $res = $zone1->new_zone_record(
@@ -1233,6 +1233,15 @@ sub doit {
     ok( $res->get('error_msg')  => 'nt_zone_record_id' );
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
 
+    $res = $user->get_record_type( type => 'forward');
+    noerrok($res);
+# warn Data::Dumper::Dumper($res->{store});
+    $res = $user->get_record_type( type => 'reverse');
+    noerrok($res);
+#warn Data::Dumper::Dumper($res->{store});
+
+    $res = $user->get_record_type( type => 'ALL');
+    noerrok($res);
 }
 
 sub del {

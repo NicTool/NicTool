@@ -187,6 +187,7 @@ sub _api {
         get_zone_record               => {},
         get_zone_records              => {},
         get_zone_record_delegates     => {},
+        get_record_type               => {},
         new_zone_record               => {},
         edit_zone_record              => {},
         delete_zone_record            => {},

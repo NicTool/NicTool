@@ -465,26 +465,6 @@ sub get_active_nameservers {
     return $self->{active_ns};
 }
 
-
-sub get_record_type {
-    my $self = shift;
-    my $lookup = shift;
-
-    if ( ! $self->{record_types} ) {
-        my $sql = "SELECT id,name,description,reverse,forward FROM resource_record_type";
-        my $types = $self->exec_query($sql);
-        foreach my $t ( @$types ) {
-            $self->{record_types}{$t->{id}} = $t;   # lookup by IETF code #
-            $self->{record_types}{$t->{name}} = $t; # lookup by name (A,MX, )
-        }
-    };
-
-    if ( $lookup =~ /^\d+$/ ) {   # all numeric
-        return $self->{record_types}{$lookup}{name}; # return type name
-    };
-    return $self->{record_types}{$lookup}{id};  # got a type, return ID
-};
-
 sub preflight {
     my $self = shift;
 

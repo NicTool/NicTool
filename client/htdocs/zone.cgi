@@ -975,20 +975,23 @@ sub display_edit_record {
 
     my ( $type_values, $type_labels );
 
+    my $rr_types = $nt_obj->rr_types;
+    #use Data::Dumper; warn Dumper $rr_types;
+    my %forwards = map { $_->{name} => "$_->{description} ($_->{name})" } 
+        grep( $_->{forward} == 1, @$rr_types);
+    my %reverse  = map { $_->{name} => "$_->{description} ($_->{name})" } 
+        grep( $_->{reverse} == 1, @$rr_types);
+
     # present RR types appropriate for the type of zone
     if ( $zone->{'zone'} =~ /(in-addr|ip6)\.arpa$/ ) {
-        $type_values = [ sort keys %{ $nt_obj->rr_reverse_types() } ];
-        $type_labels = $nt_obj->rr_reverse_types();
+        $type_values = [ sort keys %reverse ];
+        $type_labels = \%reverse;
     }
     else {
-        $type_values = [ sort keys %{ $nt_obj->rr_forward_types() } ];
-        $type_labels = $nt_obj->rr_forward_types();
+        $type_values = [ sort keys %forwards ];
+        $type_labels = \%forwards;
     }
 
-    #    use Data::Dumper;
-    #    warn Dumper $nt_obj->rr_types, "\n<br>";
-    #    warn Dumper $nt_obj->rr_forward_types, "\n<br>";
-    #    warn Dumper $nt_obj->rr_reverse_types, "\n<br>";
 
     # does user have Edit permissions?
     my $modifyperm = !$isdelegate && $user->{'zonerecord_write'}

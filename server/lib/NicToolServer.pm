@@ -478,6 +478,13 @@ sub api_commands {
                     { access => 'read', required => 1, type => 'ZONERECORD' },
             },
         },
+        'get_record_type' => {
+            'class'      => 'Zone::Record',
+            'method'     => 'get_record_type',
+            'parameters' => { 
+                    'type' => { required => 1 },
+                },
+        },
 
         # nameserver API
         'get_nameserver' => {

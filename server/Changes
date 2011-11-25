@@ -3,6 +3,7 @@ Revision history for NicToolServer
 
 2.11    2011.
 
+    * Added get_record_type to the API (see NicToolClient changes for why)
     * SQL: replaced nt_zone_record.type with nt_zone_record.type_id, which
       references resource_record_type.id. While this does make some queries 
       slightly more complex, it greatly simplifies adding new RR types.
