@@ -219,13 +219,13 @@ sub _valid_password {
     else {
         if ( $data->{password} eq $username ) {
             $self->error( 'password',
-                "Password cannot be the same as username!."
+                "Password cannot be the same as username!"
             );
         }
 
         if ( $data->{password} =~ m/$username/ ) {
             $self->error( 'password',
-                "Password cannot contain your username!."
+                "Password cannot contain your username!"
             );
         }
     }
