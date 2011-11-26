@@ -386,6 +386,76 @@ sub zr_aaaa {
         . "\n";
 }
 
+sub zr_loc {
+    my $self = shift;
+    my %p = validate( @_, { record => { type => HASHREF } } );
+
+    my $r = $p{record};
+    my $string = $r->{address};
+
+    # lifted from Net::DNS::RR::LOC
+    my ($alt, $size, $horiz_pre, $vert_pre, $latitude, $longitude, $altitude);
+    if ($string &&
+            $string =~ /^ (\d+) \s+     # deg lat
+            ((\d+) \s+)?                # min lat
+            (([\d.]+) \s+)?             # sec lat
+            (N|S) \s+                   # hem lat
+            (\d+) \s+                   # deg lon
+            ((\d+) \s+)?                # min lon
+            (([\d.]+) \s+)?             # sec lon
+            (E|W) \s+                   # hem lon
+            (-?[\d.]+) m?               # altitude
+            (\s+ ([\d.]+) m?)?          # size
+            (\s+ ([\d.]+) m?)?          # horiz precision
+            (\s+ ([\d.]+) m?)?          # vert precision
+            /ix) {
+
+        my $version = 0;
+
+        my ($latdeg, $latmin, $latsec, $lathem) = ($1, $3, $5, $6);
+        my ($londeg, $lonmin, $lonsec, $lonhem) = ($7, $9, $11, $12);
+           ($alt, $size, $horiz_pre, $vert_pre) = ($13, $15, $17, $19);
+
+        $latmin    ||= 0;
+        $latsec    ||= 0;
+        $lathem    = uc($lathem);
+
+        $lonmin    ||= 0;
+        $lonsec    ||= 0;
+        $lonhem    = uc($lonhem);
+
+        $size      ||= 1;
+        $horiz_pre ||= 10_000;
+        $vert_pre  ||= 10;
+
+        $size      = $size * 100;
+        $horiz_pre = $horiz_pre * 100;
+        $vert_pre  = $vert_pre * 100;
+        $latitude  = dms2latlon($latdeg, $latmin, $latsec, $lathem);
+        $longitude = dms2latlon($londeg, $lonmin, $lonsec, $lonhem);
+        $altitude  = $alt * 100 + 100_000 * 100;
+    }
+    else {
+        warn "Oops, invalid LOC data\n";
+    };
+
+# TODO: convert this from binary to octal \nnn codes
+    my $rdata = pack('C', 0)
+           . pack('C3', precsize_valton($size),
+                         precsize_valton($horiz_pre),
+                         precsize_valton($vert_pre))
+           . pack('N3', $latitude, $longitude, $altitude);
+
+    return ":"                                    # special char (none = generic)
+        . $self->qualify( $r->{name} )            # fqdn
+        . ':29'                                   # n
+        . ':' . $rdata                            # rdata
+        . ':' . $r->{ttl}                         # ttl
+        . ':' . $r->{timestamp}                   # timestamp
+        . ':' . $r->{location}                    # lo
+        . "\n";
+}
+
 sub qualify {
     my ( $self, $record, $zone ) = @_;
     return $record if $record =~ /\.$/;    # record already ends in .
@@ -447,6 +517,28 @@ sub characterCount {
     my $line  = pop @_;
     my @chars = split //, $line;
     return sprintf "\\%.3lo", scalar @chars;
+}
+
+# next 2 subs lifted from Net::DNS::RR::LOC
+sub dms2latlon {
+    my ($deg, $min, $sec, $hem) = @_;
+    my $retval;
+
+    my $conv_sec = 1000;
+    my $conv_min = 60 * $conv_sec;
+    my $conv_deg = 60 * $conv_min;
+
+    $retval = ($deg * $conv_deg) + ($min * $conv_min) + ($sec * $conv_sec);
+    $retval = -$retval if ($hem eq "S") || ($hem eq "W");
+    $retval += 2**31;
+    return $retval;
+}
+
+sub precsize_valton {
+    my $val = shift;
+    my $exponent = 0;
+    while ($val >= 10) { $val /= 10; ++$exponent; }
+    return (int($val) << 4) | ($exponent & 0x0f);
 }
 
 # tinydns-data format: http://cr.yp.to/djbdns/tinydns-data.html

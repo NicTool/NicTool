@@ -171,6 +171,14 @@ sub zr_aaaa {
     return "$r->{name}	$r->{ttl}	AAAA	$r->{address}\n";
 }
 
+sub zr_loc {
+    my $self = shift;
+    my %p = validate( @_, { record => { type => HASHREF } } );
+
+    my $r = $p{record};
+    return "$r->{name}	$r->{ttl}	LOC	$r->{address}\n";
+}
+
 
 1;
 

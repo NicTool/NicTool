@@ -139,6 +139,7 @@ $encode_utf8
 
 ALTER TABLE nt_nameserver_export_log DROP `result_id`;
 ALTER TABLE resource_record_type ADD UNIQUE `name` (`name`);
+INSERT INTO resource_record_type (`id`,`name`,`description`,`reverse`,`forward`) VALUES ('29','LOC','Location','1','1');
 
 UPDATE nt_options SET option_value='2.11' WHERE option_name='db_version';
 EO_211

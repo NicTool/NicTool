@@ -1379,7 +1379,9 @@ sub valid_reverse_lookup {
 
 sub valid_ip_address {
     my ( $self, $ip ) = @_;
-    return 1 if Net::IP::ip_is_ipv6($ip) == 1;
+
+    # IPv6 addresses have colons
+    return 1 if $ip =~ m/:/ && Net::IP::ip_is_ipv6($ip) == 1;
 
     return 0 if grep( /\./, split( //, $ip ) ) != 3;    # need 3 dots
 
