@@ -419,10 +419,9 @@ sub _dispatch {
     $self->{nt_user_session} = $result->{nt_user_session}
         if exists $result->{nt_user_session};
     my $islist = NicTool::API->result_is_list($method);
-    my $type   = NicTool::API->result_type($method);
+    my $type   = NicTool::API->result_type($method) || 'Result';
 
     #print "type is $type, method is $method";
-    $type = 'Result' unless $type;
     my $obj;
     unless ($islist) {
         $obj = $self->_object_for_type( $type, $result );

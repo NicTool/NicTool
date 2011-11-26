@@ -40,7 +40,8 @@ sub help_link {
 
 sub rr_types {
     my $self = shift;
-    return $self->get_record_type(type=>'ALL');
+    my $r = $self->get_record_type(type=>'ALL');
+    return $r->{types};
 }
 
 sub ns_export_formats {

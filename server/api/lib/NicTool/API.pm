@@ -428,6 +428,14 @@ sub api_commands {
             },
             'result-type' => 'Log',
         },
+        'get_record_type' => {
+            'class'      => 'Zone::Record',
+            'method'     => 'get_record_type',
+            'parameters' => { 'type' => { required => 1 }, },
+            'result-type'       => 'Record',
+            'result-list'       => 1,
+            'result-list-param' => 'types',
+        },
 
         # nameserver API
         'get_nameserver' => {
