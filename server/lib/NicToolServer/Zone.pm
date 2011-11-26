@@ -531,13 +531,12 @@ sub get_zone_records {
     my $c = $self->exec_query($sql);
     $r_data->{total} = $c->[0]{count};
 
+    return $r_data if $r_data->{total} == 0;    # 0 records
+
     $self->set_paging_vars( $data, $r_data );
 
     my $sortby;
-    if ( $r_data->{total} == 0 ) {
-        return $r_data;
-    }
-    elsif ( $r_data->{total} > 10000 ) {
+    if ( $r_data->{total} > 10000 ) {
 
         # sorting really large zones takes too long
         $sortby = $self->format_sort_conditions( $data, \%field_map, "" );
@@ -594,9 +593,9 @@ sub get_zone_records {
         };
 
     foreach my $row (@$zrecords) {
-        foreach (
-            qw(delegated_by_id delegated_by_name delegate_read delegate_write delegate_move delegate_delete delegate_delegate delegate_full)
-            )
+        foreach ( qw/ delegated_by_id delegated_by_name delegate_read
+            delegate_write delegate_move delegate_delete delegate_delegate
+            delegate_full / )
         {
             delete $row->{$_} if $row->{$_} eq '';
         }
@@ -1090,32 +1089,42 @@ sub valid_label {
 
     $self->error($type, "missing label") if ! defined $name;
 
+    my $has_error = 0;
     if ( length $name < 1 ) {
         $self->error($type, "A domain name must have at least 1 octets (character): RFC 2181");
+        $has_error++;
     };
 
     if ( length $name > 255 ) {
         $self->error($type, "A full domain name is limited to 255 octets (characters): RFC 2181");
+        $has_error++;
     };
 
-    my $label_explain = "(the bits of a domain between the dots)";
+    my $label_explain = "(the bits of a name between the dots)";
     foreach my $label ( split(/\./, $name) ) {
         if ( length $label > 63 ) {
             $self->error($type, "Max length of a label $label_explain is 63 octets (characters): RFC 2181");
+            $has_error++;
         }; 
 
         if ( length $label < 1 ) {
             $self->error($type, "Minimum length of a label $label_explain is 1 octet (character): RFC 2181");
+            $has_error++;
         };
 
-        if ( substr($label, 0,1) eq '-' ) {
-            $self->error($type, "Labels $label_explain cannot begin (or end) with a hyphen (-): RFC 1035");
+        if ( substr($label, 0,1) !~ /[a-zA-Z]/ ) {
+            $self->error($type, "Domain labels $label_explain must begin with a letter: RFC 1035");
+            $has_error++;
         };
 
-        if ( substr($label, -1,1) eq '-' ) {
-            $self->error($type, "Labels $label_explain cannot end (or begin) with a hyphen (-): RFC 1035");
+        if ( substr($label, -1,1) !~ /[a-zA-Z0-9]/ ) {
+            $self->error($type, "Domain labels $label_explain must end with a letter or digit: RFC 1035");
+            $has_error++;
         };
+        last if $has_error;
     };
+
+    return $has_error == 0 ? 1 : 0;
 };
 
 ### serial number routines
