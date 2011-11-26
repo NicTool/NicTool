@@ -38,7 +38,7 @@ use NicToolTest;
 use NicTool;
 use Test;
 
-BEGIN { plan tests => 2695 }
+BEGIN { plan tests => 2727 }
 
 $user = new NicTool(
     cache_users  => 0,
@@ -929,7 +929,7 @@ sub doit {
         }
     }
 
-    for my $type (qw(MX NS CNAME PTR)) {
+    for my $type ( qw/ MX NS CNAME PTR / ) {
         $res = $zr1->edit_zone_record(
             type    => $type,
             address => 'fully.ok.name.'
@@ -946,13 +946,14 @@ sub doit {
         }
     }
 
-    for my $type (qw(MX NS)) {
+    for my $type ( qw/ MX NS SRV / ) {
         $res = $zr1->edit_zone_record(
             type    => $type,
             address => 'fully.ok.name.'
         );
         noerrok($res);
-        for (qw(1.2.3.4 )) {
+
+        for ( qw/ 1.2.3.4 a.1.2.a / ) {
 
             #invalid address for preset type
             $res = $zr1->edit_zone_record( address => $_ );
@@ -961,20 +962,20 @@ sub doit {
             ok( $res->get('error_desc') => qr/Sanity error/ );
         }
 
-        #        for (qw(abc.def abc abc.def.hij a.1.2.a )) {
-        #
-        #            #invalid address for preset type
-        #            $res = $zr1->edit_zone_record( address => $_ );
-        #            noerrok( $res, 300, "type $type address $_" );
-        #            ok( $res->get('error_msg') =>
-        #qr/Address for $type must point to a Fully Qualified Domain Name/
-        #            );
-        #            ok( $res->get('error_desc') => qr/Sanity error/ );
-        #        }
+# these tests are invalid, as we automatically append $zone_name to the
+# record if it's not fully qualified   
+#        for ( qw/ abc.def abc abc.def.hij / ) {
+#        
+#            #invalid address for preset type
+#            $res = $zr1->edit_zone_record( address => $_ );
+#            noerrok( $res, 300, "type $type address $_" );
+#            ok( $res->get('error_msg') => qr/must be a FQDN/);
+#            ok( $res->get('error_desc') => qr/Sanity error/ );
+#        }
     }
 
-    for my $type (qw(MX NS)) {
-        for (qw(1.2.3.4 )) {
+    for my $type ( qw/ MX NS SRV / ) {
+        for ( qw/ 1.2.3.4 a.1.2.a / ) {
 
             #invalid address for type
             $res = $zr1->edit_zone_record(
@@ -987,28 +988,10 @@ sub doit {
             ok( $res->get('error_msg')  => qr/must (begin|end) with a letter/ );
             ok( $res->get('error_desc') => qr/Sanity error/ );
         }
-
-        #        for (qw(abc.def abc abc.def.hij a.1.2.a )) {
-        #
-        #            #invalid address for type
-        #            $res = $zr1->edit_zone_record(
-        #                name    => "something",
-        #                address => $_,
-        #                type    => $type,
-        #                ttl     => 86403,
-        #            );
-        #            noerrok( $res, 300, "type $type address $_" );
-        #            ok( $res->get('error_msg') =>
-        #qr/Address for $type must point to a Fully Qualified Domain Name/
-        #            );
-        #            ok( $res->get('error_desc') => qr/Sanity error/ );
-        #        }
     }
 
-    for (
-        qw(1.x.2.3 .1.2.3 0.0.0.0 1234.1.2.3 256.2.3.4  1.-.2.3 1.2.3 1.2 1 1.2.3. -1.2.3.4),
-        '1. .3.4', '1.2,3.4', '1.,.3.4' )
-    {
+    for ( qw/ 1.x.2.3 .1.2.3 0.0.0.0 1234.1.2.3 256.2.3.4  1.-.2.3 1.2.3 1.2 
+            1 1.2.3. -1.2.3.4/, '1. .3.4', '1.2,3.4', '1.,.3.4' ) {
 
         #invalid IP address for A records
         $res = $zr1->edit_zone_record(
@@ -1022,6 +1005,20 @@ sub doit {
                 qr/Address for A records must be a valid IP address/ );
         ok( $res->get('error_desc') => qr/Sanity error/ );
     }
+
+    for ( qw/ abcd:efg1::1 / ) {
+
+        #invalid IP address for AAAA records
+        $res = $zr1->edit_zone_record(
+            name    => "something",
+            address => $_,
+            type    => 'AAAA',
+            ttl     => 86403,
+        );
+        noerrok( $res, 300, "address $_" );
+        ok( $res->get('error_msg') => qr/must be a valid IPv6 address/ );
+        ok( $res->get('error_desc') => qr/Sanity error/ );
+    };
 
     $res = $zr1->edit_zone_record(
         type    => 'A',
@@ -1157,6 +1154,16 @@ sub doit {
     ok( $zr1->get('address'), '2607:f729:0000:0000:0000:0000:0000:0001' );
     ok( $zr1->get('type'),    'AAAA' );
 
+    $res = $zr1->edit_zone_record(
+        name    => 'www',
+        address => '2607:f729::0001',
+        type    => 'AAAA',
+    );
+    noerrok($res);
+    $zr1->refresh;
+    ok( $zr1->get('name'),    'www' );
+    ok( $zr1->get('address'), '2607:f729:0000:0000:0000:0000:0000:0001' );
+    ok( $zr1->get('type'),    'AAAA' );
 
     #multiple CNAMES with same name
     $res = $zr1->edit_zone_record(

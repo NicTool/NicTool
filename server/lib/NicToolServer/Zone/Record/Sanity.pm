@@ -242,7 +242,7 @@ sub _valid_fqdn {
 
     if ( $data->{address} !~ /\.$/ ) {    # if it does not end in .
         $self->error('address',
-            "Address for $data->{type} must point to a Fully Qualified Domain Name (with a '.' at the end): RFCs 1035, 2181. You can use the '\@' character to stand for the zone this record belongs to." );
+            "Address for $data->{type} must point to a FQDN (with a '.' at the end): RFCs 1035, 2181. You can use the '\@' character to stand for the zone this record belongs to." );
     }
 }
 
@@ -268,6 +268,7 @@ sub _valid_rr_type {
 sub _valid_cname {
     my ( $self, $data, $zone_text ) = @_;
 
+# NAME
     my @args = ( $data->{name}, 'CNAME', 
         $data->{nt_zone_id}, $data->{nt_zone_record_id} );
 
@@ -288,6 +289,7 @@ sub _valid_cname {
         return;
     };
 
+# ADDRESS
     $self->_valid_address( $data, $zone_text );  
     $self->_valid_address_chars( $data, $zone_text );
 }
