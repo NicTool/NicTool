@@ -1103,22 +1103,26 @@ sub valid_label {
     my $label_explain = "(the bits of a name between the dots)";
     foreach my $label ( split(/\./, $name) ) {
         if ( length $label > 63 ) {
-            $self->error($type, "Max length of a label $label_explain is 63 octets (characters): RFC 2181");
+            $self->error($type, "Max length of a $type label $label_explain is 63 octets (characters): RFC 2181");
             $has_error++;
         }; 
 
         if ( length $label < 1 ) {
-            $self->error($type, "Minimum length of a label $label_explain is 1 octet (character): RFC 2181");
+            $self->error($type, "Minimum length of a $type label $label_explain is 1 octet (character): RFC 2181");
             $has_error++;
         };
 
-        if ( substr($label, 0,1) !~ /[a-zA-Z]/ ) {
-            $self->error($type, "Domain labels $label_explain must begin with a letter: RFC 1035");
-            $has_error++;
+        # domain labels always begin with a letter
+        my $first_char = substr($label, 0,1);
+        if ( $first_char !~ /[a-zA-Z]/ ) {
+            if ( $first_char ne '_' ) {   # exception for SRV records
+                $self->error($type, "$type domain labels $label_explain must begin with a letter: RFC 1035");
+                $has_error++;
+            };
         };
 
         if ( substr($label, -1,1) !~ /[a-zA-Z0-9]/ ) {
-            $self->error($type, "Domain labels $label_explain must end with a letter or digit: RFC 1035");
+            $self->error($type, "$type domain labels $label_explain must end with a letter or digit: RFC 1035");
             $has_error++;
         };
         last if $has_error;

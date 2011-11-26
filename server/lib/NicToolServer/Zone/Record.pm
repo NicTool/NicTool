@@ -203,8 +203,8 @@ sub log_zone_record {
     }
 
     my @g_columns = qw/ nt_user_id timestamp action object object_id log_entry_id title description /;
-    my $col_string = join(',', @g_columns);
-    my @values = map( $data->{$_}, @g_columns );
+    $col_string = join(',', @g_columns);
+    @values = map( $data->{$_}, @g_columns );
     $self->exec_query( "INSERT INTO nt_user_global_log($col_string) VALUES(??)", \@values );
 }
 
@@ -297,18 +297,12 @@ sub get_record_type {
     if ( $lookup =~ /^\d+$/ ) {   # all numeric
         return $self->{record_types}{$lookup}{name}; # return type name
     }
-    elsif ( $lookup eq 'reverse' ) {
-        my %hash = map { $_->{name} => "$_->{description} ($_->{name})" }
-            grep( $_->{reverse} == 1, @{ $self->{record_types}{'ALL'} } );
-        return \%hash;
-    }
-    elsif ( $lookup eq 'forward' ) {
-        my %hash = map { $_->{name} => "$_->{description} ($_->{name})" }
-            grep( $_->{forward} == 1, @{ $self->{record_types}{'ALL'} } );
-        return \%hash;
-    }
     elsif ( $lookup eq 'ALL' ) {
-        return $self->{record_types}{'ALL'};
+        return {
+            types      => $self->{record_types}{'ALL'},
+            error_code => 200, 
+            error_msg => 'OK',
+        };
     };
 
     return $self->{record_types}{$lookup}{id};  # got a type, return ID

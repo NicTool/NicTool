@@ -3,6 +3,15 @@ Revision history for NicToolServer
 
 2.11    2011.
 
+    * added zone record tests for AAAA, SRV, SPF, and TXT records
+    * added sanity tests for SRV records
+    * automatic expansion of IPv6 addresses (allows condensed entry)
+    * added valid_reverse_label, to validate domain labels in reverse zones
+    * consolidated character verification logic into get_invalid_chars
+    * moved tests out of new_or_edit_basic_verify into _valid_(MX,NS,A,etc)
+      subs, making it easier for programmers to follow the flow of code
+    * require all domain labels to end with a letter or digit
+    * require (nearly) all domain labels to start with a letter
     * Added get_record_type to the API (see NicToolClient changes for why)
     * SQL: replaced nt_zone_record.type with nt_zone_record.type_id, which
       references resource_record_type.id. While this does make some queries 

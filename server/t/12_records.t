@@ -38,7 +38,7 @@ use NicToolTest;
 use NicTool;
 use Test;
 
-BEGIN { plan tests => 2501 }
+BEGIN { plan tests => 2695 }
 
 $user = new NicTool(
     cache_users  => 0,
@@ -319,10 +319,11 @@ sub doit {
         }
     }
 
-    for $type (qw(A MX NS CNAME PTR)) {
+    for $type ( qw/ A AAAA MX NS CNAME PTR SRV / ) {
         for ( qw{~ ` ! @ $ % ^ & * ( ) _ + = \ | ' " ; : < > / ?},
             ',', '#', "\n", ' ', qw({ }) )
         {
+            next if $type eq 'AAAA' && $_ eq ':';  # legal char
 
             #invalid chars in address
             $res = $zone1->new_zone_record(
@@ -374,8 +375,7 @@ sub doit {
                 ttl     => 86400,
             );
             noerrok( $res, 300, "type $type address $_" );
-            ok( $res->get('error_msg') =>
-                    qr/Address for $type cannot start with a dash or slash/ );
+            ok( $res->get('error_msg') => qr/must begin with a letter/ );
             ok( $res->get('error_desc') => qr/Sanity error/ );
             if ( !$res->is_error ) {
                 $res = $user->delete_zone_record(
@@ -396,7 +396,7 @@ sub doit {
             );
             noerrok( $res, 300, "type $type address $_" );
             ok( $res->get('error_msg') =>
-                    qr/Address for $type cannot be an IP address/ );
+                    qr/must begin with a letter/ );
             ok( $res->get('error_desc') => qr/Sanity error/ );
             if ( !$res->is_error ) {
                 $res = $user->delete_zone_record(
@@ -539,7 +539,7 @@ sub doit {
     );
     noerrok( $res, 300, 'multiple CNAME records' );
     ok( $res->get('error_msg') =>
-            qr/multiple cname records with the same name are NOT allowed/ );
+            qr/multiple CNAME records with the same name are NOT allowed/ );
     ok( $res->get('error_desc') => qr/Sanity error/ );
 
     if ( !$res->is_error ) {
@@ -889,7 +889,7 @@ sub doit {
                 ttl     => 86399,
             );
             noerrok( $res, 300, "type $type name $_" );
-            ok( $res->get('error_msg') => qr/cannot .* with a hyphen/ );
+            ok( $res->get('error_msg')  => qr/must (begin|end) with a letter/ );
             ok( $res->get('error_desc') => qr/Sanity error/ );
         };
     };
@@ -924,8 +924,7 @@ sub doit {
                 ttl     => 86403,
             );
             noerrok( $res, 300, "type $type address $_" );
-            ok( $res->get('error_msg') =>
-                    qr/Address for $type cannot start with a dash or slash/ );
+            ok( $res->get('error_msg') => qr/must begin with a letter/ );
             ok( $res->get('error_desc') => qr/Sanity error/ );
         }
     }
@@ -942,8 +941,7 @@ sub doit {
             #invalid address for preset type
             $res = $zr1->edit_zone_record( address => $_ );
             noerrok( $res, 300, "type $type address $_" );
-            ok( $res->get('error_msg') =>
-                    qr/Address for $type cannot start with a dash or slash/ );
+            ok( $res->get('error_msg') => qr/must begin with a letter/ );
             ok( $res->get('error_desc') => qr/Sanity error/ );
         }
     }
@@ -959,8 +957,7 @@ sub doit {
             #invalid address for preset type
             $res = $zr1->edit_zone_record( address => $_ );
             noerrok( $res, 300, "type $type address $_" );
-            ok( $res->get('error_msg') =>
-                    qr/Address for $type cannot be an IP address/ );
+            ok( $res->get('error_msg')  => qr/must (begin|end) with a letter/ );
             ok( $res->get('error_desc') => qr/Sanity error/ );
         }
 
@@ -987,8 +984,7 @@ sub doit {
                 ttl     => 86403,
             );
             noerrok( $res, 300, "type $type address $_" );
-            ok( $res->get('error_msg') =>
-                    qr/Address for $type cannot be an IP address/ );
+            ok( $res->get('error_msg')  => qr/must (begin|end) with a letter/ );
             ok( $res->get('error_desc') => qr/Sanity error/ );
         }
 
@@ -1113,6 +1109,55 @@ sub doit {
     ok( $zr1->get('address'), 'fully.qualified.com.' );
     ok( $zr1->get('type'),    'MX' );
 
+#type SRV
+    $res = $zr1->edit_zone_record(
+        name    => '_sip._udp',
+        address => 'fully.qualified.com.',
+        type    => 'SRV',
+    );
+    noerrok($res);
+    $zr1->refresh;
+    ok( $zr1->get('name'),    '_sip._udp' );
+    ok( $zr1->get('address'), 'fully.qualified.com.' );
+    ok( $zr1->get('type'),    'SRV' );
+
+#type SPF
+    $res = $zr1->edit_zone_record(
+        name    => '@',
+        address => 'v=spf1 mx a ip4:127.0.0.6 -all',
+        type    => 'SPF',
+    );
+    noerrok($res);
+    $zr1->refresh;
+    ok( $zr1->get('name'),    'test.com.' );
+    ok( $zr1->get('address'), 'v=spf1 mx a ip4:127.0.0.6 -all' );
+    ok( $zr1->get('type'),    'SPF' );
+
+#type TXT
+    $res = $zr1->edit_zone_record(
+        name    => '@',
+        address => 'v=spf1 mx a ip4:127.0.0.6 -all',
+        type    => 'TXT',
+    );
+    noerrok($res);
+    $zr1->refresh;
+    ok( $zr1->get('name'),    'test.com.' );
+    ok( $zr1->get('address'), 'v=spf1 mx a ip4:127.0.0.6 -all' );
+    ok( $zr1->get('type'),    'TXT' );
+
+#type AAAA
+    $res = $zr1->edit_zone_record(
+        name    => 'www',
+        address => '2607:f729:0000:0000:0000:0000:0000:0001',
+        type    => 'AAAA',
+    );
+    noerrok($res);
+    $zr1->refresh;
+    ok( $zr1->get('name'),    'www' );
+    ok( $zr1->get('address'), '2607:f729:0000:0000:0000:0000:0000:0001' );
+    ok( $zr1->get('type'),    'AAAA' );
+
+
     #multiple CNAMES with same name
     $res = $zr1->edit_zone_record(
         name    => 'x',
@@ -1132,7 +1177,7 @@ sub doit {
     );
     noerrok( $res, 300, 'multiple CNAME records' );
     ok( $res->get('error_msg') =>
-            qr/multiple cname records with the same name are NOT allowed/ );
+            qr/multiple CNAME records with the same name are NOT allowed/ );
     ok( $res->get('error_desc') => qr/Sanity error/ );
 
     #CNAME conflict with A record
@@ -1212,7 +1257,7 @@ sub doit {
     noerrok($res);
 
 ####################
-    # delete_zone_record
+# delete_zone_record
 ####################
 
     ####################
@@ -1233,15 +1278,13 @@ sub doit {
     ok( $res->get('error_msg')  => 'nt_zone_record_id' );
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
 
-    $res = $user->get_record_type( type => 'forward');
-    noerrok($res);
-# warn Data::Dumper::Dumper($res->{store});
-    $res = $user->get_record_type( type => 'reverse');
-    noerrok($res);
-#warn Data::Dumper::Dumper($res->{store});
+####################
+# get_record_type
+####################
 
     $res = $user->get_record_type( type => 'ALL');
     noerrok($res);
+    #warn Data::Dumper::Dumper($res);
 }
 
 sub del {

@@ -116,7 +116,7 @@ CREATE TABLE nt_zone_record_log(
     KEY `nt_zone_record_log_idx2` (`nt_zone_record_id`),
     KEY `nt_zone_record_log_idx3` (`nt_zone_id`),
     KEY `nt_zone_record_log_idx4` (`action`),
-    KEY `nt_user_id` (`nt_user_id`),
+    KEY `nt_user_id` (`nt_user_id`)
     /* CONSTRAINT `nt_zone_record_log_ibfk_3` FOREIGN KEY (`nt_zone_record_id`) REFERENCES `nt_zone_record` (`nt_zone_record_id`) ON DELETE CASCADE ON UPDATE CASCADE,
     ** CONSTRAINT `nt_zone_record_log_ibfk_1` FOREIGN KEY (`nt_zone_id`) REFERENCES `nt_zone` (`nt_zone_id`) ON DELETE CASCADE ON UPDATE CASCADE,
     ** CONSTRAINT `nt_zone_record_log_ibfk_2` FOREIGN KEY (`nt_user_id`) REFERENCES `nt_user` (`nt_user_id`) ON DELETE CASCADE ON UPDATE CASCADE */
