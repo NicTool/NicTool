@@ -1379,29 +1379,24 @@ sub valid_reverse_lookup {
 
 sub valid_ip_address {
     my ( $self, $ip ) = @_;
-    if ( Net::IP::ip_is_ipv6($ip) == 1 ) {
-        return 1;
+    return 1 if Net::IP::ip_is_ipv6($ip) == 1;
+
+    return 0 if grep( /\./, split( //, $ip ) ) != 3;    # need 3 dots
+
+    my @x = split( /\./, $ip );
+    return 0 unless @x == 4;                            # need 4 nums
+
+    return 0 unless $x[0] > 0;
+
+    return 0 if 0 + $x[0] + $x[1] + $x[2] + $x[3] == 0; # 0.0.0.0 invalid
+    return 0 if grep( $_ eq '255', @x ) == 4;    #255.255.255.255 invalid
+
+    foreach (@x) {
+        return 0 unless /^\d{1,3}$/ && $_ >= 0 && $_ <= 255;
+        $_ = 0 + $_;   # convert strings to integers
     }
-    else {
 
-        return 0 if grep( /\./, split( //, $ip ) ) != 3;    # need 3 dots
-
-        my @x = split( /\./, $ip );
-        return 0 unless @x == 4;                            # need 4 decimals
-
-        return 0 unless $x[0] > 0;
-
-        #return 0 unless $x[2] > 0;
-        return 0 if 0 + $x[0] + $x[1] + $x[2] + $x[3] == 0;   #0.0.0.0 invalid
-        return 0 if grep( $_ eq '255', @x ) == 4;    #255.255.255.255 invalid
-
-        foreach (@x) {
-            return 0 unless /^\d{1,3}$/ and $_ >= 0 and $_ <= 255;
-            $_ = 0 + $_;
-        }
-
-        return join( ".", @x );
-    }
+    return join( ".", @x );
 }
 
 sub valid_ttl {
