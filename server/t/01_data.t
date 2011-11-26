@@ -19,7 +19,7 @@ use lib '.';
 use lib 't';
 use lib 'lib';
 use NicToolTest;
-use Test::More tests => 20;
+use Test::More tests => 27;
 use Data::Dumper;
 
 
@@ -42,9 +42,9 @@ ok( $dbh, 'dbh handle' );
 $nts = NicToolServer->new(undef,undef,$dbh);
 #warn Data::Dumper::Dumper($nts);
 
+# test exec_query
 my $dbix = $nts->dbix();
 ok( $dbix, "DBIx::Simple handle");
-#warn Dumper($dbix);
 
 my $r = $nts->exec_query( "SELECT email FROM nt_user WHERE deleted=0" );
 ok( scalar @$r, "select users: ".scalar @$r );
@@ -52,7 +52,6 @@ ok( scalar @$r, "select users: ".scalar @$r );
 
 $r = $nts->exec_query( "SELECT testfake FROM nt_user" );
 ok( ! $r, "invalid select" );
-
 
 my $zid = $nts->exec_query( "INSERT INTO nt_zone SET zone='testing.com',deleted=1");
 ok( $zid, "Insert zone ID $zid" );
@@ -64,25 +63,33 @@ ok( $r, "Update zone $zid description" );
 $r = $nts->exec_query( "UPDATE nt_zone SET fake='delete me' WHERE nt_zone_id=?", $zid);
 ok( ! $r, "Update zone error" );
 
-#exit;
 $r = $nts->exec_query( "DELETE FROM nt_zone WHERE nt_zone_id=?", $zid);
 ok( $r, "Delete zone $zid");
 
-
 $r = $nts->exec_query( "INSERT INTO nt_zone SET fake='testing.com',deleted=1");
 ok( ! $r, "Insert zone fail" );
-#warn Data::Dumper::Dumper($r);
 
 $r = $nts->exec_query( "DELETE FROM nt_fake WHERE nt_zone_id=?", $r );
 ok( ! $r, "Delete zone fail");
 
+# is_subgroup
 ok( ! $nts->is_subgroup(1,1), 'is_subgroup');
 
+# valid_ttl
 foreach ( qw/ 299 2592001 0 1 3000000 oops / ) {
     ok( ! $nts->valid_ttl( $_ ), "valid_ttl: $_");
 };
 
+# valid_ip_address
+foreach ( qw/ 1.0.0.0 1.2.3.4 5.6.7.8 255.255.255.254 / ) {
+    my $ip = $nts->valid_ip_address( $_ );
+    ok( $ip, "valid_ip_address: $_ -> $ip");
+};
 
+foreach ( qw/ 0.0.0.0 0.0.0.1 255.255.255.255 / ) {
+    my $ip = $nts->valid_ip_address( $_ );
+    ok( ! $ip, "valid_ip_address: $_ -> $ip");
+};
 
 #$r = $nts->is_subgroup(1,320);
 #ok( $r, "is_subgroup ($r)");
