@@ -3,6 +3,9 @@ Revision history for NicToolServer
 
 2.11    2011.
 
+    * added valid wildcard record tests
+    * added wildcard and SRV exceptions to valid_label 
+    * fixed some SQL errors where logging failed due to missing data
     * added zone record tests for AAAA, SRV, SPF, and TXT records
     * added sanity tests for SRV records
     * automatic expansion of IPv6 addresses (allows condensed entry)

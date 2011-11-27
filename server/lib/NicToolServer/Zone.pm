@@ -1112,17 +1112,24 @@ sub valid_label {
             $has_error++;
         };
 
+        # wildcard DNS not subject to the first/last character rules
+        next if ( $type eq 'name' && $label eq '*' );
+
         # domain labels always begin with a letter
+        my $err_prefix = "$type domain labels $label_explain must";
         my $first_char = substr($label, 0,1);
         if ( $first_char !~ /[a-zA-Z]/ ) {
-            if ( $first_char ne '_' ) {   # exception for SRV records
-                $self->error($type, "$type domain labels $label_explain must begin with a letter: RFC 1035");
+            if ( $type eq 'name' && $first_char eq '_' ) {
+                # exception for SRV records
+            }
+            else {
+                $self->error($type, "$err_prefix begin with a letter: RFC 1035");
                 $has_error++;
             };
         };
 
         if ( substr($label, -1,1) !~ /[a-zA-Z0-9]/ ) {
-            $self->error($type, "$type domain labels $label_explain must end with a letter or digit: RFC 1035");
+            $self->error($type, "$err_prefix end with a letter or digit: RFC 1035");
             $has_error++;
         };
         last if $has_error;

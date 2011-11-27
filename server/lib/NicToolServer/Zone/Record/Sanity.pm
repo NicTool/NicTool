@@ -51,10 +51,6 @@ sub new_or_edit_basic_verify {
 
     my $zone_text = $z->{zone};
 
-    if ( $data->{name} eq '*' ) {    # fully qualify the * record
-        $data->{name} = '*' . ".$zone_text.";
-    }
-
     $self->_expand_shortcuts( $data, $zone_text );  # expand @ and & shortcuts
 
     if ( $data->{name} =~ /^(.+)\.$zone_text\.$/ ) {  # ends in domain name
@@ -176,17 +172,19 @@ sub _valid_name_chars {
 
     return if $data->{name} !~ m/($invalid_match)/;  # no ickies
 
-    # wildcard * or *.something is OK: RFC 1034, 4592
-    return if $data->{name} =~ /^(\*$|\*\.)/;
+    # wildcard records: RFC 1034, 4592
+    return if $data->{name} eq '*';       # wildcard *
+    return if $data->{name} =~ /^\*\./;   # wildcard *.something
+    return if $data->{name} =~ /\.\*\./;   # wildcard some.*.something
 
     if ( $data->{name} =~ /\*/ ) {
-        $self->error('name',
+        return $self->error('name',
             "only *.something or * (by itself) is a valid wildcard record"
         );
     }
-    else {
-        $self->error('name', "invalid character or string in record name -- $1");
-    }
+
+    $data->{name} =~ m/($invalid_match)/g;  # match ickies
+    $self->error('name', "invalid character(s) in record name -- $1");
 }
 
 sub _valid_name {

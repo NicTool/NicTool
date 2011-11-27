@@ -38,7 +38,7 @@ use NicToolTest;
 use NicTool;
 use Test;
 
-BEGIN { plan tests => 2727 }
+BEGIN { plan tests => 2739 }
 
 $user = new NicTool(
     cache_users  => 0,
@@ -292,7 +292,7 @@ sub doit {
             );
             noerrok( $res, 300, "type $type name some${_}thing" );
             ok( $res->get('error_msg') =>
-                    qr/invalid character or string in record name/ );
+                    qr/invalid character\(s\) in record name/ );
             ok( $res->get('error_desc') => qr/Sanity error/ );
             if ( !$res->is_error ) {
                 $res = $user->delete_zone_record(
@@ -840,7 +840,7 @@ sub doit {
             );
             noerrok( $res, 300, "type $type name some${_}thing" );
             ok( $res->get('error_msg') =>
-                    qr/invalid character or string in record name/ );
+                    qr/invalid character\(s\) in record name/ );
             ok( $res->get('error_desc') => qr/Sanity error/ );
         }
     }
@@ -1081,6 +1081,22 @@ sub doit {
     ok( $zr1->get('name'),    'x' );
     ok( $zr1->get('address'), '1.2.3.4' );
     ok( $zr1->get('type'),    'A' );
+
+    # valid wildcard patterns
+    for ( qw/ * *.something something.*.something / ) {
+
+        $res = $zr1->edit_zone_record(
+            name    => $_,
+            type    => 'A',
+            ttl     => 86403,
+            address => '1.1.1.3'
+        );
+        noerrok( $res, 200, "name $_" );
+        $zr1->refresh;
+        ok( $zr1->get('name'),    $_ );
+        ok( $zr1->get('address'), '1.1.1.3' );
+        ok( $zr1->get('type'),    'A' );
+    }
 
     #type NS
     $res = $zr1->edit_zone_record(
