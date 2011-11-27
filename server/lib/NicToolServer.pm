@@ -1586,7 +1586,7 @@ sub exec_query {
         my ($table) = $query =~ /INSERT INTO (\w+)[\s\(]/;
         eval { $dbix->query( $query, @params ); };
         if ( $@ or $dbix->error ne 'DBI error: ' ) {
-            warn $err . $dbix->error if $self->debug_sql;
+            warn $err . $dbix->error; # if $self->debug_sql;
             return;
         }
         return $dbix->last_insert_id( undef, undef, $table, undef );
@@ -1597,7 +1597,7 @@ sub exec_query {
     elsif ( $query =~ /^DELETE|UPDATE/ ) {
         eval { $dbix->query( $query, @params ) };
         if ( $@ or $dbix->error ne 'DBI error: ' ) {
-            warn $err . $dbix->error if $self->debug_sql;
+            warn $err . $dbix->error; # if $self->debug_sql;
             return;
         }
         return $dbix->query("SELECT ROW_COUNT()")->list;

@@ -243,29 +243,24 @@ sub new_nameserver {
     my @columns = qw/ nt_group_id nt_nameserver_id name ttl description
         address export_format logdir datadir export_interval /;
 
-    my $sql
-        = "INSERT INTO nt_nameserver("
+    my $sql = "INSERT INTO nt_nameserver("
         . join( ',', @columns )
-        . ") VALUES("
-        . join( ',', map( $self->{dbh}->quote( $data->{$_} ), @columns ) )
-        . ")";
-    my $action = 'added';
+        . ') VALUES(??)';
+    my @values = map( $data->{$_}, @columns);
 
-    my $insertid = $self->exec_query($sql)
+    my $insertid = $self->exec_query($sql, \@values)
         or return {
         error_code => 600,
         error_msg  => $self->{dbh}->errstr,
         };
 
     $data->{nt_nameserver_id} = $insertid;
-    $self->log_nameserver( $data, $action );
+    $self->log_nameserver( $data, 'added' );
 
     return {
         error_code       => 200,
         error_msg        => 'OK',
-        nt_nameserver_id => $action == 'added'
-        ? $insertid
-        : $data->{nt_nameserver_id},
+        nt_nameserver_id => $insertid,
     };
 }
 
@@ -338,17 +333,17 @@ sub log_nameserver {
         name ttl description address export_format logdir datadir export_interval /;
 
     my $user = $data->{user};
-    $data->{nt_user_id} = $user->{nt_user_id};
+    $data->{nt_group_id} ||= $user->{nt_group_id};
+    $data->{nt_user_id} = $user->{nt_user_id} if defined $user->{nt_user_id};
     $data->{action}     = $action;
     $data->{timestamp}  = time();
 
-    my $sql
-        = "INSERT INTO nt_nameserver_log("
+    my @values = map( $data->{$_}, @columns );
+    my $sql = "INSERT INTO nt_nameserver_log("
         . join( ',', @columns )
-        . ") VALUES("
-        . join( ',', map( $dbh->quote( $data->{$_} ), @columns ) ) . ")";
+        . ") VALUES(??)";
 
-    my $insertid = $self->exec_query($sql);
+    my $insertid = $self->exec_query($sql, \@values);
 
     my @g_columns = qw/ nt_user_id timestamp action object object_id
         log_entry_id title description /;

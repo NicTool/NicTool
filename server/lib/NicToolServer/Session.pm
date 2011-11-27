@@ -74,7 +74,7 @@ sub verify_login {
 
     $data->{user}{nt_user_session} = $self->session_id;
 
-    $sql = "SELECT * FROM nt_perm " . "WHERE deleted=0 AND nt_user_id = ?";
+    $sql = "SELECT * FROM nt_perm WHERE deleted=0 AND nt_user_id = ?";
     my $perms = $self->exec_query( $sql, $data->{user}{nt_user_id} )
         or return $self->error_response( 505, $dbh->errstr );
 
@@ -104,36 +104,30 @@ sub verify_login {
         }
     }
 
+    my $uid = $data->{user}{nt_user_id};
     if ( !$perm ) {
         return $self->error_response( 507,
-                  "Could not find permissions for user ("
-                . $data->{user}{nt_user_id}
-                . ")" );
+                  "Could not find permissions for user ($uid)" );
     }
-    delete $perm->{nt_user_id};
-    delete $perm->{nt_group_id};
-    delete $perm->{nt_perm_id};
-    delete $perm->{nt_perm_name};
+    foreach ( qw/ nt_user_id nt_group_id nt_perm_id nt_perm_name / ) {
+        delete $perm->{$_};
+    };
 
     foreach ( keys %$perm ) {
         $data->{user}{$_} = $perm->{$_};
     }
 
-    $sql
-        = 'INSERT INTO nt_user_session(nt_user_id, nt_user_session, last_access) VALUES (??)';
-    my $nt_user_session_id = $self->exec_query( $sql,
-        [ $data->{user}{nt_user_id}, $data->{user}{nt_user_session}, time() ]
-    );
+    my $session = $data->{user}{nt_user_session};
+    my $session_id = $self->exec_query( 
+        'INSERT INTO nt_user_session(nt_user_id, nt_user_session, 
+            last_access) VALUES (??)',
+        [ $uid, $session, time() ] 
+    ) or return;
 
-    $sql
-        = "INSERT INTO nt_user_session_log(nt_user_id, action, timestamp, nt_user_session_id, nt_user_session) VALUES (??)";
-    $self->exec_query(
-        $sql,
-        [   $data->{user}{nt_user_id}, 'login',
-            time(),                    $nt_user_session_id,
-            $data->{user}{nt_user_session}
-        ]
-    );
+    $self->exec_query( 
+        "INSERT INTO nt_user_session_log(nt_user_id, action, timestamp, 
+            nt_user_session_id, nt_user_session) VALUES (??)",
+        [ $uid, 'login', time(), $session_id, $session ] );
 
     return 0;
 }
@@ -145,11 +139,12 @@ sub verify_session {
     my $dbh  = $self->{dbh};
 
     my $sql
-        = "SELECT nt_user.*, nt_user_session.*, nt_group.name as groupname FROM nt_user_session, nt_user, nt_group 
-        WHERE nt_user_session.nt_user_id = nt_user.nt_user_id
-          AND nt_user.nt_group_id = nt_group.nt_group_id
-          AND nt_user.deleted=0
-          AND nt_user_session.nt_user_session = ?";
+        = "SELECT u.*, s.*, g.name AS groupname 
+        FROM nt_user_session s
+         LEFT JOIN nt_user u ON s.nt_user_id = u.nt_user_id
+         LEFT JOIN nt_group g ON u.nt_group_id = g.nt_group_id
+        WHERE u.deleted=0
+          AND s.nt_user_session = ?";
 
     my $sessions = $self->exec_query( $sql, $data->{nt_user_session} )
         or return $self->error_response( 505, $dbh->errstr );
@@ -159,7 +154,7 @@ sub verify_session {
 
     $data->{user} = $sessions->[0];
 
-    my $max_age = time() - $NicToolServer::session_timeout;
+    my $max_age = time() - ($NicToolServer::session_timeout || 2700);
     if ( $max_age >= $data->{user}{last_access} ) {
         $self->logout('timeout');
         return $self->auth_error('Your session expired. Please login again');
@@ -230,21 +225,20 @@ sub logout {
     my $sql = "DELETE FROM nt_user_session WHERE nt_user_session_id = ?";
     $self->exec_query( $sql, $data->{user}{nt_user_session_id} );
 
-    $sql
-        = "INSERT INTO nt_user_session_log(nt_user_id, action, timestamp, nt_user_session, nt_user_session_id) VALUES (??) ";
-    $self->exec_query(
-        $sql,
-        [   $data->{user}{nt_user_id},
-            $msg,
-            time(),
-            $data->{user}{nt_user_session},
-            $data->{user}{nt_user_session_id}
-        ]
-    );
-
-    foreach my $key ( keys %$data ) {
-        delete( $data->{$key} );
+    if ( ! $data->{user}{nt_user_id} ) {
+        warn "calling Session::logout ... ".join(" ",caller);
     }
+    else {
+        $sql = "INSERT INTO nt_user_session_log(nt_user_id, action, timestamp,
+                nt_user_session, nt_user_session_id) VALUES (??) ";
+        $self->exec_query( $sql,
+            [   $data->{user}{nt_user_id}, $msg, time(),
+                $data->{user}{nt_user_session}, $data->{user}{nt_user_session_id}
+            ]
+        );
+    };
+
+    foreach my $key ( keys %$data ) { delete( $data->{$key} ); };
 
     return { 'error_code' => 200, error_msg => 'OK', nt_user_session => '' };
 }
@@ -298,24 +292,22 @@ sub timeout_sessions {
         $sql = "DELETE FROM nt_user_session WHERE nt_user_session_id = ?";
         $self->exec_query( $sql, $s->{nt_user_session_id} );
 
+        next if ! defined $s->{nt_user_id};
+
         # log that the session was auto_logged out
-        $sql
-            = "INSERT INTO nt_user_session_log(nt_user_id, action, timestamp, nt_user_session, nt_user_session_id) VALUES (??)";
-        $self->exec_query(
-            $sql,
-            [   $s->{nt_user_id}, 'timeout',
-                time(),             $s->{nt_user_session},
-                $s->{nt_user_session_id}
+        $sql = "INSERT INTO nt_user_session_log(nt_user_id, action, timestamp, nt_user_session, nt_user_session_id) VALUES (??)";
+        $self->exec_query( $sql,
+            [   $s->{nt_user_id}, 'timeout', time(),
+                $s->{nt_user_session}, $s->{nt_user_session_id}
             ]
         );
     }
 }
 
 sub clean_user_data {
-
-    # delete unused and password data from DB-returned user hash
     my $self = shift;
 
+    # delete unused and password data from DB-returned user hash
     my $data = $self->{client}->data();
 
     my @fields = qw(password deleted nt_user_session_id last_access);

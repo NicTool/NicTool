@@ -632,8 +632,8 @@ sub log_user {
     my ( $self, $data, $action, $prev_data ) = @_;
 
     my $dbh = $self->{dbh};
-    my @columns
-        = qw(nt_group_id nt_user_id action timestamp modified_user_id first_name last_name username email password);
+    my @columns = qw/ nt_group_id nt_user_id action timestamp modified_user_id
+        first_name last_name username email password /;
 
     my $user = $data->{user};
     $data->{modified_user_id} ||= $data->{nt_user_id};

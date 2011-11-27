@@ -143,6 +143,7 @@ sub _username_exists {
         push( @groups, $row->{nt_group_id} );
     }
 
+    return 0 if ! scalar @groups;
     if ( $data->{nt_user_id} ) {
         $sql
             = "SELECT nt_user_id FROM nt_user WHERE deleted=0 AND nt_group_id IN ("
