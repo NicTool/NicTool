@@ -2,6 +2,9 @@ Changes
 MANIFEST
 Makefile.PL
 README
+contrib/addserver.pl
+contrib/DNS.pm
+contrib/zone2nic.pl
 dist.ini
 lib/NicTool.pm
 lib/NicTool/API.pm
@@ -28,4 +31,3 @@ t/protocol.t
 t/result.t
 t/test.cfg
 t/transport.t
-test.pl

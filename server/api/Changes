@@ -1,2 +1,7 @@
 
+ 1.03 - 2011.11.27
+
+   * fixed a problem in NTObject::get, where the code was attempting to fetch
+     an array slice but not working reliably.
+
  1.00 - 

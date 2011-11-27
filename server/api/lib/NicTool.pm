@@ -12,7 +12,7 @@ use NicTool::Transport;
 use NicTool::Cache;
 our $AUTOLOAD;
 
-$NicTool::VERSION = '1.02';
+$NicTool::VERSION = '1.03';
 
 
 =head1 SYNOPSIS

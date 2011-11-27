@@ -3,6 +3,7 @@
 ##########
 
 use strict;
+use lib 'lib';
 
 use Test;
 BEGIN { plan tests => 42 }
@@ -19,12 +20,12 @@ ok( !$nt->has('chump') );
 #test setting/getting/hassing
 $nt->set( chump => 'something' );
 ok( $nt->has('chump') );
-ok( $nt->get('chump') == 'something' );
+ok( $nt->get('chump') eq 'something' );
 $nt->set( a => 'b', c => 'd' );
 ok( $nt->has('a') );
 ok( $nt->has('c') );
-ok( $nt->get('a') == 'b' );
-ok( $nt->get('c') == 'd' );
+ok( $nt->get('a') eq 'b' );
+ok( $nt->get('c') eq 'd' );
 my @a = $nt->get( 'a', 'c' );
 ok( $a[0] => 'b' );
 ok( $a[1] => 'd' );

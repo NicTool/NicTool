@@ -85,19 +85,18 @@ of the attributes in the same order.
 
 sub get {
     my $self = shift;
-    if ( @_ gt 1 ) {
-        my @r = @{ %{ $self->{store} } }{@_};
+
+    return $self->{store}->{ $_[0] } if scalar @_ == 1;
+
+    if ( scalar @_ > 1 ) {
+        my @r;
+        foreach ( @_ ) { push @r, $self->{store}{$_}; };
         return @r;
-    }
-    else {
-        unless ( defined $_[0] ) {
-            my ( $package, $filename, $line ) = caller;
-            warn
-                "package $package at line $line called NTObject::get with invalid parameters!\n";
-            return undef;
-        }
-        return $self->{store}->{ $_[0] };
-    }
+    };
+
+    my ( $package, $filename, $line ) = caller;
+    warn "package $package at line $line called NTObject::get with invalid parameters!\n";
+    return;
 }
 
 =item set(KEY=>VALUE,...)
