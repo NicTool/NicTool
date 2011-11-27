@@ -1728,7 +1728,13 @@ sub zone_record_template {
             type       => "TXT",
             address    => "v=spf1 a mx -all"
         );
-        @zr = ( \%record1, \%record2, \%record3, \%record4, \%record5 );
+        my %record6 = (
+            nt_zone_id => $id,
+            name       => "$zone.",
+            type       => "SPF",
+            address    => "v=spf1 a mx -all"
+        );
+        @zr = ( \%record1, \%record2, \%record3, \%record4, \%record5, \%record6 );
     }
     elsif ( $template eq "wildcard-spf" ) {
         %record3 = (
@@ -1743,7 +1749,13 @@ sub zone_record_template {
             type       => "TXT",
             address    => "v=spf1 a mx -all"
         );
-        @zr = ( \%record1, \%record2, \%record3, \%record4, \%record5 );
+        my %record6 = (
+            nt_zone_id => $id,
+            name       => "$zone.",
+            type       => "SPF",
+            address    => "v=spf1 a mx -all"
+        );
+        @zr = ( \%record1, \%record2, \%record3, \%record4, \%record5, \%record6 );
     }
 
     return \@zr;
