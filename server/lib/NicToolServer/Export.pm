@@ -572,11 +572,15 @@ exec 2>&1
 # setuidgid to the 'nictool' user, and run the export, logging to syslog.
 #exec setuidgid nictool ./nt_export.pl -nsid $self->{ns_id} -daemon | logger
 #
-# if run by cron, at, or interactively by a human who is logged in as the
-# 'nictool' user, this will work well. The -force option is included because
-# odds are, if you are running this by hand, you'll want the export to be
-# triggered, regardless of any DB changes.
-exec ./nt_export.pl -nsid $self->{ns_id} -force
+# For cron, at, or other periodic trigger
+#exec setuidgid nictool ./nt_export.pl -nsid $self->{ns_id} | logger
+#
+# For interactive use by a human. If said human is logged in as the
+# 'nictool' user, this works well. Otherwise, you may have to alter
+# ownership of the files created. The -force option is included because
+# odds are, if you are running this by hand, you want the export to complete
+# regardless of any DB changes.
+exec setuidgid nictool ./nt_export.pl -nsid $self->{ns_id} -force
 EORUN
 ;
     close $F;
