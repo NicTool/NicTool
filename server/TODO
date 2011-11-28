@@ -1,28 +1,32 @@
 ----NEW----
 
-. Support tinydns locations and/or BIND views
+. Support tinydns locations
     SQL & tinydns export portions completed 2011.11.14. See
     https://www.tnpi.net/support/forums/index.php/topic,1004.0.html
 
 . Support BIND views
 
-. If a user does not have delete permission for a zone/zone record, they should also not have restore permissions (https://www.tnpi.net/support/forums/index.php/topic,797.0.html)
+. If a user does not have delete permission for a zone/zone record, they 
+    should not have restore permissions
+    https://www.tnpi.net/support/forums/index.php/topic,797.0.html
 
 . Fix bug: login returns nt_perm_id and perm_name in user hash, and should not.
 
-. Be consistent with use of strings and ints.
-
 . Support other databases: 
 ..  remove all ENUM columns from database
-...  nt_zone_record.type should be a numeric code from the resource_record_type table
 
 . Support for NAPTR records: http://tools.ietf.org/html/rfc3403
 
-. SPF records: when creating or editing a SPF record, check for an TXT record. If it doesn't exist, automatically create it. If exists, update it with the SPF record: RFC 4408 ("recommends to always provide a TXT based SPF RR...and duplicate the information from the TXT")
-
-. Limit the num of export logs retained. Perhaps 1 week, or 100 records per NS, or some similar method.
+. SPF records: when creating or editing a SPF record, check for an TXT record. 
+    If TXT doesn't exist, create it. If exists, update it with SPF record. 
+    RFC 4408 ("recommends to always provide a TXT based SPF RR...and duplicate
+    the information")
 
 ==== COMPLETED =====
+
+. Limit the num of export logs retained. Prune successful "0 zones changed" log entries older than 1 day.
+
+. nt_zone_record.type is a numeric code from the resource_record_type table (was an enum)
 
 . Support for SPF record type
 

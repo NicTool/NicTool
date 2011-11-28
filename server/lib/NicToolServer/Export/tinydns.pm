@@ -51,9 +51,9 @@ sub get_export_file {
 sub postflight {
     my $self = shift;
 
+    $self->{nte}->set_copied(1);  # we intend to copy...
     $self->compile_cdb or return; # compile data to data.cdb
     $self->rsync_cdb or return;   # rsync file into place
-    $self->{nte}->set_copied(1);  # record success
 
     return 1;
 }
