@@ -154,11 +154,14 @@ sub verify_session {
 
     $data->{user} = $sessions->[0];
 
-    my $max_age = time() - ($NicToolServer::session_timeout || 2700);
-    if ( $max_age >= $data->{user}{last_access} ) {
-        $self->logout('timeout');
-        return $self->auth_error('Your session expired. Please login again');
-    }
+    # why is this sometimes not set?
+    if ( $data->{user}{last_access} ) {
+        my $max_age = time() - ($NicToolServer::session_timeout || 2700);
+        if ( $max_age >= $data->{user}{last_access} ) {
+            $self->logout('timeout');
+            return $self->auth_error('Your session expired. Please login again');
+        }
+    };
 
     # delete session and log logout if LOGOUT
     return $self->logout if $data->{action} eq 'LOGOUT';
