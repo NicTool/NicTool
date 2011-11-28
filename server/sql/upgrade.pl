@@ -58,7 +58,15 @@ foreach my $version ( @versions ) {
 };
 
 sub _sql_2_some_fine_day {
+    my @tables = $dbh->query("SHOW TABLES")->flat;
+    my $convert_to_innodb = engine_innodb( @tables );
     return <<EO_SOME_DAY
+/* InnoDB is the default database format in mysql 5.5. You want to upgrade
+** MySQL to 5.5 due to significant InnoDB performance gains. Don't forget to
+** adjust my.cnf for optimal performance. */
+
+$convert_to_innodb
+
 /* When switched to InnoDB, these constraints can be added */
 
 ALTER TABLE `nt_zone_log` ADD FOREIGN KEY (`nt_zone_id`) REFERENCES `nt_zone` (`nt_zone_id`) ON DELETE CASCADE ON UPDATE CASCADE;
@@ -101,7 +109,6 @@ sub _sql_2_11 {
         nt_zone             nt_zone_log              nt_zone_nameserver       
         nt_zone_record      nt_zone_record_log       resource_record_type     /;
 
-    my $convert_to_innodb = engine_innodb( @tables );
     my $encode_utf8 = encode_utf8( @tables );
 
     return <<EO_211
@@ -130,11 +137,6 @@ UPDATE nt_zone_record_log SET type_id=33 WHERE type='SRV';
 UPDATE nt_zone_record_log SET type_id=99 WHERE type='SPF';
 ALTER TABLE nt_zone_record_log DROP `type`;
 
-/* InnoDB is the default database format in mysql 5.5. You want to upgrade
-** MySQL to 5.5 due to significant InnoDB performance gains. Don't forget to
-** adjust my.cnf for optimal performance. */
-
-$convert_to_innodb
 $encode_utf8
 
 UPDATE nt_nameserver_export_log SET success=0 WHERE success IS NULL;
