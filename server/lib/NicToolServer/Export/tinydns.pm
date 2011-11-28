@@ -437,11 +437,12 @@ sub zr_loc {
     }
     else {
         warn "Oops, invalid LOC data\n";
+        return '';
     };
 
 # TODO: convert this from binary to octal \nnn codes
     my $rdata = pack('C', 0)
-           . pack('C3', precsize_valton($size),
+           . pack('C3',  precsize_valton($size),
                          precsize_valton($horiz_pre),
                          precsize_valton($vert_pre))
            . pack('N3', $latitude, $longitude, $altitude);
