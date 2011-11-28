@@ -156,7 +156,7 @@ sub exec_query {
     elsif ( $sql =~ /^DELETE|UPDATE/ ) {
         eval { $dbix_w->query( $sql, @params ) };
         if ( $@ or $dbix_w->error ne 'DBI error: ' ) {
-            warn $err . $dbix_w->error if $self->debug;
+            warn $err . $dbix_w->error if $self->{debug};
             return;
         }
         return $dbix_w->query("SELECT ROW_COUNT()")->list;
