@@ -2,13 +2,14 @@
 use strict;
 use warnings;
 
+use Data::Dumper;
 use English;
 use Test::More;
 
 eval "use Test::HTML::Lint";
 
 if ( $EVAL_ERROR ) {
-    warn Dumper( $EVAL_ERROR );
+    warn Data::Dumper::Dumper( $EVAL_ERROR );
     plan skip_all => 'Test::HTML::Lint not installed';
 }
 else {
