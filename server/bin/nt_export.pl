@@ -42,6 +42,13 @@ $export->get_dbh( dsn => $dsn, user => $db_user, pass => $db_pass,)
 
 defined $nsid || get_nsid();
 
+local $SIG{HUP}  = \&graceful_exit;
+local $SIG{TERM} = \&graceful_exit;
+local $SIG{PIPE} = \&graceful_exit;
+local $SIG{USR1} = \&graceful_exit;
+local $SIG{SEGV} = \&graceful_exit;
+local $SIG{ALRM} = \&graceful_exit;
+
 my $count = $export->get_modified_zones();
 print "found $count zones";
 if ( $daemon ) { $export->daemon(); }
@@ -111,4 +118,10 @@ sub get_db_creds_from_nictoolserver_conf {
         ($db_pass) = $contents =~ m/db_pass\s+=\s+'(.*)?'/;
     };
 };
+
+sub graceful_exit {
+    my $signal = shift;
+    $export->elog( "exiting: received signal ($signal)" );
+    exit;
+}
 
