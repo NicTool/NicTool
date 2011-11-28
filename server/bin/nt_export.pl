@@ -50,7 +50,7 @@ local $SIG{SEGV} = \&graceful_exit;
 local $SIG{ALRM} = \&graceful_exit;
 
 my $count = $export->get_modified_zones();
-print "found $count zones";
+print "nsid $nsid found $count zones";
 if ( $daemon ) { $export->daemon(); }
 else           { $export->export(); };
 
