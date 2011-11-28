@@ -37,16 +37,20 @@ foreach my $version ( @versions ) {
     my $test_sub = '_sql_test_' . $version;  # assemble sub name
     $test_sub =~ s/\./_/g;                   # replace . with _
     no strict 'refs';
-    if ( &{ $test_sub } ) {                  # run the test
+    my $is_applied = &$test_sub;
+    use strict;
+    if ( $is_applied ) {                     # run the test
         print "Skipping v$version SQL updates (already applied).\n";
         next;
     };
 
 # run the SQL updates, if needed
     print "applying v $version SQL updates\n";
-    my $query = '_sql_' . $version;
-    $query =~ s/\./_/g;                   # replace . with _
-    my $q_string = &{ $query };           # fetch the queries
+    my $queries = '_sql_' . $version;
+    $queries =~ s/\./_/g;                   # replace . with _
+    no strict 'refs';
+    my $q_string = &$queries;             # fetch the queries
+    use strict;
     $q_string =~ s/[\s]{2,}/ /g;          # condense whitespace
     foreach my $q ( split(';', $q_string )  ) { # split string into queries
         next if $q =~ /^\s+$/;            # skip blank entries
@@ -93,10 +97,12 @@ EO_SOME_DAY
 
 
 sub _sql_test_2_11 {
-    my $r = $dbh->query( 'SELECT option_value FROM nt_options WHERE option_value="2.10"' )->list;
+    my $sql = 'SELECT option_value FROM nt_options WHERE option_value="2.10"';
+    my $r;
+    eval { $r = $dbh->query( $sql )->list; };
     return 1 if ! defined $r;   # query failed
-    return 1 if $r ne '2.10';
-    return;   # do the update
+    return 0 if $r eq '2.10';   # do it!
+    return 1;                   # don't update
 };
 
 sub _sql_2_11 {
@@ -163,10 +169,12 @@ EO_211
 };
 
 sub _sql_test_2_10 {
-    my $r = $dbh->query( 'SELECT option_value FROM nt_options WHERE option_value="2.09"' )->list;
-    return 1 if ! defined $r;   # query failed
-    return 1 if $r ne '2.09';   # current db version != 2.09
-    return;         # whee, time to update
+    my $r;
+    my $sql = 'SELECT option_value FROM nt_options WHERE option_value="2.09"';
+    eval { $r = $dbh->query( $sql )->list; };
+    return 1 if ! defined $r;   # query failed, 2.09 not applied yet
+    return 0 if $r eq '2.09';   # set is_applied=0
+    return 1;                   # DB version is probably > 2.09 already
 };
 
 sub _sql_2_10 {
@@ -292,9 +300,10 @@ EO_SQL_2_10
 
 sub _sql_test_2_09 {
 # the nt_options table was added in 2.09. 
-    my $r = $dbh->query( 'SELECT option_id FROM nt_options LIMIT 1' );
-    return 1 if ! defined $r;     # query failed
-    return $r;        # result will be a positive int
+    my $r;
+    eval { $r = $dbh->query( 'SELECT option_id FROM nt_options LIMIT 1' ); };
+    return 0 if ! defined $r;   # query failed, set is_applied=0
+    return $r;                  # result will be a positive int
 };
 
 sub _sql_2_09 {
@@ -351,6 +360,8 @@ sub _sql_test_2_08 {
         );
     my $id = $dbh->last_insert_id( undef, undef, 'nt_user', undef );
     $dbh->query( "SET sql_mode=''" );
+# ID will be undefined if the query fails.
+# Otherwise, it'll return some positive integer, meaning 'patch applied'
     return $id;
 };
 
