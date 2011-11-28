@@ -1,6 +1,8 @@
 package NicToolServer::Export::tinydns;
 # ABSTRACT: export NicTool DNS data to tinydns (part of djbdns)
 
+#use parent NicToolServer::Export;
+
 use strict;
 use warnings;
 
@@ -49,11 +51,9 @@ sub get_export_file {
 sub postflight {
     my $self = shift;
 
-    # compile data to data.cdb
-    $self->compile_cdb or return;
-
-    # rsync file into place
-    $self->rsync_cdb or return;
+    $self->compile_cdb or return; # compile data to data.cdb
+    $self->rsync_cdb or return;   # rsync file into place
+    $self->{nte}->set_copied(1);  # record success
 
     return 1;
 }

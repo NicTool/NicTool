@@ -3,6 +3,8 @@ Revision history for NicToolServer
 
 2.11    2011.11.27
 
+    * automatically clean up the many "success, 0 changed zones" entries in
+      nt_nameserver_export_log 
     * added valid wildcard record tests
     * added wildcard and SRV exceptions to valid_label 
     * fixed some SQL errors where logging failed due to missing data

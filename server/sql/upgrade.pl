@@ -137,7 +137,11 @@ ALTER TABLE nt_zone_record_log DROP `type`;
 $convert_to_innodb
 $encode_utf8
 
-ALTER TABLE nt_nameserver_export_log DROP `result_id`;
+UPDATE nt_nameserver_export_log SET success=0 WHERE success IS NULL;
+UPDATE nt_nameserver_export_log SET result_id=0 WHERE result_id IS NULL;
+ALTER TABLE nt_nameserver_export_log MODIFY `success` tinyint(1) UNSIGNED NOT NULL DEFAULT '0';
+ALTER TABLE nt_nameserver_export_log CHANGE `result_id` `copied` tinyint(1) UNSIGNED NOT NULL DEFAULT '0';
+
 ALTER TABLE resource_record_type ADD UNIQUE `name` (`name`);
 INSERT INTO resource_record_type (`id`,`name`,`description`,`reverse`,`forward`) VALUES ('29','LOC','Location','1','1');
 

@@ -99,6 +99,7 @@ CREATE TABLE nt_nameserver_export_log(
     nt_nameserver_id                SMALLINT UNSIGNED NOT NULL,
     date_start                      timestamp NULL DEFAULT NULL,
     date_end                        timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP  on update CURRENT_TIMESTAMP,
+    copied                          tinyint(1) UNSIGNED NOT NULL DEFAULT 0,
     message                         VARCHAR(256) NULL DEFAULT NULL,
     success                         tinyint(1) UNSIGNED NULL DEFAULT NULL,
     partial                         tinyint(1) UNSIGNED NOT NULL DEFAULT 0

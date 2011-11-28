@@ -89,12 +89,36 @@ sub elog {
     return $message;
 }
 
+sub set_copied {
+    my $self   = shift;
+    my $copied = shift;
+    $self->exec_query( 
+        "UPDATE nt_nameserver SET result_id=? WHERE nt_nameserver_id=?",
+        [ $copied, $self->{ns_id} ] 
+    );
+}
+
 sub set_status {
     my $self    = shift;
     my $message = shift;
-    my $sql = "UPDATE nt_nameserver SET export_status=?  WHERE nt_nameserver_id=?";
-    $self->exec_query( $sql, [ $message, $self->{ns_id} ] );
+    $self->exec_query( 
+        "UPDATE nt_nameserver SET export_status=?  WHERE nt_nameserver_id=?",
+         [ $message, $self->{ns_id} ] 
+    );
 }
+
+sub cleanup_db {
+    my $self = shift;
+
+# delete the "started, 0 changed zones, exiting" log entries older than today
+    $self->exec_query(
+        "DELETE FROM nt_nameserver_export_log 
+          WHERE copied=0 AND success=1
+            AND date_start < DATE_SUB( CURRENT_TIMESTAMP, INTERVAL 1 DAY)
+            AND nt_nameserver_id=?",
+        [ $self->{ns_id} ]
+    );
+};
 
 sub exec_query {
     my $self = shift;
@@ -152,6 +176,7 @@ sub export {
 
     if ( ! $self->{export_required} && ! $self->{force} ) {
         $self->set_status("no changes.");
+        $self->set_copied(0);
         $self->elog("exiting");
         return 1;
     };
@@ -498,6 +523,8 @@ sub preflight {
 
     # determine export directory
     $self->get_export_dir or return;
+    $self->write_runfile();
+
     return 1;
 }
 
@@ -508,7 +535,7 @@ sub postflight {
 
     $self->update_status();
 
-    $self->write_runfile();
+    $self->cleanup_db();
 
     # mark export successful
     $self->elog("complete", success=>1);
