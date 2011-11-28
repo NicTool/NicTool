@@ -1,5 +1,5 @@
 
-2.11    2011.11.18
+2.11    2011.11.27
   - added type 99 SPF record to SPF templates
   - zone record types are fetched via NicTool API (not statically coded). 
 
