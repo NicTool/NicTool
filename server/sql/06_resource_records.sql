@@ -1,7 +1,7 @@
 
 DROP TABLE IF EXISTS resource_record_type;
 CREATE TABLE resource_record_type (
-    id              smallint(2) unsigned NOT NULL AUTO_INCREMENT,
+    id              smallint(2) unsigned NOT NULL,
     name            varchar(10) NOT NULL,
     description     varchar(55) NULL DEFAULT NULL,
     reverse         tinyint(1) UNSIGNED NOT NULL DEFAULT 1,

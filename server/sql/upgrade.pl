@@ -144,8 +144,18 @@ UPDATE nt_nameserver_export_log SET result_id=0 WHERE result_id IS NULL;
 ALTER TABLE nt_nameserver_export_log MODIFY `success` tinyint(1) UNSIGNED NOT NULL DEFAULT '0';
 ALTER TABLE nt_nameserver_export_log CHANGE `result_id` `copied` tinyint(1) UNSIGNED NOT NULL DEFAULT '0';
 
-ALTER TABLE resource_record_type ADD UNIQUE `name` (`name`);
-INSERT INTO resource_record_type (`id`,`name`,`description`,`reverse`,`forward`) VALUES ('29','LOC','Location','1','1');
+DROP TABLE IF EXISTS resource_record_type;
+CREATE TABLE resource_record_type (
+   id              smallint(2) unsigned NOT NULL,
+   name            varchar(10) NOT NULL,
+   description     varchar(55) NULL DEFAULT NULL,
+   reverse         tinyint(1) UNSIGNED NOT NULL DEFAULT 1,
+   forward         tinyint(1) UNSIGNED NOT NULL DEFAULT 1,
+PRIMARY KEY (`id`),
+UNIQUE `name` (`name`)
+) DEFAULT CHARSET=utf8;
+
+INSERT INTO `resource_record_type` VALUES (2,'NS','Name Server',1,1),(5,'CNAME','Canonical Name',1,1),(6,'SOA',NULL,0,0),(12,'PTR','Pointer',1,0),(15,'MX','Mail Exchanger',0,1),(28,'AAAA','Address IPv6',0,1),(33,'SRV','Service',0,1),(99,'SPF','Sender Policy Framework',0,1),(252,'AXFR',NULL,0,1),(1,'A','Address',0,1),(16,'TXT','Text',1,1),(48,'DNSKEY',NULL,0,1),(43,'DS',NULL,0,1),(25,'KEY',NULL,0,1),(29,'LOC','Location',0,0);
 
 UPDATE nt_options SET option_value='2.11' WHERE option_name='db_version';
 EO_211
