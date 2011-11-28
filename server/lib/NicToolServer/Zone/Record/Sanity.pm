@@ -2,6 +2,7 @@ package NicToolServer::Zone::Record::Sanity;
 # ABSTRACT: sanity tests for zone records
 
 use strict;
+use Net::IP;
 
 @NicToolServer::Zone::Record::Sanity::ISA = qw(NicToolServer::Zone::Record);
 
@@ -202,7 +203,7 @@ sub _valid_name {
         $self->valid_reverse_label('name', $data->{name} );
     }
     else {
-        $self->valid_label('name', $data->{name} );
+        $self->valid_label('name', $data->{name}, $data->{type} );
     };
 }
 
@@ -272,19 +273,14 @@ sub _valid_cname {
 
     if ($self->record_exists( @args ) ) {
         $self->error( 'name', "multiple CNAME records with the same name are NOT allowed. (use plain old round robin)" );
-        return;
     };
 
-    @args[1] = 'A';
-    if ( $self->record_exists( @args ) ) {
-        $self->error( 'name', "record $data->{name} already exists within zone as an Address (A) record: RFC 1034 & 2181");
-        return;
-    };
+    foreach my $a ( qw/ A AAAA MX / ) {
+        @args[1] = $a;
 
-    @args[1] = 'MX';
-    if ( $self->record_exists( @args ) ) {
-        $self->error( 'name', "record $data->{name} already exists as a Mail Exchanger (MX) record: RFC 1034 & 2181");
-        return;
+        if ( $self->record_exists( @args ) ) {
+            $self->error( 'name', "record $data->{name} already exists within zone as an Address ($a) record: RFC 1034 & 2181");
+        };
     };
 
 # ADDRESS
@@ -306,6 +302,11 @@ sub _valid_a {
 # ADDRESS
     $self->_valid_address_chars( $data, $zone_text );
 
+    Net::IP::ip_is_ipv4( $data->{address} ) or 
+        $self->error( 'address', 
+            'Address for A records must be a valid IP address.'
+        );
+    
     $self->valid_ip_address( $data->{address} ) or 
         $self->error( 'address', 
             'Address for A records must be a valid IP address.'
@@ -315,9 +316,7 @@ sub _valid_a {
 sub _valid_aaaa {
     my ( $self, $data, $zone_text ) = @_;
 
-    $data->{address} =~ s/ //g;     # strip out any spaces
-    $data->{address} = Net::IP::ip_expand_address($data->{address},6);
-
+# NAME
     $self->error( 'name',
         "record $data->{name} already exists within zone as an Alias (CNAME) record."
         ) if ( $self->record_exists(
@@ -327,11 +326,22 @@ sub _valid_aaaa {
             );
 
 # ADDRESS
+    $data->{address} =~ s/ //g;     # strip out any spaces
+    if ( ! Net::IP::ip_is_ipv4( $data->{address} ) ) {
+        $data->{address} = Net::IP::ip_expand_address($data->{address},6);
+    };
+
     $self->_valid_address_chars( $data, $zone_text );
 
-    $self->valid_ip_address( $data->{address} ) or
-        $self->error( 'address', 
+# TODO: add support for IPv4 transitional IPs: 2001:db8::1.2.3.4
+    Net::IP::ip_is_ipv6( $data->{address} )  
+        or $self->error( 'address', 
             'Address for AAAA records must be a valid IPv6 address.'
+        );
+
+    $self->valid_ip_address( $data->{address} ) or 
+        $self->error( 'address', 
+            'Address for A records must be a valid IP address.'
         );
 }
 
@@ -413,6 +423,30 @@ sub _valid_ns {
 sub _valid_srv {
     my ( $self, $data, $zone_text ) = @_;
 
+# NAME
+    # SRV records allow leading underscore: RFC 2782
+# since we allow _ in the valid_name_chars match, we still need to assure
+# that _ is only allowed in the leading position
+
+    # get more restrictive pattern
+    my $invalid_match = $self->get_invalid_chars( 'SRV', 'address', $zone_text );
+
+    # check each domain label
+    foreach my $label ( split /\./, $data->{name} ) {
+        if ( substr($label, 0, 1) eq '_' ) {
+            my $rest_of_chars = substr($label, 1);
+            if ( $rest_of_chars =~ /($invalid_match)/g ) {
+                $self->error( 'name', "invalid characters in SRV record: $1" );
+            };
+        }
+        else {
+            if ( $label =~ /($invalid_match)/g ) {
+                $self->error( 'name', "invalid characters in SRV record: $1" );
+            };
+        };
+    };
+
+# WEIGHT, PRIORITY, PORT
     # weight, priority, and port must all be 16 bit integers
     my %values_to_check = (
         'weight'   => 'Weight',
@@ -428,6 +462,7 @@ sub _valid_srv {
         }
     }
 
+# ADDRESS
     # SRV records must not point to a CNAME
     if ($self->record_exists( $data->{address}, 'CNAME', 
             $data->{nt_zone_id}, $data->{nt_zone_record_id} ) ) {

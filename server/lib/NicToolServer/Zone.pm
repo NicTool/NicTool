@@ -1084,52 +1084,50 @@ sub zone_exists {
 
 sub valid_label {
     my $self = shift;
-    my $type = shift or die "invalid type\n";
-    my $name = shift;
+    my ( $field, $name, $type ) = @_;
 
-    $self->error($type, "missing label") if ! defined $name;
+    $self->error($field, "missing label") if ! defined $name;
 
     my $has_error = 0;
     if ( length $name < 1 ) {
-        $self->error($type, "A domain name must have at least 1 octets (character): RFC 2181");
+        $self->error($field, "A domain name must have at least 1 octets (character): RFC 2181");
         $has_error++;
     };
 
     if ( length $name > 255 ) {
-        $self->error($type, "A full domain name is limited to 255 octets (characters): RFC 2181");
+        $self->error($field, "A full domain name is limited to 255 octets (characters): RFC 2181");
         $has_error++;
     };
 
     my $label_explain = "(the bits of a name between the dots)";
     foreach my $label ( split(/\./, $name) ) {
         if ( length $label > 63 ) {
-            $self->error($type, "Max length of a $type label $label_explain is 63 octets (characters): RFC 2181");
+            $self->error($field, "Max length of a $field label $label_explain is 63 octets (characters): RFC 2181");
             $has_error++;
         }; 
 
         if ( length $label < 1 ) {
-            $self->error($type, "Minimum length of a $type label $label_explain is 1 octet (character): RFC 2181");
+            $self->error($field, "Minimum length of a $field label $label_explain is 1 octet (character): RFC 2181");
             $has_error++;
         };
 
         # wildcard DNS not subject to the first/last character rules
-        next if ( $type eq 'name' && $label eq '*' );
+        next if $field eq 'name' && $label eq '*';
+
+        my $err_prefix = "$field domain labels $label_explain must";
 
         # domain labels always begin with a letter
-        my $err_prefix = "$type domain labels $label_explain must";
         my $first_char = substr($label, 0,1);
-        if ( $first_char !~ /[a-zA-Z]/ ) {
-            if ( $type eq 'name' && $first_char eq '_' ) {
-                # exception for SRV records
-            }
-            else {
-                $self->error($type, "$err_prefix begin with a letter: RFC 1035");
-                $has_error++;
-            };
+        if ( $field eq 'name' && $type eq 'SRV' && $first_char eq '_' ) {
+            # except for SRV
+        }
+        elsif ( $first_char =~ /[^a-zA-Z]/ ) {
+            $self->error($field, "$err_prefix begin with a letter: RFC 1035");
+            $has_error++;
         };
 
         if ( substr($label, -1,1) !~ /[a-zA-Z0-9]/ ) {
-            $self->error($type, "$err_prefix end with a letter or digit: RFC 1035");
+            $self->error($field, "$err_prefix end with a letter or digit: RFC 1035");
             $has_error++;
         };
         last if $has_error;
