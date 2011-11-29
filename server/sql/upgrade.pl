@@ -143,6 +143,10 @@ UPDATE nt_zone_record_log SET type_id=33 WHERE type='SRV';
 UPDATE nt_zone_record_log SET type_id=99 WHERE type='SPF';
 ALTER TABLE nt_zone_record_log DROP `type`;
 
+DELETE FROM nt_zone_nameserver WHERE nt_nameserver_id=0;
+ALTER TABLE nt_zone_nameserver MODIFY nt_zone_id int(10) unsigned NOT NULL;
+ALTER TABLE nt_zone_nameserver ADD UNIQUE KEY `zone_ns` (`nt_zone_id`,`nt_nameserver_id`);
+
 $encode_utf8
 
 UPDATE nt_nameserver_export_log SET success=0 WHERE success IS NULL;
@@ -203,7 +207,8 @@ ALTER TABLE nt_zone_record_log MODIFY type enum('A','AAAA','MX','PTR','NS','TXT'
 ** this sql portion is run twice, we start with the create. */
 CREATE TABLE nt_zone_nameserver (
     nt_zone_id           int(10) unsigned NOT NULL,
-    nt_nameserver_id     smallint(5) unsigned NOT NULL
+    nt_nameserver_id     smallint(5) unsigned NOT NULL,
+  UNIQUE KEY `zone_ns_id` (`nt_zone_id`,`nt_nameserver_id`)
 ) DEFAULT CHARSET=utf8;
 
 /* New database table, replacing nt_zone_record.type ENUM */
@@ -217,7 +222,7 @@ PRIMARY KEY (`id`)
 INSERT INTO resource_record_type VALUES (2,'NS'),(5,'CNAME'),(6,'SOA'),(12,'PTR'),(15,'MX'),(28,'AAAA'),(33,'SRV'),(99,'SPF'),(252,'AXFR'),(1,'A'),(16,'TXT'),(48,'DNSKEY'),(43,'DS'),(25,'KEY');
 
 
-/* GLOBALLY change table.deleted columns from enum to tinyint(1) */
+/* change all table.deleted columns from enum to tinyint(1) */
 ALTER TABLE `nt_zone_record` MODIFY deleted tinyint(1) UNSIGNED NOT NULL DEFAULT 0;
 /* and then decrement the values because enums are evil */
 UPDATE nt_zone_record SET deleted=deleted-1;
@@ -240,16 +245,16 @@ ALTER TABLE nt_zone ADD column `location` VARCHAR(2) DEFAULT NULL  AFTER `ttl`;
 ALTER TABLE nt_zone ADD column `last_modified` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP AFTER `location`;
 
 /* import NS settings from existing nt_zone.ns0..ns9 */
-REPLACE INTO nt_zone_nameserver (nt_zone_id,nt_nameserver_id) SELECT nt_zone_id,ns0 FROM nt_zone WHERE deleted=0 AND ns0 IS NOT NULL;
-REPLACE INTO nt_zone_nameserver (nt_zone_id,nt_nameserver_id) SELECT nt_zone_id,ns1 FROM nt_zone WHERE deleted=0 AND ns1 IS NOT NULL;
-REPLACE INTO nt_zone_nameserver (nt_zone_id,nt_nameserver_id) SELECT nt_zone_id,ns2 FROM nt_zone WHERE deleted=0 AND ns2 IS NOT NULL;
-REPLACE INTO nt_zone_nameserver (nt_zone_id,nt_nameserver_id) SELECT nt_zone_id,ns3 FROM nt_zone WHERE deleted=0 AND ns3 IS NOT NULL;
-REPLACE INTO nt_zone_nameserver (nt_zone_id,nt_nameserver_id) SELECT nt_zone_id,ns4 FROM nt_zone WHERE deleted=0 AND ns4 IS NOT NULL;
-REPLACE INTO nt_zone_nameserver (nt_zone_id,nt_nameserver_id) SELECT nt_zone_id,ns5 FROM nt_zone WHERE deleted=0 AND ns5 IS NOT NULL;
-REPLACE INTO nt_zone_nameserver (nt_zone_id,nt_nameserver_id) SELECT nt_zone_id,ns6 FROM nt_zone WHERE deleted=0 AND ns6 IS NOT NULL;
-REPLACE INTO nt_zone_nameserver (nt_zone_id,nt_nameserver_id) SELECT nt_zone_id,ns7 FROM nt_zone WHERE deleted=0 AND ns7 IS NOT NULL;
-REPLACE INTO nt_zone_nameserver (nt_zone_id,nt_nameserver_id) SELECT nt_zone_id,ns8 FROM nt_zone WHERE deleted=0 AND ns8 IS NOT NULL;
-REPLACE INTO nt_zone_nameserver (nt_zone_id,nt_nameserver_id) SELECT nt_zone_id,ns9 FROM nt_zone WHERE deleted=0 AND ns9 IS NOT NULL;
+REPLACE INTO nt_zone_nameserver (nt_zone_id,nt_nameserver_id) SELECT nt_zone_id,ns0 FROM nt_zone WHERE ns0 IS NOT NULL AND ns0 != 0;
+REPLACE INTO nt_zone_nameserver (nt_zone_id,nt_nameserver_id) SELECT nt_zone_id,ns1 FROM nt_zone WHERE ns1 IS NOT NULL AND ns1 != 0;
+REPLACE INTO nt_zone_nameserver (nt_zone_id,nt_nameserver_id) SELECT nt_zone_id,ns2 FROM nt_zone WHERE ns2 IS NOT NULL AND ns2 != 0;
+REPLACE INTO nt_zone_nameserver (nt_zone_id,nt_nameserver_id) SELECT nt_zone_id,ns3 FROM nt_zone WHERE ns3 IS NOT NULL AND ns3 != 0;
+REPLACE INTO nt_zone_nameserver (nt_zone_id,nt_nameserver_id) SELECT nt_zone_id,ns4 FROM nt_zone WHERE ns4 IS NOT NULL AND ns4 != 0;
+REPLACE INTO nt_zone_nameserver (nt_zone_id,nt_nameserver_id) SELECT nt_zone_id,ns5 FROM nt_zone WHERE ns5 IS NOT NULL AND ns5 != 0;
+REPLACE INTO nt_zone_nameserver (nt_zone_id,nt_nameserver_id) SELECT nt_zone_id,ns6 FROM nt_zone WHERE ns6 IS NOT NULL AND ns6 != 0;
+REPLACE INTO nt_zone_nameserver (nt_zone_id,nt_nameserver_id) SELECT nt_zone_id,ns7 FROM nt_zone WHERE ns7 IS NOT NULL AND ns7 != 0;
+REPLACE INTO nt_zone_nameserver (nt_zone_id,nt_nameserver_id) SELECT nt_zone_id,ns8 FROM nt_zone WHERE ns8 IS NOT NULL AND ns8 != 0;
+REPLACE INTO nt_zone_nameserver (nt_zone_id,nt_nameserver_id) SELECT nt_zone_id,ns9 FROM nt_zone WHERE ns9 IS NOT NULL AND ns9 != 0;
 /* and then kiss them columns goodbye. And don't let the door hit your ... */
 ALTER TABLE nt_zone DROP column ns0;
 ALTER TABLE nt_zone DROP column ns1;

@@ -124,6 +124,7 @@ CREATE TABLE nt_zone_record_log(
 
 CREATE TABLE nt_zone_nameserver (
     nt_zone_id           int(10) unsigned NOT NULL,
-    nt_nameserver_id     smallint(5) unsigned NOT NULL
+    nt_nameserver_id     smallint(5) unsigned NOT NULL,
+    UNIQUE KEY `zone_ns_id` (`nt_zone_id`,`nt_nameserver_id`)
 ) DEFAULT CHARSET=utf8;
 
