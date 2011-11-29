@@ -123,7 +123,7 @@ CREATE TABLE nt_zone_record_log(
 ) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 CREATE TABLE nt_zone_nameserver (
-    nt_zone_id           smallint(5) unsigned NOT NULL,
+    nt_zone_id           int(10) unsigned NOT NULL,
     nt_nameserver_id     smallint(5) unsigned NOT NULL
 ) DEFAULT CHARSET=utf8;
 

@@ -202,7 +202,7 @@ ALTER TABLE nt_zone_record_log MODIFY type enum('A','AAAA','MX','PTR','NS','TXT'
 ** data (like dropping that table after the ns0..9 fields are dropped) if 
 ** this sql portion is run twice, we start with the create. */
 CREATE TABLE nt_zone_nameserver (
-    nt_zone_id           smallint(5) unsigned NOT NULL,
+    nt_zone_id           int(10) unsigned NOT NULL,
     nt_nameserver_id     smallint(5) unsigned NOT NULL
 ) DEFAULT CHARSET=utf8;
 
