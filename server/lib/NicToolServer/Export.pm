@@ -180,11 +180,16 @@ sub export {
         return 1;
     };
 
+    $self->elog("forced") if $self->{force};
+
+    my $before = time;
     $self->set_status("exporting from DB");
     $self->{export_class}->export_db();
+    my $elapsed = time - $before;
+    my $timed = " ($elapsed secs)" if $elapsed > 5;
+    $self->elog('exported'.$timed);
 
 # TODO: detect and delete BIND zone files deleted in NicTool
-    $self->elog("exported");
     $self->postflight or return;
     return 1;
 }
@@ -407,7 +412,7 @@ sub get_ns_records {
 
     return ($sql,@args) if $p{query_result};
     my $r = $self->exec_query( $sql, \@args ) or return [];
-    $self->elog( "retrieved " . scalar @$r . " zones" );
+    $self->elog( "retrieved " . scalar @$r . " records" );
     return $r;
 }
 
@@ -648,10 +653,12 @@ sub is_ip_port {
 
 sub qualify {
     my ( $self, $record, $zone ) = @_;
-    return $record if $record =~ /\.$/;    # record already ends in .
+    return $record if substr($record,-1,1) eq '.';  # record ends in .
     $zone ||= $self->{zone_name} or return $record;
-    return $record if $record =~ /$zone$/;    # ends in zone, just no .
-    return "$record.$zone"                    # append missing zone name
+
+# substr is measurably faster than a regexp
+    return $record if $zone eq substr($record,(-1*length($zone)),length($zone));
+    return "$record.$zone"                 # append missing zone name
 }
 
 

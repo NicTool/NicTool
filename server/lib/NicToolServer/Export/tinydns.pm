@@ -73,7 +73,7 @@ sub compile_cdb {
     };
     my $elapsed = time - $before;
     my $message = "compiled";
-    $message .= ( $elapsed > 5 ) ? " ($elapsed secs)" : '';
+    $message .= " ($elapsed secs)" if $elapsed > 5;
     $self->{nte}->elog($message);
     return 1;
 };
@@ -162,7 +162,7 @@ sub export_db {
 # loop uses 150MB less RAM.
     my @sql = $self->{nte}->get_ns_zones(query_result=>1);
     my $result = $self->{nte}{dbix_r}->query( @sql );
-    $self->{nte}->elog( "retrieved " . $result->rows . " zones" );
+    $self->{nte}->elog( $result->rows . " zones" );
     while ( my $z = $result->hash ) {
 
         $self->{nte}{zone_name} = $z->{zone};
@@ -176,6 +176,7 @@ sub export_db {
     @sql = $self->{nte}->get_ns_records(query_result=>1);
     $result = $self->{nte}{dbix_r}->query( @sql ) 
         or die $self->{nte}{dbix_r}->error;
+    $self->{nte}->elog( $result->rows . " records" );
     while ( my $r = $result->hash ) {
         $self->{nte}{zone_name} = $r->{zone_name};
         my $type   = lc( $r->{type} );
@@ -439,12 +440,12 @@ sub zr_loc {
 }
 
 sub qualify {
-    my ( $self, $record, $zone ) = @_;
+    my $self = shift;
+    my $record = shift;
     return $record if substr($record,-1,1) eq '.';  # record ends in .
-    $zone ||= $self->{nte}{zone_name};
-    $zone or return $record;
+    my $zone = shift || $self->{nte}{zone_name} or return $record;
 
-# yes, substr is measurably faster than using a regexp
+# substr is measurably faster than the regexp
     #return $record if $record =~ /$zone$/;   # ends in zone, just no .
     return $record if $zone eq substr($record,(-1*length($zone)),length($zone));
 
@@ -454,7 +455,6 @@ sub qualify {
 sub format_timestamp {
     my ($self, $ts) = @_;
     return '' if ! $ts;
-    #warn "timestamp: $ts\n";
     return substr unixtai64( $ts ), 1;
 };
 
