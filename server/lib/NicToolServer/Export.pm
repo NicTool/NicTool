@@ -5,7 +5,6 @@ use strict;
 use warnings;
 
 use Cwd;
-use Data::Dumper;
 use DBIx::Simple;
 use File::Path;
 use Params::Validate qw/ :all /;
@@ -15,7 +14,7 @@ use NicToolServer::Export::tinydns;
 use NicToolServer::Export::BIND;
 
 # this class and subclasses support nt_export.pl
-# subclasses (see tinydns & BIND ^^) have logic to export to them
+# subclasses (see tinydns & BIND ^^) have server specific export logic
 
 sub new {
     my $class = shift;
@@ -343,19 +342,16 @@ sub get_ns_id {
 sub get_ns_zones {
     my $self = shift;
     my %p = validate( @_,
-        { last_modified => { type => SCALAR, optional => 1 }, },
-        );
+        { last_modified => { type => SCALAR, optional => 1 },
+          query_result  => { type => BOOLEAN, optional => 1 }, 
+        },
+    );
 
     my $sql = "SELECT z.nt_zone_id, z.zone, z.mailaddr, z.serial, z.refresh,
-        z.retry, z.expire, z.minimum, z.ttl, z.location, z.last_modified
-FROM nt_zone z";
-
-# TODO: It may prove faster to collect the NSIDs now, similar to how the old 
-# nt_export_djb.c app did. But I'll save optimization for when it's necessary
-# because premature optimization is the root of all evil... If we did want to,
-# something like this would do it:
-# (SELECT GROUP_CONCAT(nt_nameserver_id) FROM nt_zone_nameserver n WHERE
-# n.nt_zone_id=z.nt_zone_id) AS nsids
+        z.retry, z.expire, z.minimum, z.ttl, z.location, z.last_modified,
+ (SELECT GROUP_CONCAT(nt_nameserver_id) FROM nt_zone_nameserver n 
+    WHERE n.nt_zone_id=z.nt_zone_id) AS nsids
+     FROM nt_zone z";
 
     my @args;
     if ( $self->{ns_id} == 0 ) {
@@ -373,6 +369,43 @@ FROM nt_zone z";
         push @args, $p{last_modified};
     }
 
+    return ($sql,@args) if $p{query_result};
+    my $r = $self->exec_query( $sql, \@args ) or return [];
+    $self->elog( "retrieved " . scalar @$r . " zones" );
+    return $r;
+}
+
+sub get_ns_records {
+    my $self = shift;
+    my %p = validate( @_,
+        { last_modified => { type => SCALAR, optional => 1 },
+          query_result  => { type => BOOLEAN, optional => 1 }, 
+        },
+    );
+
+    my $sql = "SELECT r.name, r.ttl, t.name AS type, r.address, r.weight, 
+        r.priority, r.other, r.location, z.zone AS zone_name,
+        UNIX_TIMESTAMP(timestamp) AS timestamp
+      FROM nt_zone_record r
+        LEFT JOIN resource_record_type t ON t.id=r.type_id
+        LEFT JOIN nt_zone_nameserver ns ON ns.nt_zone_id=r.nt_zone_id
+        JOIN nt_zone z ON ns.nt_zone_id=z.nt_zone_id";
+
+    my @args;
+    if ( $self->{ns_id} == 0 ) {
+        $sql .= " WHERE r.deleted=0";  # all zone recs
+    }
+    else {
+        $sql .= " WHERE ns.nt_nameserver_id=? AND r.deleted=0";
+        push @args, $self->{ns_id};
+    }
+
+    if ( $p{last_modified} ) {
+        $sql .= " AND z.last_modified > ?";
+        push @args, $p{last_modified};
+    }
+
+    return ($sql,@args) if $p{query_result};
     my $r = $self->exec_query( $sql, \@args ) or return [];
     $self->elog( "retrieved " . scalar @$r . " zones" );
     return $r;
@@ -440,20 +473,6 @@ sub get_zone_ns_ids {
     )->flat;
 }
 
-sub get_zone_records {
-    my $self = shift;
-    my %p = validate( @_, { zone => { type => HASHREF } } );
-
-    my $zid = $p{zone}->{nt_zone_id};
-    my $sql = "SELECT r.name, r.ttl, r.description, t.name AS type, r.address, r.weight, 
-    priority, other, location, UNIX_TIMESTAMP(timestamp) AS timestamp
-        FROM nt_zone_record r
-        LEFT JOIN resource_record_type t ON t.id=r.type_id
-         WHERE r.deleted=0 AND r.nt_zone_id=?";
-
-    return $self->exec_query( $sql, $zid );
-}
-
 sub get_active_nameservers {
     my $self = shift;
     return $self->{active_ns} if defined $self->{active_ns};
@@ -470,7 +489,6 @@ sub get_active_nameservers {
         $r->{export_serials}++ if $r->{export_format} ne 'tinydns';
     }
 
-    #warn Dumper( $self->{active_ns} );
     my $export_format;
     if ( $self->{ns_id} ) {
         $self->{ns_ref} = $self->{active_ns_ids}{$self->{ns_id}};
@@ -589,30 +607,26 @@ EORUN
 
 sub zr_soa {
     my $self = shift;
-    my %p = validate( @_, { zone => { type => HASHREF } } );
+    my $z  = shift;
 
-    my $z  = $p{zone};
-
-    my @ns_ids       = $self->get_zone_ns_ids( $z );
+    my @ns_ids       = split(',', $z->{nsids} );
     $z->{timestamp}  = '';       # does it make sense to?
     $z->{location} ||= '';
     $z->{nsname}     = $self->{active_ns_ids}{ $ns_ids[0] }{name};
     $z->{serial}     = $self->{ns_ref}{export_serials} ? $z->{serial} : '',
 
-    my $r = $self->{export_class}->zr_soa( zone => $z );
+    my $r = $self->{export_class}->zr_soa( $z );
     return $r;
 }
 
 sub zr_ns { 
     my $self = shift;
-    my %p = validate( @_, { zone => { type => HASHREF } } );
-
-    my $z = $p{zone};
+    my $z = shift;
     my $r;
-    foreach my $nsid ( $self->get_zone_ns_ids( $z ) ) {
+    foreach my $nsid ( split(',', $z->{nsids} ) ) {
         my $ns_ref = $self->{active_ns_ids}{$nsid};
         $r .= $self->{export_class}->zr_ns(
-            record => {
+            {
                 name     => $z->{zone},
                 address  => $self->qualify( $ns_ref->{name}, $z->{zone} ),
                 ttl      => $ns_ref->{ttl},

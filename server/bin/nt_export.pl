@@ -5,10 +5,11 @@ use warnings;
 
 use lib '.';
 use lib 'lib';
-use Data::Dumper;
+use lib '../server/lib';
+#use Data::Dumper;
 use Getopt::Long;
 use Params::Validate qw/:all/;
-$Data::Dumper::Sortkeys=1;
+#$Data::Dumper::Sortkeys=1;
 
 use NicToolServer::Export;
 

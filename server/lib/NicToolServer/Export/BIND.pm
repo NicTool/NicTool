@@ -5,7 +5,6 @@ use strict;
 use warnings;
 
 use Cwd;
-use Data::Dumper;
 use File::Copy;
 use Params::Validate qw/ :all /;
 
@@ -30,15 +29,15 @@ sub export_db {
             $self->{nte}->get_export_dir, $z->{zone} )
                 or die "unable to figure out export name for zone $z->{zone}\n";
         $self->{nte}{zone_name} = $z->{zone};
-        print $fh $self->{nte}->zr_soa( zone => $z );
-        print $fh $self->{nte}->zr_ns( zone => $z );
+        print $fh $self->{nte}->zr_soa( $z );
+        print $fh $self->{nte}->zr_ns( $z );
 
-        my $records = $self->{nte}->get_zone_records( zone => $z );
+        my $records = $self->get_records( $z->{nt_zone_id} );
         foreach my $r ( @$records ) {
             my $type   = lc( $r->{type} );
             my $method = "zr_${type}";
             $r->{location}  ||= '';
-            print $fh $self->$method( record => $r );
+            print $fh $self->$method( $r );
         }
 
         close $fh;
@@ -56,6 +55,19 @@ sub get_export_file {
     return $FH;
 };
 
+sub get_records {
+    my $self = shift;
+    my $zone_id = shift;
+
+    my $sql = "SELECT r.name, r.ttl, r.description, t.name AS type, r.address, r.weight, 
+    priority, other, location, UNIX_TIMESTAMP(timestamp) AS timestamp
+        FROM nt_zone_record r
+        LEFT JOIN resource_record_type t ON t.id=r.type_id
+         WHERE r.deleted=0 AND r.nt_zone_id=?";
+
+    return $self->{nte}->exec_query( $sql, $zone_id );
+}
+
 sub postflight {
     my $self = shift;
 
@@ -68,64 +80,49 @@ sub postflight {
 }
 
 sub zr_a {
-    my $self = shift;
-    my %p = validate( @_, { record => { type => HASHREF }, } );
+    my ($self, $r) = @_;
 
-    my $r = $p{record};
 # name  ttl  class  type  type-specific-data
     return "$r->{name}	$r->{ttl}	A	$r->{address}\n";
 }
 
 sub zr_cname {
-    my $self = shift;
-    my %p = validate( @_, { record => { type => HASHREF } } );
-    my $r = $p{record};
+    my ($self, $r) = @_;
 
 # name  ttl  class   rr     canonical name
     return "$r->{name}	$r->{ttl}	CNAME	$r->{address}\n";
 }
 
 sub zr_mx {
-    my $self = shift;
-    my %p = validate( @_, { record => { type => HASHREF } } );
+    my ($self, $r) = @_;
 
-    my $r = $p{record};
 #name           ttl  class   rr  pref name
     return "$r->{name}	$r->{ttl}	MX	$r->{weight}	$r->{address}\n";
 }
 
 sub zr_txt {
-    my $self = shift;
-    my %p = validate( @_, { record => { type => HASHREF } } );
+    my ($self, $r) = @_;
 
-    my $r = $p{record};
 # name  ttl  class   rr     text
     return "$r->{name}	$r->{ttl}	TXT	\"$r->{address}\"\n";
 }
 
 sub zr_ns {
-    my $self = shift;
-    my %p = validate( @_, { record => { type => HASHREF } } );
+    my ($self, $r) = @_;
 
-    my $r = $p{record};
 # name  ttl  class  type  type-specific-data
     return "$r->{name}.	$r->{ttl}	NS	$r->{address}\n";
 }
 
 sub zr_ptr {
-    my $self = shift;
-    my %p = validate( @_, { record => { type => HASHREF } } );
+    my ($self, $r) = @_;
 
-    my $r = $p{record};
 # name  ttl  class  type  type-specific-data
     return "$r->{name}	$r->{ttl}	PTR	$r->{address}\n";
 }
 
 sub zr_soa {
-    my $self = shift;
-    my %p = validate( @_, { zone => { type => HASHREF } } );
-
-    my $z = $p{zone};
+    my ($self, $z) = @_;
 
 # name        ttl class rr    name-server email-addr  (sn ref ret ex min)
     return "$z->{zone}.		$z->{ttl}	IN	SOA	$z->{nsname}    $z->{mailaddr} (
@@ -138,20 +135,16 @@ sub zr_soa {
 }
 
 sub zr_spf {
-    my $self = shift;
-    my %p = validate( @_, { record => { type => HASHREF } } );
+    my ($self, $r) = @_;
 
 # SPF record support was added in BIND v9.4.0
-    my $r = $p{record};
+
 # name  ttl  class  type  type-specific-data
     return "$r->{name}	$r->{ttl}	SPF	$r->{address}\n";
 }
 
 sub zr_srv {
-    my $self = shift;
-    my %p = validate( @_, { record => { type => HASHREF } } );
-
-    my $r = $p{record};
+    my ($self, $r) = @_;
 
     my $priority = $self->{nte}->is_ip_port( $r->{priority} );
     my $weight   = $self->{nte}->is_ip_port( $r->{weight} );
@@ -162,20 +155,14 @@ sub zr_srv {
 }
 
 sub zr_aaaa {
-    my $self = shift;
-    my %p = validate( @_, { record => { type => HASHREF } } );
-
-    my $r = $p{record};
+    my ($self, $r) = @_;
 
 # name  ttl  class  type  type-specific-data
     return "$r->{name}	$r->{ttl}	AAAA	$r->{address}\n";
 }
 
 sub zr_loc {
-    my $self = shift;
-    my %p = validate( @_, { record => { type => HASHREF } } );
-
-    my $r = $p{record};
+    my ($self, $r) = @_;
     return "$r->{name}	$r->{ttl}	LOC	$r->{address}\n";
 }
 

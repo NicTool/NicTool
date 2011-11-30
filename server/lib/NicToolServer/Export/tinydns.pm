@@ -7,7 +7,6 @@ use strict;
 use warnings;
 
 use Cwd;
-use Data::Dumper;
 use File::Copy;
 use Params::Validate qw/ :all /;
 use Time::TAI64 qw/ unixtai64 /;
@@ -158,30 +157,41 @@ sub export_db {
 
     my $fh = $self->get_export_file() or return;
 
-    foreach my $z ( @{ $self->{nte}->get_ns_zones() } ) {
-        $self->{nte}{zone_name} = $z->{zone};
-        print $fh $self->{nte}->zr_soa( zone => $z );
-        print $fh $self->{nte}->zr_ns( zone => $z );
+# the while loop fetches a row at at time. Grabbing them all in one pass is
+# no faster. It takes 3 seconds to fetch 150,000 zones either way. The while 
+# loop uses 150MB less RAM.
+    my @sql = $self->{nte}->get_ns_zones(query_result=>1);
+    my $result = $self->{nte}{dbix_r}->query( @sql );
+    $self->{nte}->elog( "retrieved " . $result->rows . " zones" );
+    while ( my $z = $result->hash ) {
 
-        my $records = $self->{nte}->get_zone_records( zone => $z );
-        foreach my $r ( @$records ) {
-            my $type   = lc( $r->{type} );
-            my $method = "zr_${type}";
-            $r->{location}  ||= '';
-            $r->{timestamp} = $self->format_timestamp($r->{timestamp}),
-            print $fh $self->$method( record => $r );
-        }
-    }   
+        $self->{nte}{zone_name} = $z->{zone};
+# print SOA & NS records
+        print $fh $self->{nte}->zr_soa( $z );
+        print $fh $self->{nte}->zr_ns( $z );
+    } 
+    $result->finish;
+
+# print all the rest
+    @sql = $self->{nte}->get_ns_records(query_result=>1);
+    $result = $self->{nte}{dbix_r}->query( @sql ) 
+        or die $self->{nte}{dbix_r}->error;
+    while ( my $r = $result->hash ) {
+        $self->{nte}{zone_name} = $r->{zone_name};
+        my $type   = lc( $r->{type} );
+        $r->{location}  ||= '';
+        $r->{timestamp} = $self->format_timestamp($r->{timestamp}),
+        my $method = "zr_${type}";
+        print $fh $self->$method( $r );
+    };
+    $result->finish;
+
     close $fh;
 };
 
 sub zr_a {
     my $self = shift;
-    my %p = validate( @_, { record => { type => HASHREF }, } );
-
-    my $r = $p{record};
-
-    #warn Data::Dumper::Dumper($r);
+    my $r = shift or die;
 
     return '+'                            # special char
         . $self->qualify( $r->{name} )    # fqdn
@@ -194,11 +204,7 @@ sub zr_a {
 
 sub zr_cname {
     my $self = shift;
-    my %p = validate( @_, { record => { type => HASHREF } } );
-
-    my $r = $p{record};
-
-    #warn Data::Dumper::Dumper($r);
+    my $r = shift or die;
 
     return 'C'                                     # special char
         . $self->qualify( $r->{name} )             # fqdn
@@ -211,9 +217,7 @@ sub zr_cname {
 
 sub zr_mx {
     my $self = shift;
-    my %p = validate( @_, { record => { type => HASHREF } } );
-
-    my $r = $p{record};
+    my $r = shift or die;
 
     return '@'                                     # special char
         . $self->qualify( $r->{name} )             # fqdn
@@ -228,11 +232,7 @@ sub zr_mx {
 
 sub zr_txt {
     my $self = shift;
-    my %p = validate( @_, { record => { type => HASHREF } } );
-
-    my $r = $p{record};
-
-    #warn Data::Dumper::Dumper($r);
+    my $r = shift or die;
 
     return "'"                                     # special char '
         . $self->qualify( $r->{name} )             # fqdn
@@ -245,11 +245,7 @@ sub zr_txt {
 
 sub zr_ns {
     my $self = shift;
-    my %p = validate( @_, { record => { type => HASHREF } } );
-
-    my $r = $p{record};
-
-    #warn Data::Dumper::Dumper($r);
+    my $r = shift or die;
 
     return '&'                                     # special char
         . $self->qualify( $r->{name} )             # fqdn
@@ -263,11 +259,7 @@ sub zr_ns {
 
 sub zr_ptr {
     my $self = shift;
-    my %p = validate( @_, { record => { type => HASHREF } } );
-
-    my $r = $p{record};
-
-    #warn Data::Dumper::Dumper($r);
+    my $r = shift or die;
 
     return '^'                                     # special char
         . $self->qualify( $r->{name} )             # fqdn
@@ -280,10 +272,9 @@ sub zr_ptr {
 
 sub zr_soa {
     my $self = shift;
-    my %p = validate( @_, { zone => { type => HASHREF } } );
+    my $z = shift or die;
 
-    my $z = $p{zone};
-
+# using sprintf versus concatenation takes the same amount of time.
     return 'Z' . "$z->{zone}"     # fqdn
         . ":$z->{nsname}"         # mname
         . ":$z->{mailaddr}"       # rname
@@ -300,9 +291,7 @@ sub zr_soa {
 
 sub zr_spf {
     my $self = shift;
-    my %p = validate( @_, { record => { type => HASHREF } } );
-
-    my $r = $p{record};
+    my $r = shift or die;
 
 # assistance from djbdnsRecordBuilder
     return ":"                                    # special char (none = generic)
@@ -318,11 +307,7 @@ sub zr_spf {
 
 sub zr_srv {
     my $self = shift;
-    my %p = validate( @_, { record => { type => HASHREF } } );
-
-    my $r = $p{record};
-
-    #warn Data::Dumper::Dumper($r);
+    my $r = shift or die;
 
     # :fqdn:n:rdata:ttl:timestamp:lo (Generic record)
     my $priority = escapeNumber( $self->{nte}->is_ip_port( $r->{priority} ) );
@@ -350,9 +335,7 @@ sub zr_srv {
 
 sub zr_aaaa {
     my $self = shift;
-    my %p = validate( @_, { record => { type => HASHREF } } );
-
-    my $r = $p{record};
+    my $r = shift or die;
 
 # AAAA - from djbdnsRecordBuilder
 # ffff:1234:5678:9abc:def0:1234:0:0
@@ -388,9 +371,7 @@ sub zr_aaaa {
 
 sub zr_loc {
     my $self = shift;
-    my %p = validate( @_, { record => { type => HASHREF } } );
-
-    my $r = $p{record};
+    my $r = shift or die;
     my $string = $r->{address};
 
     # lifted from Net::DNS::RR::LOC
@@ -459,10 +440,15 @@ sub zr_loc {
 
 sub qualify {
     my ( $self, $record, $zone ) = @_;
-    return $record if $record =~ /\.$/;    # record already ends in .
-    $zone ||= $self->{nte}{zone_name} or return $record;
-    return $record if $record =~ /$zone$/;    # ends in zone, just no .
-    return "$record.$zone"                    # append missing zone name
+    return $record if substr($record,-1,1) eq '.';  # record ends in .
+    $zone ||= $self->{nte}{zone_name};
+    $zone or return $record;
+
+# yes, substr is measurably faster than using a regexp
+    #return $record if $record =~ /$zone$/;   # ends in zone, just no .
+    return $record if $zone eq substr($record,(-1*length($zone)),length($zone));
+
+    return "$record.$zone"       # append missing zone name
 }
 
 sub format_timestamp {
@@ -478,7 +464,8 @@ sub escape {
     my $out;
 
     foreach my $char ( split //, $line ) {
-        if ( $char =~ /[\r\n\t: \\\/]/ ) {
+        #if ( $char =~ /[\r\n\t: \\\/]/ ) {
+        if ( $char =~ /[\r\n\t:\\\/]/ ) {    # removed space
             $out .= sprintf "\\%.3lo", ord $char;
         }
         else {

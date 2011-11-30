@@ -22,6 +22,10 @@
     RFC 4408 ("recommends to always provide a TXT based SPF RR...and duplicate
     the information")
 
+. Fix hostmaster.ZONE.TLD entries in nt_zone table.
+..  UPDATE nt_zone SET mailaddr=CONCAT('hostmaster.',zone,'.') WHERE mailaddr LIKE 'hostmaster.ZONE.TLD%';
+..  Fix up Zone::new_zone to automatically rewrite those entries before insertion.
+
 ==== COMPLETED =====
 
 . Limit the num of export logs retained. Prune successful "0 zones changed" log entries older than 1 day.
