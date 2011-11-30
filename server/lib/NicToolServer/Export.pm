@@ -92,8 +92,19 @@ sub set_copied {
     my $self   = shift;
     my $copied = shift;
     $self->exec_query( 
-        "UPDATE nt_nameserver SET result_id=? WHERE nt_nameserver_id=?",
-        [ $copied, $self->{ns_id} ] 
+        "UPDATE nt_nameserver_export_log SET copied=? WHERE nt_nameserver_id=?
+            AND nt_nameserver_export_log_id=?",
+        [ $copied, $self->{ns_id}, $self->{log_id} ] 
+    );
+}
+
+sub set_partial {
+    my $self   = shift;
+    my $boolean = shift;
+    $self->exec_query( 
+        "UPDATE nt_nameserver_export_log SET partial=? 
+        WHERE nt_nameserver_id=? AND nt_nameserver_export_log_id=?",
+        [ $boolean, $self->{ns_id}, $self->{log_id} ] 
     );
 }
 
@@ -174,9 +185,11 @@ sub export {
     $self->get_active_nameservers;
 
     if ( ! $self->{export_required} && ! $self->{force} ) {
-        $self->set_status("no changes.");
-        $self->set_copied(0);
-        $self->elog("exiting");
+        my $last_copy = $self->get_last_ns_export(success=>1,copied=>1);
+        my $last_ts = substr( $last_copy->{date_end}, 5, 11 );
+        my $now_ts = substr( localtime( time ), 4, 15 );
+        $self->set_status("no changes:$now_ts last:$last_ts");
+        $self->elog("exiting",success=>1);
         return 1;
     };
 
@@ -285,6 +298,7 @@ sub get_last_ns_export {
         @_,
         {   success => { type => BOOLEAN, optional => 1 },
             partial => { type => BOOLEAN, optional => 1 },
+            copied  => { type => BOOLEAN, optional => 1 },
         }
     );
 
@@ -294,7 +308,7 @@ sub get_last_ns_export {
         WHERE nt_nameserver_id=?";
 
     my @args = $self->{ns_id};
-    foreach my $f (qw/ success partial /) {
+    foreach my $f (qw/ success partial copied /) {
         if ( defined $p{$f} ) {
             $sql .= " AND $f=?";
             push @args, $p{$f};
@@ -422,6 +436,7 @@ sub get_log_id {
         @_,
         {   success => { type => BOOLEAN, optional => 1 },
             partial => { type => BOOLEAN, optional => 1 },
+            copied  => { type => BOOLEAN, optional => 1 },
         }
     );
     return $self->{log_id} if defined $self->{log_id};
@@ -430,7 +445,7 @@ sub get_log_id {
         SET nt_nameserver_id=?, date_start=CURRENT_TIMESTAMP(), message=?";
 
     my @args = ( $self->{ns_id}, $message );
-    foreach (qw/ success partial /) {
+    foreach (qw/ success partial copied /) {
         if ( defined $p{$_} ) {
             $sql .= ",$_=?";
             push @args, $p{$_};
