@@ -186,10 +186,6 @@ else {
     }
 }
 
-# TODO - log size of data and data.cdb
-# disabled 9/28/2007 - not being used - mps
-#&finish_export_log($db_row, time(), $sec_build_data, $sec_build_cdb, $sec_rsync_cdb);
-
 chdir($cwd);
 warn
     "$ns->{name}: build_data: $sec_build_data build_cdb: $sec_build_cdb rsync_cdb: $sec_rsync_cdb\n"
@@ -233,12 +229,6 @@ while ( $runningtime < $ns->{export_interval} ) {
     $closes++;
 }
 
-#$dbh_write = &db_object_write unless ($dbh_write->{Active});
-#&set_export_status($ns, $dbh_write, "spawning next export");
-#$dbh_write->disconnect;
-#$closes++;
-#$dbh_read->disconnect ;
-#$closes++;
 exec( ( $0, @oldargv ) );
 
 ### helper subroutines

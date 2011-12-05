@@ -51,15 +51,13 @@ sub handler {
     warn "request: error: " . Data::Dumper::Dumper($error)
         if $self->debug_request and $error;
     return $response_obj->respond($error) if $error;
-    my $action = uc( $client_obj->data()->{action} );
-    if (   $action eq 'LOGIN'
-        or $action eq 'VERIFY_SESSION'
-        or $action eq 'LOGOUT' )
-    {
 
-#warn "result of session verify: ".Data::Dumper::Dumper($client_obj->data->{user});
-        return $response_obj->respond( $client_obj->data()->{user} );
-    }
+    my $action = uc( $client_obj->data()->{action} );
+
+    return $response_obj->respond( $client_obj->data()->{user} )
+        if (   $action eq 'LOGIN'
+            or $action eq 'VERIFY_SESSION'
+            or $action eq 'LOGOUT' );
 
     $self->{user} = $client_obj->data()->{user};
 

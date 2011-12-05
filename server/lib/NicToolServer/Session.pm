@@ -3,9 +3,9 @@ package NicToolServer::Session;
 
 use strict;
 use warnings;
-use Digest::HMAC_SHA1 qw(hmac_sha1_hex);
+use Digest::HMAC_SHA1 'hmac_sha1_hex';
 
-@NicToolServer::Session::ISA = qw(NicToolServer);
+@NicToolServer::Session::ISA = 'NicToolServer';
 
 sub debug_session_sql {0}
 
@@ -166,7 +166,7 @@ sub verify_session {
     # delete session and log logout if LOGOUT
     return $self->logout if $data->{action} eq 'LOGOUT';
 
-    $sql = "SELECT * FROM nt_perm WHERE deleted=0 AND nt_user_id = ?";
+    $sql = "SELECT * FROM nt_perm WHERE deleted=0 AND nt_user_id=?";
     my $perms = $self->exec_query( $sql, $data->{user}{nt_user_id} )
         or return $self->error_response( 505, $dbh->errstr );
 
@@ -203,14 +203,14 @@ sub verify_session {
     delete $perm->{nt_user_id};
     delete $perm->{nt_group_id};
 
-    #@{$data->{user}}{sort keys %$perm} = @{$perm}{sort keys %$perm};
     foreach ( keys %$perm ) {
         $data->{user}{$_} = $perm->{$_};
     }
 
-    $sql = "UPDATE nt_user_session SET last_access = ?"
-        . " WHERE nt_user_session_id = ?";
-    $self->exec_query( $sql, [ time(), $data->{user}{nt_user_session_id} ] );
+    $self->exec_query( 
+        "UPDATE nt_user_session SET last_access=? WHERE nt_user_session_id=?",
+        [ time(), $data->{user}{nt_user_session_id} ] 
+    );
 
     $self->clean_user_data;
 
@@ -225,16 +225,18 @@ sub logout {
     #warn "calling Session::logout ... ".join(" ",caller);
     my $data = $self->{client}->data();
 
-    my $sql = "DELETE FROM nt_user_session WHERE nt_user_session_id = ?";
-    $self->exec_query( $sql, $data->{user}{nt_user_session_id} );
+    $self->exec_query( 
+        "DELETE FROM nt_user_session WHERE nt_user_session_id = ?", 
+        $data->{user}{nt_user_session_id} 
+    );
 
     if ( ! $data->{user}{nt_user_id} ) {
         warn "calling Session::logout ... ".join(" ",caller);
     }
     else {
-        $sql = "INSERT INTO nt_user_session_log(nt_user_id, action, timestamp,
-                nt_user_session, nt_user_session_id) VALUES (??) ";
-        $self->exec_query( $sql,
+        $self->exec_query( 
+               "INSERT INTO nt_user_session_log(nt_user_id, action, timestamp,
+                nt_user_session, nt_user_session_id) VALUES (??) ",
             [   $data->{user}{nt_user_id}, $msg, time(),
                 $data->{user}{nt_user_session}, $data->{user}{nt_user_session_id}
             ]
@@ -249,7 +251,7 @@ sub logout {
 sub populate_groups {
     my $self = shift;
 
- # return true on successful population of @$data->{groups}, otherwise false
+# return true on successful population of @$data->{groups}
 
     my $data = $self->{client}->data();
 
@@ -259,25 +261,25 @@ sub populate_groups {
     my $sql;
     if ( $data->{username} =~ /(.+)\@(.+)/ ) {
         $data->{username} = $1;
-        $sql
-            = "SELECT nt_group_id FROM nt_group WHERE deleted=0 AND name = ?";
-        $ids = $self->exec_query( $sql, $2 );
+        $ids = $self->exec_query( 
+            "SELECT nt_group_id FROM nt_group WHERE deleted=0 AND name=?",
+            $2 
+        );
     }
     else {
         return 0 unless @NicToolServer::default_groups;
-        $sql
-            = "SELECT nt_group_id FROM nt_group WHERE deleted=0 AND name IN (??)";
-        $ids = $self->exec_query( $sql, [@NicToolServer::default_groups] );
+        $ids = $self->exec_query( 
+            "SELECT nt_group_id FROM nt_group WHERE deleted=0 AND name IN (??)",
+            [@NicToolServer::default_groups] 
+        );
     }
 
-    my $i = 0;
     foreach (@$ids) {
-        push( @{ $data->{groups} }, $_->{nt_group_id} );
-        $i++;
+        push @{ $data->{groups} }, $_->{nt_group_id};
     }
 
     # if no group found, return false, else return true
-    $i < 1 ? return 0 : return 1;
+    return scalar @{ $data->{groups} } < 1 ? 0 : 1;
 }
 
 sub timeout_sessions {
@@ -316,10 +318,8 @@ sub clean_user_data {
     my @fields = qw(password deleted nt_user_session_id last_access);
 
     foreach my $f (@fields) {
-        delete( $data->{user}->{$f} )
-            if ( exists( $data->{user}->{$f} ) );
+        delete( $data->{user}->{$f} ) if exists( $data->{user}->{$f} );
     }
-
 }
 
 sub auth_error {
@@ -330,7 +330,7 @@ sub auth_error {
 sub session_id {
     my $self = shift;
 
-    return $ENV{UNIQUE_ID} if ( $ENV{UNIQUE_ID} );    # mod_uniqeid sets this
+    return $ENV{UNIQUE_ID} if $ENV{UNIQUE_ID};  # mod_uniqeid sets this
 
     warn "mod_uniqueid not available - building my own unique ID.\n"
         if $self->debug;
@@ -339,7 +339,6 @@ sub session_id {
     my $session = int( rand(60000) );
     $session = unpack( "H*", pack( "Nnn", time, $$, $session ) );
     return $session;
-
 }
 
 1;

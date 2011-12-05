@@ -51,7 +51,7 @@ sub display {
         #       warn Data::Dumper::Dumper $zone_record;
         my $rr_type = $zone_record->{'type'};
         $nt_obj->parse_template( $NicToolClient::start_html_template,
-            ONLOAD_JS => "show_rr_edit_rows(\'$rr_type\')" );
+            ONLOAD_JS => "showFieldsForRRtype(\'$rr_type\')" );
     }
     else {
         $nt_obj->parse_template($NicToolClient::start_html_template);
@@ -1294,10 +1294,10 @@ sub display_edit_record {
         -values  => $type_values,
         -labels  => $type_labels,
         -default => $default_record_type,
-        -onClick => "show_rr_edit_rows(value)"
+        -onClick => "showFieldsForRRtype(value)"
         ,    # not valid for popup menus (according to CGI.pm docs, but works
-        -onChange => "show_rr_edit_rows(value)",    # seems to work
-        -onFocus  => "show_rr_edit_rows(value)"
+        -onChange => "showFieldsForRRtype(value)",    # seems to work
+        -onFocus  => "showFieldsForRRtype(value)"
         , # run, darn it, even if user doesn't change value and onClick isn't permitted
         )
         : $type_labels->{ $zone_record->{'type'} }, "</td></tr>";
