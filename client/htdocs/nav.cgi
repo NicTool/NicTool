@@ -55,19 +55,19 @@ sub display {
    <table class="no_pad" style="width:100%;">
     <tr>
      <td><img src="$NicToolClient::image_dir/group.gif" alt="group icon"></td>
-     <td style="white-space: nowrap;"><a href="group.cgi?nt_group_id=$group->{'nt_group_id'}" target="body"> ]
+     <td class="nowrap"><a href="group.cgi?nt_group_id=$group->{'nt_group_id'}" target="body"> ]
         . $group->{'name'} . '</a> '
         . $nt_obj->help_link( 'all', 'Help' );
     print qq[
      </td>
-     <td align=right width=100%><a href="javascript:window.location = window.location">refresh</a></td>
+     <td class="right fat"><a href="javascript:window.location = window.location">refresh</a></td>
     </tr>
    </table>
   </td>
  </tr>
 </table>
 
-<table class='no_pad'>
+<table class="no_pad">
  <tr>
   <td><img src="$NicToolClient::image_dir/dirtree_tee.gif"></td>
   <td><a href="group_zones.cgi?nt_group_id=$group->{'nt_group_id'}" target=body><img src="$NicToolClient::image_dir/folder_closed.gif" alt="closed folder icon"></a></td>
@@ -149,9 +149,9 @@ sub recurse_groups {
             : 'plus' )
             . '_'
             . ( $_ == $total ? 'elbow' : 'tee' )
-            . qq[.gif" alt='dirtree elbow or tee icon'></a></td>
+            . qq[.gif" alt="dirtree elbow or tee icon"></a></td>
         <td><img src="$NicToolClient::image_dir/transparent.gif" width=4 height=1><img src="$NicToolClient::image_dir/group.gif" alt='group icon'></td>
-   <td style="white-space: nowrap;"><a href="group.cgi?nt_group_id=$group->{'nt_group_id'}" target="body"> $group->{'name'} </a>
+   <td class="nowrap"><a href="group.cgi?nt_group_id=$group->{'nt_group_id'}" target="body"> $group->{'name'} </a>
   </td>
  </tr>
 </table>];

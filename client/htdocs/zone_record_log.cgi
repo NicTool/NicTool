@@ -80,9 +80,9 @@ sub display {
             . ".gif width=17 height=17></td>";
     }
 
-    print "<td nowrap>&nbsp; <b>Resource Record log</b></td>";
-    print "<td align=right width=100%>", "&nbsp;</td>";
-    print "</tr></table>";
+    print qq[<td class="nowrap">&nbsp; <b>Resource Record log</b></td>
+    <td align=right width=100%>&nbsp;</td>
+    </tr></table>];
 
     $nt_obj->display_nice_error($message) if $message;
     print "</td></tr></table>";

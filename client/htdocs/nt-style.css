@@ -28,51 +28,32 @@ div {
   margin: 2px;
 }
 
-.right {
-	text-align: right;
-}
-.center {
-	text-align: center;
-}
-.disabled {
-	color: #777777;
-}
-.dark {
-	color: #336666;
-}
-.white_bg {
-  background: white;
-}
+.nowrap { white-space: nowrap; }
+.fat    { width: 100%; }
+.right  { text-align: right; }
+.center { text-align: center; }
+.middle { vertical-align: middle; }
+.top    { vertical-align: top; }
+
+.disabled { color: #777777; }
+.dark     { color: #336666; }
+.white_bg { background: white; }
 .dark_bg {
   background: #336666;
   color: #FFFFFF;
 }
-.dark_grey_bg {
-  background: #CCCCCC;
-}
-.light_grey_bg {
-  background: #EEEEEE;
-}
-.light_hilite_bg {
-  background: #ffffee;
-}
-.dark_hilite_bg {
-  background: #eeeedd;
-}
+.dark_grey_bg { background: #CCCCCC; }
+.light_grey_bg { background: #EEEEEE; }
+.light_hilite_bg { background: #ffffee; }
+.dark_hilite_bg { background: #eeeedd; }
 .error_bg {
   background: red;
   color: white;
 }
 
-tr#tr_weight {
-  display: none;
-}
-tr#tr_priority {
-  display: none;
-}
-tr#tr_other {
-  display: none;
-}
+tr#tr_weight { display: none; }
+tr#tr_priority { display: none; }
+tr#tr_other { display: none; }
 
 a:link    { color: #336666 }
 a:visited { color: #336666 }

@@ -106,25 +106,22 @@ sub move {
 
     $nt_obj->display_nice_error( $message, "Move Users" ) if $message;
 
-    print "<table width=100%>";
-    print "<tr class=dark_bg><td colspan=2><b>Move Users</b></td></tr>";
-
-    print "<tr class=light_grey_bg>";
-    print "<td nowrap valign=top>", "Users: </td>";
-    print "<td width=100%>",
+    print qq[<table width=100%>
+    <tr class=dark_bg><td colspan=2><b>Move Users</b></td></tr>
+    <tr class=light_grey_bg>
+    <td class="nowrap top">Users: </td>
+    <td width=100%>],
         join(
         ', ',
         map("<a href=user.cgi?nt_group_id=$_->{'nt_group_id'}&nt_user_id=$_->{'nt_user_id'} target=_blank>$_->{'username'}</a>",
             @$list )
         ),
-        "</td>";
-    print "</tr>";
-    print "</table>";
+        "</td> </tr> </table>";
 
     $nt_obj->display_group_list( $q, $user, 'move_users.cgi' );
 
-    print "\n<table width=100%>\n";
-    print "<tr class=dark_grey_bg><td colspan=2 align=center>",
+    print qq[\n<table width=100%>\n
+    <tr class=dark_grey_bg><td colspan=2 class="center">],
         $q->submit('Save'),
         $q->submit(
         -name    => 'cancel_move',

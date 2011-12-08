@@ -65,7 +65,7 @@ sub display {
     <td><img src="$NicToolClient::image_dir/transparent.gif" width=1 height=16></td>
     <td><img src="$NicToolClient::image_dir/graph.gif"></td>
     <td><img src="$NicToolClient::image_dir/transparent.gif" width=3 height=16></td>
-    <td nowrap><b>Nameserver Query Log</b></td>
+    <td class="nowrap"><b>Nameserver Query Log</b></td>
     <td align=right width=100%> &nbsp;</td>
     </tr>
     </table></td></tr>

@@ -285,17 +285,15 @@ sub display_group_tree {
         print "<td><img src=$NicToolClient::image_dir/group.gif></td>";
 
         if ( $in_summary and ( $_ == $count ) ) {
-            print
-                "<td nowrap><b>$group->{'name'}</b></td>";
+            print qq[<td class="nowrap"><b>$group->{'name'}</b></td>];
         }
         else {
-            print
-                "<td nowrap><a href=group.cgi?nt_group_id=$group->{'nt_group_id'}>$group->{'name'}</a></td>";
+            print qq[<td class="nowrap"><a href="group.cgi?nt_group_id=$group->{'nt_group_id'}">$group->{'name'}</a></td>];
         }
 
-        print "
-     <td align=right width=100%>
-      <table class='no_pad'><tr>",
+        print qq[
+     <td style="text-align:right; width:100%;">
+      <table class='no_pad'><tr>],
             join( '<td>&nbsp;|&nbsp;</td>', @options) . "</tr></table></td>";
         print "
     </tr>
@@ -349,7 +347,7 @@ sub display_zone_list_options {
         print qq[<td style="text-wrap: none;"><a href="group_zones.cgi?nt_group_id=$group_id">Zones</a></td>];
     }
 
-    print "<td align=right width=100%>", join( ' | ', @options ), "</td>
+    print qq[<td class="right fat">], join( ' | ', @options ), "</td>
     </tr></table>
     </td></tr></table>";
 }
@@ -383,15 +381,15 @@ sub display_user_list_options {
     print "<td><img src=$NicToolClient::image_dir/folder_open.gif></td>";
 
     if ($in_user_list) {
-        print "<td nowrap><b>Users</b></td>";
+        print qq[<td class="nowrap"><b>Users</b></td>];
     }
     else {
-        print qq[<td nowrap><a href="group_users.cgi?nt_group_id=$group_id">Users</a></td>];
+        print qq[<td class="nowrap"><a href="group_users.cgi?nt_group_id=$group_id">Users</a></td>];
     }
 
-    print "<td align=right width=100%>", join( ' | ', @options ), "</td>";
-    print "</tr></table>";
-    print "</td></tr></table>";
+    print qq[<td class="right" width=100%>], join( ' | ', @options ), qq[</td>
+</tr></table>
+    </td></tr></table>];
 }
 
 sub display_zone_options {
@@ -479,15 +477,14 @@ sub display_zone_options {
         : ''
     );
     if ($in_zone) {
-        print "<td nowrap><b>$zone->{'zone'}</b>$tag</td>";
+        print qq[<td class="nowrap"><b>$zone->{'zone'}</b>$tag</td>];
     }
     else {
-        print qq[<td nowrap><a href="zone.cgi?nt_group_id=$q->param('nt_group_id')&nt_zone_id=$zone->{'nt_zone_id'}">$zone->{'zone'}</a>$tag</td>];
+        print qq[<td class="nowrap"><a href="zone.cgi?nt_group_id=$q->param('nt_group_id')&nt_zone_id=$zone->{'nt_zone_id'}">$zone->{'zone'}</a>$tag</td>];
     }
 
-    print "<td align=right width=100%>", join( ' | ', @options ), "</td>";
-    print "</tr></table>";
-    print "</td></tr></table>";
+    print qq[<td class="right fat">], join( ' | ', @options ), 
+    qq[</td> </tr></table> </td></tr></table>];
 }
 
 sub display_nameserver_options {
@@ -518,15 +515,14 @@ sub display_nameserver_options {
     print "<td><img src=$NicToolClient::image_dir/folder_open.gif></td>";
 
     if ($in_ns_summary) {
-        print "<td nowrap><b>Nameservers</b></td>";
+        print qq[<td class="nowrap"><b>Nameservers</b></td>];
     }
     else {
-        print "<td nowrap><a href=group_nameservers.cgi?nt_group_id=$group_id>Nameservers</a></td>";
+        print qq[<td class="nowrap"><a href="group_nameservers.cgi?nt_group_id=$group_id">Nameservers</a></td>];
     }
 
-    print "<td align=right width=100%>", join( ' | ', @options ), "</td>";
-    print "</tr></table>";
-    print "</td></tr></table>";
+    print qq[<td align=right width=100%>], join( ' | ', @options ), 
+    "</td></tr></table></td></tr></table>";
 }
 
 sub paging_fields {
@@ -792,8 +788,8 @@ sub display_sort_options {
     print "<table width=100%>";
     print "<tr class=dark_bg><td colspan=2><b>Change Sort Order</b></td></tr>";
     foreach ( 1 .. 3 ) {
-        print "<tr class=light_grey_bg>";
-        print "<td nowrap>",
+        print qq[<tr class=light_grey_bg>
+        <td class="nowrap">],
             ( $_ == 1 ? 'Sort by' : 'Then by' ), "</td>";
         print "<td width=100%>";
         print $q->popup_menu(

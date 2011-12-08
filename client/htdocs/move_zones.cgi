@@ -94,12 +94,11 @@ sub move_zones {
 
     $nt_obj->display_nice_error($message) if $message;
 
-    print "<table width=100%>";
-    print "<tr class=dark_bg><td colspan=2><b>Move Zones</b></td></tr>";
-
-    print "<tr class=light_grey_bg>";
-    print "<td nowrap valign=top>", "Zones: </td>";
-    print "<td width=100%>",
+    print qq[<table width=100%>
+<tr class=dark_bg><td colspan=2><b>Move Zones</b></td></tr>
+<tr class=light_grey_bg>
+<td class="nowrap top">Zones: </td>
+<td width=100%>],
         join(
         ', ',
         map("<a href=zone.cgi?nt_group_id=$_->{'nt_group_id'}&nt_zone_id=$_->{'nt_zone_id'} target=_blank>$_->{'zone'}</a>",

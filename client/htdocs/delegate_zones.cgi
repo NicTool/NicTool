@@ -201,8 +201,8 @@ sub delegate_zones {
   <td colspan=2><b>$title</b></td>
  </tr>
  <tr class=light_grey_bg>
-  <td nowrap valign=center>Zone:</td>
-  <td width=100%>
+  <td class="nowrap middle"> Zone:</td>
+  <td class="fat">
    <table class='no_pad'><tr>],
         join( '<td>, </td>',
             map( qq(
@@ -232,7 +232,7 @@ sub delegate_zones {
 <table width=100%>
  <tr class="dark_bg"><td colspan=2><b>$title</b></td></tr>
  <tr class="light_grey_bg">
-  <td nowrap valign=center> Zone: </td>
+  <td class="nowrap middle"> Zone: </td>
   <td width=100%>
    <table class="no_pad">
     <tr>
@@ -329,7 +329,7 @@ sub delegate_zones {
  <tr class="dark_grey_bg dark"><td colspan=2> Delegation</td></tr>
  <tr class="light_grey_bg"><td>Group</td><td>Delegated By</td></tr>
  <tr class="light_grey_bg">
-  <td nowrap valign=center>
+  <td class="nowrap middle">
    <table>
     <tr>
      <td valign=center><a href="group.cgi?nt_group_id=$del->{'nt_group_id'}"><img src="$NicToolClient::image_dir/group.gif"></a></td>
@@ -337,7 +337,7 @@ sub delegate_zones {
     </tr>
    </table>
   </td>
-  <td nowrap valign=center>
+  <td class="nowrap middle">
                         
    <table>
     <tr>

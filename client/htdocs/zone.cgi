@@ -212,7 +212,7 @@ sub display_properties {
             <td>
                 <table width=100%>
                 <tr class=light_hilite_bg>
-                    <td nowrap colspan=2> This zone may not be modified because it is deleted.
+                    <td class="nowrap" colspan=2> This zone may not be modified because it is deleted.
                     </td></tr>
                 </table>
             </td>
@@ -238,7 +238,7 @@ sub display_properties {
         if ( !$zone->{'pseudo'} ) {
             print qq(
                 <tr class=light_grey_bg>
-                    <td nowrap> Delegated by: </td>
+                    <td class="nowrap"> Delegated by: </td>
                     <td width=100%>
                         <table>
                         <tr><td valign=center><img src=$NicToolClient::image_dir/user.gif></td>
@@ -251,14 +251,14 @@ sub display_properties {
         else {
             print qq(
                 <tr class=light_hilite_bg>
-                    <td nowrap colspan=2> This zone is visible because some of its records have been delegated to you.</td>
+                    <td class="nowrap" colspan=2> This zone is visible because some of its records have been delegated to you.</td>
                 </tr>);
 
         }
 
         print qq(
             <tr class=light_grey_bg>
-                <td nowrap> Belonging to group: </td>
+                <td class="nowrap"> Belonging to group: </td>
                 <td width=100%>
                     <table>
                         <tr>
@@ -273,7 +273,7 @@ sub display_properties {
         if ( !$zone->{'pseudo'} ) {
             print qq(
             <tr class=light_grey_bg>
-                <td nowrap> With Permissions: </td>
+                <td class="nowrap"> With Permissions: </td>
                 <td width=100%>
                     <table> <tr class=light_grey_bg>);
             my %perms = (
@@ -327,75 +327,46 @@ sub display_properties {
                 <td valign=top>
                     <table width=100%>
                      <tr class=light_grey_bg>
-                        <td nowrap> Delegated To Group</td>
-                        <td nowrap> Delegated By</td>
-                        <td nowrap> Access Permissions}
+                        <td class="nowrap"> Delegated To Group</td>
+                        <td class="nowrap"> Delegated By</td>
+                        <td class="nowrap"> Access Permissions}
                 . $nt_obj->help_link('delperms') . qq{</td>
-                        <td nowrap width=1%> Edit</td>
-                        <td nowrap width=1% align=center><img src=$NicToolClient::image_dir/trash-delegate.gif></td>
+                        <td class="nowrap" width=1%> Edit</td>
+                        <td class="nowrap" width=1% align=center><img src=$NicToolClient::image_dir/trash-delegate.gif></td>
                     </tr>
             };
             foreach my $del ( @{ $delegates->{'delegates'} } ) {
-                print qq(
-                    <tr class=light_grey_bg>
-                        <td nowrap valign=center>
-                            <table><tr>
-                            <td valign=center><a href=group.cgi?nt_group_id=$del->{'nt_group_id'}><img src=$NicToolClient::image_dir/group.gif></a></td>
-                            <td valign=center><a href=group.cgi?nt_group_id=$del->{'nt_group_id'}>$del->{'group_name'}</a></td>
-                            </tr>
-                            </table>
-                        </td>
-                        <td nowrap valign=center>
-                            <table><tr>
-                            <td valign=center><a href=user.cgi?nt_user_id=$del->{'delegated_by_id'}><img src=$NicToolClient::image_dir/user.gif></a></td>
-                            <td valign=center><a href=user.cgi?nt_user_id=$del->{'delegated_by_id'}>$del->{'delegated_by_name'}</a></td>
-                            </tr>
-                            </table>
-                        </td>
-                        <td nowrap>
-                            <table><tr>)
-
-#<td><img src=$NicToolClient::image_dir/perm-).($del->{delegate_write}?"write.gif":"nowrite.gif").qq(>&nbsp;Write</td>
-#<td><img src=$NicToolClient::image_dir/perm-).($del->{delegate_delete}?"delete.gif":"nodelete.gif").qq(>&nbsp;Remove</td>
-#<td><img src=$NicToolClient::image_dir/perm-).($del->{delegate_delegate}?"delegate.gif":"nodelegate.gif").qq(>&nbsp;Re-delegate</td>
-                    . qq(
-                            <td><img src=$NicToolClient::image_dir/perm-)
+                print qq[
+<tr class=light_grey_bg>
+ <td class="nowrap center">
+  <table><tr>
+   <td valign=center><a href=group.cgi?nt_group_id=$del->{'nt_group_id'}><img src=$NicToolClient::image_dir/group.gif></a></td>
+   <td valign=center><a href=group.cgi?nt_group_id=$del->{'nt_group_id'}>$del->{'group_name'}</a></td>
+  </tr>
+  </table>
+ </td>
+ <td class="nowrap center">
+  <table><tr>
+    <td valign=center><a href=user.cgi?nt_user_id=$del->{'delegated_by_id'}><img src=$NicToolClient::image_dir/user.gif></a></td>
+    <td valign=center><a href=user.cgi?nt_user_id=$del->{'delegated_by_id'}>$del->{'delegated_by_name'}</a></td>
+   </tr>
+  </table>
+ </td>
+ <td class="nowrap">
+<table><tr>
+	<td><img src=$NicToolClient::image_dir/perm-]
                     . (
                     $del->{delegate_write} ? "checked.gif" : "unchecked.gif" )
-                    . qq(>&nbsp;Write</td>
-                            <td><img src=$NicToolClient::image_dir/perm-)
-                    . (
-                    $del->{delegate_delete}
-                    ? "checked.gif"
-                    : "unchecked.gif"
-                    )
-                    . qq(>&nbsp;Remove</td>
-                            <td><img src=$NicToolClient::image_dir/perm-)
-                    . (
-                    $del->{delegate_delegate}
-                    ? "checked.gif"
-                    : "unchecked.gif"
-                    )
-                    . qq(>&nbsp;Re-delegate</td>
-                            <td><img src=$NicToolClient::image_dir/perm-)
-                    . (
-                    $del->{delegate_add_records}
-                    ? "checked.gif"
-                    : "unchecked.gif"
-                    )
-                    . qq(>&nbsp;Add Records</td>
-                            <td><img src=$NicToolClient::image_dir/perm-)
-                    . (
-                    $del->{delegate_delete_records}
-                    ? "checked.gif"
-                    : "unchecked.gif"
-                    )
-                    . qq(>&nbsp;Delete Records</td>
-                            </tr>
-                            </table>
-                        </td>
-                        <td nowrap width=1%>
-                            );
+                    . qq(>&nbsp;Write</td><td><img src=$NicToolClient::image_dir/perm-)
+                    . ( $del->{delegate_delete} ? "checked.gif" : "unchecked.gif")
+                    . qq(>&nbsp;Remove</td><td><img src=$NicToolClient::image_dir/perm-)
+                    . ( $del->{delegate_delegate} ? "checked.gif" : "unchecked.gif")
+                    . qq(>&nbsp;Re-delegate</td> <td><img src=$NicToolClient::image_dir/perm-)
+                    . ( $del->{delegate_add_records} ? "checked.gif" : "unchecked.gif")
+                    . qq(>&nbsp;Add Records</td> <td><img src=$NicToolClient::image_dir/perm-)
+                    . ( $del->{delegate_delete_records} ? "checked.gif" : "unchecked.gif")
+                    . qq(
+>&nbsp;Delete Records</td> </tr> </table> </td> <td class="nowrap" width=1%>);
 
                 if ( $nt_obj->no_gui_hints
                     || !$zone->{'deleted'} && $user->{zone_delegate} )
@@ -406,35 +377,20 @@ sub display_properties {
                 else {
                     print "<span class=disabled>Edit</span>";
                 }
-                print qq{
-                        </td>
-                        <td nowrap width=1% align=center>
-                            };
+                print qq{ </td> <td class="nowrap center" style="width:1%;"> };
 
                 if ( $nt_obj->no_gui_hints
                     || !$zone->{'deleted'} && $user->{zone_delegate} )
                 {
-                    print
-                        "<a href='zone.cgi?nt_zone_id=$zone->{'nt_zone_id'}&nt_group_id="
-                        . $q->param('nt_group_id')
-                        . "&delegate_group_id=$del->{'nt_group_id'}&deletedelegate=1' onClick=\"return confirm('Are you sure you want to remove the delegation of zone $zone->{'zone'} to group $del->{'group_name'}?');\"><img src=$NicToolClient::image_dir/trash-delegate.gif alt='Remove Delegation'></a>";
+                    print qq[<a href="zone.cgi?nt_zone_id=$zone->{'nt_zone_id'}&nt_group_id=$q->param('nt_group_id')&delegate_group_id=$del->{'nt_group_id'}&deletedelegate=1" onClick="return confirm('Are you sure you want to remove the delegation of zone $zone->{'zone'} to group $del->{'group_name'}?');"><img src="$NicToolClient::image_dir/trash-delegate.gif" alt="Remove Delegation"></a>];
                 }
                 else {
-                    print
-                        "<img src=$NicToolClient::image_dir/trash-delegate-disabled.gif >";
+                    print qq[<img src="$NicToolClient::image_dir/trash-delegate-disabled.gif">];
                 }
 
-                print qq{
-                        </td>
-                    </tr>};
+                print qq{ </td> </tr>};
             }
-            print qq{
-                    </table>
-                </td>
-            </tr>
-            </table>
-            };
-
+            print qq{ </table> </td> </tr> </table> };
         }
     }
 
@@ -456,33 +412,27 @@ sub display_properties {
     else {
         print "<td align=right><span class=disabled>Edit</span></td>";
     }
-    print "</tr></table>";
-    print "</td></tr></table>";
-
-    print "<table cellspacing=0 width=100%>";
-    print "<tr>";
-    print "<td width=50%>";
-    print "<table width=100%>";
+    print qq[</tr></table>
+</td></tr></table>
+<table cellspacing=0 width=100%>
+<tr>
+<td width=50%>
+<table width=100%>];
     foreach (qw(zone mailaddr description serial minimum)) {
-        print "<tr class=light_grey_bg>";
-        print "<td nowrap>", "$_: </td>";
-        print "<td width=100%>",
-            ( $zone->{$_} ? $zone->{$_} : '&nbsp;' ), "</td>";
-        print "</tr>";
+        print qq[<tr class=light_grey_bg>
+<td class="nowrap">$_: </td>
+<td width=100%>], ( $zone->{$_} ? $zone->{$_} : '&nbsp;' ), "</td></tr>";
     }
-    print "</table>";
-    print "</td><td width=50% valign=top>";
-    print "<table width=100%>";
+    print qq[</table>
+    </td><td width=50% valign=top>
+    <table width=100%>];
     foreach (qw(refresh retry expire ttl )) {
-        print "<tr class=light_grey_bg>";
-        print "<td nowrap>", "$_: </td>";
-        print "<td width=100%>",
-            ( $zone->{$_} ? $zone->{$_} : '&nbsp;' ), "</td>";
-        print "</tr>";
+        print qq[<tr class=light_grey_bg>
+        <td class="nowrap">$_: </td>
+        <td width=100%>], ( $zone->{$_} ? $zone->{$_} : '&nbsp;' ), "</td></tr>";
     }
 
-    print "</table>";
-    print "</td></tr></table>";
+    print qq[</table></td></tr></table>];
 
     return $zone;
 }
@@ -1014,71 +964,52 @@ sub display_edit_record {
                 . $delegates->{'error_msg'};
         }
         elsif ( @{ $delegates->{'delegates'} } gt 0 ) {
-            print qq{
-            <table width=100%>
-            <tr class=dark_grey_bg>
-                <td> Delegates</td>
-            </tr>
-            </table>
-
-            <table cellspacing=0 width=100%>
-            <tr>
-                <td valign=top>
-                    <table width=100%>
-
-                    <tr class=light_grey_bg>
-                        <td nowrap> Group</td>
-                        <td nowrap> Delegated By</td>
-                        <td nowrap> Access Permissions}
-                . $nt_obj->help_link('delperms') . qq{</td>
-                        <td nowrap width=1%> Edit</td>
-                        <td nowrap width=1% align=center><img src=$NicToolClient::image_dir/trash-delegate.gif></td>
-                    </tr>
-            };
+            print qq[
+<table width=100%><tr class=dark_grey_bg><td>Delegates</td></tr></table>
+<table cellspacing=0 width=100%>
+ <tr>
+  <td valign=top>
+   <table width=100%>
+    <tr class=light_grey_bg>
+    <td class="nowrap"> Group</td>
+    <td class="nowrap"> Delegated By</td>
+    <td class="nowrap"> Access Permissions $nt_obj->help_link('delperms') </td>
+    <td class="nowrap" style="width:1%;"> Edit</td>
+    <td class="nowrap center" style="width:1%;"><img src=$NicToolClient::image_dir/trash-delegate.gif></td>
+   </tr>
+];
             foreach my $del ( @{ $delegates->{'delegates'} } ) {
-                print qq(
-                    <tr class=light_grey_bg>
-                        <td nowrap valign=center>
-                            <table><tr>
-                            <td valign=center><a href=group.cgi?nt_group_id=$del->{'nt_group_id'}><img src=$NicToolClient::image_dir/group.gif></a></td>
-                            <td valign=center><a href=group.cgi?nt_group_id=$del->{'nt_group_id'}>$del->{'group_name'}</a></td>
-                            </tr>
-                            </table>
-                        </td>
-                        <td nowrap valign=center>
-                            <table><tr>
-                            <td valign=center><a href=user.cgi?nt_user_id=$del->{'delegated_by_id'}><img src=$NicToolClient::image_dir/user.gif ></a></td>
-                            <td valign=center><a href=user.cgi?nt_user_id=$del->{'delegated_by_id'}>$del->{'delegated_by_name'}</a></td>
-                            </tr>
-                            </table>
-                        </td>
-                        <td nowrap>
-                            <table><tr>)
-                    . qq(
-                            <td><img src=$NicToolClient::image_dir/perm-)
+                print qq[
+<tr class=light_grey_bg>
+ <td class="nowrap center">
+	<table><tr>
+	 <td valign=center><a href=group.cgi?nt_group_id=$del->{'nt_group_id'}><img src=$NicToolClient::image_dir/group.gif></a></td>
+	 <td valign=center><a href=group.cgi?nt_group_id=$del->{'nt_group_id'}>$del->{'group_name'}</a></td>
+   </tr>
+  </table>
+ </td>
+ <td class="nowrap center">
+	<table><tr>
+		<td valign=center><a href=user.cgi?nt_user_id=$del->{'delegated_by_id'}><img src=$NicToolClient::image_dir/user.gif ></a></td>
+		<td valign=center><a href=user.cgi?nt_user_id=$del->{'delegated_by_id'}>$del->{'delegated_by_name'}</a></td>
+	 </tr>
+	</table>
+ </td>
+ <td class="nowrap">
+	<table><tr>
+   <td><img src=$NicToolClient::image_dir/perm-]
                     . (
                     $del->{delegate_write} ? "checked.gif" : "unchecked.gif" )
-                    . qq(>&nbsp;Write</td>
-                            <td><img src=$NicToolClient::image_dir/perm-)
-                    . (
-                    $del->{delegate_delete}
-                    ? "checked.gif"
-                    : "unchecked.gif"
-                    )
-                    . qq(>&nbsp;Remove</td>
-                            <td><img src=$NicToolClient::image_dir/perm-)
-                    . (
-                    $del->{delegate_delegate}
-                    ? "checked.gif"
-                    : "unchecked.gif"
-                    )
+                    . qq(>&nbsp;Write</td><td><img src=$NicToolClient::image_dir/perm-)
+                    . ( $del->{delegate_delete} ? "checked.gif" : "unchecked.gif")
+                    . qq(>&nbsp;Remove</td><td><img src=$NicToolClient::image_dir/perm-)
+                    . ( $del->{delegate_delegate} ? "checked.gif" : "unchecked.gif")
                     . qq(>&nbsp;Re-delegate</td>
-
                             </tr>
-                            </table>
+                          </table>
                         </td>
-                        <td nowrap width=1%>
-                            );
+                        <td class="nowrap" style="width:1%;">
+								);
                 if ( $nt_obj->no_gui_hints || $user->{zonerecord_delegate} ) {
                     print
                         "<a href=\"javascript:void window.open('delegate_zones.cgi?type=record&obj_list=$zone_record->{'nt_zone_record_id'}&nt_zone_id=$zone_record->{'nt_zone_id'}&nt_group_id=$del->{'nt_group_id'}&edit=1', 'delegate_win', 'width=640,height=480,scrollbars,resizable=yes')\">Edit</a>";
@@ -1087,9 +1018,9 @@ sub display_edit_record {
                     print "<span class=disabled>Edit</span>";
                 }
                 print qq{
-                        </td>
-                        <td nowrap width=1% align=center>
-                            };
+</td>
+<td class="nowrap center" style="width:1%;">
+								};
 
                 if ( $nt_obj->no_gui_hints || $user->{zonerecord_delegate} ) {
                     print
@@ -1126,7 +1057,7 @@ sub display_edit_record {
  <tr> <td valign=top>
    <table width=100%>
     <tr class=light_grey_bg>
-     <td nowrap> Delegated by: </td>
+     <td class="nowrap"> Delegated by: </td>
      <td width=100%> <table> <tr>
 		    <td valign=center><img src=$NicToolClient::image_dir/user.gif></td>
         <td valign=center> $zone_record->{'delegated_by_name'}</td>
@@ -1134,7 +1065,7 @@ sub display_edit_record {
     </tr>
 
     <tr class=light_grey_bg>
-     <td nowrap> Belonging to group: </td>
+     <td class="nowrap"> Belonging to group: </td>
      <td width=100%> <table> <tr>
         <td valign=center><img src=$NicToolClient::image_dir/group.gif></td>
         <td valign=center> $zone_record->{'group_name'}</td>
@@ -1142,7 +1073,7 @@ sub display_edit_record {
     </tr>
 
     <tr class=light_grey_bg>
-     <td nowrap> With Permissions: </td>
+     <td class="nowrap"> With Permissions: </td>
      <td width=100%>
       <table>
        <tr class=light_grey_bg>];

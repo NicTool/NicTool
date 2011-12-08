@@ -95,32 +95,27 @@ sub move {
 
     $nt_obj->display_nice_error($message) if $message;
 
-    print "<table width=100%>";
-    print "<tr class=dark_bg><td colspan=2><b>Move Nameservers</b></td></tr>";
-    print "<tr class=light_grey_bg>";
-    print "<td nowrap valign=top>", "Users: </td>";
-    print "<td width=100%>",
-        join(
-        ', ',
-        map("<a href=group_nameservers.cgi?nt_group_id=$_->{'nt_group_id'}&nt_nameserver_id=$_->{'nt_nameserver_id'} target=_blank>$_->{'name'}</a>",
-            @$list )
+    print qq[<table width=100%>
+    <tr class=dark_bg><td colspan=2><b>Move Nameservers</b></td></tr>
+    <tr class=light_grey_bg>
+    <td class="nowrap top"> Users: </td>
+    <td class="fat">],
+        join( ', ', map(
+qq[<a href="group_nameservers.cgi?nt_group_id=$_->{'nt_group_id'}&nt_nameserver_id=$_->{'nt_nameserver_id'}" target="_blank">$_->{'name'}</a>], @$list )
         ),
-        "</td>";
-    print "</tr>";
-    print "</table>";
+        "</td> </tr> </table>";
 
     $nt_obj->display_group_list( $q, $user, 'move_nameservers.cgi' );
 
-    print "\n<table width=100%>\n";
-    print "<tr class=dark_grey_bg><td colspan=2 align=center>",
+    print qq[\n<table class="fat">\n
+    <tr class=dark_grey_bg><td colspan=2 class="center">],
         $q->submit('Save'),
         $q->submit(
         -name    => 'cancel_move',
         -value   => 'Cancel',
         -onClick => 'window.close(); return false;'
         ),
-        "</td></tr>";
-    print "</table>\n";
-    print $q->end_form;
+        "</td></tr> </table>\n",
+    $q->end_form;
 }
 

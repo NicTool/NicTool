@@ -124,11 +124,11 @@ sub display {
             my $t = $topics->{$k};
             print qq[
             <tr class=light_grey_bg>
-             <td align=right>
-              <table style="width:100%; border-spacing:0; padding:4;">
+             <td class="right">
+              <table class="fat" style="border-spacing:0; padding:4;">
                <tr>
-                <td valign=center align=left><img src=$NicToolClient::image_dir/help.gif></td>
-                <td valign=center align=left width=100% nowrap><a href="help.cgi?topic=$k">$t->{'name'}</a></td>
+                <td style="middle left"><img src="$NicToolClient::image_dir/help.gif"></td>
+                <td class="left fat nowrap middle"><a href="help.cgi?topic=$k">$t->{'name'}</a></td>
                </tr>
               </table>
              </td>

@@ -69,8 +69,8 @@ sub display {
     }
 
     print qq[ 
-     <td nowrap> <b>Log</b></td>
-     <td align=right width=100%>", "&nbsp;</td>
+     <td class="nowrap"><b>Log</b></td>
+     <td class="right fat">&nbsp;</td>
     </tr>
    </table>
   </td></tr>

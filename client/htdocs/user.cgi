@@ -189,10 +189,10 @@ sub display {
     }
 
     print qq[<table width=100%>
-    <tr class="light_grey_bg">
-    <td>
-    <table class="no_pad" width=100%>
-    <tr>];
+<tr class="light_grey_bg">
+<td>
+<table class="no_pad" width=100%>
+<tr>];
 
     for my $x ( 1 .. $level ) {
         print "<td><img src=$NicToolClient::image_dir/"
@@ -200,11 +200,11 @@ sub display {
             . ".gif width=17 height=17></td>";
     }
 
-    print "<td><img src=$NicToolClient::image_dir/user.gif></td>";
-    print "<td nowrap><b>$duser->{'username'}</b></td>";
-    print "<td align=right width=100%>", join( ' | ', @options ), "</td>";
-    print "</tr></table>";
-    print "</td></tr></table>";
+    print qq[<td><img src=$NicToolClient::image_dir/user.gif></td>
+<td class="nowrap"><b>$duser->{'username'}</b></td>
+td align=right width=100%>], join( ' | ', @options ), qq[</td>
+</tr></table>
+</td></tr></table>];
 
     &display_properties( $nt_obj, $q, $user, $duser, $edit_message );
     &display_global_log( $nt_obj, $q, $user, $duser, $message );
@@ -271,37 +271,34 @@ sub display_properties {
     print "</tr></table>";
     print "</td></tr></table>";
 
-    print "<table cellspacing=0 width=100%>";
-    print "<tr>";
-    print "<td width=50%>";
-    print "<table width=100%>";
-    print "<tr class=light_grey_bg>";
-    print "<td nowrap>", "Username: </td>";
-    print "<td width=100%>",
-        ( $duser->{'username'} ? $duser->{'username'} : '&nbsp;' ), "</td>";
-    print "</tr>";
-    print "<tr class=light_grey_bg>";
-    print "<td nowrap>", "Email: </td>";
-    print "<td width=100%>",
-        ( $duser->{'email'} ? $duser->{'email'} : '&nbsp;' ), "</td>";
-    print "</tr>";
-    print "</table>";
-    print "</td><td width=50%>";
-    print "<table width=100%>";
-    print "<tr class=light_grey_bg>";
-    print "<td nowrap>", "First Name: </td>";
-    print "<td width=100%>",
-        ( $duser->{'first_name'} ? $duser->{'first_name'} : '&nbsp;' ),
-        "</td>";
-    print "</tr>";
-    print "<tr class=light_grey_bg>";
-    print "<td nowrap>", "Last Name: </td>";
-    print "<td width=100%>",
-        ( $duser->{'last_name'} ? $duser->{'last_name'} : '&nbsp;' ), "</td>";
-    print "</tr>";
-
-    print "</table>";
-    print "</td></tr></table>";
+    print qq[<table cellspacing=0 width=100%>
+ <tr>
+  <td width=50%>
+   <table width=100%>
+    <tr class=light_grey_bg>
+     <td class="nowrap">Username: </td>
+     <td width=100%>], ( $duser->{'username'} ? $duser->{'username'} : '&nbsp;' ), qq[</td>
+    </tr>
+    <tr class=light_grey_bg>
+     <td class="nowrap">Email: </td>
+     <td width=100%>], ( $duser->{'email'} ? $duser->{'email'} : '&nbsp;' ), qq[</td>
+    </tr>
+   </table>
+   </td>
+	 <td width=50%>
+    <table width=100%>
+     <tr class=light_grey_bg>
+      <td class="nowrap">First Name: </td>
+      <td width=100%>], ( $duser->{'first_name'} ? $duser->{'first_name'} : '&nbsp;' ), qq[</td>
+    </tr>
+    <tr class=light_grey_bg>
+     <td class="nowrap">Last Name: </td>
+     <td width=100%>], ( $duser->{'last_name'} ? $duser->{'last_name'} : '&nbsp;' ), qq[</td>
+    </tr>
+   </table>
+  </td>
+ </tr>
+</table>];
 
     return $duser;
 }
@@ -491,13 +488,12 @@ sub display_edit {
     $nt_obj->display_nice_error( $message, ucfirst($edit) . " User" )
         if $message;
 
-    print "<a name='ZONE'>";
-    print "<table width=100%>";
-    print "<tr class=dark_bg><td colspan=2><b>$modname</b></td></tr>";
-
-    print "<tr class=light_grey_bg>";
-    print "<td align=right nowrap>", "Username:</td>";
-    print "<td width=100%>",
+    print qq[<a name='ZONE'>
+<table width=100%>
+ <tr class=dark_bg><td colspan=2><b>$modname</b></td></tr>
+ <tr class=light_grey_bg>
+  <td class="right nowrap">Username:</td>
+  <td width=100%>],
         (
         $modifyperm
         ? $q->textfield(
@@ -507,42 +503,31 @@ sub display_edit {
             )
         : $duser->{'username'}
         ),
-        "</td>";
-    print "</tr>";
-
-    print "<tr class=light_grey_bg>";
-    print "<td align=right nowrap>", "First Name:</td>";
-    print "<td width=100%>",
+        qq[</td>
+</tr>
+<tr class=light_grey_bg>
+<td class="nowrap right">First Name:</td>
+<td width=100%>],
         (
         $modifyperm
-        ? $q->textfield(
-            -name  => 'first_name',
-            -value => $duser->{'first_name'},
-            -size  => 30
-            )
+        ? $q->textfield( -name  => 'first_name', -value => $duser->{'first_name'}, -size  => 30)
         : $duser->{'first_name'}
         ),
-        "</td>";
-    print "</tr>";
-
-    print "<tr class=light_grey_bg>";
-    print "<td align=right nowrap>", "Last Name:</td>";
-    print "<td width=100%>",
+        qq[</td>
+</tr>
+<tr class=light_grey_bg>
+<td class="right nowrap">Last Name:</td>
+<td width=100%>],
         (
         $modifyperm
-        ? $q->textfield(
-            -name  => 'last_name',
-            -value => $duser->{'last_name'},
-            -size  => 40
-            )
+        ? $q->textfield( -name => 'last_name', -value => $duser->{'last_name'}, -size  => 40)
         : $duser->{'last_name'}
         ),
-        "</td>";
-    print "</tr>";
-
-    print "<tr class=light_grey_bg>";
-    print "<td align=right nowrap>", "Email:</td>";
-    print "<td width=100%>",
+        qq[</td>
+</tr>
+<tr class=light_grey_bg>
+<td class="right nowrap">Email:</td>
+<td width=100%>],
         (
         $modifyperm
         ? $q->textfield(
@@ -556,45 +541,27 @@ sub display_edit {
     print "</tr>";
 
     if ($modifyperm) {
-        print "<tr class=dark_grey_bg><td colspan=2>",
-            "Change Password</td></tr>";
-
-        print "<tr class=light_grey_bg>";
-        print "<td align=right nowrap>", "Current Password:</td>";
-        print "<td width=100%>",
+        print qq[<tr class=dark_grey_bg><td colspan=2>Change Password</td></tr>
+<tr class=light_grey_bg>
+<td class="right nowrap">Current Password:</td>
+<td width=100%>],
             $q->password_field( -name => 'current_password', -override => 1 ),
-            "</td>";
-        print "</tr>";
-
-        print
-            "<tr class=light_grey_bg><td colspan=2>&nbsp;</td></tr>";
-
-        print "<tr class=light_grey_bg>";
-        print "<td align=right nowrap>", "New Password:</td>";
-        print "<td width=100%>",
-            $q->password_field(
-            -name      => 'password',
-            -maxlength => 15,
-            -override  => 1
-            ),
-            "</td>";
-        print "</tr>";
-        print "<tr class=light_grey_bg>";
-        print "<td align=right nowrap>", "Confirm New Password:</td>";
-        print "<td width=100%>",
-            $q->password_field(
-            -name      => 'password2',
-            -maxlength => 15,
-            -override  => 1
-            ),
-            "</td>";
-        print "</tr>";
-
+            qq[</td>
+</tr>
+<tr class=light_grey_bg><td colspan=2>&nbsp;</td></tr>
+<tr class=light_grey_bg>
+<td align=right class="nowrap">New Password:</td>
+<td width=100%>],
+            $q->password_field( -name => 'password', -maxlength => 15, -override  => 1),
+            qq[</td>
+</tr>
+<tr class=light_grey_bg>
+<td class="right nowrap">Confirm New Password:</td>
+<td width=100%>],
+            $q->password_field( -name => 'password2', -maxlength => 15, -override  => 1),
+            qq[</td>
+        </tr>];
     }
-
-#my $ns_tree = $nt_obj->get_nameserver_tree( nt_group_id =>$user->{'nt_group_id'});
-#my %nsmap = map {$data->{"usable_ns$_"}=>1} grep {$data->{"usable_ns$_"} != 0} (0..9);
-#warn "nsmap: ".Data::Dumper::Dumper($data);
 
     if ($showpermissions) {
         my %perms = (
