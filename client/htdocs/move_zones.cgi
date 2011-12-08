@@ -92,14 +92,12 @@ sub move_zones {
 
     my $zones = $rv->{'zones'};
 
- #print "<center><font color=red><b>$message</b></font></center>" if $message;
     $nt_obj->display_nice_error($message) if $message;
 
-    print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-    print
-        "<tr bgcolor=$NicToolClient::dark_color><td colspan=2><font color=white><b>Move Zones</b></font></td></tr>";
+    print "<table width=100%>";
+    print "<tr class=dark_bg><td colspan=2><b>Move Zones</b></td></tr>";
 
-    print "<tr bgcolor=$NicToolClient::light_grey>";
+    print "<tr class=light_grey_bg>";
     print "<td nowrap valign=top>", "Zones: </td>";
     print "<td width=100%>",
         join(
@@ -113,8 +111,8 @@ sub move_zones {
 
     $nt_obj->display_group_list( $q, $user, 'move_zones.cgi' );
 
-    print "\n<table cellpadding=2 cellspacing=2 border=0 width=100%>\n";
-    print "<tr bgcolor=$NicToolClient::dark_grey><td colspan=2 align=center>",
+    print "\n<table width=100%>\n";
+    print "<tr class=dark_grey_bg><td colspan=2 align=center>",
         $q->submit('Save'),
         $q->submit(
         -name    => 'cancel_move',

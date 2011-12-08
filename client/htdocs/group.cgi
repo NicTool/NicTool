@@ -160,21 +160,20 @@ sub display {
 sub display_zone_search {
     my ( $nt_obj, $q, $group ) = @_;
 
-    print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-    print
-        "<tr bgcolor=$NicToolClient::dark_grey><td><table cellpadding=0 cellspacing=0 border=0 width=100%>";
-    print "<tr>";
-    print $q->startform( -action => 'group.cgi', -method => 'POST' );
-    print $q->hidden( -name => 'nt_group_id' );
-    print "<td>";
-    print $q->textfield( -name => 'search_value', -size => 30,
-        -override => 1 );
-    print $q->hidden(
+    print qq[ 
+<table width=100%>
+ <tr class=dark_grey_bg><td><table class="no_pad" width=100%>
+    <tr> ],
+    $q->startform( -action => 'group.cgi', -method => 'POST' ),
+    $q->hidden( -name => 'nt_group_id' ),
+    qq[ <td> ],
+    $q->textfield( -name => 'search_value', -size => 30, -override => 1 ),
+    $q->hidden(
         -name     => 'quick_search',
         -value    => 'Enter',
         -override => 1
-    );
-    print $q->submit( -name => 'quick_search', -value => 'Search Zones' );
+    ),
+    $q->submit( -name => 'quick_search', -value => 'Search Zones' );
     print " &nbsp; &nbsp;",
         $q->checkbox(
         -name     => 'include_subgroups',
@@ -182,11 +181,13 @@ sub display_zone_search {
         -label    => 'include sub-groups',
         -override => 1
         ) if $group->{'has_children'};
-    print "</td>";
-    print $q->endform;
-    print "</tr>"
-        . "</table></td></tr>"
-        . "</table>";
+    print "</td>",
+    $q->endform,
+    "</tr>
+   </table>
+  </td>
+ </tr>
+</table>";
 }
 
 sub display_group_list {
@@ -247,38 +248,32 @@ sub display_group_list {
                 . "&new=1>New Sub-Group</a>" );
     }
     else {
-
-        #warn "user group_create is ".$user->{'group_create'};
-        @options
-            = (
-            "<font color=$NicToolClient::disabled_color>New Sub-Group</font>"
-            );
+        @options = ( "<span class=disabled>New Sub-Group</span>");
     }
 
-    print "<table cellpadding=2 cellspacing=2 border=0 width=100%>"
-        . "<tr bgcolor=$NicToolClient::dark_grey><td>"
-        . "<table cellpadding=0 cellspacing=0 border=0 width=100%>"
-        . "<tr>"
-        . "<td><b>Sub-Group List</b></td>"
-        . "<td align=right>", join( ' | ', @options ), "</td>"
-        . "</tr></table></td></tr>"
-        . "</table>";
+    print qq[<table width=100%>
+        <tr class=dark_grey_bg><td>
+        <table class="no_pad" width=100%>
+        <tr>
+        <td><b>Sub-Group List</b></td>
+        <td align=right>], join( ' | ', @options ), "</td>
+        </tr></table></td></tr>
+        </table>";
 
     $nt_obj->display_search_rows( $q, $rv, \%params, $cgi, ['nt_group_id'],
         $include_subgroups );
 
     if (@$groups) {
-        print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-        print "<tr bgcolor=$NicToolClient::dark_grey>";
+        print "<table width=100%>";
+        print "<tr class=dark_grey_bg>";
         foreach (@columns) {
             if ( $sort_fields{$_} ) {
-                print "<td bgcolor=$NicToolClient::dark_color align=center>"
-                    . "<table cellpadding=0 cellspacing=0 border=0>"
-                    . "<tr>"
-                    . "<td><font color=white>$labels{$_}</font></td>"
-                    . "<td>&nbsp; &nbsp; $NicToolClient::font<font color=white>",
-                    $sort_fields{$_}->{'order'}, "</font></font></td>"
-                    . "<td><img src=$NicToolClient::image_dir/",
+                print qq[<td class=dark_bg align=center>
+                    <table class="no_pad">
+                    <tr>
+                    <td>$labels{$_}</td>
+                    <td>&nbsp; &nbsp; $sort_fields{$_}->{'order'}</td>
+                    <td><img src=$NicToolClient::image_dir/],
                     ( uc( $sort_fields{$_}->{'mod'} ) eq 'ASCENDING'
                         ? 'up.gif'
                         : 'down.gif' ), "></tD>"
@@ -298,14 +293,10 @@ sub display_group_list {
         my $x = 0;
 
         foreach my $group (@$groups) {
-            print "<tr bgcolor="
-                . ( $x++ % 2 == 0 ? $NicToolClient::light_grey : 'white' )
-                . ">";
-
-            print
-                "<td width=100%><table cellpadding=0 cellspacing=0 border=0><tr>"
-                . "<td><img src=$NicToolClient::image_dir/group.gif></td>"
-                . "<td>",
+            print "<tr class=" . ( $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' ) . ">";
+            print qq[<td width=100%><table class="no_pad"><tr>
+<td><img src=$NicToolClient::image_dir/group.gif></td>
+<td>],
                 join(
                 ' / ',
                 map("<a href=group.cgi?nt_group_id=$_->{'nt_group_id'}>$_->{'name'}</a>",
@@ -319,16 +310,17 @@ sub display_group_list {
                 . "</tr></table></td>";
 
             for (qw(zones nameservers users log)) {
-                print "<td align=center width=1%>"
-                    . "<table cellpadding=0 cellspacing=0 border=0><tr>"
-                    . "<td><img src=$NicToolClient::image_dir/transparent.gif width=2 height=16></td>"
-                    . "<td><a href=group_$_.cgi?nt_group_id=$group->{'nt_group_id'}>"
-                    . "<img src=$NicToolClient::image_dir/folder_closed.gif border=0 alt=\"$group->{'name'}'s $_\"></a></td>";
-                print "<td><a href=group_$_.cgi?nt_group_id=$group->{'nt_group_id'}>"
+                print qq[
+           <td align=center width=1%>
+            <table class="no_pad"><tr>
+              <td><img src="$NicToolClient::image_dir/transparent.gif" width=2 height=16></td>
+              <td><a href="group_$_.cgi?nt_group_id=$group->{'nt_group_id'}">
+                 <img src="$NicToolClient::image_dir/folder_closed.gif" alt="$group->{'name'}'s $_"></a></td>
+              <td><a href="group_$_.cgi?nt_group_id=$group->{'nt_group_id'}"> ]
                     . ucfirst($_)
-                    . "</a></td>"
-                    .  "<td><img src=$NicToolClient::image_dir/transparent.gif width=2 height=16></td>"
-                    . "</tr></table></td>";
+                    . "</a></td>
+                    <td><img src=$NicToolClient::image_dir/transparent.gif width=2 height=16></td>
+                    </tr></table></td>";
             }
             if ($user->{'group_delete'}
                 && ( !exists $group->{'delegate_delete'}
@@ -347,11 +339,10 @@ sub display_group_list {
                             }
                             ) )
                     ),
-                    " and all associated data?');\"><img src=$NicToolClient::image_dir/trash.gif border=0></a></td>";
+                    " and all associated data?');\"><img src=$NicToolClient::image_dir/trash.gif></a></td>";
             }
             else {
-                print
-                    "<td align=center><img src=$NicToolClient::image_dir/trash-disabled.gif border=0></td>";
+                print "<td align=center><img src=$NicToolClient::image_dir/trash-disabled.gif></td>";
             }
             print "</tr>";
         }
@@ -389,7 +380,6 @@ sub display_edit {
             nt_group_id      => $q->param('nt_group_id'),
             include_for_user => 1
             );
-
     }
 
     #warn "group is ".Data::Dumper::Dumper($data);
@@ -412,15 +402,12 @@ sub display_edit {
         }
     }
 
-    print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-
-    print
-        "<tr bgcolor=$NicToolClient::dark_color><td colspan=2>$NicToolClient::font<font color=white><b>",
-        ( $modifyperm ? ucfirst($edit) : 'View' ),
-        " Sub-Group</b></font></font></td></tr>";
-    print "<tr bgcolor=$NicToolClient::light_grey>";
-    print "<td align=right>", "Name:</td>";
-    print "<td width=100%>$NicToolClient::font";
+    print qq[<table width=100%>
+    <tr class=dark_bg><td colspan=2><b>],
+        ( $modifyperm ? ucfirst($edit) : 'View' ), " Sub-Group</b></td></tr>";
+    print "<tr class=light_grey_bg>";
+    print "<td align=right>Name:</td>";
+    print "<td width=100%>";
     if ($modifyperm) {
         print $q->textfield(
             -name    => 'name',
@@ -429,31 +416,25 @@ sub display_edit {
         );
     }
     else {
-        print "<b>" . $data->{'name'} . "</b>";
+        print "<b>$data->{'name'}</b>";
     }
-    print "</font></td>";
-    print "</tr>";
+    print "</td> </tr>";
     my $ns_tree = $nt_obj->get_usable_nameservers(@param);
     my %nsmap = map { $data->{"usable_ns$_"} => 1 }
         grep { $data->{"usable_ns$_"} != 0 } ( 0 .. 9 );
 
-    #warn "ns_tree ".Data::Dumper::Dumper($ns_tree);
-    #warn "data ".Data::Dumper::Dumper($data);
-    #warn "params ".join(",",@param);
-
     #show nameservers
     print qq(
-        <tr bgcolor=$NicToolClient::dark_grey>
+        <tr class=dark_grey_bg>
             <td colspan=2> Allow users of this group to publish zones changes to the following nameservers: </td>
         </tr>
-         <tr bgcolor=$NicToolClient::light_grey>
-            <td  bgcolor=$NicToolClient::light_grey valign=top> Nameservers: </td>
-            <td  bgcolor=$NicToolClient::light_grey valign=top>$NicToolClient::font
+         <tr class=light_grey_bg>
+            <td class=light_grey_bg valign=top> Nameservers: </td>
+            <td class=light_grey_bg valign=top>
                       );
 
     foreach ( 1 .. scalar( @{ $ns_tree->{'nameservers'} } ) ) {
 
-        #last if ($_ > 10);
         my $ns = $ns_tree->{'nameservers'}->[ $_ - 1 ];
         print $q->checkbox(
             -name    => "usable_nameservers",
@@ -474,27 +455,22 @@ sub display_edit {
         print "<li>$ns->{'description'} ($ns->{'name'})<BR>";
     }
 
-    print qq(
-                </font>
-            </td>
-        </tr>
-    );
+    print qq( </td> </tr>);
 
     if ($showpermissions) {
-        print
-            "<tr bgcolor=$NicToolClient::dark_grey><td colspan=2>$NicToolClient::font"
+        print "<tr class=dark_grey_bg><td colspan=2>"
             . (
             $modifyperm
             ? "By default, allow users of this group to have these permissions"
             : "Users of this group have these permissions"
             )
             . $nt_obj->help_link('perms')
-            . ":</font></td></tr>";
+            . ":</td></tr>";
 
         print qq{
-        <tr bgcolor=$NicToolClient::light_grey>
-            <td colspan=2 bgcolor=$NicToolClient::light_grey>
-                <table cellpadding=6 cellspacing=1 border=0 align=center>
+        <tr class=light_grey_bg>
+         <td colspan=2 class=light_grey_bg>
+          <table style="padding:6; border-spacing:1; text-align:center;">
                     };
 
         my %perms = (
@@ -523,7 +499,7 @@ sub display_edit {
                     <tr><td></td>
                 );
                 foreach (qw(Edit Create Delete Delegate All)) {
-                    print "<td>$NicToolClient::font";
+                    print "<td>";
                     print $q->checkbox(
                         -name  => "select_all_$_",
                         -label => '',
@@ -531,19 +507,18 @@ sub display_edit {
                             "selectAll$_(document.perms_form, this.checked);",
                         -override => 1
                     );
-                    print "</font></td>";
+                    print "</td>";
                 }
                 print qq(
                     </tr>
                 );
             }
             else {
-                $color = (
-                    $x++ % 2 == 0 ? $NicToolClient::light_grey : 'white' );
+                $color = ( $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' );
                 print qq{
                         <tr>
-                            <td align=right>$NicToolClient::font<b>}
-                    . ( ucfirst($type) ) . qq{:</b></font></td>
+                         <td align=right><b>}
+                    . ( ucfirst($type) ) . qq{:</b></td>
                                 };
                 foreach my $perm ( @{ $perms{$type} } ) {
                     if ( $perm eq '.' ) {
@@ -553,7 +528,7 @@ sub display_edit {
                     }
                     elsif ( $user->{ $type . "_" . $perm } ) {
                         print qq{
-                            <td valign=center align=left bgcolor=$color>$NicToolClient::font
+                            <td valign=center align=left class=$color>
                             };
                         print $q->checkbox(
                             -name    => $type . "_" . $perm,
@@ -565,28 +540,28 @@ sub display_edit {
                             exists $labels{$type}->{$perm}
                             ? $labels{$type}->{$perm}
                             : ucfirst($perm) )
-                            . qq{</font></td> };
+                            . qq{</td> };
                     }
                     else {
                         print qq{
-                            <td valign=center align=left bgcolor=$color>$NicToolClient::font<img src=$NicToolClient::image_dir/perm-}
+                            <td valign=center align=left class=$color><img src=$NicToolClient::image_dir/perm-}
                             . ( $data->{ $type . "_" . $perm } ? 'checked.gif'
                             : 'unchecked.gif' )
                             . qq{>}
                             . (
                             $modifyperm
-                            ? "<font color=$NicToolClient::disabled_color>"
+                            ? "<span class=disabled>"
                             : ''
                             )
                             . (
                             exists $labels{$type}->{$perm}
                             ? $labels{$type}->{$perm}
                             : ucfirst($perm) )
-                            . ( $modifyperm ? '</font>' : '' )
-                            . qq{</font></td> };
+                            . ( $modifyperm ? '</span>' : '' )
+                            . qq{</td> };
                     }
                 }
-                print "<td>$NicToolClient::font"
+                print "<td>"
                     . $q->checkbox(
                     -name    => "select_all_$type",
                     -label   => '',
@@ -594,7 +569,7 @@ sub display_edit {
                         . ucfirst($type)
                         . "(document.perms_form, this.checked);",
                     -override => 1
-                    ) . "</font></td>";
+                    ) . "</td>";
                 print qq{
                         </tr>
                         };
@@ -609,7 +584,7 @@ sub display_edit {
 
     if ($modifyperm) {
         print
-            "<tr bgcolor=$NicToolClient::dark_grey><td align=center colspan=2>",
+            "<tr class=dark_grey_bg><td align=center colspan=2>",
             $q->submit( $edit eq 'edit' ? 'Save' : 'Create' ),
             $q->submit('Cancel'), "</td></tr>";
     }

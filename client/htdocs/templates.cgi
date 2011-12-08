@@ -65,7 +65,7 @@ sub show_zone_records {
     return if ( scalar( @{$recs} ) == 0 );
 
     print qq{
-  <table width="100%" colspacing="1" cellpadding="2">
+  <table style="width:100%; border-spacing:1;">
     <tr class="dark_bg"> <td colspan="6" align="center"> $template </td> </tr> };
 
     for ( my $i = 0; $i < scalar( @{$recs} ); $i++ ) {

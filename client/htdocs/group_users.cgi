@@ -159,12 +159,9 @@ sub display_edit_user {
 
     $nt_obj->display_nice_error($message) if $message;
 
- #print "<center><font color=red><b>$message</b></font></center>" if $message;
-
-    print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-    print
-        "<tr bgcolor=$NicToolClient::dark_color><td colspan=2><font color=white><b>New User</b></font></td></tr>";
-    print "<tr bgcolor=$NicToolClient::light_grey>";
+    print "<table width=100%>";
+    print "<tr class=dark_bg><td colspan=2><b>New User</b></td></tr>";
+    print "<tr class=light_grey_bg>";
     print "<td align=right>", "Username:</td>";
     print "<td width=80%>",
         (
@@ -177,7 +174,7 @@ sub display_edit_user {
         : ''
         ),
         "</td></tr>";
-    print "<tr bgcolor=$NicToolClient::light_grey>";
+    print "<tr class=light_grey_bg>";
     print "<td align=right>", "First Name:</td>";
     print "<td width=80%>",
         (
@@ -190,7 +187,7 @@ sub display_edit_user {
         : ''
         ),
         "</td></tr>";
-    print "<tr bgcolor=$NicToolClient::light_grey>";
+    print "<tr class=light_grey_bg>";
     print "<td align=right>", "Last Name:</td>";
     print "<td width=80%>",
         (
@@ -203,7 +200,7 @@ sub display_edit_user {
         : ''
         ),
         "</td></tr>";
-    print "<tr bgcolor=$NicToolClient::light_grey>";
+    print "<tr class=light_grey_bg>";
     print "<td align=right>", "Email Address:</td>";
     print "<td width=80%>",
         (
@@ -212,7 +209,7 @@ sub display_edit_user {
         : ''
         ),
         "</td></tr>";
-    print "<tr bgcolor=$NicToolClient::light_grey>";
+    print "<tr class=light_grey_bg>";
     print "<td align=right>", "Password:</td>";
     print "<td width=80%>",
         (
@@ -225,7 +222,7 @@ sub display_edit_user {
         : ''
         ),
         "</td></tr>";
-    print "<tr bgcolor=$NicToolClient::light_grey>";
+    print "<tr class=light_grey_bg>";
     print "<td align=right>", "Password (Again):</td>";
     print "<td width=80%>",
         (
@@ -258,20 +255,20 @@ sub display_edit_user {
         );
         my @order = qw(group user zone zonerecord nameserver self);
 
-        print "<tr bgcolor=$NicToolClient::dark_grey><td colspan=2>"
+        print "<tr class=dark_grey_bg><td colspan=2>"
             . "<input type=radio value='1' name='group_defaults' CHECKED>This user inherits the permissions defined for the enclosing group"
             . $nt_obj->help_link('perms')
             . "</td></tr>";
         print qq{
-        <tr bgcolor=$NicToolClient::light_grey>
-            <td colspan=2 bgcolor=$NicToolClient::light_grey>
-                <table cellpadding=6 cellspacing=1 border=0 align=center>
-                    };
+<tr class=light_grey_bg>
+ <td colspan=2 class=light_grey_bg>
+  <table style="padding:6; border-spacing:1; text-align:center;">
+};
 
         my $x = 1;
         my $color;
         foreach my $type (@order) {
-            $color = ( $x++ % 2 == 0 ? $NicToolClient::light_grey : 'white' );
+            $color = ( $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' );
             print qq{
                     <tr>
                         <td align=right><b>}
@@ -280,12 +277,12 @@ sub display_edit_user {
             foreach my $perm ( @{ $perms{$type} } ) {
                 if ( $perm eq '.' ) {
                     print qq(
-                            <td bgcolor=$color></td>
+                            <td class=$color></td>
                         );
                     next;
                 }
                 print qq{
-                        <td valign=center bgcolor=$color align=left><img src=$NicToolClient::image_dir/perm-}
+                    <td valign=center class=$color align=left><img src=$NicToolClient::image_dir/perm-}
                     . ( $group->{ $type . "_" . $perm }
                     ? 'checked.gif'
                     : 'unchecked.gif' )
@@ -307,18 +304,18 @@ sub display_edit_user {
         </tr>
         };
 
-        print "<tr bgcolor=$NicToolClient::dark_grey><td colspan=2>"
+        print "<tr class=dark_grey_bg><td colspan=2>"
             . "<input type=radio value='0' name='group_defaults'>This user uses the permissions defined below"
             . $nt_obj->help_link('perms')
             . "</td></tr>";
         print qq{
-        <tr bgcolor=$NicToolClient::light_grey>
-            <td colspan=2 bgcolor=$NicToolClient::light_grey>
-                <table cellpadding=6 cellspacing=1 border=0 align=center>
-                    };
-        $x     = 1;
-        @order = qw(group user zone zonerecord nameserver self header);
-        foreach my $type (@order) {
+<tr class=light_grey_bg>
+ <td colspan=2 class=light_grey_bg>
+  <table style="padding:6; border-spacing:1; text-align:center;">
+};
+    $x     = 1;
+    @order = qw(group user zone zonerecord nameserver self header);
+    foreach my $type (@order) {
 
             if ( $type eq 'header' ) {
                 print qq(
@@ -345,7 +342,7 @@ sub display_edit_user {
             }
             else {
                 $color = (
-                    $x++ % 2 == 0 ? $NicToolClient::light_grey : 'white' );
+                    $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' );
                 print qq{
                         <tr>
                             <td align=right><b>}
@@ -360,7 +357,7 @@ sub display_edit_user {
                     }
                     if ( $user->{ $type . "_" . $perm } ) {
                         print qq{
-                            <td valign=center align=left bgcolor=$color> };
+                            <td valign=center align=left class=$color> };
                         print $q->checkbox(
                             -name    => $type . "_" . $perm,
                             -value   => '1',
@@ -374,31 +371,23 @@ sub display_edit_user {
                             . qq{</td> };
                     }
                     else {
-                        print qq{
-                            <td bgcolor=$color valign=center align=left><img src=$NicToolClient::image_dir/perm-}
-                            . (
-                            $group->{ $type . "_" . $perm } ? 'checked.gif'
-                            :   'unchecked.gif' )
-                            . qq{> <font color=$NicToolClient::disabled_color>}
-                            . (
-                            exists $labels{$type}->{$perm}
-                            ? $labels{$type}->{$perm}
-                            : ucfirst($perm) )
-                            . qq{</font></td> };
+                        print qq{<td class=$color valign=center align=left><img src=$NicToolClient::image_dir/perm-}
+                            . ( $group->{ $type . "_" . $perm } ? 'checked.gif' : 'unchecked.gif' )
+                            . qq{><span class=disabled>}
+                            . ( exists $labels{$type}->{$perm} ? $labels{$type}->{$perm} : ucfirst($perm) )
+                            . qq{</span></td> };
                     }
                 }
-                print "<td>"
-                    . $q->checkbox(
+                print "<td>",
+                     $q->checkbox(
                     -name    => "select_all_$type",
                     -label   => '',
                     -onClick => "selectAll"
                         . ucfirst($type)
                         . "(document.perms_form, this.checked);",
                     -override => 1
-                    ) . "</td>";
-                print qq{
-                        </tr>
-                        };
+                    ), 
+                    "</td> </tr>";
             }
         }
         print qq{
@@ -409,7 +398,7 @@ sub display_edit_user {
     }
     if ($modifyperm) {
         print
-            "<tr bgcolor=$NicToolClient::dark_grey><td colspan=2 align=center>",
+            "<tr class=dark_grey_bg><td colspan=2 align=center>",
             $q->submit( $edit eq 'edit' ? 'Save' : 'Create' ),
             $q->submit('Cancel'), "</td></tr>";
     }
@@ -468,12 +457,12 @@ sub display_list {
             if ( $q->param($_) );
     }
 
-    print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-    print "<tr bgcolor=$NicToolClient::dark_grey><td>";
-    print "<table cellpadding=0 cellspacing=0 border=0 width=100%>";
-    print "<tr>";
-    print "<td><b>User List</b></td>";
-    print "<td align=right>";
+    print qq[<table width=100%>
+    <tr class=dark_grey_bg><td>
+    <table class="no_pad" width=100%>
+    <tr>
+    <td><b>User List</b></td>
+    <td align=right>];
     if ( $user->{'user_create'} ) {
         print "<a href=$cgi?"
             . join( '&', @state_fields )
@@ -482,7 +471,7 @@ sub display_list {
             . "&new=1>New User</a>";
     }
     else {
-        print "<font color=$NicToolClient::disabled_color>New User</font>";
+        print "<span class=disabled>New User</span>";
     }
     print
         " | <a href=\"javascript:void open_move(document.list_form.obj_list);\">Move Selected Users</a>"
@@ -497,14 +486,13 @@ sub display_list {
     if (@$list) {
         $nt_obj->display_move_javascript( 'move_users.cgi', 'user' );
 
-        print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-        print "<tr bgcolor=$NicToolClient::dark_grey>";
+        print "<table width=100%>";
+        print "<tr class=dark_grey_bg>";
 
         if ( $user_group->{'has_children'} ) {
-            print "<td align=center>";
-
-            print "<table cellpadding=0 cellspacing=0 border=0>";
-            print "<tr><td></td>";
+            print qq[<td align=center>
+            <table class="no_pad">
+            <tr><td></td>];
             print $q->endform . "\n";
             print $q->startform(
                 -action => 'move_users.cgi',
@@ -530,13 +518,11 @@ sub display_list {
 
         foreach (@columns) {
             if ( $sort_fields{$_} ) {
-                print
-                    "<td bgcolor=$NicToolClient::dark_color align=center><table cellpadding=0 cellspacing=0 border=0>";
-                print "<tr>";
-                print "<td><font color=white>$labels{$_}</font></td>";
-                print "<td>&nbsp; &nbsp; <font color=white>",
-                    $sort_fields{$_}->{'order'}, "</font></td>";
-                print "<td><img src=$NicToolClient::image_dir/",
+                print qq[<td class=dark_bg align=center><table class="no_pad">
+                <tr>
+                <td>$labels{$_}</td>
+                <td>&nbsp; &nbsp; $sort_fields{$_}->{'order'}</td>
+                <td><img src=$NicToolClient::image_dir/],
                     (
                     uc( $sort_fields{$_}->{'mod'} ) eq 'ASCENDING'
                     ? 'up.gif'
@@ -556,8 +542,8 @@ sub display_list {
         my $width = int( 100 / @columns ) . '%';
 
         foreach my $obj (@$list) {
-            print "<tr bgcolor="
-                . ( $x++ % 2 == 0 ? $NicToolClient::light_grey : 'white' )
+            print "<tr class="
+                . ( $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' )
                 . ">";
             if (   $user->{'user_write'}
                 && $obj->{'nt_user_id'} ne $user->{'nt_user_id'} )
@@ -580,10 +566,8 @@ sub display_list {
             }
 
             if ($include_subgroups) {
-                print
-                    "<td width=$width><table cellpadding=0 cellspacing=0 border=0><tr>";
-                print
-                    "<td><img src=$NicToolClient::image_dir/group.gif></td>";
+                print qq[<td width=$width><table class="no_pad"><tr>
+                <td><img src="$NicToolClient::image_dir/group.gif"></td>];
                 if ($map) {
                     print "<td>",
                         join(
@@ -612,23 +596,18 @@ sub display_list {
                 print "</tr></table></td>";
             }
 
-            print
-                "<td width=$width><table cellpadding=0 cellspacing=0 border=0>";
-            print "<tr>";
-            print
-                "<td><a href=user.cgi?nt_user_id=$obj->{'nt_user_id'}&nt_group_id=$obj->{'nt_group_id'}><img src=$NicToolClient::image_dir/user.gif border=0></a></td>";
-            print
-                "<td><a href=user.cgi?nt_user_id=$obj->{'nt_user_id'}&nt_group_id=$obj->{'nt_group_id'}>",
-                $obj->{'username'}, "</a></td>";
-            print "</tr></table></td>";
-
-            print "<td width=$width>",
+            print qq[<td width=$width><table class="no_pad">
+            <tr>
+            <td><a href="user.cgi?nt_user_id=$obj->{'nt_user_id'}&nt_group_id=$obj->{'nt_group_id'}"><img src="$NicToolClient::image_dir/user.gif"></a></td>
+            <td><a href="user.cgi?nt_user_id=$obj->{'nt_user_id'}&nt_group_id=$obj->{'nt_group_id'}">$obj->{'username'}</a></td>
+            </tr></table></td>
+            <td width=$width>],
                 ( $obj->{'first_name'} ? $obj->{'first_name'} : '&nbsp;' ),
-                "</td>";
-            print "<td width=$width>",
+                "</td>",
+            "<td width=$width>",
                 ( $obj->{'last_name'} ? $obj->{'last_name'} : '&nbsp;' ),
-                "</td>";
-            print "<td width=$width>",
+                "</td>",
+            "<td width=$width>",
                 ( $obj->{'email'}
                 ? "<a href=mailto:$obj->{'email'}>$obj->{'email'}</a>"
                 : '&nbsp;' ), "</td>";
@@ -640,11 +619,10 @@ sub display_list {
                     . join( '&', @state_fields )
                     . "&nt_group_id="
                     . $q->param('nt_group_id')
-                    . "&delete=1&obj_list=$obj->{'nt_user_id'} onClick=\"return confirm('Delete user $obj->{'username'}?');\"><img src=$NicToolClient::image_dir/trash.gif border=0></a></td>";
+                    . "&delete=1&obj_list=$obj->{'nt_user_id'} onClick=\"return confirm('Delete user $obj->{'username'}?');\"><img src=$NicToolClient::image_dir/trash.gif></a></td>";
             }
             else {
-                print
-                    "<td width=1%><img src=$NicToolClient::image_dir/trash-disabled.gif border=0></td>";
+                print "<td width=1%><img src=$NicToolClient::image_dir/trash-disabled.gif></td>";
             }
             print "</tr>";
         }

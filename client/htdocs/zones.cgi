@@ -101,7 +101,7 @@ sub print_zone_request_form {
         -default => $q->param('nt_group_id')
         );
 
-    print qq{ <table cellpadding="2" cellspacing="2" border="0" width="100%">
+    print qq{ <table width="100%">
 			  <tr class="dark_bg"> 
                 <td colspan="4" align="center"><b>Batch Zone Creation</b></td>
               </tr> },
@@ -165,7 +165,6 @@ sub print_zone_request_form {
               </tr>
                },
 
-#$q->checkbox(-name=>'reverse', -label=>' Reverse') (Create Matching PTR)</font></td>',
         $q->td( { -colspan => '4', -align => 'center' }, $q->submit, ),
         qq{ </tr></table> },
         $q->end_form;

@@ -167,12 +167,13 @@ sub display_list {
             if ( $q->param($_) );
     }
 
-    print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-    print "<tr bgcolor=$NicToolClient::dark_grey><td>";
-    print "<table cellpadding=0 cellspacing=0 border=0 width=100%>";
-    print "<tr>";
-    print "<td><b>Nameserver List</b></td>";
-    print "<td align=right>";
+    print qq[
+<table width=100%>
+ <tr class=dark_grey_bg><td>
+   <table class="no_pad" width=100%>
+    <tr>
+     <td><b>Nameserver List</b></td>
+     <td align=right>];
     if ( $user->{'nameserver_create'} ) {
         print "<a href=$cgi?"
             . join( '&', @state_fields )
@@ -181,8 +182,7 @@ sub display_list {
             . "&new=1>New Nameserver</a>";
     }
     else {
-        print
-            "<font color=$NicToolClient::disabled_color>New Nameserver</font>";
+        print "<span class=disabled>New Nameserver</span>";
     }
     print
         " | <a href=\"javascript:void open_move(document.list_form.obj_list);\">Move Selected Nameservers</a>"
@@ -200,23 +200,22 @@ sub display_list {
 
     $nt_obj->display_move_javascript( 'move_nameservers.cgi', 'nameserver' );
 
-    print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-    print "<tr bgcolor=$NicToolClient::dark_grey>";
+    print "<table width=100%>";
+    print "<tr class=dark_grey_bg>";
 
     if ( $user_group->{'has_children'} ) {
         print "<td align=center>";
 
-        print "<table cellpadding=0 cellspacing=0 border=0>";
-        print "<tr><td></td>";
-        print $q->endform . "\n";
-        print $q->startform(
+        print qq[<table class="no_pad">
+        <tr><td></td>],
+        $q->endform, "\n",
+        $q->startform(
             -action => 'move_users.cgi',
             -method => 'POST',
             -name   => 'list_form',
             -target => 'move_win'
-        ) . "\n";
-        print "<td></td></tr>";
-        print "</table>";
+        ), "\n",
+        qq[ <td></td></tr> </table> ];
 
         print "",
             (
@@ -233,19 +232,16 @@ sub display_list {
 
     foreach (@columns) {
         if ( $sort_fields{$_} ) {
-            print
-                "<td bgcolor=$NicToolClient::dark_color align=center><table cellpadding=0 cellspacing=0 border=0>";
-            print "<tr>";
-            print "<td><font color=white>$labels{$_}</font></td>";
-            print "<td>&nbsp; &nbsp; <font color=white>",
-                $sort_fields{$_}->{'order'}, "</font></td>";
-            print "<td><img src=$NicToolClient::image_dir/",
+            print qq[<td class=dark_bg align=center><table class="no_pad">
+            <tr>
+            <td>$labels{$_}</td>
+            <td>&nbsp; &nbsp; $sort_fields{$_}->{'order'} </td>
+            <td><img src=$NicToolClient::image_dir/],
                 (
                 uc( $sort_fields{$_}->{'mod'} ) eq 'ASCENDING'
                 ? 'up.gif'
-                : 'down.gif' ), "></tD>";
-            print "</tr></table></td>";
-
+                : 'down.gif' ), "></tD>
+            </tr></table></td>";
         }
         else {
             print "<td align=center>", "$labels{$_}</td>";
@@ -259,9 +255,7 @@ sub display_list {
     my $width = int( 100 / @columns ) . '%';
 
     foreach my $obj (@$list) {
-        print "<tr bgcolor="
-            . ( $x++ % 2 == 0 ? $NicToolClient::light_grey : 'white' )
-            . ">";
+        print "<tr class=" . ( $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' ) . ">";
         if ($user->{'nameserver_write'}
             && ( !exists $obj->{'delegate_write'}
                 || $obj->{'delegate_write'} )
@@ -283,10 +277,8 @@ sub display_list {
         }
 
         if ($include_subgroups) {
-            print
-                "<td width=$width><table cellpadding=0 cellspacing=0 border=0><tr>";
-            print
-                "<td><img src=$NicToolClient::image_dir/group.gif></td>";
+            print qq[<td width=$width><table class="no_pad"><tr>
+            <td><img src="$NicToolClient::image_dir/group.gif"></td>];
             if ($map) {
                 print "<td>",
                     join(
@@ -315,15 +307,11 @@ sub display_list {
             print "</tr></table></td>";
         }
 
-        print
-            "<td width=$width><table cellpadding=0 cellspacing=0 border=0>";
-        print "<tr>";
-        print
-            "<td><a href=$cgi?nt_nameserver_id=$obj->{'nt_nameserver_id'}&nt_group_id=$obj->{'nt_group_id'}&edit=1><img src=$NicToolClient::image_dir/nameserver.gif border=0></a></td>";
-        print
-            "<td><a href=$cgi?nt_nameserver_id=$obj->{'nt_nameserver_id'}&nt_group_id=$obj->{'nt_group_id'}&edit=1>",
-            $obj->{'name'}, "</a></td>";
-        print "</tr></table></td>";
+        print qq[<td width=$width><table class="no_pad">
+        <tr>
+         <td><a href="$cgi?nt_nameserver_id=$obj->{'nt_nameserver_id'}&nt_group_id=$obj->{'nt_group_id'}&edit=1"><img src="$NicToolClient::image_dir/nameserver.gif"></a></td>
+         <td><a href="$cgi?nt_nameserver_id=$obj->{'nt_nameserver_id'}&nt_group_id=$obj->{'nt_group_id'}&edit=1"> $obj->{'name'} </a></td>
+        </tr></table></td>];
 
         foreach (qw(description address status)) {
             print "<td width=$width>",
@@ -339,11 +327,11 @@ sub display_list {
                 . join( '&', @state_fields )
                 . "&nt_group_id="
                 . $q->param('nt_group_id')
-                . "&delete=1&nt_nameserver_id=$obj->{'nt_nameserver_id'} onClick=\"return confirm('Delete nameserver $obj->{'name'}?');\"><img src=$NicToolClient::image_dir/trash.gif border=0></a></td>";
+                . "&delete=1&nt_nameserver_id=$obj->{'nt_nameserver_id'} onClick=\"return confirm('Delete nameserver $obj->{'name'}?');\"><img src=$NicToolClient::image_dir/trash.gif></a></td>";
         }
         else {
             print
-                "<td width=1%><img src=$NicToolClient::image_dir/trash-disabled.gif border=0></td>";
+                "<td width=1%><img src=$NicToolClient::image_dir/trash-disabled.gif></td>";
         }
         print "</tr>";
     }
@@ -394,7 +382,6 @@ sub display_edit_nameserver {
         print $q->hidden( -name => 'nt_nameserver_id' ) if $edit ne 'new';
     }
 
- #print "<center><font color=red><b>$message</b></font></center>" if $message;
     $nt_obj->display_nice_error($message) if $message;
     my $title;
     if ($modifyperm) {
@@ -403,11 +390,9 @@ sub display_edit_nameserver {
     else {
         $title = "View Nameserver Details";
     }
-    print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-    print
-        "<tr bgcolor=$NicToolClient::dark_color><td colspan=2><font color=white><b>$title</b></font></td></tr>";
-
-    print "<tr bgcolor=$NicToolClient::light_grey>";
+    print "<table width=100%>";
+    print "<tr class=dark_bg><td colspan=2><b>$title</b></td></tr>";
+    print "<tr class=light_grey_bg>";
     print "<td align=right>", "Fully qualfied nameserver name:</td>";
     print "<td width=80%>",
         (
@@ -417,7 +402,7 @@ sub display_edit_nameserver {
         ),
         "</td></tr>";
 
-    print "<tr bgcolor=$NicToolClient::light_grey>";
+    print "<tr class=light_grey_bg>";
     print "<td align=right>", "IP Address:</td>";
     print "<td width=80%>",
         (
@@ -431,7 +416,7 @@ sub display_edit_nameserver {
         ),
         "</td></tr>";
 
-    print "<tr bgcolor=$NicToolClient::light_grey>";
+    print "<tr class=light_grey_bg>";
     print "<td align=right>", "Output Format:</td>";
     print "<td width=80%>\n",
         (
@@ -446,7 +431,7 @@ sub display_edit_nameserver {
         ),
         "</td></tr>";
 
-    print "<tr bgcolor=$NicToolClient::light_grey>";
+    print "<tr class=light_grey_bg>";
     print "<td align=right>", "Logfile Directory:</td>";
     print "<td width=80%>",
         (
@@ -460,7 +445,7 @@ sub display_edit_nameserver {
         ),
         "</td></tr>";
 
-    print "<tr bgcolor=$NicToolClient::light_grey>";
+    print "<tr class=light_grey_bg>";
     print "<td align=right>", "Datafile Directory:</td>";
     print "<td width=80%>",
         (
@@ -474,7 +459,7 @@ sub display_edit_nameserver {
         ),
         "</td></tr>";
 
-    print "<tr bgcolor=$NicToolClient::light_grey>";
+    print "<tr class=light_grey_bg>";
     print "<td align=right>", "TTL:</td>";
     print "<td width=80%>",
         (
@@ -489,7 +474,7 @@ sub display_edit_nameserver {
         ),
         "</td></tr>";
 
-    print "<tr bgcolor=$NicToolClient::light_grey>";
+    print "<tr class=light_grey_bg>";
     print "<td align=right>", "Export Interval (seconds):</td>";
     print "<td width=80%>",
         (
@@ -504,7 +489,7 @@ sub display_edit_nameserver {
         ),
         "</td></tr>";
 
-    print "<tr bgcolor=$NicToolClient::light_grey>";
+    print "<tr class=light_grey_bg>";
     print "<td align=right>", "Description:</td>";
     print "<td width=80%>",
         (
@@ -520,8 +505,7 @@ sub display_edit_nameserver {
         "</td></tr>";
 
     if ($modifyperm) {
-        print
-            "<tr bgcolor=$NicToolClient::dark_grey><td colspan=2 align=center>",
+        print "<tr class=dark_grey_bg><td colspan=2 align=center>",
             $q->submit( $edit eq 'edit' ? 'Save' : 'Create' ),
             $q->submit('Cancel'), "</td></tr>";
     }

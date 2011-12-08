@@ -232,12 +232,12 @@ sub display_list {
         push( @state_fields, "$_=" . $q->escape( $q->param($_) ) )
             if ( $q->param($_) );
     }
-    print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-    print "<tr bgcolor=$NicToolClient::dark_grey><td>";
-    print "<table cellpadding=0 cellspacing=0 border=0 width=100%>";
-    print "<tr>";
-    print "<td><b>Zone List</b></td>";
-    print "<td align=right>";
+    print qq[<table width=100%>
+    <tr class=dark_grey_bg><td>
+    <table class="no_pad" width=100%>
+    <tr>
+    <td><b>Zone List</b></td>
+    <td align=right>];
     if ( $nt_obj->no_gui_hints || $user->{"zone_create"} ) {
         print "<a href=group_zones.cgi?"
             . join( '&', @state_fields )
@@ -246,7 +246,7 @@ sub display_list {
             . "&new=1>New Zone</a>";
     }
     else {
-        print "<font color=$NicToolClient::disabled_color>New Zone</font>";
+        print "<span class=disabled>New Zone";
     }
     print
         " | <a href=\"javascript:void open_move(document.list_form.obj_list);\">Move Selected Zones</a>"
@@ -257,11 +257,6 @@ sub display_list {
         && $user_group->{'has_children'}
         && $user->{'zone_delegate'} );
 
-#if($user->{'zone_delegate'}&&(!exists $zone->{'delegate_delegate'} || $zone->{'delegate_delegate'})){
-#print " | <a href=\"javascript:void open_delegate(document.list_form.obj_list);\">Delegate Selected Zones</a>" if( @$zones && $user_group->{'has_children'} ) ;
-#}else{
-#print " | <font color=$NicToolClient::disabled_color>Delegate Selected Zones</font>" if( @$zones && $user_group->{'has_children'} ) ;
-#}
     print " | <a href=group_zones_log.cgi?nt_group_id=",
         $q->param('nt_group_id'), ">View Zone Log</a>";
     print "</td>";
@@ -276,29 +271,29 @@ sub display_list {
         $nt_obj->display_delegate_javascript( 'delegate_zones.cgi', 'zone' );
 
         print qq{
-        <table cellpadding=2 cellspacing=2 border=0 width=100%>
-            <tr bgcolor=$NicToolClient::dark_grey>};
+        <table width=100%>
+            <tr class=dark_grey_bg>};
 
         if ( $user_group->{'has_children'} ) {
             print qq{
                 <td align=center>
-		            <table cellpadding=0 cellspacing=0 border=0>
-		                <tr>
-                            <td></td>
-                                };
-            print $q->endform . "\n";
-            print $q->startform(
+		         <table class="no_pad">
+		          <tr>
+                   <td></td>
+            },
+            $q->endform, "\n",
+            $q->startform(
                 -action => 'move_zones.cgi',
                 -method => 'POST',
                 -name   => 'list_form',
                 -target => 'move_win'
-            );
-            print qq{
-                            <td></td>
-                        </tr>
-                    </table>
-		           }
-                . (
+            ),
+            qq{
+                   <td></td>
+                  </tr>
+                 </table>
+		    },
+            (
                 $rv->{'total'} == 1 ? '&nbsp;' : $q->checkbox(
                     -name  => 'select_all_or_none',
                     -label => '',
@@ -306,19 +301,19 @@ sub display_list {
                         'selectAllorNone(document.list_form.obj_list, this.checked);',
                     -override => 1
                 )
-                ) . "</td>";
+            ), "</td>";
         }
 
         foreach (@columns) {
             if ( $sort_fields{$_} ) {
                 print qq{
-    <td bgcolor=$NicToolClient::dark_color align=center>
-        <table cellpadding=0 cellspacing=0 border=0>
-            <tr>
-                <td><font color=white>} . $labels{$_} . qq{</font></td>
-                <td>&nbsp; &nbsp; <font color=white>}
+    <td class=dark_bg align=center>
+     <table class="no_pad">
+      <tr>
+       <td>} . $labels{$_} . qq{</td>
+                <td>&nbsp; &nbsp; }
                     . $sort_fields{$_}->{'order'}
-                    . qq{</font></td>
+                    . qq{</td>
                 <td><img src=$NicToolClient::image_dir/}
                     . (
                     uc( $sort_fields{$_}->{'mod'} ) eq 'ASCENDING'
@@ -342,21 +337,16 @@ sub display_list {
 
         my $x     = 0;
         my $width = int( 100 / @columns ) . '%';
-        my $bgcolor;
+        my $class;
         my $hilite;
         foreach my $zone (@$zones) {
-            $bgcolor
-                = ( $x++ % 2 == 0 ? $NicToolClient::light_grey : 'white' );
-            $hilite
-                = ( $x % 2 == 0
-                ? $NicToolClient::light_hilite
-                : $NicToolClient::dark_hilite );
-            $bgcolor = $hilite
-                if ($zone->{'nt_zone_id'} eq $q->param('new_zone_id')
+            $class = ( $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' );
+            $hilite  = ( $x % 2 == 0 ? 'light_hilite_bg' : 'dark_hilite_bg' );
+            $class = $hilite if ($zone->{'nt_zone_id'} eq $q->param('new_zone_id')
                 and $NicToolClient::hilite_new_zones );
             my $isdelegate = exists $zone->{'delegated_by_id'};
             print qq{
-            <tr bgcolor=$bgcolor>};
+            <tr class="$class">};
             if ( $user->{'zone_create'} && !$isdelegate ) {
                 print qq{
                 <td width=1% align=center>}
@@ -370,23 +360,20 @@ sub display_list {
             }
             else {
 
-#print "<td width=1% align=center><img src=$NicToolClient::image_dir/perm-unchecked.gif></td>" if( $user_group->{'has_children'} );
                 print
                     "<td width=1% align=center><img src=$NicToolClient::image_dir/nobox.gif></td>"
                     if ( $user_group->{'has_children'} );
 
-#print qq{ <td width=1% align=center>&nbsp;</td>} if( $user_group->{'has_children'} );
             }
 
-            #$bgcolor = $hilite if $zone->{'pseudo'};
             print qq{
-                <td width=$width bgcolor=$bgcolor>
-                    <table cellpadding=0 cellspacing=0 border=0>
-                        <tr>};
+                <td width=$width class=$class>
+                 <table class="no_pad">
+                  <tr>};
             if ( !$isdelegate ) {
                 print qq{
                             <td><a href=zone.cgi?nt_zone_id=}
-                    . "$zone->{'nt_zone_id'}&nt_group_id=$zone->{'nt_group_id'}><img src=$NicToolClient::image_dir/zone.gif border=0></a></td>
+                    . "$zone->{'nt_zone_id'}&nt_group_id=$zone->{'nt_group_id'}><img src=$NicToolClient::image_dir/zone.gif></a></td>
                             <td><a href=zone.cgi?nt_zone_id="
                     . "$zone->{'nt_zone_id'}&nt_group_id=$zone->{'nt_group_id'}>$zone->{'zone'}</a>";
             }
@@ -397,13 +384,13 @@ sub display_list {
                             <td>
                             <a href=zone.cgi?nt_zone_id=$zone->{'nt_zone_id'}&nt_group_id=)
                     . $q->param('nt_group_id')
-                    . qq(><img src=$NicToolClient::image_dir/$img.gif border=0></a></td>
+                    . qq(><img src=$NicToolClient::image_dir/$img.gif></a></td>
                             <td><a href=zone.cgi?nt_zone_id=$zone->{'nt_zone_id'}&nt_group_id=)
                     . $q->param('nt_group_id')
                     . qq(> $zone->{'zone'}</a>);
                 if ( $zone->{'pseudo'} ) {
                     print
-                        "&nbsp; <font color=$NicToolClient::disabled_color>("
+                        "&nbsp; <span class=disabled>("
                         . $zone->{'delegated_records'}
                         . " record"
                         . ( $zone->{'delegated_records'} gt 1 ? 's' : '' )
@@ -414,7 +401,7 @@ sub display_list {
                         . ( $zone->{'delegate_write'}
                         ? "write.gif"
                         : "nowrite.gif" )
-                        . "></font>";
+                        . ">";
                 }
             }
             print qq{
@@ -424,10 +411,8 @@ sub display_list {
                 </td>};
 
             if ($include_subgroups) {
-                print
-                    "<td width=$width><table cellpadding=0 cellspacing=0 border=0><tr>";
-                print
-                    "<td><img src=$NicToolClient::image_dir/group.gif></td>";
+                print qq[<td width=$width><table class="no_pad"><tr>
+                <td><img src=$NicToolClient::image_dir/group.gif></td>];
                 if ($map) {
                     print "<td>",
                         join(
@@ -467,11 +452,11 @@ sub display_list {
                 && ( $isdelegate ? $zone->{'delegate_delegate'} : 1 ) )
             {
                 print
-                    "<td align=center><a href=\"javascript:void window.open('delegate_zones.cgi?obj_list=$zone->{'nt_zone_id'}', 'delegate_win', 'width=640,height=480,scrollbars,resizable=yes')\"><img src=$NicToolClient::image_dir/delegate.gif border=0 alt='Delegate Zone'></a></td>";
+                    "<td align=center><a href=\"javascript:void window.open('delegate_zones.cgi?obj_list=$zone->{'nt_zone_id'}', 'delegate_win', 'width=640,height=480,scrollbars,resizable=yes')\"><img src=$NicToolClient::image_dir/delegate.gif alt='Delegate Zone'></a></td>";
             }
             else {
                 print
-                    "<td align=center><img src=$NicToolClient::image_dir/delegate-disabled.gif border=0></td>";
+                    "<td align=center><img src=$NicToolClient::image_dir/delegate-disabled.gif></td>";
             }
             if ( ( $nt_obj->no_gui_hints || $user->{'zone_delete'} )
                 && !$isdelegate )
@@ -480,7 +465,7 @@ sub display_list {
                     . join( '&', @state_fields )
                     . "&nt_group_id="
                     . $q->param('nt_group_id')
-                    . "&delete=1&zone_list=$zone->{'nt_zone_id'} onClick=\"return confirm('Delete $zone->{'zone'} and associated resource records?');\"><img src=$NicToolClient::image_dir/trash.gif border=0></a></td>";
+                    . "&delete=1&zone_list=$zone->{'nt_zone_id'} onClick=\"return confirm('Delete $zone->{'zone'} and associated resource records?');\"><img src=$NicToolClient::image_dir/trash.gif></a></td>";
             }
             elsif (
                 (      $nt_obj->no_gui_hints
@@ -493,15 +478,13 @@ sub display_list {
                     . join( '&', @state_fields )
                     . "&nt_group_id="
                     . $q->param('nt_group_id')
-                    . "&deletedelegate=1&nt_zone_id=$zone->{'nt_zone_id'} onClick=\"return confirm('Remove delegation of $zone->{'zone'}?');\"><img src=$NicToolClient::image_dir/trash-delegate.gif border=0 alt=\"Remove Zone Delegation\"></a></td>";
+                    . "&deletedelegate=1&nt_zone_id=$zone->{'nt_zone_id'} onClick=\"return confirm('Remove delegation of $zone->{'zone'}?');\"><img src=$NicToolClient::image_dir/trash-delegate.gif alt=\"Remove Zone Delegation\"></a></td>";
             }
             elsif ($isdelegate) {
-                print
-                    "<td width=1%><img src=$NicToolClient::image_dir/trash-delegate-disabled.gif border=0></td>";
+                print "<td width=1%><img src=$NicToolClient::image_dir/trash-delegate-disabled.gif></td>";
             }
             else {
-                print
-                    "<td width=1%><img src=$NicToolClient::image_dir/trash-disabled.gif border=0></td>";
+                print "<td width=1%><img src=$NicToolClient::image_dir/trash-disabled.gif></td>";
             }
             print "</tr>";
         }
@@ -530,13 +513,10 @@ sub new_zone {
     $nt_obj->display_nice_error( $message, ucfirst($edit) . " Zone" )
         if $message;
 
- #print "<center><font color=red><b>$message</b></font></center>" if $message;
+    print "<table width=100%>";
+    print "<tr class=dark_bg><td colspan=2><b>New Zone</b></td></tr>";
 
-    print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-    print
-        "<tr bgcolor=$NicToolClient::dark_color><td colspan=2><font color=white><b>New Zone</b></font></td></tr>";
-
-    print "<tr bgcolor=$NicToolClient::light_grey>";
+    print "<tr class=light_grey_bg>";
     print "<td align=right>", "Zone:</td>";
     print "<td width=100%>",
         $q->textfield( -name => 'zone', -size => 40, -maxlength => 128 ),
@@ -544,7 +524,7 @@ sub new_zone {
         . $q->param('nt_group_id')
         . "\">Batch</a></td></tr>";
 
-    print "<tr bgcolor=$NicToolClient::light_grey>";
+    print "<tr class=light_grey_bg>";
     print "<td align=right valign=top>", "Nameservers:</td>";
     print "<td width=80%>\n";
 
@@ -571,7 +551,7 @@ sub new_zone {
     }
     print "</td></tr>\n";
 
-    print "<tr bgcolor=$NicToolClient::light_grey>";
+    print "<tr class=light_grey_bg>";
     print "<td align=right valign=top>", "Description:</td>";
     print "<td width=80%>",
         $q->textarea(
@@ -582,7 +562,7 @@ sub new_zone {
         ),
         "</td></tr>";
 
-    print "<tr bgcolor=$NicToolClient::light_grey>";
+    print "<tr class=light_grey_bg>";
     print "<td align=right>", "TTL:</td>";
     my $ttl = $NicToolClient::default_zone_ttl || $q->param('ttl');
     print "<td width=80%>",
@@ -597,7 +577,7 @@ sub new_zone {
         " $NicToolClient::default_zone_ttl";
     print "</td></tr>";
 
-    print "<tr bgcolor=$NicToolClient::light_grey>";
+    print "<tr class=light_grey_bg>";
     print "<td align=right>", "Refresh:</td>";
     my $refresh = $NicToolClient::default_zone_refresh
         || $q->param('refresh');
@@ -613,7 +593,7 @@ sub new_zone {
         " $NicToolClient::default_zone_refresh";
     print "</td></tr>";
 
-    print "<tr bgcolor=$NicToolClient::light_grey>";
+    print "<tr class=light_grey_bg>";
     print "<td align=right>", "Retry:</td>";
     my $retry = $NicToolClient::default_zone_retry || $q->param('retry');
     print "<td width=80%>",
@@ -628,7 +608,7 @@ sub new_zone {
         " $NicToolClient::default_zone_retry";
     print "</td></tr>";
 
-    print "<tr bgcolor=$NicToolClient::light_grey>";
+    print "<tr class=light_grey_bg>";
     print "<td align=right>", "Expire:</td>";
     my $expire = $NicToolClient::default_zone_expire || $q->param('expire');
     print "<td width=80%>",
@@ -643,7 +623,7 @@ sub new_zone {
         " $NicToolClient::default_zone_expire";
     print "</td></tr>";
 
-    print "<tr bgcolor=$NicToolClient::light_grey>";
+    print "<tr class=light_grey_bg>";
     print "<td align=right>", "Minimum:</td>";
     my $minimum = $NicToolClient::default_zone_minimum
         || $q->param('minimum');
@@ -659,7 +639,7 @@ sub new_zone {
         " $NicToolClient::default_zone_minimum";
     print "</td></tr>";
 
-    print "<tr bgcolor=$NicToolClient::light_grey>";
+    print "<tr class=light_grey_bg>";
     print "<td align=right>", "MailAddr:</td>";
     my $mailaddr = $NicToolClient::default_zone_mailaddr
         || $q->param('mailaddr');
@@ -675,7 +655,7 @@ sub new_zone {
         " $NicToolClient::default_zone_mailaddr";
     print "</td></tr>";
 
-    print "<tr bgcolor=$NicToolClient::light_grey>";
+    print "<tr class=light_grey_bg>";
     print "<td align=right>",
         "<a href=\"javascript:void window.open('templates.cgi', 'templates_win', 'width=640,height=580,scrollbars,resizable=yes')\">Template:</a></td>";
     my @templates = $nt_obj->zone_record_template_list;
@@ -692,7 +672,7 @@ sub new_zone {
         " Mail IP: <input type=\"text\" name=\"mailip\" size=\"17\" maxlength=\"15\">";
     print "</td></tr>";
 
-    print "<tr bgcolor=$NicToolClient::dark_grey><td colspan=2 align=center>",
+    print "<tr class=dark_grey_bg><td colspan=2 align=center>",
         $q->submit( $edit eq 'edit' ? 'Save' : 'Create' ),
         $q->submit('Cancel'), "</td></tr>";
     print "</table>";

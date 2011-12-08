@@ -61,11 +61,11 @@ sub display {
     $nt_obj->display_zone_list_options( $user, $q->param('nt_group_id'),
         $level, 0 );
 
-    print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-    print "<tr bgcolor=$NicToolClient::light_grey>";
-    print "<td>";
-    print "<table cellpadding=0 cellspacing=0 border=0 width=100%>";
-    print "<tr>";
+    print qq[<table width=100%>
+    <tr class=light_grey_bg>
+    <td>
+    <table class="no_pad" width=100%>
+    <tr>];
     $level++;
     for my $x ( 1 .. $level ) {
         print "<td><img src=$NicToolClient::image_dir/"
@@ -77,7 +77,6 @@ sub display {
     print "<td align=right width=100%>", "&nbsp;</td>";
     print "</tr></table>";
 
-#print "<tr><td align=center><font color=red>$message</font></td></tr>" if( $message );
     $nt_obj->display_nice_error($message) if $message;
     print "</td></tr></table>";
 
@@ -138,17 +137,15 @@ sub display_log {
         $include_subgroups );
 
     if (@$log) {
-        print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-        print "<tr bgcolor=$NicToolClient::dark_grey>";
+        print "<table width=100%>";
+        print "<tr class=dark_grey_bg>";
         foreach (@columns) {
             if ( $sort_fields{$_} ) {
-                print
-                    "<td bgcolor=$NicToolClient::dark_color align=center><table cellpadding=0 cellspacing=0 border=0>";
-                print "<tr>";
-                print "<td><font color=white>$labels{$_}</font></td>";
-                print "<td>&nbsp; &nbsp; <font color=white>",
-                    $sort_fields{$_}->{'order'}, "</font></td>";
-                print "<td><img src=$NicToolClient::image_dir/",
+                print qq[<td class=dark_bg align=center><table class="no_pad">
+                <tr>
+                <td>$labels{$_}</td>
+                <td>&nbsp; &nbsp; $sort_fields{$_}->{'order'} </td>
+                <td><img src=$NicToolClient::image_dir/],
                     (
                     uc( $sort_fields{$_}->{'mod'} ) eq 'ASCENDING'
                     ? 'up.gif'
@@ -166,17 +163,17 @@ sub display_log {
         my $range;
         foreach my $row (@$log) {
 
-            print "<tr bgcolor="
-                . ( $x++ % 2 == 0 ? $NicToolClient::light_grey : 'white' )
+            print "<tr class="
+                . ( $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' )
                 . ">";
             foreach (@columns) {
                 if ( $_ eq 'zone' ) {
-                    print "<td><table cellpadding=0 cellspacing=0 border=0>";
-                    print "<tr>";
-                    print "<td><a href=$cgi?", join( '&', @state_fields ),
+                    print qq[<td><table class="no_pad">
+                    <tr>
+                    <td><a href=$cgi?], join( '&', @state_fields ),
                         "&redirect=1&object=zone&obj_id=$row->{'nt_zone_id'}&nt_group_id="
                         . $q->param('nt_group_id')
-                        . "><img src=$NicToolClient::image_dir/zone.gif border=0></a></td>";
+                        . "><img src=$NicToolClient::image_dir/zone.gif></a></td>";
                     print "<td><a href=$cgi?", join( '&', @state_fields ),
                         "&redirect=1&object=zone&obj_id=$row->{'nt_zone_id'}&nt_group_id="
                         . $q->param('nt_group_id')
@@ -187,22 +184,19 @@ sub display_log {
                     print "<td>", ( scalar localtime( $row->{$_} ) ), "</td>";
                 }
                 elsif ( $_ eq 'user' ) {
-                    print
-                        "<td><table cellpadding=0 cellspacing=0 border=0><tr>";
-                    print "<td><a href=user.cgi?nt_group_id="
+                    print qq[<td><table class="no_pad"><tr>
+                    <td><a href=user.cgi?nt_group_id=]
                         . $q->param('nt_group_id')
-                        . "&nt_user_id=$row->{'nt_user_id'}><img src=$NicToolClient::image_dir/user.gif border=0></a></td>";
+                        . "&nt_user_id=$row->{'nt_user_id'}><img src=$NicToolClient::image_dir/user.gif></a></td>";
                     print "<td><a href=user.cgi?nt_group_id="
                         . $q->param('nt_group_id')
                         . "&nt_user_id=$row->{'nt_user_id'}>$row->{'user'}</a></td>";
                     print "</tr></table></td>";
                 }
                 elsif ( $_ eq 'group' ) {
-                    print
-                        "<td><table cellpadding=0 cellspacing=0 border=0><tr>";
-                    print
-                        "<td><img src=$NicToolClient::image_dir/group.gif></td>";
-                    print "<td>",
+                    print qq[<td><table class="no_pad"><tr>
+                    <td><img src=$NicToolClient::image_dir/group.gif></td>
+                    <td>],
                         join(
                         ' / ',
                         map("<a href=group.cgi?nt_group_id=$_->{'nt_group_id'}>$_->{'name'}</a>",

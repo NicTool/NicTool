@@ -49,12 +49,6 @@ sub help_text {
                 'What do the delegation permissions settings mean?',
             template => "help_delperms.html",
         },
-
-        #nonsavail=>{
-        #name=>'Usable Nameservers',
-        #description=>'Why does it say "No available nameservers"?',
-        #template=>"help_nonsavail.html",
-        #},
         undeletezone => {
             name        => 'Undelete a Zone',
             description => 'How do I get back the zone I deleted?',
@@ -71,9 +65,7 @@ sub help_text {
                 'What can I put in the Address field of a Resource Record?',
             template => "help_rraddress.html",
         },
-
     }
-
 }
 
 sub display {
@@ -87,7 +79,7 @@ sub display {
         userid    => $user->{'nt_user_id'}
     );
 
-    my $message;    #={error_msg=>$q->param('message'),error_desc=>'Message'};
+    my $message;
     my $topics = &help_text;
     my $t      = $topics->{ $q->param('topic') };
 
@@ -97,7 +89,7 @@ sub display {
     {
         $message = {
             error_msg =>
-                "Sorry that help topic was not found.  Please choose from the available topics.",
+                "Sorry that help topic was not found. Please choose from the available topics.",
             error_desc => 'No Such Topic'
         };
     }
@@ -113,7 +105,6 @@ sub display {
         }
         else {
 
- #print "<center><font color=red><b>$message</b></font></center>" if $message;
             $nt_obj->display_nice_error($message) if $message;
             $nt_obj->parse_template(
                 $NicToolClient::template_dir . "/help_start.html", %$t );
@@ -121,35 +112,33 @@ sub display {
             $nt_obj->parse_template(
                 $NicToolClient::template_dir . "/help_end.html" );
         }
-
     }
     else {
 
- #print "<center><font color=red><b>$message</b></font></center>" if $message;
         $nt_obj->display_nice_error($message) if $message;
         print qq(
-        <Table width=100% cellpadding=6 cellspacing=2>
-            <tr bgcolor=$NicToolClient::dark_color><td colspan=2><font color=white>Help Topics</font></td></tr>
+        <table style="width:100%; padding:6; border-spacing:2;">
+            <tr class=dark_bg><td colspan=2>Help Topics</td></tr>
         );
         foreach my $k ( keys %$topics ) {
             my $t = $topics->{$k};
-            print qq(
-            <tr bgcolor=$NicToolClient::light_grey>
-                <td align=right>
-                    <table width=100% border=0 cellspacing=0 cellpadding=4>
-                        <tr>
-                            <td valign=center align=left><img src=$NicToolClient::image_dir/help.gif></td>
-                            <td valign=center align=left width=100% nowrap><a href="help.cgi?topic=$k">$t->{'name'}</a></td>
-                        </tr>
-                    </table>
-                </td>
-                <td width=100% align=left> $t->{'description'}</td>
-            </tr>);
+            print qq[
+            <tr class=light_grey_bg>
+             <td align=right>
+              <table style="width:100%; border-spacing:0; padding:4;">
+               <tr>
+                <td valign=center align=left><img src=$NicToolClient::image_dir/help.gif></td>
+                <td valign=center align=left width=100% nowrap><a href="help.cgi?topic=$k">$t->{'name'}</a></td>
+               </tr>
+              </table>
+             </td>
+             <td width=100% align=left> $t->{'description'}</td>
+            </tr>];
         }
-        print qq(
-            <tr bgcolor=$NicToolClient::dark_grey><td colspan=2 align=center><form><input type=button value="Close" onClick="window.close()"></form></td></tr> 
+        print qq[
+            <tr class=dark_grey_bg><td colspan=2 align=center><form><input type=button value="Close" onClick="window.close()"></form></td></tr> 
         </table>
-        );
+        ];
 
     }
 

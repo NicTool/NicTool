@@ -40,7 +40,6 @@ sub display {
     my ( $nt_obj, $q, $user ) = @_;
 
     $nt_obj->parse_template($NicToolClient::start_html_template);
-    $nt_obj->parse_template($NicToolClient::nav_start_template);
 
     my $expanded = {
         'expanded' => { map { $_, 1 } split( /,/, $q->param('expanded') ) } };
@@ -49,72 +48,62 @@ sub display {
 
     return $nt_obj->display_error($group) if $group->{'error_code'} != '200';
 
-    print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-    print
-        "<tr bgcolor=$NicToolClient::dark_grey><td><table cellpadding=0 cellspacing=0 border=0 width=100%>";
-    print "<td><img src=$NicToolClient::image_dir/group.gif border=0></td>";
-    print
-        "<td nowrap><a href=group.cgi?nt_group_id=$group->{'nt_group_id'} target=body>"
-        . $group->{'name'} . "</a> "
-        . $nt_obj->help_link( 'all', 'Help' ) . "</td>";
-    print
-        "<td align=right width=100%><a href=\"javascript:window.location = window.location\">refresh</a></td>";
-    print "</tr>";
-    print "</table></td></tr></table>";
+    print qq[
+<table style="width:100%;">
+ <tr class="dark_grey_bg">
+  <td>
+   <table class="no_pad" style="width:100%;">
+    <tr>
+     <td><img src="$NicToolClient::image_dir/group.gif" alt="group icon"></td>
+     <td style="white-space: nowrap;"><a href="group.cgi?nt_group_id=$group->{'nt_group_id'}" target="body"> ]
+        . $group->{'name'} . '</a> '
+        . $nt_obj->help_link( 'all', 'Help' );
+    print qq[
+     </td>
+     <td align=right width=100%><a href="javascript:window.location = window.location">refresh</a></td>
+    </tr>
+   </table>
+  </td>
+ </tr>
+</table>
 
-    print "<table cellpadding=0 cellspacing=0 border=0>";
-    print "<tr>";
-    print "<td><img src=$NicToolClient::image_dir/dirtree_tee.gif></td>";
-    print "<td><a href=group_zones.cgi?nt_group_id="
-        . $group->{'nt_group_id'}
-        . " target=body><img src=$NicToolClient::image_dir/folder_closed.gif border=0></a></td>";
-    print "<td><a href=group_zones.cgi?nt_group_id="
-        . $group->{'nt_group_id'}
-        . " target=body>Zones</a></td>";
-    print "</tr>";
-    print "</table>";
+<table class='no_pad'>
+ <tr>
+  <td><img src="$NicToolClient::image_dir/dirtree_tee.gif"></td>
+  <td><a href="group_zones.cgi?nt_group_id=$group->{'nt_group_id'}" target=body><img src="$NicToolClient::image_dir/folder_closed.gif" alt="closed folder icon"></a></td>
+  <td><a href="group_zones.cgi?nt_group_id=$group->{'nt_group_id'}" target=body>Zones</a></td>
+ </tr>
+</table>
 
-    print "<table cellpadding=0 cellspacing=0 border=0>";
-    print "<tr>";
-    print "<td><img src=$NicToolClient::image_dir/dirtree_tee.gif></td>";
-    print "<td><a href=group_nameservers.cgi?nt_group_id="
-        . $group->{'nt_group_id'}
-        . " target=body><img src=$NicToolClient::image_dir/folder_closed.gif border=0></a></td>";
-    print "<td><a href=group_nameservers.cgi?nt_group_id="
-        . $group->{'nt_group_id'}
-        . " target=body>Nameservers</a></td>";
-    print "</tr>";
-    print "</table>";
+<table class='no_pad'>
+ <tr>
+  <td><img src="$NicToolClient::image_dir/dirtree_tee.gif" alt="dirtree tee"></td>
+  <td><a href="group_nameservers.cgi?nt_group_id=$group->{'nt_group_id'}" target=body><img src="$NicToolClient::image_dir/folder_closed.gif" alt="closed folder icon"></a></td>
+  <td><a href="group_nameservers.cgi?nt_group_id=$group->{'nt_group_id'}" target=body>Nameservers</a></td>
+ </tr>
+</table>
 
-    print "<table cellpadding=0 cellspacing=0 border=0>";
-    print "<tr>";
-    print "<td><img src=$NicToolClient::image_dir/dirtree_tee.gif></td>";
-    print "<td><a href=group_users.cgi?nt_group_id="
-        . $group->{'nt_group_id'}
-        . " target=body><img src=$NicToolClient::image_dir/folder_closed.gif border=0></a></td>";
-    print "<td><a href=group_users.cgi?nt_group_id="
-        . $group->{'nt_group_id'}
-        . " target=body>Users</a></td>";
-    print "</tr>";
-    print "</table>";
+<table class='no_pad'>
+ <tr>
+  <td><img src="$NicToolClient::image_dir/dirtree_tee.gif" alt="dirtree tee icon"></td>
+  <td><a href="group_users.cgi?nt_group_id=$group->{'nt_group_id'}" target=body><img src="$NicToolClient::image_dir/folder_closed.gif" alt="closed folder icon"></a></td>
+  <td><a href="group_users.cgi?nt_group_id=$group->{'nt_group_id'}" target=body>Users</a></td>
+ </tr>
+</table>
 
-    print "<table cellpadding=0 cellspacing=0 border=0>";
-    print "<tr>";
-    print "<td><img src=$NicToolClient::image_dir/dirtree_",
-        ( $group->{'has_children'} ? 'tee' : 'elbow' ), ".gif></td>";
-    print "<td><a href=group_log.cgi?nt_group_id="
-        . $group->{'nt_group_id'}
-        . " target=body><img src=$NicToolClient::image_dir/folder_closed.gif border=0></a></td>";
-    print "<td><a href=group_log.cgi?nt_group_id="
-        . $group->{'nt_group_id'}
-        . " target=body>Log</a></td>";
-    print "</tr>";
-    print "</table>";
+<table class='no_pad'>
+ <tr>
+  <td><img src="$NicToolClient::image_dir/dirtree_],
+    ( $group->{'has_children'} ? 'tee' : 'elbow' ), qq[.gif"></td>
+  <td><a href="group_log.cgi?nt_group_id=$group->{'nt_group_id'}" target=body><img src="$NicToolClient::image_dir/folder_closed.gif" alt=""></a></td>
+  <td><a href="group_log.cgi?nt_group_id=$group->{'nt_group_id'}" target=body>Log</a></td>
+ </tr>
+</table>
+];
 
     &recurse_groups( $nt_obj, $group->{'nt_group_id'}, [], $user, $expanded )
         if ( $group->{'has_children'} );
 
-    $nt_obj->parse_template($NicToolClient::nav_end_template);
     $nt_obj->parse_template($NicToolClient::end_html_template);
 }
 
@@ -130,11 +119,11 @@ sub recurse_groups {
     for (@$levels) {
         if ($_) {
             $level_html
-                .= "<td><img src=$NicToolClient::image_dir/dirtree_vertical.gif width=17 height=17></td>";
+                .= qq[<td><img src="$NicToolClient::image_dir/dirtree_vertical.gif" width=17 height=17 alt=''></td>];
         }
         else {
             $level_html
-                .= "<td><img src=$NicToolClient::image_dir/transparent.gif width=17 height=17></td>";
+                .= qq[<td><img src="$NicToolClient::image_dir/transparent.gif" width=17 height=17 alt=''></td>];
         }
     }
 
@@ -146,94 +135,77 @@ sub recurse_groups {
 
         my $html
             = $level_html
-            . "<td><img src=$NicToolClient::image_dir/"
+            . qq[<td><img src="$NicToolClient::image_dir/]
             . ( $_ == $total ? 'transparent.gif' : 'dirtree_vertical.gif' )
-            . " width=17 height=17></td>";
+            . qq[" width=17 height=17></td>];
 
-        print "<table cellpadding=0 cellspacing=0 border=0>";
+        print "<table class='no_pad'>";
         print "<tr>$level_html";
-        print "<td><a href=nav.cgi?"
+        print qq[<td><a href="nav.cgi?]
             . &expand_url( $expanded, 'expanded', $group->{'nt_group_id'} )
-            . "><img src=$NicToolClient::image_dir/dirtree_"
+            . qq["><img src="$NicToolClient::image_dir/dirtree_]
             . ( $expanded->{'expanded'}->{ $group->{'nt_group_id'} }
             ? 'minus'
             : 'plus' )
             . '_'
             . ( $_ == $total ? 'elbow' : 'tee' )
-            . ".gif border=0></a></td>";
-        print
-            "<td><img src=$NicToolClient::image_dir/transparent.gif width=4 height=1><img src=$NicToolClient::image_dir/group.gif border=0></td>";
-        print
-            "<td nowrap><a href=group.cgi?nt_group_id=$group->{'nt_group_id'} target=body>"
-            . $group->{'name'}
-            . "</a></td>";
-        print "</tr>";
-        print "</table>";
+            . qq[.gif" alt='dirtree elbow or tee icon'></a></td>
+        <td><img src="$NicToolClient::image_dir/transparent.gif" width=4 height=1><img src="$NicToolClient::image_dir/group.gif" alt='group icon'></td>
+   <td style="white-space: nowrap;"><a href="group.cgi?nt_group_id=$group->{'nt_group_id'}" target="body"> $group->{'name'} </a>
+  </td>
+ </tr>
+</table>];
 
         if ( $expanded->{'expanded'}->{ $group->{'nt_group_id'} } ) {
-            print "<table cellpadding=0 cellspacing=0 border=0>";
-            print "<tr>$level_html";
-            print "<td><img src=$NicToolClient::image_dir/"
+            print qq[
+<table class='no_pad'>
+ <tr>$level_html
+  <td><img src="$NicToolClient::image_dir/]
                 . ( $_ == $total ? 'transparent' : 'dirtree_vertical' )
-                . ".gif width=17 height=17></td>";
-            print
-                "<td><img src=$NicToolClient::image_dir/dirtree_tee.gif></td>";
-            print "<td><a href=group_zones.cgi?nt_group_id="
-                . $group->{'nt_group_id'}
-                . " target=body><img src=$NicToolClient::image_dir/folder_closed.gif border=0 alt=\"Group Zones\"></a></td>";
-            print "<td><a href=group_zones.cgi?nt_group_id="
-                . $group->{'nt_group_id'}
-                . " target=body>Zones</a></td>";
-            print "</tr>";
-            print "</table>";
+                . qq[.gif\" width=17 height=17></td>];
+            print qq[<td><img src="$NicToolClient::image_dir/dirtree_tee.gif"></td>
+  <td><a href="group_zones.cgi?nt_group_id=$group->{'nt_group_id'}" target="body"><img src="$NicToolClient::image_dir/folder_closed.gif" alt="Group Zones"></a></td>
+  <td><a href="group_zones.cgi?nt_group_id=$group->{'nt_group_id'}" target=body>Zones</a></td>
+ </tr>
+</table>
 
-            print "<table cellpadding=0 cellspacing=0 border=0>";
-            print "<tr>$level_html";
-            print "<td><img src=$NicToolClient::image_dir/"
+<table class='no_pad'>
+ <tr>$level_html
+  <td><img src="$NicToolClient::image_dir/]
                 . ( $_ == $total ? 'transparent' : 'dirtree_vertical' )
-                . ".gif width=17 height=17></td>";
-            print
-                "<td><img src=$NicToolClient::image_dir/dirtree_tee.gif></td>";
-            print "<td><a href=group_nameservers.cgi?nt_group_id="
-                . $group->{'nt_group_id'}
-                . " target=body><img src=$NicToolClient::image_dir/folder_closed.gif border=0 alt=\"Group Nameservers\"></a></td>";
-            print "<td><a href=group_nameservers.cgi?nt_group_id="
-                . $group->{'nt_group_id'}
-                . " target=body>Nameservers</a></td>";
-            print "</tr>";
-            print "</table>";
+                . qq[.gif" width=17 height=17></td>];
+            print qq[
+  <td><img src="$NicToolClient::image_dir/dirtree_tee.gif"></td>
+  <td><a href="group_nameservers.cgi?nt_group_id=$group->{'nt_group_id'}" target="body">
+       <img src="$NicToolClient::image_dir/folder_closed.gif" alt="Group Nameservers"></a></td>
+  <td><a href="group_nameservers.cgi?nt_group_id=$group->{'nt_group_id'}" target=body>Nameservers</a></td>
+ </tr>
+</table>
 
-            print "<table cellpadding=0 cellspacing=0 border=0>";
-            print "<tr>$level_html";
-            print "<td><img src=$NicToolClient::image_dir/"
+<table class='no_pad'>
+ <tr>$level_html
+  <td><img src="$NicToolClient::image_dir/]
                 . ( $_ == $total ? 'transparent' : 'dirtree_vertical' )
-                . ".gif width=17 height=17></td>";
-            print
-                "<td><img src=$NicToolClient::image_dir/dirtree_tee.gif></td>";
-            print "<td><a href=group_users.cgi?nt_group_id="
-                . $group->{'nt_group_id'}
-                . " target=body><img src=$NicToolClient::image_dir/folder_closed.gif border=0 alt=\"Group Users\"></a></td>";
-            print "<td><a href=group_users.cgi?nt_group_id="
-                . $group->{'nt_group_id'}
-                . " target=body>Users</a></td>";
-            print "</tr>";
-            print "</table>";
+                . qq[.gif" width=17 height=17></td>
+  <td><img src="$NicToolClient::image_dir/dirtree_tee.gif"></td>
+  <td><a href="group_users.cgi?nt_group_id=$group->{'nt_group_id'}" target=body>
+      <img src="$NicToolClient::image_dir/folder_closed.gif" alt="Group Users"></a></td>
+  <td><a href="group_users.cgi?nt_group_id=$group->{'nt_group_id'}" target=body>Users</a></td>
+ </tr>
+</table>
 
-            print "<table cellpadding=0 cellspacing=0 border=0>";
-            print "<tr>$level_html";
-            print "<td><img src=$NicToolClient::image_dir/"
+<table class='no_pad'>
+ <tr>$level_html
+  <td><img src="$NicToolClient::image_dir/]
                 . ( $_ == $total ? 'transparent' : 'dirtree_vertical' )
-                . ".gif width=17 height=17></td>";
-            print "<td><img src=$NicToolClient::image_dir/dirtree_",
-                ( $group->{'has_children'} ? 'tee' : 'elbow' ), ".gif></td>";
-            print "<td><a href=group_log.cgi?nt_group_id="
-                . $group->{'nt_group_id'}
-                . " target=body><img src=$NicToolClient::image_dir/folder_closed.gif border=0 alt=\"Group Users\"></a></td>";
-            print "<td><a href=group_log.cgi?nt_group_id="
-                . $group->{'nt_group_id'}
-                . " target=body>Log</a></td>";
-            print "</tr>";
-            print "</table>";
+                . qq[.gif" width=17 height=17></td>
+            <td><img src="$NicToolClient::image_dir/dirtree_],
+                ( $group->{'has_children'} ? 'tee' : 'elbow' ), qq[.gif"></td>
+            <td><a href="group_log.cgi?nt_group_id=$group->{'nt_group_id'}" target=body>
+                 <img src="$NicToolClient::image_dir/folder_closed.gif" alt="Group Users"></a></td>
+            <td><a href="group_log.cgi?nt_group_id=$group->{'nt_group_id'}" target="body">Log</a></td>
+            </tr>
+            </table>];
 
             if (    $group->{'has_children'}
                 and $expanded->{'expanded'}->{ $group->{'nt_group_id'} } )

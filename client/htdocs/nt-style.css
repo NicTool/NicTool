@@ -1,52 +1,81 @@
 /* 
   Author: Matt Simerson (matt@tnpi.net)
-          Version: 1.0
-                Date: 2007.02.21
-
-                colors in use:
+  Version: 1.1
+  Date: 2011.12.07
 }
 */
 
 body, P, H1, H2, H3, H4, H5, H6, LI, TD, TH, DD, DT { 
-        font-family: Helvetica;
-        font-size: 13px;
+  font-family: Helvetica;
+  font-size: 13px;
 }
 
-div.dark_bg_color {
-		background: #336666;
-		color: #FFFFFF;
-		padding: 2px;
-		margin: 2px;
+table {
+	padding: 2px;
+	border-spacing: 2px;
+	border: 0px;
+}
+table.no_pad {
+	padding: 0px;
+	border-spacing: 0px;
+	border-collapse: collapse;  /* 'cellspacing' equivalent */
+}
+table.no_pad td, table.no_pad th {
+	padding: 0px;  /* 'cellpadding' equivalent */
+}
+div {
+  padding: 2px;
+  margin: 2px;
 }
 
-tr.dark_bg {
-		background: #336666;
-		color: #FFFFFF;
+.right {
+	text-align: right;
 }
-tr.dark_grey_bg {
-		background: #CCCCCC;
+.center {
+	text-align: center;
 }
-tr.light_grey_bg {
-		background: #EEEEEE;
+.disabled {
+	color: #777777;
+}
+.dark {
+	color: #336666;
+}
+.white_bg {
+  background: white;
+}
+.dark_bg {
+  background: #336666;
+  color: #FFFFFF;
+}
+.dark_grey_bg {
+  background: #CCCCCC;
+}
+.light_grey_bg {
+  background: #EEEEEE;
+}
+.light_hilite_bg {
+  background: #ffffee;
+}
+.dark_hilite_bg {
+  background: #eeeedd;
+}
+.error_bg {
+  background: red;
+  color: white;
 }
 
 tr#tr_weight {
-	display: none;
+  display: none;
 }
 tr#tr_priority {
-	display: none;
+  display: none;
 }
 tr#tr_other {
-	display: none;
-}
-div.dark_grey_bg {
-		background: #CCCCCC;
-		padding: 2px;
-		margin: 2px;
+  display: none;
 }
 
-div.light_grey_bg {
-		background: #EEEEEE;
-		padding: 2px;
-		margin: 2px;
-}
+a:link    { color: #336666 }
+a:visited { color: #336666 }
+a:active  { color: #336666 }
+
+img { border: 0; }

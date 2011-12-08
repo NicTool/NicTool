@@ -191,27 +191,29 @@ sub delegate_zones {
 
         my $zones = $rv->{'zones'};
 
- #print "<center><font color=red><b>$message</b></font></center>" if $message;
         $nt_obj->display_nice_error( $message, "Delegate Zones" ) if $message;
 
         #TODO handle 600 error where object is already delegated
 
-        print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-        print
-            "<tr bgcolor=$NicToolClient::dark_color><td colspan=2><font color=white><b>$title</b></font></td></tr>";
-
-        print "<tr bgcolor=$NicToolClient::light_grey>",
-            "<td nowrap valign=center>Zone:</td>",
-            "<td width=100%> <table cellspacing=0 cellpadding=0 border=0><tr>",
-            join(
-            '<td>, </td>',
+        print qq[
+<table width=100%>
+ <tr class=dark_bg>
+  <td colspan=2><b>$title</b></td>
+ </tr>
+ <tr class=light_grey_bg>
+  <td nowrap valign=center>Zone:</td>
+  <td width=100%>
+   <table class='no_pad'><tr>],
+        join( '<td>, </td>',
             map( qq(
-                <td valign=center><a href=zone.cgi?nt_group_id=$_->{'nt_group_id'}&nt_zone_id=$_->{'nt_zone_id'} target=body><img src=$NicToolClient::image_dir/zone.gif border=0></a></td>
-                    <td valign=center><a href=zone.cgi?nt_group_id=$_->{'nt_group_id'}&nt_zone_id=$_->{'nt_zone_id'} target=body>$_->{'zone'}</a></td>
-                    ), @$zones )
+    <td valign=center><a href="zone.cgi?nt_group_id=$_->{'nt_group_id'}&nt_zone_id=$_->{'nt_zone_id'}" target=body><img src="$NicToolClient::image_dir/zone.gif"></a></td>
+    <td valign=center><a href="zone.cgi?nt_group_id=$_->{'nt_group_id'}&nt_zone_id=$_->{'nt_zone_id'}" target=body>$_->{'zone'}</a></td>), @$zones )
             ),
-            "</tr></table></td>";
-        print "</tr>", "</table>";
+    qq[</tr>
+   </table>
+  </td>
+ </tr>
+</table>];
     }
     elsif ( $type eq 'record' ) {
         my $zr = $nt_obj->get_zone_record(
@@ -223,53 +225,53 @@ sub delegate_zones {
         return $nt_obj->display_nice_error( $zone, "Get Zone Details" )
             if ( $zone->{'error_code'} != 200 );
 
- #print "<center><font color=red><b>$message</b></font></center>" if $message;
         $nt_obj->display_nice_error( $message, "Delegate Zone Records" )
             if $message;
 
-        #TODO handle 600 error where object is already delegated
-
         print qq(
-        <table cellpadding=2 cellspacing=2 border=0 width=100%>
-            <tr bgcolor=$NicToolClient::dark_color><td colspan=2><font color=white><b>$title</b></font></td></tr>
-        
-            <tr bgcolor=$NicToolClient::light_grey>
-                <td nowrap valign=center> Zone: </td>
-                <td width=100%>
-                    <table cellspacing=0 cellpadding=0 border=0><tr><td valign=center><a href=zone.cgi?nt_group_id=$zone->{'nt_group_id'}&nt_zone_id=$zone->{'nt_zone_id'} target=body><img src=$NicToolClient::image_dir/zone.gif border=0></a></td>
-                    <td valign=center><a href=zone.cgi?nt_group_id=$zone->{'nt_group_id'}&nt_zone_id=$zone->{'nt_zone_id'} target=body>$zone->{'zone'}</a></td>
-                    </tr></table>
-                </td>
-            </tr>
-        </table>
+<table width=100%>
+ <tr class="dark_bg"><td colspan=2><b>$title</b></td></tr>
+ <tr class="light_grey_bg">
+  <td nowrap valign=center> Zone: </td>
+  <td width=100%>
+   <table class="no_pad">
+    <tr>
+     <td valign=center><a href=zone.cgi?nt_group_id=$zone->{'nt_group_id'}&nt_zone_id=$zone->{'nt_zone_id'} target=body><img src="$NicToolClient::image_dir/zone.gif" ></a></td>
+     <td valign=center><a href=zone.cgi?nt_group_id=$zone->{'nt_group_id'}&nt_zone_id=$zone->{'nt_zone_id'} target=body>$zone->{'zone'}</a></td>
+    </tr>
+   </table>
+  </td>
+ </tr>
+</table>
 
-        <table width=100% cellpadding=2 cellspacing=2 border=0>
-            <tr bgcolor=$NicToolClient::dark_grey>
-                <td colspan=6> Resource Record</td>
-            </tr>
-            <tr bgcolor=$NicToolClient::light_grey>
-                <td align=center> Name</td>
-                <td align=center> Type</td>
-                <td align=center> Address</td>
-                <td align=center> TTL</td>
-                <td align=center> Weight</td>
-                <td align=center> Description</td>
-            </tr>
-            <tr bgcolor=$NicToolClient::light_grey>
-                <td width=25%>
-                    <table cellspacing=0 cellpadding=0 border=0><tr><td valign=center><a href=zone.cgi?nt_group_id=$zone->{'nt_group_id'}&nt_zone_id=$zone->{'nt_zone_id'}&nt_zone_record_id=$zr->{'nt_zone_record_id'}&edit_record=1 target=body><img src=$NicToolClient::image_dir/r_record.gif border=0></a></td>
-                    <td valign=center><a href=zone.cgi?nt_group_id=$zone->{'nt_group_id'}&nt_zone_id=$zone->{'nt_zone_id'}&nt_zone_record_id=$zr->{'nt_zone_record_id'}&edit_record=1 target=body>$zr->{'name'}</a></td>
-                    </tr></table>
-                </td>
-                <td> $zr->{'type'}</td>
-                <td> $zr->{'address'}</td>
-                <td> $zr->{'ttl'}</td>
-                <td> $zr->{'weight'}</td>
-                <td width=100%>)
-            . ( $zr->{'description'} || "&nbsp;" )
-            . qq(</td>
-            </tr>
-        </table>);
+<table width=100%>
+ <tr class="dark_grey_bg"> <td colspan=6> Resource Record</td> </tr>
+ <tr class=light_grey_bg>
+  <td align=center> Name</td>
+  <td align=center> Type</td>
+  <td align=center> Address</td>
+  <td align=center> TTL</td>
+  <td align=center> Weight</td>
+  <td align=center> Description</td>
+ </tr>
+ <tr class=light_grey_bg>
+  <td width=25%>
+   <table class="no_pad">
+    <tr>
+     <td valign=center><a href="zone.cgi?nt_group_id=$zone->{'nt_group_id'}&nt_zone_id=$zone->{'nt_zone_id'}&nt_zone_record_id=$zr->{'nt_zone_record_id'}&edit_record=1" target=body><img src="$NicToolClient::image_dir/r_record.gif"></a></td>
+     <td valign=center><a href="zone.cgi?nt_group_id=$zone->{'nt_group_id'}&nt_zone_id=$zone->{'nt_zone_id'}&nt_zone_record_id=$zr->{'nt_zone_record_id'}&edit_record=1" target=body>$zr->{'name'}</a></td>
+    </tr>
+   </table>
+  </td>
+  <td> $zr->{'type'}</td>
+  <td> $zr->{'address'}</td>
+  <td> $zr->{'ttl'}</td>
+  <td> $zr->{'weight'}</td>
+  <td width=100%>) . ( $zr->{'description'} || "&nbsp;" ) . qq(
+  </td>
+ </tr>
+</table>
+);
     }
 
     if ( !$edit ) {
@@ -303,64 +305,50 @@ sub delegate_zones {
             -action => 'delegate_zones.cgi',
             -method => 'POST',
             -name   => $edit
-        );
-        print "\n",
+        ),
+        "\n",
             $q->hidden(
             -name     => 'obj_list',
             -value    => join( ',', $q->param('obj_list') ),
             -override => 1
             ),
-            "\n";
-        print "\n", $q->hidden( -name => $edit, -value => 1 ), "\n";
-        print "\n",
-            $q->hidden( -name => 'type', -value => $q->param('type') ), "\n";
-        print "\n",
-            $q->hidden(
+            "\n",
+        "\n", $q->hidden( -name => $edit, -value => 1 ), "\n",
+        "\n", $q->hidden( -name => 'type', -value => $q->param('type') ), "\n",
+        "\n", $q->hidden(
             -name  => 'nt_zone_id',
             -value => $edit eq 'record'
             ? $q->param('nt_zone_id')
             : $q->param('obj_list')
-            ),
-            "\n";
-        print "\n",
-            $q->hidden(
-            -name  => 'nt_group_id',
-            -value => $q->param('nt_group_id')
-            ),
-            "\n";
+            ), "\n",
+        "\n", $q->hidden( -name=>'nt_group_id', -value=>$q->param('nt_group_id')), "\n";
 
         if ( ref $del ) {
-            print "<table cellpadding=2 cellspacing=2 border=0 width=100%>
-            <tr bgcolor=$NicToolClient::dark_grey>
-                <td colspan=2> Delegation</font></td>
-            </tr>";
-            print "<tr bgcolor=$NicToolClient::light_grey><td>"
-                . "Group</td><td>"
-                . "Delegated By</td></tr>";
-            print qq(
-                    <tr bgcolor=$NicToolClient::light_grey>
-                        <td nowrap valign=center>
-                            <table>
-                            <tr>
-                                <td valign=center> <a href=group.cgi?nt_group_id=$del->{'nt_group_id'}><img src=$NicToolClient::image_dir/group.gif border=0></a></td>
-                                <td valign=center><a href=group.cgi?nt_group_id=$del->{'nt_group_id'}>$del->{'group_name'}</a></td>
-                            </tr>
-                            </table>
-                        </td>
-                        <td nowrap valign=center>
+            print qq[
+<table width=100%>
+ <tr class="dark_grey_bg dark"><td colspan=2> Delegation</td></tr>
+ <tr class="light_grey_bg"><td>Group</td><td>Delegated By</td></tr>
+ <tr class="light_grey_bg">
+  <td nowrap valign=center>
+   <table>
+    <tr>
+     <td valign=center><a href="group.cgi?nt_group_id=$del->{'nt_group_id'}"><img src="$NicToolClient::image_dir/group.gif"></a></td>
+     <td valign=center><a href="group.cgi?nt_group_id=$del->{'nt_group_id'}">$del->{'group_name'}</a></td>
+    </tr>
+   </table>
+  </td>
+  <td nowrap valign=center>
                         
-                            <table>
-                            <tr>
-                                <td valign=center> <a href=user.cgi?nt_user_id=$del->{'delegated_by_id'}><img src=$NicToolClient::image_dir/user.gif border=0></a></td>
-                                <td valign=center><a href=user.cgi?nt_user_id=$del->{'delegated_by_id'}>$del->{'delegated_by_name'}</a></td>
-                            </tr>
-                            </table>
-                        
-
-                        </td>
-                    </tr>
-                </table>
-                    );
+   <table>
+    <tr>
+     <td valign=center> <a href="user.cgi?nt_user_id=$del->{'delegated_by_id'}"><img src="$NicToolClient::image_dir/user.gif"></a></td>
+     <td valign=center><a href="user.cgi?nt_user_id=$del->{'delegated_by_id'}">$del->{'delegated_by_name'}</a></td>
+    </tr>
+   </table>
+  </td>
+ </tr>
+</table>
+];
         }
         else {
             return $nt_obj->display_nice_error(
@@ -373,8 +361,11 @@ sub delegate_zones {
 
     }
 
-    print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-    print "<tr bgcolor=$NicToolClient::dark_grey><td colspan=2>"
+    print qq[
+<table width=100%>
+ <tr class="dark_grey_bg">
+  <td colspan=2>
+]
         . (
         $modifyperm
         ? "Allow users in the selected group to have these permissions"
@@ -411,11 +402,11 @@ sub delegate_zones {
     my $x = 1;
     my $color;
     foreach my $perm (@order) {
-        $color = ( $x++ % 2 == 0 ? $NicToolClient::light_grey : 'white' );
+        $color = ( $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' );
         print qq{
-            <tr bgcolor=$NicToolClient::light_grey>
-                <td align=left bgcolor=$color>
-                };
+            <tr class="light_grey_bg">
+             <td align=left class="$color">
+        };
 
         my $hasprop = 0;
         if ( $edit eq 'edit' ) {
@@ -448,8 +439,8 @@ sub delegate_zones {
     </table>
     };
 
-    print "\n<table cellpadding=2 cellspacing=2 border=0 width=100%>\n";
-    print "<tr bgcolor=$NicToolClient::dark_grey><td colspan=2 align=center>",
+    print "\n<table width=100%>\n";
+    print "<tr class=dark_grey_bg><td colspan=2 align=center>",
         $q->submit( $edit eq 'edit'
         ? 'Modify'
         : ( $edit eq 'delete' ? 'Remove' : 'Save' ) ),

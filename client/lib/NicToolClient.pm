@@ -22,20 +22,12 @@ sub new {
 sub no_gui_hints {0}
 
 sub help_link {
-    my $self      = shift;
-    my $helptopic = shift;
-    my $text      = shift;
-    if ($NicToolClient::show_help_links) {
-        return
-            qq{ &nbsp; [<a href=\"javascript:void window.open('help.cgi?topic=$helptopic', 'help_win', 'width=640,height=480,scrollbars,resizable=yes')\" >}
+    my ($self,$helptopic, $text) = @_;
 
-            . ( $text ? $text : '' )
-            . qq{<img src=$NicToolClient::image_dir/help-small.gif border=0 alt=Help>}
-            . qq{</a>]};
-    }
-    else {
-        return '';
-    }
+    return '' if !$NicToolClient::show_help_links;
+    return qq{ &nbsp; [<a href="javascript:void window.open('help.cgi?topic=$helptopic', 'help_win', 'width=640,height=480,scrollbars,resizable=yes')">}
+        . ( $text ? $text : '' )
+        . qq{<img src="$NicToolClient::image_dir/help-small.gif" alt="Help"></a>]};
 }
 
 sub rr_types {
@@ -199,26 +191,19 @@ sub fill_template_vars {
     my $self = shift;
     my $vars = shift;
 
-    my @fields
-        = qw( app_title app_dir image_dir font dark_color dark_grey light_grey
-        disabled_color light_hilite dark_hilite generic_error_message
-        VERSION SRCURL LICENSE NTURL );
+    my @fields = qw( app_title app_dir image_dir generic_error_message VERSION SRCURL LICENSE NTURL );
 
     foreach my $f (@fields) {
         my $temp;
         eval "\$temp = \$NicToolClient::$f";
         $vars->{$f} = $temp;
     }
-
-    #$self->{'fill_vars'} = 1;
 }
 
 sub display_group_tree {
     my ( $self, $user, $user_group, $curr_group, $in_summary ) = @_;
 
     $curr_group ||= $user_group;
-
-#warn "displaying the group tree from $user_group, at $curr_group:".join(" ",caller);
 
     my $rv = $self->{'nt_server_obj'}->send_request(
         action          => "get_group_branch",
@@ -244,19 +229,16 @@ sub display_group_tree {
 
         my @options;
         if ( $group->{'nt_group_id'} != $user_group ) {
-            my $name;
+            my $name = 'View Details';
             if ($user->{'group_write'}
                 && ( !exists $group->{'delegate_write'}
                     || $group->{'delegate_write'} )
                 )
             {
                 $name = 'Edit';
-            }
-            else {
-                $name = 'View Details';
-            }
+            };
             push( @options,
-                "<td>$NicToolClient::font<a href=group.cgi?nt_group_id=$group->{'nt_group_id'}&edit=1>$name</a></font></td>"
+                "<td><a href=group.cgi?nt_group_id=$group->{'nt_group_id'}&edit=1>$name</a></td>"
             );
             if ($user->{"group_delete"}
                 && ( !exists $group->{'delegate_delete'}
@@ -264,39 +246,35 @@ sub display_group_tree {
                 )
             {
                 push( @options,
-                    "<td>$NicToolClient::font<a href=group.cgi?nt_group_id=$group->{'parent_group_id'}&delete=$group->{'nt_group_id'} onClick=\"return confirm('Delete "
+                    "<td><a href=group.cgi?nt_group_id=$group->{'parent_group_id'}&delete=$group->{'nt_group_id'} onClick=\"return confirm('Delete "
                         . join( ' / ', @list )
-                        . " and all associated data?');\">Delete</a></font></td>"
+                        . " and all associated data?');\">Delete</a></td>"
                 );
             }
             else {
-
-                #warn "can't delete? ".Data::Dumper::Dumper($user);
-                push( @options,
-                    "<td>$NicToolClient::font<font color=$NicToolClient::disabled_color>Delete</font></font></td>"
-                );
+                push @options, "<td class='disabled'>Delete</td>";
             }
-
-#    push(@options, "<td>$NicToolClient::font<a href=group.cgi?nt_group_id=$group->{'nt_group_id'}&move=1>move</a></font></td>");
         }
         push( @options,
-            "<td><img src=$NicToolClient::image_dir/folder_closed.gif></td><td>$NicToolClient::font<a href=group_zones.cgi?nt_group_id=$group->{'nt_group_id'}>Zones</a></font></td>"
+            "<td><img src=$NicToolClient::image_dir/folder_closed.gif></td><td><a href=group_zones.cgi?nt_group_id=$group->{'nt_group_id'}>Zones</a></td>"
         );
         push( @options,
-            "<td><img src=$NicToolClient::image_dir/folder_closed.gif></td><td>$NicToolClient::font<a href=group_nameservers.cgi?nt_group_id=$group->{'nt_group_id'}>Nameservers</a></font></td>"
+            "<td><img src=$NicToolClient::image_dir/folder_closed.gif></td><td><a href=group_nameservers.cgi?nt_group_id=$group->{'nt_group_id'}>Nameservers</a></td>"
         );
         push( @options,
-            "<td><img src=$NicToolClient::image_dir/folder_closed.gif></td><td>$NicToolClient::font<a href=group_users.cgi?nt_group_id=$group->{'nt_group_id'}>Users</a></font></td>"
+            "<td><img src=$NicToolClient::image_dir/folder_closed.gif></td><td><a href=group_users.cgi?nt_group_id=$group->{'nt_group_id'}>Users</a></td>"
         );
         push( @options,
-            "<td><img src=$NicToolClient::image_dir/folder_closed.gif></td><td>$NicToolClient::font<a href=group_log.cgi?nt_group_id=$group->{'nt_group_id'}>Log</a></font></td>"
+            "<td><img src=$NicToolClient::image_dir/folder_closed.gif></td><td><a href=group_log.cgi?nt_group_id=$group->{'nt_group_id'}>Log</a></td>"
         );
 
-        print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-        print "<tr bgcolor=$NicToolClient::light_grey>";
-        print "<td>";
-        print "<table cellpadding=0 cellspacing=0 border=0 width=100%>";
-        print "<tr>";
+        print qq[
+<table width=100%>
+ <tr class=light_grey_bg>
+  <td>
+   <table class='no_pad' width=100%>
+    <tr>
+        ];
 
         for my $x ( 1 .. $_ ) {
             print "<td><img src=$NicToolClient::image_dir/"
@@ -308,21 +286,23 @@ sub display_group_tree {
 
         if ( $in_summary and ( $_ == $count ) ) {
             print
-                "<td nowrap>$NicToolClient::font<b>$group->{'name'}</b></font></td>";
+                "<td nowrap><b>$group->{'name'}</b></td>";
         }
         else {
             print
-                "<td nowrap>$NicToolClient::font<a href=group.cgi?nt_group_id=$group->{'nt_group_id'}>$group->{'name'}</a></font></td>";
+                "<td nowrap><a href=group.cgi?nt_group_id=$group->{'nt_group_id'}>$group->{'name'}</a></td>";
         }
 
-        print
-            "<td align=right width=100%><table cellpadding=0 cellspacing=0 border=0><tr>",
-            join(
-            '<td>' . $NicToolClient::font . '&nbsp;|&nbsp;</font></td>',
-            @options
-            ) . "</tr></table></td>";
-        print "</tr></table>";
-        print "</td></tr></table>";
+        print "
+     <td align=right width=100%>
+      <table class='no_pad'><tr>",
+            join( '<td>&nbsp;|&nbsp;</td>', @options) . "</tr></table></td>";
+        print "
+    </tr>
+   </table>
+  </td>
+ </tr>
+</table>";
     }
 
     return $count + 1;
@@ -340,40 +320,38 @@ sub display_zone_list_options {
         ) unless ($in_zone_list);
     }
     else {
-        push( @options,
-            "<font color=$NicToolClient::disabled_color>New Zone</font>" )
-            unless ($in_zone_list);
+        push @options, '<span class="disabled">New Zone</span>'
+            unless $in_zone_list;
     }
     push( @options,
         "<a href=group_zones_log.cgi?nt_group_id=$group_id>View Zone Log</a>"
     ) unless ($in_zone_list);
 
-    print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-    print "<tr bgcolor=$NicToolClient::light_grey>";
-    print "<td>";
-    print "<table cellpadding=0 cellspacing=0 border=0 width=100%>";
-    print "<tr>";
+    print qq[ 
+<table style="width:100%">
+ <tr class=light_grey_bg>
+  <td>
+   <table class="no_pad" style="width: 100%;">
+    <tr>];
 
     for my $x ( 1 .. $level ) {
-        print "<td><img src=$NicToolClient::image_dir/"
+        print qq[<td><img src="$NicToolClient::image_dir/]
             . ( $x == $level ? 'dirtree_elbow' : 'transparent' )
-            . ".gif width=17 height=17></td>";
+            . qq[.gif" width=17 height=17></td>];
     }
 
     print "<td><img src=$NicToolClient::image_dir/folder_open.gif></td>";
 
     if ($in_zone_list) {
-        print "<td nowrap>$NicToolClient::font<b>Zones</b></font></td>";
+        print qq[<td style="text-wrap: none;"><b>Zones</b></td>];
     }
     else {
-        print
-            "<td nowrap>$NicToolClient::font<a href=group_zones.cgi?nt_group_id=$group_id>Zones</a></font></td>";
+        print qq[<td style="text-wrap: none;"><a href="group_zones.cgi?nt_group_id=$group_id">Zones</a></td>];
     }
 
-    print "<td align=right width=100%>$NicToolClient::font",
-        join( ' | ', @options ), "</font></td>";
-    print "</tr></table>";
-    print "</td></tr></table>";
+    print "<td align=right width=100%>", join( ' | ', @options ), "</td>
+    </tr></table>
+    </td></tr></table>";
 }
 
 sub display_user_list_options {
@@ -383,21 +361,18 @@ sub display_user_list_options {
 
     my @options;
     if ( $user->{'user_create'} ) {
-        push( @options,
-            "<a href=group_users.cgi?nt_group_id=$group_id&new=1>New User</a>"
-        ) unless ($in_user_list);
+        push @options, qq[<a href="group_users.cgi?nt_group_id=$group_id&new=1">New User</a>]
+        unless ($in_user_list);
     }
     else {
-        push( @options,
-            "<font color=$NicToolClient::disabled_color>New User</font>" )
-            unless ($in_user_list);
+        push @options, '<span class="disabled">New User</span>' unless $in_user_list;
     }
 
-    print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-    print "<tr bgcolor=$NicToolClient::light_grey>";
-    print "<td>";
-    print "<table cellpadding=0 cellspacing=0 border=0 width=100%>";
-    print "<tr>";
+    print qq[<table width=100%>
+    <tr class=light_grey_bg>
+    <td>
+    <table class="no_pad" width=100%>
+    <tr>];
 
     for my $x ( 1 .. $level ) {
         print "<td><img src=$NicToolClient::image_dir/"
@@ -408,15 +383,13 @@ sub display_user_list_options {
     print "<td><img src=$NicToolClient::image_dir/folder_open.gif></td>";
 
     if ($in_user_list) {
-        print "<td nowrap>$NicToolClient::font<b>Users</b></font></td>";
+        print "<td nowrap><b>Users</b></td>";
     }
     else {
-        print
-            "<td nowrap>$NicToolClient::font<a href=group_users.cgi?nt_group_id=$group_id>Users</a></font></td>";
+        print qq[<td nowrap><a href="group_users.cgi?nt_group_id=$group_id">Users</a></td>];
     }
 
-    print "<td align=right width=100%>$NicToolClient::font",
-        join( ' | ', @options ), "</font></td>";
+    print "<td align=right width=100%>", join( ' | ', @options ), "</td>";
     print "</tr></table>";
     print "</td></tr></table>";
 }
@@ -434,77 +407,55 @@ sub display_zone_options {
 
     #delete option
     if ( $user->{'zone_delete'} && !$isdelegate && !$zone->{'deleted'} ) {
-        push( @options,
-                  "<a href=group_zones.cgi?nt_group_id="
+        push @options,
+                  qq[<a href="group_zones.cgi?nt_group_id=]
                 . $q->param('nt_group_id')
-                . "&zone_list=$zone->{'nt_zone_id'}&delete=1 onClick=\"return confirm('Delete $zone->{'zone'} and all associated resource records?');\">Delete</a>"
-        );
+                . qq[&zone_list=$zone->{'nt_zone_id'}&delete=1" onClick="return confirm('Delete $zone->{'zone'} and all associated resource records?');">Delete</a>];
     }
     elsif ( $zone->{'deleted'} ) {
-        push( @options,
-            "<a href=zone.cgi?nt_group_id=$zone->{'nt_group_id'}&nt_zone_id=$zone->{'nt_zone_id'}&edit_zone=1&undelete=1>Undelete</a>"
-        );
+        push @options, qq[<a href="zone.cgi?nt_group_id=$zone->{'nt_group_id'}&nt_zone_id=$zone->{'nt_zone_id'}&edit_zone=1&undelete=1">Undelete</a>];
 
     }
     elsif ( !$isdelegate ) {
-        push( @options,
-            "<font color=$NicToolClient::disabled_color>Delete</font>" );
+        push @options, '<span style="disabled">Delete</span>';
     }
     elsif ($user->{'zone_delete'}
         && $isdelegate
         && $zone->{'delegate_delete'} )
     {
-        push( @options,
-                  "<a href=group_zones.cgi?nt_group_id="
-                . $q->param('nt_group_id')
-                . "&nt_zone_id=$zone->{'nt_zone_id'}&deletedelegate=1 onClick=\"return confirm('Remove delegation of $zone->{'zone'}?');\">Remove Delegation</a>"
-        );
+        push @options, qq[<a href="group_zones.cgi?nt_group_id=$q->param('nt_group_id')&nt_zone_id=$zone->{'nt_zone_id'}&deletedelegate=1" onClick="return confirm('Remove delegation of $zone->{'zone'}?');">Remove Delegation</a>];
     }
     elsif ($isdelegate) {
-        push( @options,
-            "<font color=$NicToolClient::disabled_color>Remove Delegation</font>"
-        );
+        push @options, '<span class="disabled">Remove Delegation</span>';
     }
 
     if ( $user->{'zone_write'} && !$isdelegate && !$zone->{'deleted'} ) {
-        push( @options,
-            "<a href=\"javascript:void window.open('move_zones.cgi?obj_list=$zone->{'nt_zone_id'}', 'move_win', 'width=640,height=480,scrollbars,resizable=yes')\">Move</a>"
-        ) if ( $group->{'has_children'} );
+        push @options, qq[<a href="javascript:void window.open('move_zones.cgi?obj_list=$zone->{'nt_zone_id'}', 'move_win', 'width=640,height=480,scrollbars,resizable=yes')">Move</a>] if $group->{'has_children'};
     }
     elsif ( !$isdelegate ) {
-        push( @options,
-            "<font color=$NicToolClient::disabled_color>Move</font>" )
-            if ( $group->{'has_children'} );
+        push @options, '<span class="disabled">Move</span>' if $group->{'has_children'};
     }
 
     if ( $user->{'zone_delegate'} && !$isdelegate && !$zone->{'deleted'} ) {
-        push( @options,
-            "<a href=\"javascript:void window.open('delegate_zones.cgi?obj_list=$zone->{'nt_zone_id'}', 'delegate_win', 'width=640,height=480,scrollbars,resizable=yes')\">Delegate</a>"
-        ) if ( $group->{'has_children'} );
+        push @options, qq[<a href="javascript:void window.open('delegate_zones.cgi?obj_list=$zone->{'nt_zone_id'}', 'delegate_win', 'width=640,height=480,scrollbars,resizable=yes')">Delegate</a>] if $group->{'has_children'};
     }
     elsif ( !$isdelegate ) {
-        push( @options,
-            "<font color=$NicToolClient::disabled_color>Delegate</font>" )
-            if ( $group->{'has_children'} );
+        push @options, '<span class="disabled">Delegate</span>' if $group->{'has_children'};
     }
     elsif ($user->{'zone_delegate'}
         && $isdelegate
         && $zone->{'delegate_delegate'} )
     {
-        push( @options,
-            "<a href=\"javascript:void window.open('delegate_zones.cgi?obj_list=$zone->{'nt_zone_id'}', 'delegate_win', 'width=640,height=480,scrollbars,resizable=yes')\">Re-Delegate</a>"
-        ) if ( $group->{'has_children'} );
+        push @options, qq[<a href="javascript:void window.open('delegate_zones.cgi?obj_list=$zone->{'nt_zone_id'}', 'delegate_win', 'width=640,height=480,scrollbars,resizable=yes')">Re-Delegate</a>] if $group->{'has_children'};
     }
     elsif ($isdelegate) {
-        push( @options,
-            "<font color=$NicToolClient::disabled_color>Re-Delegate</font>" )
-            if ( $group->{'has_children'} );
+        push @options, '<span color="disabled">Re-Delegate</span>' if $group->{'has_children'};
     }
-    print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-    print "<tr bgcolor=$NicToolClient::light_grey>";
-    print "<td>";
-    print "<table cellpadding=0 cellspacing=0 border=0 width=100%>";
-    print "<tr>";
+    print qq[<table width=100%>
+    <tr class=light_grey_bg>
+    <td>
+    <table class="no_pad" width=100%>
+    <tr>];
 
     for my $x ( 1 .. $level ) {
         print "<td><img src=$NicToolClient::image_dir/"
@@ -528,17 +479,13 @@ sub display_zone_options {
         : ''
     );
     if ($in_zone) {
-        print
-            "<td nowrap>$NicToolClient::font<b>$zone->{'zone'}</b>$tag</font></td>";
+        print "<td nowrap><b>$zone->{'zone'}</b>$tag</td>";
     }
     else {
-        print "<td nowrap>$NicToolClient::font<a href=zone.cgi?nt_group_id="
-            . $q->param('nt_group_id')
-            . "&nt_zone_id=$zone->{'nt_zone_id'}>$zone->{'zone'}</a>$tag</font></td>";
+        print qq[<td nowrap><a href="zone.cgi?nt_group_id=$q->param('nt_group_id')&nt_zone_id=$zone->{'nt_zone_id'}">$zone->{'zone'}</a>$tag</td>];
     }
 
-    print "<td align=right width=100%>$NicToolClient::font",
-        join( ' | ', @options ), "</font></td>";
+    print "<td align=right width=100%>", join( ' | ', @options ), "</td>";
     print "</tr></table>";
     print "</td></tr></table>";
 }
@@ -553,16 +500,14 @@ sub display_nameserver_options {
         ) if !$in_ns_summary;
     }
     else {
-        push( @options,
-            "<font color=$NicToolClient::disabled_color>New Nameserver</font>"
-        ) if !$in_ns_summary;
+        push @options, '<span class="disabled">New Nameserver</class>' if !$in_ns_summary;
     }
 
-    print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-    print "<tr bgcolor=$NicToolClient::light_grey>";
-    print "<td>";
-    print "<table cellpadding=0 cellspacing=0 border=0 width=100%>";
-    print "<tr>";
+    print qq[<table width=100%>
+    <tr class=light_grey_bg>
+    <td>
+    <table class="no_pad" width=100%>
+    <tr>];
 
     for my $x ( 1 .. $level ) {
         print "<td><img src=$NicToolClient::image_dir/"
@@ -573,15 +518,13 @@ sub display_nameserver_options {
     print "<td><img src=$NicToolClient::image_dir/folder_open.gif></td>";
 
     if ($in_ns_summary) {
-        print "<td nowrap>$NicToolClient::font<b>Nameservers</b></font></td>";
+        print "<td nowrap><b>Nameservers</b></td>";
     }
     else {
-        print
-            "<td nowrap>$NicToolClient::font<a href=group_nameservers.cgi?nt_group_id=$group_id>Nameservers</a></font></td>";
+        print "<td nowrap><a href=group_nameservers.cgi?nt_group_id=$group_id>Nameservers</a></td>";
     }
 
-    print "<td align=right width=100%>$NicToolClient::font",
-        join( ' | ', @options ), "</font></td>";
+    print "<td align=right width=100%>", join( ' | ', @options ), "</td>";
     print "</tr></table>";
     print "</td></tr></table>";
 }
@@ -689,15 +632,14 @@ sub display_search_rows {
             if ( $q->param($_) );
     }
 
-    print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-    print
-        "<tr bgcolor=$NicToolClient::dark_grey><td><table cellpadding=0 cellspacing=0 border=0 width=100%>";
-    print "<tr>";
-    print $q->startform( -action => $cgi_name, -method => 'POST' );
+    print qq[<table width=100%>
+    <tr class=dark_grey_bg><td><table class="no_pad" width=100%>
+    <tr>],
+    $q->startform( -action => $cgi_name, -method => 'POST' );
     foreach (@$state_fields) {
         print $q->hidden( -name => $_ );
     }
-    print "<td>$NicToolClient::font";
+    print "<td>";
     print $q->textfield(
         -name     => 'search_value',
         -size     => 30,
@@ -730,7 +672,7 @@ sub display_search_rows {
         -label   => 'exact match',
         -checked => $NicToolClient::exact_match_checked
         );
-    print "</font></td>";
+    print "</td>";
 
     print $q->endform;
     print $q->startform( -action => $cgi_name, -method => 'POST' );
@@ -746,7 +688,7 @@ sub display_search_rows {
             -override => 1
         );
     }
-    print "<td align=right>$NicToolClient::font";
+    print "<td align=right>";
     if ( $rv->{'start'} - $rv->{'limit'} >= 0 ) {
         print "<a href=$cgi_name?"
             . join( '&', @state_vars )
@@ -787,7 +729,7 @@ sub display_search_rows {
             . ( $morestr ? "&$morestr" : "" )
             . "><b>>></b></a>";
     }
-    print "</font></td>";
+    print "</td>";
     print "</tr>";
     print "</table></td></tr>";
     print "</table>";
@@ -801,29 +743,27 @@ sub display_search_rows {
             if ( $q->param($_) );
     }
 
-    print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-    print
-        "<tr bgcolor=$NicToolClient::dark_grey><td><table cellpadding=0 cellspacing=0 border=0 width=100%>";
-    print "<tr>";
-    print "<td>$NicToolClient::font",
-        "Search: $params->{'search_query'} found $rv->{'total'} records</font></td>";
-    print "<td align=right>$NicToolClient::font",
-          "<a href=$cgi_name?"
+    print qq[
+<table width=100%>
+ <tr class=dark_grey_bg><td><table class="no_pad" width=100%>
+    <tr>
+     <td>Search: $params->{'search_query'} found $rv->{'total'} records</td>
+     <td align=right><a href="$cgi_name?]
         . join( '&', @state_vars )
         . "&edit_search=1"
         . ( $morestr ? "&$morestr" : "" )
-        . ">Advanced Search</a> | ",
-        "<a href=$cgi_name?"
+        . qq[">Advanced Search</a> | <a href="$cgi_name?]
         . join( '&', @state_vars )
         . "&edit_sortorder=1"
         . ( $morestr ? "&$morestr" : "" )
-        . ">Change Sort Order</a> | ", "<a href=$cgi_name?"
+        . qq[">Change Sort Order</a> | <a href=$cgi_name?]
         . join( '&',
         map( "$_=" . $q->escape( $q->param($_) ), @$state_fields ) )
         . ( $morestr ? "&$morestr" : "" )
-        . ">Browse All</a>",
-        "</font></td>";
-    print "</tr></table></td></tr></table>";
+        . ">Browse All</a>
+        </td>
+    </tr></table></td></tr>
+</table>";
 }
 
 sub display_sort_options {
@@ -849,14 +789,13 @@ sub display_sort_options {
         );
     }
 
-    print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-    print
-        "<tr bgcolor=$NicToolClient::dark_color><td colspan=2>$NicToolClient::font<font color=white><b>Change Sort Order</b></font></td></tr>";
+    print "<table width=100%>";
+    print "<tr class=dark_bg><td colspan=2><b>Change Sort Order</b></td></tr>";
     foreach ( 1 .. 3 ) {
-        print "<tr bgcolor=$NicToolClient::light_grey>";
-        print "<td nowrap>$NicToolClient::font",
-            ( $_ == 1 ? 'Sort by' : 'Then by' ), "</font></td>";
-        print "<td width=100%>$NicToolClient::font";
+        print "<tr class=light_grey_bg>";
+        print "<td nowrap>",
+            ( $_ == 1 ? 'Sort by' : 'Then by' ), "</td>";
+        print "<td width=100%>";
         print $q->popup_menu(
             -name     => $_ . '_sortfield',
             -values   => [ '--', @$columns ],
@@ -869,16 +808,15 @@ sub display_sort_options {
             -values   => [ 'Ascending', 'Descending' ],
             -override => 1
         );
-        print "</font></td>";
+        print "</td>";
         print "</tr>";
     }
-    print
-        "<tr bgcolor=$NicToolClient::dark_grey><td colspan=2 align=center><table cellpadding=0 cellspacing=0 border=0><tr>";
-    print "<td>$NicToolClient::font";
-    print $q->submit( -name => 'change_sortorder', -value => 'Change' );
-    print "</font></td>";
-    print $q->endform;
-    print $q->startform( -action => $cgi_name, -method => 'POST' );
+    print qq[<tr class=dark_grey_bg><td colspan=2 align=center><table class="no_pad"><tr>
+    <td>],
+    $q->submit( -name => 'change_sortorder', -value => 'Change' ),
+    qq[</td>],
+    $q->endform,
+    $q->startform( -action => $cgi_name, -method => 'POST' );
 
     foreach ( @{ $self->paging_fields }, @$state_fields ) {
         next if ( $_ eq 'edit_sortorder' );
@@ -886,8 +824,8 @@ sub display_sort_options {
         print $q->hidden( -name => $_ ) if ( $q->param($_) );
     }
 
-    print "<td>$NicToolClient::font";
-    print $q->submit('Cancel'), "</font></td></tr>";
+    print "<td>";
+    print $q->submit('Cancel'), "</td></tr>";
     print "</table></td></tr></table>";
     print $q->endform;
 }
@@ -916,28 +854,26 @@ sub display_advanced_search {
         );
     }
 
-    print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-    print
-        "<tr bgcolor=$NicToolClient::dark_color><td colspan=2>$NicToolClient::font<font color=white><b>Advanced Search</b></font></font></td></tr>";
-    print
-        "<tr bgcolor=$NicToolClient::light_grey><td colspan=2>$NicToolClient::font",
+    print "<table width=100%>";
+    print "<tr class=dark_bg><td colspan=2><b>Advanced Search</b></td></tr>";
+    print "<tr class=light_grey_bg><td colspan=2>",
         $q->checkbox(
         -name    => 'include_subgroups',
         -value   => 1,
         -label   => 'include sub-groups',
         -checked => $NicToolClient::include_subgroups_checked,
         ),
-        "</font></td></tr>";
+        "</td></tr>";
 
-    print "<tr bgcolor=$NicToolClient::dark_grey>";
+    print "<tr class=dark_grey_bg>";
     foreach ( ( 'Inclusive / Exclusive', 'Condition' ) ) {
-        print "<td align=center>$NicToolClient::font", $_, "</font></td>";
+        print "<td align=center>", $_, "</td>";
     }
     print "</tr>";
 
     foreach ( 1 .. 5 ) {
-        print "<tr bgcolor=$NicToolClient::light_grey>\n";
-        print "<td align=center>$NicToolClient::font",
+        print "<tr class=light_grey_bg>\n";
+        print "<td align=center>",
             (
             $_ == 1 ? '&nbsp;' : $q->radio_group(
                 -name     => $_ . '_inclusive',
@@ -946,8 +882,8 @@ sub display_advanced_search {
                 -override => 1
             )
             ),
-            "</font></td>\n";
-        print "<td>$NicToolClient::font",
+            "</td>\n";
+        print "<td>",
             $q->popup_menu(
             -name     => $_ . '_field',
             -values   => [ '--', @$columns ],
@@ -964,20 +900,17 @@ sub display_advanced_search {
             -size     => 30,
             -override => 1
             ),
-            "</font></td>\n";
+            "</td>\n";
         print "</tr>\n";
     }
     print "</table>";
 
-    print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-    print
-        "<tr bgcolor=$NicToolClient::dark_grey><td colspan=2>$NicToolClient::font<b>",
-        "Sort Order</b> (optional)</font></td></tr>";
+    print "<table width=100%>";
+    print "<tr class=dark_grey_bg><td colspan=2><b>Sort Order</b> (optional)</td></tr>";
     foreach ( 1 .. 3 ) {
-        print "<tr bgcolor=$NicToolClient::light_grey>";
-        print "<td>$NicToolClient::font", ( $_ == 1 ? 'sort by' : "then by" ),
-            "</font></td>";
-        print "<td>$NicToolClient::font",
+        print "<tr class=light_grey_bg>";
+        print "<td>", ( $_ == 1 ? 'sort by' : "then by" ), "</td>";
+        print "<td>",
             $q->popup_menu(
             -name   => $_ . '_sortfield',
             -values => [ '--', @$columns ],
@@ -987,19 +920,18 @@ sub display_advanced_search {
             -name   => $_ . '_sortmod',
             -values => [ 'Ascending', 'Descending' ]
             ),
-            "</font></td>";
+            "</td>";
         print "</tr>";
     }
     print "</table>";
 
-    print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-    print
-        "<tr bgcolor=$NicToolClient::dark_grey><td align=center><table cellpadding=0 cellspacing=0 border=0><tr>";
-    print "<td>$NicToolClient::font";
-    print $q->submit('Search');
-    print "</font></td>";
-    print $q->endform;
-    print $q->startform( -action => $cgi_name, -method => 'POST' );
+    print qq[<table width=100%>
+    <tr class=dark_grey_bg><td align=center><table class="no_pad"><tr>
+    <td>],
+    $q->submit('Search'),
+    "</td>",
+    $q->endform,
+    $q->startform( -action => $cgi_name, -method => 'POST' );
 
     foreach ( @{ $self->paging_fields }, @$state_fields ) {
         next if ( $_ eq 'edit_search' );
@@ -1007,11 +939,9 @@ sub display_advanced_search {
         print $q->hidden( -name => $_ ) if ( $q->param($_) );
     }
 
-    print "<td>$NicToolClient::font";
-    print $q->submit('Cancel'), "</font></td></tr>";
+    print "<td>";
+    print $q->submit('Cancel'), "</td></tr>";
     print "</table></td></tr>";
-
-    #print "<tr><td><hr></td></tr>";
     print "</table>";
 
     print $q->endform();
@@ -1033,9 +963,7 @@ sub display_group_list {
     my $group = $self->get_group( nt_group_id => $q->param('nt_group_id') );
 
     unless ( $group->{'has_children'} ) {
-        print "<center>$NicToolClient::font<font color=red><B>Group "
-            . $group->{'name'}
-            . " has no sub-groups!</b></font></font></center>";
+        print qq( <center><span style="color:red;"><strong>Group $group->{'name'} has no sub-groups!</strong></span></center>);
         $q->param( 'nt_group_id', $group->{'parent_group_id'} );
         $group = $self->get_group( nt_group_id => $q->param('nt_group_id') );
     }
@@ -1075,42 +1003,38 @@ sub display_group_list {
         push( @state_fields, "$_=" . $q->escape( $q->param($_) ) )
             if ( $q->param($_) );
     }
-    print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-    print "<tr bgcolor=$NicToolClient::dark_grey><td>";
-    print "<table cellpadding=0 cellspacing=0 border=0 width=100%>";
-    print "<tr>";
-    print
-        "<td>$NicToolClient::font<b>Select the group to $action to.</b></font></td>";
-    print "<td align=right>$NicToolClient::font";
-    print "&nbsp;";
-    print "</font></td>";
-    print "</tr></table></td></tr>";
-    print "</table>";
+    print qq[<table width=100%>
+    <tr class=dark_grey_bg><td>
+    <table class="no_pad" width=100%>
+    <tr>
+    <td><b>Select the group to $action to.</b></td>
+    <td align=right> &nbsp; </td>
+    </tr></table></td></tr>
+    </table>];
 
     $self->display_search_rows( $q, $rv, \%params, $cgi,
         [ 'obj_list', 'nt_group_id' ],
         $include_subgroups, $moreparams );
 
     if (@$groups) {
-        print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-        print "<tr bgcolor=$NicToolClient::dark_grey>";
-        print "<td>";
-
-        print "<table cellpadding=0 cellspacing=0 border=0>";
-        print "<tr><td></td>";
-        print $q->endform;
-        print $q->start_form(
+        print qq[<table width=100%>
+        <tr class=dark_grey_bg>
+        <td>
+        <table class="no_pad">
+        <tr><td></td>],
+        $q->endform,
+        $q->start_form(
             -action => $cgi,
             -method => 'POST',
             -name   => 'new'
-        );
-        print "\n",
-            $q->hidden(
+        ),
+        "\n",
+        $q->hidden(
             -name     => 'obj_list',
             -value    => join( ',', $q->param('obj_list') ),
             -override => 1
-            ),
-            "\n";
+        ),
+        "\n";
 
         foreach ( @{ $self->paging_fields() } ) {
             print $q->hidden( -name => $_ ) if ( $q->param($_) );
@@ -1121,18 +1045,14 @@ sub display_group_list {
         print "<td></td></tr>";
         print "</table>";
 
-        print "$NicToolClient::font", "&nbsp;</font></td>";
+        print "&nbsp;</td>";
         foreach (@columns) {
             if ( $sort_fields{$_} ) {
-                print
-                    "<td bgcolor=$NicToolClient::dark_color align=center><table cellpadding=0 cellspacing=0 border=0>";
-                print "<tr>";
-                print
-                    "<td>$NicToolClient::font<font color=white>$labels{$_}</font></font></td>";
-                print
-                    "<td>&nbsp; &nbsp; $NicToolClient::font<font color=white>",
-                    $sort_fields{$_}->{'order'}, "</font></font></td>";
-                print "<td><img src=$NicToolClient::image_dir/",
+                print qq[<td class=dark_bg align=center><table class="no_pad">
+                <tr>
+                <td>$labels{$_}</td>
+                <td>&nbsp; &nbsp; $sort_fields{$_}->{'order'}</td>
+                <td><img src=$NicToolClient::image_dir/],
                     (
                     uc( $sort_fields{$_}->{'mod'} ) eq 'ASCENDING'
                     ? 'up.gif'
@@ -1143,8 +1063,7 @@ sub display_group_list {
 
             }
             else {
-                print "<td align=center>$NicToolClient::font",
-                    "$labels{$_}</font></td>";
+                print "<td align=center>$labels{$_}</td>";
             }
         }
         print "</tr>";
@@ -1152,22 +1071,22 @@ sub display_group_list {
         my $x = 0;
 
         foreach my $group (@$groups) {
-            print "<tr bgcolor="
-                . ( $x++ % 2 == 0 ? $NicToolClient::light_grey : 'white' )
+            print "<tr class="
+                . ( $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' )
                 . ">";
             if ( $group->{'nt_group_id'} eq $excludeid ) {
-                print "<td width=1%>$NicToolClient::font &nbsp;</font></td>";
+                print "<td width=1%> &nbsp;</td>";
             }
             else {
                 print
-                    "<td width=1%>$NicToolClient::font<input type=radio name=group_list value='$group->{'nt_group_id'}'",
-                    ( $x == 1 ? " checked" : "" ), "></font></td>";
+                    "<td width=1%><input type=radio name=group_list value='$group->{'nt_group_id'}'",
+                    ( $x == 1 ? " checked" : "" ), "></td>";
 
             }
 
-            print "<td><table cellpadding=0 cellspacing=0 border=0><tr>";
-            print "<td><img src=$NicToolClient::image_dir/group.gif></td>";
-            print "<td>$NicToolClient::font",
+            print qq[<td><table class="no_pad"><tr>
+            <td><img src=$NicToolClient::image_dir/group.gif></td>
+            <td>],
                 join(
                 ' / ',
                 map( "<a href=$cgi?nt_group_id=$_->{'nt_group_id'}&obj_list="
@@ -1186,13 +1105,11 @@ sub display_group_list {
                         }
                         ) )
                 ),
-                "</font></td>";
-            print "</tr></table></td>";
+                "</td></tr></table></td>";
 
-            print "<td>$NicToolClient::font",
+            print "<td>",
                 ( $group->{'children'} ? $group->{'children'} : 'n/a' ),
-                "</font></td>";
-            print "</tr>";
+                "</td></tr>";
         }
 
         print "</table>";
@@ -1504,10 +1421,7 @@ ENDJS
 }
 
 sub display_hr {
-    print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-    print "<tr><td><hr></td></tr>";
-    print "</table>";
-
+    print qq[<table style="width:100%;"><tr><td><hr></td></tr></table>];
 }
 
 sub error_message {
@@ -1576,24 +1490,19 @@ sub error_message {
 sub display_nice_message {
     my ( $self, $message, $title, $explain ) = @_;
     my @msgs = split( /\bAND\b/, $message );
-    $message
-        = "<font color=blue><li>"
-        . join( "</font><br>\n<font color=blue><li>", @msgs )
-        . "</font><br>";
+    $message = qq( <li style="color: blue;"> )
+        . join( qq(<br>\n<li style="color: blue;"> ), @msgs )
+        . '<br>';
 
     print qq{
-        <table width=100% border=0 cellspacing=2 cellpadding=2 align=center>
-            <tr><td align=left bgcolor=$NicToolClient::dark_color>$NicToolClient::font
-                <font color=white><B>$title</b></font></font></td></tr>
+        <table width=100% align=center>
+            <tr><td align=left class=dark_bg>
+                <B>$title</b></td></tr>
             <tr>
-                <td align=left bgcolor=$NicToolClient::light_grey>$NicToolClient::font
-                    $message<p>
-                    $explain
-                    </font>
-                </td>
+                <td align=left class=light_grey_bg> $message<p> $explain </td>
             </tr>
             <tr>
-                <td align=center bgcolor=$NicToolClient::dark_grey>&nbsp;</td>
+                <td align=center class=dark_grey_bg>&nbsp;</td>
             </tr>
         </table>
     };
@@ -1608,32 +1517,27 @@ sub display_nice_error {
     $actionmsg = ": " . $actionmsg if $actionmsg;
     my $errmsg = $error->{'error_msg'};
     my @msgs = split( /\bAND\b/, $errmsg );
-    $errmsg
-        = "<font color=$NicToolClient::error><li>"
-        . join( "</font><br>\n<font color=$NicToolClient::error><li>", @msgs )
-        . "</font><br>";
+    $errmsg = "<span class=error><li>"
+        . join( "</span><br>\n<span class=error><li>", @msgs )
+        . "</span><br>";
     print qq(
-        <table width=100% border=0 cellspacing=2 cellpadding=2 align=center>
-            <tr><td align=left bgcolor=$NicToolClient::error>$NicToolClient::font
-                <font color=white><B>$message</b>$actionmsg</font></font></td></tr>
+        <table width=100% align=center>
+            <tr><td align=left class=error_bg>
+                <strong>$message</strong>$actionmsg</td></tr>
             <tr>
-                <td align=left bgcolor=$NicToolClient::light_grey>$NicToolClient::font
-                    $errmsg<p> 
-                    $explain
-                    </font>
-                </td>
+                <td align=left class=light_grey_bg> $errmsg<p> $explain </td>
             </tr>
             <tr>
-                <td align=right bgcolor=$NicToolClient::dark_grey>$NicToolClient::font)
+                <td align=right class="dark_grey_bg dark">)
         . (
         $back
         ? '<form><input type=submit value="Back" onClick="javascript:history.go(-1)"></form>'
         : '&nbsp;'
         )
-        . qq(<font color=$NicToolClient::dark_color>\($error->{'error_code'}\)</font></font></td>
+        . qq[ ($error->{'error_code'})</td>
             </tr>
         </table>
-    );
+    ];
 
     warn "Client error: $error->{'error_code'}: $error->{'error_msg'}: "
         . join( ":", caller );
@@ -1643,8 +1547,7 @@ sub display_nice_error {
 sub display_error {
     my ( $self, $error ) = @_;
 
-    print
-        "<center>$NicToolClient::font<font color=$NicToolClient::error><b>$error->{'error_msg'}</b></font></font></center>";
+    print qq[ <center class="error"><b>$error->{'error_msg'}</b></center> ];
 
     warn
         "Client error: $error->{'error_code'}: $error->{'error_msg'}: $error->{'error_desc'} "

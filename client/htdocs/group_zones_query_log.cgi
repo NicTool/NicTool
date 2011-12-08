@@ -55,25 +55,21 @@ sub display {
     $nt_obj->display_zone_list_options( $user, $q->param('nt_group_id'),
         $level, 0 );
 
-    print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-    print
-        "<tr bgcolor=$NicToolClient::light_grey><td><table cellpadding=0 cellspacing=0 border=0 width=100%>";
-    print "<tr>";
+    print qq[<table width=100%>
+    <tr class=light_grey_bg><td><table class="no_pad" width=100%>
+    <tr>];
     foreach ( 1 .. $level ) {
-        print
-            "<td><img src=$NicToolClient::image_dir/transparent.gif width=16 height=16></td>";
+        print "<td><img src=$NicToolClient::image_dir/transparent.gif width=16 height=16></td>";
     }
-    print "<td><img src=$NicToolClient::image_dir/dirtree_elbow.gif></td>";
-    print
-        "<td><img src=$NicToolClient::image_dir/transparent.gif width=1 height=16></td>";
-    print "<td><img src=$NicToolClient::image_dir/graph.gif></td>";
-    print
-        "<td><img src=$NicToolClient::image_dir/transparent.gif width=3 height=16></td>";
-    print "<td nowrap>",                 " <b>Nameserver Query Log</b></td>";
-    print "<td align=right width=100%>", "&nbsp;</td>";
-    print "</tr>";
-    print "</table></td></tr>";
-    print "</table>";
+    print qq[<td><img src="$NicToolClient::image_dir/dirtree_elbow.gif"></td>
+    <td><img src="$NicToolClient::image_dir/transparent.gif" width=1 height=16></td>
+    <td><img src="$NicToolClient::image_dir/graph.gif"></td>
+    <td><img src="$NicToolClient::image_dir/transparent.gif" width=3 height=16></td>
+    <td nowrap><b>Nameserver Query Log</b></td>
+    <td align=right width=100%> &nbsp;</td>
+    </tr>
+    </table></td></tr>
+    </table>];
 
     my @columns = qw(timestamp nameserver zone query qtype flag ip port);
     my %labels  = (
@@ -110,17 +106,15 @@ sub display {
     $nt_obj->display_search_rows( $q, $rv, \%params,
         'group_zones_query_log.cgi', ['nt_group_id'] );
 
-    print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-    print "<tr bgcolor=$NicToolClient::dark_grey>";
+    print "<table width=100%>";
+    print "<tr class=dark_grey_bg>";
     foreach (@columns) {
         if ( $sort_fields{$_} ) {
-            print
-                "<td bgcolor=$NicToolClient::dark_color align=center><table cellpadding=0 cellspacing=0 border=0>";
-            print "<tr>";
-            print "<td><font color=white>$labels{$_}</font></td>";
-            print "<td>&nbsp; &nbsp; <font color=white>",
-                $sort_fields{$_}->{'order'}, "</font></td>";
-            print "<td><img src=$NicToolClient::image_dir/",
+            print qq[<td class=dark_bg align=center><table class="no_tab">
+            <tr>
+            <td>$labels{$_}</td>
+            <td>&nbsp; &nbsp; $sort_fields{$_}->{'order'} </td>
+            <td><img src=$NicToolClient::image_dir/],
                 (
                 uc( $sort_fields{$_}->{'mod'} ) eq 'ASCENDING'
                 ? 'up.gif'
@@ -136,38 +130,28 @@ sub display {
 
     my $x = 0;
     foreach my $row ( @{ $rv->{'search_result'} } ) {
-        print "<tr bgcolor=",
-            ( $x++ % 2 == 0 ? $NicToolClient::light_grey : 'white' ), ">";
+        print "<tr class=",
+            ( $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' ), ">";
         foreach (@columns) {
             if ( $_ eq 'timestamp' ) {
                 print "<td>", ( scalar localtime $row->{$_} ), "</td>";
             }
             elsif ( $_ eq 'nameserver' ) {
-                print "<td><table cellpadding=0 cellspacing=0 border=0><tr>";
-
-#print "<td><img src=$NicToolClient::image_dir/nameserver.gif border=0></td>";
-                print "<td>$row->{$_}</td>";
-                print "</tr></table></td>";
+                print qq[<td><table class="no_pad"><tr>
+                <td>$row->{$_}</td>
+                </tr></table></td>];
             }
             elsif ( $_ eq 'zone' ) {
-                print "<td><table cellpadding=0 cellspacing=0 border=0><tr>";
-                print "<td><a href=zone.cgi?nt_group_id="
-                    . $q->param('nt_group_id')
-                    . "&nt_zone_id=$row->{'nt_zone_id'}><img src=$NicToolClient::image_dir/zone.gif border=0></a></td>";
-                print "<td><a href=zone.cgi?nt_group_id="
-                    . $q->param('nt_group_id')
-                    . "&nt_zone_id=$row->{'nt_zone_id'}>$row->{$_}</a></td>";
-                print "</tr></table></td>";
+                print qq[<td><table class="no_pad"><tr>
+                <td><a href="zone.cgi?nt_group_id=$q->param('nt_group_id')&nt_zone_id=$row->{'nt_zone_id'}"><img src="$NicToolClient::image_dir/zone.gif"></a></td>
+                <td><a href="zone.cgi?nt_group_id=$q->param('nt_group_id')&nt_zone_id=$row->{'nt_zone_id'}">$row->{$_}</a></td>
+                </tr></table></td>];
             }
             elsif ( $_ eq 'query' ) {
-                print "<td><table cellpadding=0 cellspacing=0 border=0><tr>";
-                print "<td><a href=zone.cgi?nt_group_id="
-                    . $q->param('nt_group_id')
-                    . "&nt_zone_id=$row->{'nt_zone_id'}&nt_zone_record_id=$row->{'nt_zone_record_id'}&edit_record=1><img src=$NicToolClient::image_dir/r_record.gif border=0></a></td>";
-                print "<td><a href=zone.cgi?nt_group_id="
-                    . $q->param('nt_group_id')
-                    . "&nt_zone_id=$row->{'nt_zone_id'}&nt_zone_record_id=$row->{'nt_zone_record_id'}&edit_record=1>$row->{$_}</a></td>";
-                print "</tr></table></td>";
+                print qq[<td><table class="no_pad"><tr>
+                <td><a href="zone.cgi?nt_group_id=$q->param('nt_group_id')&nt_zone_id=$row->{'nt_zone_id'}&nt_zone_record_id=$row->{'nt_zone_record_id'}&edit_record=1"><img src="$NicToolClient::image_dir/r_record.gif"></a></td>
+                <td><a href=zone.cgi?nt_group_id=$q->param('nt_group_id')&nt_zone_id=$row->{'nt_zone_id'}&nt_zone_record_id=$row->{'nt_zone_record_id'}&edit_record=1">$row->{$_}</a></td>
+                </tr></table></td>];
             }
             else {
                 print "<td>", $row->{$_}, "</td>";

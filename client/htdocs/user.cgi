@@ -175,8 +175,7 @@ sub display {
         );
     }
     else {
-        push( @options,
-            "<font color=$NicToolClient::disabled_color>Delete</font>" );
+        push @options, "<span class=disabled>Delete</span>";
     }
     if (   $user->{'user_write'}
         && $user->{'nt_user_id'} ne $duser->{'nt_user_id'} )
@@ -186,16 +185,14 @@ sub display {
         ) if ( $group->{'has_children'} );
     }
     else {
-        push( @options,
-            "<font color=$NicToolClient::disabled_color>Move</font>" )
-            if ( $group->{'has_children'} );
+        push @options, "<span class=disabled>Move</span>" if $group->{'has_children'};
     }
 
-    print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-    print "<tr bgcolor=$NicToolClient::light_grey>";
-    print "<td>";
-    print "<table cellpadding=0 cellspacing=0 border=0 width=100%>";
-    print "<tr>";
+    print qq[<table width=100%>
+    <tr class="light_grey_bg">
+    <td>
+    <table class="no_pad" width=100%>
+    <tr>];
 
     for my $x ( 1 .. $level ) {
         print "<td><img src=$NicToolClient::image_dir/"
@@ -256,11 +253,10 @@ sub display_properties {
             if ( $q->param($_) );
     }
 
-    print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-    print
-        "<tr bgcolor=$NicToolClient::dark_grey><td><table cellpadding=0 cellspacing=0 border=0 width=100%>";
-    print "<tr>";
-    print "<td><b>Properties</b></td>";
+    print qq[<table width=100%>
+    <tr class=dark_grey_bg><td><table class="no_pad" width=100%>
+    <tr>
+    <td><b>Properties</b></td>];
     my $modname;
     if ($modifyperm) {
         $modname = "Edit";
@@ -275,30 +271,30 @@ sub display_properties {
     print "</tr></table>";
     print "</td></tr></table>";
 
-    print "<table cellpadding=2 cellspacing=0 border=0 width=100%>";
+    print "<table cellspacing=0 width=100%>";
     print "<tr>";
     print "<td width=50%>";
-    print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-    print "<tr bgcolor=$NicToolClient::light_grey>";
+    print "<table width=100%>";
+    print "<tr class=light_grey_bg>";
     print "<td nowrap>", "Username: </td>";
     print "<td width=100%>",
         ( $duser->{'username'} ? $duser->{'username'} : '&nbsp;' ), "</td>";
     print "</tr>";
-    print "<tr bgcolor=$NicToolClient::light_grey>";
+    print "<tr class=light_grey_bg>";
     print "<td nowrap>", "Email: </td>";
     print "<td width=100%>",
         ( $duser->{'email'} ? $duser->{'email'} : '&nbsp;' ), "</td>";
     print "</tr>";
     print "</table>";
     print "</td><td width=50%>";
-    print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-    print "<tr bgcolor=$NicToolClient::light_grey>";
+    print "<table width=100%>";
+    print "<tr class=light_grey_bg>";
     print "<td nowrap>", "First Name: </td>";
     print "<td width=100%>",
         ( $duser->{'first_name'} ? $duser->{'first_name'} : '&nbsp;' ),
         "</td>";
     print "</tr>";
-    print "<tr bgcolor=$NicToolClient::light_grey>";
+    print "<tr class=light_grey_bg>";
     print "<td nowrap>", "Last Name: </td>";
     print "<td width=100%>",
         ( $duser->{'last_name'} ? $duser->{'last_name'} : '&nbsp;' ), "</td>";
@@ -353,32 +349,29 @@ sub display_global_log {
             if ( $q->param($_) );
     }
 
-    print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
+    print "<table width=100%>";
     print "<tr><td><hr></td></tr>";
 
-#print "<tr><td align=center><font color=red>$message</font></td></tr>" if( $message );
     $nt_obj->display_nice_error($message) if $message;
-    print "<tr bgcolor=$NicToolClient::dark_grey><td>";
-    print "<table cellpadding=0 cellspacing=0 border=0 width=100%>";
-    print "<tr>";
-    print "<td><b>Global Application Log</b></td>";
-    print "</tr></table></td></tr>";
-    print "</table>";
+    print qq[<tr class=dark_grey_bg><td>
+    <table class="no_pad" width=100%>
+    <tr>
+    <td><b>Global Application Log</b></td>
+    </tr></table></td></tr>
+    </table>];
 
     $nt_obj->display_search_rows( $q, $rv, \%params, $cgi, \@req_fields );
 
     if (@$list) {
-        print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-        print "<tr bgcolor=$NicToolClient::dark_grey>";
+        print "<table width=100%>";
+        print "<tr class=dark_grey_bg>";
         foreach (@columns) {
             if ( $sort_fields{$_} ) {
-                print
-                    "<td bgcolor=$NicToolClient::dark_color align=center><table cellpadding=0 cellspacing=0 border=0>";
-                print "<tr>";
-                print "<td><font color=white>$labels{$_}</font></td>";
-                print "<td>&nbsp; &nbsp; <font color=white>",
-                    $sort_fields{$_}->{'order'}, "</font></td>";
-                print "<td><img src=$NicToolClient::image_dir/",
+                print qq[<td class=dark_bg align=center><table class="no_pad">
+                <tr>
+                <td>$labels{$_}</td>
+                <td>&nbsp; &nbsp; $sort_fields{$_}->{'order'}</td>
+                <td><img src=$NicToolClient::image_dir/],
                     (
                     uc( $sort_fields{$_}->{'mod'} ) eq 'ASCENDING'
                     ? 'up.gif'
@@ -397,8 +390,8 @@ sub display_global_log {
         my $range;
         foreach my $row (@$list) {
 
-            print "<tr bgcolor="
-                . ( $x++ % 2 == 0 ? $NicToolClient::light_grey : 'white' )
+            print "<tr class="
+                . ( $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' )
                 . ">";
             foreach (@columns) {
                 if ( $_ eq 'timestamp' ) {
@@ -411,15 +404,14 @@ sub display_global_log {
 
                 }
                 elsif ( $_ eq 'title' ) {
-                    print
-                        "<td><table cellpadding=0 cellspacing=0 border=0><tr>";
-                    print "<td><a href=user.cgi?"
+                    print qq[<td><table class="no_pad"><tr>
+                    <td><a href=user.cgi?]
                         . join( '&', @state_fields )
                         . "&redirect=1&nt_group_id=$duser->{'nt_group_id'}&nt_user_id=$duser->{'nt_user_id'}&object="
                         . $q->escape( $row->{'object'} )
                         . "&obj_id="
                         . $q->escape( $row->{'object_id'} )
-                        . "><img src=$NicToolClient::image_dir/$map->{ $row->{'object'} }->{'image'} border=0></a></td>";
+                        . "><img src=$NicToolClient::image_dir/$map->{ $row->{'object'} }->{'image'}></a></td>";
                     print "<td><a href=user.cgi?"
                         . join( '&', @state_fields )
                         . "&redirect=1&nt_group_id=$duser->{'nt_group_id'}&nt_user_id=$duser->{'nt_user_id'}&object="
@@ -430,15 +422,14 @@ sub display_global_log {
                     print "</tr></table></td>";
                 }
                 elsif ( $_ eq 'target' && $row->{'target_id'} ) {
-                    print
-                        "<td><table cellpadding=0 cellspacing=0 border=0><tr>";
-                    print "<td><a href=user.cgi?"
+                    print qq[<td><table class="no_pad"><tr>
+                    <td><a href=user.cgi?]
                         . join( '&', @state_fields )
                         . "&redirect=1&nt_group_id=$duser->{'nt_group_id'}&nt_user_id=$duser->{'nt_user_id'}&object="
                         . $q->escape( $row->{'target'} )
                         . "&obj_id="
                         . $q->escape( $row->{'target_id'} )
-                        . "><img src=$NicToolClient::image_dir/$map->{ $row->{'target'} }->{'image'} border=0></a></td>";
+                        . "><img src=$NicToolClient::image_dir/$map->{ $row->{'target'} }->{'image'}></a></td>";
                     print "<td><a href=user.cgi?"
                         . join( '&', @state_fields )
                         . "&redirect=1&nt_group_id=$duser->{'nt_group_id'}&nt_user_id=$duser->{'nt_user_id'}&object="
@@ -497,16 +488,14 @@ sub display_edit {
     }
     my $modname = $modifyperm ? 'Edit Properties' : 'View Details';
 
- #print "<center><font color=red><b>$message</b></font></center>" if $message;
     $nt_obj->display_nice_error( $message, ucfirst($edit) . " User" )
         if $message;
 
     print "<a name='ZONE'>";
-    print "<table cellpadding=2 cellspacing=2 border=0 width=100%>";
-    print
-        "<tr bgcolor=$NicToolClient::dark_color><td colspan=2><font color=white><b>$modname</b></font></td></tr>";
+    print "<table width=100%>";
+    print "<tr class=dark_bg><td colspan=2><b>$modname</b></td></tr>";
 
-    print "<tr bgcolor=$NicToolClient::light_grey>";
+    print "<tr class=light_grey_bg>";
     print "<td align=right nowrap>", "Username:</td>";
     print "<td width=100%>",
         (
@@ -521,7 +510,7 @@ sub display_edit {
         "</td>";
     print "</tr>";
 
-    print "<tr bgcolor=$NicToolClient::light_grey>";
+    print "<tr class=light_grey_bg>";
     print "<td align=right nowrap>", "First Name:</td>";
     print "<td width=100%>",
         (
@@ -536,7 +525,7 @@ sub display_edit {
         "</td>";
     print "</tr>";
 
-    print "<tr bgcolor=$NicToolClient::light_grey>";
+    print "<tr class=light_grey_bg>";
     print "<td align=right nowrap>", "Last Name:</td>";
     print "<td width=100%>",
         (
@@ -551,7 +540,7 @@ sub display_edit {
         "</td>";
     print "</tr>";
 
-    print "<tr bgcolor=$NicToolClient::light_grey>";
+    print "<tr class=light_grey_bg>";
     print "<td align=right nowrap>", "Email:</td>";
     print "<td width=100%>",
         (
@@ -567,10 +556,10 @@ sub display_edit {
     print "</tr>";
 
     if ($modifyperm) {
-        print "<tr bgcolor=$NicToolClient::dark_grey><td colspan=2>",
+        print "<tr class=dark_grey_bg><td colspan=2>",
             "Change Password</td></tr>";
 
-        print "<tr bgcolor=$NicToolClient::light_grey>";
+        print "<tr class=light_grey_bg>";
         print "<td align=right nowrap>", "Current Password:</td>";
         print "<td width=100%>",
             $q->password_field( -name => 'current_password', -override => 1 ),
@@ -578,9 +567,9 @@ sub display_edit {
         print "</tr>";
 
         print
-            "<tr bgcolor=$NicToolClient::light_grey><td colspan=2>&nbsp;</td></tr>";
+            "<tr class=light_grey_bg><td colspan=2>&nbsp;</td></tr>";
 
-        print "<tr bgcolor=$NicToolClient::light_grey>";
+        print "<tr class=light_grey_bg>";
         print "<td align=right nowrap>", "New Password:</td>";
         print "<td width=100%>",
             $q->password_field(
@@ -590,7 +579,7 @@ sub display_edit {
             ),
             "</td>";
         print "</tr>";
-        print "<tr bgcolor=$NicToolClient::light_grey>";
+        print "<tr class=light_grey_bg>";
         print "<td align=right nowrap>", "Confirm New Password:</td>";
         print "<td width=100%>",
             $q->password_field(
@@ -644,7 +633,7 @@ sub display_edit {
             }
 
             #warn "user is ".Data::Dumper::Dumper($duser);
-            print "<tr bgcolor=$NicToolClient::dark_grey><td colspan=2>"
+            print "<tr class=dark_grey_bg><td colspan=2>"
                 . (
                 $permmodify
                 ? "<input type=radio value='1' name='group_defaults' "
@@ -663,60 +652,53 @@ sub display_edit {
 
             if ($showusablens) {
                 print qq(
-                    <tr bgcolor=$NicToolClient::light_grey>
-                        <td  bgcolor=$NicToolClient::light_grey valign=top> Usable Nameservers: </td>
-                        <td  bgcolor=$NicToolClient::light_grey valign=top> Permissions: </td>
+                    <tr class=light_grey_bg>
+                        <td class=light_grey_bg valign=top> Usable Nameservers: </td>
+                        <td class=light_grey_bg valign=top> Permissions: </td>
                     </tr>
 
                 );
                 print qq(
-                    <tr bgcolor=$NicToolClient::light_grey>
-                        <td  bgcolor=$NicToolClient::light_grey valign=top>
+                    <tr class=light_grey_bg>
+                        <td class=light_grey_bg valign=top>
                                   );
                 my %order = map { $_->{'nt_nameserver_id'} => $_ }
                     @{ $ns_tree->{'list'} };
                 foreach ( sort keys %order ) {
                     my $ns = $order{$_};
                     print
-                        "<img src=$NicToolClient::image_dir/perm-checked.gif border=0>&nbsp;$ns->{'description'} ($ns->{'name'})<BR>";
+                        "<img src=$NicToolClient::image_dir/perm-checked.gif>&nbsp;$ns->{'description'} ($ns->{'name'})<BR>";
                 }
                 if ( @{ $ns_tree->{'list'} } == 0 ) {
                     print "No available nameservers."
                         . $nt_obj->help_link('nonsavail');
                 }
-                print qq(
-                        </td>
-                );
+                print qq[</td>];
             }
             else {
-                print qq(
-                    <tr bgcolor=$NicToolClient::light_grey colspan=2>);
+                print qq[<tr class="light_grey_bg" colspan=2>];
             }
 
             print qq{
-                <td bgcolor=$NicToolClient::light_grey colspan=2>
-                    <table cellpadding=6 cellspacing=1 border=0 align=center>
-                        };
+<td class=light_grey_bg colspan=2>
+ <table style="padding:6; border-spacing:1; text-align:center;">
+						};
 
             my $x = 1;
             my $color;
             foreach my $type (@order) {
                 $color = (
-                    $x++ % 2 == 0 ? $NicToolClient::light_grey : 'white' );
-                print qq{
-                        <tr>
-                            <td align=right><b>}
+                    $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' );
+                print qq[ <tr> <td align=right><b>]
                     . ( ucfirst($type) ) . qq{:</b></td>
                                 };
                 foreach my $perm ( @{ $perms{$type} } ) {
                     if ( $perm eq '.' ) {
-                        print qq(
-                                <td bgcolor=$color></td>
-                            );
+                        print qq[<td class=$color></td>];
                         next;
                     }
                     print qq{
-                            <td valign=center bgcolor=$color align=left><img src=$NicToolClient::image_dir/perm-}
+                            <td valign=center class=$color align=left><img src=$NicToolClient::image_dir/perm-}
                         . ( $group->{ $type . "_" . $perm }
                         ? 'checked.gif'
                         : 'unchecked.gif' )
@@ -753,7 +735,7 @@ sub display_edit {
                     ;    #(nt_group_id=>$user->{'nt_group_id'});
             }
 
-            print "<tr bgcolor=$NicToolClient::dark_grey><td colspan=2>"
+            print "<tr class=dark_grey_bg><td colspan=2>"
 
                 #.($modifyperm && !$editself
                 . (
@@ -773,15 +755,15 @@ sub display_edit {
 
             if ($showusablens) {
                 print qq(
-                     <tr bgcolor=$NicToolClient::light_grey>
-                        <td  bgcolor=$NicToolClient::light_grey valign=top> Usable Nameservers: </td>
-                        <td  bgcolor=$NicToolClient::light_grey valign=top> Permissions: </td>
+                     <tr class=light_grey_bg>
+                        <td class=light_grey_bg valign=top> Usable Nameservers: </td>
+                        <td class=light_grey_bg valign=top> Permissions: </td>
                     </tr>
                                   );
 
                 print qq(
-                     <tr bgcolor=$NicToolClient::light_grey>
-                        <td  bgcolor=$NicToolClient::light_grey valign=top>
+                     <tr class=light_grey_bg>
+                      <td class=light_grey_bg valign=top>
                                   );
                 my %order = map { $_->{'nt_nameserver_id'} => $_ }
                     @{ $ns_tree->{'nameservers'} };
@@ -801,28 +783,22 @@ sub display_edit {
                     print "No available nameservers."
                         . $nt_obj->help_link('nonsavail');
                 }
-                print qq(
-                        </td>
-                );
+                print qq( </td>);
             }
             else {
-                print qq(
-                <tr bgcolor=$NicToolClient::light_grey colspan=2>);
+                print qq(<tr class=light_grey_bg colspan=2>);
             }
 
-            print qq{
-                <td colspan=2 bgcolor=$NicToolClient::light_grey>
-                    <table cellpadding=6 cellspacing=1 border=0 align=center>
-                        };
+            print qq[
+<td colspan=2 class=light_grey_bg>
+ <table style="padding:6; border-spacing:1; text-align:center;"> ];
             my $x = 1;
             my $color;
             @order = qw(group user zone zonerecord nameserver self header);
             foreach my $type (@order) {
                 if ( $type eq 'header' ) {
                     next if $editself;
-                    print qq(
-                        <tr><td></td>
-                    );
+                    print qq( <tr><td></td>);
                     foreach (qw(Edit Create Delete Delegate All)) {
                         if ( $_ eq '.' ) {
                             print "<td></td>";
@@ -838,25 +814,16 @@ sub display_edit {
                         );
                         print "</td>";
                     }
-                    print qq(
-                        </tr>
-                    );
+                    print qq( </tr>);
                 }
                 else {
-                    $color
-                        = ( $x++ % 2 == 0
-                        ? $NicToolClient::light_grey
-                        : 'white' );
-                    print qq{
-                            <tr>
-                                <td align=right><b>}
+                    $color = ( $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' );
+                    print qq{ <tr> <td align=right><b>}
                         . ( ucfirst($type) ) . qq{:</b></td>
                                     };
                     foreach my $perm ( @{ $perms{$type} } ) {
                         if ( $perm eq '.' ) {
-                            print qq(
-                                <td>&nbsp;</td>
-                            );
+                            print qq( <td>&nbsp;</td>);
                             next;
                         }
                         if (   $modifyperm
@@ -864,7 +831,7 @@ sub display_edit {
                             && !$editself )
                         {
                             print qq{
-                                <td valign=center align=left bgcolor=$color> };
+                                <td valign=center align=left class=$color> };
                             print $q->checkbox(
                                 -name    => $type . "_" . $perm,
                                 -value   => '1',
@@ -881,21 +848,21 @@ sub display_edit {
                         }
                         else {
                             print qq{
-                                <td bgcolor=$color valign=center align=left><img src=$NicToolClient::image_dir/perm-}
+                                <td class=$color valign=center align=left><img src=$NicToolClient::image_dir/perm-}
                                 . ( $duser->{ $type . "_" . $perm }
                                 ? 'checked.gif'
                                 : 'unchecked.gif' )
                                 . qq{>
                                     }
                                 . ( $modifyperm && !$editself
-                                ? qq{<font color=$NicToolClient::disabled_color>}
+                                ? qq{<span class=disabled>}
                                 : '' )
                                 . (
                                 exists $labels{$type}->{$perm}
                                 ? $labels{$type}->{$perm}
                                 : ucfirst($perm) )
                                 . ( $modifyperm
-                                    && !$editself ? '</font>' : '' )
+                                    && !$editself ? '</span>' : '' )
                                 . qq{</td> };
                         }
                     }
@@ -924,7 +891,7 @@ sub display_edit {
     }
     if ($modifyperm) {
         print
-            "<tr bgcolor=$NicToolClient::dark_grey><td colspan=2 align=center>",
+            "<tr class=dark_grey_bg><td colspan=2 align=center>",
             $q->submit( $edit eq 'edit' ? 'Save' : 'Create' ),
             $q->submit('Cancel'), "</td></tr>";
     }
