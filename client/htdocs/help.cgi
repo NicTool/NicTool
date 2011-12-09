@@ -132,7 +132,7 @@ sub display {
                </tr>
               </table>
              </td>
-             <td width=100% align=left> $t->{'description'}</td>
+             <td class="fat left"> $t->{'description'}</td>
             </tr>];
         }
         print qq[

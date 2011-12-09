@@ -159,11 +159,11 @@ sub display_edit_user {
 
     $nt_obj->display_nice_error($message) if $message;
 
-    print "<table width=100%>";
-    print "<tr class=dark_bg><td colspan=2><b>New User</b></td></tr>";
-    print "<tr class=light_grey_bg>";
-    print "<td align=right>", "Username:</td>";
-    print "<td width=80%>",
+    print qq[<table class="fat">
+<tr class=dark_bg><td colspan=2><b>New User</b></td></tr>
+<tr class=light_grey_bg>
+<td class=right>Username:</td>
+<td width=80%>],
         (
         $modifyperm
         ? $q->textfield(
@@ -457,9 +457,9 @@ sub display_list {
             if ( $q->param($_) );
     }
 
-    print qq[<table width=100%>
+    print qq[<table class="fat">
     <tr class=dark_grey_bg><td>
-    <table class="no_pad" width=100%>
+    <table class="no_pad" class="fat">
     <tr>
     <td><b>User List</b></td>
     <td align=right>];
@@ -486,8 +486,7 @@ sub display_list {
     if (@$list) {
         $nt_obj->display_move_javascript( 'move_users.cgi', 'user' );
 
-        print "<table width=100%>";
-        print "<tr class=dark_grey_bg>";
+        print qq[<table class="fat"> <tr class=dark_grey_bg>];
 
         if ( $user_group->{'has_children'} ) {
             print qq[<td align=center>

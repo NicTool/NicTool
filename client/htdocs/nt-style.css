@@ -30,6 +30,7 @@ div {
 
 .nowrap { white-space: nowrap; }
 .fat    { width: 100%; }
+.left   { text-align: left; }
 .right  { text-align: right; }
 .center { text-align: center; }
 .middle { vertical-align: middle; }

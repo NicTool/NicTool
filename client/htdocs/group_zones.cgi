@@ -232,12 +232,12 @@ sub display_list {
         push( @state_fields, "$_=" . $q->escape( $q->param($_) ) )
             if ( $q->param($_) );
     }
-    print qq[<table width=100%>
-    <tr class=dark_grey_bg><td>
-    <table class="no_pad" width=100%>
-    <tr>
-    <td><b>Zone List</b></td>
-    <td align=right>];
+    print qq[<table class="fat">
+<tr class=dark_grey_bg><td>
+<table class="no_pad fat">
+<tr>
+<td><b>Zone List</b></td>
+<td class=right>];
     if ( $nt_obj->no_gui_hints || $user->{"zone_create"} ) {
         print "<a href=group_zones.cgi?"
             . join( '&', @state_fields )
@@ -271,7 +271,7 @@ sub display_list {
         $nt_obj->display_delegate_javascript( 'delegate_zones.cgi', 'zone' );
 
         print qq{
-        <table width=100%>
+        <table class="fat">
             <tr class=dark_grey_bg>};
 
         if ( $user_group->{'has_children'} ) {
@@ -513,12 +513,11 @@ sub new_zone {
     $nt_obj->display_nice_error( $message, ucfirst($edit) . " Zone" )
         if $message;
 
-    print "<table width=100%>";
-    print "<tr class=dark_bg><td colspan=2><b>New Zone</b></td></tr>";
-
-    print "<tr class=light_grey_bg>";
-    print "<td align=right>", "Zone:</td>";
-    print "<td width=100%>",
+    print qq[<table class="fat">
+<tr class=dark_bg><td colspan=2><b>New Zone</b></td></tr>
+<tr class=light_grey_bg>
+<td align=right>Zone:</td>
+<td class="fat">],
         $q->textfield( -name => 'zone', -size => 40, -maxlength => 128 ),
         " <a href=\"zones.cgi?nt_group_id="
         . $q->param('nt_group_id')

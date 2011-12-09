@@ -52,7 +52,7 @@ sub display {
         show_zone_records( $template, $recs );
     }
 
-    print '<div align="center" class="dark_grey_bg" width="100%">
+    print '<div class="dark_grey_bg fat center">
         <form> <input type="button" value="Close" onClick="window.close()"> </form>
      </div>';
 

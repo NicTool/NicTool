@@ -207,10 +207,10 @@ sub display_properties {
 
     if ( $zone->{'deleted'} ) {
         print qq( 
-        <table width=100%>
+        <table class="fat">
         <tr class=dark_grey_bg>
             <td>
-                <table width=100%>
+                <table class="fat">
                 <tr class=light_hilite_bg>
                     <td class="nowrap" colspan=2> This zone may not be modified because it is deleted.
                     </td></tr>
@@ -224,57 +224,57 @@ sub display_properties {
 
     #show delegation information if has been delegated to you
     if ($isdelegate) {
-        print qq[<table width=100%>
-        <tr class=dark_grey_bg><td><table class="no_pad" width=100%>
-        <tr>
-        <td><b>Delegation</b></td>
-        </tr></table>
-        </td></tr></table>
-        <table cellspacing=0 width=100%>
-        <tr>
-        <td valign=top>
-        <table width=100%>];
+        print qq[<table class="fat">
+<tr class=dark_grey_bg><td><table class="no_pad fat">
+<tr>
+<td><b>Delegation</b></td>
+</tr></table>
+</td></tr></table>
+<table cellspacing=0 class="fat">
+<tr>
+<td valign=top>
+<table class="fat">];
 
         if ( !$zone->{'pseudo'} ) {
-            print qq(
-                <tr class=light_grey_bg>
-                    <td class="nowrap"> Delegated by: </td>
-                    <td width=100%>
-                        <table>
-                        <tr><td valign=center><img src=$NicToolClient::image_dir/user.gif></td>
-                            <td valign=center> $zone->{'delegated_by_name'}</td>
-                        </tr>
-                        </table>
-                    </td>
-                </tr>);
+            print qq[
+<tr class=light_grey_bg>
+	<td class="nowrap"> Delegated by: </td>
+	<td class="fat">
+ 	 <table>
+		<tr><td valign=center><img src=$NicToolClient::image_dir/user.gif></td>
+			<td valign=center> $zone->{'delegated_by_name'}</td>
+		</tr>
+	</table>
+ </td>
+</tr>];
         }
         else {
-            print qq(
-                <tr class=light_hilite_bg>
-                    <td class="nowrap" colspan=2> This zone is visible because some of its records have been delegated to you.</td>
-                </tr>);
+            print qq[
+<tr class=light_hilite_bg>
+ <td class="nowrap" colspan=2> This zone is visible because some of its records have been delegated to you.</td>
+  </tr>];
 
         }
 
-        print qq(
-            <tr class=light_grey_bg>
-                <td class="nowrap"> Belonging to group: </td>
-                <td width=100%>
-                    <table>
-                        <tr>
-                            <td valign=center><img src=$NicToolClient::image_dir/group.gif></td>
-                            <td valign=center> $zone->{'group_name'}</td>
-                        </tr>
-                    </table>
-                </td>
-            </tr>);
+        print qq[
+<tr class=light_grey_bg>
+ <td class="nowrap"> Belonging to group: </td>
+ <td class="fat">
+	<table>
+		<tr>
+			<td valign=center><img src=$NicToolClient::image_dir/group.gif></td>
+			<td valign=center> $zone->{'group_name'}</td>
+		</tr>
+	</table>
+ </td>
+</tr>];
 
         #print "</td><td width=50% valign=top>";
         if ( !$zone->{'pseudo'} ) {
             print qq(
             <tr class=light_grey_bg>
                 <td class="nowrap"> With Permissions: </td>
-                <td width=100%>
+                <td class="fat">
                     <table> <tr class=light_grey_bg>);
             my %perms = (
                 'write'          => "Write",
@@ -310,30 +310,30 @@ sub display_properties {
         }
         elsif ( @{ $delegates->{'delegates'} } gt 0 ) {
             print qq{
-            <table width=100%>
-            <tr class=dark_grey_bg>
-                <td>
-                    <table class="no_pad" width=100%>
-                        <tr>
-                        <td><b>Zone Delegates</b></td>
-                        </tr>
-                    </table>
-                </td>
-            </tr>
-            </table>
+<table class="fat">
+<tr class=dark_grey_bg>
+<td>
+<table class="no_pad fat">
+<tr>
+<td><b>Zone Delegates</b></td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
 
-            <table cellspacing=0 width=100%>
-            <tr>
-                <td valign=top>
-                    <table width=100%>
-                     <tr class=light_grey_bg>
-                        <td class="nowrap"> Delegated To Group</td>
-                        <td class="nowrap"> Delegated By</td>
-                        <td class="nowrap"> Access Permissions}
-                . $nt_obj->help_link('delperms') . qq{</td>
-                        <td class="nowrap" width=1%> Edit</td>
-                        <td class="nowrap" width=1% align=center><img src=$NicToolClient::image_dir/trash-delegate.gif></td>
-                    </tr>
+<table cellspacing=0 class="fat">
+<tr>
+<td valign=top>
+<table class="fat">
+<tr class=light_grey_bg>
+<td class="nowrap"> Delegated To Group</td>
+<td class="nowrap"> Delegated By</td>
+<td class="nowrap"> Access Permissions}
+. $nt_obj->help_link('delperms') . qq{</td>
+<td class="nowrap" width=1%> Edit</td>
+<td class="nowrap" width=1% align=center><img src=$NicToolClient::image_dir/trash-delegate.gif></td>
+</tr>
             };
             foreach my $del ( @{ $delegates->{'delegates'} } ) {
                 print qq[
@@ -394,8 +394,8 @@ sub display_properties {
         }
     }
 
-    print qq[<table width=100%>
-    <tr class=dark_grey_bg><td><table class="no_pad" width=100%>
+    print qq[<table class="fat">
+    <tr class=dark_grey_bg><td><table class="no_pad fat">
     <tr>
     <td><b>Properties</b></td>];
     if ( $nt_obj->no_gui_hints
@@ -414,22 +414,22 @@ sub display_properties {
     }
     print qq[</tr></table>
 </td></tr></table>
-<table cellspacing=0 width=100%>
+<table cellspacing=0 class="fat">
 <tr>
 <td width=50%>
-<table width=100%>];
+<table class="fat">];
     foreach (qw(zone mailaddr description serial minimum)) {
         print qq[<tr class=light_grey_bg>
 <td class="nowrap">$_: </td>
-<td width=100%>], ( $zone->{$_} ? $zone->{$_} : '&nbsp;' ), "</td></tr>";
+<td class="fat">], ( $zone->{$_} ? $zone->{$_} : '&nbsp;' ), "</td></tr>";
     }
     print qq[</table>
     </td><td width=50% valign=top>
-    <table width=100%>];
+    <table class="fat">];
     foreach (qw(refresh retry expire ttl )) {
         print qq[<tr class=light_grey_bg>
         <td class="nowrap">$_: </td>
-        <td width=100%>], ( $zone->{$_} ? $zone->{$_} : '&nbsp;' ), "</td></tr>";
+        <td class="fat">], ( $zone->{$_} ? $zone->{$_} : '&nbsp;' ), "</td></tr>";
     }
 
     print qq[</table></td></tr></table>];
@@ -454,10 +454,10 @@ sub display_nameservers {
         description => 'description'
     );
 
-    print qq[<table cellspacing=0 width=100%>
+    print qq[<table cellspacing=0 class="fat">
     <tr><td>
-    <table width=100%>
-    <tr class=dark_grey_bg><td><table class="no_pad" width=100%>
+    <table class="fat">
+    <tr class=dark_grey_bg><td><table class="no_pad fat">
     <tr>
     <td><b>Nameservers</b></td>];
     if ( $nt_obj->no_gui_hints
@@ -474,14 +474,11 @@ sub display_nameservers {
     else {
         print "<td align=right><span class=disabled>Edit</span></td>";
     }
-    print "</tr></table>";
-    print "</td></tr></table>";
-
-    print "<table width=100%>";
-    print "<tr class=dark_grey_bg>";
-    foreach (@fields) {
-        print "<td align=center>", "$labels{$_}</td>";
-    }
+    print qq[</tr></table>
+    </td></tr></table>
+    <table class="fat">
+    <tr class=dark_grey_bg>];
+    foreach (@fields) { print "<td align=center>$labels{$_}</td>"; }
     print "</tr>";
 
     my $x = 1;
@@ -605,13 +602,13 @@ sub display_zone_records {
             . $q->param('nt_zone_id')
             . ">View Resource Record Log</a>" );
 
-    print "<table width=100%>";
-    print "<tr><td><hr></td></tr>";
+    print qq[<table class="fat">
+    <tr><td><hr></td></tr>];
 
     #show delegation information if delegated down
 
     print qq[<tr class=dark_grey_bg><td>
-    <table class="no_pad" width=100%>
+    <table class="no_pad fat">
     <tr>
     <td><b>Resource Records</b></td>
     <td align=right>], join( ' | ', @options ), "</td>";
@@ -638,11 +635,11 @@ sub display_zone_records {
         }
         push @columns, 'description';
 
-        print "<table width=100%>";
-        print "<tr class=dark_grey_bg>";
+        print qq[<table class="fat">
+        <tr class=dark_grey_bg>];
         foreach (@columns) {
             if ( $sort_fields{$_} ) {
-                print qq[<td class=dark_bg align=center>
+                print qq[<td class="dark_bg center">
 								<table class="no_pad"><tr>
                 <td>$labels{$_}</td>
                 <td>&nbsp; &nbsp; $sort_fields{$_}->{'order'}</td>
@@ -950,8 +947,8 @@ sub display_edit_record {
 
     $nt_obj->display_nice_error($message)  if $message;
     $nt_obj->display_nice_error($message2) if $message2;
-    print "<a name='RECORD'>";
-    print '<div class="dark_bg">Resource Record</div>';
+    print qq[<a name="RECORD">
+    <div class="dark_bg">Resource Record</div>];
 
     # display delegation information
     if ( !$isdelegate && $edit ne 'new' ) {
@@ -965,11 +962,11 @@ sub display_edit_record {
         }
         elsif ( @{ $delegates->{'delegates'} } gt 0 ) {
             print qq[
-<table width=100%><tr class=dark_grey_bg><td>Delegates</td></tr></table>
-<table cellspacing=0 width=100%>
+<table class="fat"><tr class=dark_grey_bg><td>Delegates</td></tr></table>
+<table cellspacing=0 class="fat">
  <tr>
   <td valign=top>
-   <table width=100%>
+   <table class="fat">
     <tr class=light_grey_bg>
     <td class="nowrap"> Group</td>
     <td class="nowrap"> Delegated By</td>
@@ -1011,54 +1008,39 @@ sub display_edit_record {
                         <td class="nowrap" style="width:1%;">
 								);
                 if ( $nt_obj->no_gui_hints || $user->{zonerecord_delegate} ) {
-                    print
-                        "<a href=\"javascript:void window.open('delegate_zones.cgi?type=record&obj_list=$zone_record->{'nt_zone_record_id'}&nt_zone_id=$zone_record->{'nt_zone_id'}&nt_group_id=$del->{'nt_group_id'}&edit=1', 'delegate_win', 'width=640,height=480,scrollbars,resizable=yes')\">Edit</a>";
+                    print qq[<a href="javascript:void window.open('delegate_zones.cgi?type=record&obj_list=$zone_record->{'nt_zone_record_id'}&nt_zone_id=$zone_record->{'nt_zone_id'}&nt_group_id=$del->{'nt_group_id'}&edit=1', 'delegate_win', 'width=640,height=480,scrollbars,resizable=yes')">Edit</a>];
                 }
                 else {
-                    print "<span class=disabled>Edit</span>";
+                    print qq[<span class=disabled>Edit</span>];
                 }
-                print qq{
-</td>
-<td class="nowrap center" style="width:1%;">
-								};
+                print qq[ </td> <td class="nowrap center" style="width:1%;"> ];
 
                 if ( $nt_obj->no_gui_hints || $user->{zonerecord_delegate} ) {
-                    print
-                        "<a href='zone.cgi?type=record&nt_zone_record_id=$zone_record->{'nt_zone_record_id'}&nt_zone_id=$zone_record->{'nt_zone_id'}&nt_group_id="
-                        . $q->param('nt_group_id')
-                        . "&delegate_group_id=$del->{'nt_group_id'}&deletedelegate=1' onClick=\"return confirm('Are you sure you want to remove the delegation of resource record $zone_record->{'name'} to group $del->{'group_name'}?');\"><img src=$NicToolClient::image_dir/trash-delegate.gif alt='Remove Delegation'></a>";
+                    print qq[<a href="zone.cgi?type=record&nt_zone_record_id=$zone_record->{'nt_zone_record_id'}&nt_zone_id=$zone_record->{'nt_zone_id'}&nt_group_id=$q->param('nt_group_id')&delegate_group_id=$del->{'nt_group_id'}&deletedelegate=1" onClick="return confirm('Are you sure you want to remove the delegation of resource record $zone_record->{'name'} to group $del->{'group_name'}?');"><img src="$NicToolClient::image_dir/trash-delegate.gif" alt="Remove Delegation"></a>];
                 }
                 else {
-                    print "<img src=$NicToolClient::image_dir/trash-delegate-disabled.gif>";
+                    print qq[<img src="$NicToolClient::image_dir/trash-delegate-disabled.gif">];
                 }
 
-                print qq{
-                        </td>
-                    </tr>};
+                print qq[ </td> </tr>];
             }
-            print qq{
-                    </table>
-                </td>
-            </tr>
-            </table>
-            };
-
+            print qq[ </table> </td> </tr> </table> ];
         }
     }
     elsif ( $edit ne 'new' && !$pseudo ) {
         print qq[
-<table width=100%>
+<table class="fat">
  <tr class=dark_grey_bg>
   <td>
-   <table class="no_pad" width=100%> <tr> <td><b>Delegation</b></td> </tr> </table>
+   <table class="no_pad fat"> <tr> <td><b>Delegation</b></td> </tr> </table>
 	</td>
  </tr></table>
-<table cellspacing=0 width=100%>
+<table cellspacing=0 class="fat">
  <tr> <td valign=top>
-   <table width=100%>
+   <table class="fat">
     <tr class=light_grey_bg>
      <td class="nowrap"> Delegated by: </td>
-     <td width=100%> <table> <tr>
+     <td class="fat"> <table> <tr>
 		    <td valign=center><img src=$NicToolClient::image_dir/user.gif></td>
         <td valign=center> $zone_record->{'delegated_by_name'}</td>
        </tr> </table> </td>
@@ -1066,7 +1048,7 @@ sub display_edit_record {
 
     <tr class=light_grey_bg>
      <td class="nowrap"> Belonging to group: </td>
-     <td width=100%> <table> <tr>
+     <td class="fat"> <table> <tr>
         <td valign=center><img src=$NicToolClient::image_dir/group.gif></td>
         <td valign=center> $zone_record->{'group_name'}</td>
        </tr> </table> </td>
@@ -1074,7 +1056,7 @@ sub display_edit_record {
 
     <tr class=light_grey_bg>
      <td class="nowrap"> With Permissions: </td>
-     <td width=100%>
+     <td class="fat">
       <table>
        <tr class=light_grey_bg>];
         my %perms = (
@@ -1101,13 +1083,13 @@ sub display_edit_record {
         print "</table>";
         print "</td></tr></table>";
         print qq(
-            <table width=100%>
+            <table class="fat">
             <tr class=dark_grey_bg>
                 <td> Actions</td>
             </tr>
             </table>
 
-            <table cellspacing=0 width=100%>
+            <table cellspacing=0 class="fat">
             <tr class=light_grey_bg>
                 <td align=left>
         );
@@ -1147,34 +1129,29 @@ sub display_edit_record {
 
     }
 
-    print qq{
-  <table width=100%>
+    print qq[
+  <table class="fat">
     <tr class="dark_grey_bg"><td colspan=2> $action </td></tr>
     <tr class="light_grey_bg">
-      <td align="right"> Name:</td> },
-        "<td width=100%>", $modifyperm ? $q->textfield(
+      <td align="right"> Name:</td>
+        <td class="fat">], 
+				$modifyperm ? $q->textfield(
         -name      => 'name',
         -size      => 40,
         -maxlength => 127,
         -default   => $zone_record->{'name'}
         ) : $zone_record->{'name'},
-        (
-        $zone_record->{'name'} ne "$zone->{'zone'}."
-        ? "<b>.$zone->{'zone'}.</b>"
-        : ""
-        ),
+        ( $zone_record->{'name'} ne "$zone->{'zone'}." ? "<b>.$zone->{'zone'}.</b>" : ""),
         "</td></tr>";
 
     my $default_record_type = $zone_record->{'type'};
     $default_record_type = 'PTR' if ( $zone->{'zone'} =~ /(in-addr|ip6)\.arpa/ );
 
-    print qq{
+    print qq[
     <tr class="light_grey_bg">
-      <td align=right> Type:</td> }, "<td width=100%>\n", $modifyperm
-        ? $q->popup_menu(
+      <td class=right> Type:</td><td class="fat">\n], 
+			$modifyperm ? $q->popup_menu(
 
-        #        ? $q->radio_group(
-        #        -linebreak => 'true',
         -name    => 'type',
         -id      => 'rr_type',
         -values  => $type_values,
@@ -1204,7 +1181,7 @@ sub display_edit_record {
     print qq{
        <tr id="tr_weight" class="light_grey_bg">
          <td align="right"> Weight:</td>
-         <td width=100%>}, $modifyperm
+         <td class="fat">}, $modifyperm
         ? $q->textfield(
         -name      => 'weight',
         -size      => 5,
@@ -1218,7 +1195,7 @@ sub display_edit_record {
     print qq{
        <tr id="tr_priority" class="light_grey_bg">
          <td align="right"> Priority:</td>
-         <td width=100%>}, $modifyperm
+         <td class="fat">}, $modifyperm
         ? $q->textfield(
         -name      => 'priority',
         -size      => 5,
@@ -1231,8 +1208,8 @@ sub display_edit_record {
 
     print qq{
        <tr id="tr_other" class="light_grey_bg">
-         <td align="right"> Port:</td>
-         <td width=100%>}, $modifyperm
+         <td class="right"> Port:</td>
+         <td class="fat">}, $modifyperm
         ? $q->textfield(
         -name      => 'other',
         -size      => 5,
@@ -1309,17 +1286,15 @@ sub display_edit_zone {
 
     $nt_obj->display_nice_error($message) if $message;
 
-    print "<a name='ZONE'>";
-    print "<table width=100%>";
-    print "<tr class=dark_bg><td colspan=2><b>$action Zone</b></td></tr>";
-
-    print "<tr class=light_grey_bg>";
-    print "<td align=right>", "Zone:</td>";
-    print "<td width=100%>", $zone->{'zone'}, "</td></tr>";
-
-    print "<tr class=light_grey_bg>";
-    print "<td align=right valign=top>", "Nameservers:</td>";
-    print "<td width=80%>\n";
+    print qq[<a name='ZONE'>
+<table class="fat">
+ <tr class=dark_bg><td colspan=2><b>$action Zone</b></td></tr>
+ <tr class=light_grey_bg>
+  <td align=right>Zone:</td>
+  <td class="fat">$zone->{'zone'}</td></tr>
+ <tr class=light_grey_bg>
+  <td align=right valign=top>Nameservers:</td>
+  <td width=80%>\n];
 
     my %zone_ns
         = map { $_->{'nt_nameserver_id'}, 1 } @{ $zone->{'nameservers'} };

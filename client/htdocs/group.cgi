@@ -161,8 +161,8 @@ sub display_zone_search {
     my ( $nt_obj, $q, $group ) = @_;
 
     print qq[ 
-<table width=100%>
- <tr class=dark_grey_bg><td><table class="no_pad" width=100%>
+<table class="fat">
+ <tr class=dark_grey_bg><td><table class="no_pad fat">
     <tr> ],
     $q->startform( -action => 'group.cgi', -method => 'POST' ),
     $q->hidden( -name => 'nt_group_id' ),
@@ -251,9 +251,9 @@ sub display_group_list {
         @options = ( "<span class=disabled>New Sub-Group</span>");
     }
 
-    print qq[<table width=100%>
+    print qq[<table class="fat">
         <tr class=dark_grey_bg><td>
-        <table class="no_pad" width=100%>
+        <table class="no_pad fat">
         <tr>
         <td><b>Sub-Group List</b></td>
         <td align=right>], join( ' | ', @options ), "</td>
@@ -264,11 +264,11 @@ sub display_group_list {
         $include_subgroups );
 
     if (@$groups) {
-        print "<table width=100%>";
-        print "<tr class=dark_grey_bg>";
+        print qq[<table class="fat">
+        <tr class="dark_grey_bg">];
         foreach (@columns) {
             if ( $sort_fields{$_} ) {
-                print qq[<td class=dark_bg align=center>
+                print qq[<td class="dark_bg center">
                     <table class="no_pad">
                     <tr>
                     <td>$labels{$_}</td>
@@ -294,7 +294,7 @@ sub display_group_list {
 
         foreach my $group (@$groups) {
             print "<tr class=" . ( $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' ) . ">";
-            print qq[<td width=100%><table class="no_pad"><tr>
+            print qq[<td class="fat"><table class="no_pad"><tr>
 <td><img src=$NicToolClient::image_dir/group.gif></td>
 <td>],
                 join(
@@ -402,12 +402,12 @@ sub display_edit {
         }
     }
 
-    print qq[<table width=100%>
+    print qq[<table class="fat">
     <tr class=dark_bg><td colspan=2><b>],
         ( $modifyperm ? ucfirst($edit) : 'View' ), " Sub-Group</b></td></tr>";
-    print "<tr class=light_grey_bg>";
-    print "<td align=right>Name:</td>";
-    print "<td width=100%>";
+    print qq[<tr class="light_grey_bg">
+    <td class="right">Name:</td>
+    <td class="fat">];
     if ($modifyperm) {
         print $q->textfield(
             -name    => 'name',

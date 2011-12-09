@@ -57,10 +57,10 @@ sub display {
     );
 
     print qq[ 
-<table width=100%>
+<table class="fat">
  <tr class=light_grey_bg>
   <td>
-   <table class="no_pad" width=100%>
+   <table class="no_pad fat">
     <tr>];
     for my $x ( 1 .. $level ) {
         print "<td><img src=$NicToolClient::image_dir/"
@@ -135,8 +135,8 @@ sub display_log {
         ['nt_group_id'], $include_subgroups );
 
     if (@$log) {
-        print "<table width=100%>";
-        print "<tr class=dark_grey_bg>";
+        print qq[<table class="fat">
+        <tr class=dark_grey_bg>];
         foreach (@columns) {
             if ( $sort_fields{$_} ) {
                 print qq[

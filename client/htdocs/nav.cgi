@@ -49,10 +49,10 @@ sub display {
     return $nt_obj->display_error($group) if $group->{'error_code'} != '200';
 
     print qq[
-<table style="width:100%;">
+<table class="fat">
  <tr class="dark_grey_bg">
   <td>
-   <table class="no_pad" style="width:100%;">
+   <table class="no_pad fat">
     <tr>
      <td><img src="$NicToolClient::image_dir/group.gif" alt="group icon"></td>
      <td class="nowrap"><a href="group.cgi?nt_group_id=$group->{'nt_group_id'}" target="body"> ]

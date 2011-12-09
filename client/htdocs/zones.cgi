@@ -101,13 +101,13 @@ sub print_zone_request_form {
         -default => $q->param('nt_group_id')
         );
 
-    print qq{ <table width="100%">
+    print qq{ <table class="fat">
 			  <tr class="dark_bg"> 
-                <td colspan="4" align="center"><b>Batch Zone Creation</b></td>
+                <td colspan="4" class="center"><b>Batch Zone Creation</b></td>
               </tr> },
 
         qq{ <tr class="light_grey_bg">
-                <td align="right"> Action: </td>
+                <td class="right"> Action: </td>
                 <td> },
         $q->popup_menu(
         -name    => 'action',
@@ -115,7 +115,7 @@ sub print_zone_request_form {
         -default => $q->param('action')
         ),
         qq{   </td>
-                <td align="right">New IP:</td><td> },
+                <td class="right">New IP:</td><td> },
         $q->textfield(
         -name  => 'newip',
         -size  => 15,
@@ -129,7 +129,7 @@ sub print_zone_request_form {
                <td> },
         $q->popup_menu( -name => 'template', -values => [@templates] ),
         qq{ </td>
-               <td align="right">Mail IP: </td>
+               <td class="right">Mail IP: </td>
                <td> },
         $q->textfield(
         -name  => 'mailip',
@@ -146,7 +146,7 @@ sub print_zone_request_form {
 
              <tr class="light_grey_bg">
                 <td></td>
-                <td colspan="3" align="center"><br>
+                <td colspan="3" class="center"><br>
     Zones must be a zone or list of zones, entered one per line. Zones have only two parts.<br>
               </tr>
               <tr class="light_grey_bg">

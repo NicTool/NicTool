@@ -55,8 +55,8 @@ sub display {
     $nt_obj->display_zone_list_options( $user, $q->param('nt_group_id'),
         $level, 0 );
 
-    print qq[<table width=100%>
-    <tr class=light_grey_bg><td><table class="no_pad" width=100%>
+    print qq[<table class="fat">
+    <tr class=light_grey_bg><td><table class="no_pad fat">
     <tr>];
     foreach ( 1 .. $level ) {
         print "<td><img src=$NicToolClient::image_dir/transparent.gif width=16 height=16></td>";
@@ -66,7 +66,7 @@ sub display {
     <td><img src="$NicToolClient::image_dir/graph.gif"></td>
     <td><img src="$NicToolClient::image_dir/transparent.gif" width=3 height=16></td>
     <td class="nowrap"><b>Nameserver Query Log</b></td>
-    <td align=right width=100%> &nbsp;</td>
+    <td class="right fat"> &nbsp;</td>
     </tr>
     </table></td></tr>
     </table>];
@@ -106,8 +106,8 @@ sub display {
     $nt_obj->display_search_rows( $q, $rv, \%params,
         'group_zones_query_log.cgi', ['nt_group_id'] );
 
-    print "<table width=100%>";
-    print "<tr class=dark_grey_bg>";
+    print qq[<table class="fat">
+    <tr class=dark_grey_bg>];
     foreach (@columns) {
         if ( $sort_fields{$_} ) {
             print qq[<td class=dark_bg align=center><table class="no_tab">

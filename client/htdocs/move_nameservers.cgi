@@ -95,7 +95,7 @@ sub move {
 
     $nt_obj->display_nice_error($message) if $message;
 
-    print qq[<table width=100%>
+    print qq[<table class="fat">
     <tr class=dark_bg><td colspan=2><b>Move Nameservers</b></td></tr>
     <tr class=light_grey_bg>
     <td class="nowrap top"> Users: </td>

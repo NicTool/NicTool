@@ -168,9 +168,9 @@ sub display_list {
     }
 
     print qq[
-<table width=100%>
+<table class="fat">
  <tr class=dark_grey_bg><td>
-   <table class="no_pad" width=100%>
+   <table class="no_pad fat">
     <tr>
      <td><b>Nameserver List</b></td>
      <td align=right>];
@@ -200,8 +200,8 @@ sub display_list {
 
     $nt_obj->display_move_javascript( 'move_nameservers.cgi', 'nameserver' );
 
-    print "<table width=100%>";
-    print "<tr class=dark_grey_bg>";
+    print qq[<table class="fat">
+    <tr class=dark_grey_bg>];
 
     if ( $user_group->{'has_children'} ) {
         print "<td align=center>";
@@ -390,11 +390,11 @@ sub display_edit_nameserver {
     else {
         $title = "View Nameserver Details";
     }
-    print "<table width=100%>";
-    print "<tr class=dark_bg><td colspan=2><b>$title</b></td></tr>";
-    print "<tr class=light_grey_bg>";
-    print "<td align=right>", "Fully qualfied nameserver name:</td>";
-    print "<td width=80%>",
+    print qq[<table class="fat">
+    <tr class=dark_bg><td colspan=2><b>$title</b></td></tr>
+    <tr class=light_grey_bg>
+    <td class=right>Fully qualfied nameserver name:</td>
+    <td width=80%>],
         (
           $modifyperm
         ? $q->textfield( -name => 'name', -size => 40, -maxlength => 127 )
@@ -402,22 +402,18 @@ sub display_edit_nameserver {
         ),
         "</td></tr>";
 
-    print "<tr class=light_grey_bg>";
-    print "<td align=right>", "IP Address:</td>";
-    print "<td width=80%>",
+    print qq[<tr class=light_grey_bg>
+    <td class=right>IP Address:</td>
+    <td width=80%>],
         (
         $modifyperm
-        ? $q->textfield(
-            -name      => 'address',
-            -size      => 15,
-            -maxlength => 15
-            )
+        ? $q->textfield( -name => 'address', -size => 15, -maxlength => 15)
         : $nameserver->{'address'}
         ),
         "</td></tr>";
 
     print "<tr class=light_grey_bg>";
-    print "<td align=right>", "Output Format:</td>";
+    print "<td class=right>", "Output Format:</td>";
     print "<td width=80%>\n",
         (
         $modifyperm

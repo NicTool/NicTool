@@ -9,27 +9,27 @@
 <form action="index.cgi" method=POST>
 <table width=100% height=100%>
  <tr>
-  <td align=center valign=middle>
+  <td class="center middle">
    <table>
-    <tr><td align=center colspan=2 style="color:red;"><strong>{{message}}</strong></td></tr>
+    <tr><td class=center colspan=2 style="color:red;"><strong>{{message}}</strong></td></tr>
     <tr class="dark_grey_bg">
-		 <td class="dark" colspan=2 style="text-align: center; font-size: 110%"><b>{{app_title}} Login</b></td></tr>
+		 <td class="dark center" colspan=2 style="font-size: 110%"><b>{{app_title}} Login</b></td></tr>
     <tr class="light_grey_bg">
-     <td align=right>UserName:</td>
+     <td class=right>UserName:</td>
      <td><input type=text name=username size=25></td>
     </tr>
     <tr class="light_grey_bg">
-     <td align=right>Password:</td>
+     <td class=right>Password:</td>
      <td><input type=password name=password size=25></td>
     </tr>
     <tr class="dark_grey_bg">
-     <td class="dark" colspan=2 align=center>
+     <td class="dark center" colspan=2>
       <input type=hidden name=login value=Enter>
       <input type=submit name=login value=Login>
      </td>
     </tr>
     <tr>
-     <td colspan=2 class="light_hilite_bg dark" style="text-align:right;">
+     <td colspan=2 class="light_hilite_bg dark right">
       NicTool v{{VERSION}}
       <span style="font-size: 80%;"><a href="{{LICENSE}}" TARGET="_blank">License</a> :: <a href="{{SRCURL}}" TARGET="_blank">Source</a></span>
       </td>

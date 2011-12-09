@@ -196,7 +196,7 @@ sub delegate_zones {
         #TODO handle 600 error where object is already delegated
 
         print qq[
-<table width=100%>
+<table class="fat">
  <tr class=dark_bg>
   <td colspan=2><b>$title</b></td>
  </tr>
@@ -229,11 +229,11 @@ sub delegate_zones {
             if $message;
 
         print qq(
-<table width=100%>
+<table class="fat">
  <tr class="dark_bg"><td colspan=2><b>$title</b></td></tr>
  <tr class="light_grey_bg">
   <td class="nowrap middle"> Zone: </td>
-  <td width=100%>
+  <td class="fat">
    <table class="no_pad">
     <tr>
      <td valign=center><a href=zone.cgi?nt_group_id=$zone->{'nt_group_id'}&nt_zone_id=$zone->{'nt_zone_id'} target=body><img src="$NicToolClient::image_dir/zone.gif" ></a></td>
@@ -244,7 +244,7 @@ sub delegate_zones {
  </tr>
 </table>
 
-<table width=100%>
+<table class="fat">
  <tr class="dark_grey_bg"> <td colspan=6> Resource Record</td> </tr>
  <tr class=light_grey_bg>
   <td align=center> Name</td>
@@ -267,7 +267,7 @@ sub delegate_zones {
   <td> $zr->{'address'}</td>
   <td> $zr->{'ttl'}</td>
   <td> $zr->{'weight'}</td>
-  <td width=100%>) . ( $zr->{'description'} || "&nbsp;" ) . qq(
+  <td class="fat">) . ( $zr->{'description'} || "&nbsp;" ) . qq(
   </td>
  </tr>
 </table>
@@ -325,7 +325,7 @@ sub delegate_zones {
 
         if ( ref $del ) {
             print qq[
-<table width=100%>
+<table class="fat">
  <tr class="dark_grey_bg dark"><td colspan=2> Delegation</td></tr>
  <tr class="light_grey_bg"><td>Group</td><td>Delegated By</td></tr>
  <tr class="light_grey_bg">
@@ -362,7 +362,7 @@ sub delegate_zones {
     }
 
     print qq[
-<table width=100%>
+<table class="fat">
  <tr class="dark_grey_bg">
   <td colspan=2>
 ]
@@ -439,8 +439,8 @@ sub delegate_zones {
     </table>
     };
 
-    print "\n<table width=100%>\n";
-    print "<tr class=dark_grey_bg><td colspan=2 align=center>",
+    print qq[\n<table class="fat">\n
+    <tr class=dark_grey_bg><td colspan=2 align=center>],
         $q->submit( $edit eq 'edit'
         ? 'Modify'
         : ( $edit eq 'delete' ? 'Remove' : 'Save' ) ),

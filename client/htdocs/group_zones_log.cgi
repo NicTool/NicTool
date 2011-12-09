@@ -61,10 +61,10 @@ sub display {
     $nt_obj->display_zone_list_options( $user, $q->param('nt_group_id'),
         $level, 0 );
 
-    print qq[<table width=100%>
+    print qq[<table class="fat">
     <tr class=light_grey_bg>
     <td>
-    <table class="no_pad" width=100%>
+    <table class="no_pad fat">
     <tr>];
     $level++;
     for my $x ( 1 .. $level ) {
@@ -137,8 +137,8 @@ sub display_log {
         $include_subgroups );
 
     if (@$log) {
-        print "<table width=100%>";
-        print "<tr class=dark_grey_bg>";
+        print qq[<table class="fat">
+        <tr class=dark_grey_bg>];
         foreach (@columns) {
             if ( $sort_fields{$_} ) {
                 print qq[<td class=dark_bg align=center><table class="no_pad">

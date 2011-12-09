@@ -269,10 +269,10 @@ sub display_group_tree {
         );
 
         print qq[
-<table width=100%>
+<table class="fat">
  <tr class=light_grey_bg>
   <td>
-   <table class='no_pad' width=100%>
+   <table class="no_pad fat">
     <tr>
         ];
 
@@ -366,10 +366,10 @@ sub display_user_list_options {
         push @options, '<span class="disabled">New User</span>' unless $in_user_list;
     }
 
-    print qq[<table width=100%>
+    print qq[<table class="fat">
     <tr class=light_grey_bg>
     <td>
-    <table class="no_pad" width=100%>
+    <table class="no_pad fat">
     <tr>];
 
     for my $x ( 1 .. $level ) {
@@ -387,7 +387,7 @@ sub display_user_list_options {
         print qq[<td class="nowrap"><a href="group_users.cgi?nt_group_id=$group_id">Users</a></td>];
     }
 
-    print qq[<td class="right" width=100%>], join( ' | ', @options ), qq[</td>
+    print qq[<td class="right fat">], join( ' | ', @options ), qq[</td>
 </tr></table>
     </td></tr></table>];
 }
@@ -449,10 +449,10 @@ sub display_zone_options {
     elsif ($isdelegate) {
         push @options, '<span color="disabled">Re-Delegate</span>' if $group->{'has_children'};
     }
-    print qq[<table width=100%>
+    print qq[<table class="fat">
     <tr class=light_grey_bg>
     <td>
-    <table class="no_pad" width=100%>
+    <table class="no_pad fat">
     <tr>];
 
     for my $x ( 1 .. $level ) {
@@ -500,10 +500,10 @@ sub display_nameserver_options {
         push @options, '<span class="disabled">New Nameserver</class>' if !$in_ns_summary;
     }
 
-    print qq[<table width=100%>
+    print qq[<table class="fat">
     <tr class=light_grey_bg>
     <td>
-    <table class="no_pad" width=100%>
+    <table class="no_pad" class="fat">
     <tr>];
 
     for my $x ( 1 .. $level ) {
@@ -521,7 +521,7 @@ sub display_nameserver_options {
         print qq[<td class="nowrap"><a href="group_nameservers.cgi?nt_group_id=$group_id">Nameservers</a></td>];
     }
 
-    print qq[<td align=right width=100%>], join( ' | ', @options ), 
+    print qq[<td class="right fat">], join( ' | ', @options ), 
     "</td></tr></table></td></tr></table>";
 }
 
@@ -628,8 +628,8 @@ sub display_search_rows {
             if ( $q->param($_) );
     }
 
-    print qq[<table width=100%>
-    <tr class=dark_grey_bg><td><table class="no_pad" width=100%>
+    print qq[<table class="fat">
+    <tr class=dark_grey_bg><td><table class="no_pad fat">
     <tr>],
     $q->startform( -action => $cgi_name, -method => 'POST' );
     foreach (@$state_fields) {
@@ -684,7 +684,7 @@ sub display_search_rows {
             -override => 1
         );
     }
-    print "<td align=right>";
+    print "<td class=right>";
     if ( $rv->{'start'} - $rv->{'limit'} >= 0 ) {
         print "<a href=$cgi_name?"
             . join( '&', @state_vars )
@@ -740,11 +740,11 @@ sub display_search_rows {
     }
 
     print qq[
-<table width=100%>
- <tr class=dark_grey_bg><td><table class="no_pad" width=100%>
+<table class="fat">
+ <tr class=dark_grey_bg><td><table class="no_pad fat">
     <tr>
      <td>Search: $params->{'search_query'} found $rv->{'total'} records</td>
-     <td align=right><a href="$cgi_name?]
+     <td class=right><a href="$cgi_name?]
         . join( '&', @state_vars )
         . "&edit_search=1"
         . ( $morestr ? "&$morestr" : "" )
@@ -785,29 +785,29 @@ sub display_sort_options {
         );
     }
 
-    print "<table width=100%>";
-    print "<tr class=dark_bg><td colspan=2><b>Change Sort Order</b></td></tr>";
+    print qq[<table class="fat">
+    <tr class=dark_bg><td colspan=2><b>Change Sort Order</b></td></tr>];
     foreach ( 1 .. 3 ) {
         print qq[<tr class=light_grey_bg>
         <td class="nowrap">],
-            ( $_ == 1 ? 'Sort by' : 'Then by' ), "</td>";
-        print "<td width=100%>";
-        print $q->popup_menu(
+            ( $_ == 1 ? 'Sort by' : 'Then by' ), "</td>",
+        qq[<td class="fat">],
+        $q->popup_menu(
             -name     => $_ . '_sortfield',
             -values   => [ '--', @$columns ],
             -labels   => { '--' => '--', %$labels },
             -override => 1
             ),
-            " ";
-        print $q->popup_menu(
+            " ",
+        $q->popup_menu(
             -name     => $_ . '_sortmod',
             -values   => [ 'Ascending', 'Descending' ],
             -override => 1
-        );
-        print "</td>";
-        print "</tr>";
+        ),
+        "</td>",
+        "</tr>";
     }
-    print qq[<tr class=dark_grey_bg><td colspan=2 align=center><table class="no_pad"><tr>
+    print qq[<tr class=dark_grey_bg><td colspan=2 class=center><table class="no_pad"><tr>
     <td>],
     $q->submit( -name => 'change_sortorder', -value => 'Change' ),
     qq[</td>],
@@ -850,9 +850,9 @@ sub display_advanced_search {
         );
     }
 
-    print "<table width=100%>";
-    print "<tr class=dark_bg><td colspan=2><b>Advanced Search</b></td></tr>";
-    print "<tr class=light_grey_bg><td colspan=2>",
+    print qq[<table class="fat">
+    <tr class=dark_bg><td colspan=2><b>Advanced Search</b></td></tr>
+    <tr class=light_grey_bg><td colspan=2>],
         $q->checkbox(
         -name    => 'include_subgroups',
         -value   => 1,
@@ -863,13 +863,13 @@ sub display_advanced_search {
 
     print "<tr class=dark_grey_bg>";
     foreach ( ( 'Inclusive / Exclusive', 'Condition' ) ) {
-        print "<td align=center>", $_, "</td>";
+        print "<td class=center>", $_, "</td>";
     }
     print "</tr>";
 
     foreach ( 1 .. 5 ) {
         print "<tr class=light_grey_bg>\n";
-        print "<td align=center>",
+        print "<td class=center>",
             (
             $_ == 1 ? '&nbsp;' : $q->radio_group(
                 -name     => $_ . '_inclusive',
@@ -901,8 +901,8 @@ sub display_advanced_search {
     }
     print "</table>";
 
-    print "<table width=100%>";
-    print "<tr class=dark_grey_bg><td colspan=2><b>Sort Order</b> (optional)</td></tr>";
+    print qq[<table class="fat">
+    <tr class=dark_grey_bg><td colspan=2><b>Sort Order</b> (optional)</td></tr>],
     foreach ( 1 .. 3 ) {
         print "<tr class=light_grey_bg>";
         print "<td>", ( $_ == 1 ? 'sort by' : "then by" ), "</td>";
@@ -921,8 +921,8 @@ sub display_advanced_search {
     }
     print "</table>";
 
-    print qq[<table width=100%>
-    <tr class=dark_grey_bg><td align=center><table class="no_pad"><tr>
+    print qq[<table class="fat">
+    <tr class=dark_grey_bg><td class=center><table class="no_pad"><tr>
     <td>],
     $q->submit('Search'),
     "</td>",
@@ -999,12 +999,12 @@ sub display_group_list {
         push( @state_fields, "$_=" . $q->escape( $q->param($_) ) )
             if ( $q->param($_) );
     }
-    print qq[<table width=100%>
+    print qq[<table class="fat">
     <tr class=dark_grey_bg><td>
-    <table class="no_pad" width=100%>
+    <table class="no_pad fat">
     <tr>
     <td><b>Select the group to $action to.</b></td>
-    <td align=right> &nbsp; </td>
+    <td class=right> &nbsp; </td>
     </tr></table></td></tr>
     </table>];
 
@@ -1013,7 +1013,7 @@ sub display_group_list {
         $include_subgroups, $moreparams );
 
     if (@$groups) {
-        print qq[<table width=100%>
+        print qq[<table class="fat">
         <tr class=dark_grey_bg>
         <td>
         <table class="no_pad">
@@ -1044,7 +1044,7 @@ sub display_group_list {
         print "&nbsp;</td>";
         foreach (@columns) {
             if ( $sort_fields{$_} ) {
-                print qq[<td class=dark_bg align=center><table class="no_pad">
+                print qq[<td class=dark_bg class=center><table class="no_pad">
                 <tr>
                 <td>$labels{$_}</td>
                 <td>&nbsp; &nbsp; $sort_fields{$_}->{'order'}</td>
@@ -1059,7 +1059,7 @@ sub display_group_list {
 
             }
             else {
-                print "<td align=center>$labels{$_}</td>";
+                print "<td class=center>$labels{$_}</td>";
             }
         }
         print "</tr>";
@@ -1491,14 +1491,14 @@ sub display_nice_message {
         . '<br>';
 
     print qq{
-        <table width=100% align=center>
-            <tr><td align=left class=dark_bg>
+        <table class="center fat">
+            <tr><td class="left dark_bg">
                 <B>$title</b></td></tr>
             <tr>
-                <td align=left class=light_grey_bg> $message<p> $explain </td>
+                <td class=left class=light_grey_bg> $message<p> $explain </td>
             </tr>
             <tr>
-                <td align=center class=dark_grey_bg>&nbsp;</td>
+                <td class=center class=dark_grey_bg>&nbsp;</td>
             </tr>
         </table>
     };
@@ -1517,7 +1517,7 @@ sub display_nice_error {
         . join( "</span><br>\n<span class=error><li>", @msgs )
         . "</span><br>";
     print qq(
-        <table width=100% align=center>
+        <table class="fat center">
             <tr><td align=left class=error_bg>
                 <strong>$message</strong>$actionmsg</td></tr>
             <tr>

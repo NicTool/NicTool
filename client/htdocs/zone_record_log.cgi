@@ -68,10 +68,10 @@ sub display {
         $level, 0 );
     $nt_obj->display_zone_options( $user, $zone, $level + 1, 0 );
 
-    print qq[<table width=100%>
+    print qq[<table class="fat">
     <tr class=light_grey_bg>
     <td>
-    <table class="no_pad" width=100%>
+    <table class="no_pad fat">
     <tr>];
     $level += 2;
     for my $x ( 1 .. $level ) {
@@ -81,7 +81,7 @@ sub display {
     }
 
     print qq[<td class="nowrap">&nbsp; <b>Resource Record log</b></td>
-    <td align=right width=100%>&nbsp;</td>
+    <td class="fat right">&nbsp;</td>
     </tr></table>];
 
     $nt_obj->display_nice_error($message) if $message;
@@ -140,11 +140,11 @@ sub display_log {
     $nt_obj->display_search_rows( $q, $rv, \%params, $cgi, \@req_fields );
 
     if (@$log) {
-        print "<table width=100%>";
-        print "<tr class=dark_grey_bg>";
+        print qq[<table class="fat">
+        <tr class=dark_grey_bg>];
         foreach (@columns) {
             if ( $sort_fields{$_} ) {
-                print qq[<td class=dark_bg align=center><table class="no_pad">
+                print qq[<td class="dark_bg center"><table class="no_pad">
                 <tr>
                 <td>$labels{$_}</td>
                 <td>&nbsp; &nbsp; $sort_fields{$_}->{'order'}</td>
