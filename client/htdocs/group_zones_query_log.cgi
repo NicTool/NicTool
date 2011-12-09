@@ -110,7 +110,7 @@ sub display {
     <tr class=dark_grey_bg>];
     foreach (@columns) {
         if ( $sort_fields{$_} ) {
-            print qq[<td class=dark_bg align=center><table class="no_tab">
+            print qq[<td class="dark_bg center"><table class="no_tab">
             <tr>
             <td>$labels{$_}</td>
             <td>&nbsp; &nbsp; $sort_fields{$_}->{'order'} </td>
@@ -123,7 +123,7 @@ sub display {
 
         }
         else {
-            print "<td align=center>", "$labels{$_}</td>";
+            print "<td class=center>$labels{$_}</td>";
         }
     }
     print "</tr>";

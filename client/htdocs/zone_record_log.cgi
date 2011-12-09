@@ -75,9 +75,9 @@ sub display {
     <tr>];
     $level += 2;
     for my $x ( 1 .. $level ) {
-        print "<td><img src=$NicToolClient::image_dir/"
+        print qq[<td><img src="$NicToolClient::image_dir/]
             . ( $x == $level ? 'dirtree_elbow' : 'transparent' )
-            . ".gif width=17 height=17></td>";
+            . qq[.gif" class="tee" alt=""></td>];
     }
 
     print qq[<td class="nowrap">&nbsp; <b>Resource Record log</b></td>
@@ -156,7 +156,7 @@ sub display_log {
                 print "</tr></table></td>";
             }
             else {
-                print "<td align=center>", "$labels{$_}</td>";
+                print "<td class=center>$labels{$_}</td>";
             }
         }
         print "<td>&nbsp;</td>";
@@ -211,13 +211,13 @@ sub display_log {
                 }
             }
             if ( !$zone->{'deleted'} ) {
-                print "<td align=center><a href=zone.cgi?nt_group_id=",
+                print "<td class=center><a href=zone.cgi?nt_group_id=",
                     $q->param('nt_group_id'), "&nt_zone_id=",
                     $q->param('nt_zone_id'),
                     "&nt_zone_record_id=$row->{'nt_zone_record_id'}&edit_record=1&nt_zone_record_log_id=$row->{'nt_zone_record_log_id'}>recover</a></td>";
             }
             else {
-                print '<td align="center" class="disabled">recover</td>';
+                print '<td class="center disabled">recover</td>';
             }
             print "</tr>";
         }
@@ -225,6 +225,6 @@ sub display_log {
         print "</table>";
     }
     else {
-        print "<center>", "No log data available</center>";
+        print "<center>No log data available</center>";
     }
 }

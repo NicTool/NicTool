@@ -232,7 +232,7 @@ sub display_properties {
 </td></tr></table>
 <table cellspacing=0 class="fat">
 <tr>
-<td valign=top>
+<td class="top">
 <table class="fat">];
 
         if ( !$zone->{'pseudo'} ) {
@@ -241,8 +241,8 @@ sub display_properties {
 	<td class="nowrap"> Delegated by: </td>
 	<td class="fat">
  	 <table>
-		<tr><td valign=center><img src=$NicToolClient::image_dir/user.gif></td>
-			<td valign=center> $zone->{'delegated_by_name'}</td>
+		<tr><td class=middle><img src=$NicToolClient::image_dir/user.gif></td>
+			<td class=middle> $zone->{'delegated_by_name'}</td>
 		</tr>
 	</table>
  </td>
@@ -262,14 +262,13 @@ sub display_properties {
  <td class="fat">
 	<table>
 		<tr>
-			<td valign=center><img src=$NicToolClient::image_dir/group.gif></td>
-			<td valign=center> $zone->{'group_name'}</td>
+			<td class=middle><img src=$NicToolClient::image_dir/group.gif></td>
+			<td class=middle> $zone->{'group_name'}</td>
 		</tr>
 	</table>
  </td>
 </tr>];
 
-        #print "</td><td width=50% valign=top>";
         if ( !$zone->{'pseudo'} ) {
             print qq(
             <tr class=light_grey_bg>
@@ -324,7 +323,7 @@ sub display_properties {
 
 <table cellspacing=0 class="fat">
 <tr>
-<td valign=top>
+<td class=top>
 <table class="fat">
 <tr class=light_grey_bg>
 <td class="nowrap"> Delegated To Group</td>
@@ -332,7 +331,7 @@ sub display_properties {
 <td class="nowrap"> Access Permissions}
 . $nt_obj->help_link('delperms') . qq{</td>
 <td class="nowrap" width=1%> Edit</td>
-<td class="nowrap" width=1% align=center><img src=$NicToolClient::image_dir/trash-delegate.gif></td>
+<td class="nowrap center" width=1%><img src=$NicToolClient::image_dir/trash-delegate.gif></td>
 </tr>
             };
             foreach my $del ( @{ $delegates->{'delegates'} } ) {
@@ -340,15 +339,17 @@ sub display_properties {
 <tr class=light_grey_bg>
  <td class="nowrap center">
   <table><tr>
-   <td valign=center><a href=group.cgi?nt_group_id=$del->{'nt_group_id'}><img src=$NicToolClient::image_dir/group.gif></a></td>
-   <td valign=center><a href=group.cgi?nt_group_id=$del->{'nt_group_id'}>$del->{'group_name'}</a></td>
+   <td class="middle"><a href=group.cgi?nt_group_id=$del->{'nt_group_id'}>
+	   <img src="$NicToolClient::image_dir/group.gif" alt="group"></a></td>
+   <td class="middle"><a href=group.cgi?nt_group_id=$del->{'nt_group_id'}>$del->{'group_name'}</a></td>
   </tr>
   </table>
  </td>
  <td class="nowrap center">
   <table><tr>
-    <td valign=center><a href=user.cgi?nt_user_id=$del->{'delegated_by_id'}><img src=$NicToolClient::image_dir/user.gif></a></td>
-    <td valign=center><a href=user.cgi?nt_user_id=$del->{'delegated_by_id'}>$del->{'delegated_by_name'}</a></td>
+    <td class="middle"><a href="user.cgi?nt_user_id=$del->{'delegated_by_id'}">
+		  <img src="$NicToolClient::image_dir/user.gif" alt="user"></a></td>
+    <td class="middle"><a href=user.cgi?nt_user_id=$del->{'delegated_by_id'}>$del->{'delegated_by_name'}</a></td>
    </tr>
   </table>
  </td>
@@ -403,14 +404,14 @@ sub display_properties {
         && $user->{'zone_write'}
         && ( $isdelegate ? $zone->{'delegate_write'} : 1 ) )
     {
-        print "<td align=right><a href=zone.cgi?",
+        print "<td class=right><a href=zone.cgi?",
             join( '&', @state_fields ),
             "&nt_group_id="
             . $q->param('nt_group_id')
             . "&nt_zone_id=$zone->{'nt_zone_id'}&edit_zone=1>Edit</a></td>";
     }
     else {
-        print "<td align=right><span class=disabled>Edit</span></td>";
+        print "<td class=right><span class=disabled>Edit</span></td>";
     }
     print qq[</tr></table>
 </td></tr></table>
@@ -424,7 +425,7 @@ sub display_properties {
 <td class="fat">], ( $zone->{$_} ? $zone->{$_} : '&nbsp;' ), "</td></tr>";
     }
     print qq[</table>
-    </td><td width=50% valign=top>
+    </td><td width=50% class=top>
     <table class="fat">];
     foreach (qw(refresh retry expire ttl )) {
         print qq[<tr class=light_grey_bg>
@@ -465,20 +466,20 @@ sub display_nameservers {
         && $user->{'zone_write'}
         && ( $isdelegate ? $zone->{'delegate_write'} : 1 ) )
     {
-        print "<td align=right><a href=zone.cgi?",
+        print "<td class=right><a href=zone.cgi?",
             join( '&', @state_fields ),
             "&nt_group_id="
             . $q->param('nt_group_id')
             . "&nt_zone_id=$zone->{'nt_zone_id'}&edit_zone=1>Edit</a></td>";
     }
     else {
-        print "<td align=right><span class=disabled>Edit</span></td>";
+        print "<td class=right><span class=disabled>Edit</span></td>";
     }
     print qq[</tr></table>
     </td></tr></table>
     <table class="fat">
     <tr class=dark_grey_bg>];
-    foreach (@fields) { print "<td align=center>$labels{$_}</td>"; }
+    foreach (@fields) { print "<td class=center>$labels{$_}</td>"; }
     print "</tr>";
 
     my $x = 1;
@@ -611,7 +612,7 @@ sub display_zone_records {
     <table class="no_pad fat">
     <tr>
     <td><b>Resource Records</b></td>
-    <td align=right>], join( ' | ', @options ), "</td>";
+    <td class=right>], join( ' | ', @options ), "</td>";
     print "</tr></table></td></tr>";
     print "</table>";
 
@@ -654,13 +655,13 @@ sub display_zone_records {
 
             }
             else {
-                print "<td align=center>", "$labels{$_}</td>";
+                print "<td class=center>$labels{$_}</td>";
             }
         }
         print
-            "<td align=center width=1%><img src=$NicToolClient::image_dir/delegate.gif></td>";
+            "<td class=center width=1%><img src=$NicToolClient::image_dir/delegate.gif></td>";
         print
-            "<td align=center width=1%><img src=$NicToolClient::image_dir/trash.gif></td>";
+            "<td class=center width=1%><img src=$NicToolClient::image_dir/trash.gif></td>";
         print "</tr>";
 
         my $x = 0;
@@ -742,12 +743,12 @@ sub display_zone_records {
                     print "</tr></table></td>";
                 }
                 elsif ( $_ =~ /address|ttl|weight|priority|other/i ) {
-                    print '<td align="right">',
+                    print '<td class="right">',
                         ( $r_record->{$_} ? $r_record->{$_} : '&nbsp;' ),
                         "</td>";
                 }
                 else {
-                    print '<td align="center">',
+                    print '<td class="center">',
                         ( $r_record->{$_} ? $r_record->{$_} : '&nbsp;' ),
                         "</td>";
                 }
@@ -763,11 +764,11 @@ sub display_zone_records {
                 )
             {
                 print
-                    "<td align=center><a href=\"javascript:void window.open('delegate_zones.cgi?type=record&obj_list=$r_record->{'nt_zone_record_id'}&nt_zone_id=$r_record->{'nt_zone_id'}', 'delegate_win', 'width=640,height=480,scrollbars,resizable=yes')\"><img src=$NicToolClient::image_dir/delegate.gif alt='Delegate Resource Record'></a></td>";
+                    "<td class=center><a href=\"javascript:void window.open('delegate_zones.cgi?type=record&obj_list=$r_record->{'nt_zone_record_id'}&nt_zone_id=$r_record->{'nt_zone_id'}', 'delegate_win', 'width=640,height=480,scrollbars,resizable=yes')\"><img src=$NicToolClient::image_dir/delegate.gif alt='Delegate Resource Record'></a></td>";
             }
             else {
                 print
-                    "<td align=center><img src=$NicToolClient::image_dir/delegate-disabled.gif></td>";
+                    "<td class=center><img src=$NicToolClient::image_dir/delegate-disabled.gif></td>";
             }
             $img =~ s/.$//g;
             if ( $nt_obj->no_gui_hints
@@ -777,7 +778,7 @@ sub display_zone_records {
                 && ( $zonedelegate ? $zone->{'delegate_delete_records'} : 1 )
                 )
             {
-                print "<td align=center><a href=\"zone.cgi?",
+                print "<td class=center><a href=\"zone.cgi?",
                     join( '&', @state_fields ),
                     "&nt_zone_id=$zone->{'nt_zone_id'}&nt_group_id="
                     . $q->param('nt_group_id')
@@ -786,7 +787,7 @@ sub display_zone_records {
             }
             else {
                 print
-                    "<td align=center><img src=$NicToolClient::image_dir/trash$img-disabled.gif></td>";
+                    "<td class=center><img src=$NicToolClient::image_dir/trash$img-disabled.gif></td>";
             }
             print "</tr>";
         }
@@ -965,7 +966,7 @@ sub display_edit_record {
 <table class="fat"><tr class=dark_grey_bg><td>Delegates</td></tr></table>
 <table cellspacing=0 class="fat">
  <tr>
-  <td valign=top>
+  <td class="top">
    <table class="fat">
     <tr class=light_grey_bg>
     <td class="nowrap"> Group</td>
@@ -980,15 +981,16 @@ sub display_edit_record {
 <tr class=light_grey_bg>
  <td class="nowrap center">
 	<table><tr>
-	 <td valign=center><a href=group.cgi?nt_group_id=$del->{'nt_group_id'}><img src=$NicToolClient::image_dir/group.gif></a></td>
-	 <td valign=center><a href=group.cgi?nt_group_id=$del->{'nt_group_id'}>$del->{'group_name'}</a></td>
+	 <td class="middle"><a href=group.cgi?nt_group_id=$del->{'nt_group_id'}><img src=$NicToolClient::image_dir/group.gif></a></td>
+	 <td class="middle"><a href=group.cgi?nt_group_id=$del->{'nt_group_id'}>$del->{'group_name'}</a></td>
    </tr>
   </table>
  </td>
  <td class="nowrap center">
 	<table><tr>
-		<td valign=center><a href=user.cgi?nt_user_id=$del->{'delegated_by_id'}><img src=$NicToolClient::image_dir/user.gif ></a></td>
-		<td valign=center><a href=user.cgi?nt_user_id=$del->{'delegated_by_id'}>$del->{'delegated_by_name'}</a></td>
+		<td class="middle"><a href="user.cgi?nt_user_id=$del->{'delegated_by_id'}">
+		  <img src="$NicToolClient::image_dir/user.gif" alt=""></a></td>
+		<td class="middle"><a href="user.cgi?nt_user_id=$del->{'delegated_by_id'}">$del->{'delegated_by_name'}</a></td>
 	 </tr>
 	</table>
  </td>
@@ -1036,21 +1038,21 @@ sub display_edit_record {
 	</td>
  </tr></table>
 <table cellspacing=0 class="fat">
- <tr> <td valign=top>
+ <tr> <td class=top>
    <table class="fat">
     <tr class=light_grey_bg>
      <td class="nowrap"> Delegated by: </td>
      <td class="fat"> <table> <tr>
-		    <td valign=center><img src=$NicToolClient::image_dir/user.gif></td>
-        <td valign=center> $zone_record->{'delegated_by_name'}</td>
+		    <td class=middle><img src=$NicToolClient::image_dir/user.gif></td>
+        <td class=middle> $zone_record->{'delegated_by_name'}</td>
        </tr> </table> </td>
     </tr>
 
     <tr class=light_grey_bg>
      <td class="nowrap"> Belonging to group: </td>
      <td class="fat"> <table> <tr>
-        <td valign=center><img src=$NicToolClient::image_dir/group.gif></td>
-        <td valign=center> $zone_record->{'group_name'}</td>
+        <td class=middle><img src=$NicToolClient::image_dir/group.gif></td>
+        <td class=middle> $zone_record->{'group_name'}</td>
        </tr> </table> </td>
     </tr>
 
@@ -1091,7 +1093,7 @@ sub display_edit_record {
 
             <table cellspacing=0 class="fat">
             <tr class=light_grey_bg>
-                <td align=left>
+                <td class=left>
         );
         if (   $nt_obj->no_gui_hints
             || $user->{'zonerecord_delegate'}
@@ -1133,7 +1135,7 @@ sub display_edit_record {
   <table class="fat">
     <tr class="dark_grey_bg"><td colspan=2> $action </td></tr>
     <tr class="light_grey_bg">
-      <td align="right"> Name:</td>
+      <td class="right"> Name:</td>
         <td class="fat">], 
 				$modifyperm ? $q->textfield(
         -name      => 'name',
@@ -1167,7 +1169,7 @@ sub display_edit_record {
 
     print qq{
       <tr class="light_grey_bg">
-        <td align="right"> Address:</td>
+        <td class="right"> Address:</td>
         <td width="100%">}, $modifyperm
         ? $q->textfield(
         -name      => 'address',
@@ -1180,7 +1182,7 @@ sub display_edit_record {
 
     print qq{
        <tr id="tr_weight" class="light_grey_bg">
-         <td align="right"> Weight:</td>
+         <td class="right"> Weight:</td>
          <td class="fat">}, $modifyperm
         ? $q->textfield(
         -name      => 'weight',
@@ -1194,7 +1196,7 @@ sub display_edit_record {
 
     print qq{
        <tr id="tr_priority" class="light_grey_bg">
-         <td align="right"> Priority:</td>
+         <td class="right"> Priority:</td>
          <td class="fat">}, $modifyperm
         ? $q->textfield(
         -name      => 'priority',
@@ -1222,7 +1224,7 @@ sub display_edit_record {
 
     print qq{
         <tr class="light_grey_bg">
-          <td align="right"> TTL:</td>
+          <td class="right"> TTL:</td>
           <td width="100%">}, $modifyperm
         ? $q->textfield(
         -name      => 'ttl',
@@ -1235,7 +1237,7 @@ sub display_edit_record {
 
     print qq{
         <tr class="light_grey_bg">
-          <td align="right"> Description:</td>
+          <td class="right"> Description:</td>
           <td width="100%">}, $modifyperm
         ? $q->textfield(
         -name      => 'description',
@@ -1246,7 +1248,7 @@ sub display_edit_record {
         : $zone_record->{'description'} || "&nbsp;",
         "</td></tr>";
 
-    print qq{ <tr class="dark_grey_bg"><td colspan="2" align="center"> },
+    print qq{ <tr class="dark_grey_bg"><td colspan="2" class="center"> },
         $modifyperm
         ? $q->submit( $edit eq 'edit' ? 'Save' : 'Create' )
         . $q->submit('Cancel')
@@ -1290,10 +1292,10 @@ sub display_edit_zone {
 <table class="fat">
  <tr class=dark_bg><td colspan=2><b>$action Zone</b></td></tr>
  <tr class=light_grey_bg>
-  <td align=right>Zone:</td>
+  <td class=right>Zone:</td>
   <td class="fat">$zone->{'zone'}</td></tr>
  <tr class=light_grey_bg>
-  <td align=right valign=top>Nameservers:</td>
+  <td class="right top">Nameservers:</td>
   <td width=80%>\n];
 
     my %zone_ns
@@ -1327,11 +1329,10 @@ sub display_edit_zone {
         my $ns = $nt_obj->get_nameserver( nt_nameserver_id => $_ );
         print "<li>$ns->{'description'} ($ns->{'name'})<BR>";
     }
-    print "</td></tr>\n";
-
-    print "<tr class=light_grey_bg>";
-    print "<td align=right valign=top>", "Description:</td>";
-    print "<td width=80%>",
+    print qq[</td></tr>\n
+    <tr class=light_grey_bg>
+    <td class="right top">Description:</td>
+    <td width=80%>],
         $q->textarea(
         -name      => 'description',
         -cols      => 50,
@@ -1342,7 +1343,7 @@ sub display_edit_zone {
         "</td></tr>";
 
     print "<tr class=light_grey_bg>";
-    print "<td align=right>", "TTL:</td>";
+    print "<td class=right>TTL:</td>";
     print "<td width=80%>",
         $q->textfield(
         -name      => 'ttl',
@@ -1356,7 +1357,7 @@ sub display_edit_zone {
     print "</td></tr>";
 
     print "<tr class=light_grey_bg>";
-    print "<td align=right>", "Refresh:</td>";
+    print "<td class=right>Refresh:</td>";
     print "<td width=80%>",
         $q->textfield(
         -name      => 'refresh',
@@ -1366,10 +1367,10 @@ sub display_edit_zone {
         );
     print
         "<input type=\"button\" value=\"Default\" onClick=\"this.form.refresh.value=$NicToolClient::default_zone_refresh\">",
-        " $NicToolClient::default_zone_refresh", "</td></tr>";
+        " $NicToolClient::default_zone_refresh</td></tr>";
 
     print "<tr class=light_grey_bg>";
-    print "<td align=right>", "Retry:</td>";
+    print "<td class=right>Retry:</td>";
     print "<td width=80%>",
         $q->textfield(
         -name      => 'retry',
@@ -1379,10 +1380,10 @@ sub display_edit_zone {
         );
     print
         "<input type=\"button\" value=\"Default\" onClick=\"this.form.retry.value=$NicToolClient::default_zone_retry\">",
-        " $NicToolClient::default_zone_retry", "</td></tr>";
+        " $NicToolClient::default_zone_retry</td></tr>";
 
     print "<tr class=light_grey_bg>";
-    print "<td align=right>", "Expire:</td>";
+    print "<td class=right>Expire:</td>";
     print "<td width=80%>",
         $q->textfield(
         -name      => 'expire',
@@ -1392,10 +1393,10 @@ sub display_edit_zone {
         );
     print
         "<input type=\"button\" value=\"Default\" onClick=\"this.form.expire.value=$NicToolClient::default_zone_expire\">",
-        " $NicToolClient::default_zone_expire", "</td></tr>";
+        " $NicToolClient::default_zone_expire</td></tr>";
 
     print "<tr class=light_grey_bg>";
-    print "<td align=right>", "Minimum:</td>";
+    print "<td class=right>Minimum:</td>";
     print "<td width=80%>",
         $q->textfield(
         -name      => 'minimum',
@@ -1405,10 +1406,10 @@ sub display_edit_zone {
         );
     print
         "<input type=\"button\" value=\"Default\" onClick=\"this.form.minimum.value=$NicToolClient::default_zone_minimum\">",
-        " $NicToolClient::default_zone_minimum", "</td></tr>";
+        " $NicToolClient::default_zone_minimum</td></tr>";
 
     print "<tr class=light_grey_bg>";
-    print "<td align=right>", "MailAddr:</td>";
+    print "<td class=right>MailAddr:</td>";
     print "<td width=80%>",
         $q->textfield(
         -name      => 'mailaddr',
@@ -1419,10 +1420,10 @@ sub display_edit_zone {
     print
         "<input type=\"button\" value=\"Default\" onClick=\"this.form.mailaddr.value='hostmaster."
         . $zone->{'zone'}
-        . ".'\">", " hostmaster." . $zone->{'zone'} . ".",
+        . ".'\"> hostmaster." . $zone->{'zone'} . ".",
         "</td></tr>";
 
-    print "<tr class=dark_grey_bg><td colspan=2 align=center>",
+    print "<tr class=dark_grey_bg><td colspan=2 class=center>",
         $q->submit( $edit eq 'edit' ? 'Save' : 'Create' ),
         $q->submit('Cancel'), "</td></tr>";
     print "</table>";

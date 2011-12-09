@@ -72,4 +72,5 @@ sub display_frameset {
         nt_group_id => $data->{'nt_group_id'}
     );
 }
+
 1;

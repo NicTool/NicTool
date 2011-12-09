@@ -1,19 +1,20 @@
+<!DOCTYPE html>
 <html>
 <head>
   <title>{{app_title}} {{VERSION}}</title>
+	<meta http-equiv="Content-Type" content="text/html;charset=utf-8">
   <link rel="stylesheet" href="nt-style.css" type="text/css" media="screen" />
   <script src="nt-script.js" type="text/javascript"></script>
 </head>
 
-<body class="white_bg">
-<form action="index.cgi" method=POST>
-<table width=100% height=100%>
- <tr>
-  <td class="center middle">
+<body class="center">
+ <div id="loginBox" style="padding-top: 200px; width:250px; margin:0px auto;">
+  <form action="index.cgi" method="POST">
    <table>
-    <tr><td class=center colspan=2 style="color:red;"><strong>{{message}}</strong></td></tr>
+    <tr><td class="center bold" colspan=2 style="color:red;">{{message}}</td></tr>
     <tr class="dark_grey_bg">
-		 <td class="dark center" colspan=2 style="font-size: 110%"><b>{{app_title}} Login</b></td></tr>
+		 <td class="dark center bold" colspan=2 style="font-size: 110%">{{app_title}} Login</td>
+    </tr>
     <tr class="light_grey_bg">
      <td class=right>UserName:</td>
      <td><input type=text name=username size=25></td>
@@ -32,12 +33,10 @@
      <td colspan=2 class="light_hilite_bg dark right">
       NicTool v{{VERSION}}
       <span style="font-size: 80%;"><a href="{{LICENSE}}" TARGET="_blank">License</a> :: <a href="{{SRCURL}}" TARGET="_blank">Source</a></span>
-      </td>
-     </tr>
-    </table>
-   </td>
- </tr>
-</table>
-</form>
+     </td>
+    </tr>
+   </table>
+  </form>
+ </div>
 </body>
 </html>

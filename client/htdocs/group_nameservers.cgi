@@ -173,7 +173,7 @@ sub display_list {
    <table class="no_pad fat">
     <tr>
      <td><b>Nameserver List</b></td>
-     <td align=right>];
+     <td class=right>];
     if ( $user->{'nameserver_create'} ) {
         print "<a href=$cgi?"
             . join( '&', @state_fields )
@@ -204,7 +204,7 @@ sub display_list {
     <tr class=dark_grey_bg>];
 
     if ( $user_group->{'has_children'} ) {
-        print "<td align=center>";
+        print "<td class=center>";
 
         print qq[<table class="no_pad">
         <tr><td></td>],
@@ -232,7 +232,7 @@ sub display_list {
 
     foreach (@columns) {
         if ( $sort_fields{$_} ) {
-            print qq[<td class=dark_bg align=center><table class="no_pad">
+            print qq[<td class="dark_bg center"><table class="no_pad">
             <tr>
             <td>$labels{$_}</td>
             <td>&nbsp; &nbsp; $sort_fields{$_}->{'order'} </td>
@@ -244,7 +244,7 @@ sub display_list {
             </tr></table></td>";
         }
         else {
-            print "<td align=center>", "$labels{$_}</td>";
+            print "<td class=center>$labels{$_}</td>";
         }
     }
     print
@@ -261,7 +261,7 @@ sub display_list {
                 || $obj->{'delegate_write'} )
             )
         {
-            print "<td width=1% align=center>",
+            print qq[<td style="width:1%;" class=center>],
                 $q->checkbox(
                 -name  => 'obj_list',
                 -value => $obj->{'nt_nameserver_id'},
@@ -271,9 +271,8 @@ sub display_list {
                 if ( $user_group->{'has_children'} );
         }
         else {
-            print
-                "<td width=1% align=center><img src=$NicToolClient::image_dir/nobox.gif></td>"
-                if ( $user_group->{'has_children'} );
+            print qq[<td style="width:1%;" class=center><img src=$NicToolClient::image_dir/nobox.gif></td>]
+                if $user_group->{'has_children'};
         }
 
         if ($include_subgroups) {
@@ -413,7 +412,7 @@ sub display_edit_nameserver {
         "</td></tr>";
 
     print "<tr class=light_grey_bg>";
-    print "<td class=right>", "Output Format:</td>";
+    print "<td class=right>Output Format:</td>";
     print "<td width=80%>\n",
         (
         $modifyperm
@@ -428,7 +427,7 @@ sub display_edit_nameserver {
         "</td></tr>";
 
     print "<tr class=light_grey_bg>";
-    print "<td align=right>", "Logfile Directory:</td>";
+    print "<td class=right>Logfile Directory:</td>";
     print "<td width=80%>",
         (
         $modifyperm
@@ -442,7 +441,7 @@ sub display_edit_nameserver {
         "</td></tr>";
 
     print "<tr class=light_grey_bg>";
-    print "<td align=right>", "Datafile Directory:</td>";
+    print "<td class=right>Datafile Directory:</td>";
     print "<td width=80%>",
         (
         $modifyperm
@@ -456,7 +455,7 @@ sub display_edit_nameserver {
         "</td></tr>";
 
     print "<tr class=light_grey_bg>";
-    print "<td align=right>", "TTL:</td>";
+    print "<td class=right>TTL:</td>";
     print "<td width=80%>",
         (
         $modifyperm
@@ -471,7 +470,7 @@ sub display_edit_nameserver {
         "</td></tr>";
 
     print "<tr class=light_grey_bg>";
-    print "<td align=right>", "Export Interval (seconds):</td>";
+    print "<td class=right>Export Interval (seconds):</td>";
     print "<td width=80%>",
         (
         $modifyperm
@@ -486,7 +485,7 @@ sub display_edit_nameserver {
         "</td></tr>";
 
     print "<tr class=light_grey_bg>";
-    print "<td align=right>", "Description:</td>";
+    print "<td class=right>Description:</td>";
     print "<td width=80%>",
         (
         $modifyperm
@@ -501,7 +500,7 @@ sub display_edit_nameserver {
         "</td></tr>";
 
     if ($modifyperm) {
-        print "<tr class=dark_grey_bg><td colspan=2 align=center>",
+        print "<tr class=dark_grey_bg><td colspan=2 class=center>",
             $q->submit( $edit eq 'edit' ? 'Save' : 'Create' ),
             $q->submit('Cancel'), "</td></tr>";
     }

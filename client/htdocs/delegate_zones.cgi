@@ -48,7 +48,7 @@ sub display {
     );
 
     if ( $q->param('cancel_delegate') ) {   # do nothing
-        $self->_close_window();
+        $nt_obj->_close_window();
     }
     elsif ( $q->param('Save') && $q->param('type') ne 'record' ) {
         my %params = (
@@ -69,8 +69,8 @@ sub display {
             &delegate_zones( $nt_obj, $user, $q, $rv );
         }
         else {
-            $self->_close_window();
-            $self->_center_bold('Zones Delegated');
+            $nt_obj->_close_window();
+            $nt_obj->_center_bold('Zones Delegated');
         }
     }
     elsif ( $q->param('Save') && $q->param('type') eq 'record' ) {
@@ -90,8 +90,8 @@ sub display {
             &delegate_zones( $nt_obj, $user, $q, $rv );
         }
         else {
-            $self->_close_window();
-            $self->_center_bold('Zones Delegated');
+            $nt_obj->_close_window();
+            $nt_obj->_center_bold('Zones Delegated');
         }
     }
     elsif ( $q->param('Modify') && $q->param('type') ne 'record' ) {
@@ -111,8 +111,8 @@ sub display {
             &delegate_zones( $nt_obj, $user, $q, $rv, 'edit' );
         }
         else {
-            $self->_close_window();
-            $self->_center_bold('Zones Delegated');
+            $nt_obj->_close_window();
+            $nt_obj->_center_bold('Zones Delegated');
         }
     }
     elsif ( $q->param('Modify') && $q->param('type') eq 'record' ) {
@@ -132,8 +132,8 @@ sub display {
             &delegate_zones( $nt_obj, $user, $q, $rv, 'edit' );
         }
         else {
-            $self->_close_window();
-            $self->_center_bold('Zones Delegated');
+            $nt_obj->_close_window();
+            $nt_obj->_center_bold('Zones Delegated');
         }
     }
     elsif ( $q->param('Remove') ) {
@@ -149,8 +149,8 @@ sub display {
             &delegate_zones( $nt_obj, $user, $q, $rv );
         }
         else {
-            $self->_close_window();
-            $self->_center_bold('Zones Delegated');
+            $nt_obj->_close_window();
+            $nt_obj->_center_bold('Zones Delegated');
         }
     }
     else {
@@ -206,8 +206,8 @@ sub delegate_zones {
    <table class='no_pad'><tr>],
         join( '<td>, </td>',
             map( qq(
-    <td valign=center><a href="zone.cgi?nt_group_id=$_->{'nt_group_id'}&nt_zone_id=$_->{'nt_zone_id'}" target=body><img src="$NicToolClient::image_dir/zone.gif"></a></td>
-    <td valign=center><a href="zone.cgi?nt_group_id=$_->{'nt_group_id'}&nt_zone_id=$_->{'nt_zone_id'}" target=body>$_->{'zone'}</a></td>), @$zones )
+    <td class="middle"><a href="zone.cgi?nt_group_id=$_->{'nt_group_id'}&nt_zone_id=$_->{'nt_zone_id'}" target=body><img src="$NicToolClient::image_dir/zone.gif"></a></td>
+    <td class="middle"><a href="zone.cgi?nt_group_id=$_->{'nt_group_id'}&nt_zone_id=$_->{'nt_zone_id'}" target=body>$_->{'zone'}</a></td>), @$zones )
             ),
     qq[</tr>
    </table>
@@ -236,8 +236,8 @@ sub delegate_zones {
   <td class="fat">
    <table class="no_pad">
     <tr>
-     <td valign=center><a href=zone.cgi?nt_group_id=$zone->{'nt_group_id'}&nt_zone_id=$zone->{'nt_zone_id'} target=body><img src="$NicToolClient::image_dir/zone.gif" ></a></td>
-     <td valign=center><a href=zone.cgi?nt_group_id=$zone->{'nt_group_id'}&nt_zone_id=$zone->{'nt_zone_id'} target=body>$zone->{'zone'}</a></td>
+     <td class="middle"><a href=zone.cgi?nt_group_id=$zone->{'nt_group_id'}&nt_zone_id=$zone->{'nt_zone_id'} target=body><img src="$NicToolClient::image_dir/zone.gif" ></a></td>
+     <td class="middle"><a href=zone.cgi?nt_group_id=$zone->{'nt_group_id'}&nt_zone_id=$zone->{'nt_zone_id'} target=body>$zone->{'zone'}</a></td>
     </tr>
    </table>
   </td>
@@ -247,19 +247,19 @@ sub delegate_zones {
 <table class="fat">
  <tr class="dark_grey_bg"> <td colspan=6> Resource Record</td> </tr>
  <tr class=light_grey_bg>
-  <td align=center> Name</td>
-  <td align=center> Type</td>
-  <td align=center> Address</td>
-  <td align=center> TTL</td>
-  <td align=center> Weight</td>
-  <td align=center> Description</td>
+  <td class=center> Name</td>
+  <td class=center> Type</td>
+  <td class=center> Address</td>
+  <td class=center> TTL</td>
+  <td class=center> Weight</td>
+  <td class=center> Description</td>
  </tr>
  <tr class=light_grey_bg>
   <td width=25%>
    <table class="no_pad">
     <tr>
-     <td valign=center><a href="zone.cgi?nt_group_id=$zone->{'nt_group_id'}&nt_zone_id=$zone->{'nt_zone_id'}&nt_zone_record_id=$zr->{'nt_zone_record_id'}&edit_record=1" target=body><img src="$NicToolClient::image_dir/r_record.gif"></a></td>
-     <td valign=center><a href="zone.cgi?nt_group_id=$zone->{'nt_group_id'}&nt_zone_id=$zone->{'nt_zone_id'}&nt_zone_record_id=$zr->{'nt_zone_record_id'}&edit_record=1" target=body>$zr->{'name'}</a></td>
+     <td class="middle"><a href="zone.cgi?nt_group_id=$zone->{'nt_group_id'}&nt_zone_id=$zone->{'nt_zone_id'}&nt_zone_record_id=$zr->{'nt_zone_record_id'}&edit_record=1" target=body><img src="$NicToolClient::image_dir/r_record.gif"></a></td>
+     <td class="middle"><a href="zone.cgi?nt_group_id=$zone->{'nt_group_id'}&nt_zone_id=$zone->{'nt_zone_id'}&nt_zone_record_id=$zr->{'nt_zone_record_id'}&edit_record=1" target=body>$zr->{'name'}</a></td>
     </tr>
    </table>
   </td>
@@ -332,8 +332,8 @@ sub delegate_zones {
   <td class="nowrap middle">
    <table>
     <tr>
-     <td valign=center><a href="group.cgi?nt_group_id=$del->{'nt_group_id'}"><img src="$NicToolClient::image_dir/group.gif"></a></td>
-     <td valign=center><a href="group.cgi?nt_group_id=$del->{'nt_group_id'}">$del->{'group_name'}</a></td>
+     <td class="middle"><a href="group.cgi?nt_group_id=$del->{'nt_group_id'}"><img src="$NicToolClient::image_dir/group.gif"></a></td>
+     <td class="middle"><a href="group.cgi?nt_group_id=$del->{'nt_group_id'}">$del->{'group_name'}</a></td>
     </tr>
    </table>
   </td>
@@ -341,8 +341,8 @@ sub delegate_zones {
                         
    <table>
     <tr>
-     <td valign=center> <a href="user.cgi?nt_user_id=$del->{'delegated_by_id'}"><img src="$NicToolClient::image_dir/user.gif"></a></td>
-     <td valign=center><a href="user.cgi?nt_user_id=$del->{'delegated_by_id'}">$del->{'delegated_by_name'}</a></td>
+     <td class="middle"><a href="user.cgi?nt_user_id=$del->{'delegated_by_id'}"><img src="$NicToolClient::image_dir/user.gif"></a></td>
+     <td class="middle"><a href="user.cgi?nt_user_id=$del->{'delegated_by_id'}">$del->{'delegated_by_name'}</a></td>
     </tr>
    </table>
   </td>
@@ -405,7 +405,7 @@ sub delegate_zones {
         $color = ( $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' );
         print qq{
             <tr class="light_grey_bg">
-             <td align=left class="$color">
+             <td class="$color left">
         };
 
         my $hasprop = 0;
@@ -440,7 +440,7 @@ sub delegate_zones {
     };
 
     print qq[\n<table class="fat">\n
-    <tr class=dark_grey_bg><td colspan=2 align=center>],
+    <tr class=dark_grey_bg><td colspan=2 class=center>],
         $q->submit( $edit eq 'edit'
         ? 'Modify'
         : ( $edit eq 'delete' ? 'Remove' : 'Save' ) ),
@@ -456,7 +456,8 @@ sub delegate_zones {
 
 sub _center_bold {
     my $self = shift;
-    return "<center><strong>" . shift . "</strong></center>";
+    my $text = shift;
+    return "<center><strong>$text</strong></center>";
 };
 
 sub _close_window {

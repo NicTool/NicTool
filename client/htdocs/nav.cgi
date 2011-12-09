@@ -69,7 +69,7 @@ sub display {
 
 <table class="no_pad">
  <tr>
-  <td><img src="$NicToolClient::image_dir/dirtree_tee.gif"></td>
+  <td><img src="$NicToolClient::image_dir/dirtree_tee.gif" alt="tee icon"></td>
   <td><a href="group_zones.cgi?nt_group_id=$group->{'nt_group_id'}" target=body><img src="$NicToolClient::image_dir/folder_closed.gif" alt="closed folder icon"></a></td>
   <td><a href="group_zones.cgi?nt_group_id=$group->{'nt_group_id'}" target=body>Zones</a></td>
  </tr>
@@ -77,7 +77,7 @@ sub display {
 
 <table class='no_pad'>
  <tr>
-  <td><img src="$NicToolClient::image_dir/dirtree_tee.gif" alt="dirtree tee"></td>
+  <td><img src="$NicToolClient::image_dir/dirtree_tee.gif" alt="tee icon"></td>
   <td><a href="group_nameservers.cgi?nt_group_id=$group->{'nt_group_id'}" target=body><img src="$NicToolClient::image_dir/folder_closed.gif" alt="closed folder icon"></a></td>
   <td><a href="group_nameservers.cgi?nt_group_id=$group->{'nt_group_id'}" target=body>Nameservers</a></td>
  </tr>
@@ -85,7 +85,7 @@ sub display {
 
 <table class='no_pad'>
  <tr>
-  <td><img src="$NicToolClient::image_dir/dirtree_tee.gif" alt="dirtree tee icon"></td>
+  <td><img src="$NicToolClient::image_dir/dirtree_tee.gif" alt="tee icon"></td>
   <td><a href="group_users.cgi?nt_group_id=$group->{'nt_group_id'}" target=body><img src="$NicToolClient::image_dir/folder_closed.gif" alt="closed folder icon"></a></td>
   <td><a href="group_users.cgi?nt_group_id=$group->{'nt_group_id'}" target=body>Users</a></td>
  </tr>
@@ -94,7 +94,7 @@ sub display {
 <table class='no_pad'>
  <tr>
   <td><img src="$NicToolClient::image_dir/dirtree_],
-    ( $group->{'has_children'} ? 'tee' : 'elbow' ), qq[.gif"></td>
+    ( $group->{'has_children'} ? 'tee' : 'elbow' ), qq[.gif" alt="icon"></td>
   <td><a href="group_log.cgi?nt_group_id=$group->{'nt_group_id'}" target=body><img src="$NicToolClient::image_dir/folder_closed.gif" alt=""></a></td>
   <td><a href="group_log.cgi?nt_group_id=$group->{'nt_group_id'}" target=body>Log</a></td>
  </tr>
@@ -119,11 +119,11 @@ sub recurse_groups {
     for (@$levels) {
         if ($_) {
             $level_html
-                .= qq[<td><img src="$NicToolClient::image_dir/dirtree_vertical.gif" width=17 height=17 alt=''></td>];
+                .= qq[<td><img src="$NicToolClient::image_dir/dirtree_vertical.gif" class="tee" alt=''></td>];
         }
         else {
             $level_html
-                .= qq[<td><img src="$NicToolClient::image_dir/transparent.gif" width=17 height=17 alt=''></td>];
+                .= qq[<td><img src="$NicToolClient::image_dir/transparent.gif" class="tee" alt=''></td>];
         }
     }
 
@@ -137,7 +137,7 @@ sub recurse_groups {
             = $level_html
             . qq[<td><img src="$NicToolClient::image_dir/]
             . ( $_ == $total ? 'transparent.gif' : 'dirtree_vertical.gif' )
-            . qq[" width=17 height=17></td>];
+            . qq[" class="tee" alt=""></td>];
 
         print "<table class='no_pad'>";
         print "<tr>$level_html";
@@ -150,7 +150,7 @@ sub recurse_groups {
             . '_'
             . ( $_ == $total ? 'elbow' : 'tee' )
             . qq[.gif" alt="dirtree elbow or tee icon"></a></td>
-        <td><img src="$NicToolClient::image_dir/transparent.gif" width=4 height=1><img src="$NicToolClient::image_dir/group.gif" alt='group icon'></td>
+        <td><img src="$NicToolClient::image_dir/transparent.gif" style="width:4; height:1;" alt=""><img src="$NicToolClient::image_dir/group.gif" alt='group icon'></td>
    <td class="nowrap"><a href="group.cgi?nt_group_id=$group->{'nt_group_id'}" target="body"> $group->{'name'} </a>
   </td>
  </tr>
@@ -162,8 +162,8 @@ sub recurse_groups {
  <tr>$level_html
   <td><img src="$NicToolClient::image_dir/]
                 . ( $_ == $total ? 'transparent' : 'dirtree_vertical' )
-                . qq[.gif\" width=17 height=17></td>];
-            print qq[<td><img src="$NicToolClient::image_dir/dirtree_tee.gif"></td>
+                . qq[.gif" class="tee" alt=""></td>
+  <td><img src="$NicToolClient::image_dir/dirtree_tee.gif"></td>
   <td><a href="group_zones.cgi?nt_group_id=$group->{'nt_group_id'}" target="body"><img src="$NicToolClient::image_dir/folder_closed.gif" alt="Group Zones"></a></td>
   <td><a href="group_zones.cgi?nt_group_id=$group->{'nt_group_id'}" target=body>Zones</a></td>
  </tr>
@@ -173,8 +173,7 @@ sub recurse_groups {
  <tr>$level_html
   <td><img src="$NicToolClient::image_dir/]
                 . ( $_ == $total ? 'transparent' : 'dirtree_vertical' )
-                . qq[.gif" width=17 height=17></td>];
-            print qq[
+                . qq[.gif" class="tee" alt=""></td>
   <td><img src="$NicToolClient::image_dir/dirtree_tee.gif"></td>
   <td><a href="group_nameservers.cgi?nt_group_id=$group->{'nt_group_id'}" target="body">
        <img src="$NicToolClient::image_dir/folder_closed.gif" alt="Group Nameservers"></a></td>
@@ -186,7 +185,7 @@ sub recurse_groups {
  <tr>$level_html
   <td><img src="$NicToolClient::image_dir/]
                 . ( $_ == $total ? 'transparent' : 'dirtree_vertical' )
-                . qq[.gif" width=17 height=17></td>
+                . qq[.gif" class="tee" alt=""></td>
   <td><img src="$NicToolClient::image_dir/dirtree_tee.gif"></td>
   <td><a href="group_users.cgi?nt_group_id=$group->{'nt_group_id'}" target=body>
       <img src="$NicToolClient::image_dir/folder_closed.gif" alt="Group Users"></a></td>
@@ -198,7 +197,7 @@ sub recurse_groups {
  <tr>$level_html
   <td><img src="$NicToolClient::image_dir/]
                 . ( $_ == $total ? 'transparent' : 'dirtree_vertical' )
-                . qq[.gif" width=17 height=17></td>
+                . qq[.gif" class="tee" alt=""></td>
             <td><img src="$NicToolClient::image_dir/dirtree_],
                 ( $group->{'has_children'} ? 'tee' : 'elbow' ), qq[.gif"></td>
             <td><a href="group_log.cgi?nt_group_id=$group->{'nt_group_id'}" target=body>

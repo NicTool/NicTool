@@ -276,7 +276,7 @@ sub display_list {
 
         if ( $user_group->{'has_children'} ) {
             print qq{
-                <td align=center>
+                <td class=center>
 		         <table class="no_pad">
 		          <tr>
                    <td></td>
@@ -307,7 +307,7 @@ sub display_list {
         foreach (@columns) {
             if ( $sort_fields{$_} ) {
                 print qq{
-    <td class=dark_bg align=center>
+    <td class="dark_bg center">
      <table class="no_pad">
       <tr>
        <td>} . $labels{$_} . qq{</td>
@@ -327,11 +327,11 @@ sub display_list {
             }
             else {
                 print qq{
-                <td align=center>} . $labels{$_} . qq{</td>};
+                <td class=center>} . $labels{$_} . qq{</td>};
             }
         }
         print qq{
-                <td align=center width=1%><img src=$NicToolClient::image_dir/delegate.gif></td>
+                <td class=center width=1%><img src=$NicToolClient::image_dir/delegate.gif></td>
                 <td width=1%><img src=$NicToolClient::image_dir/trash.gif></td>
             </tr>};
 
@@ -349,7 +349,7 @@ sub display_list {
             <tr class="$class">};
             if ( $user->{'zone_create'} && !$isdelegate ) {
                 print qq{
-                <td width=1% align=center>}
+                <td width=1% class=center>}
                     . $q->checkbox(
                     -name  => 'obj_list',
                     -value => $zone->{'nt_zone_id'},
@@ -361,7 +361,7 @@ sub display_list {
             else {
 
                 print
-                    "<td width=1% align=center><img src=$NicToolClient::image_dir/nobox.gif></td>"
+                    "<td width=1% class=center><img src=$NicToolClient::image_dir/nobox.gif></td>"
                     if ( $user_group->{'has_children'} );
 
             }
@@ -452,11 +452,11 @@ sub display_list {
                 && ( $isdelegate ? $zone->{'delegate_delegate'} : 1 ) )
             {
                 print
-                    "<td align=center><a href=\"javascript:void window.open('delegate_zones.cgi?obj_list=$zone->{'nt_zone_id'}', 'delegate_win', 'width=640,height=480,scrollbars,resizable=yes')\"><img src=$NicToolClient::image_dir/delegate.gif alt='Delegate Zone'></a></td>";
+                    "<td class=center><a href=\"javascript:void window.open('delegate_zones.cgi?obj_list=$zone->{'nt_zone_id'}', 'delegate_win', 'width=640,height=480,scrollbars,resizable=yes')\"><img src=$NicToolClient::image_dir/delegate.gif alt='Delegate Zone'></a></td>";
             }
             else {
                 print
-                    "<td align=center><img src=$NicToolClient::image_dir/delegate-disabled.gif></td>";
+                    "<td class=center><img src=$NicToolClient::image_dir/delegate-disabled.gif></td>";
             }
             if ( ( $nt_obj->no_gui_hints || $user->{'zone_delete'} )
                 && !$isdelegate )
@@ -516,16 +516,16 @@ sub new_zone {
     print qq[<table class="fat">
 <tr class=dark_bg><td colspan=2><b>New Zone</b></td></tr>
 <tr class=light_grey_bg>
-<td align=right>Zone:</td>
+<td class=right>Zone:</td>
 <td class="fat">],
         $q->textfield( -name => 'zone', -size => 40, -maxlength => 128 ),
         " <a href=\"zones.cgi?nt_group_id="
         . $q->param('nt_group_id')
         . "\">Batch</a></td></tr>";
 
-    print "<tr class=light_grey_bg>";
-    print "<td align=right valign=top>", "Nameservers:</td>";
-    print "<td width=80%>\n";
+    print qq[<tr class=light_grey_bg>
+    <td class="right top">Nameservers:</td>
+    <td width=80%>\n ];
 
     # get list of available nameservers
     my $ns_tree = $nt_obj->get_usable_nameservers(
@@ -550,19 +550,19 @@ sub new_zone {
     }
     print "</td></tr>\n";
 
-    print "<tr class=light_grey_bg>";
-    print "<td align=right valign=top>", "Description:</td>";
-    print "<td width=80%>",
+    print qq[<tr class=light_grey_bg>
+    <td class="right top">Description:</td>
+    <td width=80%>],
         $q->textarea(
         -name      => 'description',
         -cols      => 50,
         -rows      => 4,
         -maxlength => 255
         ),
-        "</td></tr>";
+        qq[</td></tr>
 
-    print "<tr class=light_grey_bg>";
-    print "<td align=right>", "TTL:</td>";
+    <tr class=light_grey_bg>
+    <td class=right>TTL:</td>];
     my $ttl = $NicToolClient::default_zone_ttl || $q->param('ttl');
     print "<td width=80%>",
         $q->textfield(
@@ -571,13 +571,9 @@ sub new_zone {
         -maxlength => 10,
         -default   => $ttl
         );
-    print
-        "<input type=\"button\" value=\"Default\" onClick=\"this.form.ttl.value=$NicToolClient::default_zone_ttl\">",
-        " $NicToolClient::default_zone_ttl";
-    print "</td></tr>";
-
-    print "<tr class=light_grey_bg>";
-    print "<td align=right>", "Refresh:</td>";
+    print qq[<input type="button" value="Default" onClick="this.form.ttl.value=$NicToolClient::default_zone_ttl"> $NicToolClient::default_zone_ttl </td></tr>"
+    <tr class=light_grey_bg>
+    <td class=right>Refresh:</td>];
     my $refresh = $NicToolClient::default_zone_refresh
         || $q->param('refresh');
     print "<td width=80%>",
@@ -587,13 +583,9 @@ sub new_zone {
         -maxlength => 10,
         -default   => $refresh
         );
-    print
-        "<input type=\"button\" value=\"Default\" onClick=\"this.form.refresh.value=$NicToolClient::default_zone_refresh\">",
-        " $NicToolClient::default_zone_refresh";
-    print "</td></tr>";
-
-    print "<tr class=light_grey_bg>";
-    print "<td align=right>", "Retry:</td>";
+    print qq[<input type="button" value="Default" onClick="this.form.refresh.value=$NicToolClient::default_zone_refresh"> $NicToolClient::default_zone_refresh </td></tr>
+    <tr class=light_grey_bg>
+    <td class=right>Retry:</td>];
     my $retry = $NicToolClient::default_zone_retry || $q->param('retry');
     print "<td width=80%>",
         $q->textfield(
@@ -608,7 +600,7 @@ sub new_zone {
     print "</td></tr>";
 
     print "<tr class=light_grey_bg>";
-    print "<td align=right>", "Expire:</td>";
+    print "<td class=right>Expire:</td>";
     my $expire = $NicToolClient::default_zone_expire || $q->param('expire');
     print "<td width=80%>",
         $q->textfield(
@@ -623,7 +615,7 @@ sub new_zone {
     print "</td></tr>";
 
     print "<tr class=light_grey_bg>";
-    print "<td align=right>", "Minimum:</td>";
+    print "<td class=right>Minimum:</td>";
     my $minimum = $NicToolClient::default_zone_minimum
         || $q->param('minimum');
     print "<td width=80%>",
@@ -639,7 +631,7 @@ sub new_zone {
     print "</td></tr>";
 
     print "<tr class=light_grey_bg>";
-    print "<td align=right>", "MailAddr:</td>";
+    print "<td class=right>MailAddr:</td>";
     my $mailaddr = $NicToolClient::default_zone_mailaddr
         || $q->param('mailaddr');
     print "<td width=80%>",
@@ -655,7 +647,7 @@ sub new_zone {
     print "</td></tr>";
 
     print "<tr class=light_grey_bg>";
-    print "<td align=right>",
+    print "<td class=right>",
         "<a href=\"javascript:void window.open('templates.cgi', 'templates_win', 'width=640,height=580,scrollbars,resizable=yes')\">Template:</a></td>";
     my @templates = $nt_obj->zone_record_template_list;
     print "<td width=80%>",
@@ -665,13 +657,12 @@ sub new_zone {
         -default => 'none'
         );
     my $ip = $q->param('newip') || "IP Address";
-    print
-        " IP: <input type=\"text\" name=\"newip\" size=\"17\" maxlength=\"15\" value=\"$ip\", onFocus=\"if(this.value=='IP Address')this.value='';\"> ";
-    print
-        " Mail IP: <input type=\"text\" name=\"mailip\" size=\"17\" maxlength=\"15\">";
-    print "</td></tr>";
+    print qq[ 
+IP: <input type="text" name="newip" size="17" maxlength="15" value="$ip", onFocus="if(this.value=='IP Address')this.value='';"> 
+Mail IP: <input type="text" name="mailip" size="17" maxlength="15">
+    </td></tr>];
 
-    print "<tr class=dark_grey_bg><td colspan=2 align=center>",
+    print "<tr class=dark_grey_bg><td colspan=2 class=center>",
         $q->submit( $edit eq 'edit' ? 'Save' : 'Create' ),
         $q->submit('Cancel'), "</td></tr>";
     print "</table>";

@@ -63,9 +63,9 @@ sub display {
    <table class="no_pad fat">
     <tr>];
     for my $x ( 1 .. $level ) {
-        print "<td><img src=$NicToolClient::image_dir/"
+        print qq[<td><img src="$NicToolClient::image_dir/]
             . ( $x == $level ? 'dirtree_elbow' : 'transparent' )
-            . ".gif width=17 height=17></td>";
+            . qq[.gif" class="tee" alt=""></td>];
     }
 
     print qq[ 
@@ -140,7 +140,7 @@ sub display_log {
         foreach (@columns) {
             if ( $sort_fields{$_} ) {
                 print qq[
-                <td class=dark_bg align=center>
+                <td class="dark_bg center">
                  <table class="no_pad">
                   <tr>
                    <td>$labels{$_}</td>
@@ -152,7 +152,7 @@ sub display_log {
                 </td>";
             }
             else {
-                print qq[<td align=center> $labels{$_}</td>];
+                print qq[<td class=center> $labels{$_}</td>];
             }
         }
         print "</tr>";
@@ -223,6 +223,6 @@ sub display_log {
         print "</table>";
     }
     else {
-        print "<center>", "No log data available</center>";
+        print "<center>No log data available</center>";
     }
 }

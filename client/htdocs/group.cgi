@@ -149,9 +149,6 @@ sub display {
 
     my $group = $nt_obj->get_group( nt_group_id  => $q->param('nt_group_id') );
 
-    #&display_zone_search($nt_obj, $q, $group);
-    #$nt_obj->display_hr();
-
     &display_group_list( $nt_obj, $q, $group, $user );
 
     $nt_obj->parse_template($NicToolClient::end_html_template);
@@ -256,7 +253,7 @@ sub display_group_list {
         <table class="no_pad fat">
         <tr>
         <td><b>Sub-Group List</b></td>
-        <td align=right>], join( ' | ', @options ), "</td>
+        <td class=right>], join( ' | ', @options ), "</td>
         </tr></table></td></tr>
         </table>";
 
@@ -281,13 +278,13 @@ sub display_group_list {
 
             }
             else {
-                print "<td align=center>", "$labels{$_}</td>";
+                print "<td class=center>$labels{$_}</td>";
             }
         }
         for (qw(Zones Nameservers Users Log)) {
-            print "<td align=center>", $_, "</td>";
+            print "<td class=center>", $_, "</td>";
         }
-        print "<td align=center><img src=$NicToolClient::image_dir/trash.gif></td>"
+        print "<td class=center><img src=$NicToolClient::image_dir/trash.gif></td>"
             . "</tr>";
 
         my $x = 0;
@@ -311,7 +308,7 @@ sub display_group_list {
 
             for (qw(zones nameservers users log)) {
                 print qq[
-           <td align=center width=1%>
+           <td class=center width=1%>
             <table class="no_pad"><tr>
               <td><img src="$NicToolClient::image_dir/transparent.gif" width=2 height=16></td>
               <td><a href="group_$_.cgi?nt_group_id=$group->{'nt_group_id'}">
@@ -327,9 +324,7 @@ sub display_group_list {
                     || $group->{'delegate_delete'} )
                 )
             {
-                print "<td align=center><a href=\"group.cgi?nt_group_id="
-                    . $q->param('nt_group_id')
-                    . "&delete=$group->{'nt_group_id'}\" onClick=\"return confirm('Delete ",
+                print qq[<td class=center><a href="group.cgi?nt_group_id=$q->param('nt_group_id')&delete=$group->{'nt_group_id'}" onClick="return confirm('Delete ],
                     join(
                     ' / ',
                     map( $_->{'name'},
@@ -339,10 +334,10 @@ sub display_group_list {
                             }
                             ) )
                     ),
-                    " and all associated data?');\"><img src=$NicToolClient::image_dir/trash.gif></a></td>";
+                    qq[ and all associated data?');"><img src="$NicToolClient::image_dir/trash.gif" alt="trash"></a></td>];
             }
             else {
-                print "<td align=center><img src=$NicToolClient::image_dir/trash-disabled.gif></td>";
+                print qq[<td class=center><img src="$NicToolClient::image_dir/trash-disabled.gif" alt=""></td>];
             }
             print "</tr>";
         }
@@ -429,8 +424,8 @@ sub display_edit {
             <td colspan=2> Allow users of this group to publish zones changes to the following nameservers: </td>
         </tr>
          <tr class=light_grey_bg>
-            <td class=light_grey_bg valign=top> Nameservers: </td>
-            <td class=light_grey_bg valign=top>
+            <td class="light_grey_bg top"> Nameservers: </td>
+            <td class="light_grey_bg top">
                       );
 
     foreach ( 1 .. scalar( @{ $ns_tree->{'nameservers'} } ) ) {
@@ -467,11 +462,10 @@ sub display_edit {
             . $nt_obj->help_link('perms')
             . ":</td></tr>";
 
-        print qq{
+        print qq[
         <tr class=light_grey_bg>
          <td colspan=2 class=light_grey_bg>
-          <table style="padding:6; border-spacing:1; text-align:center;">
-                    };
+          <table class="center" style="padding:6; border-spacing:1;"> ];
 
         my %perms = (
             group      => [qw(write create delete . )],
@@ -517,7 +511,7 @@ sub display_edit {
                 $color = ( $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' );
                 print qq{
                         <tr>
-                         <td align=right><b>}
+                         <td class=right><b>}
                     . ( ucfirst($type) ) . qq{:</b></td>
                                 };
                 foreach my $perm ( @{ $perms{$type} } ) {
@@ -528,7 +522,7 @@ sub display_edit {
                     }
                     elsif ( $user->{ $type . "_" . $perm } ) {
                         print qq{
-                            <td valign=center align=left class=$color>
+                            <td class="middle left $color">
                             };
                         print $q->checkbox(
                             -name    => $type . "_" . $perm,
@@ -544,19 +538,11 @@ sub display_edit {
                     }
                     else {
                         print qq{
-                            <td valign=center align=left class=$color><img src=$NicToolClient::image_dir/perm-}
-                            . ( $data->{ $type . "_" . $perm } ? 'checked.gif'
-                            : 'unchecked.gif' )
-                            . qq{>}
-                            . (
-                            $modifyperm
-                            ? "<span class=disabled>"
-                            : ''
-                            )
-                            . (
-                            exists $labels{$type}->{$perm}
-                            ? $labels{$type}->{$perm}
-                            : ucfirst($perm) )
+                            <td class="middle left $color"><img src="$NicToolClient::image_dir/perm-}
+                            . ( $data->{ $type . "_" . $perm } ? 'checked.gif' : 'unchecked.gif' )
+                            . qq{" alt="">}
+                            . ( $modifyperm ? "<span class=disabled>" : '') 
+                            . ( exists $labels{$type}->{$perm} ? $labels{$type}->{$perm} : ucfirst($perm) )
                             . ( $modifyperm ? '</span>' : '' )
                             . qq{</td> };
                     }
@@ -583,8 +569,7 @@ sub display_edit {
     }
 
     if ($modifyperm) {
-        print
-            "<tr class=dark_grey_bg><td align=center colspan=2>",
+        print qq[<tr class=dark_grey_bg><td class=center colspan=2>],
             $q->submit( $edit eq 'edit' ? 'Save' : 'Create' ),
             $q->submit('Cancel'), "</td></tr>";
     }

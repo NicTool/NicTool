@@ -175,7 +175,7 @@ sub display_edit_user {
         ),
         "</td></tr>";
     print "<tr class=light_grey_bg>";
-    print "<td align=right>", "First Name:</td>";
+    print "<td class=right>First Name:</td>";
     print "<td width=80%>",
         (
         $modifyperm
@@ -188,7 +188,7 @@ sub display_edit_user {
         ),
         "</td></tr>";
     print "<tr class=light_grey_bg>";
-    print "<td align=right>", "Last Name:</td>";
+    print "<td class=right>Last Name:</td>";
     print "<td width=80%>",
         (
         $modifyperm
@@ -201,7 +201,7 @@ sub display_edit_user {
         ),
         "</td></tr>";
     print "<tr class=light_grey_bg>";
-    print "<td align=right>", "Email Address:</td>";
+    print "<td class=right>Email Address:</td>";
     print "<td width=80%>",
         (
           $modifyperm
@@ -210,7 +210,7 @@ sub display_edit_user {
         ),
         "</td></tr>";
     print "<tr class=light_grey_bg>";
-    print "<td align=right>", "Password:</td>";
+    print "<td class=right>Password:</td>";
     print "<td width=80%>",
         (
         $modifyperm
@@ -221,10 +221,10 @@ sub display_edit_user {
             )
         : ''
         ),
-        "</td></tr>";
-    print "<tr class=light_grey_bg>";
-    print "<td align=right>", "Password (Again):</td>";
-    print "<td width=80%>",
+        qq[</td></tr>
+    <tr class=light_grey_bg>
+    <td class=right>Password (Again):</td>
+    <td style="width:80%;">],
         (
         $modifyperm
         ? $q->password_field(
@@ -262,18 +262,14 @@ sub display_edit_user {
         print qq{
 <tr class=light_grey_bg>
  <td colspan=2 class=light_grey_bg>
-  <table style="padding:6; border-spacing:1; text-align:center;">
+  <table class="center" style="padding:6; border-spacing:1;">
 };
 
         my $x = 1;
         my $color;
         foreach my $type (@order) {
             $color = ( $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' );
-            print qq{
-                    <tr>
-                        <td align=right><b>}
-                . ( ucfirst($type) ) . qq{:</b></td>
-                            };
+            print qq{ <tr> <td class=right><b>} . ucfirst($type) . qq{:</b></td>};
             foreach my $perm ( @{ $perms{$type} } ) {
                 if ( $perm eq '.' ) {
                     print qq(
@@ -282,27 +278,15 @@ sub display_edit_user {
                     next;
                 }
                 print qq{
-                    <td valign=center class=$color align=left><img src=$NicToolClient::image_dir/perm-}
-                    . ( $group->{ $type . "_" . $perm }
-                    ? 'checked.gif'
-                    : 'unchecked.gif' )
-                    . qq{>
-                            }
-                    . (
-                    exists $labels{$type}->{$perm}
-                    ? $labels{$type}->{$perm}
-                    : ucfirst($perm) )
+                    <td class="$color left middle"><img src="$NicToolClient::image_dir/perm-}
+                    . ( $group->{ $type . "_" . $perm } ? 'checked.gif' : 'unchecked.gif' )
+                    . qq{"> }
+                    . ( exists $labels{$type}{$perm} ? $labels{$type}{$perm} : ucfirst($perm) )
                     . qq{</td> };
             }
-            print qq{
-                    </tr>
-                    };
+            print qq{ </tr> };
         }
-        print qq{
-                </table>
-            </td>
-        </tr>
-        };
+        print qq{ </table> </td> </tr> };
 
         print "<tr class=dark_grey_bg><td colspan=2>"
             . "<input type=radio value='0' name='group_defaults'>This user uses the permissions defined below"
@@ -311,7 +295,7 @@ sub display_edit_user {
         print qq{
 <tr class=light_grey_bg>
  <td colspan=2 class=light_grey_bg>
-  <table style="padding:6; border-spacing:1; text-align:center;">
+  <table class="center" style="padding:6; border-spacing:1;">
 };
     $x     = 1;
     @order = qw(group user zone zonerecord nameserver self header);
@@ -345,7 +329,7 @@ sub display_edit_user {
                     $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' );
                 print qq{
                         <tr>
-                            <td align=right><b>}
+                            <td class=right><b>}
                     . ( ucfirst($type) ) . qq{:</b></td>
                                 };
                 foreach my $perm ( @{ $perms{$type} } ) {
@@ -356,8 +340,7 @@ sub display_edit_user {
                         next;
                     }
                     if ( $user->{ $type . "_" . $perm } ) {
-                        print qq{
-                            <td valign=center align=left class=$color> };
+                        print qq{<td class="$color left middle"> };
                         print $q->checkbox(
                             -name    => $type . "_" . $perm,
                             -value   => '1',
@@ -371,9 +354,9 @@ sub display_edit_user {
                             . qq{</td> };
                     }
                     else {
-                        print qq{<td class=$color valign=center align=left><img src=$NicToolClient::image_dir/perm-}
+                        print qq{<td class="$color middle left"><img src="$NicToolClient::image_dir/perm-}
                             . ( $group->{ $type . "_" . $perm } ? 'checked.gif' : 'unchecked.gif' )
-                            . qq{><span class=disabled>}
+                            . qq{" alt=""><span class=disabled>}
                             . ( exists $labels{$type}->{$perm} ? $labels{$type}->{$perm} : ucfirst($perm) )
                             . qq{</span></td> };
                     }
@@ -397,8 +380,7 @@ sub display_edit_user {
         };
     }
     if ($modifyperm) {
-        print
-            "<tr class=dark_grey_bg><td colspan=2 align=center>",
+        print qq[<tr class=dark_grey_bg><td colspan=2 class=center>],
             $q->submit( $edit eq 'edit' ? 'Save' : 'Create' ),
             $q->submit('Cancel'), "</td></tr>";
     }
@@ -462,7 +444,7 @@ sub display_list {
     <table class="no_pad" class="fat">
     <tr>
     <td><b>User List</b></td>
-    <td align=right>];
+    <td class=right>];
     if ( $user->{'user_create'} ) {
         print "<a href=$cgi?"
             . join( '&', @state_fields )
@@ -489,7 +471,7 @@ sub display_list {
         print qq[<table class="fat"> <tr class=dark_grey_bg>];
 
         if ( $user_group->{'has_children'} ) {
-            print qq[<td align=center>
+            print qq[<td class=center>
             <table class="no_pad">
             <tr><td></td>];
             print $q->endform . "\n";
@@ -517,7 +499,7 @@ sub display_list {
 
         foreach (@columns) {
             if ( $sort_fields{$_} ) {
-                print qq[<td class=dark_bg align=center><table class="no_pad">
+                print qq[<td class="dark_bg center"><table class="no_pad">
                 <tr>
                 <td>$labels{$_}</td>
                 <td>&nbsp; &nbsp; $sort_fields{$_}->{'order'}</td>
@@ -530,7 +512,7 @@ sub display_list {
 
             }
             else {
-                print "<td align=center>", "$labels{$_}</td>";
+                print "<td class=center>$labels{$_}</td>";
             }
         }
         print
@@ -547,7 +529,7 @@ sub display_list {
             if (   $user->{'user_write'}
                 && $obj->{'nt_user_id'} ne $user->{'nt_user_id'} )
             {
-                print "<td width=1% align=center>",
+                print qq[<td style="width:1%;" class=center>],
                     $q->checkbox(
                     -name  => 'obj_list',
                     -value => $obj->{'nt_user_id'},
@@ -557,11 +539,8 @@ sub display_list {
                     if ( $user_group->{'has_children'} );
             }
             else {
-                print
-                    "<td width=1% align=center><img src=$NicToolClient::image_dir/nobox.gif></td>"
-                    if ( $user_group->{'has_children'} );
-
-#print "<td width=1% align=center><img src=$NicToolClient::image_dir/perm-unchecked.gif></td>" if( $user_group->{'has_children'} );
+                print qq[<td width=1% class=center><img src="$NicToolClient::image_dir/nobox.gif" alt="nobox"></td>]
+                    if $user_group->{'has_children'};
             }
 
             if ($include_subgroups) {

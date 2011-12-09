@@ -136,7 +136,7 @@ sub display {
             </tr>];
         }
         print qq[
-            <tr class=dark_grey_bg><td colspan=2 align=center><form><input type=button value="Close" onClick="window.close()"></form></td></tr> 
+            <tr class=dark_grey_bg><td colspan=2 class=center><form><input type=button value="Close" onClick="window.close()"></form></td></tr> 
         </table>
         ];
 

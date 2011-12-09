@@ -93,8 +93,6 @@ sub print_zone_request_form {
     my @templates = $nt_obj->zone_record_template_list();
     my @actions   = ("add");
 
-    #my @actions = ( "", "add", "mod", "del");
-
     print $q->start_form,
         $q->hidden(
         -name    => 'nt_group_id',
@@ -165,7 +163,7 @@ sub print_zone_request_form {
               </tr>
                },
 
-        $q->td( { -colspan => '4', -align => 'center' }, $q->submit, ),
+        $q->td( { -colspan => '4', -class => 'center' }, $q->submit, ),
         qq{ </tr></table> },
         $q->end_form;
 }

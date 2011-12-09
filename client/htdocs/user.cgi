@@ -195,9 +195,9 @@ sub display {
 <tr>];
 
     for my $x ( 1 .. $level ) {
-        print "<td><img src=$NicToolClient::image_dir/"
+        print qq[<td><img src="$NicToolClient::image_dir/]
             . ( $x == $level ? 'dirtree_elbow' : 'transparent' )
-            . ".gif width=17 height=17></td>";
+            . qq[.gif" class="tee" alt=""></td>];
     }
 
     print qq[<td><img src=$NicToolClient::image_dir/user.gif></td>
@@ -264,7 +264,7 @@ sub display_properties {
     else {
         $modname = 'View Details';
     }
-    print "<td align=right><a href=user.cgi?", join( '&', @state_fields ),
+    print "<td class=right><a href=user.cgi?", join( '&', @state_fields ),
           "&nt_group_id="
         . $q->param('nt_group_id')
         . "&nt_user_id=$duser->{'nt_user_id'}&edit=1>$modname</a></td>";
@@ -364,7 +364,7 @@ sub display_global_log {
         <tr class=dark_grey_bg>];
         foreach (@columns) {
             if ( $sort_fields{$_} ) {
-                print qq[<td class=dark_bg align=center><table class="no_pad">
+                print qq[<td class="dark_bg center"><table class="no_pad">
                 <tr>
                 <td>$labels{$_}</td>
                 <td>&nbsp; &nbsp; $sort_fields{$_}->{'order'}</td>
@@ -376,7 +376,7 @@ sub display_global_log {
                 print "</tr></table></td>";
             }
             else {
-                print "<td align=center>", "$labels{$_}</td>";
+                print "<td class=center>", "$labels{$_}</td>";
             }
         }
         print "</tr>";
@@ -550,7 +550,7 @@ sub display_edit {
 </tr>
 <tr class=light_grey_bg><td colspan=2>&nbsp;</td></tr>
 <tr class=light_grey_bg>
-<td align=right class="nowrap">New Password:</td>
+<td class="right nowrap">New Password:</td>
 <td class="fat">],
             $q->password_field( -name => 'password', -maxlength => 15, -override  => 1),
             qq[</td>
@@ -620,15 +620,12 @@ sub display_edit {
             if ($showusablens) {
                 print qq(
                     <tr class=light_grey_bg>
-                        <td class=light_grey_bg valign=top> Usable Nameservers: </td>
-                        <td class=light_grey_bg valign=top> Permissions: </td>
+                        <td class="light_grey_bg top"> Usable Nameservers: </td>
+                        <td class="light_grey_bg top"> Permissions: </td>
                     </tr>
 
                 );
-                print qq(
-                    <tr class=light_grey_bg>
-                        <td class=light_grey_bg valign=top>
-                                  );
+                print qq( <tr class=light_grey_bg> <td class="light_grey_bg top">);
                 my %order = map { $_->{'nt_nameserver_id'} => $_ }
                     @{ $ns_tree->{'list'} };
                 foreach ( sort keys %order ) {
@@ -648,7 +645,7 @@ sub display_edit {
 
             print qq{
 <td class=light_grey_bg colspan=2>
- <table style="padding:6; border-spacing:1; text-align:center;">
+ <table class="center" style="padding:6; border-spacing:1;">
 						};
 
             my $x = 1;
@@ -656,7 +653,7 @@ sub display_edit {
             foreach my $type (@order) {
                 $color = (
                     $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' );
-                print qq[ <tr> <td align=right><b>]
+                print qq[ <tr> <td class=right><b>]
                     . ( ucfirst($type) ) . qq{:</b></td>
                                 };
                 foreach my $perm ( @{ $perms{$type} } ) {
@@ -664,23 +661,13 @@ sub display_edit {
                         print qq[<td class=$color></td>];
                         next;
                     }
-                    print qq{
-                            <td valign=center class=$color align=left><img src=$NicToolClient::image_dir/perm-}
-                        . ( $group->{ $type . "_" . $perm }
-                        ? 'checked.gif'
-                        : 'unchecked.gif' )
-                        . qq{>
-                                }
-                        . (
-                        exists $labels{$type}->{$perm}
-                        ? $labels{$type}->{$perm}
-                        : ucfirst($perm) )
-
+                    print qq{ <td class="$color left middle"><img src="$NicToolClient::image_dir/perm-}
+                        . ( $group->{ $type . "_" . $perm } ? 'checked.gif' : 'unchecked.gif' )
+                        . qq{"> }
+                        . ( exists $labels{$type}{$perm} ? $labels{$type}{$perm} : ucfirst($perm) )
                         . qq{</td> };
                 }
-                print qq{
-                        </tr>
-                        };
+                print qq{ </tr> };
             }
             print qq{
                     </table>
@@ -723,14 +710,14 @@ sub display_edit {
             if ($showusablens) {
                 print qq(
                      <tr class=light_grey_bg>
-                        <td class=light_grey_bg valign=top> Usable Nameservers: </td>
-                        <td class=light_grey_bg valign=top> Permissions: </td>
+                        <td class="light_grey_bg top"> Usable Nameservers: </td>
+                        <td class="light_grey_bg top"> Permissions: </td>
                     </tr>
                                   );
 
                 print qq(
                      <tr class=light_grey_bg>
-                      <td class=light_grey_bg valign=top>
+                      <td class="light_grey_bg top">
                                   );
                 my %order = map { $_->{'nt_nameserver_id'} => $_ }
                     @{ $ns_tree->{'nameservers'} };
@@ -758,7 +745,7 @@ sub display_edit {
 
             print qq[
 <td colspan=2 class=light_grey_bg>
- <table style="padding:6; border-spacing:1; text-align:center;"> ];
+ <table class="center" style="padding:6; border-spacing:1;"> ];
             my $x = 1;
             my $color;
             @order = qw(group user zone zonerecord nameserver self header);
@@ -785,7 +772,7 @@ sub display_edit {
                 }
                 else {
                     $color = ( $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' );
-                    print qq{ <tr> <td align=right><b>}
+                    print qq{ <tr> <td class=right><b>}
                         . ( ucfirst($type) ) . qq{:</b></td>
                                     };
                     foreach my $perm ( @{ $perms{$type} } ) {
@@ -797,8 +784,7 @@ sub display_edit {
                             && $user->{ $type . "_" . $perm }
                             && !$editself )
                         {
-                            print qq{
-                                <td valign=center align=left class=$color> };
+                            print qq{ <td class="center left $color"> };
                             print $q->checkbox(
                                 -name    => $type . "_" . $perm,
                                 -value   => '1',
@@ -815,22 +801,16 @@ sub display_edit {
                         }
                         else {
                             print qq{
-                                <td class=$color valign=center align=left><img src=$NicToolClient::image_dir/perm-}
-                                . ( $duser->{ $type . "_" . $perm }
-                                ? 'checked.gif'
-                                : 'unchecked.gif' )
-                                . qq{>
-                                    }
-                                . ( $modifyperm && !$editself
-                                ? qq{<span class=disabled>}
-                                : '' )
+                                <td class="$color center left"><img src="$NicToolClient::image_dir/perm-}
+                                . ( $duser->{ $type . "_" . $perm } ? 'checked.gif' : 'unchecked.gif' ) . qq{">}
+                                . ( $modifyperm && !$editself ? qq{<span class=disabled>} : '' )
                                 . (
                                 exists $labels{$type}->{$perm}
                                 ? $labels{$type}->{$perm}
                                 : ucfirst($perm) )
                                 . ( $modifyperm
                                     && !$editself ? '</span>' : '' )
-                                . qq{</td> };
+                                . qq{</td>};
                         }
                     }
                     if ( $modifyperm && !$editself ) {
@@ -857,11 +837,11 @@ sub display_edit {
         }
     }
     if ($modifyperm) {
-        print
-            "<tr class=dark_grey_bg><td colspan=2 align=center>",
+        print qq[<tr class=dark_grey_bg><td colspan=2 class=center>],
             $q->submit( $edit eq 'edit' ? 'Save' : 'Create' ),
             $q->submit('Cancel'), "</td></tr>";
     }
-    print "</table>";
-    print $q->end_form;
+    print "</table>",
+    $q->end_form;
 }
+

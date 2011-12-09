@@ -66,7 +66,7 @@ sub show_zone_records {
 
     print qq{
   <table style="width:100%; border-spacing:1;">
-    <tr class="dark_bg"> <td colspan="6" align="center"> $template </td> </tr> };
+    <tr class="dark_bg"> <td colspan="6" class="center"> $template </td> </tr> };
 
     for ( my $i = 0; $i < scalar( @{$recs} ); $i++ ) {
         my %zone_record = (
