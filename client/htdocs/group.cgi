@@ -236,13 +236,13 @@ sub display_group_list {
     my @options;
     if ( $user->{'group_create'} ) {
         @options
-            = (   "<a href=group.cgi?"
+            = (   qq[<a href="group.cgi?]
                 . join( '&', @state_fields )
                 . "&nt_group_id="
                 . $q->param('nt_group_id')
                 . "&parent_group_id="
                 . $q->param('nt_group_id')
-                . "&new=1>New Sub-Group</a>" );
+                . qq[&new=1">New Sub-Group</a>] );
     }
     else {
         @options = ( "<span class=disabled>New Sub-Group</span>");
@@ -296,7 +296,7 @@ sub display_group_list {
 <td>],
                 join(
                 ' / ',
-                map("<a href=group.cgi?nt_group_id=$_->{'nt_group_id'}>$_->{'name'}</a>",
+                map(qq[<a href="group.cgi?nt_group_id=$_->{'nt_group_id'}">$_->{'name'}</a>],
                     (   @{ $map->{ $group->{'nt_group_id'} } },
                         {   nt_group_id => $group->{'nt_group_id'},
                             name        => $group->{'name'}

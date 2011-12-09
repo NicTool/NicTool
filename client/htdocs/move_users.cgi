@@ -113,7 +113,7 @@ sub move {
     <td class="fat">],
         join(
         ', ',
-        map("<a href=user.cgi?nt_group_id=$_->{'nt_group_id'}&nt_user_id=$_->{'nt_user_id'} target=_blank>$_->{'username'}</a>",
+        map(qq[<a href="user.cgi?nt_group_id=$_->{'nt_group_id'}&nt_user_id=$_->{'nt_user_id'}" target=_blank>$_->{'username'}</a>],
             @$list )
         ),
         "</td> </tr> </table>";

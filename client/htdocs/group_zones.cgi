@@ -239,29 +239,24 @@ sub display_list {
 <td><b>Zone List</b></td>
 <td class=right>];
     if ( $nt_obj->no_gui_hints || $user->{"zone_create"} ) {
-        print "<a href=group_zones.cgi?"
+        print qq[<a href="group_zones.cgi?]
             . join( '&', @state_fields )
-            . "&nt_group_id="
-            . $q->param('nt_group_id')
-            . "&new=1>New Zone</a>";
+            . qq[&nt_group_id=$q->param('nt_group_id')&new=1">New Zone</a>];
     }
     else {
         print "<span class=disabled>New Zone";
     }
-    print
-        " | <a href=\"javascript:void open_move(document.list_form.obj_list);\">Move Selected Zones</a>"
-        if ( @$zones && $user_group->{'has_children'} );
-    print
-        " | <a href=\"javascript:void open_delegate(document.list_form.obj_list);\">Delegate Selected Zones</a>"
-        if ( @$zones
-        && $user_group->{'has_children'}
-        && $user->{'zone_delegate'} );
 
-    print " | <a href=group_zones_log.cgi?nt_group_id=",
-        $q->param('nt_group_id'), ">View Zone Log</a>";
-    print "</td>";
-    print "</tr></table></td></tr>";
-    print "</table>";
+    if ( @$zones && $user_group->{'has_children'} ) {
+        print qq[ | <a href="javascript:void open_move(document.list_form.obj_list);">Move Selected Zones</a>];
+        print qq[ | <a href="javascript:void open_delegate(document.list_form.obj_list);">Delegate Selected Zones</a>]
+            if $user->{'zone_delegate'};
+    };
+
+    print qq[ | <a href="group_zones_log.cgi?nt_group_id=$q->param('nt_group_id')">View Zone Log</a>
+</td>
+</tr></table></td></tr>
+</table>];
 
     $nt_obj->display_search_rows( $q, $rv, \%params, 'group_zones.cgi',
         ['nt_group_id'], $include_subgroups );
@@ -356,13 +351,13 @@ sub display_list {
                     -label => ''
                     )
                     . qq{</td>}
-                    if ( $user_group->{'has_children'} );
+                    if $user_group->{'has_children'};
             }
             else {
 
                 print
                     "<td width=1% class=center><img src=$NicToolClient::image_dir/nobox.gif></td>"
-                    if ( $user_group->{'has_children'} );
+                    if $user_group->{'has_children'};
 
             }
 
@@ -371,23 +366,22 @@ sub display_list {
                  <table class="no_pad">
                   <tr>};
             if ( !$isdelegate ) {
-                print qq{
-                            <td><a href=zone.cgi?nt_zone_id=}
-                    . "$zone->{'nt_zone_id'}&nt_group_id=$zone->{'nt_group_id'}><img src=$NicToolClient::image_dir/zone.gif></a></td>
-                            <td><a href=zone.cgi?nt_zone_id="
-                    . "$zone->{'nt_zone_id'}&nt_group_id=$zone->{'nt_group_id'}>$zone->{'zone'}</a>";
+                print qq[
+<td><a href="zone.cgi?nt_zone_id=$zone->{'nt_zone_id'}&nt_group_id=$zone->{'nt_group_id'}">
+  <img src="$NicToolClient::image_dir/zone.gif" alt="zone"></a></td>
+<td><a href="zone.cgi?nt_zone_id=$zone->{'nt_zone_id'}&nt_group_id=$zone->{'nt_group_id'}">$zone->{'zone'}</a>];
             }
             else {
                 my $img = "zone"
                     . ( $zone->{'pseudo'} ? '-pseudo' : '-delegated' );
                 print qq(
                             <td>
-                            <a href=zone.cgi?nt_zone_id=$zone->{'nt_zone_id'}&nt_group_id=)
+                            <a href="zone.cgi?nt_zone_id=$zone->{'nt_zone_id'}&nt_group_id=)
                     . $q->param('nt_group_id')
-                    . qq(><img src=$NicToolClient::image_dir/$img.gif></a></td>
-                            <td><a href=zone.cgi?nt_zone_id=$zone->{'nt_zone_id'}&nt_group_id=)
+                    . qq("><img src="$NicToolClient::image_dir/$img.gif" alt=""></a></td>
+                            <td><a href="zone.cgi?nt_zone_id=$zone->{'nt_zone_id'}&nt_group_id=)
                     . $q->param('nt_group_id')
-                    . qq(> $zone->{'zone'}</a>);
+                    . qq("> $zone->{'zone'}</a>);
                 if ( $zone->{'pseudo'} ) {
                     print
                         "&nbsp; <span class=disabled>("
@@ -417,7 +411,7 @@ sub display_list {
                     print "<td>",
                         join(
                         ' / ',
-                        map("<a href=group.cgi?nt_group_id=$_->{'nt_group_id'}>$_->{'name'}</a>",
+                        map(qq[<a href="group.cgi?nt_group_id=$_->{'nt_group_id'}">$_->{'name'}</a>],
                             (   @{ $map->{ $zone->{'nt_group_id'} } },
                                 {   nt_group_id => $zone->{'nt_group_id'},
                                     name        => $zone->{'group_name'}
@@ -430,7 +424,7 @@ sub display_list {
                     print "<td>",
                         join(
                         ' / ',
-                        map("<a href=group.cgi?nt_group_id=$_->{'nt_group_id'}>$_->{'name'}</a>",
+                        map(qq[<a href="group.cgi?nt_group_id=$_->{'nt_group_id'}">$_->{'name'}</a>],
                             (   {   nt_group_id => $zone->{'nt_group_id'},
                                     name        => $zone->{'group_name'}
                                 }
@@ -648,7 +642,7 @@ sub new_zone {
 
     print "<tr class=light_grey_bg>";
     print "<td class=right>",
-        "<a href=\"javascript:void window.open('templates.cgi', 'templates_win', 'width=640,height=580,scrollbars,resizable=yes')\">Template:</a></td>";
+        qq[<a href="javascript:void window.open('templates.cgi', 'templates_win', 'width=640,height=580,scrollbars,resizable=yes')">Template:</a></td>];
     my @templates = $nt_obj->zone_record_template_list;
     print "<td width=80%>",
         $q->popup_menu(

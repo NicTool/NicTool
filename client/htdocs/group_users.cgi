@@ -446,21 +446,20 @@ sub display_list {
     <td><b>User List</b></td>
     <td class=right>];
     if ( $user->{'user_create'} ) {
-        print "<a href=$cgi?"
+        print qq[<a href="$cgi?]
             . join( '&', @state_fields )
             . "&nt_group_id="
             . $q->param('nt_group_id')
-            . "&new=1>New User</a>";
+            . qq[&new=1">New User</a>];
     }
     else {
         print "<span class=disabled>New User</span>";
     }
-    print
-        " | <a href=\"javascript:void open_move(document.list_form.obj_list);\">Move Selected Users</a>"
+    print qq[ | <a href="javascript:void open_move(document.list_form.obj_list);">Move Selected Users</a>]
         if ( @$list && $user_group->{'has_children'} );
-    print "</td>";
-    print "</tr></table></td></tr>";
-    print "</table>";
+    print qq[</td>
+</tr></table></td></tr>
+</table>];
 
     $nt_obj->display_search_rows( $q, $rv, \%params, $cgi, ['nt_group_id'],
         $include_subgroups );
@@ -550,7 +549,7 @@ sub display_list {
                     print "<td>",
                         join(
                         ' / ',
-                        map("<a href=group.cgi?nt_group_id=$_->{'nt_group_id'}>$_->{'name'}</a>",
+                        map(qq[<a href="group.cgi?nt_group_id=$_->{'nt_group_id'}">$_->{'name'}</a>],
                             (   @{ $map->{ $obj->{'nt_group_id'} } },
                                 {   nt_group_id => $obj->{'nt_group_id'},
                                     name        => $obj->{'group_name'}
@@ -563,7 +562,7 @@ sub display_list {
                     print "<td>",
                         join(
                         ' / ',
-                        map("<a href=group.cgi?nt_group_id=$_->{'nt_group_id'}>$_->{'name'}</a>",
+                        map(qq[<a href="group.cgi?nt_group_id=$_->{'nt_group_id'}">$_->{'name'}</a>],
                             (   {   nt_group_id => $obj->{'nt_group_id'},
                                     name        => $obj->{'group_name'}
                                 }
@@ -585,22 +584,20 @@ sub display_list {
             "<td width=$width>",
                 ( $obj->{'last_name'} ? $obj->{'last_name'} : '&nbsp;' ),
                 "</td>",
-            "<td width=$width>",
-                ( $obj->{'email'}
-                ? "<a href=mailto:$obj->{'email'}>$obj->{'email'}</a>"
+            "<td width=$width>", 
+             ( $obj->{'email'} ? qq[<a href="mailto:$obj->{'email'}">$obj->{'email'}</a>]
                 : '&nbsp;' ), "</td>";
 
             if (    $user->{'user_delete'}
                 and $obj->{'nt_user_id'} != $user->{'nt_user_id'} )
             {
-                print "<td width=1%><a href=$cgi?"
+                print qq[<td width=1%><a href="$cgi?]
                     . join( '&', @state_fields )
-                    . "&nt_group_id="
-                    . $q->param('nt_group_id')
-                    . "&delete=1&obj_list=$obj->{'nt_user_id'} onClick=\"return confirm('Delete user $obj->{'username'}?');\"><img src=$NicToolClient::image_dir/trash.gif></a></td>";
+                    . qq[&nt_group_id=$q->param('nt_group_id')&delete=1&obj_list=$obj->{'nt_user_id'}" onClick=\"return confirm('Delete user $obj->{'username'}?');\">
+<img src="$NicToolClient::image_dir/trash.gif" alt="trash"></a></td>];
             }
             else {
-                print "<td width=1%><img src=$NicToolClient::image_dir/trash-disabled.gif></td>";
+                print qq[<td width=1%><img src="$NicToolClient::image_dir/trash-disabled.gif" alt="disabled trash"></td>];
             }
             print "</tr>";
         }

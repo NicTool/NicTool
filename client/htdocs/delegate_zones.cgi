@@ -236,8 +236,8 @@ sub delegate_zones {
   <td class="fat">
    <table class="no_pad">
     <tr>
-     <td class="middle"><a href=zone.cgi?nt_group_id=$zone->{'nt_group_id'}&nt_zone_id=$zone->{'nt_zone_id'} target=body><img src="$NicToolClient::image_dir/zone.gif" ></a></td>
-     <td class="middle"><a href=zone.cgi?nt_group_id=$zone->{'nt_group_id'}&nt_zone_id=$zone->{'nt_zone_id'} target=body>$zone->{'zone'}</a></td>
+     <td class="middle"><a href="zone.cgi?nt_group_id=$zone->{'nt_group_id'}&nt_zone_id=$zone->{'nt_zone_id'}" target=body><img src="$NicToolClient::image_dir/zone.gif" ></a></td>
+     <td class="middle"><a href="zone.cgi?nt_group_id=$zone->{'nt_group_id'}&nt_zone_id=$zone->{'nt_zone_id'}" target=body>$zone->{'zone'}</a></td>
     </tr>
    </table>
   </td>

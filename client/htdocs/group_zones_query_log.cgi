@@ -150,7 +150,7 @@ sub display {
             elsif ( $_ eq 'query' ) {
                 print qq[<td><table class="no_pad"><tr>
                 <td><a href="zone.cgi?nt_group_id=$q->param('nt_group_id')&nt_zone_id=$row->{'nt_zone_id'}&nt_zone_record_id=$row->{'nt_zone_record_id'}&edit_record=1"><img src="$NicToolClient::image_dir/r_record.gif"></a></td>
-                <td><a href=zone.cgi?nt_group_id=$q->param('nt_group_id')&nt_zone_id=$row->{'nt_zone_id'}&nt_zone_record_id=$row->{'nt_zone_record_id'}&edit_record=1">$row->{$_}</a></td>
+                <td><a href="zone.cgi?nt_group_id=$q->param('nt_group_id')&nt_zone_id=$row->{'nt_zone_id'}&nt_zone_record_id=$row->{'nt_zone_record_id'}&edit_record=1">$row->{$_}</a></td>
                 </tr></table></td>];
             }
             else {

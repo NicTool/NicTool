@@ -101,7 +101,7 @@ sub move_zones {
 <td class="fat">],
         join(
         ', ',
-        map("<a href=zone.cgi?nt_group_id=$_->{'nt_group_id'}&nt_zone_id=$_->{'nt_zone_id'} target=_blank>$_->{'zone'}</a>",
+        map(qq[<a href="zone.cgi?nt_group_id=$_->{'nt_group_id'}&nt_zone_id=$_->{'nt_zone_id'}" target=_blank>$_->{'zone'}</a>],
             @$zones )
         ),
         "</td>";

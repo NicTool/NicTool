@@ -172,28 +172,21 @@ sub display_log {
             if ( $_ eq 'zone' ) {
                 print qq[<td><table class="no_pad">
                 <tr>
-                <td><a href=$cgi?], join( '&', @state_fields ),
-                    "&redirect=1&object=zone&obj_id=$row->{'nt_zone_id'}&nt_group_id="
-                    . $q->param('nt_group_id')
-                    . "><img src=$NicToolClient::image_dir/zone.gif></a></td>";
-                print "<td><a href=$cgi?", join( '&', @state_fields ),
-                    "&redirect=1&object=zone&obj_id=$row->{'nt_zone_id'}&nt_group_id="
-                    . $q->param('nt_group_id')
-                    . ">", $row->{$_}, "</a></td>";
-                print "</tr></table></td>";
+                <td><a href="$cgi?], join( '&', @state_fields ),
+                    qq[&redirect=1&object=zone&obj_id=$row->{'nt_zone_id'}&nt_group_id=$q->param('nt_group_id')">
+                    <img src="$NicToolClient::image_dir/zone.gif" alt=""></a></td>
+                <td><a href="$cgi?], join( '&', @state_fields ),
+qq[&redirect=1&object=zone&obj_id=$row->{'nt_zone_id'}&nt_group_id=$q->param('nt_group_id')">$row->{$_} </a></td> </tr></table></td>];
             }
             elsif ( $_ eq 'timestamp' ) {
                 print "<td>", ( scalar localtime( $row->{$_} ) ), "</td>";
             }
             elsif ( $_ eq 'user' ) {
                 print qq[<td><table class="no_pad"><tr>
-                <td><a href=user.cgi?nt_group_id=]
+                <td><a href="user.cgi?nt_group_id=]
                     . $q->param('nt_group_id')
-                    . "&nt_user_id=$row->{'nt_user_id'}><img src=$NicToolClient::image_dir/user.gif></a></td>";
-                print "<td><a href=user.cgi?nt_group_id="
-                    . $q->param('nt_group_id')
-                    . "&nt_user_id=$row->{'nt_user_id'}>$row->{'user'}</a></td>";
-                print "</tr></table></td>";
+                    . qq[&nt_user_id=$row->{'nt_user_id'}"><img src=$NicToolClient::image_dir/user.gif alt="user"></a></td>
+                <td><a href="user.cgi?nt_group_id=$q->param('nt_group_id')&nt_user_id=$row->{'nt_user_id'}">$row->{'user'}</a></td> </tr></table></td>];
             }
             elsif ( $_ eq 'group' ) {
                 print qq[<td><table class="no_pad"><tr>
@@ -201,23 +194,21 @@ sub display_log {
                 <td>],
                     join(
                     ' / ',
-                    map("<a href=group.cgi?nt_group_id=$_->{'nt_group_id'}>$_->{'name'}</a>",
+                    map(qq[<a href="group.cgi?nt_group_id=$_->{'nt_group_id'}">$_->{'name'}</a>],
                         (   @{ $map->{ $row->{'nt_group_id'} } },
                             {   nt_group_id => $row->{'nt_group_id'},
                                 name        => $row->{'group_name'}
                             }
                             ) )
                     ),
-                    "</td>";
-                print "</tr></table></td>";
+                    "</td></tr></table></td>";
             }
             else {
-                print "<td>", ( $row->{$_} ? $row->{$_} : '&nbsp;' ),
-                    "</td>";
+                print "<td>", ( $row->{$_} ? $row->{$_} : '&nbsp;' ), "</td>";
             }
         }
         if ( $row->{'action'} eq 'deleted' ) {
-            print "<td class=center><a href=zone.cgi?nt_group_id=$row->{'nt_group_id'}&nt_zone_id=$row->{'nt_zone_id'}&edit_zone=1&undelete=1>undelete</a></td>";
+            print qq[<td class=center><a href="zone.cgi?nt_group_id=$row->{'nt_group_id'}&nt_zone_id=$row->{'nt_zone_id'}&edit_zone=1&undelete=1">undelete</a></td>];
         }
         else {
             print "<td class=center>&nbsp;</td>";

@@ -174,7 +174,7 @@ sub display_log {
                     <td>],
                         join(
                         ' / ',
-                        map("<a href=group.cgi?nt_group_id=$_->{'nt_group_id'}>$_->{'name'}</a>",
+                        map(qq[<a href="group.cgi?nt_group_id=$_->{'nt_group_id'}">$_->{'name'}</a>],
                             (   @{ $map->{ $row->{'nt_group_id'} } },
                                 {   nt_group_id => $row->{'nt_group_id'},
                                     name        => $row->{'group_name'}
@@ -187,12 +187,12 @@ sub display_log {
                 elsif ( $_ eq 'user' ) {
                     print qq[<td><table class="no_pad"><tr>
                     <td><img src=$NicToolClient::image_dir/user.gif></td>
-                    <td><a href=user.cgi?nt_group_id=$row->{'nt_group_id'}&nt_user_id=$row->{'nt_user_id'}>$row->{'user'}</a></td>
+                    <td><a href="user.cgi?nt_group_id=$row->{'nt_group_id'}&nt_user_id=$row->{'nt_user_id'}">$row->{'user'}</a></td>
                     </tr></table></td>];
                 }
                 elsif ( $_ eq 'title' ) {
                     print qq[<td><table class="no_pad"><tr>
-                    <td><a href=group_log.cgi?]
+                    <td><a href="group_log.cgi?]
                         . join( '&', @state_fields )
                         . "&redirect=1&nt_group_id="
                         . $q->param('nt_group_id')
@@ -200,8 +200,8 @@ sub display_log {
                         . $q->escape( $row->{'object'} )
                         . "&obj_id="
                         . $q->escape( $row->{'object_id'} )
-                        . "><img src=$NicToolClient::image_dir/$map->{ $row->{'object'} }->{'image'}></a></td>";
-                    print "<td><a href=group_log.cgi?"
+                        . qq["><img src=$NicToolClient::image_dir/$map->{ $row->{'object'} }->{'image'}"></a></td>
+                    <td><a href="group_log.cgi?]
                         . join( '&', @state_fields )
                         . "&redirect=1&nt_group_id="
                         . $q->param('nt_group_id')
@@ -209,8 +209,8 @@ sub display_log {
                         . $q->escape( $row->{'object'} )
                         . "&obj_id="
                         . $q->escape( $row->{'object_id'} )
-                        . ">$row->{'title'}</a></td>";
-                    print "</tr></table></td>";
+                        . qq[">$row->{'title'}</a></td>
+                        </tr></table></td> ];
                 }
                 else {
                     print "<td>", ( $row->{$_} ? $row->{$_} : '&nbsp;' ),

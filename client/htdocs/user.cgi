@@ -168,11 +168,7 @@ sub display {
     if ( $user->{'user_delete'}
         && ( $user->{'nt_user_id'} ne $duser->{'nt_user_id'} ) )
     {
-        push( @options,
-                  "<a href=group_users.cgi?nt_group_id="
-                . $q->param('nt_group_id')
-                . "&delete=1&obj_list=$duser->{'nt_user_id'} onClick=\"return confirm('Delete user $duser->{'username'}?');\">Delete</a>"
-        );
+        push @options, qq[<a href="group_users.cgi?nt_group_id=$q->param('nt_group_id')&delete=1&obj_list=$duser->{'nt_user_id'}" onClick="return confirm('Delete user $duser->{'username'}?');">Delete</a>];
     }
     else {
         push @options, "<span class=disabled>Delete</span>";
@@ -180,9 +176,7 @@ sub display {
     if (   $user->{'user_write'}
         && $user->{'nt_user_id'} ne $duser->{'nt_user_id'} )
     {
-        push( @options,
-            "<a href=\"javascript:void window.open('move_users.cgi?obj_list=$duser->{'nt_user_id'}', 'move_win', 'width=640,height=480,scrollbars,resizable=yes')\">Move</a>"
-        ) if ( $group->{'has_children'} );
+        push @options, qq[<a href="javascript:void window.open('move_users.cgi?obj_list=$duser->{'nt_user_id'}', 'move_win', 'width=640,height=480,scrollbars,resizable=yes')">Move</a>] if $group->{'has_children'};
     }
     else {
         push @options, "<span class=disabled>Move</span>" if $group->{'has_children'};
@@ -264,12 +258,10 @@ sub display_properties {
     else {
         $modname = 'View Details';
     }
-    print "<td class=right><a href=user.cgi?", join( '&', @state_fields ),
-          "&nt_group_id="
-        . $q->param('nt_group_id')
-        . "&nt_user_id=$duser->{'nt_user_id'}&edit=1>$modname</a></td>";
-    print "</tr></table>";
-    print "</td></tr></table>";
+    print qq[<td class=right><a href="user.cgi?], join( '&', @state_fields ),
+qq[&nt_group_id=$q->param('nt_group_id')&nt_user_id=$duser->{'nt_user_id'}&edit=1">$modname</a></td>
+</tr></table>
+</td></tr></table>];
 
     print qq[<table class="fat" cellspacing=0>
  <tr>
@@ -359,96 +351,94 @@ sub display_global_log {
 
     $nt_obj->display_search_rows( $q, $rv, \%params, $cgi, \@req_fields );
 
-    if (@$list) {
-        print qq[<table class="fat">
-        <tr class=dark_grey_bg>];
-        foreach (@columns) {
-            if ( $sort_fields{$_} ) {
-                print qq[<td class="dark_bg center"><table class="no_pad">
-                <tr>
-                <td>$labels{$_}</td>
-                <td>&nbsp; &nbsp; $sort_fields{$_}->{'order'}</td>
-                <td><img src=$NicToolClient::image_dir/],
-                    (
-                    uc( $sort_fields{$_}->{'mod'} ) eq 'ASCENDING'
-                    ? 'up.gif'
-                    : 'down.gif' ), "></tD>";
-                print "</tr></table></td>";
-            }
-            else {
-                print "<td class=center>", "$labels{$_}</td>";
-            }
-        }
-        print "</tr>";
-
-        my $map = $nt_obj->obj_to_cgi_map();
-
-        my $x = 0;
-        my $range;
-        foreach my $row (@$list) {
-
-            print "<tr class="
-                . ( $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' )
-                . ">";
-            foreach (@columns) {
-                if ( $_ eq 'timestamp' ) {
-                    print "<td>", ( scalar localtime( $row->{$_} ) ), "</td>";
-                }
-                elsif ( $_ eq 'object' ) {
-                    my $txt = $row->{'object'};
-                    $txt = join( " ", map( ucfirst, split( /_/, $txt ) ) );
-                    print "<td>", ( $txt ? $txt : '&nbsp;' ), "</td>";
-
-                }
-                elsif ( $_ eq 'title' ) {
-                    print qq[<td><table class="no_pad"><tr>
-                    <td><a href=user.cgi?]
-                        . join( '&', @state_fields )
-                        . "&redirect=1&nt_group_id=$duser->{'nt_group_id'}&nt_user_id=$duser->{'nt_user_id'}&object="
-                        . $q->escape( $row->{'object'} )
-                        . "&obj_id="
-                        . $q->escape( $row->{'object_id'} )
-                        . "><img src=$NicToolClient::image_dir/$map->{ $row->{'object'} }->{'image'}></a></td>";
-                    print "<td><a href=user.cgi?"
-                        . join( '&', @state_fields )
-                        . "&redirect=1&nt_group_id=$duser->{'nt_group_id'}&nt_user_id=$duser->{'nt_user_id'}&object="
-                        . $q->escape( $row->{'object'} )
-                        . "&obj_id="
-                        . $q->escape( $row->{'object_id'} )
-                        . ">$row->{'title'}</a></td>";
-                    print "</tr></table></td>";
-                }
-                elsif ( $_ eq 'target' && $row->{'target_id'} ) {
-                    print qq[<td><table class="no_pad"><tr>
-                    <td><a href=user.cgi?]
-                        . join( '&', @state_fields )
-                        . "&redirect=1&nt_group_id=$duser->{'nt_group_id'}&nt_user_id=$duser->{'nt_user_id'}&object="
-                        . $q->escape( $row->{'target'} )
-                        . "&obj_id="
-                        . $q->escape( $row->{'target_id'} )
-                        . "><img src=$NicToolClient::image_dir/$map->{ $row->{'target'} }->{'image'}></a></td>";
-                    print "<td><a href=user.cgi?"
-                        . join( '&', @state_fields )
-                        . "&redirect=1&nt_group_id=$duser->{'nt_group_id'}&nt_user_id=$duser->{'nt_user_id'}&object="
-                        . $q->escape( $row->{'target'} )
-                        . "&obj_id="
-                        . $q->escape( $row->{'target_id'} )
-                        . ">$row->{'target_name'}</a></td>";
-                    print "</tr></table></td>";
-                }
-                else {
-                    print "<td>", ( $row->{$_} ? $row->{$_} : '&nbsp;' ),
-                        "</td>";
-                }
-            }
-            print "</tr>";
-        }
-
-        print "</table>";
-    }
-    else {
+    if (!@$list) {
         print "<center>", "No log data available</center>";
-    }
+				return;
+		};
+
+		print qq[<table class="fat">
+		<tr class=dark_grey_bg>];
+		foreach (@columns) {
+				if ( $sort_fields{$_} ) {
+						print qq[<td class="dark_bg center"><table class="no_pad">
+						<tr>
+						<td>$labels{$_}</td>
+						<td>&nbsp; &nbsp; $sort_fields{$_}->{'order'}</td>
+						<td><img src=$NicToolClient::image_dir/],
+								(
+								uc( $sort_fields{$_}->{'mod'} ) eq 'ASCENDING'
+								? 'up.gif'
+								: 'down.gif' ), "></tD>";
+						print "</tr></table></td>";
+				}
+				else {
+						print "<td class=center>", "$labels{$_}</td>";
+				}
+		}
+		print "</tr>";
+
+		my $map = $nt_obj->obj_to_cgi_map();
+
+		my $x = 0;
+		my $range;
+		foreach my $row (@$list) {
+
+				print "<tr class="
+						. ( $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' )
+						. ">";
+				foreach (@columns) {
+						if ( $_ eq 'timestamp' ) {
+								print "<td>", ( scalar localtime( $row->{$_} ) ), "</td>";
+						}
+						elsif ( $_ eq 'object' ) {
+								my $txt = $row->{'object'};
+								$txt = join( " ", map( ucfirst, split( /_/, $txt ) ) );
+								print "<td>", ( $txt ? $txt : '&nbsp;' ), "</td>";
+
+						}
+						elsif ( $_ eq 'title' ) {
+								print qq[<td><table class="no_pad"><tr>
+								<td><a href="user.cgi?]
+										. join( '&', @state_fields )
+										. "&redirect=1&nt_group_id=$duser->{'nt_group_id'}&nt_user_id=$duser->{'nt_user_id'}&object="
+										. $q->escape( $row->{'object'} )
+										. qq[&obj_id=$q->escape( $row->{'object_id'} )">
+										<img src=$NicToolClient::image_dir/$map->{ $row->{'object'} }->{'image'}" alt="image"></a></td>];
+								print qq[<td><a href="user.cgi?]
+										. join( '&', @state_fields )
+										. "&redirect=1&nt_group_id=$duser->{'nt_group_id'}&nt_user_id=$duser->{'nt_user_id'}&object="
+										. $q->escape( $row->{'object'} )
+										. "&obj_id="
+										. $q->escape( $row->{'object_id'} )
+										. qq[">$row->{'title'}</a></td>];
+								print "</tr></table></td>";
+						}
+						elsif ( $_ eq 'target' && $row->{'target_id'} ) {
+								print qq[<td><table class="no_pad"><tr>
+								<td><a href="user.cgi?]
+										. join( '&', @state_fields )
+										. "&redirect=1&nt_group_id=$duser->{'nt_group_id'}&nt_user_id=$duser->{'nt_user_id'}&object="
+										. $q->escape( $row->{'target'} )
+										. "&obj_id="
+										. $q->escape( $row->{'target_id'} )
+										. qq["><img src=$NicToolClient::image_dir/$map->{ $row->{'target'} }->{'image'}></a></td>];
+								print qq[<td><a href="user.cgi?]
+										. join( '&', @state_fields )
+										. "&redirect=1&nt_group_id=$duser->{'nt_group_id'}&nt_user_id=$duser->{'nt_user_id'}&object="
+										. $q->escape( $row->{'target'} )
+										. "&obj_id="
+										. $q->escape( $row->{'target_id'} )
+										. qq[">$row->{'target_name'}</a></td>
+								</tr></table></td>];
+						}
+						else {
+								print "<td>", ( $row->{$_} ? $row->{$_} : '&nbsp;' ), "</td>";
+						}
+				}
+				print "</tr>";
+		}
+
+		print "</table>";
 }
 
 sub display_edit {

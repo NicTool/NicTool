@@ -175,17 +175,16 @@ sub display_list {
      <td><b>Nameserver List</b></td>
      <td class=right>];
     if ( $user->{'nameserver_create'} ) {
-        print "<a href=$cgi?"
+        print qq[<a href="$cgi?]
             . join( '&', @state_fields )
             . "&nt_group_id="
             . $q->param('nt_group_id')
-            . "&new=1>New Nameserver</a>";
+            . qq[&new=1">New Nameserver</a>];
     }
     else {
         print "<span class=disabled>New Nameserver</span>";
     }
-    print
-        " | <a href=\"javascript:void open_move(document.list_form.obj_list);\">Move Selected Nameservers</a>"
+    print qq[ | <a href="javascript:void open_move(document.list_form.obj_list);">Move Selected Nameservers</a>]
         if ( @$list && $user_group->{'has_children'} );
     print "</td>";
     print "</tr></table></td></tr>";
@@ -282,7 +281,7 @@ sub display_list {
                 print "<td>",
                     join(
                     ' / ',
-                    map("<a href=group.cgi?nt_group_id=$_->{'nt_group_id'}>$_->{'name'}</a>",
+                    map(qq[<a href="group.cgi?nt_group_id=$_->{'nt_group_id'}">$_->{'name'}</a>],
                         (   @{ $map->{ $obj->{'nt_group_id'} } },
                             {   nt_group_id => $obj->{'nt_group_id'},
                                 name        => $obj->{'group_name'}
@@ -295,9 +294,9 @@ sub display_list {
                 print "<td>",
                     join(
                     ' / ',
-                    map("<a href=group.cgi?nt_group_id=$_->{'nt_group_id'}>$_->{'name'}</a>",
-                        (   {   nt_group_id => $obj->{'nt_group_id'},
-                                name        => $obj->{'group_name'}
+                    map(qq[<a href="group.cgi?nt_group_id=$_->{'nt_group_id'}">$_->{'name'}</a>],
+                        ( {   nt_group_id => $obj->{'nt_group_id'},
+                              name        => $obj->{'group_name'}
                             }
                             ) )
                     ),
@@ -322,15 +321,14 @@ sub display_list {
                 || $obj->{'delegate_delete'} )
             )
         {
-            print "<td width=1%><a href=$cgi?"
+            print qq[<td width=1%><a href="$cgi?]
                 . join( '&', @state_fields )
                 . "&nt_group_id="
                 . $q->param('nt_group_id')
-                . "&delete=1&nt_nameserver_id=$obj->{'nt_nameserver_id'} onClick=\"return confirm('Delete nameserver $obj->{'name'}?');\"><img src=$NicToolClient::image_dir/trash.gif></a></td>";
+                . qq[&delete=1&nt_nameserver_id=$obj->{'nt_nameserver_id'}" onClick="return confirm('Delete nameserver $obj->{'name'}?');"><img src="$NicToolClient::image_dir/trash.gif" alt="trash"></a></td>];
         }
         else {
-            print
-                "<td width=1%><img src=$NicToolClient::image_dir/trash-disabled.gif></td>";
+            print qq[<td width=1%><img src="$NicToolClient::image_dir/trash-disabled.gif" alt="disabled trash"></td>];
         }
         print "</tr>";
     }

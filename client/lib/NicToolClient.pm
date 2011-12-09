@@ -237,19 +237,15 @@ sub display_group_tree {
             {
                 $name = 'Edit';
             };
-            push( @options,
-                "<td><a href=group.cgi?nt_group_id=$group->{'nt_group_id'}&edit=1>$name</a></td>"
-            );
+            push @options, qq[<td><a href="group.cgi?nt_group_id=$group->{'nt_group_id'}&edit=1">$name</a></td>];
             if ($user->{"group_delete"}
                 && ( !exists $group->{'delegate_delete'}
                     || $group->{'delegate_delete'} )
                 )
             {
-                push( @options,
-                    "<td><a href=group.cgi?nt_group_id=$group->{'parent_group_id'}&delete=$group->{'nt_group_id'} onClick=\"return confirm('Delete "
+                push @options, qq[<td><a href="group.cgi?nt_group_id=$group->{'parent_group_id'}&delete=$group->{'nt_group_id'}" onClick="return confirm('Delete ]
                         . join( ' / ', @list )
-                        . " and all associated data?');\">Delete</a></td>"
-                );
+                        . " and all associated data?');\">Delete</a></td>";
             }
             else {
                 push @options, "<td class='disabled'>Delete</td>";
@@ -314,17 +310,15 @@ sub display_zone_list_options {
 
     my @options;
     if ( $user->{'zone_create'} ) {
-        push( @options,
-            "<a href=group_zones.cgi?nt_group_id=$group_id&new=1>New Zone</a>"
-        ) unless ($in_zone_list);
+        push @options, qq[<a href="group_zones.cgi?nt_group_id=$group_id&new=1">New Zone</a>]
+         unless $in_zone_list;
     }
     else {
         push @options, '<span class="disabled">New Zone</span>'
             unless $in_zone_list;
     }
-    push( @options,
-        "<a href=group_zones_log.cgi?nt_group_id=$group_id>View Zone Log</a>"
-    ) unless ($in_zone_list);
+    push @options, qq[<a href="group_zones_log.cgi?nt_group_id=$group_id">View Zone Log</a>]
+     unless $in_zone_list;
 
     print qq[ 
 <table class="fat">
@@ -494,9 +488,8 @@ sub display_nameserver_options {
 
     my @options;
     if ( $user->{'nameserver_create'} ) {
-        push( @options,
-            "<a href=group_nameservers.cgi?nt_group_id=$group_id&edit=1>New Nameserver</a>"
-        ) if !$in_ns_summary;
+        push @options, qq[<a href="group_nameservers.cgi?nt_group_id=$group_id&edit=1">New Nameserver</a>] 
+            if !$in_ns_summary;
     }
     else {
         push @options, '<span class="disabled">New Nameserver</class>' if !$in_ns_summary;
@@ -688,18 +681,17 @@ sub display_search_rows {
     }
     print "<td class=right>";
     if ( $rv->{'start'} - $rv->{'limit'} >= 0 ) {
-        print "<a href=$cgi_name?"
+        print qq[<a href="$cgi_name?]
             . join( '&', @state_vars )
             . "&start=1&limit=$params->{'limit'}"
             . ( $morestr ? "&$morestr" : "" )
-            . "><b><<</b></a> &nbsp; ";
-        print "<a href=$cgi_name?"
+            . qq["><b><<</b></a> &nbsp; <a href="$cgi_name?]
             . join( '&', @state_vars )
             . "&start="
             . ( $rv->{'start'} - $rv->{'limit'} )
             . "&limit=$params->{'limit'}"
             . ( $morestr ? "&$morestr" : "" )
-            . "><B><</b></a> &nbsp; ";
+            . qq["><b><</b></a> &nbsp; ];
     }
     print "Page ",
         $q->textfield(
@@ -714,23 +706,20 @@ sub display_search_rows {
         ),
         " of $rv->{'total_pages'}";
     if ( ( $rv->{'end'} + 1 ) <= $rv->{'total'} ) {
-        print " &nbsp; <a href=$cgi_name?"
+        print qq[ &nbsp; <a href="$cgi_name?]
             . join( '&', @state_vars )
             . "&start="
             . ( $rv->{'end'} + 1 )
             . "&limit=$params->{'limit'}"
             . ( $morestr ? "&$morestr" : "" )
-            . "><b>></b></a>";
-        print " &nbsp; <a href=$cgi_name?"
+            . qq["><b>></b></a>];
+        print qq[ &nbsp; <a href="$cgi_name?]
             . join( '&', @state_vars )
             . "&page=$rv->{'total_pages'}&limit=$params->{'limit'}"
             . ( $morestr ? "&$morestr" : "" )
-            . "><b>>></b></a>";
+            . qq["><b>>></b></a>];
     }
-    print "</td>";
-    print "</tr>";
-    print "</table></td></tr>";
-    print "</table>";
+    print "</td> </tr> </table></td></tr> </table>";
 
     @state_vars = ();
     foreach ( @{ $self->paging_fields }, @$state_fields ) {
@@ -738,7 +727,7 @@ sub display_search_rows {
         next if ( $_ eq 'edit_sortorder' );
 
         push( @state_vars, "$_=" . $q->escape( $q->param($_) ) )
-            if ( $q->param($_) );
+            if $q->param($_);
     }
 
     print qq[
@@ -754,14 +743,14 @@ sub display_search_rows {
         . join( '&', @state_vars )
         . "&edit_sortorder=1"
         . ( $morestr ? "&$morestr" : "" )
-        . qq[">Change Sort Order</a> | <a href=$cgi_name?]
+        . qq[">Change Sort Order</a> | <a href="$cgi_name?]
         . join( '&',
         map( "$_=" . $q->escape( $q->param($_) ), @$state_fields ) )
         . ( $morestr ? "&$morestr" : "" )
-        . ">Browse All</a>
+        . qq[">Browse All</a>
         </td>
     </tr></table></td></tr>
-</table>";
+</table>];
 }
 
 sub display_sort_options {
@@ -1085,7 +1074,7 @@ sub display_group_list {
             <td>],
                 join(
                 ' / ',
-                map( "<a href=$cgi?nt_group_id=$_->{'nt_group_id'}&obj_list="
+                map( qq[<a href="$cgi?nt_group_id=$_->{'nt_group_id'}&obj_list=]
                         . $q->param('obj_list')
                         . (
                         $moreparams
@@ -1094,7 +1083,7 @@ sub display_group_list {
                             map {"$_=$moreparams->{$_}"} keys %$moreparams )
                         : ''
                         )
-                        . ">$_->{'name'}</a>",
+                        . qq[">$_->{'name'}</a>],
                     (   @{ $map->{ $group->{'nt_group_id'} } },
                         {   nt_group_id => $group->{'nt_group_id'},
                             name        => $group->{'name'}

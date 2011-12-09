@@ -176,20 +176,16 @@ sub display_log {
                 if ( $_ eq 'name' ) {
                     print qq[<td><table class="no_pad"> <tr> <td>];
                     if ( !$zone->{'deleted'} ) {
-                        print "<a href=$cgi?", join( '&', @state_fields ),
-                            "&redirect=1&object=zone_record&obj_id=$row->{'nt_zone_record_id'}&nt_zone_id=$row->{'nt_zone_id'}&nt_group_id="
-                            . $q->param('nt_group_id')
-                            . "><img src=$NicToolClient::image_dir/r_record.gif></a>";
+                        print qq[<a href="$cgi?], join( '&', @state_fields ),
+qq[&redirect=1&object=zone_record&obj_id=$row->{'nt_zone_record_id'}&nt_zone_id=$row->{'nt_zone_id'}&nt_group_id=$q->param('nt_group_id')"><img src=$NicToolClient::image_dir/r_record.gif alt="record"></a>];
                     }
                     else {
                         print "<img src=$NicToolClient::image_dir/r_record.gif>";
                     }
                     print "</td><td>";
                     if ( !$zone->{'deleted'} ) {
-                        print "<a href=$cgi?", join( '&', @state_fields ),
-                            "&redirect=1&object=zone_record&obj_id=$row->{'nt_zone_record_id'}&nt_zone_id=$row->{'nt_zone_id'}&nt_group_id="
-                            . $q->param('nt_group_id')
-                            . ">", $row->{$_}, "</a>";
+                        print qq[<a href="$cgi?], join( '&', @state_fields ),
+                            qq[&redirect=1&object=zone_record&obj_id=$row->{'nt_zone_record_id'}&nt_zone_id=$row->{'nt_zone_id'}&nt_group_id=$q->param('nt_group_id')"> $row->{$_} </a>];
                     }
                     else {
                         print "", $row->{$_}, "";
@@ -211,10 +207,7 @@ sub display_log {
                 }
             }
             if ( !$zone->{'deleted'} ) {
-                print "<td class=center><a href=zone.cgi?nt_group_id=",
-                    $q->param('nt_group_id'), "&nt_zone_id=",
-                    $q->param('nt_zone_id'),
-                    "&nt_zone_record_id=$row->{'nt_zone_record_id'}&edit_record=1&nt_zone_record_log_id=$row->{'nt_zone_record_log_id'}>recover</a></td>";
+                print qq[<td class=center><a href="zone.cgi?nt_group_id=$q->param('nt_group_id')&nt_zone_id=$q->param('nt_zone_id')&nt_zone_record_id=$row->{'nt_zone_record_id'}&edit_record=1&nt_zone_record_log_id=$row->{'nt_zone_record_log_id'}">recover</a></td>];
             }
             else {
                 print '<td class="center disabled">recover</td>';
