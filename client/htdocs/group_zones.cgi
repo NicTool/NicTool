@@ -31,7 +31,7 @@ sub main {
     my $user = $nt_obj->verify_session();
 
     if ($user) {
-        &display( $nt_obj, $q, $user );
+        display( $nt_obj, $q, $user );
     }
 }
 
@@ -41,57 +41,11 @@ sub display {
     my @newzone;
 
     if ( $q->param('new') ) {
-        if ( $q->param('Cancel') ) {
-
-            # do nothing
-        }
+        if    ( $q->param('Cancel') ) { }   # do nothing
         elsif ( $q->param('Create') ) {
-            my @fields
-                = qw(nt_group_id zone nameservers description serial refresh retry expire minimum mailaddr template ttl);
-            my %data;
-            foreach (@fields) { $data{$_} = $q->param($_); }
-            $data{'nameservers'} = join( ',', $q->param('nameservers') );
-
-            my $error = $nt_obj->new_zone(%data);
-            if ( $error->{'error_code'} != 200 ) {
-                @newzone = ( $nt_obj, $q, $error, 'new' );
-            }
-            else {
-
-                # do the template stuff here
-                my $nt_zone_id   = $error->{'nt_zone_id'};
-                my $zone_records = $nt_obj->zone_record_template(
-                    {   zone       => $q->param('zone'),
-                        nt_zone_id => $nt_zone_id,
-                        template   => $q->param('template'),
-                        newip      => $q->param('newip'),
-                        mailip     => $q->param('mailip'),
-                        debug      => $q->param('debug')
-                    }
-                );
-                add_zone_records( $nt_obj, $zone_records );
-
-                # end template additions
-
-                if ($NicToolClient::edit_after_new_zone) {
-                    $q->param( -name => 'object', -value => 'zone' );
-                    $q->param(
-                        -name  => 'obj_id',
-                        -value => $error->{'nt_zone_id'}
-                    );
-                    $nt_obj->redirect_from_log($q);
-                    return;
-                }
-
-                $q->param(
-                    -name  => 'new_zone_id',
-                    -value => $error->{'nt_zone_id'}
-                );
-                @nicemessage = (
-                    "The Zone '$data{'zone'}' was successfully created.",
-                    "Zone Created"
-                );
-            }
+            my $r = add_zone( $nt_obj, $q, $user ) or return;
+            @newzone = @{ $r->{newzone} } if $r->{newzone};
+            @nicemessage = @{ $r->{nicemessage} } if $r->{nicemessage};
         }
         else {
             @newzone = ( $nt_obj, $q, '', 'new' );
@@ -113,34 +67,30 @@ sub display {
         $q->param('nt_group_id'), 0
     );
 
-    $nt_obj->display_zone_list_options( $user, $q->param('nt_group_id'),
-        $level, 1 );
+    $nt_obj->display_zone_list_options( $user, $q->param('nt_group_id'), $level, 1 );
 
     my $group = $nt_obj->get_group( nt_group_id => $q->param('nt_group_id') );
 
     if ( $q->param('new') ) {
-        $nt_obj->nice_message(@nicemessage) if @nicemessage;
-        &new_zone(@newzone) if @newzone;
+        $nt_obj->display_nice_message(@nicemessage) if @nicemessage;
+        display_new_zone(@newzone) if @newzone;
     }
     if ( $q->param('edit') ) {
         if ( $q->param('Save') ) {
-            my @fields
-                = qw(nt_zone_id nt_group_id zone nameservers description serial refresh retry expire minimum mailaddr ttl);
+            my @fields = qw/ nt_zone_id nt_group_id zone nameservers
+                description serial refresh retry expire minimum mailaddr ttl /;
             my %data;
             foreach (@fields) { $data{$_} = $q->param($_); }
             $data{'nameservers'} = join( ',', $q->param('nameservers') );
 
             my $error = $nt_obj->edit_zone(%data);
             if ( $error->{'error_code'} != 200 ) {
-                &new_zone( $nt_obj, $q, $error, 'edit' );
+                display_new_zone( $nt_obj, $q, $error, 'edit' );
             }
         }
-        elsif ( $q->param('Cancel') ) {
-
-            # do nothing
-        }
+        elsif ( $q->param('Cancel') ) { } # do nothing
         else {
-            &new_zone( $nt_obj, $q, '', 'edit' );
+            display_new_zone( $nt_obj, $q, '', 'edit' );
         }
     }
 
@@ -179,7 +129,7 @@ sub display {
         }
     }
 
-    &display_list( $nt_obj, $q, $group, $user );
+    display_list( $nt_obj, $q, $group, $user );
 
     $nt_obj->parse_template($NicToolClient::end_html_template);
 }
@@ -216,280 +166,217 @@ sub display_list {
 
     $nt_obj->display_sort_options( $q, \@columns, \%labels, 'group_zones.cgi',
         ['nt_group_id'], $include_subgroups )
-        if $q->param('edit_sortorder');
+            if $q->param('edit_sortorder');
     $nt_obj->display_advanced_search( $q, \@columns, \%labels,
         'group_zones.cgi', ['nt_group_id'], $include_subgroups )
-        if $q->param('edit_search');
+            if $q->param('edit_search');
 
     return $nt_obj->display_nice_error( $rv, "Get Group Zones" )
-        if ( $rv->{'error_code'} != 200 );
+        if $rv->{'error_code'} != 200;
 
     my $zones = $rv->{'zones'};
     my $map   = $rv->{'group_map'};
 
     my @state_fields;
     foreach ( @{ $nt_obj->paging_fields } ) {
-        push( @state_fields, "$_=" . $q->escape( $q->param($_) ) )
-            if ( $q->param($_) );
+        next if ! $q->param($_);
+        push @state_fields, "$_=" . $q->escape( $q->param($_) );
     }
-    print qq[<table class="fat">
-<tr class=dark_grey_bg><td>
-<table class="no_pad fat">
-<tr>
-<td><b>Zone List</b></td>
-<td class=right>];
-    if ( $nt_obj->no_gui_hints || $user->{"zone_create"} ) {
-        print qq[<a href="group_zones.cgi?]
-            . join( '&', @state_fields )
-            . qq[&nt_group_id=$q->param('nt_group_id')&new=1">New Zone</a>];
-    }
-    else {
-        print "<span class=disabled>New Zone";
-    }
+    my $gid = $q->param('nt_group_id');
+    my $state_string = join('&amp;', @state_fields, "nt_group_id=$gid");
 
-    if ( @$zones && $user_group->{'has_children'} ) {
-        print qq[ | <a href="javascript:void open_move(document.list_form.obj_list);">Move Selected Zones</a>];
-        print qq[ | <a href="javascript:void open_delegate(document.list_form.obj_list);">Delegate Selected Zones</a>]
-            if $user->{'zone_delegate'};
-    };
-
-    print qq[ | <a href="group_zones_log.cgi?nt_group_id=$q->param('nt_group_id')">View Zone Log</a>
-</td>
-</tr></table></td></tr>
-</table>];
+    display_zone_actions( $nt_obj, $q, $user, $zones, $user_group );
 
     $nt_obj->display_search_rows( $q, $rv, \%params, 'group_zones.cgi',
         ['nt_group_id'], $include_subgroups );
 
-    if (@$zones) {
-        $nt_obj->display_move_javascript( 'move_zones.cgi', 'zone' );
-        $nt_obj->display_delegate_javascript( 'delegate_zones.cgi', 'zone' );
+    if (! @$zones) {
+        print '</form>';
+        return;
+    };
 
-        print qq{
-        <table class="fat">
-            <tr class=dark_grey_bg>};
+    $nt_obj->display_move_javascript( 'move_zones.cgi', 'zone' );
+    $nt_obj->display_delegate_javascript( 'delegate_zones.cgi', 'zone' );
 
-        if ( $user_group->{'has_children'} ) {
-            print qq{
-                <td class=center>
-		         <table class="no_pad">
-		          <tr>
-                   <td></td>
-            },
-            $q->endform, "\n",
-            $q->startform(
-                -action => 'move_zones.cgi',
-                -method => 'POST',
-                -name   => 'list_form',
-                -target => 'move_win'
-            ),
-            qq{
-                   <td></td>
-                  </tr>
-                 </table>
-		    },
-            (
-                $rv->{'total'} == 1 ? '&nbsp;' : $q->checkbox(
-                    -name  => 'select_all_or_none',
-                    -label => '',
-                    -onClick =>
-                        'selectAllorNone(document.list_form.obj_list, this.checked);',
-                    -override => 1
-                )
-            ), "</td>";
-        }
+    print qq[
+<form method="post" action="move_zones.cgi" target="move_win" name="list_form">
+<table id="zoneList" class="fat">];
 
-        foreach (@columns) {
-            if ( $sort_fields{$_} ) {
-                print qq{
-    <td class="dark_bg center">
-     <table class="no_pad">
-      <tr>
-       <td>} . $labels{$_} . qq{</td>
-                <td>&nbsp; &nbsp; }
-                    . $sort_fields{$_}->{'order'}
-                    . qq{</td>
-                <td><img src=$NicToolClient::image_dir/}
-                    . (
-                    uc( $sort_fields{$_}->{'mod'} ) eq 'ASCENDING'
-                    ? 'up.gif'
-                    : 'down.gif' )
-                    . qq{></tD>
-            </tr>
-        </table>
-    </td>};
+    display_list_header( \@columns, \%labels, \%sort_fields, $user_group, $rv );
 
-            }
-            else {
-                print qq{
-                <td class=center>} . $labels{$_} . qq{</td>};
-            }
-        }
-        print qq{
-                <td class=center width=1%><img src=$NicToolClient::image_dir/delegate.gif></td>
-                <td width=1%><img src=$NicToolClient::image_dir/trash.gif></td>
-            </tr>};
+    my $x     = 0;
+    my $width = int( 100 / @columns ) . '%';
+    my $bgcolor;
+    my $hilite;
+    foreach my $zone (@$zones) {
+        $bgcolor = $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg';
+        $hilite= $x % 2 == 0 ? 'light_hilite_bg' : 'dark_hilite_bg';
+        $bgcolor = $hilite if $zone->{'nt_zone_id'} eq $q->param('new_zone_id');
+        my $isdelegate = exists $zone->{'delegated_by_id'};
 
-        my $x     = 0;
-        my $width = int( 100 / @columns ) . '%';
-        my $class;
-        my $hilite;
-        foreach my $zone (@$zones) {
-            $class = ( $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' );
-            $hilite  = ( $x % 2 == 0 ? 'light_hilite_bg' : 'dark_hilite_bg' );
-            $class = $hilite if ($zone->{'nt_zone_id'} eq $q->param('new_zone_id')
-                and $NicToolClient::hilite_new_zones );
-            my $isdelegate = exists $zone->{'delegated_by_id'};
-            print qq{
-            <tr class="$class">};
-            if ( $user->{'zone_create'} && !$isdelegate ) {
-                print qq{
-                <td width=1% class=center>}
-                    . $q->checkbox(
-                    -name  => 'obj_list',
-                    -value => $zone->{'nt_zone_id'},
-                    -label => ''
-                    )
-                    . qq{</td>}
-                    if $user_group->{'has_children'};
-            }
-            else {
-
-                print
-                    "<td width=1% class=center><img src=$NicToolClient::image_dir/nobox.gif></td>"
-                    if $user_group->{'has_children'};
-
-            }
-
-            print qq{
-                <td width=$width class=$class>
-                 <table class="no_pad">
-                  <tr>};
-            if ( !$isdelegate ) {
-                print qq[
-<td><a href="zone.cgi?nt_zone_id=$zone->{'nt_zone_id'}&nt_group_id=$zone->{'nt_group_id'}">
-  <img src="$NicToolClient::image_dir/zone.gif" alt="zone"></a></td>
-<td><a href="zone.cgi?nt_zone_id=$zone->{'nt_zone_id'}&nt_group_id=$zone->{'nt_group_id'}">$zone->{'zone'}</a>];
-            }
-            else {
-                my $img = "zone"
-                    . ( $zone->{'pseudo'} ? '-pseudo' : '-delegated' );
-                print qq(
-                            <td>
-                            <a href="zone.cgi?nt_zone_id=$zone->{'nt_zone_id'}&nt_group_id=)
-                    . $q->param('nt_group_id')
-                    . qq("><img src="$NicToolClient::image_dir/$img.gif" alt=""></a></td>
-                            <td><a href="zone.cgi?nt_zone_id=$zone->{'nt_zone_id'}&nt_group_id=)
-                    . $q->param('nt_group_id')
-                    . qq("> $zone->{'zone'}</a>);
-                if ( $zone->{'pseudo'} ) {
-                    print
-                        "&nbsp; <span class=disabled>("
-                        . $zone->{'delegated_records'}
-                        . " record"
-                        . ( $zone->{'delegated_records'} gt 1 ? 's' : '' )
-                        . ")";
-                }
-                else {
-                    print "&nbsp; <img src=$NicToolClient::image_dir/perm-"
-                        . ( $zone->{'delegate_write'}
-                        ? "write.gif"
-                        : "nowrite.gif" )
-                        . ">";
-                }
-            }
-            print qq{
-                            </td>
-                        </tr>
-                    </table>
-                </td>};
-
-            if ($include_subgroups) {
-                print qq[<td width=$width><table class="no_pad"><tr>
-                <td><img src=$NicToolClient::image_dir/group.gif></td>];
-                if ($map) {
-                    print "<td>",
-                        join(
-                        ' / ',
-                        map(qq[<a href="group.cgi?nt_group_id=$_->{'nt_group_id'}">$_->{'name'}</a>],
-                            (   @{ $map->{ $zone->{'nt_group_id'} } },
-                                {   nt_group_id => $zone->{'nt_group_id'},
-                                    name        => $zone->{'group_name'}
-                                }
-                                ) )
-                        ),
-                        "</td>";
-                }
-                else {
-                    print "<td>",
-                        join(
-                        ' / ',
-                        map(qq[<a href="group.cgi?nt_group_id=$_->{'nt_group_id'}">$_->{'name'}</a>],
-                            (   {   nt_group_id => $zone->{'nt_group_id'},
-                                    name        => $zone->{'group_name'}
-                                }
-                                ) )
-                        ),
-                        "</td>";
-                }
-                print "</tr></table></td>";
-            }
-
-            print "<td width=$width>",
-                (
-                $zone->{'description'} ? $zone->{'description'} : '&nbsp;' ),
-                "</td>";
-
-            if (   $nt_obj->no_gui_hints
-                || $user_group->{'has_children'}
-                && $user->{'zone_delegate'}
-                && ( $isdelegate ? $zone->{'delegate_delegate'} : 1 ) )
-            {
-                print
-                    "<td class=center><a href=\"javascript:void window.open('delegate_zones.cgi?obj_list=$zone->{'nt_zone_id'}', 'delegate_win', 'width=640,height=480,scrollbars,resizable=yes')\"><img src=$NicToolClient::image_dir/delegate.gif alt='Delegate Zone'></a></td>";
-            }
-            else {
-                print
-                    "<td class=center><img src=$NicToolClient::image_dir/delegate-disabled.gif></td>";
-            }
-            if ( ( $nt_obj->no_gui_hints || $user->{'zone_delete'} )
-                && !$isdelegate )
-            {
-                print "<td width=1%><a href=group_zones.cgi?"
-                    . join( '&', @state_fields )
-                    . "&nt_group_id="
-                    . $q->param('nt_group_id')
-                    . "&delete=1&zone_list=$zone->{'nt_zone_id'} onClick=\"return confirm('Delete $zone->{'zone'} and associated resource records?');\"><img src=$NicToolClient::image_dir/trash.gif></a></td>";
-            }
-            elsif (
-                (      $nt_obj->no_gui_hints
-                    || $user->{'zone_delegate'} && $zone->{'delegate_delete'}
-                )
-                && $isdelegate
-                )
-            {
-                print "<td width=1%><a href=group_zones.cgi?"
-                    . join( '&', @state_fields )
-                    . "&nt_group_id="
-                    . $q->param('nt_group_id')
-                    . "&deletedelegate=1&nt_zone_id=$zone->{'nt_zone_id'} onClick=\"return confirm('Remove delegation of $zone->{'zone'}?');\"><img src=$NicToolClient::image_dir/trash-delegate.gif alt=\"Remove Zone Delegation\"></a></td>";
-            }
-            elsif ($isdelegate) {
-                print "<td width=1%><img src=$NicToolClient::image_dir/trash-delegate-disabled.gif></td>";
-            }
-            else {
-                print "<td width=1%><img src=$NicToolClient::image_dir/trash-disabled.gif></td>";
-            }
-            print "</tr>";
-        }
-
-        print "</table>";
+        print qq[ <tr class="$bgcolor" id="zoneID$zone->{nt_zone_id}">];
+        display_list_move_checkbox( $zone, $user, $user_group );
+        display_list_zone_name( $zone, $width, $bgcolor, $gid );
+        display_list_group_name( $zone, $width, $map ) if $include_subgroups;
+        print qq[\n  <td style="width:$width;" title="Description">$zone->{'description'}</td>];
+        display_list_delegate_icon( $zone, $user, $user_group );
+        display_list_delete_icon( $zone, $user, $gid, $state_string );
+        print ' </tr>';
     }
 
-    print $q->endform;
+    print qq[</table>
+</form>
+];
 }
 
-sub new_zone {
+sub display_list_header {
+    my ( $columns, $labels, $sort_fields, $user_group, $rv) = @_;
+    print qq[
+ <tr id="zoneListHeading" class=dark_grey_bg>];
+
+    if ( $user_group->{'has_children'} ) {
+        print qq[
+  <td class="center no_pad" title="Move Zone">];
+        if ( $rv->{'total'} != 1 ) {
+            print qq[<input type="checkbox" name="select_all_or_none" value="on" onclick="selectAllorNone(document.list_form.obj_list, this.checked);" />],
+        };
+        print '</td>';
+    }
+
+    foreach my $col (@$columns) {
+        if ( $sort_fields->{$col} ) {
+            my $dir = uc( $sort_fields->{$col}->{'mod'} ) eq 'ASCENDING' ? 'up' : 'down';
+            print qq[
+  <td class="dark_bg center no_pad">
+      $labels->{$col} &nbsp; &nbsp; (sort $sort_fields->{$col}->{'order'} <img src="$NicToolClient::image_dir/$dir.gif" alt="$dir">)</td>];
+        }
+        else {
+            print qq[
+  <td class=center> $labels->{$col} </td>];
+        }
+    }
+    print qq[
+  <td class=center style="width:1%;" title="Delegate"></td>
+  <td style="width:1%;" title="Trash"></td>
+ </tr>];
+};
+
+sub display_list_move_checkbox {
+    my ( $zone, $user, $user_group ) = @_;
+    my $isdelegate = exists $zone->{'delegated_by_id'};
+
+    if ( $user->{'zone_create'} && !$isdelegate ) {
+        if ( $user_group->{'has_children'} ) {
+            print qq[
+<td style="width:1%;" class=center> 
+<input type="checkbox" name="obj_list" value="$zone->{nt_zone_id}" /></td>];
+        };
+    }
+    elsif ( $user_group->{'has_children'} ) {
+        print qq[
+<td style="width:1%;" class=center>
+<img src="$NicToolClient::image_dir/nobox.gif" alt="no box">
+</td>];
+    }
+};
+
+sub display_list_zone_name {
+    my ( $zone, $width, $bgcolor, $gid ) = @_;
+
+    my $isdelegate = exists $zone->{'delegated_by_id'};
+    print qq[
+  <td style="width:$width;" class="$bgcolor" title="Zone Name">
+   <div class="no_pad no_margin"> 
+    ];
+    if ( !$isdelegate ) {
+        print qq[
+    <a href="zone.cgi?nt_zone_id=$zone->{'nt_zone_id'}&amp;nt_group_id=$zone->{'nt_group_id'}">
+    <img src="$NicToolClient::image_dir/zone.gif" alt="zone"></a>
+    <a href="zone.cgi?nt_zone_id=$zone->{'nt_zone_id'}&amp;nt_group_id=$zone->{'nt_group_id'}">$zone->{'zone'}</a>];
+    }
+    else {
+        my $img = "zone" . ( $zone->{'pseudo'} ? '-pseudo' : '-delegated' );
+        print qq[
+<a href="zone.cgi?nt_zone_id=$zone->{'nt_zone_id'}&amp;nt_group_id=$gid"><img src="$NicToolClient::image_dir/$img.gif" alt=""></a>
+<a href="zone.cgi?nt_zone_id=$zone->{'nt_zone_id'}&amp;nt_group_id=$gid">$zone->{'zone'}</a>];
+        if ( $zone->{'pseudo'} ) {
+            print qq[&nbsp; <span class=disabled>($zone->{'delegated_records'} record];
+            print 's' if $zone->{'delegated_records'} gt 1;
+            print ')</span>';
+        }
+        else {
+            print qq[&nbsp; <img src="$NicToolClient::image_dir/perm-];
+            print 'no' if ! $zone->{'delegate_write'};
+            print qq[write.gif" alt="">];
+        }
+    }
+    print qq{
+  </div>
+ </td>};
+};
+
+sub display_list_group_name {
+    my ( $zone, $width, $map ) = @_; 
+    
+    print qq[
+ <td style="width:$width;" title="Group Name">
+  <div class="no_pad no_margin">
+    <img src="$NicToolClient::image_dir/group.gif" alt="">];
+            my @list = (
+                {   nt_group_id => $zone->{'nt_group_id'},
+                    name        => $zone->{'group_name'}
+                }
+            );
+            if ($map) { unshift @list, @{ $map->{ $zone->{'nt_group_id'} } }; };
+
+            my $url = qq[<a href="group.cgi?nt_group_id=];
+            my $group_string = join( ' / ', 
+                map( qq[${url}$_->{'nt_group_id'}">$_->{'name'}</a>], @list ) );
+
+            print qq[ $group_string
+  </div>
+ </td>];
+};
+
+sub display_list_delegate_icon {
+    my ( $zone, $user, $user_group ) = @_;
+
+    my $isdelegate = exists $zone->{'delegated_by_id'};
+
+    print qq[
+  <td class=center title="Delegate">];
+
+    if (   $user_group->{'has_children'}
+        && $user->{'zone_delegate'}
+        && ( $isdelegate ? $zone->{'delegate_delegate'} : 1 ) )
+    {
+        print qq[<a href="javascript:void window.open('delegate_zones.cgi?obj_list=$zone->{'nt_zone_id'}', 'delegate_win', 'width=640,height=480,scrollbars,resizable=yes')"><img src="$NicToolClient::image_dir/delegate.gif" alt="Delegate Zone"></a></td>];
+    }
+    else {
+        print qq[<img src="$NicToolClient::image_dir/delegate-disabled.gif" alt="disabled"></td>];
+    }
+};
+
+sub display_list_delete_icon {
+    my ( $zone, $user, $gid, $state_string ) = @_;
+    my $isdelegate = exists $zone->{'delegated_by_id'};
+    print qq[
+<td style="width:1%;" title="Delete">];
+    if ( $user->{'zone_delete'} && !$isdelegate ) {
+        print qq[<a href="group_zones.cgi?$state_string&amp;nt_group_id=$gid&amp;delete=1&amp;zone_list=$zone->{'nt_zone_id'}" onClick="return confirm('Delete $zone->{'zone'} and associated resource records?');"><img src="$NicToolClient::image_dir/trash.gif" alt="trash"></a></td>];
+    }
+    elsif ( $isdelegate && ( $user->{'zone_delegate'} && $zone->{'delegate_delete'} )) {
+        print qq[<a href="group_zones.cgi?$state_string&amp;nt_group_id=$gid&amp;deletedelegate=1&amp;nt_zone_id=$zone->{'nt_zone_id'}" onClick="return confirm('Remove delegation of $zone->{'zone'}?');"><img src=$NicToolClient::image_dir/trash-delegate.gif alt="Remove Zone Delegation"></a></td>];
+    }
+    elsif ($isdelegate) {
+        print qq[<img src="$NicToolClient::image_dir/trash-delegate-disabled.gif" alt="disabled trash"></td>];
+    }
+    else {
+        print qq[<img src="$NicToolClient::image_dir/trash-disabled.gif" alt="disabled trash"></td>];
+    }
+};
+
+sub display_new_zone {
     my ( $nt_obj, $q, $message, $edit ) = @_;
 
     print $q->start_form(
@@ -501,30 +388,26 @@ sub new_zone {
     print $q->hidden( -name => $edit );
 
     foreach ( @{ $nt_obj->paging_fields() } ) {
-        print $q->hidden( -name => $_ ) if ( $q->param($_) );
+        print $q->hidden( -name => $_ ) if $q->param($_);
     }
 
-    $nt_obj->display_nice_error( $message, ucfirst($edit) . " Zone" )
-        if $message;
+    $nt_obj->display_nice_error( $message, ucfirst($edit) . " Zone" ) if $message;
 
-    print qq[<table class="fat">
-<tr class=dark_bg><td colspan=2><b>New Zone</b></td></tr>
-<tr class=light_grey_bg>
-<td class=right>Zone:</td>
-<td class="fat">],
+    print qq[
+<table class="fat">
+ <tr class=dark_bg><td colspan=2 class="bold">New Zone</td></tr>
+ <tr class=light_grey_bg>
+  <td class=right>Zone:</td>
+  <td class="fat">],
         $q->textfield( -name => 'zone', -size => 40, -maxlength => 128 ),
-        " <a href=\"zones.cgi?nt_group_id="
-        . $q->param('nt_group_id')
-        . "\">Batch</a></td></tr>";
-
-    print qq[<tr class=light_grey_bg>
-    <td class="right top">Nameservers:</td>
-    <td width=80%>\n ];
+qq[ <a href="zones.cgi?nt_group_id=],$q->param('nt_group_id'),qq[">Batch</a></td></tr>
+<tr class=light_grey_bg>
+ <td class="right top">Nameservers:</td>
+ <td style="width:80%;">\n ];
 
     # get list of available nameservers
     my $ns_tree = $nt_obj->get_usable_nameservers(
-        nt_group_id      => $q->param('nt_group_id'),
-        include_for_user => 1
+        nt_group_id => $q->param('nt_group_id')
     );
     foreach ( 1 .. scalar( @{ $ns_tree->{'nameservers'} } ) ) {
         last if ( $_ > 10 );
@@ -542,11 +425,11 @@ sub new_zone {
     if ( @{ $ns_tree->{'nameservers'} } == 0 ) {
         print "No available nameservers.";
     }
-    print "</td></tr>\n";
+    print qq[</td></tr>
 
-    print qq[<tr class=light_grey_bg>
-    <td class="right top">Description:</td>
-    <td width=80%>],
+<tr class=light_grey_bg>
+ <td class="right top">Description:</td>
+ <td style="width:80%;">],
         $q->textarea(
         -name      => 'description',
         -cols      => 50,
@@ -555,148 +438,192 @@ sub new_zone {
         ),
         qq[</td></tr>
 
-    <tr class=light_grey_bg>
-    <td class=right>TTL:</td>];
-    my $ttl = $NicToolClient::default_zone_ttl || $q->param('ttl');
-    print "<td width=80%>",
+<tr class=light_grey_bg>
+ <td class=right>TTL:</td>
+ <td style="width:80%;">],
         $q->textfield(
         -name      => 'ttl',
         -size      => 8,
         -maxlength => 10,
-        -default   => $ttl
+        -default   => $NicToolClient::default_zone_ttl || $q->param('ttl'),
         );
-    print qq[<input type="button" value="Default" onClick="this.form.ttl.value=$NicToolClient::default_zone_ttl"> $NicToolClient::default_zone_ttl </td></tr>"
+    print qq[<input type="button" value="Default" onClick="this.form.ttl.value=$NicToolClient::default_zone_ttl"> $NicToolClient::default_zone_ttl </td></tr>
     <tr class=light_grey_bg>
-    <td class=right>Refresh:</td>];
-    my $refresh = $NicToolClient::default_zone_refresh
-        || $q->param('refresh');
-    print "<td width=80%>",
+    <td class=right>Refresh:</td>
+    <td style="width:80%;">],
         $q->textfield(
         -name      => 'refresh',
         -size      => 8,
         -maxlength => 10,
-        -default   => $refresh
-        );
-    print qq[<input type="button" value="Default" onClick="this.form.refresh.value=$NicToolClient::default_zone_refresh"> $NicToolClient::default_zone_refresh </td></tr>
+        -default   => $NicToolClient::default_zone_refresh || $q->param('refresh'),
+        ),
+    qq[<input type="button" value="Default" onClick="this.form.refresh.value=$NicToolClient::default_zone_refresh"> $NicToolClient::default_zone_refresh </td></tr>
     <tr class=light_grey_bg>
-    <td class=right>Retry:</td>];
-    my $retry = $NicToolClient::default_zone_retry || $q->param('retry');
-    print "<td width=80%>",
+    <td class=right>Retry:</td>
+    <td style="width:80%;">],
         $q->textfield(
         -name      => 'retry',
         -size      => 8,
         -maxlength => 10,
-        -default   => $retry
+        -default   => $NicToolClient::default_zone_retry || $q->param('retry'),
         );
-    print
-        "<input type=\"button\" value=\"Default\" onClick=\"this.form.retry.value=$NicToolClient::default_zone_retry\">",
-        " $NicToolClient::default_zone_retry";
-    print "</td></tr>";
+    print qq[<input type="button" value="Default" onClick="this.form.retry.value=$NicToolClient::default_zone_retry"> $NicToolClient::default_zone_retry </td></tr>
 
-    print "<tr class=light_grey_bg>";
-    print "<td class=right>Expire:</td>";
-    my $expire = $NicToolClient::default_zone_expire || $q->param('expire');
-    print "<td width=80%>",
+    <tr class=light_grey_bg>
+    <td class=right>Expire:</td>
+    <td style="width:80%;">],
         $q->textfield(
         -name      => 'expire',
         -size      => 8,
         -maxlength => 10,
-        -default   => $expire
-        );
-    print
-        "<input type=\"button\" value=\"Default\" onClick=\"this.form.expire.value=$NicToolClient::default_zone_expire\">",
-        " $NicToolClient::default_zone_expire";
-    print "</td></tr>";
+        -default   => $NicToolClient::default_zone_expire || $q->param('expire'),
+        ),
+    qq[<input type="button" value="Default" onClick="this.form.expire.value=$NicToolClient::default_zone_expire"> $NicToolClient::default_zone_expire </td></tr>
 
-    print "<tr class=light_grey_bg>";
-    print "<td class=right>Minimum:</td>";
-    my $minimum = $NicToolClient::default_zone_minimum
-        || $q->param('minimum');
-    print "<td width=80%>",
+    <tr class=light_grey_bg>
+    <td class=right>Minimum:</td>
+    <td style="width:80%;">],
         $q->textfield(
         -name      => 'minimum',
         -size      => 8,
         -maxlength => 10,
-        -default   => $minimum
-        );
-    print
-        "<input type=\"button\" value=\"Default\" onClick=\"this.form.minimum.value=$NicToolClient::default_zone_minimum\">",
-        " $NicToolClient::default_zone_minimum";
-    print "</td></tr>";
+        -default   => $NicToolClient::default_zone_minimum || $q->param('minimum'),
+        ),
+    qq[<input type="button" value="Default" onClick="this.form.minimum.value=$NicToolClient::default_zone_minimum"> $NicToolClient::default_zone_minimum</td></tr>
 
-    print "<tr class=light_grey_bg>";
-    print "<td class=right>MailAddr:</td>";
-    my $mailaddr = $NicToolClient::default_zone_mailaddr
-        || $q->param('mailaddr');
-    print "<td width=80%>",
+    <tr class=light_grey_bg>
+    <td class=right>MailAddr:</td>
+    <td style="width:80%;">],
         $q->textfield(
         -name      => 'mailaddr',
         -size      => 25,
         -maxlength => 255,
-        -default   => $mailaddr
-        );
-    print
-        "<input type=\"button\" value=\"Default\" onClick=\"this.form.mailaddr.value='hostmaster.'+this.form.zone.value+'.'\">",
-        " $NicToolClient::default_zone_mailaddr";
-    print "</td></tr>";
+        -default   => $NicToolClient::default_zone_mailaddr || $q->param('mailaddr'),
+        ),
+    qq[<input type="button" value="Default" onClick="this.form.mailaddr.value='hostmaster.'+this.form.zone.value+'.'"> $NicToolClient::default_zone_mailaddr </td></tr>
 
-    print "<tr class=light_grey_bg>";
-    print "<td class=right>",
-        qq[<a href="javascript:void window.open('templates.cgi', 'templates_win', 'width=640,height=580,scrollbars,resizable=yes')">Template:</a></td>];
+<tr class=light_grey_bg>
+ <td class=right>
+  <a href="javascript:void window.open('templates.cgi', 'templates_win', 'width=640,height=580,scrollbars,resizable=yes')">Template:</a></td>];
     my @templates = $nt_obj->zone_record_template_list;
-    print "<td width=80%>",
+    print qq[<td style="width:80%;">],
         $q->popup_menu(
         -name    => 'template',
         -values  => \@templates,
         -default => 'none'
         );
     my $ip = $q->param('newip') || "IP Address";
-    print qq[ 
-IP: <input type="text" name="newip" size="17" maxlength="15" value="$ip", onFocus="if(this.value=='IP Address')this.value='';"> 
+    print qq[
+IP: <input type="text" name="newip" size="17" maxlength="15" value="$ip" onFocus="if(this.value=='IP Address')this.value='';"> 
 Mail IP: <input type="text" name="mailip" size="17" maxlength="15">
-    </td></tr>];
+    </td></tr>
 
-    print "<tr class=dark_grey_bg><td colspan=2 class=center>",
-        $q->submit( $edit eq 'edit' ? 'Save' : 'Create' ),
-        $q->submit('Cancel'), "</td></tr>";
-    print "</table>";
-    print $q->end_form;
+    <tr class=dark_grey_bg><td colspan=2 class=center>],
+    $q->submit( $edit eq 'edit' ? 'Save' : 'Create' ),
+    $q->submit('Cancel'), "</td></tr></table>",
+    $q->end_form;
 }
+
+sub add_zone {
+    my ($nt_obj, $q, $user) = @_;
+
+    my @fields = qw/ nt_group_id zone nameservers description serial 
+                refresh retry expire minimum mailaddr template ttl /;
+    my %data;
+    foreach (@fields) { $data{$_} = $q->param($_); }
+    $data{'nameservers'} = join( ',', $q->param('nameservers') );
+
+    my $error = $nt_obj->new_zone(%data);
+    if ( $error->{'error_code'} != 200 ) {
+        return { newzone => [ $nt_obj, $q, $error, 'new' ] };
+    }
+
+    # do the template stuff here
+    my $nt_zone_id   = $error->{'nt_zone_id'};
+    my $zone_records = $nt_obj->zone_record_template(
+        {   zone       => $q->param('zone'),
+            nt_zone_id => $nt_zone_id,
+            template   => $q->param('template'),
+            newip      => $q->param('newip'),
+            mailip     => $q->param('mailip'),
+            debug      => $q->param('debug')
+        }
+    );
+    add_zone_records( $nt_obj, $zone_records );
+    # end template additions
+
+    my $nice = "The Zone '$data{'zone'}' was successfully created.";
+    if ($NicToolClient::edit_after_new_zone) {
+        $q->param( -name => 'object', -value => 'zone' );
+        $q->param( -name => 'obj_id', -value => $error->{'nt_zone_id'} );
+        $nt_obj->redirect_from_log($q);
+        return { nicemessage => [ $nice, "Zone Created" ] };
+    }
+
+    $q->param( -name  => 'new_zone_id', -value => $error->{'nt_zone_id'} );
+    return { nicemessage => [ $nice, "Zone Created" ] };
+};
 
 sub add_zone_records {
     my ( $nt, $recs, $debug ) = @_;
 
-    if ( $recs && scalar( @{$recs} ) > 0 ) {
-        for ( my $i = 0; $i < scalar( @{$recs} ); $i++ ) {
-            my %zone_record = (
-                nt_zone_id  => $recs->[$i]->{'nt_zone_id'},
-                name        => $recs->[$i]->{'name'},
-                ttl         => "3600",
-                description => "batch added",
-                type        => $recs->[$i]->{'type'},
-                address     => $recs->[$i]->{'address'},
-                weight      => $recs->[$i]->{'weight'},
-                priority    => $recs->[$i]->{'priority'},
-                other       => $recs->[$i]->{'other'},
-            );
-            if ($debug) {
+    return if ! $recs;
+    return if ! scalar @$recs;
 
-#print "add_zone_records: $recs->[$i]->{'nt_zone_id'}, $recs->[$i]->{'name'}, ";
-#print "$recs->[$i]->{'type'}, $recs->[$i]->{'address'}, $recs->[$i]->{'weight'}\n";
-#                print Data::Dumper::Dumper(%zone_record);
-            }
-            my $r = $nt->new_zone_record(%zone_record);
-            if ( $r->{'error_code'} ne "200" ) {
-                print
-                    "ZONE RECORD FAILED: $r->{'error_msg'}, $r->{'error_code'}\n";
-                print Data::Dumper::Dumper($r);
-            }
+    for ( my $i = 0; $i < scalar @$recs; $i++ ) {
+        my $r = $nt->new_zone_record(
+            nt_zone_id  => $recs->[$i]->{'nt_zone_id'},
+            name        => $recs->[$i]->{'name'},
+            ttl         => "3600",
+            description => "batch added",
+            type        => $recs->[$i]->{'type'},
+            address     => $recs->[$i]->{'address'},
+            weight      => $recs->[$i]->{'weight'},
+            priority    => $recs->[$i]->{'priority'},
+            other       => $recs->[$i]->{'other'},
+        );
+        if ( $r->{'error_code'} ne "200" ) {
+            print "ZONE RECORD FAILED: $r->{'error_msg'}, $r->{'error_code'}\n";
+            print Data::Dumper::Dumper($r);
         }
     }
-    else {
-
-     # don't output anything here, we haven't returned the HTML header yet!
-     #       print "We didn't get any records back from the zone template!\n";
-    }
 }
+
+sub display_zone_actions {
+    my ($nt_obj, $q, $user, $zones, $user_group) = @_; 
+
+    my @state_fields;
+    foreach ( @{ $nt_obj->paging_fields } ) {
+        push @state_fields, "$_=" . $q->escape( $q->param($_) ) if $q->param($_);
+    }
+    my $gid = $q->param('nt_group_id');
+    my $state_string = join('&amp;', @state_fields, "nt_group_id=$gid");
+
+    print qq[
+<div id="zoneActions" class="fat dark_grey_bg">
+ <table class="no_pad fat">
+  <tr><td class="bold">Zone List</td>
+    <td class=right>];
+
+    if ( $user->{'zone_create'} ) {
+        print qq[<a href="group_zones.cgi?$state_string&amp;new=1">New Zone</a>];
+    }
+    else {
+        print qq[<span class=disabled>New Zone</span>];
+    }
+
+    if ( @$zones && $user_group->{'has_children'} ) {
+        print qq[ | <a href="javascript:void open_move(document.list_form.obj_list);">Move Selected Zones</a>];
+        if ( $user->{'zone_delegate'} ) {
+            print qq[ | <a href="javascript:void open_delegate(document.list_form.obj_list);">Delegate Selected Zones</a>]
+        };
+    };
+
+    print qq[ | <a href="group_zones_log.cgi?nt_group_id=$gid">View Zone Log</a>
+   </td>
+  </tr>
+ </table>
+</div>
+];
+};
 
