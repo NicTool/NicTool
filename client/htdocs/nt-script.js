@@ -80,3 +80,72 @@ function showThis(showMe) {
     styleObject.display = "block";
 }
 
+
+//access types
+function selectAllEdit(pForm, pAction) {
+    if (pForm.group_write) { pForm.group_write.checked = pAction; }
+    if (pForm.user_write) { pForm.user_write.checked = pAction; }
+    if (pForm.zone_write) { pForm.zone_write.checked = pAction; }
+    if (pForm.zonerecord_write) { pForm.zonerecord_write.checked = pAction; }
+    if (pForm.nameserver_write) { pForm.nameserver_write.checked = pAction; }
+    if (pForm.self_write) { pForm.self_write.checked = pAction; }
+}
+function selectAllCreate(pForm, pAction) {
+    if (pForm.group_create) { pForm.group_create.checked = pAction; }
+    if (pForm.user_create) { pForm.user_create.checked = pAction; }
+    if (pForm.zone_create) { pForm.zone_create.checked = pAction; }
+    if (pForm.zonerecord_create) { pForm.zonerecord_create.checked = pAction; }
+    if (pForm.nameserver_create) { pForm.nameserver_create.checked = pAction; }
+}
+function selectAllDelete(pForm, pAction) {
+    if (pForm.group_delete) { pForm.group_delete.checked = pAction; }
+    if (pForm.user_delete) { pForm.user_delete.checked = pAction; }
+    if (pForm.zone_delete) { pForm.zone_delete.checked = pAction; }
+    if (pForm.zonerecord_delete) { pForm.zonerecord_delete.checked = pAction; }
+    if (pForm.nameserver_delete) { pForm.nameserver_delete.checked = pAction; }
+}
+function selectAllDelegate(pForm, pAction) {
+    if (pForm.zone_delegate) { pForm.zone_delegate.checked = pAction; }
+    if (pForm.zonerecord_delegate) {
+        pForm.zonerecord_delegate.checked = pAction;
+    }
+}
+function selectAllAll(pForm, pAction) {
+    selectAllEdit(pForm, pAction);
+    selectAllCreate(pForm, pAction);
+    selectAllDelete(pForm, pAction);
+    selectAllDelegate(pForm, pAction);
+}
+
+//object types
+function selectAllGroup(pForm, pAction) {
+    if (pForm.group_write) { pForm.group_write.checked = pAction; }
+    if (pForm.group_create) { pForm.group_create.checked = pAction; }
+    if (pForm.group_delete) { pForm.group_delete.checked = pAction; }
+}
+function selectAllUser(pForm, pAction) {
+    if (pForm.user_write) { pForm.user_write.checked = pAction; }
+    if (pForm.user_create) { pForm.user_create.checked = pAction; }
+    if (pForm.user_delete) { pForm.user_delete.checked = pAction; }
+}
+function selectAllZone(pForm, pAction) {
+    if (pForm.zone_create) { pForm.zone_create.checked = pAction; }
+    if (pForm.zone_write) { pForm.zone_write.checked = pAction; }
+    if (pForm.zone_delete) { pForm.zone_delete.checked = pAction; }
+    if (pForm.zone_delegate) { pForm.zone_delegate.checked = pAction; }
+}
+function selectAllZonerecord(pForm, pAction) {
+    if (pForm.zonerecord_write) { pForm.zonerecord_write.checked = pAction; }
+    if (pForm.zonerecord_create) { pForm.zonerecord_create.checked = pAction; }
+    if (pForm.zonerecord_delete) { pForm.zonerecord_delete.checked = pAction; }
+    if (pForm.zonerecord_delegate) { pForm.zonerecord_delegate.checked = pAction; }
+}
+function selectAllNameserver(pForm, pAction) {
+    if (pForm.nameserver_write) { pForm.nameserver_write.checked = pAction; }
+    if (pForm.nameserver_create) { pForm.nameserver_create.checked = pAction; }
+    if (pForm.nameserver_delete) { pForm.nameserver_delete.checked = pAction; }
+}
+function selectAllSelf(pForm, pAction) {
+    if (pForm.self_write) { pForm.self_write.checked = pAction; }
+}
+
