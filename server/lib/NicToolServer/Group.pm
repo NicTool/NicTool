@@ -359,10 +359,9 @@ sub get_group_groups {
     }
 
     if ( ref( $r_data->{groups} ) ) {
+        $sql = "SELECT COUNT(*) AS count FROM nt_group WHERE deleted=0 AND parent_group_id = ?";
         foreach ( @{ $r_data->{groups} } ) {
-            $sql
-                = "SELECT COUNT(*) AS count FROM nt_group WHERE deleted=0 AND parent_group_id = ?";
-            my $c = $self->exec_query( $_->{nt_group_id} );
+            my $c = $self->exec_query( $sql, $_->{nt_group_id} );
             $_->{has_children} = $c->[0]->{count};
         }
     }
@@ -400,59 +399,52 @@ sub get_group_subgroups {
 
     my $r_data = { error_code => 200, error_msg => 'OK', groups => [] };
 
-    my $sql = "SELECT COUNT(*) AS count FROM nt_group ";
-    $sql
-        .= "WHERE deleted=0 AND nt_group.parent_group_id IN("
-        . join( ',', @group_list ) . ") "
-        . ( @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
+    my $group_string = join(',', @group_list );
+    my $cond_string = join(' ', @$conditions );
+    my $sql = "SELECT COUNT(*) AS count FROM nt_group 
+  WHERE deleted=0 AND parent_group_id IN ($group_string)";
+    $sql .= " AND ($cond_string)" if scalar @$conditions;
 
     my $c = $self->exec_query($sql);
     $r_data->{total} = $c->[0]->{count};
 
     $self->set_paging_vars( $data, $r_data );
 
-    $r_data->{total}++ if ( $data->{include_parent} );
+    $r_data->{total}++ if $data->{include_parent};
 
-    if ( $r_data->{total} == 0 ) {
-        return $r_data;
-    }
+    return $r_data if $r_data->{total} == 0;
 
-    $sql
-        = "SELECT nt_group.* FROM nt_group "
-        . "WHERE deleted=0 AND nt_group.parent_group_id IN("
-        . join( ',', @group_list ) . ") ";
-    $sql .= 'AND (' . join( ' ', @$conditions ) . ') ' if @$conditions;
-    $sql .= "ORDER BY " . join( ', ', @$sortby ) . " " if (@$sortby);
-    $sql .= "LIMIT " . ( $r_data->{start} - 1 ) . ", $r_data->{limit}";
+    my $sort_string = join( ', ', @$sortby);
+    $sql = "SELECT nt_group.* FROM nt_group 
+WHERE deleted=0 AND parent_group_id IN ($group_string)";
+    $sql .= " AND ($cond_string)" if @$conditions;
+    $sql .= " ORDER BY $sort_string" if (@$sortby);
+    $sql .= " LIMIT " . ( $r_data->{start} - 1 ) . ", $r_data->{limit}";
     my $group_rows = $self->exec_query($sql);
 
-    if ($group_rows) {
-        my %groups;
-        foreach my $row (@$group_rows) {
-            $sql
-                = "SELECT COUNT(*) AS count FROM nt_group WHERE deleted=0 AND parent_group_id = ?";
-            $c = $self->exec_query( $sql, $row->{nt_group_id} )
-                or return $self->error_response( 505, $self->{dbh}->errstr );
-            $row->{has_children} = $c->[0]->{count};
+    return { error_code => '600', error_msg => $self->{dbh}->errstr }
+        if !$group_rows;
 
-            push( @{ $r_data->{groups} }, $row );
+    my %groups;
+    foreach my $row (@$group_rows) {
+        $sql = "SELECT COUNT(*) AS count FROM nt_group WHERE deleted=0 AND parent_group_id = ?";
+        $c = $self->exec_query( $sql, $row->{nt_group_id} )
+            or return $self->error_response( 505, $self->{dbh}->errstr );
+        $row->{has_children} = $c->[0]->{count};
 
-            $groups{ $row->{nt_group_id} } = 1;
-        }
+        push( @{ $r_data->{groups} }, $row );
 
-        unshift(
-            @{ $r_data->{groups} },
-            $self->find_group( $data->{user}{nt_group_id} )
-        ) if ( $data->{include_parent} );
-
-        $r_data->{group_map}
-            = $self->get_group_map( $data->{start_group_id},
-            [ keys %groups ] );
+        $groups{ $row->{nt_group_id} } = 1;
     }
-    else {
-        $r_data->{error_code} = '600';
-        $r_data->{error_msg}  = $self->{dbh}->errstr;
-    }
+
+    unshift(
+        @{ $r_data->{groups} },
+        $self->find_group( $data->{user}{nt_group_id} )
+    ) if ( $data->{include_parent} );
+
+    $r_data->{group_map}
+        = $self->get_group_map( $data->{start_group_id},
+        [ keys %groups ] );
 
     warn "get_group_subgroups: " . Data::Dumper::Dumper($r_data)
         if $self->debug_result;
@@ -577,7 +569,7 @@ sub get_group_branch {
         $last_group = $cur_group;
         $cur_group  = $group->{parent_group_id};
 
-        unshift( @{ $rv{groups} }, $group );
+        unshift @{ $rv{groups} }, $group;
     }
 
     return \%rv;

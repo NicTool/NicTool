@@ -498,11 +498,6 @@ sub api_commands {
             'result' => $self->error_response(
                 503, 'get_nameserver_tree.  Use get_usable_nameservers.'
             ),
-
-   #'class'     => 'Nameserver',
-   #'method'    => 'get_usable_nameservers',
-   #'parameters'=>{ 'nt_group_id'=>{access=>'read',required=>1,type=>'GROUP'},
-   #},
         },
         'get_usable_nameservers' => {
             'class'      => 'Nameserver',
@@ -1151,8 +1146,7 @@ sub verify_obj_usage {
     return $api->{result} if exists $api->{result};
     my $params = $api->{parameters};
 
-    warn
-        "##############################\n$cmd VERIFY OBJECT USAGE\n##############################\n"
+    warn "##############################\n$cmd VERIFY OBJECT USAGE\n##############################\n"
 
         #"      params: ".Data::Dumper::Dumper($params).""
         if $self->debug_permissions;
@@ -1601,9 +1595,14 @@ sub exec_query {
         return $dbix->query("SELECT ROW_COUNT()")->list;
     }
 
+    if ( $query !~ /^[\s+]?SELECT/ ) {
+        warn "no support for this query. I'll try anyway\n$err";
+    };
+
     my $r;
     eval { $r = $dbix->query( $query, @params )->hashes; };
-    warn "$err\t$@" if $@;    #&& $self->debug_sql );
+    warn "$err\t$@\n$query" if $@;    #&& $self->debug_sql );
+    warn $err . $dbix->error if $dbix->error ne 'DBI error: ';
     return $r;
 }
 

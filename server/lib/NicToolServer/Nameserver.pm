@@ -11,7 +11,6 @@ sub get_usable_nameservers {
     my @groups;
     my @usable;
     if ( $data->{nt_group_id} ) {
-
         my $res = $self->NicToolServer::Group::get_group_branch($data);
         return $res if $self->is_error_response($res);
         @groups = map { $_->{nt_group_id} } @{ $res->{groups} };
@@ -26,16 +25,17 @@ sub get_usable_nameservers {
     my $r_data = $self->error_response(200);
     $r_data->{nameservers} = [];
 
-    my $sql
-        = "SELECT * FROM nt_nameserver "
-        . " WHERE deleted=0 AND (nt_group_id IN ("
-        . join( ",", @groups ) . ")"
-        . (
-        @usable
-        ? " OR " . "nt_nameserver_id IN (" . join( ",", @usable ) . " )"
-        : ''
-        ) . " ) ";
+    my $groups_string = join(',', @groups);
+    my $usable_string = join(',', @usable);
+    my $sql = 
+"SELECT * FROM nt_nameserver
+  WHERE deleted=0 
+    AND (nt_group_id IN ($groups_string)";
 
+    $sql .= " OR nt_nameserver_id IN ($usable_string)" if @usable; 
+    $sql .= ")";
+
+    #warn $sql;
     my $nameservers = $self->exec_query($sql)
         or return {
         error_code => 600,

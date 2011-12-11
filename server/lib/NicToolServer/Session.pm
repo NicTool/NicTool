@@ -138,16 +138,15 @@ sub verify_session {
     my $data = $self->{client}->data();
     my $dbh  = $self->{dbh};
 
-    my $sql
-        = "SELECT u.*, s.*, g.name AS groupname 
-        FROM nt_user_session s
-         LEFT JOIN nt_user u ON s.nt_user_id = u.nt_user_id
-         LEFT JOIN nt_group g ON u.nt_group_id = g.nt_group_id
-        WHERE u.deleted=0
-          AND s.nt_user_session = ?";
-
-    my $sessions = $self->exec_query( $sql, $data->{nt_user_session} )
-        or return $self->error_response( 505, $dbh->errstr );
+    my $sessions = $self->exec_query( "
+SELECT u.*, s.*, g.name AS groupname 
+  FROM nt_user_session s
+   LEFT JOIN nt_user u ON s.nt_user_id = u.nt_user_id
+   LEFT JOIN nt_group g ON u.nt_group_id = g.nt_group_id
+  WHERE u.deleted=0
+    AND s.nt_user_session = ?",
+        $data->{nt_user_session} 
+    ) or return $self->error_response( 505, $dbh->errstr );
 
     return $self->auth_error('Your session has expired. Please login again')
         if !$sessions;
