@@ -20,7 +20,7 @@ use strict;
 
 require 'nictoolclient.conf';
 
-&main();
+main();
 
 sub main {
     my $q      = new CGI();
@@ -39,7 +39,7 @@ sub main {
                     $nt_obj->display_login($data);
                 }
                 else {
-                    &display_frameset( $q, $nt_obj, $data );
+                    display_frameset( $q, $nt_obj, $data );
                 }
             }
             else {

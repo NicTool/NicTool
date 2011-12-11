@@ -20,7 +20,7 @@ use strict;
 
 require 'nictoolclient.conf';
 
-&main();
+main();
 
 sub main {
     my $q      = new CGI();
@@ -31,7 +31,7 @@ sub main {
         my $user = $nt_obj->verify_session();
         if ($user) {
             print $q->header;
-            &display( $nt_obj, $q, $user );
+            display( $nt_obj, $q, $user );
         }
     }
 }
@@ -73,7 +73,7 @@ sub display {
     display_group($group, '', '');
 
     if ( $group->{'has_children'} ) {
-        &recurse_groups( $nt_obj, $gid, [], $user, $expanded );
+        recurse_groups( $nt_obj, $gid, [], $user, $expanded );
     };
 
     $nt_obj->parse_template($NicToolClient::end_html_template);
@@ -108,7 +108,7 @@ sub recurse_groups {
         print qq[
 <table id="navGroupLevel$gid" class='no_pad'>
  <tr>$level_html
-  <td><a href="nav.cgi?] . &expand_url( $expanded, 'expanded', $gid ) . qq[">$img</a></td>
+  <td><a href="nav.cgi?] . expand_url( $expanded, 'expanded', $gid ) . qq[">$img</a></td>
   <td><img src="$NicToolClient::image_dir/transparent.gif" style="width:4; height:1;" alt="transparent"><img src="$NicToolClient::image_dir/group.gif" alt="group"></td>
   <td class="nowrap"><a href="group.$suffix"> $group->{'name'} </a> </td>
  </tr>
@@ -122,7 +122,7 @@ sub recurse_groups {
         next if ! $expanded->{'expanded'}->{ $gid };
 
         my $thislevels = [ ( @$levels, ( $_ == $total ? 0 : 1 ) ) ];
-        &recurse_groups( $nt_obj, $gid, $thislevels, $user, $expanded );
+        recurse_groups( $nt_obj, $gid, $thislevels, $user, $expanded );
     }
 }
 
@@ -148,7 +148,7 @@ sub expand_url {
         }
     }
 
-    return join( '&', @url );
+    return join( '&amp;', @url );
 }
 
 sub display_group {

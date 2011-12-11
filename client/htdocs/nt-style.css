@@ -21,14 +21,14 @@ table.no_pad {
 	border-spacing: 0px;
 	border-collapse: collapse;  /* 'cellspacing' equivalent */
 }
-table.no_pad td, table.no_pad th {
-	padding: 0px;  /* 'cellpadding' equivalent */
-}
+table.no_pad td, table.no_pad th { padding: 0px; }
 div {
   padding: 2px;
   margin: 2px;
 }
 
+.no_margin { margin: 0px; }
+.no_pad { padding: 0px; }      /* 'cellpadding' equivalent */
 .nowrap { white-space: nowrap; }
 .tall   { height: 100%; }
 .fat    { width:  100%; }
@@ -66,3 +66,12 @@ a:visited { color: #336666 }
 a:active  { color: #336666 }
 
 img { border: 0; }
+
+table#navBar span {
+	padding-left: 2px;
+	padding-right: 2px;
+}
+table#navBar span img {
+	margin: 0px;
+	padding: 0px;
+}

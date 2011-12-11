@@ -20,7 +20,7 @@ use strict;
 
 require 'nictoolclient.conf';
 
-&main();
+main();
 
 sub main {
     my $q      = new CGI();
@@ -36,7 +36,7 @@ sub main {
             $message = $nt_obj->redirect_from_log($q);
         }
         print $q->header;
-        &display( $nt_obj, $q, $user, $message );
+        display( $nt_obj, $q, $user, $message );
     }
 }
 
@@ -58,8 +58,7 @@ sub display {
 
     #warn "user info: ".Data::Dumper::Dumper($user);
     my $edit_message;
-    my @fields
-        = qw(user_create user_delete user_write group_create group_delete group_write zone_create zone_delegate zone_delete zone_write zonerecord_create zonerecord_delegate zonerecord_delete zonerecord_write nameserver_create nameserver_delete nameserver_write self_write);
+    my @fields = qw/ user_create user_delete user_write group_create group_delete group_write zone_create zone_delegate zone_delete zone_write zonerecord_create zonerecord_delegate zonerecord_delete zonerecord_write nameserver_create nameserver_delete nameserver_write self_write /;
 
     if ( $q->param('edit') ) {
         if ( $q->param('Save') ) {
@@ -168,7 +167,7 @@ sub display {
     if ( $user->{'user_delete'}
         && ( $user->{'nt_user_id'} ne $duser->{'nt_user_id'} ) )
     {
-        push @options, qq[<a href="group_users.cgi?nt_group_id=$q->param('nt_group_id')&delete=1&obj_list=$duser->{'nt_user_id'}" onClick="return confirm('Delete user $duser->{'username'}?');">Delete</a>];
+        push @options, qq[<a href="group_users.cgi?nt_group_id=].$q->param('nt_group_id').qq[&amp;delete=1&amp;obj_list=$duser->{'nt_user_id'}" onClick="return confirm('Delete user $duser->{'username'}?');">Delete</a>];
     }
     else {
         push @options, "<span class=disabled>Delete</span>";
@@ -196,12 +195,12 @@ sub display {
 
     print qq[<td><img src=$NicToolClient::image_dir/user.gif></td>
 <td class="nowrap"><b>$duser->{'username'}</b></td>
-td class="right fat">], join( ' | ', @options ), qq[</td>
+<td class="right fat">], join( ' | ', @options ), qq[</td>
 </tr></table>
 </td></tr></table>];
 
-    &display_properties( $nt_obj, $q, $user, $duser, $edit_message );
-    &display_global_log( $nt_obj, $q, $user, $duser, $message );
+    display_properties( $nt_obj, $q, $user, $duser, $edit_message );
+    display_global_log( $nt_obj, $q, $user, $duser, $message );
 
     $nt_obj->parse_template($NicToolClient::end_html_template);
 }
@@ -217,27 +216,27 @@ sub display_properties {
     if ( $q->param('new') ) {
         if ( $q->param('Create') ) {
             if ($message) {
-                &display_edit( $nt_obj, $q, $message, $user, $duser, 'new' );
+                display_edit( $nt_obj, $q, $message, $user, $duser, 'new' );
             }
         }
         elsif ( $q->param('Cancel') ) {
 
         }
         else {
-            &display_edit( $nt_obj, $q, '', $user, $duser, 'new' );
+            display_edit( $nt_obj, $q, '', $user, $duser, 'new' );
         }
     }
     elsif ( $q->param('edit') ) {
         if ( $q->param('Save') ) {
             if ($message) {
-                &display_edit( $nt_obj, $q, $message, $user, $duser, 'edit' );
+                display_edit( $nt_obj, $q, $message, $user, $duser, 'edit' );
             }
         }
         elsif ( $q->param('Cancel') ) {
 
         }
         else {
-            &display_edit( $nt_obj, $q, '', $user, $duser, 'edit' );
+            display_edit( $nt_obj, $q, '', $user, $duser, 'edit' );
         }
     }
 
@@ -249,43 +248,37 @@ sub display_properties {
 
     print qq[<table class="fat">
     <tr class=dark_grey_bg><td><table class="no_pad fat">
-    <tr>
-    <td><b>Properties</b></td>];
-    my $modname;
-    if ($modifyperm) {
-        $modname = "Edit";
-    }
-    else {
-        $modname = 'View Details';
-    }
-    print qq[<td class=right><a href="user.cgi?], join( '&', @state_fields ),
-qq[&nt_group_id=$q->param('nt_group_id')&nt_user_id=$duser->{'nt_user_id'}&edit=1">$modname</a></td>
+    <tr> <td><b>Properties</b></td>];
+    my $modname = 'View Details';
+		$modname = "Edit" if $modifyperm;
+		my $gid = $q->param('nt_group_id');
+		my $uid = $duser->{'nt_user_id'};
+
+    print qq[<td class=right><a href="user.cgi?], join( '&amp;', @state_fields ),
+qq[&amp;nt_group_id=$gid&amp;nt_user_id=$uid&amp;edit=1">$modname</a></td>
 </tr></table>
 </td></tr></table>];
 
-    print qq[<table class="fat" cellspacing=0>
+    print qq[
+<table class="fat" cellspacing=0>
  <tr>
   <td width=50%>
    <table class="fat">
     <tr class=light_grey_bg>
-     <td class="nowrap">Username: </td>
-     <td class="fat">], ( $duser->{'username'} ? $duser->{'username'} : '&nbsp;' ), qq[</td>
+     <td class="nowrap">Username: </td> <td class="fat">$duser->{'username'}</td>
     </tr>
     <tr class=light_grey_bg>
-     <td class="nowrap">Email: </td>
-     <td class="fat">], ( $duser->{'email'} ? $duser->{'email'} : '&nbsp;' ), qq[</td>
+     <td class="nowrap">Email: </td> <td class="fat">$duser->{'email'}</td>
     </tr>
    </table>
-   </td>
-	 <td width=50%>
-    <table class="fat">
-     <tr class=light_grey_bg>
-      <td class="nowrap">First Name: </td>
-      <td class="fat">], ( $duser->{'first_name'} ? $duser->{'first_name'} : '&nbsp;' ), qq[</td>
+  </td>
+	<td width=50%>
+   <table class="fat">
+    <tr class=light_grey_bg>
+     <td class="nowrap">First Name: </td> <td class="fat">$duser->{'first_name'}</td>
     </tr>
     <tr class=light_grey_bg>
-     <td class="nowrap">Last Name: </td>
-     <td class="fat">], ( $duser->{'last_name'} ? $duser->{'last_name'} : '&nbsp;' ), qq[</td>
+     <td class="nowrap">Last Name: </td> <td class="fat">$duser->{'last_name'}</td>
     </tr>
    </table>
   </td>
@@ -338,41 +331,39 @@ sub display_global_log {
             if ( $q->param($_) );
     }
 
-    print qq[<table class="fat">
-    <tr><td><hr></td></tr>];
+    print qq[<table class="fat"><tr><td><hr></td></tr>];
 
     $nt_obj->display_nice_error($message) if $message;
-    print qq[<tr class=dark_grey_bg><td>
-    <table class="no_pad fat">
-    <tr>
-    <td><b>Global Application Log</b></td>
-    </tr></table></td></tr>
-    </table>];
+    print qq[
+ <tr class=dark_grey_bg><td>
+   <table class="no_pad fat">
+    <tr><td class="bold">Global Application Log</td></tr>
+	</table></td></tr>
+</table>];
 
     $nt_obj->display_search_rows( $q, $rv, \%params, $cgi, \@req_fields );
 
     if (!@$list) {
-        print "<center>", "No log data available</center>";
+        print "<center>No log data available</center>";
 				return;
 		};
 
-		print qq[<table class="fat">
-		<tr class=dark_grey_bg>];
+		print qq[<table class="fat"> <tr class=dark_grey_bg>];
 		foreach (@columns) {
 				if ( $sort_fields{$_} ) {
-						print qq[<td class="dark_bg center"><table class="no_pad">
-						<tr>
-						<td>$labels{$_}</td>
-						<td>&nbsp; &nbsp; $sort_fields{$_}->{'order'}</td>
-						<td><img src=$NicToolClient::image_dir/],
-								(
-								uc( $sort_fields{$_}->{'mod'} ) eq 'ASCENDING'
-								? 'up.gif'
-								: 'down.gif' ), "></tD>";
-						print "</tr></table></td>";
+						my $direc = uc( $sort_fields{$_}->{'mod'} ) eq 'ASCENDING' ? 'up' : 'down';
+						print qq[
+ <td class="dark_bg center"><table class="no_pad">
+  <tr>
+   <td>$labels{$_}</td>
+   <td>&nbsp; &nbsp; $sort_fields{$_}->{'order'}</td>
+   <td><img src=$NicToolClient::image_dir/$direc.gif></td>
+  </tr>
+ </table>
+</td>];
 				}
 				else {
-						print "<td class=center>", "$labels{$_}</td>";
+						print "<td class=center>$labels{$_}</td>";
 				}
 		}
 		print "</tr>";
@@ -383,53 +374,45 @@ sub display_global_log {
 		my $range;
 		foreach my $row (@$list) {
 
-				print "<tr class="
-						. ( $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' )
-						. ">";
+				my $bgcolor = ( $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' );
+				print qq[<tr class="bgcolor">];
 				foreach (@columns) {
+						my $state_string = @state_fields ? join( '&amp;', @state_fields ) : 'not_empty=1';
 						if ( $_ eq 'timestamp' ) {
-								print "<td>", ( scalar localtime( $row->{$_} ) ), "</td>";
+								print '<td>', scalar localtime( $row->{$_} ), '</td>';
 						}
 						elsif ( $_ eq 'object' ) {
 								my $txt = $row->{'object'};
-								$txt = join( " ", map( ucfirst, split( /_/, $txt ) ) );
-								print "<td>", ( $txt ? $txt : '&nbsp;' ), "</td>";
-
+								$txt = join( ' ', map( ucfirst, split( /_/, $txt ) ) );
+								print qq[<td>$txt</td>];
 						}
 						elsif ( $_ eq 'title' ) {
-								print qq[<td><table class="no_pad"><tr>
-								<td><a href="user.cgi?]
-										. join( '&', @state_fields )
-										. "&redirect=1&nt_group_id=$duser->{'nt_group_id'}&nt_user_id=$duser->{'nt_user_id'}&object="
-										. $q->escape( $row->{'object'} )
-										. qq[&obj_id=$q->escape( $row->{'object_id'} )">
-										<img src=$NicToolClient::image_dir/$map->{ $row->{'object'} }->{'image'}" alt="image"></a></td>];
-								print qq[<td><a href="user.cgi?]
-										. join( '&', @state_fields )
-										. "&redirect=1&nt_group_id=$duser->{'nt_group_id'}&nt_user_id=$duser->{'nt_user_id'}&object="
-										. $q->escape( $row->{'object'} )
-										. "&obj_id="
-										. $q->escape( $row->{'object_id'} )
-										. qq[">$row->{'title'}</a></td>];
-								print "</tr></table></td>";
+								my $obj = $q->escape( $row->{'object'} );
+								my $obj_id = $q->escape( $row->{'object_id'} );
+								my $url = "user.cgi?$state_string&amp;redirect=1&amp;nt_group_id=$duser->{'nt_group_id'}&amp;nt_user_id=$duser->{'nt_user_id'}&amp;object=$obj&amp;obj_id=$obj_id";
+								my $img = "$NicToolClient::image_dir/$map->{ $row->{'object'} }->{'image'}";
+
+								print qq[
+<td>
+ <table class="no_pad"><tr>
+		<td><a href="$url"><img src="$img" alt="image"></a></td>
+	  <td><a href="$url">$row->{'title'}</a></td>
+   </tr></table></td>];
 						}
 						elsif ( $_ eq 'target' && $row->{'target_id'} ) {
-								print qq[<td><table class="no_pad"><tr>
-								<td><a href="user.cgi?]
-										. join( '&', @state_fields )
-										. "&redirect=1&nt_group_id=$duser->{'nt_group_id'}&nt_user_id=$duser->{'nt_user_id'}&object="
-										. $q->escape( $row->{'target'} )
-										. "&obj_id="
-										. $q->escape( $row->{'target_id'} )
-										. qq["><img src=$NicToolClient::image_dir/$map->{ $row->{'target'} }->{'image'}></a></td>];
-								print qq[<td><a href="user.cgi?]
-										. join( '&', @state_fields )
-										. "&redirect=1&nt_group_id=$duser->{'nt_group_id'}&nt_user_id=$duser->{'nt_user_id'}&object="
-										. $q->escape( $row->{'target'} )
-										. "&obj_id="
-										. $q->escape( $row->{'target_id'} )
-										. qq[">$row->{'target_name'}</a></td>
-								</tr></table></td>];
+								my $target    = $q->escape( $row->{'target'} );
+								my $target_id = $q->escape( $row->{'target_id'} );
+								my $url = "user.cgi?$state_string&amp;redirect=1&amp;nt_group_id=$duser->{'nt_group_id'}&amp;nt_user_id=$duser->{'nt_user_id'}&amp;object=$target&amp;obj_id=$target_id";
+								my $img = "$NicToolClient::image_dir/$map->{ $row->{'target'} }->{'image'}";
+								print qq[
+<td>
+ <table class="no_pad">
+  <tr>
+   <td><a href="$url"><img src="$img"></a></td>
+   <td><a href="$url">$row->{'target_name'}</a></td>
+  </tr>
+ </table>
+</td>];
 						}
 						else {
 								print "<td>", ( $row->{$_} ? $row->{$_} : '&nbsp;' ), "</td>";
@@ -459,7 +442,6 @@ sub display_edit {
 
     #warn "user hash: ".Data::Dumper::Dumper($duser);
     if ($modifyperm) {
-        $nt_obj->display_perms_javascript;
         print $q->start_form(
             -action => 'user.cgi',
             -method => 'POST',
@@ -484,51 +466,27 @@ sub display_edit {
  <tr class=light_grey_bg>
   <td class="right nowrap">Username:</td>
   <td class="fat">],
-        (
-        $modifyperm
-        ? $q->textfield(
-            -name  => 'username',
-            -value => $duser->{'username'},
-            -size  => 30
-            )
-        : $duser->{'username'}
-        ),
+        ( $modifyperm ? $q->textfield( -name  => 'username', -value => $duser->{'username'}, -size  => 30) : $duser->{'username'} ),
         qq[</td>
 </tr>
 <tr class=light_grey_bg>
 <td class="nowrap right">First Name:</td>
 <td class="fat">],
-        (
-        $modifyperm
-        ? $q->textfield( -name  => 'first_name', -value => $duser->{'first_name'}, -size  => 30)
-        : $duser->{'first_name'}
-        ),
+        ( $modifyperm ? $q->textfield( -name  => 'first_name', -value => $duser->{'first_name'}, -size  => 30) : $duser->{'first_name'} ),
         qq[</td>
 </tr>
 <tr class=light_grey_bg>
 <td class="right nowrap">Last Name:</td>
 <td class="fat">],
-        (
-        $modifyperm
-        ? $q->textfield( -name => 'last_name', -value => $duser->{'last_name'}, -size  => 40)
-        : $duser->{'last_name'}
-        ),
+        ( $modifyperm ? $q->textfield( -name => 'last_name', -value => $duser->{'last_name'}, -size  => 40) : $duser->{'last_name'} ),
         qq[</td>
 </tr>
 <tr class=light_grey_bg>
 <td class="right nowrap">Email:</td>
 <td class="fat">],
-        (
-        $modifyperm
-        ? $q->textfield(
-            -name  => 'email',
-            -value => $duser->{'email'},
-            -size  => 60
-            )
-        : $duser->{'email'}
-        ),
-        "</td>";
-    print "</tr>";
+        ( $modifyperm ? $q->textfield( -name  => 'email', -value => $duser->{'email'}, -size  => 60) : $duser->{'email'} ),
+        "</td>
+    </tr>";
 
     if ($modifyperm) {
         print qq[<tr class=dark_grey_bg><td colspan=2>Change Password</td></tr>
@@ -585,8 +543,6 @@ sub display_edit {
                     grep { $group->{"usable_ns$_"} != 0 } ( 0 .. 9 );
                 $ns_tree = $nt_obj->get_nameserver_list(
                     nameserver_list => join( ",", keys %nsmap ) );
-
-                #warn "group: ".Data::Dumper::Dumper($ns_tree);
             }
 
             #warn "user is ".Data::Dumper::Dumper($duser);
@@ -594,9 +550,7 @@ sub display_edit {
                 . (
                 $permmodify
                 ? "<input type=radio value='1' name='group_defaults' "
-                    . (
-                    $duser->{'inherit_group_permissions'} ? 'CHECKED' : ''
-                    )
+                    . ( $duser->{'inherit_group_permissions'} ? 'CHECKED' : '')
                     . ">"
                 : ''
                 )
@@ -620,8 +574,7 @@ sub display_edit {
                     @{ $ns_tree->{'list'} };
                 foreach ( sort keys %order ) {
                     my $ns = $order{$_};
-                    print
-                        "<img src=$NicToolClient::image_dir/perm-checked.gif>&nbsp;$ns->{'description'} ($ns->{'name'})<BR>";
+                    print qq[<img src="$NicToolClient::image_dir/perm-checked.gif">&nbsp;$ns->{'description'} ($ns->{'name'})<br>];
                 }
                 if ( @{ $ns_tree->{'list'} } == 0 ) {
                     print "No available nameservers."
@@ -641,29 +594,28 @@ sub display_edit {
             my $x = 1;
             my $color;
             foreach my $type (@order) {
-                $color = (
-                    $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' );
-                print qq[ <tr> <td class=right><b>]
-                    . ( ucfirst($type) ) . qq{:</b></td>
-                                };
+                $color = ( $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' );
+                print qq[ 
+  <tr> <td class="right bold">] . ucfirst($type) . qq[:</td>];
                 foreach my $perm ( @{ $perms{$type} } ) {
                     if ( $perm eq '.' ) {
-                        print qq[<td class=$color></td>];
+                        print qq[
+   <td class=$color></td>];
                         next;
                     }
-                    print qq{ <td class="$color left middle"><img src="$NicToolClient::image_dir/perm-}
-                        . ( $group->{ $type . "_" . $perm } ? 'checked.gif' : 'unchecked.gif' )
-                        . qq{"> }
-                        . ( exists $labels{$type}{$perm} ? $labels{$type}{$perm} : ucfirst($perm) )
-                        . qq{</td> };
+										my $pc = $group->{ $type . "_" . $perm } ? 'checked' : 'unchecked';
+										my $permc = $labels{$type}{$perm} || ucfirst $perm;
+                    print qq[
+    <td class="$color left middle">
+     <img src="$NicToolClient::image_dir/perm-$pc.gif">$permc </td>];
                 }
-                print qq{ </tr> };
+                print qq[
+   </tr>];
             }
-            print qq{
-                    </table>
-                </td>
-            </tr>
-            };
+            print qq[
+  </table>
+ </td>
+</tr> ];
         }
 
         if (   !$editself && $modifyperm

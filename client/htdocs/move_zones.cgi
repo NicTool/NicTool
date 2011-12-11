@@ -20,7 +20,7 @@ use strict;
 
 require 'nictoolclient.conf';
 
-&main();
+main();
 
 sub main {
     my $q      = new CGI();
@@ -32,7 +32,7 @@ sub main {
 
     if ($user) {
         print $q->header;
-        &display( $nt_obj, $q, $user );
+        display( $nt_obj, $q, $user );
     }
 }
 
@@ -48,9 +48,7 @@ sub display {
     );
 
     if ( $q->param('cancel_move') ) {
-        print "<script language='JavaScript'>";
-        print "window.close();";
-        print "</script>";
+        print "<script> window.close(); </script>";
 
         # do nothing
     }
@@ -62,20 +60,15 @@ sub display {
         if ( $rv->{'error_code'} != 200 ) {
 
             #$nt_obj->display_error($rv);
-            &move_zones( $nt_obj, $user, $q, $rv );
+            move_zones( $nt_obj, $user, $q, $rv );
         }
         else {
-            print "<script language='JavaScript'>";
-
-            #print "window.opener.location.reload();";
-            print "window.close();";
-            print "</script>";
-
+            print "<script> window.close(); </script>";
             print "<center><B>Zones Moved</B></center>";
         }
     }
     else {
-        &move_zones( $nt_obj, $user, $q );
+        move_zones( $nt_obj, $user, $q );
     }
 
     $nt_obj->parse_template($NicToolClient::end_html_template);
@@ -101,7 +94,7 @@ sub move_zones {
 <td class="fat">],
         join(
         ', ',
-        map(qq[<a href="zone.cgi?nt_group_id=$_->{'nt_group_id'}&nt_zone_id=$_->{'nt_zone_id'}" target=_blank>$_->{'zone'}</a>],
+        map(qq[<a href="zone.cgi?nt_group_id=$_->{'nt_group_id'}&amp;nt_zone_id=$_->{'nt_zone_id'}" target=_blank>$_->{'zone'}</a>],
             @$zones )
         ),
         "</td>";

@@ -3,7 +3,7 @@ use strict;
 
 require 'nictoolclient.conf';
 
-&main();
+main();
 
 sub main {
     my $q = new CGI();
@@ -19,7 +19,7 @@ sub main {
 
     if ($user) {
         print $q->header;
-        &display( $nt_obj, $q, $user );
+        display( $nt_obj, $q, $user );
     }
 }
 
@@ -92,4 +92,4 @@ sub show_zone_records {
     print qq{ </table> <br> };
 }
 
-1;
+

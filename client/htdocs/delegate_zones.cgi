@@ -20,7 +20,7 @@ use strict;
 
 require 'nictoolclient.conf';
 
-&main();
+main();
 
 sub main {
     my $q      = new CGI();
@@ -32,7 +32,7 @@ sub main {
 
     if ($user) {
         print $q->header;
-        &display( $nt_obj, $q, $user );
+        display( $nt_obj, $q, $user );
     }
 }
 
@@ -66,7 +66,7 @@ sub display {
         if ( $rv->{'error_code'} != 200 ) {
 
             #$nt_obj->display_error($rv);
-            &delegate_zones( $nt_obj, $user, $q, $rv );
+            delegate_zones( $nt_obj, $user, $q, $rv );
         }
         else {
             $nt_obj->_close_window();
@@ -87,7 +87,7 @@ sub display {
         if ( $rv->{'error_code'} != 200 ) {
 
             #$nt_obj->display_error($rv);
-            &delegate_zones( $nt_obj, $user, $q, $rv );
+            delegate_zones( $nt_obj, $user, $q, $rv );
         }
         else {
             $nt_obj->_close_window();
@@ -108,7 +108,7 @@ sub display {
         if ( $rv->{'error_code'} != 200 ) {
 
             #$nt_obj->display_error($rv);
-            &delegate_zones( $nt_obj, $user, $q, $rv, 'edit' );
+            delegate_zones( $nt_obj, $user, $q, $rv, 'edit' );
         }
         else {
             $nt_obj->_close_window();
@@ -129,7 +129,7 @@ sub display {
         if ( $rv->{'error_code'} != 200 ) {
 
             #$nt_obj->display_error($rv);
-            &delegate_zones( $nt_obj, $user, $q, $rv, 'edit' );
+            delegate_zones( $nt_obj, $user, $q, $rv, 'edit' );
         }
         else {
             $nt_obj->_close_window();
@@ -146,7 +146,7 @@ sub display {
         if ( $rv->{'error_code'} != 200 ) {
 
             #$nt_obj->display_error($rv);
-            &delegate_zones( $nt_obj, $user, $q, $rv );
+            delegate_zones( $nt_obj, $user, $q, $rv );
         }
         else {
             $nt_obj->_close_window();
@@ -154,7 +154,7 @@ sub display {
         }
     }
     else {
-        &delegate_zones( $nt_obj, $user, $q, '',
+        delegate_zones( $nt_obj, $user, $q, '',
             $q->param("edit")
             ? "edit"
             : ( $q->param("delete") ? "delete" : "" ) );
@@ -258,8 +258,8 @@ sub delegate_zones {
   <td width=25%>
    <table class="no_pad">
     <tr>
-     <td class="middle"><a href="zone.cgi?nt_group_id=$zone->{'nt_group_id'}&nt_zone_id=$zone->{'nt_zone_id'}&nt_zone_record_id=$zr->{'nt_zone_record_id'}&edit_record=1" target=body><img src="$NicToolClient::image_dir/r_record.gif"></a></td>
-     <td class="middle"><a href="zone.cgi?nt_group_id=$zone->{'nt_group_id'}&nt_zone_id=$zone->{'nt_zone_id'}&nt_zone_record_id=$zr->{'nt_zone_record_id'}&edit_record=1" target=body>$zr->{'name'}</a></td>
+     <td class="middle"><a href="zone.cgi?nt_group_id=$zone->{'nt_group_id'}&nt_zone_id=$zone->{'nt_zone_id'}&nt_zone_record_id=$zr->{'nt_zone_record_id'}&amp;edit_record=1" target=body><img src="$NicToolClient::image_dir/r_record.gif"></a></td>
+     <td class="middle"><a href="zone.cgi?nt_group_id=$zone->{'nt_group_id'}&nt_zone_id=$zone->{'nt_zone_id'}&nt_zone_record_id=$zr->{'nt_zone_record_id'}&amp;edit_record=1" target=body>$zr->{'name'}</a></td>
     </tr>
    </table>
   </td>
@@ -462,7 +462,7 @@ sub _center_bold {
 
 sub _close_window {
     return <<"EOJSCLOSE"
-<script language='JavaScript'>
+<script>
   window.close();
 </script>
 EOJSCLOSE

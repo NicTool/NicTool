@@ -20,7 +20,7 @@
 
 require 'nictoolclient.conf';
 
-&main();
+main();
 
 sub main {
     my $q      = new CGI();
@@ -176,7 +176,7 @@ sub display_list {
      <td class=right>];
     if ( $user->{'nameserver_create'} ) {
         print qq[<a href="$cgi?]
-            . join( '&', @state_fields )
+            . join( '&amp;', @state_fields )
             . "&nt_group_id="
             . $q->param('nt_group_id')
             . qq[&new=1">New Nameserver</a>];
@@ -307,8 +307,8 @@ sub display_list {
 
         print qq[<td width=$width><table class="no_pad">
         <tr>
-         <td><a href="$cgi?nt_nameserver_id=$obj->{'nt_nameserver_id'}&nt_group_id=$obj->{'nt_group_id'}&edit=1"><img src="$NicToolClient::image_dir/nameserver.gif"></a></td>
-         <td><a href="$cgi?nt_nameserver_id=$obj->{'nt_nameserver_id'}&nt_group_id=$obj->{'nt_group_id'}&edit=1"> $obj->{'name'} </a></td>
+         <td><a href="$cgi?nt_nameserver_id=$obj->{'nt_nameserver_id'}&nt_group_id=$obj->{'nt_group_id'}&amp;edit=1"><img src="$NicToolClient::image_dir/nameserver.gif"></a></td>
+         <td><a href="$cgi?nt_nameserver_id=$obj->{'nt_nameserver_id'}&nt_group_id=$obj->{'nt_group_id'}&amp;edit=1"> $obj->{'name'} </a></td>
         </tr></table></td>];
 
         foreach (qw(description address status)) {
@@ -322,10 +322,10 @@ sub display_list {
             )
         {
             print qq[<td width=1%><a href="$cgi?]
-                . join( '&', @state_fields )
+                . join( '&amp;', @state_fields )
                 . "&nt_group_id="
                 . $q->param('nt_group_id')
-                . qq[&delete=1&nt_nameserver_id=$obj->{'nt_nameserver_id'}" onClick="return confirm('Delete nameserver $obj->{'name'}?');"><img src="$NicToolClient::image_dir/trash.gif" alt="trash"></a></td>];
+                . qq[&amp;delete=1&amp;nt_nameserver_id=$obj->{'nt_nameserver_id'}" onClick="return confirm('Delete nameserver $obj->{'name'}?');"><img src="$NicToolClient::image_dir/trash.gif" alt="trash"></a></td>];
         }
         else {
             print qq[<td width=1%><img src="$NicToolClient::image_dir/trash-disabled.gif" alt="disabled trash"></td>];

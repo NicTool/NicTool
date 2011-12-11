@@ -20,7 +20,7 @@ use strict;
 
 require 'nictoolclient.conf';
 
-&main();
+main();
 
 sub main {
     my $q      = new CGI();
@@ -32,7 +32,7 @@ sub main {
 
     if ($user) {
         print $q->header;
-        &display( $nt_obj, $q, $user );
+        display( $nt_obj, $q, $user );
     }
 }
 
@@ -48,9 +48,7 @@ sub display {
     );
 
     if ( $q->param('cancel_move') ) {
-        print "<script language='JavaScript'>";
-        print "window.close();";
-        print "</script>";
+        print qq[<script> window.close(); </script>];
 
         # do nothing
     }
@@ -62,20 +60,15 @@ sub display {
         if ( $rv->{'error_code'} != 200 ) {
 
             #$nt_obj->display_error($rv);
-            &move( $nt_obj, $user, $q, $rv );
+            move( $nt_obj, $user, $q, $rv );
         }
         else {
-            print "<script language='JavaScript'>";
-
-            #print "window.opener.location = window.opener.location;";
-            print "window.close();";
-            print "</script>";
-
+            print qq[<script> window.close(); </script>];
             print "<center><B>Nameservers Moved</B></center>";
         }
     }
     else {
-        &move( $nt_obj, $user, $q );
+        move( $nt_obj, $user, $q );
     }
 
     $nt_obj->parse_template($NicToolClient::end_html_template);
@@ -101,7 +94,7 @@ sub move {
     <td class="nowrap top"> Users: </td>
     <td class="fat">],
         join( ', ', map(
-qq[<a href="group_nameservers.cgi?nt_group_id=$_->{'nt_group_id'}&nt_nameserver_id=$_->{'nt_nameserver_id'}" target="_blank">$_->{'name'}</a>], @$list )
+qq[<a href="group_nameservers.cgi?nt_group_id=$_->{'nt_group_id'}&amp;nt_nameserver_id=$_->{'nt_nameserver_id'}" target="_blank">$_->{'name'}</a>], @$list )
         ),
         "</td> </tr> </table>";
 

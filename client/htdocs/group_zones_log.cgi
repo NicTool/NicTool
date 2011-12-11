@@ -20,7 +20,7 @@ use strict;
 
 require 'nictoolclient.conf';
 
-&main();
+main();
 
 sub main {
     my $q      = new CGI();
@@ -37,7 +37,7 @@ sub main {
         }
 
         print $q->header;
-        &display( $nt_obj, $q, $user, $message );
+        display( $nt_obj, $q, $user, $message );
     }
 }
 
@@ -58,29 +58,26 @@ sub display {
         $q->param('nt_group_id'), 0
     );
 
-    $nt_obj->display_zone_list_options( $user, $q->param('nt_group_id'),
-        $level, 0 );
+    $nt_obj->display_zone_list_options( $user, $q->param('nt_group_id'), $level, 0 );
 
     print qq[<table class="fat">
-    <tr class=light_grey_bg>
-    <td>
-    <table class="no_pad fat">
-    <tr>];
+ <tr class=light_grey_bg>
+<td>
+<table class="no_pad fat"><tr>];
     $level++;
     for my $x ( 1 .. $level ) {
-        print qq[<td><img src="$NicToolClient::image_dir/]
-            . ( $x == $level ? 'dirtree_elbow' : 'transparent' )
-            . qq[.gif" class="tee" alt=""></td>];
+        my $icon = $x == $level ? 'dirtree_elbow' : 'transparent';
+        print qq[<td><img src="$NicToolClient::image_dir/$icon.gif" class="tee" alt=""></td>];
     }
 
-    print qq[<td class="nowrap">&nbsp; <b>Zone log</b></td>
+    print qq[<td class="nowrap bold">&nbsp; Zone log</td>
     <td class="right fat"> &nbsp;</td>
-    </tr></table>];
+   </tr></table>];
 
     $nt_obj->display_nice_error($message) if $message;
     print "</td></tr></table>";
 
-    &display_log( $nt_obj, $q );
+    display_log( $nt_obj, $q );
 
     $nt_obj->parse_template($NicToolClient::end_html_template);
 }
@@ -167,48 +164,54 @@ sub display_log {
     my $range;
     foreach my $row (@$log) {
 
-        print "<tr class=" . ( $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' ) . ">";
+        my $bgcolor = $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg';
+        print "<tr class=$bgcolor>";
         foreach (@columns) {
+            my $gid = $q->param('nt_group_id');
             if ( $_ eq 'zone' ) {
-                print qq[<td><table class="no_pad">
-                <tr>
-                <td><a href="$cgi?], join( '&', @state_fields ),
-                    qq[&redirect=1&object=zone&obj_id=$row->{'nt_zone_id'}&nt_group_id=$q->param('nt_group_id')">
-                    <img src="$NicToolClient::image_dir/zone.gif" alt=""></a></td>
-                <td><a href="$cgi?], join( '&', @state_fields ),
-qq[&redirect=1&object=zone&obj_id=$row->{'nt_zone_id'}&nt_group_id=$q->param('nt_group_id')">$row->{$_} </a></td> </tr></table></td>];
+                my $state_string = join( '&amp;', @state_fields, 
+                    'redirect=1',
+                    'object=zone',
+                    "obj_id=$row->{'nt_zone_id'}",
+                    "nt_group_id=$gid",
+                );
+                print qq[<td>
+<table class="no_pad">
+ <tr>
+  <td><a href="$cgi?$state_string"><img src="$NicToolClient::image_dir/zone.gif" alt=""></a></td>
+  <td><a href="$cgi?$state_string">$row->{$_}</a></td>
+ </tr>
+</table></td>];
             }
             elsif ( $_ eq 'timestamp' ) {
                 print "<td>", ( scalar localtime( $row->{$_} ) ), "</td>";
             }
             elsif ( $_ eq 'user' ) {
+                my $url = "user.cgi?nt_group_id=$gid&nt_user_id=$row->{'nt_user_id'}";
                 print qq[<td><table class="no_pad"><tr>
-                <td><a href="user.cgi?nt_group_id=]
-                    . $q->param('nt_group_id')
-                    . qq[&nt_user_id=$row->{'nt_user_id'}"><img src=$NicToolClient::image_dir/user.gif alt="user"></a></td>
-                <td><a href="user.cgi?nt_group_id=$q->param('nt_group_id')&nt_user_id=$row->{'nt_user_id'}">$row->{'user'}</a></td> </tr></table></td>];
+<td><a href="$url"><img src="$NicToolClient::image_dir/user.gif" alt="user"></a></td>
+<td><a href="$url">$row->{'user'}</a></td> </tr></table></td>];
             }
             elsif ( $_ eq 'group' ) {
                 print qq[<td><table class="no_pad"><tr>
-                <td><img src=$NicToolClient::image_dir/group.gif></td>
+                <td><img src="$NicToolClient::image_dir/group.gif"></td>
                 <td>],
-                    join(
-                    ' / ',
+                join( ' / ',
                     map(qq[<a href="group.cgi?nt_group_id=$_->{'nt_group_id'}">$_->{'name'}</a>],
                         (   @{ $map->{ $row->{'nt_group_id'} } },
                             {   nt_group_id => $row->{'nt_group_id'},
                                 name        => $row->{'group_name'}
                             }
-                            ) )
-                    ),
-                    "</td></tr></table></td>";
+                        ) )
+                ),
+                "</td></tr></table></td>";
             }
             else {
                 print "<td>", ( $row->{$_} ? $row->{$_} : '&nbsp;' ), "</td>";
             }
         }
         if ( $row->{'action'} eq 'deleted' ) {
-            print qq[<td class=center><a href="zone.cgi?nt_group_id=$row->{'nt_group_id'}&nt_zone_id=$row->{'nt_zone_id'}&edit_zone=1&undelete=1">undelete</a></td>];
+            print qq[<td class=center><a href="zone.cgi?nt_group_id=$row->{'nt_group_id'}&amp;nt_zone_id=$row->{'nt_zone_id'}&amp;edit_zone=1&amp;undelete=1">undelete</a></td>];
         }
         else {
             print "<td class=center>&nbsp;</td>";

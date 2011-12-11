@@ -1,11 +1,11 @@
 #!/usr/bin/perl
-#
+
 use strict;
 use Data::Dumper;
 
 require 'nictoolclient.conf';
 
-&main();
+main();
 
 sub main {
     my $q = new CGI();
@@ -19,7 +19,7 @@ sub main {
 
     if ($user) {
         print $q->header;
-        &display( $nt_obj, $q, $user );
+        display( $nt_obj, $q, $user );
     }
 }
 
@@ -49,7 +49,6 @@ sub display {
     my %vars = setup_http_vars( $q, 1 );
     $vars{'ns_tree'} = $nt_obj->get_usable_nameservers(
         nt_group_id      => $q->param('nt_group_id'),
-        include_for_user => 1
     );
 
     print_zone_request_form( $nt_obj, $q, %vars );
@@ -193,7 +192,6 @@ sub find_one_zone_id {
     }
 }
 
-## completed subs
 
 sub zone_add {
     my ( $zone, $nt, $q, %vars ) = @_;
@@ -356,4 +354,4 @@ sub print_ns_tree {
     return $string;
 }
 
-1;
+

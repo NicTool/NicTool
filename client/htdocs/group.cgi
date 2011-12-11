@@ -20,7 +20,7 @@ use strict;
 
 require 'nictoolclient.conf';
 
-&main();
+main();
 
 sub main {
     my $q      = new CGI();
@@ -32,7 +32,7 @@ sub main {
 
     if ($user) {
         print $q->header;
-        &display( $nt_obj, $q, $user );
+        display( $nt_obj, $q, $user );
     }
 }
 
@@ -109,7 +109,7 @@ sub display {
         if ( $q->param('Save') ) {
             if ( $error->{'error_code'} != 200 ) {
                 $nt_obj->display_nice_error( $error, "Edit Group" );
-                &display_edit( $nt_obj, $user, $q, "edit" );
+                display_edit( $nt_obj, $user, $q, "edit" );
             }
             else {
                 $nt_obj->refresh_nav();
@@ -119,14 +119,14 @@ sub display {
 
         }
         else {
-            &display_edit( $nt_obj, $user, $q, "edit" );
+            display_edit( $nt_obj, $user, $q, "edit" );
         }
     }
     elsif ( $q->param('new') ) {
         if ( $q->param('Create') ) {
             if ( $error->{'error_code'} != 200 ) {
                 $nt_obj->display_nice_error( $error, "New Group" );
-                &display_edit( $nt_obj, $user, $q, "new" );
+                display_edit( $nt_obj, $user, $q, "new" );
             }
             else {
                 $nt_obj->refresh_nav();
@@ -136,7 +136,7 @@ sub display {
 
         }
         else {
-            &display_edit( $nt_obj, $user, $q, "new" );
+            display_edit( $nt_obj, $user, $q, "new" );
         }
     }
 
@@ -149,7 +149,7 @@ sub display {
 
     my $group = $nt_obj->get_group( nt_group_id  => $q->param('nt_group_id') );
 
-    &display_group_list( $nt_obj, $q, $group, $user );
+    display_group_list( $nt_obj, $q, $group, $user );
 
     $nt_obj->parse_template($NicToolClient::end_html_template);
 }
@@ -178,9 +178,9 @@ sub display_zone_search {
         -label    => 'include sub-groups',
         -override => 1
         ) if $group->{'has_children'};
-    print "</td>",
-    $q->endform,
-    "</tr>
+    print $q->endform,
+    "</td>
+    </tr>
    </table>
   </td>
  </tr>
@@ -237,12 +237,12 @@ sub display_group_list {
     if ( $user->{'group_create'} ) {
         @options
             = (   qq[<a href="group.cgi?]
-                . join( '&', @state_fields )
-                . "&nt_group_id="
+                . join( '&amp;', @state_fields )
+                . "&amp;nt_group_id="
                 . $q->param('nt_group_id')
-                . "&parent_group_id="
+                . "&amp;parent_group_id="
                 . $q->param('nt_group_id')
-                . qq[&new=1">New Sub-Group</a>] );
+                . qq[&amp;new=1">New Sub-Group</a>] );
     }
     else {
         @options = ( "<span class=disabled>New Sub-Group</span>");
@@ -324,7 +324,7 @@ sub display_group_list {
                     || $group->{'delegate_delete'} )
                 )
             {
-                print qq[<td class=center><a href="group.cgi?nt_group_id=$q->param('nt_group_id')&delete=$group->{'nt_group_id'}" onClick="return confirm('Delete ],
+                print qq[<td class=center><a href="group.cgi?nt_group_id=].$q->param('nt_group_id').qq[&amp;delete=$group->{'nt_group_id'}" onClick="return confirm('Delete ],
                     join(
                     ' / ',
                     map( $_->{'name'},
@@ -364,7 +364,6 @@ sub display_edit {
             ? ()
             : (
             nt_group_id      => $data->{'parent_group_id'},
-            include_for_user => 1
             );
     }
     else {
@@ -373,7 +372,6 @@ sub display_edit {
             ? ()
             : (
             nt_group_id      => $q->param('nt_group_id'),
-            include_for_user => 1
             );
     }
 
@@ -382,7 +380,6 @@ sub display_edit {
         = $user->{ 'group_' . ( $edit eq 'edit' ? 'write' : 'create' ) };
 
     if ($modifyperm) {
-        $nt_obj->display_perms_javascript;
         print $q->start_form(
             -action => 'group.cgi',
             -method => 'POST',

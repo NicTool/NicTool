@@ -20,7 +20,7 @@ use strict;
 
 require 'nictoolclient.conf';
 
-&main();
+main();
 
 sub main {
     my $q      = new CGI();
@@ -32,7 +32,7 @@ sub main {
 
     if ($user) {
         print $q->header;
-        &display( $nt_obj, $q, $user );
+        display( $nt_obj, $q, $user );
     }
 }
 
@@ -52,8 +52,7 @@ sub display {
         $user->{'nt_group_id'},
         $q->param('nt_group_id'), 0
     );
-    $nt_obj->display_zone_list_options( $user, $q->param('nt_group_id'),
-        $level, 0 );
+    $nt_obj->display_zone_list_options( $user, $q->param('nt_group_id'), $level, 0 );
 
     print qq[<table class="fat">
     <tr class=light_grey_bg><td><table class="no_pad fat">
@@ -90,7 +89,8 @@ sub display {
         'group_zones_query_log.cgi', ['nt_group_id'] )
         if $q->param('edit_search');
 
-    my %params = ( nt_group_id => $q->param('nt_group_id') );
+    my $gid = $q->param('nt_group_id');
+    my %params = ( nt_group_id => $gid );
     my %sort_fields;
 
     $nt_obj->prepare_search_params( $q, \%labels, \%params, \%sort_fields,
@@ -143,14 +143,14 @@ sub display {
             }
             elsif ( $_ eq 'zone' ) {
                 print qq[<td><table class="no_pad"><tr>
-                <td><a href="zone.cgi?nt_group_id=$q->param('nt_group_id')&nt_zone_id=$row->{'nt_zone_id'}"><img src="$NicToolClient::image_dir/zone.gif"></a></td>
-                <td><a href="zone.cgi?nt_group_id=$q->param('nt_group_id')&nt_zone_id=$row->{'nt_zone_id'}">$row->{$_}</a></td>
+                <td><a href="zone.cgi?nt_group_id=$gid&amp;nt_zone_id=$row->{'nt_zone_id'}"><img src="$NicToolClient::image_dir/zone.gif"></a></td>
+                <td><a href="zone.cgi?nt_group_id=$gid&amp;nt_zone_id=$row->{'nt_zone_id'}">$row->{$_}</a></td>
                 </tr></table></td>];
             }
             elsif ( $_ eq 'query' ) {
                 print qq[<td><table class="no_pad"><tr>
-                <td><a href="zone.cgi?nt_group_id=$q->param('nt_group_id')&nt_zone_id=$row->{'nt_zone_id'}&nt_zone_record_id=$row->{'nt_zone_record_id'}&edit_record=1"><img src="$NicToolClient::image_dir/r_record.gif"></a></td>
-                <td><a href="zone.cgi?nt_group_id=$q->param('nt_group_id')&nt_zone_id=$row->{'nt_zone_id'}&nt_zone_record_id=$row->{'nt_zone_record_id'}&edit_record=1">$row->{$_}</a></td>
+                <td><a href="zone.cgi?nt_group_id=$gid&amp;nt_zone_id=$row->{'nt_zone_id'}&amp;nt_zone_record_id=$row->{'nt_zone_record_id'}&amp;edit_record=1"><img src="$NicToolClient::image_dir/r_record.gif"></a></td>
+                <td><a href="zone.cgi?nt_group_id=$gid&amp;nt_zone_id=$row->{'nt_zone_id'}&amp;nt_zone_record_id=$row->{'nt_zone_record_id'}&amp;edit_record=1">$row->{$_}</a></td>
                 </tr></table></td>];
             }
             else {

@@ -20,7 +20,7 @@ use strict;
 
 require 'nictoolclient.conf';
 
-&main();
+main();
 
 sub main {
     my $q      = new CGI();
@@ -32,7 +32,7 @@ sub main {
 
     if ($user) {
         print $q->header;
-        &display( $nt_obj, $q, $user );
+        display( $nt_obj, $q, $user );
     }
 }
 
@@ -57,14 +57,11 @@ sub display {
         $level, 1 );
     my $group = $nt_obj->get_group( nt_group_id => $q->param('nt_group_id') );
 
-    my @fields
-        = qw(user_create user_delete user_write group_create group_delete group_write zone_create zone_delegate zone_delete zone_write zonerecord_create zonerecord_delegate zonerecord_delete zonerecord_write nameserver_create nameserver_delete nameserver_write self_write);
+    my @fields = qw/ user_create user_delete user_write group_create group_delete group_write zone_create zone_delegate zone_delete zone_write zonerecord_create zonerecord_delegate zonerecord_delete zonerecord_write nameserver_create nameserver_delete nameserver_write self_write /;
     if ( $q->param('new') ) {
         if ( $q->param('Create') ) {
             my %data;
-            foreach (
-                qw(nt_group_id username first_name last_name email password password2)
-                )
+            foreach ( qw( nt_group_id username first_name last_name email password password2 ) )
             {
                 $data{$_} = $q->param($_);
             }
@@ -81,8 +78,7 @@ sub display {
             my $error = $nt_obj->new_user(%data);
 
             if ( $error->{'error_code'} != 200 ) {
-                &display_edit_user( $nt_obj, $user, $group, $q, $error,
-                    'new' );
+                display_edit_user( $nt_obj, $user, $group, $q, $error, 'new' );
             }
         }
         elsif ( $q->param('Cancel') ) {
@@ -90,7 +86,7 @@ sub display {
             # do nothing
         }
         else {
-            &display_edit_user( $nt_obj, $user, $group, $q, '', 'new' );
+            display_edit_user( $nt_obj, $user, $group, $q, '', 'new' );
         }
     }
     elsif ( $q->param('edit') ) {
@@ -113,7 +109,7 @@ sub display {
             my $error = $nt_obj->edit_user(%data);
 
             if ( $error->{'error_code'} != 200 ) {
-                &display_edit_user( $nt_obj, $user, $group, $q, $error,
+                display_edit_user( $nt_obj, $user, $group, $q, $error,
                     'edit' );
             }
         }
@@ -122,7 +118,7 @@ sub display {
             # do nothing
         }
         else {
-            &display_edit_user( $nt_obj, $user, $group, $q, '', 'edit' );
+            display_edit_user( $nt_obj, $user, $group, $q, '', 'edit' );
         }
     }
 
@@ -134,7 +130,7 @@ sub display {
         }
     }
 
-    &display_list( $nt_obj, $q, $group, $user );
+    display_list( $nt_obj, $q, $group, $user );
 
     $nt_obj->parse_template($NicToolClient::end_html_template);
 }
@@ -146,7 +142,6 @@ sub display_edit_user {
     my $modifyperm
         = $user->{ 'user_' . ( $edit eq 'edit' ? 'write' : 'create' ) };
     if ($modifyperm) {
-        $nt_obj->display_perms_javascript;
         print $q->start_form(
             -action => 'group_users.cgi',
             -method => 'POST',
@@ -173,68 +168,32 @@ sub display_edit_user {
             )
         : ''
         ),
-        "</td></tr>";
-    print "<tr class=light_grey_bg>";
-    print "<td class=right>First Name:</td>";
-    print "<td width=80%>",
-        (
-        $modifyperm
-        ? $q->textfield(
-            -name      => 'first_name',
-            -size      => 20,
-            -maxlength => 30
-            )
-        : ''
-        ),
-        "</td></tr>";
-    print "<tr class=light_grey_bg>";
-    print "<td class=right>Last Name:</td>";
-    print "<td width=80%>",
-        (
-        $modifyperm
-        ? $q->textfield(
-            -name      => 'last_name',
-            -size      => 30,
-            -maxlength => 40
-            )
-        : ''
-        ),
-        "</td></tr>";
-    print "<tr class=light_grey_bg>";
-    print "<td class=right>Email Address:</td>";
-    print "<td width=80%>",
-        (
-          $modifyperm
-        ? $q->textfield( -name => 'email', -size => 40, -maxlength => 100 )
-        : ''
-        ),
-        "</td></tr>";
-    print "<tr class=light_grey_bg>";
-    print "<td class=right>Password:</td>";
-    print "<td width=80%>",
-        (
-        $modifyperm
-        ? $q->password_field(
-            -name      => 'password',
-            -size      => 15,
-            -maxlength => 15
-            )
-        : ''
-        ),
+        qq[</td></tr>
+<tr class=light_grey_bg>
+<td class=right>First Name:</td>
+<td width=80%>],
+( $modifyperm ? $q->textfield( -name => 'first_name', -size => 20, -maxlength => 30) : ''),
+        qq[</td></tr>
+<tr class=light_grey_bg>
+<td class=right>Last Name:</td>
+<td width=80%>],
+( $modifyperm ? $q->textfield( -name => 'last_name', -size => 30, -maxlength => 40) : ''),
+        qq[</td></tr>
+<tr class=light_grey_bg>
+<td class=right>Email Address:</td>
+<td width=80%>],
+( $modifyperm ? $q->textfield( -name => 'email', -size => 40, -maxlength => 100 ) : ''),
         qq[</td></tr>
     <tr class=light_grey_bg>
-    <td class=right>Password (Again):</td>
-    <td style="width:80%;">],
-        (
-        $modifyperm
-        ? $q->password_field(
-            -name      => 'password2',
-            -size      => 15,
-            -maxlength => 15
-            )
-        : ''
-        ),
-        "</td></tr>";
+    <td class=right>Password:</td>
+    <td width=80%>],
+( $modifyperm ? $q->password_field( -name => 'password', -size => 15, -maxlength => 15) : ''),
+        qq[</td></tr>
+<tr class=light_grey_bg>
+<td class=right>Password (Again):</td>
+<td style="width:80%;">],
+( $modifyperm ? $q->password_field( -name => 'password2', -size => 15, -maxlength => 15) : ''),
+        qq[</td></tr>];
 
     if ($showpermissions) {
         my %perms = (
@@ -255,50 +214,42 @@ sub display_edit_user {
         );
         my @order = qw(group user zone zonerecord nameserver self);
 
-        print "<tr class=dark_grey_bg><td colspan=2>"
-            . "<input type=radio value='1' name='group_defaults' CHECKED>This user inherits the permissions defined for the enclosing group"
-            . $nt_obj->help_link('perms')
-            . "</td></tr>";
-        print qq{
+        print qq[
+<tr class=dark_grey_bg><td colspan=2>
+ <input type=radio value='1' name='group_defaults' CHECKED>This user inherits the permissions defined for the enclosing group ] . $nt_obj->help_link('perms') . qq[
+ </td></tr>
 <tr class=light_grey_bg>
  <td colspan=2 class=light_grey_bg>
-  <table class="center" style="padding:6; border-spacing:1;">
-};
-
+  <table class="center" style="padding:6; border-spacing:1;"> ];
         my $x = 1;
         my $color;
         foreach my $type (@order) {
             $color = ( $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' );
-            print qq{ <tr> <td class=right><b>} . ucfirst($type) . qq{:</b></td>};
+            print qq{<tr><td class="right bold">} . ucfirst($type) . qq{:</td>};
             foreach my $perm ( @{ $perms{$type} } ) {
                 if ( $perm eq '.' ) {
-                    print qq(
-                            <td class=$color></td>
-                        );
+                    print qq[ <td class=$color></td>];
                     next;
                 }
-                print qq{
-                    <td class="$color left middle"><img src="$NicToolClient::image_dir/perm-}
-                    . ( $group->{ $type . "_" . $perm } ? 'checked.gif' : 'unchecked.gif' )
-                    . qq{"> }
+                my $check = $group->{ $type . "_" . $perm } ? 'checked.gif' : 'unchecked.gif';
+                print qq[
+                    <td class="$color left middle"><img src="$NicToolClient::image_dir/perm-$check"> ]
                     . ( exists $labels{$type}{$perm} ? $labels{$type}{$perm} : ucfirst($perm) )
-                    . qq{</td> };
+                    . qq{</td>};
             }
-            print qq{ </tr> };
+            print qq[</tr>];
         }
-        print qq{ </table> </td> </tr> };
-
-        print "<tr class=dark_grey_bg><td colspan=2>"
-            . "<input type=radio value='0' name='group_defaults'>This user uses the permissions defined below"
-            . $nt_obj->help_link('perms')
-            . "</td></tr>";
-        print qq{
+        print qq[ </table> </td> </tr>
+<tr class=dark_grey_bg><td colspan=2>
+ <input type=radio value='0' name='group_defaults'>This user uses the permissions defined below ],
+            $nt_obj->help_link('perms'),
+            qq[</td></tr>
 <tr class=light_grey_bg>
  <td colspan=2 class=light_grey_bg>
   <table class="center" style="padding:6; border-spacing:1;">
-};
+];
     $x     = 1;
-    @order = qw(group user zone zonerecord nameserver self header);
+    @order = qw/ group user zone zonerecord nameserver self header /;
     foreach my $type (@order) {
 
             if ( $type eq 'header' ) {
@@ -436,174 +387,169 @@ sub display_list {
     my @state_fields;
     foreach ( @{ $nt_obj->paging_fields } ) {
         push( @state_fields, "$_=" . $q->escape( $q->param($_) ) )
-            if ( $q->param($_) );
+            if $q->param($_);
     }
+    my $gid = $q->param('nt_group_id');
+    my $state_string = @state_fields ? join('&amp;', @state_fields) : 'not_empty=1';
 
-    print qq[<table class="fat">
-    <tr class=dark_grey_bg><td>
-    <table class="no_pad" class="fat">
+    print qq[
+<table class="fat">
+ <tr class=dark_grey_bg><td>
+   <table class="no_pad fat">
     <tr>
-    <td><b>User List</b></td>
-    <td class=right>];
+     <td class="bold">User List</td>
+     <td class="right">];
     if ( $user->{'user_create'} ) {
-        print qq[<a href="$cgi?]
-            . join( '&', @state_fields )
-            . "&nt_group_id="
-            . $q->param('nt_group_id')
-            . qq[&new=1">New User</a>];
+        print qq[<a href="$cgi?$state_string&amp;nt_group_id=$gid&amp;new=1">New User</a>];
     }
     else {
         print "<span class=disabled>New User</span>";
     }
     print qq[ | <a href="javascript:void open_move(document.list_form.obj_list);">Move Selected Users</a>]
         if ( @$list && $user_group->{'has_children'} );
-    print qq[</td>
-</tr></table></td></tr>
+    print qq[
+     </td>
+    </tr>
+   </table>
+  </td>
+ </tr>
 </table>];
 
     $nt_obj->display_search_rows( $q, $rv, \%params, $cgi, ['nt_group_id'],
         $include_subgroups );
 
-    if (@$list) {
-        $nt_obj->display_move_javascript( 'move_users.cgi', 'user' );
+    if ( ! @$list) {
+        print $q->endform;
+        return;
+    };
 
-        print qq[<table class="fat"> <tr class=dark_grey_bg>];
+    $nt_obj->display_move_javascript( 'move_users.cgi', 'user' );
 
-        if ( $user_group->{'has_children'} ) {
-            print qq[<td class=center>
-            <table class="no_pad">
-            <tr><td></td>];
-            print $q->endform . "\n";
-            print $q->startform(
-                -action => 'move_users.cgi',
-                -method => 'POST',
-                -name   => 'list_form',
-                -target => 'move_win'
-            ) . "\n";
-            print "<td></td></tr>";
-            print "</table>";
+    print qq[<table class="fat"> <tr class=dark_grey_bg>];
 
-            print "",
-                (
-                $rv->{'total'} == 1 ? '&nbsp;' : $q->checkbox(
-                    -name  => 'select_all_or_none',
-                    -label => '',
-                    -onClick =>
-                        'selectAllorNone(document.list_form.obj_list, this.checked)',
-                    -override => 1
-                )
-                ),
-                "</td>";
-        }
+    if ( $user_group->{'has_children'} ) {
+        print qq[<td class=center>
+        <table class="no_pad">
+        <tr><td></td>],
+        $q->endform, "\n",
+        $q->startform(
+            -action => 'move_users.cgi',
+            -method => 'POST',
+            -name   => 'list_form',
+            -target => 'move_win'
+        ), "\n",
+        "<td></td></tr></table>";
 
-        foreach (@columns) {
-            if ( $sort_fields{$_} ) {
-                print qq[<td class="dark_bg center"><table class="no_pad">
-                <tr>
-                <td>$labels{$_}</td>
-                <td>&nbsp; &nbsp; $sort_fields{$_}->{'order'}</td>
-                <td><img src=$NicToolClient::image_dir/],
-                    (
-                    uc( $sort_fields{$_}->{'mod'} ) eq 'ASCENDING'
-                    ? 'up.gif'
-                    : 'down.gif' ), "></tD>";
-                print "</tr></table></td>";
-
-            }
-            else {
-                print "<td class=center>$labels{$_}</td>";
-            }
-        }
-        print
-            "<td width=1%><img src=$NicToolClient::image_dir/trash.gif></td>";
-        print "</tr>";
-
-        my $x     = 0;
-        my $width = int( 100 / @columns ) . '%';
-
-        foreach my $obj (@$list) {
-            print "<tr class="
-                . ( $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' )
-                . ">";
-            if (   $user->{'user_write'}
-                && $obj->{'nt_user_id'} ne $user->{'nt_user_id'} )
-            {
-                print qq[<td style="width:1%;" class=center>],
-                    $q->checkbox(
-                    -name  => 'obj_list',
-                    -value => $obj->{'nt_user_id'},
-                    -label => ''
-                    ),
-                    "</td>"
-                    if ( $user_group->{'has_children'} );
-            }
-            else {
-                print qq[<td width=1% class=center><img src="$NicToolClient::image_dir/nobox.gif" alt="nobox"></td>]
-                    if $user_group->{'has_children'};
-            }
-
-            if ($include_subgroups) {
-                print qq[<td width=$width><table class="no_pad"><tr>
-                <td><img src="$NicToolClient::image_dir/group.gif"></td>];
-                if ($map) {
-                    print "<td>",
-                        join(
-                        ' / ',
-                        map(qq[<a href="group.cgi?nt_group_id=$_->{'nt_group_id'}">$_->{'name'}</a>],
-                            (   @{ $map->{ $obj->{'nt_group_id'} } },
-                                {   nt_group_id => $obj->{'nt_group_id'},
-                                    name        => $obj->{'group_name'}
-                                }
-                                ) )
-                        ),
-                        "</td>";
-                }
-                else {
-                    print "<td>",
-                        join(
-                        ' / ',
-                        map(qq[<a href="group.cgi?nt_group_id=$_->{'nt_group_id'}">$_->{'name'}</a>],
-                            (   {   nt_group_id => $obj->{'nt_group_id'},
-                                    name        => $obj->{'group_name'}
-                                }
-                                ) )
-                        ),
-                        "</td>";
-                }
-                print "</tr></table></td>";
-            }
-
-            print qq[<td width=$width><table class="no_pad">
-            <tr>
-            <td><a href="user.cgi?nt_user_id=$obj->{'nt_user_id'}&nt_group_id=$obj->{'nt_group_id'}"><img src="$NicToolClient::image_dir/user.gif"></a></td>
-            <td><a href="user.cgi?nt_user_id=$obj->{'nt_user_id'}&nt_group_id=$obj->{'nt_group_id'}">$obj->{'username'}</a></td>
-            </tr></table></td>
-            <td width=$width>],
-                ( $obj->{'first_name'} ? $obj->{'first_name'} : '&nbsp;' ),
-                "</td>",
-            "<td width=$width>",
-                ( $obj->{'last_name'} ? $obj->{'last_name'} : '&nbsp;' ),
-                "</td>",
-            "<td width=$width>", 
-             ( $obj->{'email'} ? qq[<a href="mailto:$obj->{'email'}">$obj->{'email'}</a>]
-                : '&nbsp;' ), "</td>";
-
-            if (    $user->{'user_delete'}
-                and $obj->{'nt_user_id'} != $user->{'nt_user_id'} )
-            {
-                print qq[<td width=1%><a href="$cgi?]
-                    . join( '&', @state_fields )
-                    . qq[&nt_group_id=$q->param('nt_group_id')&delete=1&obj_list=$obj->{'nt_user_id'}" onClick=\"return confirm('Delete user $obj->{'username'}?');\">
-<img src="$NicToolClient::image_dir/trash.gif" alt="trash"></a></td>];
-            }
-            else {
-                print qq[<td width=1%><img src="$NicToolClient::image_dir/trash-disabled.gif" alt="disabled trash"></td>];
-            }
-            print "</tr>";
-        }
-
-        print "</table>";
+        print (
+            $rv->{'total'} == 1 ? '&nbsp;' : $q->checkbox(
+                -name  => 'select_all_or_none',
+                -label => '',
+                -onClick => 'selectAllorNone(document.list_form.obj_list, this.checked)',
+                -override => 1
+            )
+        ),
+        "</td>";
     }
+
+    foreach (@columns) {
+        if ( $sort_fields{$_} ) {
+            my $dir = uc( $sort_fields{$_}->{'mod'} ) eq 'ASCENDING' ? 'up' : 'down';
+            print qq[<td class="dark_bg center">
+ <table class="no_pad">
+  <tr>
+   <td>$labels{$_}</td>
+   <td>&nbsp; &nbsp; $sort_fields{$_}->{'order'}</td>
+   <td><img src=$NicToolClient::image_dir/$dir.gif></td>
+  </tr></table></td>];
+        }
+        else {
+            print "<td class=center>$labels{$_}</td>";
+        }
+    }
+    print qq[<td width=1%><img src="$NicToolClient::image_dir/trash.gif"></td></tr>];
+
+    my $x     = 0;
+    my $width = int( 100 / @columns ) . '%';
+
+    foreach my $obj (@$list) {
+        my $bgcolor = $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg';
+        print "<tr class=$bgcolor>";
+        if (   $user->{'user_write'}
+            && $obj->{'nt_user_id'} ne $user->{'nt_user_id'} )
+        {
+            if ( $user_group->{'has_children'} ) {
+                print qq[<td style="width:1%;" class=center>],
+                    $q->checkbox( -name => 'obj_list', -value => $obj->{'nt_user_id'}, 
+                        -label => ''), '</td>';
+            };
+        }
+        else {
+            if ( $user_group->{'has_children'} ) {
+                print qq[<td width=1% class=center>
+<img src="$NicToolClient::image_dir/nobox.gif" alt="nobox"></td>];
+            };
+        }
+
+        if ($include_subgroups) {
+            print qq[<td width=$width><table class="no_pad"><tr>
+            <td><img src="$NicToolClient::image_dir/group.gif"></td>];
+            if ($map) {
+                print "<td>",
+                    join(
+                    ' / ',
+                    map(qq[<a href="group.cgi?nt_group_id=$_->{'nt_group_id'}">$_->{'name'}</a>],
+                        (   @{ $map->{ $obj->{'nt_group_id'} } },
+                            {   nt_group_id => $obj->{'nt_group_id'},
+                                name        => $obj->{'group_name'}
+                            }
+                            ) )
+                    ),
+                    "</td>";
+            }
+            else {
+                print "<td>",
+                    join(
+                    ' / ',
+                    map(qq[<a href="group.cgi?nt_group_id=$_->{'nt_group_id'}">$_->{'name'}</a>],
+                        (   {   nt_group_id => $obj->{'nt_group_id'},
+                                name        => $obj->{'group_name'}
+                            }
+                            ) )
+                    ),
+                    "</td>";
+            }
+            print "</tr></table></td>";
+        }
+
+        my $url = "user.cgi?nt_user_id=$obj->{'nt_user_id'}&nt_group_id=$obj->{'nt_group_id'}";
+        print qq[
+<td width=$width><table class="no_pad">
+  <tr>
+   <td><a href="$url"><img src="$NicToolClient::image_dir/user.gif"></a></td>
+   <td><a href="$url">$obj->{'username'}</a></td>
+  </tr>
+ </table>
+</td>
+<td width=$width>$obj->{'first_name'}</td>
+<td width=$width>$obj->{'last_name'}</td>
+<td width=$width><a href="mailto:$obj->{'email'}">$obj->{'email'}</a>
+</td>];
+
+        if (    $user->{'user_delete'}
+            and $obj->{'nt_user_id'} != $user->{'nt_user_id'} )
+        {
+            my $gid = $q->param('nt_group_id');
+            my $state_string = join('&amp;', @state_fields);
+            print qq[<td width=1%>
+ <a href="$cgi?$state_string&amp;nt_group_id=$gid&amp;delete=1&amp;obj_list=$obj->{'nt_user_id'}" onClick="return confirm('Delete user $obj->{'username'}?');"><img src="$NicToolClient::image_dir/trash.gif" alt="trash"></a></td>];
+        }
+        else {
+            print qq[<td width=1%><img src="$NicToolClient::image_dir/trash-disabled.gif" alt="disabled trash"></td>];
+        }
+        print qq[</tr>];
+    }
+
+    print qq[</table>];
 
     print $q->endform;
 }

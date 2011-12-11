@@ -697,7 +697,7 @@ sub display_search_rows {
             . "&amp;limit=$params->{'limit'}"
             . qq["><b>></b></a>];
         print qq[ &nbsp; <a href="$cgi_name?$state_string]
-            . qq[&page=$rv->{'total_pages'}&amp;limit=$params->{'limit'}]
+            . qq[&amp;page=$rv->{'total_pages'}&amp;limit=$params->{'limit'}]
             . qq["><b>>></b></a>];
     }
     print $q->endform,
