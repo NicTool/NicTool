@@ -19,7 +19,6 @@ sub new {
     bless { 'nt_server_obj' => $nt_server_obj, 'CGI' => $q }, $class;
 }
 
-sub no_gui_hints {0}
 
 sub help_link {
     my ($self,$helptopic, $text) = @_;
@@ -152,17 +151,14 @@ sub verify_session {
         -expires => '-1d',
         -path    => '/'
     );
-    print $q->header( -cookie => $cookie );
-    print "<html>\n";
-    print "<script language='JavaScript'>\n";
-    print "parent.location = 'index.cgi?message="
-        . $q->escape($error_msg) . "';\n";
-    print "</script>\n";
-    print "</html>";
+    print $q->header( -cookie => $cookie ),
+    qq[<html>
+ <script>
+  parent.location = 'index.cgi?message=] . $q->escape($error_msg) . qq[';
+ </script>
+</html>];
 
-    $self->parse_template( $NicToolClient::login_template,
-        'message' => $error_msg );
-
+    $self->parse_template( $NicToolClient::login_template, 'message' => $error_msg );
 }
 
 sub parse_template {
@@ -223,8 +219,8 @@ sub display_group_tree {
     my $count = scalar( @{ $rv->{'groups'} } ) - 1;
     my @list;
 
-    foreach ( 0 .. $count ) {
-        my $group = $rv->{'groups'}->[$_];
+    foreach my $navG ( 0 .. $count ) {
+        my $group = $rv->{'groups'}->[$navG];
         push( @list, $group->{'name'} );
 
         my @options;
@@ -237,67 +233,68 @@ sub display_group_tree {
             {
                 $name = 'Edit';
             };
-            push @options, qq[<td><a href="group.cgi?nt_group_id=$group->{'nt_group_id'}&edit=1">$name</a></td>];
+            push @options, qq[<a href="group.cgi?nt_group_id=$group->{'nt_group_id'}&amp;edit=1">$name</a>];
             if ($user->{"group_delete"}
                 && ( !exists $group->{'delegate_delete'}
                     || $group->{'delegate_delete'} )
                 )
             {
-                push @options, qq[<td><a href="group.cgi?nt_group_id=$group->{'parent_group_id'}&delete=$group->{'nt_group_id'}" onClick="return confirm('Delete ]
+                push @options, qq[<a href="group.cgi?nt_group_id=$group->{'parent_group_id'}&amp;delete=$group->{'nt_group_id'}" onClick="return confirm('Delete ]
                         . join( ' / ', @list )
-                        . " and all associated data?');\">Delete</a></td>";
+                        . qq[ and all associated data?');">Delete</a>];
             }
             else {
-                push @options, "<td class='disabled'>Delete</td>";
+                push @options, qq[<span class="disabled">Delete</span>];
             }
         }
-        push @options,
-            qq[
-<td><img src="$NicToolClient::image_dir/folder_closed.gif" alt="folder"></td>
-<td><a href="group_zones.cgi?nt_group_id=$group->{'nt_group_id'}">Zones</a></td>];
-        push @options, qq[
-<td><img src="$NicToolClient::image_dir/folder_closed.gif" alt="folder"></td>
-<td><a href="group_nameservers.cgi?nt_group_id=$group->{'nt_group_id'}">Nameservers</a></td>];
-        push @options, qq[
-<td><img src="$NicToolClient::image_dir/folder_closed.gif" alt="folder"></td>
-<td><a href="group_users.cgi?nt_group_id=$group->{'nt_group_id'}">Users</a></td>];
-        push @options, qq[
-<td><img src="$NicToolClient::image_dir/folder_closed.gif" alt="folder"></td>
-<td><a href="group_log.cgi?nt_group_id=$group->{'nt_group_id'}">Log</a></td>];
+        my $dir = qq[<img src="$NicToolClient::image_dir];
+        my $folder = $dir . qq[/folder_closed.gif" alt="folder">];
+        my $state = "cgi?nt_group_id=$group->{'nt_group_id'}";
+        push @options, qq[$dir/zone.gif" alt="zone"><a href="group_zones.$state">Zones</a>];
+        push @options, qq[$dir/nameserver.gif" alt="ns"><a href="group_nameservers.$state">Nameservers</a>];
+        push @options, qq[$dir/user.gif" alt="user"><a href="group_users.$state">Users</a>];
+        push @options, qq[$dir/group.gif" alt="group"><a href="group.$state">Groups</a>];
+        push @options, qq[$folder <a href="group_log.$state">Log</a>];
 
         print qq[
-<table class="fat">
+<table id="navBar$navG" class="fat">
  <tr class=light_grey_bg>
   <td>
    <table class="no_pad fat">
     <tr>
         ];
 
-        for my $x ( 1 .. $_ ) {
-            print qq[<td><img src="$NicToolClient::image_dir/]
-                . ( $x == $_ ? 'dirtree_elbow' : 'transparent' )
-                . qq[.gif" class="tee" alt=""></td>];
-        }
-
-        print qq[<td><img src="$NicToolClient::image_dir/group.gif" alt="group"></td>];
-
-        if ( $in_summary and ( $_ == $count ) ) {
-            print qq[<td class="nowrap"><b>$group->{'name'}</b></td>];
-        }
-        else {
-            print qq[<td class="nowrap"><a href="group.cgi?nt_group_id=$group->{'nt_group_id'}">$group->{'name'}</a></td>];
+        for my $x ( 1 .. $navG ) {
+            my $img = $x == $navG ? 'dirtree_elbow' : 'transparent';
+            print qq[
+      <td><img src="$NicToolClient::image_dir/$img.gif" class="tee" alt="$img"></td>
+];
         }
 
         print qq[
-     <td class="fat right">
-      <table class='no_pad'><tr>],
-            join( '<td>&nbsp;|&nbsp;</td>', @options) . "</tr></table></td>";
-        print "
-    </tr>
+      <td><img src="$NicToolClient::image_dir/group.gif" alt="group"></td>
+      <td class="nowrap">
+];
+
+        if ( $in_summary && $navG == $count ) {
+            print qq[<b>$group->{'name'}</b>];
+        }
+        else {
+            print qq[<a href="group.cgi?nt_group_id=$group->{'nt_group_id'}">$group->{'name'}</a>];
+        }
+
+        print qq[</td>
+      <td class="fat right"><span class="">
+        ],
+        join( "\n&nbsp;|&nbsp;", @options),
+        qq[
+       </span>
+      </td>
+     </tr>
    </table>
   </td>
  </tr>
-</table>";
+</table>];
     }
 
     return $count + 1;
@@ -310,7 +307,7 @@ sub display_zone_list_options {
 
     my @options;
     if ( $user->{'zone_create'} ) {
-        push @options, qq[<a href="group_zones.cgi?nt_group_id=$group_id&new=1">New Zone</a>]
+        push @options, qq[<a href="group_zones.cgi?nt_group_id=$group_id&amp;new=1">New Zone</a>]
          unless $in_zone_list;
     }
     else {
@@ -354,7 +351,7 @@ sub display_user_list_options {
 
     my @options;
     if ( $user->{'user_create'} ) {
-        push @options, qq[<a href="group_users.cgi?nt_group_id=$group_id&new=1">New User</a>]
+        push @options, qq[<a href="group_users.cgi?nt_group_id=$group_id&amp;new=1">New User</a>]
         unless ($in_user_list);
     }
     else {
@@ -404,10 +401,10 @@ sub display_zone_options {
         push @options,
                   qq[<a href="group_zones.cgi?nt_group_id=]
                 . $q->param('nt_group_id')
-                . qq[&zone_list=$zone->{'nt_zone_id'}&delete=1" onClick="return confirm('Delete $zone->{'zone'} and all associated resource records?');">Delete</a>];
+                . qq[&amp;zone_list=$zone->{'nt_zone_id'}&amp;delete=1" onClick="return confirm('Delete $zone->{'zone'} and all associated resource records?');">Delete</a>];
     }
     elsif ( $zone->{'deleted'} ) {
-        push @options, qq[<a href="zone.cgi?nt_group_id=$zone->{'nt_group_id'}&nt_zone_id=$zone->{'nt_zone_id'}&edit_zone=1&undelete=1">Undelete</a>];
+        push @options, qq[<a href="zone.cgi?nt_group_id=$zone->{'nt_group_id'}&amp;nt_zone_id=$zone->{'nt_zone_id'}&amp;edit_zone=1&amp;undelete=1">Undelete</a>];
 
     }
     elsif ( !$isdelegate ) {
@@ -417,7 +414,8 @@ sub display_zone_options {
         && $isdelegate
         && $zone->{'delegate_delete'} )
     {
-        push @options, qq[<a href="group_zones.cgi?nt_group_id=$q->param('nt_group_id')&nt_zone_id=$zone->{'nt_zone_id'}&deletedelegate=1" onClick="return confirm('Remove delegation of $zone->{'zone'}?');">Remove Delegation</a>];
+        my $gid = $q->param('nt_group_id');
+        push @options, qq[<a href="group_zones.cgi?nt_group_id=$gid&amp;nt_zone_id=$zone->{'nt_zone_id'}&amp;deletedelegate=1" onClick="return confirm('Remove delegation of $zone->{'zone'}?');">Remove Delegation</a>];
     }
     elsif ($isdelegate) {
         push @options, '<span class="disabled">Remove Delegation</span>';
@@ -476,7 +474,8 @@ sub display_zone_options {
         print qq[<td class="nowrap"><b>$zone->{'zone'}</b>$tag</td>];
     }
     else {
-        print qq[<td class="nowrap"><a href="zone.cgi?nt_group_id=$q->param('nt_group_id')&nt_zone_id=$zone->{'nt_zone_id'}">$zone->{'zone'}</a>$tag</td>];
+        my $gid = $q->param('nt_group_id');
+        print qq[<td class="nowrap"><a href="zone.cgi?nt_group_id=$gid&amp;nt_zone_id=$zone->{'nt_zone_id'}">$zone->{'zone'}</a>$tag</td>];
     }
 
     print qq[<td class="right fat">], join( ' | ', @options ), 
@@ -488,7 +487,7 @@ sub display_nameserver_options {
 
     my @options;
     if ( $user->{'nameserver_create'} ) {
-        push @options, qq[<a href="group_nameservers.cgi?nt_group_id=$group_id&edit=1">New Nameserver</a>] 
+        push @options, qq[<a href="group_nameservers.cgi?nt_group_id=$group_id&amp;edit=1">New Nameserver</a>] 
             if !$in_ns_summary;
     }
     else {
@@ -603,74 +602,62 @@ sub display_search_rows {
         $include_subgroups, $moreparams )
         = @_;
 
-    my $morestr = join( "&", map {"$_=$moreparams->{$_}"} keys %$moreparams );
+    my $morestr = join( "&amp;", map {"$_=$moreparams->{$_}"} keys %$moreparams );
 
-    if (   !( $q->param('Search') )
-        && !( $q->param('quick_search') )
-        && ( !($include_subgroups) && ( $rv->{'total'} <= $rv->{'limit'} ) ) )
-    {
-        return;
-    }
+    return if ( !$q->param('Search')
+        && !$q->param('quick_search')
+        && ( !$include_subgroups && ( $rv->{'total'} <= $rv->{'limit'} ) )
+    );
 
     my @state_vars;
     foreach ( @{ $self->paging_fields }, @$state_fields ) {
+        next if $_ eq 'start';
+        next if $_ eq 'limit';
+        next if $_ eq 'page';
 
-        next if ( $_ eq 'start' );
-        next if ( $_ eq 'limit' );
-        next if ( $_ eq 'page' );
-
-        push( @state_vars, "$_=" . $q->escape( $q->param($_) ) )
-            if ( $q->param($_) );
+        push( @state_vars, "$_=" . $q->escape( $q->param($_) ) ) if $q->param($_);
     }
 
-    print qq[<table class="fat">
-    <tr class=dark_grey_bg><td><table class="no_pad fat">
-    <tr>],
+    print qq[
+<table id="searchRow" class="fat">
+ <tr class=dark_grey_bg>
+  <td>
+   <table class="no_pad fat">
+    <tr>
+     <td>],
     $q->startform( -action => $cgi_name, -method => 'POST' );
-    foreach (@$state_fields) {
-        print $q->hidden( -name => $_ );
-    }
-    print "<td>";
-    print $q->textfield(
-        -name     => 'search_value',
-        -size     => 30,
-        -override => 1
-    );
-    print $q->hidden(
-        -name     => 'quick_search',
-        -value    => 'Enter',
-        -override => 1
-    );
+    foreach (@$state_fields) { print $q->hidden( -name => $_ ); }
+    print $q->textfield( -name => 'search_value', -size => 30, -override => 1);
+    print $q->hidden( -name => 'quick_search', -value => 'Enter', -override => 1);
     foreach ( keys %$moreparams ) {
-        print $q->hidden(
-            -name     => $_,
-            -value    => $moreparams->{$_},
-            -override => 1
-        );
+        print $q->hidden( -name => $_, -value => $moreparams->{$_}, -override => 1);
     }
     print $q->submit( -name => 'quick_search', -value => 'Search' );
+    if ($include_subgroups ) {
+        print " &nbsp; &nbsp;",
+                $q->checkbox(
+                -name    => 'include_subgroups',
+                -value   => 1,
+                -label   => 'include sub-groups',
+                -checked => $NicToolClient::include_subgroups_checked
+            );
+    };
     print " &nbsp; &nbsp;",
-        $q->checkbox(
-        -name    => 'include_subgroups',
-        -value   => 1,
-        -label   => 'include sub-groups',
-        -checked => $NicToolClient::include_subgroups_checked
-        ) if $include_subgroups;
-    print " &nbsp; &nbsp;",
-        $q->checkbox(
+    $q->checkbox(
         -name    => 'exact_match',
         -value   => 1,
         -label   => 'exact match',
         -checked => $NicToolClient::exact_match_checked
-        );
-    print "</td>";
+        ),
+    $q->endform,
+    qq[
+     </td>
+     <td class="right">];
 
-    print $q->endform;
     print $q->startform( -action => $cgi_name, -method => 'POST' );
     foreach ( @{ $self->paging_fields }, @$state_fields ) {
-        next if ( $_ eq 'page' );
-
-        print $q->hidden( -name => $_ ) if ( $q->param($_) );
+        next if $_ eq 'page';
+        print $q->hidden( -name => $_ ) if $q->param($_);
     }
     foreach ( keys %$moreparams ) {
         print $q->hidden(
@@ -679,77 +666,72 @@ sub display_search_rows {
             -override => 1
         );
     }
-    print "<td class=right>";
+
+    my $state_string = join( '&amp;', @state_vars );
+    $state_string .= "&amp;$morestr" if $morestr;
+
     if ( $rv->{'start'} - $rv->{'limit'} >= 0 ) {
-        print qq[<a href="$cgi_name?]
-            . join( '&', @state_vars )
-            . "&start=1&limit=$params->{'limit'}"
-            . ( $morestr ? "&$morestr" : "" )
-            . qq["><b><<</b></a> &nbsp; <a href="$cgi_name?]
-            . join( '&', @state_vars )
-            . "&start="
+        print qq[<a href="$cgi_name?$state_string&amp;limit=$params->{'limit'}&amp;start=1]
+            . qq["><b><<</b></a>&nbsp; ]
+            . qq[<a href="$cgi_name?$state_string&amp;limit=$params->{'limit'}&amp;start=]
             . ( $rv->{'start'} - $rv->{'limit'} )
-            . "&limit=$params->{'limit'}"
-            . ( $morestr ? "&$morestr" : "" )
             . qq["><b><</b></a> &nbsp; ];
     }
+
+    my $curpage = $rv->{'end'} % $rv->{'limit'} 
+                ? int( $rv->{'end'} / $rv->{'limit'} ) + 1 
+                : $rv->{'end'} / $rv->{'limit'};
+
     print "Page ",
         $q->textfield(
         -name  => 'page',
-        -value => (
-            $rv->{'end'} % $rv->{'limit'}
-            ? int( $rv->{'end'} / $rv->{'limit'} ) + 1
-            : $rv->{'end'} / $rv->{'limit'}
-        ),
+        -value => $curpage,
         -size     => 4,
         -override => 1
         ),
         " of $rv->{'total_pages'}";
-    if ( ( $rv->{'end'} + 1 ) <= $rv->{'total'} ) {
-        print qq[ &nbsp; <a href="$cgi_name?]
-            . join( '&', @state_vars )
-            . "&start="
+
+    if ( $rv->{'end'} + 1 <= $rv->{'total'} ) {
+        print qq[ &nbsp; <a href="$cgi_name?$state_string&amp;start=]
             . ( $rv->{'end'} + 1 )
-            . "&limit=$params->{'limit'}"
-            . ( $morestr ? "&$morestr" : "" )
+            . "&amp;limit=$params->{'limit'}"
             . qq["><b>></b></a>];
-        print qq[ &nbsp; <a href="$cgi_name?]
-            . join( '&', @state_vars )
-            . "&page=$rv->{'total_pages'}&limit=$params->{'limit'}"
-            . ( $morestr ? "&$morestr" : "" )
+        print qq[ &nbsp; <a href="$cgi_name?$state_string]
+            . qq[&page=$rv->{'total_pages'}&amp;limit=$params->{'limit'}]
             . qq["><b>>></b></a>];
     }
-    print "</td> </tr> </table></td></tr> </table>";
+    print $q->endform,
+      qq[
+     </td>
+    </tr>
+   </table>
+  </td>
+ </tr>
+</table>];
 
     @state_vars = ();
     foreach ( @{ $self->paging_fields }, @$state_fields ) {
         next if ( $_ eq 'edit_search' );
         next if ( $_ eq 'edit_sortorder' );
 
-        push( @state_vars, "$_=" . $q->escape( $q->param($_) ) )
-            if $q->param($_);
+        push( @state_vars, "$_=" . $q->escape( $q->param($_) ) ) if $q->param($_);
     }
 
+    my $state_string = join( '&amp;', @state_vars );
+    $state_string .= "&amp;$morestr" if $morestr;
+    my $state_map = join( '&amp;', map( "$_=" . $q->escape( $q->param($_) ), @$state_fields ) );
+    $state_map .= "&amp;$morestr" if $morestr;
+
     print qq[
-<table class="fat">
- <tr class=dark_grey_bg><td><table class="no_pad fat">
-    <tr>
+<table id="searchRowResults" class="fat">
+ <tr class=dark_grey_bg> <td>
+   <table class="no_pad fat"> <tr>
      <td>Search: $params->{'search_query'} found $rv->{'total'} records</td>
-     <td class=right><a href="$cgi_name?]
-        . join( '&', @state_vars )
-        . "&edit_search=1"
-        . ( $morestr ? "&$morestr" : "" )
-        . qq[">Advanced Search</a> | <a href="$cgi_name?]
-        . join( '&', @state_vars )
-        . "&edit_sortorder=1"
-        . ( $morestr ? "&$morestr" : "" )
-        . qq[">Change Sort Order</a> | <a href="$cgi_name?]
-        . join( '&',
-        map( "$_=" . $q->escape( $q->param($_) ), @$state_fields ) )
-        . ( $morestr ? "&$morestr" : "" )
-        . qq[">Browse All</a>
-        </td>
-    </tr></table></td></tr>
+     <td class=right>
+      <a href="$cgi_name?$state_string&amp;edit_search=1">Advanced Search</a> | 
+      <a href="$cgi_name?$state_string&amp;edit_sortorder=1">Change Sort Order</a> | 
+      <a href="$cgi_name?$state_map&amp;$state_map">Browse All</a>
+     </td> </tr> </table> </td> </tr>
 </table>];
 }
 
@@ -1074,12 +1056,12 @@ sub display_group_list {
             <td>],
                 join(
                 ' / ',
-                map( qq[<a href="$cgi?nt_group_id=$_->{'nt_group_id'}&obj_list=]
+                map( qq[<a href="$cgi?nt_group_id=$_->{'nt_group_id'}&amp;obj_list=]
                         . $q->param('obj_list')
                         . (
                         $moreparams
-                        ? "&"
-                            . join( "&",
+                        ? "&amp;"
+                            . join( "&amp;",
                             map {"$_=$moreparams->{$_}"} keys %$moreparams )
                         : ''
                         )
@@ -1123,7 +1105,7 @@ sub redirect_from_log {
 #$message = "$obj->{'zone'} is deleted. You are unable to view deleted zones.";
 #} else {
             print $q->redirect(
-                "zone.cgi?nt_group_id=$obj->{'nt_group_id'}&nt_zone_id=$obj->{'nt_zone_id'}"
+                "zone.cgi?nt_group_id=$obj->{'nt_group_id'}&amp;nt_zone_id=$obj->{'nt_zone_id'}"
             );
 
             #}
@@ -1149,7 +1131,7 @@ sub redirect_from_log {
             }
             else {
                 print $q->redirect(
-                    "group_nameservers.cgi?nt_group_id=$obj->{'nt_group_id'}&nt_nameserver_id=$obj->{'nt_nameserver_id'}&edit=1"
+                    "group_nameservers.cgi?nt_group_id=$obj->{'nt_group_id'}&amp;nt_nameserver_id=$obj->{'nt_nameserver_id'}&amp;edit=1"
                 );
             }
         }
@@ -1174,7 +1156,7 @@ sub redirect_from_log {
             }
             else {
                 print $q->redirect(
-                    "user.cgi?nt_group_id=$obj->{'nt_group_id'}&nt_user_id=$obj->{'nt_user_id'}"
+                    "user.cgi?nt_group_id=$obj->{'nt_group_id'}&amp;nt_user_id=$obj->{'nt_user_id'}"
                 );
             }
         }
@@ -1198,7 +1180,7 @@ sub redirect_from_log {
             else {
                 print $q->redirect( "zone.cgi?nt_group_id="
                         . $q->param('nt_group_id')
-                        . "&nt_zone_id=$obj->{'nt_zone_id'}&nt_zone_record_id=$obj->{'nt_zone_record_id'}&edit_record=1"
+                        . "&amp;nt_zone_id=$obj->{'nt_zone_id'}&amp;nt_zone_record_id=$obj->{'nt_zone_record_id'}&amp;edit_record=1"
                 );
             }
         }
@@ -1238,7 +1220,7 @@ sub redirect_from_log {
 sub display_move_javascript {
     my ( $self, $cgi, $name ) = @_;
     print <<ENDJS;
-<script language='javascript'>
+<script>
 function selectAllorNone(group, action) {
     if(group.length){
         for( var x = 0; x < group.length; x++ ) {
@@ -1272,7 +1254,7 @@ ENDJS
 sub display_delegate_javascript {
     my ( $self, $cgi, $name ) = @_;
     print <<ENDJS;
-<script language='javascript'>
+<script>
 function open_delegate(list) {
     var obj_list = new Array();
     if( list.length ) {
@@ -1289,117 +1271,6 @@ function open_delegate(list) {
     } else {
             alert('Select at least one $name');
     }
-}
-</script>
-ENDJS
-}
-
-sub display_perms_javascript {
-    my ( $self, $cgi, $name ) = @_;
-    print <<ENDJS;
-<script language='javascript'>
-
-//access types
-function selectAllEdit(form, action) {
-    if(form.group_write)
-        form.group_write.checked=action;
-    if(form.user_write)
-        form.user_write.checked=action;
-    if(form.zone_write)
-        form.zone_write.checked=action;
-    if(form.zonerecord_write)
-        form.zonerecord_write.checked=action;
-    if(form.nameserver_write)
-        form.nameserver_write.checked=action;
-    if(form.self_write)
-        form.self_write.checked=action;
-}
-function selectAllCreate(form, action) {
-    if(form.group_create)
-        form.group_create.checked=action;
-    if(form.user_create)
-        form.user_create.checked=action;
-    if(form.zone_create)
-        form.zone_create.checked=action;
-    if(form.zonerecord_create)
-        form.zonerecord_create.checked=action;
-    if(form.nameserver_create)
-        form.nameserver_create.checked=action;
-}
-function selectAllDelete(form, action) {
-    if(form.group_delete)
-        form.group_delete.checked=action;
-    if(form.user_delete)
-        form.user_delete.checked=action;
-    if(form.zone_delete)
-        form.zone_delete.checked=action;
-    if(form.zonerecord_delete)
-        form.zonerecord_delete.checked=action;
-    if(form.nameserver_delete)
-        form.nameserver_delete.checked=action;
-}
-function selectAllDelegate(form, action) {
-    if(form.zone_delegate)
-        form.zone_delegate.checked=action;
-    if(form.zonerecord_delegate)
-        form.zonerecord_delegate.checked=action;
-}
-function selectAllAll(form, action) {
-    selectAllEdit(form,action);
-    selectAllCreate(form,action);
-    selectAllDelete(form,action);
-    selectAllDelegate(form,action);
-}
-
-
-//object types
-function selectAllGroup(form, action) {
-    if(form.group_write)
-        form.group_write.checked=action;
-    if(form.group_create)
-        form.group_create.checked=action;
-    if(form.group_delete)
-        form.group_delete.checked=action;
-}
-function selectAllUser(form, action) {
-    if(form.user_write)
-        form.user_write.checked=action;
-    if(form.user_create)
-        form.user_create.checked=action;
-    if(form.user_delete)
-        form.user_delete.checked=action;
-}
-function selectAllZone(form, action) {
-    if(form.zone_create)
-        form.zone_create.checked=action;
-    if(form.zone_write)
-        form.zone_write.checked=action;
-    if(form.zone_delete)
-        form.zone_delete.checked=action;
-    if(form.zone_delegate)
-        form.zone_delegate.checked=action;
-}
-function selectAllZonerecord(form, action) {
-    if(form.zonerecord_write)
-        form.zonerecord_write.checked=action;
-    if(form.zonerecord_create)
-        form.zonerecord_create.checked=action;
-    if(form.zonerecord_delete)
-        form.zonerecord_delete.checked=action;
-    if(form.zonerecord_delegate)
-        form.zonerecord_delegate.checked=action;
-}
-function selectAllNameserver(form, action) {
-    if(form.nameserver_write)
-        form.nameserver_write.checked=action;
-    if(form.nameserver_create)
-        form.nameserver_create.checked=action;
-    if(form.nameserver_delete)
-        form.nameserver_delete.checked=action;
-}
-function selectAllSelf(form, action) {
-    if(form.self_write)
-        form.self_write.checked=action;
 }
 </script>
 ENDJS
@@ -1476,16 +1347,11 @@ sub display_nice_message {
         . '<br>';
 
     print qq{
-        <table class="center fat">
-            <tr><td class="left dark_bg">
-                <B>$title</b></td></tr>
-            <tr>
-                <td class=left class=light_grey_bg> $message<p> $explain </td>
-            </tr>
-            <tr>
-                <td class=center class=dark_grey_bg>&nbsp;</td>
-            </tr>
-        </table>
+<table id="niceMessage" class="center fat">
+  <tr><td class="left dark_bg bold">$title</td></tr>
+  <tr><td class="left light_grey_bg">$message<p>$explain</td></tr>
+  <tr><td>&nbsp;</td></tr>
+</table>
     };
     return 0;
 }
@@ -1640,10 +1506,7 @@ sub zone_record_template {
 
 sub refresh_nav {
     my $self = shift;
-
-    print "<script language='JavaScript'>\n";
-    print "parent.nav.location = parent.nav.location;\n";
-    print "</script>";
+    print "<script>\nparent.nav.location = parent.nav.location;\n</script>";
 }
 
 sub AUTOLOAD {

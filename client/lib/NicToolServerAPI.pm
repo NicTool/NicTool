@@ -39,16 +39,14 @@ sub send_request {
 		. $NicToolServerAPI::server_host . ':'
 		. $NicToolServerAPI::server_port;
     my $func = 'send_' . $NicToolServerAPI::data_protocol . '_request';
-    if ( $self->can($func) ) {
-        return $self->$func( $url, @_ );
-    }
-    else {
+    if ( ! $self->can($func) ) {
         return {
             'error_code' => 501,
             'error_msg'  => 'Data protocol not supported: '
                 . $NicToolServerAPI::data_protocol
         };
     }
+    return $self->$func( $url, @_ );
 }
 
 sub send_soap_request {
