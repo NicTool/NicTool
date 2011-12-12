@@ -1336,29 +1336,29 @@ sub display_nice_message {
 
 sub display_nice_error {
     my ( $self, $error, $actionmsg, $back ) = @_;
-    my ( $message, $explain )
-        = @{ $self->error_message( $error->{'error_code'} ) };
+    my ( $message, $explain ) = @{ $self->error_message( $error->{'error_code'} ) };
     my $err = $error->{'error_desc'} || 'Error';
     $actionmsg = ": " . $actionmsg if $actionmsg;
+
     my $errmsg = $error->{'error_msg'};
     my @msgs = split( /\bAND\b/, $errmsg );
-    $errmsg = "<span class=error><li>"
-        . join( "</span><br>\n<span class=error><li>", @msgs )
-        . "</span><br>";
-    print qq[
-<table class="fat center">
- <tr><td class="left error_bg"><strong>$message</strong>$actionmsg</td></tr>
- <tr><td class="left light_grey_bg">$errmsg<p> $explain</td> </tr>
- <tr><td class="right dark_grey_bg dark">]
-        . (
-        $back
-        ? '<form><input type=submit value="Back" onClick="javascript:history.go(-1)"></form>'
-        : '&nbsp;'
-        )
-        . qq[ ($error->{'error_code'})</td> </tr> </table> ];
+    $errmsg = "<div class=error><ul>\n";
+    foreach ( @msgs ) {
+        $errmsg .= qq[<li>$_</li>\n];
+    };
+    $errmsg .= qq[</ul>\n</div>];
 
-    warn "Client error: $error->{'error_code'}: $error->{'error_msg'}: "
-        . join( ":", caller );
+    my $bb = $back ? '<form><input type=submit value="Back" onClick="javascript:history.go(-1)"></form>'
+           : '&nbsp;';
+
+    print qq[<br>\n 
+<table id="errorMessage" class="fat center">
+ <tr><td class="left error_bg"><strong>$message</strong>$actionmsg</td></tr>
+ <tr><td class="left light_grey_bg">$errmsg<p>$explain</p></td></tr>
+ <tr><td class="right dark_grey_bg dark">$bb ($error->{'error_code'})</td></tr>
+</table>];
+
+    warn "Client error: $error->{'error_code'}: $error->{'error_msg'}: " . join( ":", caller );
     return 0;
 }
 

@@ -350,9 +350,9 @@ sub display_zone_delegation {
             print qq[<img src="$NicToolClient::image_dir/trash-delegate-disabled.gif" alt="disabled">];
         }
 
-        print qq{ 
+        print qq[
   </td> 
- </tr>};
+ </tr>];
     }
     print qq[
 </table>];
@@ -484,7 +484,6 @@ sub display_zone_records {
     display_zone_records_delete( $nt_obj, $q );
 
     my @columns = qw/ name type address ttl weight priority other description/;
-
     my %labels = (
         name        => 'Name',
         type        => 'Type',
@@ -508,21 +507,22 @@ sub display_zone_records {
     my %params = ( nt_zone_id => $q->param('nt_zone_id') );
     my %sort_fields;
     $nt_obj->prepare_search_params( $q, \%labels, \%params, \%sort_fields, 50 );
-
-    $sort_fields{'name'} = { 'order' => 1, 'mod' => 'Ascending' }
-        unless %sort_fields;
+    if ( ! %sort_fields ) {
+        $sort_fields{'name'} = { 'order' => 1, 'mod' => 'Ascending' };
+    };
 
     my $rv = $nt_obj->get_zone_records(%params);
     return $nt_obj->display_nice_error( $rv, "Get Zone Records" )
-        if ( $rv->{'error_code'} != '200' );
+        if $rv->{'error_code'} != '200';
 
     my $zone_records = $rv->{'records'};
 
     my @state_fields;
     foreach ( @{ $nt_obj->paging_fields } ) {
-        push( @state_fields, "$_=" . $q->escape( $q->param($_) ) )
-            if ( $q->param($_) );
+        next if ! $q->param($_);
+        push @state_fields, "$_=" . $q->escape( $q->param($_) );
     }
+    my $state_string = join('&amp;', @state_fields);
 
 # Display the RR header: Resource Records  New Resource Record | View Resource Record Log
     my @options;
@@ -536,7 +536,6 @@ sub display_zone_records {
         )
         )
     {
-        my $state_string = join('&amp;', @state_fields);
         push @options, qq[<a href="zone.cgi?$state_string&amp;nt_group_id=$gid&amp;nt_zone_id=$zid&amp;new_record=1#RECORD">New Resource Record</a>];
     }
     else {
@@ -547,168 +546,155 @@ sub display_zone_records {
 
     print qq[
 <hr class="side_pad">
-<div class="dark_grey_bg">
+<div class="dark_grey_bg side_pad">
   <span class="bold">Resource Records</span>
   <span class="float_r">], join( ' | ', @options ), qq[</span>
 </div>];
 
-    $nt_obj->display_search_rows( $q, $rv, \%params, 'zone.cgi',
-        [ 'nt_group_id', 'nt_zone_id' ] );
+    $nt_obj->display_search_rows( $q, $rv, \%params, 'zone.cgi', [ 'nt_group_id', 'nt_zone_id' ] );
 
-    if (@$zone_records) {
+    return if ! scalar @$zone_records;
 
-        # only show columns applicable to the records in the zone
-        @columns = qw(name type address ttl );
+    # show only columns used in the records in this zone
+    @columns = qw(name type address ttl );
 
-        my %has_type;
-        foreach my $r_record (@$zone_records) {
-            $has_type{ $r_record->{'type'} }++;
+    my %has_type;
+    foreach my $r_record (@$zone_records) {
+        $has_type{ $r_record->{'type'} }++;
+    }
+    if ( $has_type{'MX'} || $has_type{'SRV'} ) {
+        push @columns, 'weight';
+    }
+    if ( $has_type{'SRV'} ) {
+        push @columns, 'priority', 'other';
+    }
+    push @columns, 'description';
+
+    print qq[
+<table id="zoneRecordTable" class="fat">
+ <tr id="zoneRecordHeaderRow" class=dark_grey_bg>];
+
+    foreach (@columns) {
+        if ( $sort_fields{$_} ) {
+            my $dir = uc( $sort_fields{$_}->{'mod'} ) eq 'ASCENDING' ? 'up' : 'down';
+            print qq[
+  <td class="dark_bg center">
+     $labels{$_} &nbsp; &nbsp; $sort_fields{$_}->{'order'}
+     <img src="$NicToolClient::image_dir/$dir.gif" alt="sort order">
+  </td>];
         }
-        if ( $has_type{'MX'} || $has_type{'SRV'} ) {
-            push @columns, 'weight';
+        else {
+            print qq[\n  <td class=center>$labels{$_}</td>];
         }
-        if ( $has_type{'SRV'} ) {
-            push @columns, 'priority', 'other';
-        }
-        push @columns, 'description';
+    }
+    print qq[
+  <td class="center width1"></td>
+  <td class="center width1"></td>
+ </tr>];
 
-        print qq[<table class="fat">
-        <tr class=dark_grey_bg>];
+    my $x = 0;
+    my ( $isdelegate, $img );
+    foreach my $r_record (@$zone_records) {
+        $isdelegate = exists $r_record->{'delegated_by_id'};
+        $img        = $isdelegate ? '-delegated' : '';
+        $img        = "$NicToolClient::image_dir/r_record$img.gif";
+        my $bgclass = $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg';
+        my $hilite  = $x % 2 == 0 ? 'light_hilite_bg' : 'dark_hilite_bg';
+        if ( $r_record->{'nt_zone_record_id'} eq $q->param('new_record_id') ) {
+            $bgclass = $hilite;
+        };
+        print qq[
+ <tr class=$bgclass>];
+
+        $r_record->{name} = "@ ($zone->{'zone'})" if $r_record->{name} eq "@";
+
+        if ( $r_record->{type} !~ /^MX|SRV$/i ) {
+            $r_record->{weight} = '';
+        }
+
+        # shorten the max width of the address field (workaround for
+        # display formatting problem with DomainKey entries.
+        if ( length $r_record->{address} > 48 ) {
+            my $max = 0;
+            my @lines;
+            while ( $max < length $r_record->{address} ) {
+                push @lines, substr( $r_record->{address}, $max, 48 );
+                $max += 48;
+            }
+            $r_record->{address} = join "<br>", @lines;
+        }
+
         foreach (@columns) {
-            if ( $sort_fields{$_} ) {
+            if ( $_ eq 'name' ) {
                 print qq[
-<td class="dark_bg center">
-<table class="no_pad"><tr>
-<td>$labels{$_}</td>
-<td>&nbsp; &nbsp; $sort_fields{$_}->{'order'}</td>
-<td><img src="$NicToolClient::image_dir/],
-                    uc( $sort_fields{$_}->{'mod'} ) eq 'ASCENDING' ? 'up' : 'down',
-                    qq[.gif" alt="sort order"></td>
-                </tr></table></td>];
+  <td>];
 
+                my $edit_url = "zone.cgi?$state_string&amp;nt_zone_record_id=$r_record->{'nt_zone_record_id'}&amp;nt_zone_id=$zone->{'nt_zone_id'}&amp;nt_group_id=$gid&amp;edit_record=1#RECORD";
+
+                if ( !$zone->{'deleted'} ) {
+                    print qq[<a href="$edit_url"><img src="$img" alt="rr"></a>];
+                    print qq[<a href="$edit_url">$r_record->{$_}</a>];
+                }
+                else {
+                    print qq[<img src="$img" alt="resource record">];
+                    print $r_record->{$_};
+                }
+
+                if ( $r_record->{'delegated_by_id'} ) {
+                    my $write = $r_record->{'delegate_write'} ? 'write' : 'nowrite';
+                    print qq[&nbsp;&nbsp;<img src="$NicToolClient::image_dir/perm-$write.gif" alt="delegate write permission">];
+                }
+                print qq[
+  </td>];
+            }
+            elsif ( $_ =~ /address|ttl|weight|priority|other/i ) {
+                print qq[
+  <td class="right"> $r_record->{$_} </td>];
             }
             else {
-                print "<td class=center>$labels{$_}</td>";
+                print qq[
+  <td class="center"> $r_record->{$_} </td>];
             }
         }
         print qq[
-<td class="center width1"><img src="$NicToolClient::image_dir/delegate.gif" alt="delegate"></td>
-<td class="center width1"><img src="$NicToolClient::image_dir/trash.gif" alt="delegate"></td>
-</tr>];
-
-        my $x = 0;
-        my $range;
-        my $isdelegate;
-        my $img;
-        my $hilite;
-        my $bgclass;
-        foreach my $r_record (@$zone_records) {
-            $range      = $r_record->{'period'};
-            $isdelegate = exists $r_record->{'delegated_by_id'};
-            $img        = $isdelegate ? '-delegated' : '';
-            $bgclass = ( $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' );
-            $hilite = ( $x % 2 == 0 ? 'light_hilite_bg' : 'dark_hilite_bg');
-            $bgclass = $hilite
-                if (
-                $r_record->{'nt_zone_record_id'} eq $q->param('new_record_id')
-                and $NicToolClient::hilite_new_zone_records );
-            print "<tr class=$bgclass>";
-            $r_record->{name} = "@ ($zone->{'zone'})"
-                if ( $r_record->{name} eq "@" );
-
-            if (   uc( $r_record->{type} ) ne "MX"
-                && uc( $r_record->{'type'} ) ne "SRV" )
-            {
-                $r_record->{weight}
-                    = "";    # showing n/a just cluttered the screen
-            }
-
-            # shorten theh max width of the address field (workaround for
-            # display formatting problem with DomainKey entries.
-            if ( length $r_record->{address} > 48 ) {
-                my $max = 0;
-                my @lines;
-                while ( $max < length $r_record->{address} ) {
-                    push @lines, substr( $r_record->{address}, $max, 48 );
-                    $max += 48;
-                }
-                $r_record->{address} = join "<br>", @lines;
-            }
-            foreach (@columns) {
-                if ( $_ eq 'name' ) {
-                    print qq[<td><table class="no_pad">
-                    <tr>
-                    <td>];
-                    if ( !$zone->{'deleted'} ) {
-                        print qq[<a href="zone.cgi?], join( '&amp;', @state_fields ),
-                            qq[&amp;nt_zone_record_id=$r_record->{'nt_zone_record_id'}&amp;nt_zone_id=$zone->{'nt_zone_id'}&amp;nt_group_id=$gid&amp;edit_record=1#RECORD"><img src="$NicToolClient::image_dir/r_record$img.gif" alt=""></a>];
-                    }
-                    else {
-                        print qq[<img src="$NicToolClient::image_dir/r_record$img.gif" alt="resource record">];
-                    }
-                    print "</td><td>";
-                    if ( !$zone->{'deleted'} ) {
-                        print qq[<a href="zone.cgi?],
-                            join( '&amp;', @state_fields ),
-                            qq[&amp;nt_zone_record_id=$r_record->{'nt_zone_record_id'}&amp;nt_zone_id=$zone->{'nt_zone_id'}&amp;nt_group_id=$gid&amp;edit_record=1#RECORD">$r_record->{$_}</a>];
-                    }
-                    else {
-                        print $r_record->{$_};
-                    }
-                    if ( $r_record->{'delegated_by_id'} ) {
-                        print qq[&nbsp;&nbsp;<img src="$NicToolClient::image_dir/perm-]
-                            . ( $r_record->{'delegate_write'} ? 'write' : 'nowrite') 
-                            . qq[.gif" alt="delegate write permission">];
-                    }
-                    print "</td>
-                    </tr></table></td>";
-                }
-                elsif ( $_ =~ /address|ttl|weight|priority|other/i ) {
-                    print '<td class="right">',
-                        ( $r_record->{$_} ? $r_record->{$_} : '&nbsp;' ),
-                        "</td>";
-                }
-                else {
-                    print '<td class="center">',
-                        ( $r_record->{$_} ? $r_record->{$_} : '&nbsp;' ),
-                        "</td>";
-                }
-            }
-            if ( !$zone->{'deleted'}
-                && $group->{'has_children'}
-                && $user->{'zonerecord_delegate'}
-                && (  $isdelegate
-                    ? $r_record->{'delegate_delegate'}
-                    : ( $zonedelegate ? $zone->{'delegate_delegate'} : 1 )
-                )
-                )
-            {
-                print qq[<td class=center><a href="javascript:void window.open('delegate_zones.cgi?type=record&amp;obj_list=$r_record->{'nt_zone_record_id'}&amp;nt_zone_id=$r_record->{'nt_zone_id'}', 'delegate_win', 'width=640,height=480,scrollbars,resizable=yes')"><img src="$NicToolClient::image_dir/delegate.gif" alt="Delegate Resource Record"></a></td>];
-            }
-            else {
-                print qq[
-<td class=center><img src="$NicToolClient::image_dir/delegate-disabled.gif" alt="delegate disabled"></td>];
-            }
-            $img =~ s/.$//g;
-            if ( !$zone->{'deleted'}
-                && $user->{'zonerecord_delete'}
-                && !$isdelegate
-                && ( $zonedelegate ? $zone->{'delegate_delete_records'} : 1 )
-                )
-            {
-                print qq[<td class=center><a href="zone.cgi?],
-                    join( '&amp;', @state_fields ),
-                    qq[&amp;nt_zone_id=$zone->{'nt_zone_id'}&amp;nt_group_id=$gid&amp;nt_zone_record_id=$r_record->{'nt_zone_record_id'}&amp;delete_record=$r_record->{'nt_zone_record_id'}" onClick=\"return confirm('Are you sure you want to delete $zone->{'zone'} $r_record->{'type'} record $r_record->{'name'} that points to $r_record->{'address'} ?')"><img src="$NicToolClient::image_dir/trash.gif" alt="trash"></a></td>];
-
-            }
-            else {
-                print qq[<td class=center><img src="$NicToolClient::image_dir/trash$img-disabled.gif" alt="disabled"></td>];
-            }
-            print "</tr>";
+  <td class=center>];
+        if ( !$zone->{'deleted'}
+            && $group->{'has_children'}
+            && $user->{'zonerecord_delegate'}
+            && (  $isdelegate
+                ? $r_record->{'delegate_delegate'}
+                : ( $zonedelegate ? $zone->{'delegate_delegate'} : 1 )
+            )
+            )
+        {
+            print qq[<a href="javascript:void window.open('delegate_zones.cgi?type=record&amp;obj_list=$r_record->{'nt_zone_record_id'}&amp;nt_zone_id=$r_record->{'nt_zone_id'}', 'delegate_win', 'width=640,height=480,scrollbars,resizable=yes')">
+    <img src="$NicToolClient::image_dir/delegate.gif" alt="Delegate Resource Record"></a></td>];
+        }
+        else {
+            print qq[<img src="$NicToolClient::image_dir/delegate-disabled.gif" alt="delegate disabled"></td>];
         }
 
-        print "</table>";
+        if ( !$zone->{'deleted'}
+            && $user->{'zonerecord_delete'}
+            && !$isdelegate
+            && ( $zonedelegate ? $zone->{'delegate_delete_records'} : 1 )
+            )
+        {
+            print qq[
+   <td class=center>
+    <a href="zone.cgi?$state_string&amp;nt_zone_id=$zone->{'nt_zone_id'}&amp;nt_group_id=$gid&amp;nt_zone_record_id=$r_record->{'nt_zone_record_id'}&amp;delete_record=$r_record->{'nt_zone_record_id'}" onClick=\"return confirm('Are you sure you want to delete $zone->{'zone'} $r_record->{'type'} record $r_record->{'name'} that points to $r_record->{'address'} ?')">
+    <img src="$NicToolClient::image_dir/trash.gif" alt="trash"></a></td>];
+
+        }
+        else {
+            $img = $isdelegate ? '-delegate' : '';
+            print qq[
+   <td class=center><img src="$NicToolClient::image_dir/trash$img-disabled.gif" alt="disabled"></td>];
+        }
+        print qq[\n </tr>];
     }
+
+    print qq[\n</table>];
 }
 
 sub display_zone_records_new {
@@ -792,8 +778,7 @@ sub display_edit_record {
     my $message2;
 
     # is this a Save or Edit operation?
-    if ( $q->param('nt_zone_record_id') && !$q->param('Save') )
-    {    # get current settings
+    if ( $q->param('nt_zone_record_id') && !$q->param('Save') ) {
 
         if ( $q->param('nt_zone_record_log_id') ) {
             $action      = 'Recover';
@@ -827,7 +812,6 @@ sub display_edit_record {
     my ( $type_values, $type_labels );
 
     my $rr_types = $nt_obj->rr_types;
-    #use Data::Dumper; warn Dumper $rr_types;
     my %forwards = map { $_->{name} => "$_->{description} ($_->{name})" } 
         grep( $_->{forward} == 1, @$rr_types);
     my %reverse  = map { $_->{name} => "$_->{description} ($_->{name})" } 
@@ -843,7 +827,6 @@ sub display_edit_record {
         $type_labels = \%forwards;
     }
 
-
     # does user have Edit permissions?
     my $modifyperm = !$isdelegate && $user->{'zonerecord_write'}
         || $isdelegate
@@ -851,21 +834,17 @@ sub display_edit_record {
         && $zone_record->{'delegate_write'};
 
     if ($modifyperm) {
-        print $q->start_form(
-            -action => 'zone.cgi',
-            -method => 'POST',
-            -name   => 'rr_edit'
-            ),
-            $q->hidden( -name => $edit . '_record' ),
-            $q->hidden( -name => 'nt_group_id' ),
+        print qq[
+<form method="post" action="zone.cgi" name="rr_edit">],
+            $q->hidden( -name => $edit . '_record' ), "\n",
+            $q->hidden( -name => 'nt_group_id' ), "\n",
             $q->hidden( -name => 'nt_zone_id' ), "\n";
         print $q->hidden( -name => 'nt_zone_record_id' ) if $edit eq 'edit';
-        print $q->hidden( -name => 'nt_zone_record_log_id' );
-        print $q->hidden( -name => 'deleted', -value => 0 )
-            if $action eq 'Recover';
+        print $q->hidden( -name => 'nt_zone_record_log_id' ), "\n";
+        print $q->hidden( -name => 'deleted', -value => 0 ) if $action eq 'Recover';
 
         foreach ( @{ $nt_obj->paging_fields } ) {
-            print $q->hidden( -name => $_ );
+            print $q->hidden( -name => $_ ), "\n";
         }
     }
     else {
@@ -874,10 +853,10 @@ sub display_edit_record {
 
     $nt_obj->display_nice_error($message)  if $message;
     $nt_obj->display_nice_error($message2) if $message2;
-    print qq[<a name="RECORD">
-    <div class="dark_bg">Resource Record</div>];
+    print qq[
+<a name="RECORD" id="RECORD"></a>
+<div class="dark_bg">Resource Record</div>];
 
-    my $gid = $q->param('nt_group_id');
     # display delegation information
     if ( !$isdelegate && $edit ne 'new' ) {
         my $delegates = $nt_obj->get_zone_record_delegates(
@@ -889,7 +868,143 @@ sub display_edit_record {
                 . $delegates->{'error_msg'};
         }
         elsif ( @{ $delegates->{'delegates'} } gt 0 ) {
-            print qq[
+            display_edit_record_delegates( $nt_obj, $q, $user, $zone_record, $delegates  );
+        }
+    }
+    elsif ( $edit ne 'new' && !$pseudo ) {
+        display_new_record_delegates( $user, $zone_record, $q );
+    };
+
+    print qq[
+<table class="fat">
+ <tr class="dark_grey_bg"><td colspan=2> $action </td></tr>
+ <tr class="light_grey_bg">
+  <td class="right"> Name:</td>
+  <td class="fat">], 
+        $modifyperm ? $q->textfield(
+        -name      => 'name',
+        -size      => 40,
+        -maxlength => 127,
+        -default   => $zone_record->{'name'}
+        ) : $zone_record->{'name'},
+        ( $zone_record->{'name'} ne "$zone->{'zone'}." ? "<b>.$zone->{'zone'}.</b>" : ""),
+        qq[
+  </td>
+ </tr>];
+
+    my $default_record_type = $zone_record->{'type'};
+    $default_record_type = 'PTR' if ( $zone->{'zone'} =~ /(in-addr|ip6)\.arpa/ );
+
+    print qq[
+ <tr class="light_grey_bg">
+  <td class=right> Type:</td>
+  <td class="fat">], 
+        $modifyperm ? $q->popup_menu(
+            -name    => 'type',
+            -id      => 'rr_type',
+            -values  => $type_values,
+            -labels  => $type_labels,
+            -default => $default_record_type,
+            -onClick => "showFieldsForRRtype(value)",
+# not valid for popup menus (according to CGI.pm docs), but works
+            -onChange => "showFieldsForRRtype(value)",    # seems to work
+            -onFocus  => "showFieldsForRRtype(value)",
+# run, darn it, even if user doesn't change value and onClick isn't permitted
+        )
+        : $type_labels->{ $zone_record->{'type'} }, qq[
+  </td>
+ </tr>
+ <tr class="light_grey_bg">
+  <td class="right"> Address:</td>
+  <td style="width:100%;">], $modifyperm
+        ? $q->textfield(
+        -name      => 'address',
+        -size      => 50,
+        -maxlength => 255,
+        -default   => $zone_record->{'address'},
+        )
+        : $zone_record->{'address'},
+        $nt_obj->help_link('rraddress') . qq[
+  </td>
+ </tr>
+ <tr id="tr_weight" class="light_grey_bg">
+  <td class="right"> Weight:</td>
+  <td class="fat">], $modifyperm ? $q->textfield(
+        -name      => 'weight',
+        -size      => 5,
+        -maxlength => 10,
+        -default   => '10',
+        -default   => $zone_record->{'weight'}
+        )
+        : $zone_record->{'weight'},
+        qq[
+  </td>
+ </tr>
+ <tr id="tr_priority" class="light_grey_bg">
+  <td class="right"> Priority:</td>
+  <td class="fat">], $modifyperm
+        ? $q->textfield(
+        -name      => 'priority',
+        -size      => 5,
+        -maxlength => 10,
+        -default   => '10',
+        -default   => $zone_record->{'priority'}
+        )
+        : $zone_record->{'priority'}, qq[
+  </td>
+ </tr>
+ <tr id="tr_other" class="light_grey_bg">
+  <td class="right"> Port:</td>
+  <td class="fat">], $modifyperm ? $q->textfield(
+        -name      => 'other',
+        -size      => 5,
+        -maxlength => 10,
+        -default   => '10',
+        -default   => $zone_record->{'other'}
+        )
+        : $zone_record->{'other'},
+        qq[
+  </td>
+ </tr>
+ <tr class="light_grey_bg">
+  <td class="right"> TTL:</td>
+  <td class="fat">], $modifyperm ? $q->textfield(
+        -name      => 'ttl',
+        -size      => 5,
+        -maxlength => 10,
+        -default   => $zone_record->{'ttl'}
+        )
+        : $zone_record->{'ttl'}, qq[
+  </td>
+ </tr>
+ <tr class="light_grey_bg">
+  <td class="right"> Description:</td>
+  <td class="fat">], $modifyperm ? $q->textfield(
+        -name      => 'description',
+        -size      => 60,
+        -maxlength => 128,
+        -default   => $zone_record->{'description'}
+        )
+        : $zone_record->{'description'} || "&nbsp;",
+        qq[
+  </td>
+ </tr>
+ <tr class="dark_grey_bg">
+  <td colspan="2" class="center">],
+        $modifyperm ? $q->submit( $edit eq 'edit' ? 'Save' : 'Create' )
+        . $q->submit('Cancel')
+        : '&nbsp;', qq[
+  </td>
+ </tr>
+</table>];
+
+    print $q->end_form if $modifyperm;
+}
+
+sub display_edit_record_delegates {
+    my ($nt_obj, $q, $user, $zone_record, $delegates  ) = @_;
+
+    print qq[
 <table class="fat"><tr class=dark_grey_bg><td>Delegates</td></tr></table>
 <table class="fat no_pad">
  <tr>
@@ -903,18 +1018,20 @@ sub display_edit_record {
      <td class="nowrap center width1"><img src="$NicToolClient::image_dir/trash-delegate.gif" alt="trash delegate"></td>
     </tr>
 ];
-            foreach my $del ( @{ $delegates->{'delegates'} } ) {
-                print qq[
+    foreach my $del ( @{ $delegates->{'delegates'} } ) {
+        print qq[
     <tr class=light_grey_bg>
      <td class="nowrap center">
-      <table><tr>
+      <table>
+       <tr>
         <td class="middle"><a href="group.cgi?nt_group_id=$del->{'nt_group_id'}"><img src="$NicToolClient::image_dir/group.gif" alt="group"></a></td>
         <td class="middle"><a href="group.cgi?nt_group_id=$del->{'nt_group_id'}">$del->{'group_name'}</a></td>
        </tr>
       </table>
      </td>
      <td class="nowrap center">
-      <table><tr>
+      <table>
+       <tr>
         <td class="middle"><a href="user.cgi?nt_user_id=$del->{'delegated_by_id'}">
         <img src="$NicToolClient::image_dir/user.gif" alt=""></a></td>
         <td class="middle"><a href="user.cgi?nt_user_id=$del->{'delegated_by_id'}">$del->{'delegated_by_name'}</a></td>
@@ -922,7 +1039,8 @@ sub display_edit_record {
       </table>
      </td>
      <td class="nowrap">
-       <table><tr>
+       <table>
+        <tr>
          <td><img src="$NicToolClient::image_dir/perm-]
             . ( $del->{delegate_write} ? 'checked' : 'unchecked' )
             . qq(.gif" alt="write perm">&nbsp;Write</td><td><img src="$NicToolClient::image_dir/perm-)
@@ -930,39 +1048,47 @@ sub display_edit_record {
             . qq(.gif" alt="delete perm">&nbsp;Remove</td><td><img src="$NicToolClient::image_dir/perm-)
             . ( $del->{delegate_delegate} ? 'checked' : 'unchecked' )
             . qq[.gif" alt="re-delegate perm">&nbsp;Re-delegate</td>
-                </tr>
-                </table>
-            </td>
-            <td class="nowrap width1">];
-                if ( $user->{zonerecord_delegate} ) {
-                    print qq[<a href="javascript:void window.open('delegate_zones.cgi?type=record&amp;obj_list=$zone_record->{'nt_zone_record_id'}&amp;nt_zone_id=$zone_record->{'nt_zone_id'}&amp;nt_group_id=$del->{'nt_group_id'}&amp;edit=1', 'delegate_win', 'width=640,height=480,scrollbars,resizable=yes')">Edit</a>];
-                }
-                else {
-                    print qq[<span class=disabled>Edit</span>];
-                }
-                print qq[ </td><td class="nowrap center width1"> ];
+        </tr>
+       </table>
+     </td>
+     <td class="nowrap width1">];
 
-                if ( $user->{zonerecord_delegate} ) {
-                    print qq[<a href="zone.cgi?type=record&amp;nt_zone_record_id=$zone_record->{'nt_zone_record_id'}&amp;nt_zone_id=$zone_record->{'nt_zone_id'}&amp;nt_group_id=$gid&amp;delegate_group_id=$del->{'nt_group_id'}&amp;deletedelegate=1" onClick="return confirm('Are you sure you want to remove the delegation of resource record $zone_record->{'name'} to group $del->{'group_name'}?');"><img src="$NicToolClient::image_dir/trash-delegate.gif" alt="Remove Delegation"></a>];
-                }
-                else {
-                    print qq[<img src="$NicToolClient::image_dir/trash-delegate-disabled.gif" alt="trash delegate disabled">];
-                }
-
-                print qq[ </td> </tr>];
-            }
-            print qq[ </table> </td> </tr> </table> ];
+        if ( $user->{zonerecord_delegate} ) {
+            print qq[<a href="javascript:void window.open('delegate_zones.cgi?type=record&amp;obj_list=$zone_record->{'nt_zone_record_id'}&amp;nt_zone_id=$zone_record->{'nt_zone_id'}&amp;nt_group_id=$del->{'nt_group_id'}&amp;edit=1', 'delegate_win', 'width=640,height=480,scrollbars,resizable=yes')">Edit</a>];
         }
+        else {
+            print qq[<span class=disabled>Edit</span>];
+        }
+        print qq[ 
+     </td>
+     <td class="nowrap center width1">];
+
+        if ( $user->{zonerecord_delegate} ) {
+            my $gid = $q->param('nt_group_id');
+            print qq[<a href="zone.cgi?type=record&amp;nt_zone_record_id=$zone_record->{'nt_zone_record_id'}&amp;nt_zone_id=$zone_record->{'nt_zone_id'}&amp;nt_group_id=$gid&amp;delegate_group_id=$del->{'nt_group_id'}&amp;deletedelegate=1" onClick="return confirm('Are you sure you want to remove the delegation of resource record $zone_record->{'name'} to group $del->{'group_name'}?');"><img src="$NicToolClient::image_dir/trash-delegate.gif" alt="Remove Delegation"></a>];
+            }
+            else {
+                print qq[<img src="$NicToolClient::image_dir/trash-delegate-disabled.gif" alt="trash delegate disabled">];
+            }
+
+            print qq[
+     </td>
+    </tr>];
     }
-    elsif ( $edit ne 'new' && !$pseudo ) {
-        print qq[
-<table class="fat">
- <tr class=dark_grey_bg>
-  <td>
-   <table class="no_pad fat"> <tr> <td><b>Delegation</b></td> </tr> </table>
+    print qq[ 
+   </table> 
   </td>
  </tr>
-</table>
+</table>];
+};
+
+sub display_new_record_delegates {
+    my ($user, $zone_record, $q  ) = @_;
+
+    my $gid = $q->param('nt_group_id');
+    print qq[
+<div class="dark_grey_bg side_pad"> <b>Delegation</b> </div>
+
 <table class="fat">
  <tr> 
   <td class=top>
@@ -974,199 +1100,76 @@ sub display_edit_record {
        <tr>
         <td class=middle><img src="$NicToolClient::image_dir/user.gif" alt="user"></td>
         <td class=middle> $zone_record->{'delegated_by_name'}</td>
-       </tr> </table> </td>
+       </tr>
+      </table>
+     </td>
     </tr>
-
     <tr class=light_grey_bg>
      <td class="nowrap"> Belonging to group: </td>
-     <td class="fat"> <table> <tr>
-     <td class=middle><img src="$NicToolClient::image_dir/group.gif" alt="group"></td>
-     <td class=middle> $zone_record->{'group_name'}</td>
-    </tr> 
-   </table>
-  </td>
- </tr>
+     <td class="fat"> 
+      <table> 
+       <tr>
+        <td class=middle><img src="$NicToolClient::image_dir/group.gif" alt="group"></td>
+        <td class=middle> $zone_record->{'group_name'}</td>
+       </tr> 
+      </table>
+     </td>
+    </tr>
 
     <tr class=light_grey_bg>
      <td class="nowrap"> With Permissions: </td>
      <td class="fat">
       <table>
        <tr class=light_grey_bg>];
-        my %perms = (
-            'write'  => "Write",
-            'delete' => "Remove Delegation",
-            delegate => "Re-delegate"
-        );
-        foreach (qw(write delete delegate)) {
-            print qq[<td><img src="$NicToolClient::image_dir/perm-];
-            print "un" if ! $zone_record->{"delegate_$_"};
-            print qq[checked.gif" alt="delegate perm">&nbsp; $perms{$_} </td>];
-        }
-        print qq[</tr></table>
-</td></tr>
-</table>
-</td></tr></table>
-<table class="fat">
-<tr class=dark_grey_bg>
-<td> Actions</td>
-</tr>
-</table>
 
-<table class="fat">
-<tr class=light_grey_bg>
-<td class=left> ];
-        if (   $user->{'zonerecord_delegate'}
-            && $zone_record->{'delegate_delete'} )
-        {
-            print qq[<a href="zone.cgi?type=record&amp;nt_zone_record_id=$zone_record->{'nt_zone_record_id'}&amp;nt_zone_id=$zone_record->{'nt_zone_id'}&amp;nt_group_id=$gid&amp;delegate_group_id=$gid&amp;deletedelegate=1" onClick="return confirm('Are you sure you want to remove the delegation of resource record $zone_record->{'name'} to group $zone_record->{'group_name'}?');">Remove Delegation</a>];
-        }
-        else {
-            print "<span class=disabled>Remove Delegation</span>";
-        }
-        print " | ";
-
-        if (   $user->{zone_write}
-            && $user->{'zonerecord_delegate'}
-            && $zone_record->{'delegate_delegate'} )
-        {
-            print qq[<a href="javascript:void window.open('delegate_zones.cgi?type=record&amp;obj_list=$zone_record->{'nt_zone_record_id'}&amp;nt_zone_id=$zone_record->{'nt_zone_id'}', 'delegate_win', 'width=640,height=480,scrollbars,resizable=yes')">Re-Delegate</a>];
-        }
-        else {
-            print "<span class=disabled>Re-Delegate</span>";
-        }
-        print qq(
-                </td>
-            </tr>
-            </table>
-        );
-
+    my %perms = (
+        'write'  => "Write",
+        'delete' => "Remove Delegation",
+        delegate => "Re-delegate"
+    );
+    foreach (qw(write delete delegate)) {
+        print qq[<td><img src="$NicToolClient::image_dir/perm-];
+        print "un" if ! $zone_record->{"delegate_$_"};
+        print qq[checked.gif" alt="delegate perm">&nbsp; $perms{$_} </td>];
     }
+    print qq[</tr>
+      </table>
+     </td>
+    </tr>
+   </table>
 
+  </td>
+ </tr>
+</table>
+
+<table class="fat"> <tr class=dark_grey_bg> <td> Actions</td> </tr> </table>
+
+<table class="fat">
+ <tr class=light_grey_bg>
+  <td class=left> ];
+    if (   $user->{'zonerecord_delegate'}
+        && $zone_record->{'delegate_delete'} )
+    {
+        print qq[<a href="zone.cgi?type=record&amp;nt_zone_record_id=$zone_record->{'nt_zone_record_id'}&amp;nt_zone_id=$zone_record->{'nt_zone_id'}&amp;nt_group_id=$gid&amp;delegate_group_id=$gid&amp;deletedelegate=1" onClick="return confirm('Are you sure you want to remove the delegation of resource record $zone_record->{'name'} to group $zone_record->{'group_name'}?');">Remove Delegation</a>];
+    }
+    else {
+        print "<span class=disabled>Remove Delegation</span>";
+    }
+    print " | ";
+
+    if (   $user->{zone_write}
+        && $user->{'zonerecord_delegate'}
+        && $zone_record->{'delegate_delegate'} )
+    {
+        print qq[<a href="javascript:void window.open('delegate_zones.cgi?type=record&amp;obj_list=$zone_record->{'nt_zone_record_id'}&amp;nt_zone_id=$zone_record->{'nt_zone_id'}', 'delegate_win', 'width=640,height=480,scrollbars,resizable=yes')">Re-Delegate</a>];
+    }
+    else {
+        print "<span class=disabled>Re-Delegate</span>";
+    }
     print qq[
-  <table class="fat">
-    <tr class="dark_grey_bg"><td colspan=2> $action </td></tr>
-    <tr class="light_grey_bg">
-      <td class="right"> Name:</td>
-        <td class="fat">], 
-        $modifyperm ? $q->textfield(
-        -name      => 'name',
-        -size      => 40,
-        -maxlength => 127,
-        -default   => $zone_record->{'name'}
-        ) : $zone_record->{'name'},
-        ( $zone_record->{'name'} ne "$zone->{'zone'}." ? "<b>.$zone->{'zone'}.</b>" : ""),
-        "</td></tr>";
-
-    my $default_record_type = $zone_record->{'type'};
-    $default_record_type = 'PTR' if ( $zone->{'zone'} =~ /(in-addr|ip6)\.arpa/ );
-
-    print qq[
-    <tr class="light_grey_bg">
-      <td class=right> Type:</td><td class="fat">\n], 
-        $modifyperm ? $q->popup_menu(
-            -name    => 'type',
-            -id      => 'rr_type',
-            -values  => $type_values,
-            -labels  => $type_labels,
-            -default => $default_record_type,
-            -onClick => "showFieldsForRRtype(value)",
-# not valid for popup menus (according to CGI.pm docs), but works
-            -onChange => "showFieldsForRRtype(value)",    # seems to work
-            -onFocus  => "showFieldsForRRtype(value)",
-# run, darn it, even if user doesn't change value and onClick isn't permitted
-        )
-        : $type_labels->{ $zone_record->{'type'} }, "</td></tr>";
-
-    print qq[
-      <tr class="light_grey_bg">
-        <td class="right"> Address:</td>
-        <td style="width:100%;">], $modifyperm
-        ? $q->textfield(
-        -name      => 'address',
-        -size      => 50,
-        -maxlength => 255,
-        -default   => $zone_record->{'address'},
-        )
-        : $zone_record->{'address'},
-        $nt_obj->help_link('rraddress') . "</td></tr>";
-
-    print qq{
-       <tr id="tr_weight" class="light_grey_bg">
-         <td class="right"> Weight:</td>
-         <td class="fat">}, $modifyperm
-        ? $q->textfield(
-        -name      => 'weight',
-        -size      => 5,
-        -maxlength => 10,
-        -default   => '10',
-        -default   => $zone_record->{'weight'}
-        )
-        : $zone_record->{'weight'},
-        "</td></tr>";
-
-    print qq{
-       <tr id="tr_priority" class="light_grey_bg">
-         <td class="right"> Priority:</td>
-         <td class="fat">}, $modifyperm
-        ? $q->textfield(
-        -name      => 'priority',
-        -size      => 5,
-        -maxlength => 10,
-        -default   => '10',
-        -default   => $zone_record->{'priority'}
-        )
-        : $zone_record->{'priority'},
-        "</td></tr>";
-
-    print qq{
-       <tr id="tr_other" class="light_grey_bg">
-         <td class="right"> Port:</td>
-         <td class="fat">}, $modifyperm
-        ? $q->textfield(
-        -name      => 'other',
-        -size      => 5,
-        -maxlength => 10,
-        -default   => '10',
-        -default   => $zone_record->{'other'}
-        )
-        : $zone_record->{'other'},
-        "</td></tr>";
-
-    print qq{
-        <tr class="light_grey_bg">
-          <td class="right"> TTL:</td>
-          <td class="fat">}, $modifyperm
-        ? $q->textfield(
-        -name      => 'ttl',
-        -size      => 5,
-        -maxlength => 10,
-        -default   => $zone_record->{'ttl'}
-        )
-        : $zone_record->{'ttl'},
-        "</td></tr>";
-
-    print qq{
-        <tr class="light_grey_bg">
-          <td class="right"> Description:</td>
-          <td class="fat">}, $modifyperm
-        ? $q->textfield(
-        -name      => 'description',
-        -size      => 60,
-        -maxlength => 128,
-        -default   => $zone_record->{'description'}
-        )
-        : $zone_record->{'description'} || "&nbsp;",
-        "</td></tr>";
-
-    print qq{ <tr class="dark_grey_bg"><td colspan="2" class="center"> },
-        $modifyperm
-        ? $q->submit( $edit eq 'edit' ? 'Save' : 'Create' )
-        . $q->submit('Cancel')
-        : '&nbsp;', "</td></tr>";
-
-    print "</table>";
-
-    print $q->end_form if $modifyperm;
+  </td>
+ </tr>
+</table>];
 }
 
 sub display_edit_zone {
