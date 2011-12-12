@@ -408,14 +408,13 @@ sub get_ns_records {
       FROM nt_zone_record r
         LEFT JOIN resource_record_type t ON t.id=r.type_id
         LEFT JOIN nt_zone_nameserver ns ON ns.nt_zone_id=r.nt_zone_id
-        JOIN nt_zone z ON ns.nt_zone_id=z.nt_zone_id";
+        JOIN nt_zone z ON ns.nt_zone_id=z.nt_zone_id
+      WHERE z.deleted=0
+        AND r.deleted=0";
 
     my @args;
-    if ( $self->{ns_id} == 0 ) {
-        $sql .= " WHERE r.deleted=0";  # all zone recs
-    }
-    else {
-        $sql .= " WHERE ns.nt_nameserver_id=? AND r.deleted=0";
+    if ( $self->{ns_id} != 0 ) {
+        $sql .= " AND ns.nt_nameserver_id=?";
         push @args, $self->{ns_id};
     }
 
