@@ -187,7 +187,7 @@ sub display_log {
                 print "<td>", ( scalar localtime( $row->{$_} ) ), "</td>";
             }
             elsif ( $_ eq 'user' ) {
-                my $url = "user.cgi?nt_group_id=$gid&nt_user_id=$row->{'nt_user_id'}";
+                my $url = "user.cgi?nt_group_id=$gid&amp;nt_user_id=$row->{'nt_user_id'}";
                 print qq[<td><table class="no_pad"><tr>
 <td><a href="$url"><img src="$NicToolClient::image_dir/user.gif" alt="user"></a></td>
 <td><a href="$url">$row->{'user'}</a></td> </tr></table></td>];

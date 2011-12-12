@@ -256,8 +256,8 @@ sub display_list_header {
         }
     }
     print qq[
-  <td class=center style="width:1%;" title="Delegate"></td>
-  <td style="width:1%;" title="Trash"></td>
+  <td class="center width1" title="Delegate"></td>
+  <td class="width1" title="Trash"></td>
  </tr>];
 };
 
@@ -268,13 +268,13 @@ sub display_list_move_checkbox {
     if ( $user->{'zone_create'} && !$isdelegate ) {
         if ( $user_group->{'has_children'} ) {
             print qq[
-<td style="width:1%;" class=center> 
+<td class="width1 center"> 
 <input type="checkbox" name="obj_list" value="$zone->{nt_zone_id}" /></td>];
         };
     }
     elsif ( $user_group->{'has_children'} ) {
         print qq[
-<td style="width:1%;" class=center>
+<td class="center width1">
 <img src="$NicToolClient::image_dir/nobox.gif" alt="no box">
 </td>];
     }
@@ -361,7 +361,7 @@ sub display_list_delete_icon {
     my ( $zone, $user, $gid, $state_string ) = @_;
     my $isdelegate = exists $zone->{'delegated_by_id'};
     print qq[
-<td style="width:1%;" title="Delete">];
+<td class="width1" title="Delete">];
     if ( $user->{'zone_delete'} && !$isdelegate ) {
         print qq[<a href="group_zones.cgi?$state_string&amp;nt_group_id=$gid&amp;delete=1&amp;zone_list=$zone->{'nt_zone_id'}" onClick="return confirm('Delete $zone->{'zone'} and associated resource records?');"><img src="$NicToolClient::image_dir/trash.gif" alt="trash"></a></td>];
     }

@@ -74,14 +74,14 @@ sub display {
     $nt_obj->display_zone_list_options( $user, $q->param('nt_group_id'), $level, 0 );
     $nt_obj->display_zone_options( $user, $zone, $level + 1, 0 );    #1);
 
-    $zone = display_properties( $nt_obj, $user, $q, $zone );
+    $zone = display_zone( $nt_obj, $user, $q, $zone );
     display_nameservers( $nt_obj, $user, $q, $zone );
     display_zone_records( $nt_obj, $user, $q, $zone );
 
     $nt_obj->parse_template($NicToolClient::end_html_template);
 }
 
-sub display_properties {
+sub display_zone {
     my ( $nt_obj, $user, $q, $zone ) = @_;
     my $isdelegate = exists $zone->{'delegated_by_id'};
     if ( $q->param('edit_zone') ) {
@@ -371,7 +371,7 @@ sub display_zone_properties {
     my $isdelegate = exists $zone->{'delegated_by_id'};
 
     print qq[
-<div class="side_pad dark_grey_bg" id="propertiesHeader">
+<div id="propertiesHeader" class="side_pad dark_grey_bg">
  <b>Properties</b>];
     if ( !$zone->{'deleted'}
         && $user->{'zone_write'}
@@ -386,7 +386,7 @@ sub display_zone_properties {
  </span>
 </div>
 
-<table class="fat">
+<table id="propertiesDetail" class="fat">
  <tr>
   <td class="width50">
    <table class="fat">];
@@ -421,64 +421,56 @@ sub display_nameservers {
     my ( $nt_obj, $user, $q, $zone ) = @_;
 
     my $isdelegate = exists $zone->{'delegated_by_id'};
-    my @state_fields;
-    foreach ( @{ $nt_obj->paging_fields } ) {
-        push( @state_fields, "$_=" . $q->escape( $q->param($_) ) )
-            if ( $q->param($_) );
-    }
 
-    my @fields = qw(name address description);
-    my %labels = (
-        name        => 'name',
-        address     => 'address',
-        description => 'description'
-    );
+    my @fields = qw/ name address description /;
 
-    print qq[<table class="fat no_pad">
-    <tr><td>
-    <table class="fat">
-    <tr class=dark_grey_bg><td><table class="fat">
-    <tr>
-    <td><b>Nameservers</b></td>];
-    if ( !$zone->{'deleted'}
-        && $user->{'zone_write'}
+    print qq[
+<div id="zoneNameservers" class="">
+ <div id="zoneNameserverHeader" class="dark_grey_bg">
+  <span class="bold"> Nameservers</span>
+  <span class="float_r">];
+
+    if ( !$zone->{'deleted'} && $user->{'zone_write'}
         && ( $isdelegate ? $zone->{'delegate_write'} : 1 ) )
     {
-        my $gid = $q->param('nt_group_id');
-        print qq[<td class=right><a href="zone.cgi?],
-            join( '&amp;', @state_fields ),
-            qq[&amp;nt_group_id=$gid&amp;nt_zone_id=$zone->{'nt_zone_id'}&amp;edit_zone=1">Edit</a></td>];
+        my $state = 'nt_group_id=' . $q->param('nt_group_id');
+        foreach ( @{ $nt_obj->paging_fields } ) {
+            next if ! $q->param($_);
+            $state .= "&amp;$_=" . $q->escape( $q->param($_) );
+        }
+        $state .= "&amp;nt_zone_id=$zone->{'nt_zone_id'}&amp;edit_zone=1";
+        print qq[<a href="zone.cgi?$state">Edit</a>];
     }
     else {
-        print "<td class=right><span class=disabled>Edit</span></td>";
+        print qq[<span class="disabled">Edit</span>];
     }
-    print qq[</tr></table>
-    </td></tr></table>
-    <table class="fat">
-    <tr class=dark_grey_bg>];
-    foreach (@fields) { print "<td class=center>$labels{$_}</td>"; }
-    print "</tr>";
+    print qq[
+  </span>
+ </div>
+ <table id="zoneNameserverList" class="pad1 fat">
+  <tr class="dark_grey_bg pad2">
+   <td class=center>name</td>
+   <td class=center>address</td>
+   <td class=center>description</td>
+  </tr>
+  ];
 
     my $x = 1;
     foreach my $ns ( @{ $zone->{'nameservers'} } ) {
-        print "<tr class=",
-            ( $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' ), ">";
-        foreach (@fields) {
-            if ( $_ eq 'name' ) {
-                print qq[<td><table class="no_pad"><tr>
-                <td><img src="$NicToolClient::image_dir/nameserver.gif" alt="nameserver"></td>
-                <td>], ( $ns->{$_} ? $ns->{$_} : '&nbsp;' ), "</td>";
-                print "</tr></table></td>";
-            }
-            else {
-                print "<td>", ( $ns->{$_} ? $ns->{$_} : '&nbsp;' ), "</td>";
-            }
-        }
-        print "</tr>";
+        my $bgcolor = $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg';
+        print qq[
+  <tr class="$bgcolor">
+   <td>
+     <img class="no_pad" src="$NicToolClient::image_dir/nameserver.gif" alt="nameserver">
+     $ns->{name}</td>
+   <td> $ns->{address}</td>
+   <td>$ns->{description}</td>
+  </tr>];
     }
 
-    print "</table>";
-    print "</td></tr></table>";
+    print qq[
+ </table>
+</div>];
 }
 
 sub display_zone_records {
@@ -486,30 +478,12 @@ sub display_zone_records {
     my $group = $nt_obj->get_group( nt_group_id => $user->{'nt_group_id'} );
     my $zonedelegate = exists $zone->{'delegated_by_id'};
 
-    # display any status messages regarding any previous actions
-    #    New Zone Record 'host.example.com' Created
+    # process submitted form actions
     display_zone_records_new( $nt_obj, $user, $q, $zone );
-
-    #    Zone Record successfully modified
     display_zone_records_edit( $nt_obj, $user, $q, $zone );
+    display_zone_records_delete( $nt_obj, $q );
 
-    #    Zone Record successfully deleted.
-    if ( $q->param('delete_record') ) {
-        my $error = $nt_obj->delete_zone_record(
-            nt_group_id       => $q->param('nt_group_id'),
-            nt_zone_record_id => $q->param('nt_zone_record_id')
-        );
-        if ( $error->{'error_code'} != 200 ) {
-            $nt_obj->display_nice_error( $error, "Delete Zone Record" );
-        }
-        else {
-            $nt_obj->display_nice_message(
-                "Zone Record successfully deleted.",
-                "Delete Zone Record" );
-        }
-    }
-
-    my @columns = qw(name type address ttl weight priority other description);
+    my @columns = qw/ name type address ttl weight priority other description/;
 
     my %labels = (
         name        => 'Name',
@@ -522,12 +496,14 @@ sub display_zone_records {
         description => 'Description',
     );
 
-    $nt_obj->display_sort_options( $q, \@columns, \%labels, 'zone.cgi',
-        [ 'nt_group_id', 'nt_zone_id' ] )
-        if $q->param('edit_sortorder');
-    $nt_obj->display_advanced_search( $q, \@columns, \%labels, 'zone.cgi',
-        [ 'nt_group_id', 'nt_zone_id' ] )
-        if $q->param('edit_search');
+    if ( $q->param('edit_sortorder') ) {
+        $nt_obj->display_sort_options( $q, \@columns, \%labels, 'zone.cgi',
+            [ 'nt_group_id', 'nt_zone_id' ] );
+    };
+    if ( $q->param('edit_search') ) {
+        $nt_obj->display_advanced_search( $q, \@columns, \%labels, 'zone.cgi',
+            [ 'nt_group_id', 'nt_zone_id' ] );
+    };
 
     my %params = ( nt_zone_id => $q->param('nt_zone_id') );
     my %sort_fields;
@@ -569,17 +545,12 @@ sub display_zone_records {
     }
     push @options, qq[<a href="zone_record_log.cgi?nt_group_id=$gid&amp;nt_zone_id=$zid">View Resource Record Log</a>];
 
-    print qq[<table class="fat"> <tr><td><hr></td></tr>];
-
-    #show delegation information if delegated down
-
-    print qq[<tr class=dark_grey_bg><td>
-    <table class="no_pad fat">
-    <tr>
-    <td><b>Resource Records</b></td>
-    <td class=right>], join( ' | ', @options ), "</td>";
-    print "</tr></table></td></tr>";
-    print "</table>";
+    print qq[
+<hr class="side_pad">
+<div class="dark_grey_bg">
+  <span class="bold">Resource Records</span>
+  <span class="float_r">], join( ' | ', @options ), qq[</span>
+</div>];
 
     $nt_obj->display_search_rows( $q, $rv, \%params, 'zone.cgi',
         [ 'nt_group_id', 'nt_zone_id' ] );
@@ -792,6 +763,25 @@ sub display_zone_records_edit {
     }
     $nt_obj->display_nice_message(
             "Zone Record successfully modified.", "Edit Zone Record" );
+};
+
+sub display_zone_records_delete {
+    my ( $nt_obj, $q ) = @_;
+
+    return if ! $q->param('delete_record');
+
+    my $error = $nt_obj->delete_zone_record(
+        nt_group_id       => $q->param('nt_group_id'),
+        nt_zone_record_id => $q->param('nt_zone_record_id')
+    );
+    if ( $error->{'error_code'} != 200 ) {
+        $nt_obj->display_nice_error( $error, "Delete Zone Record" );
+    }
+    else {
+        $nt_obj->display_nice_message(
+            "Zone Record successfully deleted.",
+            "Delete Zone Record" );
+    }
 };
 
 sub display_edit_record {

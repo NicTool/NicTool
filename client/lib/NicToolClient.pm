@@ -430,7 +430,7 @@ sub display_zone_options {
 
     for my $x ( 1 .. $level ) {
         my $img = $x == $level ? 'dirtree_elbow' : 'transparent';
-        print qq[<img src="$NicToolClient::image_dir/$img.gif" class="tee" alt="$img">];
+        print qq[\n<img src="$NicToolClient::image_dir/$img.gif" class="tee" alt="$img">];
     }
 
     if ($isdelegate) {

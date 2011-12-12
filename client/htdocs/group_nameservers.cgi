@@ -177,7 +177,7 @@ sub display_list {
     if ( $user->{'nameserver_create'} ) {
         print qq[<a href="$cgi?]
             . join( '&amp;', @state_fields )
-            . "&nt_group_id="
+            . "&amp;nt_group_id="
             . $q->param('nt_group_id')
             . qq[&new=1">New Nameserver</a>];
     }
@@ -247,7 +247,7 @@ sub display_list {
         }
     }
     print
-        "<td width=1%><img src=$NicToolClient::image_dir/trash.gif></td>";
+        "<td class=width1><img src=$NicToolClient::image_dir/trash.gif></td>";
     print "</tr>";
 
     my $x     = 0;
@@ -260,7 +260,7 @@ sub display_list {
                 || $obj->{'delegate_write'} )
             )
         {
-            print qq[<td style="width:1%;" class=center>],
+            print qq[<td class="width1 center">],
                 $q->checkbox(
                 -name  => 'obj_list',
                 -value => $obj->{'nt_nameserver_id'},
@@ -270,7 +270,7 @@ sub display_list {
                 if ( $user_group->{'has_children'} );
         }
         else {
-            print qq[<td style="width:1%;" class=center><img src=$NicToolClient::image_dir/nobox.gif></td>]
+            print qq[<td class="width1 center"><img src=$NicToolClient::image_dir/nobox.gif></td>]
                 if $user_group->{'has_children'};
         }
 
@@ -307,8 +307,8 @@ sub display_list {
 
         print qq[<td width=$width><table class="no_pad">
         <tr>
-         <td><a href="$cgi?nt_nameserver_id=$obj->{'nt_nameserver_id'}&nt_group_id=$obj->{'nt_group_id'}&amp;edit=1"><img src="$NicToolClient::image_dir/nameserver.gif"></a></td>
-         <td><a href="$cgi?nt_nameserver_id=$obj->{'nt_nameserver_id'}&nt_group_id=$obj->{'nt_group_id'}&amp;edit=1"> $obj->{'name'} </a></td>
+         <td><a href="$cgi?nt_nameserver_id=$obj->{'nt_nameserver_id'}&amp;nt_group_id=$obj->{'nt_group_id'}&amp;edit=1"><img src="$NicToolClient::image_dir/nameserver.gif"></a></td>
+         <td><a href="$cgi?nt_nameserver_id=$obj->{'nt_nameserver_id'}&amp;nt_group_id=$obj->{'nt_group_id'}&amp;edit=1"> $obj->{'name'} </a></td>
         </tr></table></td>];
 
         foreach (qw(description address status)) {
@@ -321,14 +321,14 @@ sub display_list {
                 || $obj->{'delegate_delete'} )
             )
         {
-            print qq[<td width=1%><a href="$cgi?]
+            print qq[<td class="width1"><a href="$cgi?]
                 . join( '&amp;', @state_fields )
-                . "&nt_group_id="
+                . "&amp;nt_group_id="
                 . $q->param('nt_group_id')
                 . qq[&amp;delete=1&amp;nt_nameserver_id=$obj->{'nt_nameserver_id'}" onClick="return confirm('Delete nameserver $obj->{'name'}?');"><img src="$NicToolClient::image_dir/trash.gif" alt="trash"></a></td>];
         }
         else {
-            print qq[<td width=1%><img src="$NicToolClient::image_dir/trash-disabled.gif" alt="disabled trash"></td>];
+            print qq[<td class=width1><img src="$NicToolClient::image_dir/trash-disabled.gif" alt="disabled trash"></td>];
         }
         print "</tr>";
     }

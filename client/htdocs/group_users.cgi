@@ -466,7 +466,7 @@ sub display_list {
             print "<td class=center>$labels{$_}</td>";
         }
     }
-    print qq[<td width=1%><img src="$NicToolClient::image_dir/trash.gif"></td></tr>];
+    print qq[<td class="width1"><img src="$NicToolClient::image_dir/trash.gif"></td></tr>];
 
     my $x     = 0;
     my $width = int( 100 / @columns ) . '%';
@@ -478,14 +478,14 @@ sub display_list {
             && $obj->{'nt_user_id'} ne $user->{'nt_user_id'} )
         {
             if ( $user_group->{'has_children'} ) {
-                print qq[<td style="width:1%;" class=center>],
+                print qq[<td class="width1 center">],
                     $q->checkbox( -name => 'obj_list', -value => $obj->{'nt_user_id'}, 
                         -label => ''), '</td>';
             };
         }
         else {
             if ( $user_group->{'has_children'} ) {
-                print qq[<td width=1% class=center>
+                print qq[<td class="width1 center">
 <img src="$NicToolClient::image_dir/nobox.gif" alt="nobox"></td>];
             };
         }
@@ -521,7 +521,7 @@ sub display_list {
             print "</tr></table></td>";
         }
 
-        my $url = "user.cgi?nt_user_id=$obj->{'nt_user_id'}&nt_group_id=$obj->{'nt_group_id'}";
+        my $url = "user.cgi?nt_user_id=$obj->{'nt_user_id'}&amp;nt_group_id=$obj->{'nt_group_id'}";
         print qq[
 <td width=$width><table class="no_pad">
   <tr>
@@ -540,11 +540,11 @@ sub display_list {
         {
             my $gid = $q->param('nt_group_id');
             my $state_string = join('&amp;', @state_fields);
-            print qq[<td width=1%>
+            print qq[<td class="width1">
  <a href="$cgi?$state_string&amp;nt_group_id=$gid&amp;delete=1&amp;obj_list=$obj->{'nt_user_id'}" onClick="return confirm('Delete user $obj->{'username'}?');"><img src="$NicToolClient::image_dir/trash.gif" alt="trash"></a></td>];
         }
         else {
-            print qq[<td width=1%><img src="$NicToolClient::image_dir/trash-disabled.gif" alt="disabled trash"></td>];
+            print qq[<td class="width1"><img src="$NicToolClient::image_dir/trash-disabled.gif" alt="disabled trash"></td>];
         }
         print qq[</tr>];
     }

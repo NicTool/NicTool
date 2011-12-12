@@ -308,7 +308,7 @@ sub display_group_list {
 
             for (qw(zones nameservers users log)) {
                 print qq[
-           <td class=center width=1%>
+           <td class="center width1">
             <table class="no_pad"><tr>
               <td><img src="$NicToolClient::image_dir/transparent.gif" width=2 height=16></td>
               <td><a href="group_$_.cgi?nt_group_id=$group->{'nt_group_id'}">
