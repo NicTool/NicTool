@@ -5,7 +5,7 @@ use strict;
 use vars qw/ $AUTOLOAD /;
 use NicToolServerAPI();
 
-$NicToolClient::VERSION = '2.11';
+$NicToolClient::VERSION = '2.12';
 $NicToolClient::NTURL   = 'http://www.nictool.com/';
 $NicToolClient::LICENSE = 'http://www.affero.org/oagpl.html';
 $NicToolClient::SRCURL  = 'http://www.nictool.com/download/NicTool.tar.gz';
@@ -33,12 +33,6 @@ sub rr_types {
     my $self = shift;
     my $r = $self->get_record_type(type=>'ALL');
     return $r->{types};
-}
-
-sub ns_export_formats {
-    {   'bind'    => 'BIND (ISC\'s Berkeley Internet Named Daemon)',
-        'tinydns' => 'tinydns (part of DJBDNS)',
-    };
 }
 
 sub obj_to_cgi_map {
@@ -303,7 +297,7 @@ sub display_zone_list_options {
         push @options, qq[<a href="group_zones_log.cgi?nt_group_id=$group_id">View Zone Log</a>];
     };
 
-    print qq[ 
+    print qq[
 <div id="zoneListOptions" class="light_grey_bg side_pad">];
 
     for my $x ( 1 .. $level ) {
@@ -340,30 +334,38 @@ sub display_user_list_options {
         push @options, '<span class="disabled">New User</span>' unless $in_user_list;
     }
 
-    print qq[<table class="fat">
-    <tr class=light_grey_bg>
-    <td>
-    <table class="no_pad fat">
+    print qq[
+<table class="fat">
+ <tr class=light_grey_bg>
+  <td>
+   <table class="no_pad fat">
     <tr>];
 
     for my $x ( 1 .. $level ) {
-        print qq[<td><img src="$NicToolClient::image_dir/]
-            . ( $x == $level ? 'dirtree_elbow' : 'transparent' )
-            . qq[.gif" class="tee" alt=""></td>];
+        my $img = $x == $level ? 'dirtree_elbow' : 'transparent';
+        print qq[
+     <td><img src="$NicToolClient::image_dir/$img.gif" class="tee" alt=""></td>];
     }
 
-    print qq[<td><img src="$NicToolClient::image_dir/folder_open.gif" alt="folder"></td>];
+    print qq[
+     <td><img src="$NicToolClient::image_dir/folder_open.gif" alt="folder"></td>];
 
     if ($in_user_list) {
-        print qq[<td class="nowrap"><b>Users</b></td>];
+        print qq[
+     <td class="nowrap"><b>Users</b></td>];
     }
     else {
-        print qq[<td class="nowrap"><a href="group_users.cgi?nt_group_id=$group_id">Users</a></td>];
+        print qq[
+     <td class="nowrap"><a href="group_users.cgi?nt_group_id=$group_id">Users</a></td>];
     }
 
-    print qq[<td class="right fat">], join( ' | ', @options ), qq[</td>
-</tr></table>
-    </td></tr></table>];
+    print qq[
+     <td class="right fat">], join( ' | ', @options ), qq[</td>
+    </tr>
+   </table>
+  </td>
+ </tr>
+</table>];
 }
 
 sub display_zone_options {
@@ -463,38 +465,51 @@ sub display_zone_options {
 sub display_nameserver_options {
     my ( $self, $user, $group_id, $level, $in_ns_summary ) = @_;
 
-    my @options;
-    if ( $user->{'nameserver_create'} ) {
-        push @options, qq[<a href="group_nameservers.cgi?nt_group_id=$group_id&amp;edit=1">New Nameserver</a>] 
-            if !$in_ns_summary;
-    }
-    else {
-        push @options, '<span class="disabled">New Nameserver</class>' if !$in_ns_summary;
-    }
 
-    print qq[<table class="fat">
-    <tr class=light_grey_bg>
-    <td>
-    <table class="no_pad" class="fat">
+    print qq[
+<table id="nameserverOptions" class="fat">
+ <tr class=light_grey_bg>
+  <td>
+   <table class="no_pad fat">
     <tr>];
 
     for my $x ( 1 .. $level ) {
-        print qq[<td><img src="$NicToolClient::image_dir/]
-            . ( $x == $level ? 'dirtree_elbow' : 'transparent' )
-            . qq[.gif" class="tee" alt=""></td>];
+        my $tee = $x == $level ? 'dirtree_elbow' : 'transparent';
+        print qq[
+     <td><img src="$NicToolClient::image_dir/$tee.gif" class="tee" alt=""></td>];
     }
 
-    print qq[<td><img src="$NicToolClient::image_dir/folder_open.gif" alt="folder"></td>];
+    print qq[
+     <td><img src="$NicToolClient::image_dir/folder_open.gif" alt="folder"></td>];
 
     if ($in_ns_summary) {
-        print qq[<td class="nowrap"><b>Nameservers</b></td>];
+        print qq[
+     <td class="nowrap bold">Nameservers</td>];
     }
     else {
-        print qq[<td class="nowrap"><a href="group_nameservers.cgi?nt_group_id=$group_id">Nameservers</a></td>];
+        print qq[
+     <td class="nowrap"><a href="group_nameservers.cgi?nt_group_id=$group_id">Nameservers</a></td>];
     }
+    print qq[
+     <td class="right fat">];
 
-    print qq[<td class="right fat">], join( ' | ', @options ), 
-    "</td></tr></table></td></tr></table>";
+    if ( !$in_ns_summary ) {
+        if ( $user->{'nameserver_create'} ) {
+            print qq[<a href="group_nameservers.cgi?nt_group_id=$group_id&amp;edit=1">New Nameserver</a>];
+        }
+        else {
+            print qq[<span class="disabled">New Nameserver</class>];
+        }
+    };
+
+    print
+     qq[
+     </td>
+    </tr>
+   </table>
+  </td>
+ </tr>
+</table>];
 }
 
 sub paging_fields {
@@ -604,7 +619,9 @@ sub display_search_rows {
     <tr>
      <td>],
     $q->startform( -action => $cgi_name, -method => 'POST' );
-    foreach (@$state_fields) { print $q->hidden( -name => $_ ); }
+    foreach (@$state_fields) {
+        print $q->hidden( -name => $_ );
+    };
     print $q->textfield( -name => 'search_value', -size => 30, -override => 1);
     print $q->hidden( -name => 'quick_search', -value => 'Enter', -override => 1);
     foreach ( keys %$moreparams ) {
@@ -656,8 +673,8 @@ sub display_search_rows {
             . qq["><b><</b></a> &nbsp; ];
     }
 
-    my $curpage = $rv->{'end'} % $rv->{'limit'} 
-                ? int( $rv->{'end'} / $rv->{'limit'} ) + 1 
+    my $curpage = $rv->{'end'} % $rv->{'limit'}
+                ? int( $rv->{'end'} / $rv->{'limit'} ) + 1
                 : $rv->{'end'} / $rv->{'limit'};
 
     print "Page ",
@@ -702,15 +719,15 @@ sub display_search_rows {
 
     print qq[
 <table id="searchRowResults" class="fat">
- <tr class=dark_grey_bg> <td>
-   <table class="no_pad fat"> <tr>
-     <td>Search: $params->{'search_query'} found $rv->{'total'} records</td>
-     <td class=right>
-      <a href="$cgi_name?$state_string&amp;edit_search=1">Advanced Search</a> | 
-      <a href="$cgi_name?$state_string&amp;edit_sortorder=1">Change Sort Order</a> | 
-      <a href="$cgi_name?$state_map&amp;$state_map">Browse All</a>
-     </td> </tr> </table> </td> </tr>
-</table>];
+ <tr class=dark_grey_bg>
+  <td>Search: $params->{'search_query'} found $rv->{'total'} records</td>
+  <td class=right>
+   <a href="$cgi_name?$state_string&amp;edit_search=1">Advanced Search</a> |
+   <a href="$cgi_name?$state_string&amp;edit_sortorder=1">Change Sort Order</a> |
+   <a href="$cgi_name?$state_map&amp;$state_map">Browse All</a>
+  </td>
+ </tr>
+</table>\n];
 }
 
 sub display_sort_options {
@@ -1198,7 +1215,7 @@ sub redirect_from_log {
 sub display_move_javascript {
     my ( $self, $cgi, $name ) = @_;
     print <<ENDJS;
-<script>
+\n<script>
 function selectAllorNone(group, action) {
     if(group.length){
         for( var x = 0; x < group.length; x++ ) {
@@ -1351,7 +1368,7 @@ sub display_nice_error {
     my $bb = $back ? '<form><input type=submit value="Back" onClick="javascript:history.go(-1)"></form>'
            : '&nbsp;';
 
-    print qq[<br>\n 
+    print qq[<br>\n
 <table id="errorMessage" class="fat center">
  <tr><td class="left error_bg"><strong>$message</strong>$actionmsg</td></tr>
  <tr><td class="left light_grey_bg">$errmsg<p>$explain</p></td></tr>
