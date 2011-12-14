@@ -29,6 +29,7 @@ div {
 
 .float_r  { float: right; }
 .side_pad { padding-right: 4px; padding-left: 4px; }
+.side_mar { margin-right: 4px; margin-left: 4px; }
 .no_margin { margin: 0px; }
 .margin2 { margin:  2px; }
 .margin4 { margin:  4px; }
@@ -40,6 +41,7 @@ div {
 .tall    { height: 100%; }
 .fat     { width:  100%; }
 .width80 { width:   80%; }
+.width70 { width:   70%; }
 .width50 { width:   50%; }
 .width1  { width:    1%; }
 .tee     { height: 17px; width: 17px; }

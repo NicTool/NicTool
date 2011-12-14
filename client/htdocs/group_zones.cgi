@@ -156,11 +156,10 @@ sub display_list {
 
     my %params = ( nt_group_id => $q->param('nt_group_id') );
     my %sort_fields;
-    $nt_obj->prepare_search_params( $q, \%labels, \%params, \%sort_fields,
-        100 );
-
-    $sort_fields{'zone'} = { 'order' => 1, 'mod' => 'Ascending' }
-        unless %sort_fields;
+    $nt_obj->prepare_search_params( $q, \%labels, \%params, \%sort_fields, 100 );
+    if ( ! %sort_fields ) {
+        $sort_fields{'zone'} = { 'order' => 1, 'mod' => 'Ascending' };
+    };
 
     my $rv = $nt_obj->get_group_zones(%params);
 
@@ -268,7 +267,7 @@ sub display_list_move_checkbox {
     if ( $user->{'zone_create'} && !$isdelegate ) {
         if ( $user_group->{'has_children'} ) {
             print qq[
-<td class="width1 center"> 
+<td class="width1 center">
 <input type="checkbox" name="obj_list" value="$zone->{nt_zone_id}" /></td>];
         };
     }
@@ -286,7 +285,7 @@ sub display_list_zone_name {
     my $isdelegate = exists $zone->{'delegated_by_id'};
     print qq[
   <td style="width:$width;" class="$bgcolor" title="Zone Name">
-   <div class="no_pad no_margin"> 
+   <div class="no_pad no_margin">
     ];
     if ( !$isdelegate ) {
         print qq[
@@ -316,8 +315,8 @@ sub display_list_zone_name {
 };
 
 sub display_list_group_name {
-    my ( $zone, $width, $map ) = @_; 
-    
+    my ( $zone, $width, $map ) = @_;
+
     print qq[
  <td style="width:$width;" title="Group Name">
   <div class="no_pad no_margin">
@@ -330,7 +329,7 @@ sub display_list_group_name {
             if ($map) { unshift @list, @{ $map->{ $zone->{'nt_group_id'} } }; };
 
             my $url = qq[<a href="group.cgi?nt_group_id=];
-            my $group_string = join( ' / ', 
+            my $group_string = join( ' / ',
                 map( qq[${url}$_->{'nt_group_id'}">$_->{'name'}</a>], @list ) );
 
             print qq[ $group_string
@@ -514,7 +513,7 @@ qq[ <a href="zones.cgi?nt_group_id=],$q->param('nt_group_id'),qq[">Batch</a></td
         );
     my $ip = $q->param('newip') || "IP Address";
     print qq[
-IP: <input type="text" name="newip" size="17" maxlength="15" value="$ip" onFocus="if(this.value=='IP Address')this.value='';"> 
+IP: <input type="text" name="newip" size="17" maxlength="15" value="$ip" onFocus="if(this.value=='IP Address')this.value='';">
 Mail IP: <input type="text" name="mailip" size="17" maxlength="15">
     </td></tr>
 
@@ -527,7 +526,7 @@ Mail IP: <input type="text" name="mailip" size="17" maxlength="15">
 sub add_zone {
     my ($nt_obj, $q, $user) = @_;
 
-    my @fields = qw/ nt_group_id zone nameservers description serial 
+    my @fields = qw/ nt_group_id zone nameservers description serial
                 refresh retry expire minimum mailaddr template ttl /;
     my %data;
     foreach (@fields) { $data{$_} = $q->param($_); }
@@ -590,7 +589,7 @@ sub add_zone_records {
 }
 
 sub display_zone_actions {
-    my ($nt_obj, $q, $user, $zones, $user_group) = @_; 
+    my ($nt_obj, $q, $user, $zones, $user_group) = @_;
 
     my @state_fields;
     foreach ( @{ $nt_obj->paging_fields } ) {
@@ -600,10 +599,9 @@ sub display_zone_actions {
     my $state_string = join('&amp;', @state_fields, "nt_group_id=$gid");
 
     print qq[
-<div id="zoneActions" class="fat dark_grey_bg">
- <table class="no_pad fat">
-  <tr><td class="bold">Zone List</td>
-    <td class=right>];
+<div id="zoneActions" class="dark_grey_bg side_mar">
+  <span class="bold">Zone List</span>
+  <span class=float_r>];
 
     if ( $user->{'zone_create'} ) {
         print qq[<a href="group_zones.cgi?$state_string&amp;new=1">New Zone</a>];
@@ -620,9 +618,7 @@ sub display_zone_actions {
     };
 
     print qq[ | <a href="group_zones_log.cgi?nt_group_id=$gid">View Zone Log</a>
-   </td>
-  </tr>
- </table>
+ </span>
 </div>
 ];
 };
