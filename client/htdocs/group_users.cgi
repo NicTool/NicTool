@@ -53,78 +53,32 @@ sub display {
         $q->param('nt_group_id'), 0
     );
 
-    $nt_obj->display_user_list_options( $user, $q->param('nt_group_id'),
-        $level, 1 );
+    $nt_obj->display_user_list_options( $user, $q->param('nt_group_id'), $level, 1 );
     my $group = $nt_obj->get_group( nt_group_id => $q->param('nt_group_id') );
 
     my @fields = qw/ user_create user_delete user_write group_create group_delete group_write zone_create zone_delegate zone_delete zone_write zonerecord_create zonerecord_delegate zonerecord_delete zonerecord_write nameserver_create nameserver_delete nameserver_write self_write /;
+
     if ( $q->param('new') ) {
         if ( $q->param('Create') ) {
-            my %data;
-            foreach ( qw( nt_group_id username first_name last_name email password password2 ) )
-            {
-                $data{$_} = $q->param($_);
-            }
-            if ( $q->param('group_defaults') eq '0' ) {
-                foreach (@fields) {
-                    $data{$_} = $q->param($_) ? 1 : 0;
-                }
-            }
-            else {
-                $data{'inherit_group_permissions'} = 1;
-            }
-
-            #warn Data::Dumper::Dumper(\%data);
-            my $error = $nt_obj->new_user(%data);
-
-            if ( $error->{'error_code'} != 200 ) {
-                display_edit_user( $nt_obj, $user, $group, $q, $error, 'new' );
-            }
+            display_save($nt_obj, $q, $user, $group, \@fields, 'new');
         }
-        elsif ( $q->param('Cancel') ) {
-
-            # do nothing
-        }
+        elsif ( $q->param('Cancel') ) { } # do nothing
         else {
             display_edit_user( $nt_obj, $user, $group, $q, '', 'new' );
         }
     }
     elsif ( $q->param('edit') ) {
         if ( $q->param('Save') ) {
-            my %data;
-            foreach (
-                qw(nt_user_id nt_group_id username first_name last_name email password password2)
-                )
-            {
-                $data{$_} = $q->param($_);
-            }
-            if ( $q->param('group_defaults') eq '0' ) {
-                foreach (@fields) {
-                    $data{$_} = $q->param($_) ? 1 : 0;
-                }
-            }
-            else {
-                $data{'inherit_group_permissions'} = 1;
-            }
-            my $error = $nt_obj->edit_user(%data);
-
-            if ( $error->{'error_code'} != 200 ) {
-                display_edit_user( $nt_obj, $user, $group, $q, $error,
-                    'edit' );
-            }
+            display_save($nt_obj, $q, $user, $group, \@fields, 'edit');
         }
-        elsif ( $q->param('Cancel') ) {
-
-            # do nothing
-        }
+        elsif ( $q->param('Cancel') ) { } # do nothing
         else {
             display_edit_user( $nt_obj, $user, $group, $q, '', 'edit' );
         }
     }
 
     if ( $q->param('delete') ) {
-        my $error
-            = $nt_obj->delete_users( user_list => $q->param('obj_list') );
+        my $error = $nt_obj->delete_users( user_list => $q->param('obj_list') );
         if ( $error->{'error_code'} != 200 ) {
             $nt_obj->display_nice_error( $error, "Delete Users" );
         }
@@ -134,6 +88,36 @@ sub display {
 
     $nt_obj->parse_template($NicToolClient::end_html_template);
 }
+
+sub display_save {
+    my ( $nt_obj, $q, $user, $group, $fields, $e_or_s ) = @_;
+
+    my @ffields = qw/ nt_group_id username first_name last_name email password password2 /;
+    if ( $e_or_s eq 'edit' ) {
+        unshift @ffields, 'nt_user_id';
+    };
+
+    my %data;
+    foreach ( @ffields ) {
+        $data{$_} = $q->param($_);
+    }
+
+    if ( $q->param('group_defaults') eq '0' ) {
+        foreach (@$fields) {
+            $data{$_} = $q->param($_) ? 1 : 0;
+        }
+    }
+    else {
+        $data{'inherit_group_permissions'} = 1;
+    }
+    my $error = $e_or_s eq 'edit' 
+              ?  $nt_obj->edit_user(%data)
+              :  $nt_obj->new_user(%data);
+
+    if ( $error->{'error_code'} != 200 ) {
+        display_edit_user( $nt_obj, $user, $group, $q, $error, $e_or_s );
+    }
+};
 
 sub display_edit_user {
     my ( $nt_obj, $user, $group, $q, $message, $edit ) = @_;
@@ -231,11 +215,11 @@ sub display_edit_user {
                     print qq[ <td class=$color></td>];
                     next;
                 }
-                my $check = $group->{ $type . "_" . $perm } ? 'checked.gif' : 'unchecked.gif';
+                my $check = $group->{ $type . "_" . $perm } ? 'checked' : 'unchecked';
                 print qq[
-                    <td class="$color left middle"><img src="$NicToolClient::image_dir/perm-$check"> ]
+<td class="$color left middle"><img src="$NicToolClient::image_dir/perm-$check.gif" alt="permission $check"]
                     . ( exists $labels{$type}{$perm} ? $labels{$type}{$perm} : ucfirst($perm) )
-                    . qq{</td>};
+                    . qq[</td>];
             }
             print qq[</tr>];
         }
@@ -305,9 +289,9 @@ sub display_edit_user {
                             . qq{</td> };
                     }
                     else {
-                        print qq{<td class="$color middle left"><img src="$NicToolClient::image_dir/perm-}
-                            . ( $group->{ $type . "_" . $perm } ? 'checked.gif' : 'unchecked.gif' )
-                            . qq{" alt=""><span class=disabled>}
+                        print qq[<td class="$color middle left"><img src="$NicToolClient::image_dir/perm-]
+                            . ( $group->{ $type . "_" . $perm } ? 'checked' : 'unchecked' )
+                            . qq{.gif" alt="permission"><span class=disabled>}
                             . ( exists $labels{$type}->{$perm} ? $labels{$type}->{$perm} : ucfirst($perm) )
                             . qq{</span></td> };
                     }
@@ -459,14 +443,14 @@ sub display_list {
   <tr>
    <td>$labels{$_}</td>
    <td>&nbsp; &nbsp; $sort_fields{$_}->{'order'}</td>
-   <td><img src=$NicToolClient::image_dir/$dir.gif></td>
+   <td><img src=$NicToolClient::image_dir/$dir.gif alt="$dir"></td>
   </tr></table></td>];
         }
         else {
             print "<td class=center>$labels{$_}</td>";
         }
     }
-    print qq[<td class="width1"><img src="$NicToolClient::image_dir/trash.gif"></td></tr>];
+    print qq[<td class="width1"><img src="$NicToolClient::image_dir/trash.gif" alt="trash"></td></tr>];
 
     my $x     = 0;
     my $width = int( 100 / @columns ) . '%';
@@ -492,7 +476,7 @@ sub display_list {
 
         if ($include_subgroups) {
             print qq[<td style="width:$width;"><table class="no_pad"><tr>
-            <td><img src="$NicToolClient::image_dir/group.gif"></td>];
+            <td><img src="$NicToolClient::image_dir/group.gif" alt="group"></td>];
             if ($map) {
                 print "<td>",
                     join(
@@ -525,7 +509,7 @@ sub display_list {
         print qq[
 <td style="width:$width;"><table class="no_pad">
   <tr>
-   <td><a href="$url"><img src="$NicToolClient::image_dir/user.gif"></a></td>
+   <td><a href="$url"><img src="$NicToolClient::image_dir/user.gif" alt="user"></a></td>
    <td><a href="$url">$obj->{'username'}</a></td>
   </tr>
  </table>
