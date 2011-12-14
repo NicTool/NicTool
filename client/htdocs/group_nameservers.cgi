@@ -326,6 +326,7 @@ sub display_list_subgroups {
         map( qq[${url}$_->{'nt_group_id'}">$_->{'name'}</a>], @list ) );
 
     print qq[ $group_string
+     </td>
     </tr>
    </table>
   </td>];
