@@ -255,7 +255,7 @@ sub delegate_zones {
   <td class=center> Description</td>
  </tr>
  <tr class=light_grey_bg>
-  <td width=25%>
+  <td style="width:25%;">
    <table class="no_pad">
     <tr>
      <td class="middle"><a href="zone.cgi?nt_group_id=$zone->{'nt_group_id'}&amp;nt_zone_id=$zone->{'nt_zone_id'}&amp;nt_zone_record_id=$zr->{'nt_zone_record_id'}&amp;edit_record=1" target=body><img src="$NicToolClient::image_dir/r_record.gif"></a></td>

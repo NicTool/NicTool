@@ -262,7 +262,7 @@ qq[&amp;nt_group_id=$gid&amp;nt_user_id=$uid&amp;edit=1">$modname</a></td>
     print qq[
 <table class="fat" cellspacing=0>
  <tr>
-  <td width=50%>
+  <td class="width50">
    <table class="fat">
     <tr class=light_grey_bg>
      <td class="nowrap">Username: </td> <td class="fat">$duser->{'username'}</td>
@@ -272,7 +272,7 @@ qq[&amp;nt_group_id=$gid&amp;nt_user_id=$uid&amp;edit=1">$modname</a></td>
     </tr>
    </table>
   </td>
-	<td width=50%>
+	<td class="width50">
    <table class="fat">
     <tr class=light_grey_bg>
      <td class="nowrap">First Name: </td> <td class="fat">$duser->{'first_name'}</td>

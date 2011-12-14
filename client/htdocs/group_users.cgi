@@ -26,7 +26,7 @@ sub main {
     my $q      = new CGI();
     my $nt_obj = new NicToolClient($q);
 
-    return if ( $nt_obj->check_setup ne 'OK' );
+    return if $nt_obj->check_setup ne 'OK';
 
     my $user = $nt_obj->verify_session();
 
@@ -158,7 +158,7 @@ sub display_edit_user {
 <tr class=dark_bg><td colspan=2><b>New User</b></td></tr>
 <tr class=light_grey_bg>
 <td class=right>Username:</td>
-<td width=80%>],
+<td class=width80>],
         (
         $modifyperm
         ? $q->textfield(
@@ -171,22 +171,22 @@ sub display_edit_user {
         qq[</td></tr>
 <tr class=light_grey_bg>
 <td class=right>First Name:</td>
-<td width=80%>],
+<td class=width80>],
 ( $modifyperm ? $q->textfield( -name => 'first_name', -size => 20, -maxlength => 30) : ''),
         qq[</td></tr>
 <tr class=light_grey_bg>
 <td class=right>Last Name:</td>
-<td width=80%>],
+<td class=width80>],
 ( $modifyperm ? $q->textfield( -name => 'last_name', -size => 30, -maxlength => 40) : ''),
         qq[</td></tr>
 <tr class=light_grey_bg>
 <td class=right>Email Address:</td>
-<td width=80%>],
+<td class=width80>],
 ( $modifyperm ? $q->textfield( -name => 'email', -size => 40, -maxlength => 100 ) : ''),
         qq[</td></tr>
     <tr class=light_grey_bg>
     <td class=right>Password:</td>
-    <td width=80%>],
+    <td class=width80>],
 ( $modifyperm ? $q->password_field( -name => 'password', -size => 15, -maxlength => 15) : ''),
         qq[</td></tr>
 <tr class=light_grey_bg>
@@ -431,7 +431,7 @@ sub display_list {
         print qq[<td class=center>
         <table class="no_pad">
         <tr><td></td>],
-        $q->endform, "\n",
+        "\n",
         $q->startform(
             -action => 'move_users.cgi',
             -method => 'POST',
@@ -491,7 +491,7 @@ sub display_list {
         }
 
         if ($include_subgroups) {
-            print qq[<td width=$width><table class="no_pad"><tr>
+            print qq[<td style="width:$width;"><table class="no_pad"><tr>
             <td><img src="$NicToolClient::image_dir/group.gif"></td>];
             if ($map) {
                 print "<td>",
@@ -523,16 +523,16 @@ sub display_list {
 
         my $url = "user.cgi?nt_user_id=$obj->{'nt_user_id'}&amp;nt_group_id=$obj->{'nt_group_id'}";
         print qq[
-<td width=$width><table class="no_pad">
+<td style="width:$width;"><table class="no_pad">
   <tr>
    <td><a href="$url"><img src="$NicToolClient::image_dir/user.gif"></a></td>
    <td><a href="$url">$obj->{'username'}</a></td>
   </tr>
  </table>
 </td>
-<td width=$width>$obj->{'first_name'}</td>
-<td width=$width>$obj->{'last_name'}</td>
-<td width=$width><a href="mailto:$obj->{'email'}">$obj->{'email'}</a>
+<td style="width:$width;">$obj->{'first_name'}</td>
+<td style="width:$width;">$obj->{'last_name'}</td>
+<td style="width:$width;"><a href="mailto:$obj->{'email'}">$obj->{'email'}</a>
 </td>];
 
         if (    $user->{'user_delete'}
