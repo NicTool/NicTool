@@ -753,13 +753,16 @@ sub display_sort_options {
         );
     }
 
-    print qq[<table class="fat">
-    <tr class=dark_bg><td colspan=2><b>Change Sort Order</b></td></tr>];
+    print qq[
+<table id="sortOrder" class="fat">
+ <tr class=dark_bg>
+  <td colspan=2 class="bold">Change Sort Order</td>
+ </tr>];
     foreach ( 1 .. 3 ) {
-        print qq[<tr class=light_grey_bg>
-        <td class="nowrap">],
-            ( $_ == 1 ? 'Sort by' : 'Then by' ), "</td>",
-        qq[<td class="fat">],
+        print qq[
+ <tr class=light_grey_bg>
+  <td class="nowrap">], ( $_ == 1 ? 'Sort by' : 'Then by' ), qq[</td>
+  <td class="fat">],
         $q->popup_menu(
             -name     => $_ . '_sortfield',
             -values   => [ '--', @$columns ],
@@ -772,26 +775,32 @@ sub display_sort_options {
             -values   => [ 'Ascending', 'Descending' ],
             -override => 1
         ),
-        "</td>",
-        "</tr>";
+        qq[</td>
+ </tr>];
     }
-    print qq[<tr class=dark_grey_bg><td colspan=2 class=center><table class="no_pad"><tr>
-    <td>],
-    $q->submit( -name => 'change_sortorder', -value => 'Change' ),
-    qq[</td>],
-    $q->endform,
-    $q->startform( -action => $cgi_name, -method => 'POST' );
+    print qq[
+ <tr class=dark_grey_bg>
+  <td colspan=2 class=center>
+   <table class="no_pad">
+    <tr>
+     <td>], $q->submit( -name => 'change_sortorder', -value => 'Change' ), qq[</td>\n],
+    $q->endform, "\n",
+    qq[<td>],
+    $q->startform( -action => $cgi_name, -method => 'POST' ), "\n";
 
     foreach ( @{ $self->paging_fields }, @$state_fields ) {
-        next if ( $_ eq 'edit_sortorder' );
-
-        print $q->hidden( -name => $_ ) if ( $q->param($_) );
+        next if $_ eq 'edit_sortorder';
+        next if ! $q->param($_);
+        print $q->hidden( -name => $_ ), "\n"; 
     }
 
-    print "<td>";
-    print $q->submit('Cancel'), "</td></tr>";
-    print "</table></td></tr></table>";
-    print $q->endform;
+    print $q->submit('Cancel'), 
+        qq[</form></td>
+    </tr>
+   </table>
+  </td>
+ </tr>
+</table>\n];
 }
 
 sub display_advanced_search {

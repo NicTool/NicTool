@@ -1203,7 +1203,7 @@ sub display_edit_zone {
 
     print qq[<a name='ZONE'>
 <table class="fat">
- <tr class=dark_bg><td colspan=2><b>$action Zone</b></td></tr>
+ <tr class=dark_bg><td colspan=2 class="bold">$action Zone</td></tr>
  <tr class=light_grey_bg>
   <td class=right>Zone:</td>
   <td class="fat">$zone->{'zone'}</td></tr>
@@ -1211,17 +1211,14 @@ sub display_edit_zone {
   <td class="right top">Nameservers:</td>
   <td class="width80">\n];
 
-    my %zone_ns
-        = map { $_->{'nt_nameserver_id'}, 1 } @{ $zone->{'nameservers'} };
+    my %zone_ns = map { $_->{'nt_nameserver_id'}, 1 } @{ $zone->{'nameservers'} };
 
     # get list of available nameservers
     my $ns_tree = $nt_obj->get_usable_nameservers(
         nt_group_id => $q->param('nt_group_id'),
     );
-    #warn "nt_group_id is " . $q->param('nt_group_id');
 
     foreach ( 1 .. scalar( @{ $ns_tree->{'nameservers'} } ) ) {
-        last if ( $_ > 10 );
 
         my $ns = $ns_tree->{'nameservers'}->[ $_ - 1 ];
 
@@ -1241,10 +1238,13 @@ sub display_edit_zone {
         my $ns = $nt_obj->get_nameserver( nt_nameserver_id => $_ );
         print "<li>$ns->{'description'} ($ns->{'name'})<BR>";
     }
-    print qq[</td></tr>\n
-    <tr class=light_grey_bg>
-    <td class="right top">Description:</td>
-    <td class="width80">],
+    print qq[</td>
+ </tr>];
+
+    print qq[
+ <tr class=light_grey_bg>
+  <td class="right top">Description:</td>
+  <td class="width80">],
         $q->textarea(
         -name      => 'description',
         -cols      => 50,
@@ -1252,83 +1252,80 @@ sub display_edit_zone {
         -maxlength => 255,
         -default   => $zone->{'description'}
         ),
-        "</td></tr>";
-
-    print qq[<tr class=light_grey_bg>
-    <td class=right>TTL:</td>
-    <td class="width80">],
+        qq[</td>
+ </tr>
+ <tr class=light_grey_bg>
+  <td class=right>TTL:</td>
+  <td class="width80">],
         $q->textfield(
         -name      => 'ttl',
         -size      => 8,
         -maxlength => 10,
         -default   => $zone->{'ttl'}
-        );
-    print qq[<input type="button" value="Default" onClick="this.form.ttl.value=$NicToolClient::default_zone_ttl"> $NicToolClient::default_zone_ttl </td></tr>
-
-    <tr class=light_grey_bg>
-    <td class=right>Refresh:</td>
-    <td class="width80">],
+        ),
+    qq[<input type="button" value="Default" onClick="this.form.ttl.value=$NicToolClient::default_zone_ttl"> $NicToolClient::default_zone_ttl </td>
+ </tr>
+ <tr class=light_grey_bg>
+  <td class=right>Refresh:</td>
+  <td class="width80">],
         $q->textfield(
         -name      => 'refresh',
         -size      => 8,
         -maxlength => 10,
         -default   => $zone->{'refresh'}
-        );
-    print
-        "<input type=\"button\" value=\"Default\" onClick=\"this.form.refresh.value=$NicToolClient::default_zone_refresh\">",
-        " $NicToolClient::default_zone_refresh</td></tr>";
-
-    print qq[<tr class=light_grey_bg>
-    <td class=right>Retry:</td>
-    <td class="width80">],
+        ),
+        qq[<input type="button" value="Default" onClick="this.form.refresh.value=$NicToolClient::default_zone_refresh"> $NicToolClient::default_zone_refresh</td>
+ </tr>
+ <tr class=light_grey_bg>
+  <td class=right>Retry:</td>
+  <td class="width80">],
         $q->textfield(
         -name      => 'retry',
         -size      => 8,
         -maxlength => 10,
         -default   => $zone->{'retry'}
-        );
-    print qq[<input type="button" value="Default" onClick="this.form.retry.value=$NicToolClient::default_zone_retry"> $NicToolClient::default_zone_retry</td></tr>
-
-    <tr class=light_grey_bg>
-    <td class=right>Expire:</td>
-    <td class="width80">],
+        ),
+        qq[<input type="button" value="Default" onClick="this.form.retry.value=$NicToolClient::default_zone_retry"> $NicToolClient::default_zone_retry</td>
+ </tr>
+ <tr class=light_grey_bg>
+  <td class=right>Expire:</td>
+  <td class="width80">],
         $q->textfield(
         -name      => 'expire',
         -size      => 8,
         -maxlength => 10,
         -default   => $zone->{'expire'}
-        );
-    print qq[<input type="button" value="Default" onClick="this.form.expire.value=$NicToolClient::default_zone_expire"> $NicToolClient::default_zone_expire</td></tr>
-    <tr class=light_grey_bg>
-    <td class=right>Minimum:</td>
-    <td class="width80">],
+        ),
+        qq[<input type="button" value="Default" onClick="this.form.expire.value=$NicToolClient::default_zone_expire"> $NicToolClient::default_zone_expire</td>
+ </tr>
+ <tr class=light_grey_bg>
+  <td class=right>Minimum:</td>
+  <td class="width80">],
         $q->textfield(
         -name      => 'minimum',
         -size      => 8,
         -maxlength => 10,
         -default   => $zone->{'minimum'}
-        );
-    print qq[<input type="button" value="Default" onClick="this.form.minimum.value=$NicToolClient::default_zone_minimum"> $NicToolClient::default_zone_minimum</td></tr>
-
-<tr class=light_grey_bg>
-    <td class=right>MailAddr:</td>
-    <td class="width80">],
+        ),
+        qq[<input type="button" value="Default" onClick="this.form.minimum.value=$NicToolClient::default_zone_minimum"> $NicToolClient::default_zone_minimum</td>
+ </tr>
+ <tr class=light_grey_bg>
+  <td class=right>MailAddr:</td>
+  <td class="width80">],
         $q->textfield(
         -name      => 'mailaddr',
         -size      => 25,
         -maxlength => 255,
-        -default   => $zone->{'mailaddr'}
-        );
-    print
-        "<input type=\"button\" value=\"Default\" onClick=\"this.form.mailaddr.value='hostmaster."
-        . $zone->{'zone'}
-        . ".'\"> hostmaster." . $zone->{'zone'} . ".",
-        "</td></tr>";
-
-    print "<tr class=dark_grey_bg><td colspan=2 class=center>",
+        -default   => $zone->{'mailaddr'},
+        ),
+        qq[<input type="button" value="Default" onClick="this.form.mailaddr.value='hostmaster.$zone->{'zone'}'"> hostmaster.$zone->{'zone'}.],
+        qq[</td>
+ </tr>,
+ <tr class=dark_grey_bg>
+  <td colspan=2 class=center>],
         $q->submit( $edit eq 'edit' ? 'Save' : 'Create' ),
-        $q->submit('Cancel'), "</td></tr>";
-    print "</table>";
-    print $q->end_form;
+        $q->submit('Cancel'), qq[</td></tr>
+</table>],
+        $q->end_form;
 }
 

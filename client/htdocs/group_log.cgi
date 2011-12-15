@@ -117,15 +117,15 @@ sub display_log {
 
     my $rv = $nt_obj->get_global_application_log(%params);
     return $nt_obj->display_nice_error( $rv, "Get NicTool Log" )
-        if ( $rv->{'error_code'} != 200 );
+        if $rv->{'error_code'} != 200;
 
     my $log = $rv->{'log'};
     my $map = $rv->{'group_map'};
 
     my @state_fields;
     foreach ( @{ $nt_obj->paging_fields } ) {
-        push( @state_fields, "$_=" . $q->escape( $q->param($_) ) )
-            if ( $q->param($_) );
+        next if ! $q->param($_);
+        push @state_fields, "$_=" . $q->escape( $q->param($_) );
     }
     my $state_string = @state_fields ? join('&amp;', @state_fields) : 'not_empty=1';
 
@@ -135,46 +135,54 @@ sub display_log {
         ['nt_group_id'], $include_subgroups );
 
     if (!@$log) {
-        print "<center>No log data available</center>";
+        print "<div class=center>No log data available</div>";
         return;
     };
 
-    print qq[<table class="fat">
-    <tr class=dark_grey_bg>];
+    print qq[
+<table class="fat">
+ <tr class=dark_grey_bg>];
     foreach (@columns) {
         if ( $sort_fields{$_} ) {
             print qq[
-<td class="dark_bg center">
-<table class="no_pad">
-<tr>
-<td>$labels{$_}</td>
-<td>&nbsp; &nbsp; $sort_fields{$_}->{'order'} </td>
-<td><img src="$NicToolClient::image_dir/],
-uc( $sort_fields{$_}->{'mod'} ) eq 'ASCENDING' ? 'up.gif' : 'down.gif', qq["></td>
-</tr>
-</table>
-</td>];
+  <td class="dark_bg center">
+   <table class="no_pad">
+    <tr>
+     <td>$labels{$_}</td>
+     <td>&nbsp; &nbsp; $sort_fields{$_}->{'order'} </td>
+     <td><img src="$NicToolClient::image_dir/],
+       uc( $sort_fields{$_}->{'mod'} ) eq 'ASCENDING' ? 'up.gif' : 'down.gif', qq["></td>
+    </tr>
+   </table>
+  </td>];
         }
         else {
-            print qq[<td class=center>$labels{$_}</td>];
+            print qq[
+  <td class=center>$labels{$_}</td>];
         }
     }
-    print "</tr>";
+    print "
+ </tr>";
 
     my $map = $nt_obj->obj_to_cgi_map();
     my $x   = 0;
     my $range;
     foreach my $row (@$log) {
-
-        print "<tr class=" . ( $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' ) . ">";
+        my $bgcolor = $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg';
+        print "
+ <tr class=$bgcolor>";
         foreach (@columns) {
             if ( $_ eq 'timestamp' ) {
-                print "<td>", ( scalar localtime( $row->{$_} ) ), "</td>";
+                print "
+  <td>", ( scalar localtime( $row->{$_} ) ), "</td>";
             }
             elsif ( $_ eq 'group_name' ) {
-                print qq[<td><table class="no_pad"><tr>
-<td><img src="$NicToolClient::image_dir/group.gif"></td>
-<td>],
+                print qq[
+  <td>
+   <table class="no_pad">
+    <tr>
+     <td><img src="$NicToolClient::image_dir/group.gif"></td>
+     <td>],
                     join(
                     ' / ',
                     map(qq[<a href="group.cgi?nt_group_id=$_->{'nt_group_id'}">$_->{'name'}</a>],
@@ -185,29 +193,42 @@ uc( $sort_fields{$_}->{'mod'} ) eq 'ASCENDING' ? 'up.gif' : 'down.gif', qq["></t
                             ) )
                     ),
                     qq[</td>
-                </tr></table></td>];
+    </tr>
+   </table>
+  </td>];
             }
             elsif ( $_ eq 'user' ) {
-                print qq[<td><table class="no_pad"><tr>
-<td><img src="$NicToolClient::image_dir/user.gif"></td>
-<td><a href="user.cgi?nt_group_id=$row->{'nt_group_id'}&amp;nt_user_id=$row->{'nt_user_id'}">$row->{'user'}</a></td>
-</tr></table></td>];
+                print qq[
+  <td>
+   <table class="no_pad">
+    <tr>
+     <td><img src="$NicToolClient::image_dir/user.gif"></td>
+     <td><a href="user.cgi?nt_group_id=$row->{'nt_group_id'}&amp;nt_user_id=$row->{'nt_user_id'}">$row->{'user'}</a></td>
+    </tr>
+   </table>
+  </td>];
             }
             elsif ( $_ eq 'title' ) {
                 my $gid = $q->param('nt_group_id');
                 my $url = "group_log.cgi?$state_string&amp;redirect=1&amp;nt_group_id=$gid&amp;object="
                     . $q->escape( $row->{'object'} ) . "&amp;obj_id=" . $q->escape( $row->{'object_id'} );
 
-                print qq[<td><table class="no_pad"><tr>
-                <td><a href="$url"><img src="$NicToolClient::image_dir/$map->{ $row->{'object'} }->{'image'}" alt=""></a></td>
-                <td><a href="$url">$row->{'title'}</a></td> </tr></table></td> ];
+                print qq[
+  <td>
+   <table class="no_pad">
+    <tr>
+     <td><a href="$url"><img src="$NicToolClient::image_dir/$map->{ $row->{'object'} }->{'image'}" alt=""></a></td>
+     <td><a href="$url">$row->{'title'}</a></td>
+    </tr>
+   </table>
+  </td>];
             }
             else {
-                print "<td>$row->{$_}</td>";
+                print "\n  <td>$row->{$_}</td>";
             }
         }
-        print "</tr>";
+        print "\n </tr>";
     }
 
-    print "</table>";
+    print "\n</table>";
 }
