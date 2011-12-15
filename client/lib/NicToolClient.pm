@@ -717,15 +717,19 @@ sub display_search_rows {
     my $state_map = join( '&amp;', map( "$_=" . $q->escape( $q->param($_) ), @$state_fields ) );
     $state_map .= "&amp;$morestr" if $morestr;
 
+    my @urls = (
+        qq[<a href="$cgi_name?$state_string&amp;edit_search=1">Advanced Search</a>],
+        qq[<a href="$cgi_name?$state_string&amp;edit_sortorder=1">Change Sort Order</a>],
+    );
+    if ( $params->{'search_query'} ne 'ALL' ) {
+        push @urls, qq[<a href="$cgi_name?$state_map&amp;$state_map">Browse All</a>];
+    };
+
     print qq[
 <table id="searchRowResults" class="fat">
  <tr class=dark_grey_bg>
   <td>Search: $params->{'search_query'} found $rv->{'total'} records</td>
-  <td class=right>
-   <a href="$cgi_name?$state_string&amp;edit_search=1">Advanced Search</a> |
-   <a href="$cgi_name?$state_string&amp;edit_sortorder=1">Change Sort Order</a> |
-   <a href="$cgi_name?$state_map&amp;$state_map">Browse All</a>
-  </td>
+  <td class=right>] . join(' | ', @urls) . qq[</td>
  </tr>
 </table>\n];
 }
@@ -779,13 +783,10 @@ sub display_sort_options {
  </tr>];
     }
     print qq[
- <tr class=dark_grey_bg>
-  <td colspan=2 class=center>
-   <table class="no_pad">
-    <tr>
-     <td>], $q->submit( -name => 'change_sortorder', -value => 'Change' ), qq[</td>\n],
-    $q->endform, "\n",
-    qq[<td>],
+</table>
+<div class="dark_grey_bg side_pad"> ],
+    $q->submit( -name => 'change_sortorder', -value => 'Change' ), "\n",
+    $q->endform,
     $q->startform( -action => $cgi_name, -method => 'POST' ), "\n";
 
     foreach ( @{ $self->paging_fields }, @$state_fields ) {
@@ -795,12 +796,8 @@ sub display_sort_options {
     }
 
     print $q->submit('Cancel'), 
-        qq[</form></td>
-    </tr>
-   </table>
-  </td>
- </tr>
-</table>\n];
+        qq[</form>
+</div>\n];
 }
 
 sub display_advanced_search {
@@ -827,26 +824,32 @@ sub display_advanced_search {
         );
     }
 
-    print qq[<table class="fat">
-    <tr class=dark_bg><td colspan=2><b>Advanced Search</b></td></tr>
-    <tr class=light_grey_bg><td colspan=2>],
+    print qq[
+<table class="fat">
+ <tr class=dark_bg><td colspan=2 class="bold">Advanced Search</td></tr>
+ <tr class=light_grey_bg>
+  <td colspan=2>],
         $q->checkbox(
         -name    => 'include_subgroups',
         -value   => 1,
         -label   => 'include sub-groups',
         -checked => $NicToolClient::include_subgroups_checked,
         ),
-        "</td></tr>";
+        "</td>
+ </tr>
+ <tr class=dark_grey_bg>";
 
-    print "<tr class=dark_grey_bg>";
     foreach ( ( 'Inclusive / Exclusive', 'Condition' ) ) {
-        print "<td class=center>", $_, "</td>";
+        print "
+  <td class=center> $_ </td>";
     }
-    print "</tr>";
+    print "
+ </tr>";
 
     foreach ( 1 .. 5 ) {
-        print "<tr class=light_grey_bg>\n";
-        print "<td class=center>",
+        print qq[
+ <tr class=light_grey_bg>
+  <td class=center>],
             (
             $_ == 1 ? '&nbsp;' : $q->radio_group(
                 -name     => $_ . '_inclusive',
@@ -855,35 +858,38 @@ sub display_advanced_search {
                 -override => 1
             )
             ),
-            "</td>\n";
-        print "<td>",
+            "</td>\n
+        <td>",
             $q->popup_menu(
             -name     => $_ . '_field',
             -values   => [ '--', @$columns ],
             -labels   => { '--' => '- select -', %$labels },
             -override => 1
-            );
-        print $q->popup_menu(
+            ),
+        $q->popup_menu(
             -name     => $_ . '_option',
             -values   => \@options,
             -override => 1
-        ) . "\n";
-        print $q->textfield(
+        ) . "\n",
+        $q->textfield(
             -name     => $_ . '_value',
             -size     => 30,
             -override => 1
             ),
-            "</td>\n";
-        print "</tr>\n";
+            "</td>\n
+        </tr>\n";
     }
-    print "</table>";
+    print "
+</table>";
 
-    print qq[<table class="fat">
-    <tr class=dark_grey_bg><td colspan=2><b>Sort Order</b> (optional)</td></tr>];
+    print qq[
+<table class="fat">
+ <tr class=dark_grey_bg><td colspan=2 class="bold">Sort Order (optional)</td></tr>];
     foreach ( 1 .. 3 ) {
-        print "<tr class=light_grey_bg>";
-        print "<td>", ( $_ == 1 ? 'sort by' : "then by" ), "</td>";
-        print "<td>",
+        print "
+ <tr class=light_grey_bg>
+  <td>", ( $_ == 1 ? 'sort by' : "then by" ), "</td>
+  <td>",
             $q->popup_menu(
             -name   => $_ . '_sortfield',
             -values => [ '--', @$columns ],
@@ -893,29 +899,35 @@ sub display_advanced_search {
             -name   => $_ . '_sortmod',
             -values => [ 'Ascending', 'Descending' ]
             ),
-            "</td>";
-        print "</tr>";
+            "</td>
+ </tr>";
     }
-    print "</table>";
-
-    print qq[<table class="fat">
-    <tr class=dark_grey_bg><td class=center><table class="no_pad"><tr>
-    <td>],
+    print qq[
+</table>
+<table class="fat">
+ <tr class=dark_grey_bg>
+  <td class=center>
+   <table class="no_pad">
+    <tr>
+     <td>],
     $q->submit('Search'),
     "</td>",
     $q->endform,
     $q->startform( -action => $cgi_name, -method => 'POST' );
 
     foreach ( @{ $self->paging_fields }, @$state_fields ) {
-        next if ( $_ eq 'edit_search' );
-
-        print $q->hidden( -name => $_ ) if ( $q->param($_) );
+        next if $_ eq 'edit_search';
+        next if ! $q->param($_);
+        print $q->hidden( -name => $_ );
     }
 
-    print "<td>";
-    print $q->submit('Cancel'), "</td></tr>";
-    print "</table></td></tr>";
-    print "</table>";
+    print "<td>",
+        $q->submit('Cancel'), "</td>
+    </tr>
+   </table>
+  </td>
+ </tr>
+</table>";
 
     print $q->endform();
 }
@@ -931,12 +943,12 @@ sub display_group_list {
     );
 
     $q->param( 'nt_group_id', $user->{'nt_group_id'} )
-        unless $q->param('nt_group_id');
+        if ! $q->param('nt_group_id');
 
     my $group = $self->get_group( nt_group_id => $q->param('nt_group_id') );
 
-    unless ( $group->{'has_children'} ) {
-        print qq( <center><span style="color:red;"><strong>Group $group->{'name'} has no sub-groups!</strong></span></center>);
+    if ( ! $group->{'has_children'} ) {
+        print qq[<span class="center" style="color:red;"><strong>Group $group->{'name'} has no sub-groups!</strong></span>];
         $q->param( 'nt_group_id', $group->{'parent_group_id'} );
         $group = $self->get_group( nt_group_id => $q->param('nt_group_id') );
     }
@@ -946,61 +958,56 @@ sub display_group_list {
         nt_group_id    => $q->param('nt_group_id'),
         start_group_id => $user->{'nt_group_id'}
     );
-    $params{'include_parent'} = 1
-        if ( $user->{'nt_group_id'} == $q->param('nt_group_id') );
+    
+    if ( $user->{'nt_group_id'} == $q->param('nt_group_id') ) {
+        $params{'include_parent'} = 1;
+    };
 
     my %sort_fields;
     $self->prepare_search_params( $q, \%labels, \%params, \%sort_fields,
         $NicToolClient::page_length );
 
-    $sort_fields{'group'} = { 'order' => 1, 'mod' => 'Ascending' }
-        unless %sort_fields;
+    $sort_fields{'group'} = { 'order' => 1, 'mod' => 'Ascending' } if ! %sort_fields;
     my $rv = $self->get_group_subgroups(%params);
 
-    $self->display_sort_options( $q, \@columns, \%labels, $cgi,
-        [ 'obj_list', 'nt_group_id' ],
-        $include_subgroups, $moreparams )
-        if $q->param('edit_sortorder');
-    $self->display_advanced_search( $q, \@columns, \%labels, $cgi,
-        [ 'obj_list', 'nt_group_id' ],
-        $include_subgroups, $moreparams )
-        if $q->param('edit_search');
+    if ( $q->param('edit_sortorder') ) {
+        $self->display_sort_options( $q, \@columns, \%labels, $cgi,
+            [ 'obj_list', 'nt_group_id' ],
+            $include_subgroups, $moreparams );
+    };
+    if ( $q->param('edit_search') ) {
+        $self->display_advanced_search( $q, \@columns, \%labels, $cgi,
+            [ 'obj_list', 'nt_group_id' ],
+            $include_subgroups, $moreparams );
+    };
 
-    return $self->display_error($rv) if ( $rv->{'error_code'} != 200 );
+    return $self->display_error($rv) if $rv->{'error_code'} != 200;
 
     my $groups = $rv->{'groups'};
     my $map    = $rv->{'group_map'};
 
     my @state_fields;
     foreach ( @{ $self->paging_fields } ) {
-        push( @state_fields, "$_=" . $q->escape( $q->param($_) ) )
-            if ( $q->param($_) );
+        next if ! $q->param($_);
+        push @state_fields, "$_=" . $q->escape( $q->param($_) );
     }
-    print qq[<table class="fat">
-    <tr class=dark_grey_bg><td>
-    <table class="no_pad fat">
-    <tr>
-    <td><b>Select the group to $action to.</b></td>
-    <td class=right> &nbsp; </td>
-    </tr></table></td></tr>
-    </table>];
+    print qq[
+<div id="groupListHeadline" class="dark_grey_bg side_pad">
+ <span class="bold">Select the group to $action to.</span>
+</div>];
 
     $self->display_search_rows( $q, $rv, \%params, $cgi,
         [ 'obj_list', 'nt_group_id' ],
         $include_subgroups, $moreparams );
 
-    if (@$groups) {
-        print qq[<table class="fat">
-        <tr class=dark_grey_bg>
-        <td>
-        <table class="no_pad">
-        <tr><td></td>],
+    return if !@$groups;
+
+    print qq[
+<table class="fat">
+ <tr class=dark_grey_bg>
+  <td>],
         $q->endform,
-        $q->start_form(
-            -action => $cgi,
-            -method => 'POST',
-            -name   => 'new'
-        ),
+        $q->start_form( -action => $cgi, -method => 'POST', -name => 'new' ),
         "\n",
         $q->hidden(
             -name     => 'obj_list',
@@ -1009,84 +1016,74 @@ sub display_group_list {
         ),
         "\n";
 
-        foreach ( @{ $self->paging_fields() } ) {
-            print $q->hidden( -name => $_ ) if ( $q->param($_) );
-        }
-        foreach ( keys %$moreparams ) {
-            print $q->hidden( -name => $_, -value => $moreparams->{$_} );
-        }
-        print "<td></td></tr>";
-        print "</table>";
+    foreach ( @{ $self->paging_fields() } ) {
+        next if ! $q->param($_);
+        print $q->hidden( -name => $_ );
+    }
+    foreach ( keys %$moreparams ) {
+        print $q->hidden( -name => $_, -value => $moreparams->{$_} );
+    }
+    print qq[
+  </td>];
 
-        print "&nbsp;</td>";
-        foreach (@columns) {
-            if ( $sort_fields{$_} ) {
-                print qq[<td class=dark_bg class=center><table class="no_pad">
-                <tr>
-                <td>$labels{$_}</td>
-                <td>&nbsp; &nbsp; $sort_fields{$_}->{'order'}</td>
-                <td><img src="$NicToolClient::image_dir/],
-                    (
-                    uc( $sort_fields{$_}->{'mod'} ) eq 'ASCENDING'
-                    ? 'up.gif'
-                    : 'down.gif'
-                    ),
-                    qq[" alt="sort"></td></tr></table></td>];
-            }
-            else {
-                print qq[<td class=center>$labels{$_}</td>];
+    foreach (@columns) {
+        if ( $sort_fields{$_} ) {
+            my $sort_dir = uc( $sort_fields{$_}->{'mod'} ) eq 'ASCENDING' ? 'up' : 'down';
+            print qq[
+  <td class=dark_bg class=center>
+   <div class="no_pad"> $labels{$_} &nbsp; &nbsp; $sort_fields{$_}->{'order'}
+     <img src="$NicToolClient::image_dir/$sort_dir.gif" alt="sort">
+   </div>
+  </td>];
+        }
+        else {
+            print qq[
+  <td class=center>$labels{$_}</td>];
             }
         }
-        print "</tr>";
+    print "
+ </tr>";
 
-        my $x = 0;
+    my $x = 0;
 
-        foreach my $group (@$groups) {
-            print "<tr class="
-                . ( $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' )
-                . ">";
-            if ( $group->{'nt_group_id'} eq $excludeid ) {
-                print qq[<td class="width1"> &nbsp;</td>];
-            }
-            else {
-                print qq[<td class="width1">
-<input type=radio name=group_list value="$group->{'nt_group_id'}"],
-                    ( $x == 1 ? " checked" : "" ), "></td>";
-
-            }
-
-            print qq[<td><table class="no_pad"><tr>
-            <td><img src="$NicToolClient::image_dir/group.gif" alt="group"></td>
-            <td>],
-                join(
-                ' / ',
-                map( qq[<a href="$cgi?nt_group_id=$_->{'nt_group_id'}&amp;obj_list=]
-                        . $q->param('obj_list')
-                        . (
-                        $moreparams
-                        ? "&amp;"
-                            . join( "&amp;",
-                            map {"$_=$moreparams->{$_}"} keys %$moreparams )
-                        : ''
-                        )
-                        . qq[">$_->{'name'}</a>],
-                    (   @{ $map->{ $group->{'nt_group_id'} } },
-                        {   nt_group_id => $group->{'nt_group_id'},
-                            name        => $group->{'name'}
-                        }
-                        ) )
-                ),
-                "</td></tr></table></td>";
-
-            print "<td>",
-                ( $group->{'children'} ? $group->{'children'} : 'n/a' ),
-                "</td></tr>";
+    foreach my $group (@$groups) {
+        my $bgcolor = $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg';
+        print qq[
+ <tr class="$bgcolor">
+  <td class="width1">];
+        if ( $group->{'nt_group_id'} ne $excludeid ) {
+            print qq[<input type=radio name=group_list value="$group->{'nt_group_id'}"];
+            print qq[ checked] if $x == 1;
+            print qq[>];
         }
 
-        print "</table>";
+        print qq[</td>
+  <td><img src="$NicToolClient::image_dir/group.gif" alt="group">],
+            join(
+            ' / ',
+            map( qq[<a href="$cgi?nt_group_id=$_->{'nt_group_id'}&amp;obj_list=]
+                    . $q->param('obj_list')
+                    . (
+                    $moreparams
+                    ? "&amp;" . join( "&amp;",
+                        map {"$_=$moreparams->{$_}"} keys %$moreparams )
+                    : ''
+                    )
+                    . qq[">$_->{'name'}</a>],
+                (   @{ $map->{ $group->{'nt_group_id'} } },
+                    {   nt_group_id => $group->{'nt_group_id'},
+                        name        => $group->{'name'}
+                    }
+                    ) )
+            ),
+            "
+  </td>
+  <td>", ( $group->{'children'} ? $group->{'children'} : 'n/a' ), "</td>
+ </tr>";
     }
 
-    #print $q->endform;
+    print "
+</table>";
 }
 
 sub redirect_from_log {
