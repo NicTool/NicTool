@@ -263,7 +263,7 @@ sub display_group_tree {
         print qq[<img src="$NicToolClient::image_dir/group.gif" alt="group">];
 
         if ( $in_summary && $navG == $count ) {
-            print qq[<b>$group->{'name'}</b>];
+            print qq[<strong>$group->{'name'}</strong>];
         }
         else {
             print qq[<a href="group.cgi?nt_group_id=$group->{'nt_group_id'}">$group->{'name'}</a>];
@@ -613,21 +613,18 @@ sub display_search_rows {
 
     print qq[
 <table id="searchRow" class="fat">
- <tr class=dark_grey_bg>
+ <tr class="dark_grey_bg">
   <td>
-   <table class="no_pad fat">
-    <tr>
-     <td>],
-    $q->startform( -action => $cgi_name, -method => 'POST' );
+   <form method="post" action="$cgi_name">
+    <input type="text" name="search_value" size="30">
+    <input type="submit" name="quick_search" value="Search">
+    ];
     foreach (@$state_fields) {
         print $q->hidden( -name => $_ );
     };
-    print $q->textfield( -name => 'search_value', -size => 30, -override => 1);
-    print $q->hidden( -name => 'quick_search', -value => 'Enter', -override => 1);
     foreach ( keys %$moreparams ) {
         print $q->hidden( -name => $_, -value => $moreparams->{$_}, -override => 1);
     }
-    print $q->submit( -name => 'quick_search', -value => 'Search' );
     if ($include_subgroups ) {
         print " &nbsp; &nbsp;",
                 $q->checkbox(
@@ -646,10 +643,11 @@ sub display_search_rows {
         ),
     $q->endform,
     qq[
-     </td>
-     <td class="right">];
+ </td>
+ <td class="right">
+  <form method="post" action="$cgi_name">
+];
 
-    print $q->startform( -action => $cgi_name, -method => 'POST' );
     foreach ( @{ $self->paging_fields }, @$state_fields ) {
         next if $_ eq 'page';
         print $q->hidden( -name => $_ ) if $q->param($_);
@@ -677,14 +675,7 @@ sub display_search_rows {
                 ? int( $rv->{'end'} / $rv->{'limit'} ) + 1
                 : $rv->{'end'} / $rv->{'limit'};
 
-    print "Page ",
-        $q->textfield(
-        -name  => 'page',
-        -value => $curpage,
-        -size     => 4,
-        -override => 1
-        ),
-        " of $rv->{'total_pages'}";
+    print qq[Page <input type="text" name="page" value="$curpage" size="4"> of $rv->{'total_pages'}];
 
     if ( $rv->{'end'} + 1 <= $rv->{'total'} ) {
         print qq[ &nbsp; <a href="$cgi_name?$state_string&amp;start=]
@@ -697,9 +688,6 @@ sub display_search_rows {
     }
     print $q->endform,
       qq[
-     </td>
-    </tr>
-   </table>
   </td>
  </tr>
 </table>];

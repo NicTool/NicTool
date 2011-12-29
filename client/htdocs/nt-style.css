@@ -26,6 +26,14 @@ div {
   padding: 2px;
   margin: 2px;
 }
+div#navBar span {
+	padding-left: 2px;
+	padding-right: 2px;
+}
+div#navBar span img {
+	margin: 0px;
+	padding: 0px;
+}
 
 .float_r  { float: right; }
 .side_pad { padding-right: 4px; padding-left: 4px; }
@@ -33,10 +41,13 @@ div {
 .no_margin { margin: 0px; }
 .margin2 { margin:  2px; }
 .margin4 { margin:  4px; }
+.marginb4 { margin-bottom: 4px; }
 .no_pad  { padding: 0px; }      /* 'cellpadding' equivalent */
 .pad1    { padding: 1px; }
 .pad2    { padding: 2px; }
 .pad4		 { padding: 4px; }
+.padb2   { padding-bottom: 2px; }
+.padb4   { padding-bottom: 4px; }
 .nowrap  { white-space: nowrap; }
 .tall    { height: 100%; }
 .fat     { width:  100%; }
@@ -78,11 +89,3 @@ a:active  { color: #336666 }
 
 img { border: 0; }
 
-table#navBar span {
-	padding-left: 2px;
-	padding-right: 2px;
-}
-table#navBar span img {
-	margin: 0px;
-	padding: 0px;
-}
