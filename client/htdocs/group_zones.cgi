@@ -163,12 +163,14 @@ sub display_list {
 
     my $rv = $nt_obj->get_group_zones(%params);
 
-    $nt_obj->display_sort_options( $q, \@columns, \%labels, 'group_zones.cgi',
-        ['nt_group_id'], $include_subgroups )
-            if $q->param('edit_sortorder');
-    $nt_obj->display_advanced_search( $q, \@columns, \%labels,
-        'group_zones.cgi', ['nt_group_id'], $include_subgroups )
-            if $q->param('edit_search');
+    if ( $q->param('edit_sortorder') ) {
+        $nt_obj->display_sort_options( $q, \@columns, \%labels, 'group_zones.cgi',
+            ['nt_group_id'], $include_subgroups );
+    };
+    if ( $q->param('edit_search') ) {
+        $nt_obj->display_advanced_search( $q, \@columns, \%labels,
+            'group_zones.cgi', ['nt_group_id'], $include_subgroups );
+    };
 
     return $nt_obj->display_nice_error( $rv, "Get Group Zones" )
         if $rv->{'error_code'} != 200;
@@ -189,10 +191,7 @@ sub display_list {
     $nt_obj->display_search_rows( $q, $rv, \%params, 'group_zones.cgi',
         ['nt_group_id'], $include_subgroups );
 
-    if (! @$zones) {
-        print '</form>';
-        return;
-    };
+    return if ! @$zones;
 
     $nt_obj->display_move_javascript( 'move_zones.cgi', 'zone' );
     $nt_obj->display_delegate_javascript( 'delegate_zones.cgi', 'zone' );

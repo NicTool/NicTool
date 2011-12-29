@@ -404,7 +404,7 @@ sub display_zone_options {
     }
 
 # Move, Delegate, Re-Delegate
-    my $win_opts =  qq[width=640,height=480,scrollbars,resizable=yes];
+    my $win_opts =  qq['width=640,height=480,scrollbars,resizable=yes'];
     if ( $user->{'zone_write'} && !$isdelegate && !$zone->{'deleted'} ) {
         push @options, qq[<a href="javascript:void window.open('move_zones.cgi?obj_list=$zone->{'nt_zone_id'}', 'move_win', $win_opts)">Move</a>] if $group->{'has_children'};
     }
@@ -1002,35 +1002,31 @@ sub display_group_list {
 
     return if !@$groups;
 
-    print qq[
-<table class="fat">
- <tr class=dark_grey_bg>
-  <td>],
-        $q->endform,
-        $q->start_form( -action => $cgi, -method => 'POST', -name => 'new' ),
-        "\n",
+    print $q->start_form( -action => $cgi, -method => 'POST', -name => 'new' ),
         $q->hidden(
             -name     => 'obj_list',
             -value    => join( ',', $q->param('obj_list') ),
             -override => 1
-        ),
-        "\n";
+        );
 
     foreach ( @{ $self->paging_fields() } ) {
         next if ! $q->param($_);
-        print $q->hidden( -name => $_ );
+        print $q->hidden( -name => $_ ) . "\n";
     }
     foreach ( keys %$moreparams ) {
-        print $q->hidden( -name => $_, -value => $moreparams->{$_} );
+        print $q->hidden( -name => $_, -value => $moreparams->{$_} ) . "\n";
     }
+
     print qq[
-  </td>];
+<table id=groupListTable class="fat">
+ <tr class=dark_grey_bg>
+  <td></td>];
 
     foreach (@columns) {
         if ( $sort_fields{$_} ) {
             my $sort_dir = uc( $sort_fields{$_}->{'mod'} ) eq 'ASCENDING' ? 'up' : 'down';
             print qq[
-  <td class=dark_bg class=center>
+  <td class="dark_bg center">
    <div class="no_pad"> $labels{$_} &nbsp; &nbsp; $sort_fields{$_}->{'order'}
      <img src="$NicToolClient::image_dir/$sort_dir.gif" alt="sort">
    </div>
@@ -1051,11 +1047,12 @@ sub display_group_list {
         print qq[
  <tr class="$bgcolor">
   <td class="width1">];
+
         if ( $group->{'nt_group_id'} ne $excludeid ) {
             print qq[<input type=radio name=group_list value="$group->{'nt_group_id'}"];
             print qq[ checked] if $x == 1;
             print qq[>];
-        }
+        };
 
         print qq[</td>
   <td><img src="$NicToolClient::image_dir/group.gif" alt="group">],

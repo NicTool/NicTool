@@ -88,27 +88,27 @@ sub move {
 
     $nt_obj->display_nice_error($message) if $message;
 
-    print qq[<table class="fat">
-    <tr class=dark_bg><td colspan=2><b>Move Nameservers</b></td></tr>
-    <tr class=light_grey_bg>
-    <td class="nowrap top"> Users: </td>
-    <td class="fat">],
+    print qq[
+<div class="side_pad dark_bg bold">Move Nameservers</div>
+<div class="side_pad light_grey_bg top"> Nameservers: ],
         join( ', ', map(
 qq[<a href="group_nameservers.cgi?nt_group_id=$_->{'nt_group_id'}&amp;nt_nameserver_id=$_->{'nt_nameserver_id'}" target="_blank">$_->{'name'}</a>], @$list )
         ),
-        "</td> </tr> </table>";
+        "
+</div>";
 
     $nt_obj->display_group_list( $q, $user, 'move_nameservers.cgi' );
 
-    print qq[\n<table class="fat">\n
-    <tr class=dark_grey_bg><td colspan=2 class="center">],
+    print qq[
+<div class="dark_grey_bg center side_pad">],
         $q->submit('Save'),
         $q->submit(
         -name    => 'cancel_move',
         -value   => 'Cancel',
         -onClick => 'window.close(); return false;'
         ),
-        "</td></tr> </table>\n",
+        "
+</div>\n",
     $q->end_form;
 }
 
