@@ -565,19 +565,16 @@ sub prepare_search_params {
                 };
 
                 $params->{'Sort'} = 1;
-                $params->{ $_ . '_sortfield' }
-                    = $q->param( $_ . '_sortfield' );
+                $params->{ $_ . '_sortfield' } = $q->param( $_ . '_sortfield' );
                 $params->{ $_ . '_sortmod' } = $q->param( $_ . '_sortmod' );
             }
         }
     }
 
-    if ( $q->param('quick_search') ) {
-        if ( $q->param('search_value') ) {
-            $params->{'quick_search'} = 1;
-            $params->{'search_value'} = $q->param('search_value');
-            $params->{'search_query'} = "'" . $q->param('search_value') . "'";
-        }
+    if ( $q->param('quick_search')  && $q->param('search_value') ) {
+        $params->{'quick_search'} = 1;
+        $params->{'search_value'} = $q->param('search_value');
+        $params->{'search_query'} = "'" . $q->param('search_value') . "'";
     }
 
     $params->{'search_query'} ||= 'ALL';
@@ -616,6 +613,7 @@ sub display_search_rows {
  <tr class="dark_grey_bg">
   <td>
    <form method="post" action="$cgi_name">
+    <input type="hidden" name="quick_search" value="Edit">
     <input type="text" name="search_value" size="30">
     <input type="submit" name="quick_search" value="Search">
     ];
@@ -686,8 +684,8 @@ sub display_search_rows {
             . qq[&amp;page=$rv->{'total_pages'}&amp;limit=$params->{'limit'}]
             . qq["><b>>></b></a>];
     }
-    print $q->endform,
-      qq[
+    print qq[
+   </form>
   </td>
  </tr>
 </table>];
@@ -714,12 +712,10 @@ sub display_search_rows {
     };
 
     print qq[
-<table id="searchRowResults" class="fat">
- <tr class=dark_grey_bg>
-  <td>Search: $params->{'search_query'} found $rv->{'total'} records</td>
-  <td class=right>] . join(' | ', @urls) . qq[</td>
- </tr>
-</table>\n];
+<div id="searchRowResults" class="dark_grey_bg">
+ <span>Search: $params->{'search_query'} found $rv->{'total'} records</span>
+ <span class=float_r>] . join(' | ', @urls) . qq[</span>
+</div>\n];
 }
 
 sub display_sort_options {
@@ -727,15 +723,18 @@ sub display_sort_options {
         $include_subgroups, $moreparams )
         = @_;
 
-    print $q->startform( -action => $cgi_name, -method => 'POST' );
-    foreach ( @{ $self->paging_fields }, @$state_fields ) {
-        next if ( $_ =~ /sort/i );
-        next if ( $_ eq 'edit_sortorder' );
-        next if ( $_ eq 'start' );
-        next if ( $_ eq 'limit' );
-        next if ( $_ eq 'page' );
+    print qq[
+<div id="changeSortOrder">
+ <form method="post" action="$cgi_name">];
 
-        print $q->hidden( -name => $_ ) if ( $q->param($_) );
+    foreach ( @{ $self->paging_fields }, @$state_fields ) {
+        next if $_ =~ /sort/i;
+        next if $_ eq 'edit_sortorder';
+        next if $_ eq 'start';
+        next if $_ eq 'limit';
+        next if $_ eq 'page';
+        next if ! $q->param($_);
+        print $q->hidden( -name => $_ );
     }
     foreach ( keys %$moreparams ) {
         print $q->hidden(
@@ -772,20 +771,21 @@ sub display_sort_options {
     }
     print qq[
 </table>
-<div class="dark_grey_bg side_pad"> ],
-    $q->submit( -name => 'change_sortorder', -value => 'Change' ), "\n",
-    $q->endform,
-    $q->startform( -action => $cgi_name, -method => 'POST' ), "\n";
+ <input type="submit" name="change_sortorder" value="Change">
+ </form>
+ <form method="post" action="$cgi_name">];
 
     foreach ( @{ $self->paging_fields }, @$state_fields ) {
         next if $_ eq 'edit_sortorder';
         next if ! $q->param($_);
-        print $q->hidden( -name => $_ ), "\n"; 
+        print $q->hidden( -name => $_ );
     }
 
-    print $q->submit('Cancel'), 
-        qq[</form>
-</div>\n];
+    print qq[
+  <input type="submit" name="Cancel" value="Cancel">
+</form>
+</div>
+];
 }
 
 sub display_advanced_search {
