@@ -34,6 +34,9 @@ div#navBar span img {
 	margin: 0px;
 	padding: 0px;
 }
+div#navBar a {
+  vertical-align: top;
+}
 
 .float_r  { float: right; }
 .side_pad { padding-right: 4px; padding-left: 4px; }

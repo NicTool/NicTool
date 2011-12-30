@@ -813,7 +813,7 @@ sub display_advanced_search {
     }
 
     print qq[
-<table class="fat">
+<table id="advancedSearch" class="fat">
  <tr class=dark_bg><td colspan=2 class="bold">Advanced Search</td></tr>
  <tr class=light_grey_bg>
   <td colspan=2>],
@@ -867,11 +867,10 @@ sub display_advanced_search {
             "</td>\n
         </tr>\n";
     }
-    print "
-</table>";
 
     print qq[
-<table class="fat">
+</table>
+<table id="sortOrderOptional" class="fat">
  <tr class=dark_grey_bg><td colspan=2 class="bold">Sort Order (optional)</td></tr>];
     foreach ( 1 .. 3 ) {
         print "
@@ -890,17 +889,15 @@ sub display_advanced_search {
             "</td>
  </tr>";
     }
+
     print qq[
 </table>
-<table class="fat">
- <tr class=dark_grey_bg>
-  <td class=center>
-   <table class="no_pad">
-    <tr>
-     <td>],
-    $q->submit('Search'),
-    "</td>",
-    $q->endform,
+<div id="advancedSearchSubmit" class="dark_grey_bg center">
+   <input type="submit" name="Search" value="Search" />
+</div>],
+    $q->endform, 
+    qq[
+<div id="advancedSearchCancel" class="dark_grey_bg center">],
     $q->startform( -action => $cgi_name, -method => 'POST' );
 
     foreach ( @{ $self->paging_fields }, @$state_fields ) {
@@ -909,15 +906,9 @@ sub display_advanced_search {
         print $q->hidden( -name => $_ );
     }
 
-    print "<td>",
-        $q->submit('Cancel'), "</td>
-    </tr>
-   </table>
-  </td>
- </tr>
-</table>";
-
-    print $q->endform();
+    print $q->submit('Cancel'),
+          $q->endform(), qq[
+</div>],
 }
 
 sub display_group_list {
