@@ -221,16 +221,14 @@ sub display_group_tree {
         if ( $group->{'nt_group_id'} != $user_group ) {
             my $name = 'View Details';
             if ($user->{'group_write'}
-                && ( !exists $group->{'delegate_write'}
-                    || $group->{'delegate_write'} )
+                && ( !exists $group->{'delegate_write'} || $group->{'delegate_write'} )
                 )
             {
                 $name = 'Edit';
             };
             push @options, qq[<a href="group.cgi?nt_group_id=$group->{'nt_group_id'}&amp;edit=1">$name</a>];
             if ($user->{"group_delete"}
-                && ( !exists $group->{'delegate_delete'}
-                    || $group->{'delegate_delete'} )
+                && ( !exists $group->{'delegate_delete'} || $group->{'delegate_delete'} )
                 )
             {
                 push @options, qq[<a href="group.cgi?nt_group_id=$group->{'parent_group_id'}&amp;delete=$group->{'nt_group_id'}" onClick="return confirm('Delete ]
@@ -241,17 +239,9 @@ sub display_group_tree {
                 push @options, qq[<span class="disabled">Delete</span>];
             }
         }
-        my $dir = qq[<img src="$NicToolClient::image_dir];
-        my $folder = $dir . qq[/folder_closed.gif" alt="folder">];
-        my $state = "cgi?nt_group_id=$group->{'nt_group_id'}";
-        push @options, qq[$dir/zone.gif" alt="zone"><a href="group_zones.$state">Zones</a>];
-        push @options, qq[$dir/nameserver.gif" alt="ns"><a href="group_nameservers.$state">Nameservers</a>];
-        push @options, qq[$dir/user.gif" alt="user"><a href="group_users.$state">Users</a>];
-        push @options, qq[$dir/group.gif" alt="group"><a href="group.$state">Groups</a>];
-        push @options, qq[$folder <a href="group_log.$state">Log</a>];
 
         print qq[
-<div id="navBar$navG" class="light_grey_bg side_pad">
+<div id="navBar$navG" class="navbar light_grey_bg side_pad">
  <span class="nowrap">];
 
         for my $x ( 1 .. $navG ) {
@@ -269,8 +259,20 @@ sub display_group_tree {
             print qq[<a href="group.cgi?nt_group_id=$group->{'nt_group_id'}">$group->{'name'}</a>];
         }
 
-        print qq[</span>
- <span class="float_r no_wrap">], join( "\n&nbsp;|&nbsp;", @options), qq[ </span>
+        my $dir = qq[<img src="$NicToolClient::image_dir];
+        my $state = "cgi?nt_group_id=$group->{'nt_group_id'}";
+
+        print qq[
+ </span>
+ <ul>
+  <li class="first"><a href="group_log.$state">$dir/folder_closed.gif" alt="folder">Log</a></li>
+  <li><a href="group.$state">$dir/group.gif" alt="group">Groups</a></li>
+  <li><a href="group_users.$state">$dir/user.gif" alt="user">Users</a></li>
+  <li><a href="group_nameservers.$state">$dir/nameserver.gif" alt="ns">Nameservers</a></li>
+  <li><a href="group_zones.$state">$dir/zone.gif" alt="zone">Zones</a></li>];
+        foreach ( reverse @options ) { print qq[  <li class=action>$_</li>]; };
+        print qq[
+ </ul>
 </div>];
     }
 
