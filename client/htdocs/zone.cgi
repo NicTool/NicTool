@@ -366,20 +366,26 @@ sub display_zone_properties {
 
     print qq[
 <div id="propertiesHeader" class="side_pad dark_grey_bg">
- <b>Properties</b>];
+ <b>Properties</b>
+
+ <ul class="menu_r">
+  <li class=first id="zpHide" onClick="hideThis('zonePropertiesDiv'); hideThis('zpHide'); showMenuItem('zpShow')">Hide</li>
+  <li class=first id="zpShow" style="display:none;" onClick="showThis('zonePropertiesDiv'); showMenuItem('zpHide'); hideThis('zpShow')">Show</li>];
+
     if ( !$zone->{'deleted'}
         && $user->{'zone_write'}
         && ( $isdelegate ? $zone->{'delegate_write'} : 1 ) )
     {
-        print qq[<span style="float: right;"><a href="zone.cgi?$state">Edit</a>];
+        print qq[<li><a href="zone.cgi?$state">Edit</a></li>];
     }
     else {
-        print qq[<span style="float: right;" class="disabled">Edit];
+        print qq[<li class="disabled">Edit</li>];
     }
     print qq[
- </span>
+ </ul>
 </div>
 
+<div id="zonePropertiesDiv">
 <table id="propertiesDetail" class="fat">
  <tr>
   <td class="width50">
@@ -408,7 +414,8 @@ sub display_zone_properties {
    </table>
   </td>
  </tr>
-</table>];
+</table>
+</div>];
 };
 
 sub display_nameservers {
@@ -419,8 +426,8 @@ sub display_nameservers {
     my @fields = qw/ name address description /;
 
     print qq[
-<div id="zoneNameservers" class="">
- <div id="zoneNameserverHeader" class="dark_grey_bg">
+<div id="zoneNameservers" class="no_pad">
+<div id="zoneNameserverHeader" class="dark_grey_bg no_margin">
   <span class="bold">Nameservers</span>
   <ul class="menu_r">
    <li class=first id="znsHide" onClick="hideThis('zoneNameserverListDiv'); hideThis('znsHide'); showMenuItem('znsShow')">Hide</li>
@@ -442,30 +449,29 @@ sub display_nameservers {
     }
     print qq[
   </ul>
- </div>
- <div id="zoneNameserverListDiv">
-  <table id="zoneNameserverList" class="pad1 fat">
-   <tr class="dark_grey_bg pad2">
-    <td class=center>name</td>
-    <td class=center>address</td>
-    <td class=center>description</td>
-   </tr>
-  ];
+</div>
+<div id="zoneNameserverListDiv">
+ <table id="zoneNameserverList" class="pad1 fat">
+  <tr class="dark_grey_bg pad2">
+   <td class=center>name</td>
+   <td class=center>address</td>
+   <td class=center>description</td>
+  </tr>];
 
     my $x = 1;
     foreach my $ns ( @{ $zone->{'nameservers'} } ) {
         my $bgcolor = $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg';
         print qq[
-   <tr class="$bgcolor">
-    <td><img class="no_pad" src="$NicToolClient::image_dir/nameserver.gif" alt="nameserver">$ns->{name}</td>
-    <td>$ns->{address}</td>
-    <td>$ns->{description}</td>
-   </tr>];
+  <tr class="$bgcolor">
+   <td><img class="no_pad" src="$NicToolClient::image_dir/nameserver.gif" alt="nameserver">$ns->{name}</td>
+   <td>$ns->{address}</td>
+   <td>$ns->{description}</td>
+  </tr>];
     }
 
     print qq[
-  </table>
- </div>
+ </table>
+</div>
 </div>];
 }
 

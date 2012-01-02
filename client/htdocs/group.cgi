@@ -219,7 +219,7 @@ sub display_group_list {
     my $groups = $rv->{'groups'};
     my $map    = $rv->{'group_map'};
 
-    my @options;
+    my $options;
     if ( $user->{'group_create'} ) {
         my $state = 'nt_group_id=' . $q->param('nt_group_id')
                   . '&amp;parent_group_id=' . $q->param('nt_group_id');
@@ -227,128 +227,81 @@ sub display_group_list {
             next if ! $q->param($_);
             $state .= "&amp;$_=" . $q->escape( $q->param($_) );
         }
-        @options = ( qq[<a href="group.cgi?$state&amp;new=1">New Sub-Group</a>] );
+        $options = ( qq[<a href="group.cgi?$state&amp;new=1">New Sub-Group</a>] );
     }
     else {
-        @options = ( "<span class=disabled>New Sub-Group</span>");
+        $options = ( "<span class=disabled>New Sub-Group</span>");
     }
 
     print qq[
-<table class="fat">
- <tr class=dark_grey_bg>
-  <td>
-   <table class="no_pad fat">
-    <tr>
-     <td class="bold">Sub-Group List</td>
-     <td class=right>], join( ' | ', @options ), qq[</td>
-    </tr>
-   </table>
-  </td>
- </tr>
-</table>];
+<div class="dark_grey_bg margint4">
+ <b>Sub-Group List</b>
+ <span class="float_r">$options</span>
+</div>];
 
     $nt_obj->display_search_rows( $q, $rv, \%params, $cgi, ['nt_group_id'], $include_subgroups );
 
     if (@$groups) {
-
+        my $order = uc( $sort_fields{'group'}->{'mod'} ) eq 'ASCENDING' ? 'up' : 'down';
+        my $sort = '';
+        if ( $sort_fields{'group'} ) {
+            $sort = qq[( $sort_fields{'group'}->{'order'} <img src=$NicToolClient::image_dir/$order.gif alt="$order"> )];
+        };
         print qq[
-<table class="fat">
- <tr class="dark_grey_bg">];
-
-        foreach (@columns) {
-            if ( $sort_fields{$_} ) {
-                print qq[
-  <td class="dark_bg center">
-   <table class="no_pad">
-    <tr>
-     <td>$labels{$_}</td>
-     <td>&nbsp; &nbsp; $sort_fields{$_}->{'order'}</td>
-     <td><img src=$NicToolClient::image_dir/],
-                    ( uc( $sort_fields{$_}->{'mod'} ) eq 'ASCENDING' ? 'up' : 'down' ), 
-                    qq[.gif alt=""></td>
-    </tr>
-   </table>
-  </td>];
-            }
-            else {
-                print qq[
-  <td class=center>$labels{$_}</td>];
-            }
-        }
-        for ( qw/ Zones Nameservers Users Log / ) {
-            print qq[
-   <td class=center> $_ </td>];
-        }
-        print qq[
-   <td class=center><img src=$NicToolClient::image_dir/trash.gif alt="trash"></td>
-  </tr>];
+<div id="groupListHeader" class="dark_bg center">Group $sort</div>
+<div id="groupListDiv">];
 
         my $x = 0;
 
         foreach my $group (@$groups) {
             my $bgcolor = $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg';
-            print qq[
-  <tr class="$bgcolor">
-   <td class="fat">
-    <table class="no_pad">
-     <tr>
-      <td><img src=$NicToolClient::image_dir/group.gif alt="group"></td>
-      <td>],
-                join(
-                ' / ',
+            my $ggid = $group->{'nt_group_id'};
+            my $gname = $group->{'name'} . "'s";
+            my $dname = join( ' / ',
                 map(qq[<a href="group.cgi?nt_group_id=$_->{'nt_group_id'}">$_->{'name'}</a>],
-                    (   @{ $map->{ $group->{'nt_group_id'} } },
-                        {   nt_group_id => $group->{'nt_group_id'},
+                    (   @{ $map->{ $ggid } },
+                        {   nt_group_id => $ggid,
                             name        => $group->{'name'}
                         }
-                        ) )
-                ),
-                qq[</td>
-     </tr>
-    </table>
-   </td>];
+                        ) ) );
+            print qq[
+  <div class="$bgcolor"><img src=$NicToolClient::image_dir/group.gif alt="group">$dname
+  <ul class="menu_r">];
 
-            for ( qw/ zones nameservers users log / ) {
-                print qq[
-   <td class="center width1">
-    <table class="no_pad">
-     <tr>
-      <td><img src="$NicToolClient::image_dir/transparent.gif" width=2 height=16 alt=""></td>
-      <td><a href="group_$_.cgi?nt_group_id=$group->{'nt_group_id'}">
-       <img src="$NicToolClient::image_dir/folder_closed.gif" alt="$group->{'name'}'s $_"></a></td>
-      <td><a href="group_$_.cgi?nt_group_id=$group->{'nt_group_id'}"> ] . ucfirst($_) . qq[</a></td>
-      <td><img src=$NicToolClient::image_dir/transparent.gif width=2 height=16 alt=""></td>
-    </tr>
-   </table>
-  </td>];
-            }
             if ($user->{'group_delete'}
                 && ( !exists $group->{'delegate_delete'} || $group->{'delegate_delete'} )
-                )
-            {
-                print qq[
-  <td class=center><a href="group.cgi?nt_group_id=].$q->param('nt_group_id').qq[&amp;delete=$group->{'nt_group_id'}" onClick="return confirm('Delete ],
-                    join(
-                    ' / ',
-                    map( $_->{'name'},
-                        (   @{ $map->{ $group->{'nt_group_id'} } },
+                ) {
+                my $gid = $q->param('nt_group_id');
+                my $hname = join( ' / ',
+                        map( $_->{'name'},
+                            (  @{ $map->{ $group->{'nt_group_id'} } },
                             {   nt_group_id => $group->{'nt_group_id'},
                                 name        => $group->{'name'}
                             }
-                            ) )
-                    ),
-                    qq[ and all associated data?');"><img src="$NicToolClient::image_dir/trash.gif" alt="trash"></a></td>];
+                            ) ) );
+                print qq[
+   <li class="center first">
+    <a href="group.cgi?nt_group_id=$gid&amp;delete=$ggid" onClick="return confirm('Delete $hname and all associated data?');"><img src="$NicToolClient::image_dir/trash.gif" alt="trash"></a></li>];
             }
             else {
                 print qq[
-   <td class=center><img src="$NicToolClient::image_dir/trash-disabled.gif" alt=""></td>];
+   <li class="center first"><img src="$NicToolClient::image_dir/trash-disabled.gif" alt=""></li>];
             }
-            print "
- </tr>";
+            print qq[
+   <li class="nowrap center side_pad2"><a href="group_log.cgi?nt_group_id=$ggid">
+     <img src="$NicToolClient::image_dir/folder_closed.gif" alt="$gname log">Log</li>
+   <li class="nowrap center side_pad2"><a href="group_users.cgi?nt_group_id=$ggid">
+     <img src="$NicToolClient::image_dir/user.gif" alt="$gname users">Users</li>
+   <li class="nowrap center side_pad2"><a href="group_nameservers.cgi?nt_group_id=$ggid">
+     <img src="$NicToolClient::image_dir/nameserver.gif" alt="$gname nameservers">Nameservers</li>
+   <li class="nowrap center side_pad2"><a href="group_zones.cgi?nt_group_id=$ggid">
+     <img src="$NicToolClient::image_dir/zone.gif" alt="$gname zones">Zones</li>
+  </ul>
+ </div>];
         }
 
         print "
-</table>";
+</div>";
     }
 }
 
