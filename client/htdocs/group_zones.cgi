@@ -599,26 +599,26 @@ sub display_zone_actions {
 
     print qq[
 <div id="zoneActions" class="dark_grey_bg side_mar">
-  <span class="bold">Zone List</span>
-  <span class=float_r>];
-
-    if ( $user->{'zone_create'} ) {
-        print qq[<a href="group_zones.cgi?$state_string&amp;new=1">New Zone</a>];
-    }
-    else {
-        print qq[<span class=disabled>New Zone</span>];
-    }
+ <span class="bold">Zone List</span>
+ <ul class=menu_r>
+  <li class="first"><a href="group_zones_log.cgi?nt_group_id=$gid">View Zone Log</a></li>];
 
     if ( @$zones && $user_group->{'has_children'} ) {
-        print qq[ | <a href="javascript:void open_move(document.list_form.obj_list);">Move Selected Zones</a>];
         if ( $user->{'zone_delegate'} ) {
-            print qq[ | <a href="javascript:void open_delegate(document.list_form.obj_list);">Delegate Selected Zones</a>]
+            print qq[\n<li><a href="javascript:void open_delegate(document.list_form.obj_list);">Delegate Selected Zones</a></li>]
         };
+        print qq[\n<li><a href="javascript:void open_move(document.list_form.obj_list);">Move Selected Zones</a></li>];
     };
 
-    print qq[ | <a href="group_zones_log.cgi?nt_group_id=$gid">View Zone Log</a>
- </span>
-</div>
-];
+    if ( $user->{'zone_create'} ) {
+        print qq[\n<li><a href="group_zones.cgi?$state_string&amp;new=1">New Zone</a></li>];
+    }
+    else {
+        print qq[\n<li class=disabled>New Zone</li>];
+    }
+
+    print qq[
+ </ul>
+</div>];
 };
 

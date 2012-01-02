@@ -122,9 +122,8 @@ sub display_save {
 sub display_edit_user {
     my ( $nt_obj, $user, $group, $q, $message, $edit ) = @_;
 
-    my $showpermissions = 1;
-    my $modifyperm
-        = $user->{ 'user_' . ( $edit eq 'edit' ? 'write' : 'create' ) };
+    my $type = $edit eq 'edit' ? 'write' : 'create';
+    my $modifyperm = $user->{ 'user_' . $type };
     if ($modifyperm) {
         print $q->start_form(
             -action => 'group_users.cgi',
@@ -133,194 +132,47 @@ sub display_edit_user {
         );
         print $q->hidden( -name => $edit );
         print $q->hidden( -name => 'nt_group_id' );
-        print $q->hidden( -name => 'nt_user_id' ) if $edit eq 'edit';
+        if ( $edit eq 'edit' ) {
+            print $q->hidden( -name => 'nt_user_id' );
+        };
     }
 
     $nt_obj->display_nice_error($message) if $message;
+    my $username = my $firstname = my $lastname = my $email = my $password = my $password2 = '';
+    if ( $modifyperm ) {
+        $username  = $q->textfield( -name => 'username', -size => 40, -maxlength => 50 );
+        $firstname = $q->textfield( -name => 'first_name', -size => 20, -maxlength => 30);
+        $lastname  = $q->textfield( -name => 'last_name', -size => 30, -maxlength => 40);
+        $email     = $q->textfield( -name => 'email', -size => 40, -maxlength => 100 );
+        $password  = $q->password_field( -name => 'password', -size => 15, -maxlength => 15);
+        $password2 = $q->password_field( -name => 'password2', -size => 15, -maxlength => 15);
+    };
 
-    print qq[<table class="fat">
-<tr class=dark_bg><td colspan=2><b>New User</b></td></tr>
-<tr class=light_grey_bg>
-<td class=right>Username:</td>
-<td class=width80>],
-        (
-        $modifyperm
-        ? $q->textfield(
-            -name      => 'username',
-            -size      => 40,
-            -maxlength => 50
-            )
-        : ''
-        ),
-        qq[</td></tr>
-<tr class=light_grey_bg>
-<td class=right>First Name:</td>
-<td class=width80>],
-( $modifyperm ? $q->textfield( -name => 'first_name', -size => 20, -maxlength => 30) : ''),
-        qq[</td></tr>
-<tr class=light_grey_bg>
-<td class=right>Last Name:</td>
-<td class=width80>],
-( $modifyperm ? $q->textfield( -name => 'last_name', -size => 30, -maxlength => 40) : ''),
-        qq[</td></tr>
-<tr class=light_grey_bg>
-<td class=right>Email Address:</td>
-<td class=width80>],
-( $modifyperm ? $q->textfield( -name => 'email', -size => 40, -maxlength => 100 ) : ''),
-        qq[</td></tr>
-    <tr class=light_grey_bg>
-    <td class=right>Password:</td>
-    <td class=width80>],
-( $modifyperm ? $q->password_field( -name => 'password', -size => 15, -maxlength => 15) : ''),
-        qq[</td></tr>
-<tr class=light_grey_bg>
-<td class=right>Password (Again):</td>
-<td style="width:80%;">],
-( $modifyperm ? $q->password_field( -name => 'password2', -size => 15, -maxlength => 15) : ''),
-        qq[</td></tr>];
+    my $tr = '<tr class=light_grey_bg><td class=right>';
+    print qq[
+<table class="fat">
+ <tr class=dark_bg><td colspan=2><b>New User</b></td></tr>
+ $tr Username:</td><td class=width80>$username</td></tr>
+ $tr First Name:</td><td class=width80>$firstname</td></tr>
+ $tr Last Name:</td><td class=width80>$lastname</td></tr>
+ $tr Email Address:</td><td class=width80>$email</td></tr>
+ $tr Password:</td><td class=width80>$password</td></tr>
+ $tr Password (Again):</td><td style="width:80%;">$password2</td></tr>];
 
-    if ($showpermissions) {
-        my %perms = (
-            group      => [qw(write create delete .)],
-            user       => [qw(write create delete .)],
-            zone       => [qw(write create delete delegate)],
-            zonerecord => [qw(write create delete delegate)],
-            nameserver => [qw(write create delete . )],
-            self       => [qw(write . . . )]
-        );
-        my %labels = (
-            group      => { 'write' => 'Edit' },
-            user       => { 'write' => 'Edit' },
-            zone       => { 'write' => 'Edit' },
-            zonerecord => { 'write' => 'Edit' },
-            nameserver => { 'write' => 'Edit' },
-            self       => { 'write' => 'Edit' },
-        );
-        my @order = qw(group user zone zonerecord nameserver self);
+    display_user_permissions( $nt_obj, $q, $group, $user );
 
-        print qq[
-<tr class=dark_grey_bg><td colspan=2>
- <input type=radio value='1' name='group_defaults' CHECKED>This user inherits the permissions defined for the enclosing group ] . $nt_obj->help_link('perms') . qq[
- </td></tr>
-<tr class=light_grey_bg>
- <td colspan=2 class=light_grey_bg>
-  <table class="center" style="padding:6; border-spacing:1;"> ];
-        my $x = 1;
-        my $color;
-        foreach my $type (@order) {
-            $color = ( $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' );
-            print qq{<tr><td class="right bold">} . ucfirst($type) . qq{:</td>};
-            foreach my $perm ( @{ $perms{$type} } ) {
-                if ( $perm eq '.' ) {
-                    print qq[ <td class=$color></td>];
-                    next;
-                }
-                my $check = $group->{ $type . "_" . $perm } ? 'checked' : 'unchecked';
-                print qq[
-<td class="$color left middle"><img src="$NicToolClient::image_dir/perm-$check.gif" alt="permission $check"]
-                    . ( exists $labels{$type}{$perm} ? $labels{$type}{$perm} : ucfirst($perm) )
-                    . qq[</td>];
-            }
-            print qq[</tr>];
-        }
-        print qq[ </table> </td> </tr>
-<tr class=dark_grey_bg><td colspan=2>
- <input type=radio value='0' name='group_defaults'>This user uses the permissions defined below ],
-            $nt_obj->help_link('perms'),
-            qq[</td></tr>
-<tr class=light_grey_bg>
- <td colspan=2 class=light_grey_bg>
-  <table class="center" style="padding:6; border-spacing:1;">
-];
-    $x     = 1;
-    @order = qw/ group user zone zonerecord nameserver self header /;
-    foreach my $type (@order) {
-
-            if ( $type eq 'header' ) {
-                print qq(
-                    <tr><td></td>
-                );
-                foreach (qw(Edit Create Delete Delegate All)) {
-                    if ( $_ eq '.' ) {
-                        print "<td></td>";
-                        next;
-                    }
-                    print "<td>";
-                    print $q->checkbox(
-                        -name  => "select_all_$_",
-                        -label => '',
-                        -onClick =>
-                            "selectAll$_(document.perms_form, this.checked);",
-                        -override => 1
-                    );
-                    print "</td>";
-                }
-                print qq(
-                    </tr>
-                );
-            }
-            else {
-                $color = (
-                    $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' );
-                print qq{
-                        <tr>
-                            <td class=right><b>}
-                    . ( ucfirst($type) ) . qq{:</b></td>
-                                };
-                foreach my $perm ( @{ $perms{$type} } ) {
-                    if ( $perm eq '.' ) {
-                        print qq(
-                            <td>&nbsp;</td>
-                        );
-                        next;
-                    }
-                    if ( $user->{ $type . "_" . $perm } ) {
-                        print qq{<td class="$color left middle"> };
-                        print $q->checkbox(
-                            -name    => $type . "_" . $perm,
-                            -value   => '1',
-                            -checked => $group->{ $type . "_" . $perm },
-                            -label   => ''
-                            )
-                            . (
-                            exists $labels{$type}->{$perm}
-                            ? $labels{$type}->{$perm}
-                            : ucfirst($perm) )
-                            . qq{</td> };
-                    }
-                    else {
-                        print qq[<td class="$color middle left"><img src="$NicToolClient::image_dir/perm-]
-                            . ( $group->{ $type . "_" . $perm } ? 'checked' : 'unchecked' )
-                            . qq{.gif" alt="permission"><span class=disabled>}
-                            . ( exists $labels{$type}->{$perm} ? $labels{$type}->{$perm} : ucfirst($perm) )
-                            . qq{</span></td> };
-                    }
-                }
-                print "<td>",
-                     $q->checkbox(
-                    -name    => "select_all_$type",
-                    -label   => '',
-                    -onClick => "selectAll"
-                        . ucfirst($type)
-                        . "(document.perms_form, this.checked);",
-                    -override => 1
-                    ), 
-                    "</td> </tr>";
-            }
-        }
-        print qq{
-                </table>
-            </td>
-        </tr>
-        };
-    }
     if ($modifyperm) {
-        print qq[<tr class=dark_grey_bg><td colspan=2 class=center>],
+        print qq[
+ <tr class=dark_grey_bg>
+  <td colspan=2 class=center>],
             $q->submit( $edit eq 'edit' ? 'Save' : 'Create' ),
-            $q->submit('Cancel'), "</td></tr>";
+            $q->submit('Cancel'), qq[
+  </td>
+ </tr>];
     }
-    print "</table>";
-    print $q->end_form;
+    print qq[
+</table>],
+    $q->end_form;
 }
 
 sub display_list {
@@ -330,7 +182,7 @@ sub display_list {
 
     my $user_group = $nt_obj->get_group( nt_group_id => $user->{'nt_group_id'} );
 
-    my @columns = qw(username first_name last_name email);
+    my @columns = qw/ username first_name last_name email /;
     my %labels = (
         username   => 'User',
         first_name => 'First Name',
@@ -341,7 +193,7 @@ sub display_list {
 
     my $include_subgroups = $group->{'has_children'} ? 'sub-groups' : undef;
     if ($include_subgroups) {
-        unshift( @columns, 'group_name' );
+        unshift @columns, 'group_name';
     }
 
     my %params = ( nt_group_id => $q->param('nt_group_id') );
@@ -370,27 +222,33 @@ sub display_list {
 
     my @state_fields;
     foreach ( @{ $nt_obj->paging_fields } ) {
-        push( @state_fields, "$_=" . $q->escape( $q->param($_) ) )
-            if $q->param($_);
+        next if ! $q->param($_);
+        push @state_fields, "$_=" . $q->escape( $q->param($_) );
     }
     my $gid = $q->param('nt_group_id');
-    my $state_string = @state_fields ? join('&amp;', @state_fields) : 'not_empty=1';
+    my $state_string = "nt_group_id=$gid" . join('&amp;', @state_fields);
+    my $opts = 0;
 
     print qq[
 <div class="side_pad dark_grey_bg">
- <span class="bold">User List</span>
- <span class="float_r">];
+ <b>User List</b>
+ <ul class="menu_r">
+  <li class="first">];
+
+    if ( @$list && $user_group->{'has_children'} ) {
+        print qq[<a href="javascript:void open_move(document.list_form.obj_list);">Move Selected Users</a></li>
+  <li>];
+        $opts++;
+    };
 
     if ( $user->{'user_create'} ) {
-        print qq[<a href="$cgi?$state_string&amp;nt_group_id=$gid&amp;new=1">New User</a>];
+        print qq[<a href="$cgi?$state_string&amp;new=1">New User</a>];
     }
     else {
         print "<span class=disabled>New User</span>";
     }
-    print qq[ | <a href="javascript:void open_move(document.list_form.obj_list);">Move Selected Users</a>]
-        if ( @$list && $user_group->{'has_children'} );
-    print qq[
- </span>
+    print qq[</li>
+ </ul>
 </div>];
 
     $nt_obj->display_search_rows( $q, $rv, \%params, $cgi, ['nt_group_id'],
@@ -513,14 +371,10 @@ sub display_list {
   <td style="width:$width;">$obj->{'last_name'}</td>
   <td style="width:$width;"><a href="mailto:$obj->{'email'}">$obj->{'email'}</a></td>];
 
-        if (    $user->{'user_delete'}
-            and $obj->{'nt_user_id'} != $user->{'nt_user_id'} )
-        {
-            my $gid = $q->param('nt_group_id');
-            my $state_string = join('&amp;', @state_fields);
+        if ( $user->{'user_delete'} && $obj->{'nt_user_id'} != $user->{'nt_user_id'} ) {
             print qq[
   <td class="width1">
- <a href="$cgi?$state_string&amp;nt_group_id=$gid&amp;delete=1&amp;obj_list=$obj->{'nt_user_id'}" onClick="return confirm('Delete user $obj->{'username'}?');"><img src="$NicToolClient::image_dir/trash.gif" alt="trash"></a></td>];
+ <a href="$cgi?$state_string&amp;delete=1&amp;obj_list=$obj->{'nt_user_id'}" onClick="return confirm('Delete user $obj->{'username'}?');"><img src="$NicToolClient::image_dir/trash.gif" alt="trash"></a></td>];
         }
         else {
             print qq[
@@ -535,3 +389,149 @@ sub display_list {
 ],
     $q->endform;
 }
+sub display_user_permissions {
+    my ($nt_obj, $q, $group, $user) = @_;
+    my %perms = (
+        group      => [qw(write create delete .)],
+        user       => [qw(write create delete .)],
+        zone       => [qw(write create delete delegate)],
+        zonerecord => [qw(write create delete delegate)],
+        nameserver => [qw(write create delete . )],
+        self       => [qw(write . . . )]
+    );
+    my %labels = (
+        group      => { 'write' => 'Edit' },
+        user       => { 'write' => 'Edit' },
+        zone       => { 'write' => 'Edit' },
+        zonerecord => { 'write' => 'Edit' },
+        nameserver => { 'write' => 'Edit' },
+        self       => { 'write' => 'Edit' },
+    );
+    my @order = qw(group user zone zonerecord nameserver self);
+
+    print qq[
+ <tr class=dark_grey_bg>
+  <td colspan=2>
+   <input type=radio value='1' name='group_defaults' CHECKED>This user inherits the permissions defined for the enclosing group ] . $nt_obj->help_link('perms') . qq[
+  </td>
+ </tr>
+ <tr class=light_grey_bg>
+  <td colspan=2 class=light_grey_bg>
+   <table class="center" style="padding:6; border-spacing:1;"> ];
+    my $x = 1;
+    my $color;
+    foreach my $type (@order) {
+        $color = ( $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' );
+        print qq{
+    <tr>
+     <td class="right bold">} . ucfirst($type) . qq{:</td>};
+        foreach my $perm ( @{ $perms{$type} } ) {
+            if ( $perm eq '.' ) {
+                print qq[
+     <td class=$color></td>];
+                next;
+            }
+            my $check = $group->{ $type . "_" . $perm } ? 'checked' : 'unchecked';
+            print qq[
+     <td class="$color left middle"><img src="$NicToolClient::image_dir/perm-$check.gif" alt="permission $check"]
+                . ( exists $labels{$type}{$perm} ? $labels{$type}{$perm} : ucfirst($perm) )
+                . qq[</td>];
+        }
+        print qq[
+    </tr>];
+    }
+    print qq[ 
+   </table>
+  </td>
+ </tr>
+ <tr class=dark_grey_bg>
+  <td colspan=2>
+   <input type=radio value='0' name='group_defaults'>This user uses the permissions defined below ],
+        $nt_obj->help_link('perms'),
+        qq[
+  </td>
+ </tr>
+ <tr class=light_grey_bg>
+  <td colspan=2 class=light_grey_bg>
+   <table class="center" style="padding:6; border-spacing:1;">
+];
+    $x     = 1;
+    @order = qw/ group user zone zonerecord nameserver self header /;
+    foreach my $type (@order) {
+
+        if ( $type eq 'header' ) {
+            print qq[
+    <tr><td></td>
+            ];
+            foreach (qw(Edit Create Delete Delegate All)) {
+                if ( $_ eq '.' ) {
+                    print qq[<td></td>];
+                    next;
+                }
+                print "<td>",
+                    $q->checkbox(
+                    -name  => "select_all_$_",
+                    -label => '',
+                    -onClick =>
+                        "selectAll$_(document.perms_form, this.checked);",
+                    -override => 1
+                ),
+                "</td>";
+            }
+            print qq[
+    </tr>];
+        }
+        else {
+            $color = ( $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' );
+            print qq[
+    <tr>
+     <td class=right><b>] . ucfirst($type) . qq[:</b></td>];
+
+            foreach my $perm ( @{ $perms{$type} } ) {
+                if ( $perm eq '.' ) {
+                    print qq[
+     <td>&nbsp;</td>];
+                    next;
+                }
+                if ( $user->{ $type . "_" . $perm } ) {
+                    print qq[
+     <td class="$color left middle">],
+                        $q->checkbox(
+                        -name    => $type . "_" . $perm,
+                        -value   => '1',
+                        -checked => $group->{ $type . "_" . $perm },
+                        -label   => ''
+                        ),
+                        ( exists $labels{$type}->{$perm} ? $labels{$type}->{$perm} : ucfirst($perm) ),
+                        qq[
+     </td>];
+                }
+                else {
+                    my $checked = $group->{ $type . "_" . $perm } ? 'checked' : 'unchecked';
+                    my $label = exists $labels{$type}->{$perm} ? $labels{$type}->{$perm} : ucfirst($perm);
+                    print qq[
+     <td class="$color middle left"><img src="$NicToolClient::image_dir/perm-$checked.gif" alt="permission">
+      <span class=disabled>$label</span>
+     </td>];
+                }
+            }
+            print qq[
+     <td>],
+                    $q->checkbox(
+                -name    => "select_all_$type",
+                -label   => '',
+                -onClick => "selectAll" . ucfirst($type) . "(document.perms_form, this.checked);",
+                -override => 1
+            ), 
+            qq[
+     </td>
+    </tr>];
+        }
+    }
+    print qq[
+   </table>
+  </td>
+ </tr>
+    ];
+}
+

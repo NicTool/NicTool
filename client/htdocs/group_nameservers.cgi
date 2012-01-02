@@ -52,7 +52,7 @@ sub display {
         $user->{'nt_group_id'},
         $q->param('nt_group_id'), 0
     );
-    $nt_obj->display_nameserver_options( $user, $q->param('nt_group_id'), $level, 1 );
+    display_list_options( $user, $q->param('nt_group_id'), $level, 1 );
 
     if ( $q->param('new') ) {
         if ( $q->param('Create') ) {
@@ -214,22 +214,30 @@ sub display_list_actions {
     my ( $q, $user, $user_group, $state, $list ) = @_;
 
     print qq[
-<div id="nameserverListActions" class="no_pad side_mar dark_grey_bg">
+<div id="nameserverListActions" class="dark_grey_bg">
  <span class="bold">Nameserver List</span>
- <span class=float_r>];
+ <ul class=menu_r>];
 
     my $gid = $q->param('nt_group_id');
-    if ( $user->{'nameserver_create'} ) {
-        print qq[<a href="group_nameservers.cgi?nt_group_id=${gid}${state}&amp;new=1">New Nameserver</a>];
+
+    if ( @$list && $user_group->{'has_children'} ) {
+        print qq[
+  <li class="first"><a href="javascript:void open_move(document.list_form.obj_list);">Move Selected Nameservers</a></li>];
     }
     else {
-        print qq[<span class=disabled>New Nameserver</span>];
-    }
-    if ( @$list && $user_group->{'has_children'} ) {
-        print qq[ | <a href="javascript:void open_move(document.list_form.obj_list);">Move Selected Nameservers</a>];
+        print qq[
+  <li class="first disabled">Move Nameservers</li>];
     };
+    if ( $user->{'nameserver_create'} ) {
+        print qq[
+  <li><a href="group_nameservers.cgi?nt_group_id=${gid}${state}&amp;new=1">New Nameserver</a></li>];
+    }
+    else {
+        print qq[
+  <li class=disabled>New Nameserver</li>];
+    }
     print qq[
- </span>
+ </ul>
 </div>
 ];
 };
@@ -342,6 +350,47 @@ sub display_list_name {
   </td>];
 };
 
+sub display_list_options {
+    my ( $user, $group_id, $level, $in_ns_summary ) = @_;
+
+    print qq[
+<div id="nameserverOptions" class="light_grey_bg">];
+
+    my $pad = 0;
+    for my $x ( 1 .. $level ) {
+        if ( $x == $level ) {
+            print qq[<img src="$NicToolClient::image_dir/dirtree_elbow.gif" class="tee" style="padding-left: ${pad}px;" alt="elbow">];
+        };
+        $pad += 19;
+    }
+
+    print qq[<img src="$NicToolClient::image_dir/folder_open.gif" alt="folder">];
+
+    if ($in_ns_summary) {
+        print qq[<span class="bold">Nameservers</span>];
+    }
+    else {
+        print qq[<a href="group_nameservers.cgi?nt_group_id=$group_id">Nameservers</a>];
+    }
+    print qq[
+ <ul class="menu_r">
+  <li class=first>];
+
+    if ( !$in_ns_summary ) {
+        if ( $user->{'nameserver_create'} ) {
+            print qq[<a href="group_nameservers.cgi?nt_group_id=$group_id&amp;edit=1">New Nameserver</a>];
+        }
+        else {
+            print qq[<span class="disabled">New Nameserver</class>];
+        }
+    };
+
+    print
+     qq[
+ </li>
+</div>];
+}
+
 sub display_list_delete {
     my ($q, $user, $obj, $state) = @_;
 
@@ -390,23 +439,20 @@ sub display_edit_nameserver {
         || $nameserver->{'delegate_write'} );
 
     if ($modifyperm) {
-        print $q->start_form(
-            -action => 'group_nameservers.cgi',
-            -method => 'POST'
-        );
-        print $q->hidden( -name => $edit ),
-            $q->hidden( -name => 'nt_group_id' ),
-            $q->hidden( -name => 'nt_nameserver_id' ) if $edit ne 'new';
+        my $gid = $q->param('nt_group_id');
+        print qq[
+<form method="post" action="group_nameservers.cgi">
+ <input type="hidden" name="$edit" value="]. $q->param($edit) .qq["  />
+ <input type="hidden" name="nt_group_id" value="$gid"  />
+ ];
+        print $q->hidden( -name => 'nt_nameserver_id' ) if $edit ne 'new';
     }
 
     $nt_obj->display_nice_error($message) if $message;
-    my $title;
+    my $title = 'View Nameserver Details';
     if ($modifyperm) {
         $title = ucfirst($edit) . " Nameserver";
-    }
-    else {
-        $title = "View Nameserver Details";
-    }
+    };
 
     my %labels = display_edit_nameserver_fields( $q, $nameserver, $modifyperm );
 
@@ -430,7 +476,7 @@ sub display_edit_nameserver {
         $q->submit('Cancel'), "</td>
  </tr>";
     }
-
+ 
     print qq[
 </table>];
     print $q->end_form if $modifyperm;

@@ -232,39 +232,41 @@ sub display_group_tree {
                 )
             {
                 push @options, qq[<a href="group.cgi?nt_group_id=$group->{'parent_group_id'}&amp;delete=$group->{'nt_group_id'}" onClick="return confirm('Delete ]
-                        . join( ' / ', @list )
-                        . qq[ and all associated data?');">Delete</a>];
+                    . join( ' / ', @list )
+                    . qq[ and all associated data?');">Delete</a>];
             }
             else {
                 push @options, qq[<span class="disabled">Delete</span>];
             }
         }
 
+        my $dir = qq[<img src="$NicToolClient::image_dir];
+        my $state = "cgi?nt_group_id=$group->{'nt_group_id'}";
+        my $pad = 0;
+
         print qq[
 <div id="navBar$navG" class="navbar light_grey_bg side_pad">
  <span class="nowrap">];
 
         for my $x ( 1 .. $navG ) {
-            my $img = $x == $navG ? 'dirtree_elbow' : 'transparent';
-            print qq[\n  <img src="$NicToolClient::image_dir/$img.gif" class="tee" alt="$img">
-];
+            if ( $x == $navG ) {
+                print qq[\n  $dir/dirtree_elbow.gif" class="tee" style="padding-left: ${pad}px" alt="elbow">];
+            };
+            $pad += 19;
         }
 
-        print qq[<img src="$NicToolClient::image_dir/group.gif" alt="group">];
+        print qq[\n  $dir/group.gif" alt="group">];
 
         if ( $in_summary && $navG == $count ) {
             print qq[<strong>$group->{'name'}</strong>];
         }
         else {
-            print qq[<a href="group.cgi?nt_group_id=$group->{'nt_group_id'}">$group->{'name'}</a>];
+            print qq[<a href="group.$state">$group->{'name'}</a>];
         }
-
-        my $dir = qq[<img src="$NicToolClient::image_dir];
-        my $state = "cgi?nt_group_id=$group->{'nt_group_id'}";
 
         print qq[
  </span>
- <ul>
+ <ul class="menu_r">
   <li class="first"><a href="group_log.$state">$dir/folder_closed.gif" alt="folder">Log</a></li>
   <li><a href="group.$state">$dir/group.gif" alt="group">Groups</a></li>
   <li><a href="group_users.$state">$dir/user.gif" alt="user">Users</a></li>
@@ -282,92 +284,80 @@ sub display_group_tree {
 sub display_zone_list_options {
     my ( $self, $user, $group_id, $level, $in_zone_list ) = @_;
 
-    my $q = $self->{'CGI'};
-
-    my @options;
+    my $options='';
+    my $first = 'first';
+    if ( ! $in_zone_list ) {
+        $options .= qq[<li class="$first"><a href="group_zones_log.cgi?nt_group_id=$group_id">View Zone Log</a></li>];
+        $first = '';
+    };
     if ( $user->{'zone_create'} ) {
         if ( ! $in_zone_list ) {
-            push @options, qq[<a href="group_zones.cgi?nt_group_id=$group_id&amp;new=1">New Zone</a>];
+            $options .= qq[<li class="$first"><a href="group_zones.cgi?nt_group_id=$group_id&amp;new=1">New Zone</a></li>];
         };
     }
     else {
         if ( ! $in_zone_list ) {
-            push @options, '<span class="disabled">New Zone</span>';
+            $options .= qq[<li class="$first disabled">New Zone</li>];
         };
     }
-    if ( ! $in_zone_list ) {
-        push @options, qq[<a href="group_zones_log.cgi?nt_group_id=$group_id">View Zone Log</a>];
-    };
 
     print qq[
 <div id="zoneListOptions" class="light_grey_bg side_pad">];
 
-    for my $x ( 1 .. $level ) {
-        my $img = $x == $level ? 'dirtree_elbow' : 'transparent';
-        print qq[
- <img src="$NicToolClient::image_dir/$img.gif" class="tee" alt="$img">];
-    }
-
-    print qq[<img src="$NicToolClient::image_dir/folder_open.gif" class="tee" alt="folder">];
+    my $pad = 19 * ($level - 1);
+    print qq[
+ <img style="padding-left: ${pad}px;" src="$NicToolClient::image_dir/dirtree_elbow.gif" class="tee" alt="elbow">
+ <img src="$NicToolClient::image_dir/folder_open.gif" class="tee" alt="folder">];
 
     if ($in_zone_list) {
-        print qq[<span class="bold">Zones</span>];
+        print qq[<b>Zones</b>];
     }
     else {
         print qq[<a href="group_zones.cgi?nt_group_id=$group_id">Zones</a>];
     }
 
     print qq[
- <span class="float_r pad2">], join( ' | ', @options ), qq[</span>
+ <ul class="menu_r">$options
+ </ul>
 </div>];
 }
 
 sub display_user_list_options {
     my ( $self, $user, $group_id, $level, $in_user_list ) = @_;
 
-    my $q = $self->{'CGI'};
-
-    my @options;
-    if ( $user->{'user_create'} ) {
-        push @options, qq[<a href="group_users.cgi?nt_group_id=$group_id&amp;new=1">New User</a>]
-        unless ($in_user_list);
-    }
-    else {
-        push @options, '<span class="disabled">New User</span>' unless $in_user_list;
-    }
-
     print qq[
-<table class="fat">
- <tr class=light_grey_bg>
-  <td>
-   <table class="no_pad fat">
-    <tr>];
+<div class="light_grey_bg">];
 
+    my $pad = 0;
     for my $x ( 1 .. $level ) {
-        my $img = $x == $level ? 'dirtree_elbow' : 'transparent';
-        print qq[
-     <td><img src="$NicToolClient::image_dir/$img.gif" class="tee" alt=""></td>];
+        if ( $x == $level ) {
+            print qq[<img src="$NicToolClient::image_dir/dirtree_elbow.gif" class="tee" style="padding-left: ${pad}px;" alt="elbow">];
+        };
+        $pad += 19;
     }
 
-    print qq[
-     <td><img src="$NicToolClient::image_dir/folder_open.gif" alt="folder"></td>];
+    print qq[<img src="$NicToolClient::image_dir/folder_open.gif" alt="folder">];
 
     if ($in_user_list) {
-        print qq[
-     <td class="nowrap"><b>Users</b></td>];
+        print qq[<b>Users</b>];
     }
     else {
-        print qq[
-     <td class="nowrap"><a href="group_users.cgi?nt_group_id=$group_id">Users</a></td>];
+        print qq[<a href="group_users.cgi?nt_group_id=$group_id">Users</a>
+ <ul>];
+
+        if ( $user->{'user_create'} ) {
+            print qq[
+  <li class=first><a href="group_users.cgi?nt_group_id=$group_id&amp;new=1">New User</a></li>];
+        }
+        else {
+            print qq[
+  <li class="first disabled">New User</li>];
+        }
     }
 
     print qq[
-     <td class="right fat">], join( ' | ', @options ), qq[</td>
-    </tr>
-   </table>
-  </td>
- </tr>
-</table>];
+ </ul>
+</div>];
 }
 
 sub display_zone_options {
@@ -381,12 +371,34 @@ sub display_zone_options {
 
     my @options;
 
-    #delete option
+    if ( $group->{'has_children'} ) {
+        my $win_opts =  qq['width=640,height=480,scrollbars,resizable=yes'];
+# Move
+        if ( $user->{'zone_write'} && !$isdelegate && !$zone->{'deleted'} ) {
+            push @options, qq[<a href="javascript:void window.open('move_zones.cgi?obj_list=$zone->{'nt_zone_id'}', 'move_win', $win_opts)">Move</a>];
+        }
+        elsif ( !$isdelegate ) {
+            push @options, '<span class="disabled">Move</span>';
+        }
+
+# Delegate, Re-Delegate
+        if ( $user->{'zone_delegate'} && !$isdelegate && !$zone->{'deleted'} ) {
+            push @options, qq[<a href="javascript:void window.open('delegate_zones.cgi?obj_list=$zone->{'nt_zone_id'}', 'delegate_win', $win_opts)">Delegate</a>];
+        }
+        elsif ( !$isdelegate ) {
+            push @options, '<span class="disabled">Delegate</span>';
+        }
+        elsif ($user->{'zone_delegate'} && $isdelegate && $zone->{'delegate_delegate'} ) {
+            push @options, qq[<a href="javascript:void window.open('delegate_zones.cgi?obj_list=$zone->{'nt_zone_id'}', 'delegate_win', $win_opts)">Re-Delegate</a>];
+        }
+        elsif ($isdelegate) {
+            push @options, '<span class="disabled">Re-Delegate</span>';
+        }
+    };
+
+# Delete options
     if ( $user->{'zone_delete'} && !$isdelegate && !$zone->{'deleted'} ) {
-        push @options,
-                  qq[<a href="group_zones.cgi?nt_group_id=]
-                . $q->param('nt_group_id')
-                . qq[&amp;zone_list=$zone->{'nt_zone_id'}&amp;delete=1" onClick="return confirm('Delete $zone->{'zone'} and all associated resource records?');">Delete</a>];
+        push @options, qq[<a href="group_zones.cgi?nt_group_id=$gid&amp;zone_list=$zone->{'nt_zone_id'}&amp;delete=1" onClick="return confirm('Delete $zone->{'zone'} and all associated resource records?');">Delete</a>];
     }
     elsif ( $zone->{'deleted'} ) {
         push @options, qq[<a href="zone.cgi?nt_group_id=$zone->{'nt_group_id'}&amp;nt_zone_id=$zone->{'nt_zone_id'}&amp;edit_zone=1&amp;undelete=1">Undelete</a>];
@@ -395,61 +407,31 @@ sub display_zone_options {
     elsif ( !$isdelegate ) {
         push @options, '<span style="disabled">Delete</span>';
     }
-    elsif ($user->{'zone_delete'}
-        && $isdelegate
-        && $zone->{'delegate_delete'} )
-    {
+    elsif ($user->{'zone_delete'} && $isdelegate && $zone->{'delegate_delete'} ) {
         push @options, qq[<a href="group_zones.cgi?nt_group_id=$gid&amp;nt_zone_id=$zone->{'nt_zone_id'}&amp;deletedelegate=1" onClick="return confirm('Remove delegation of $zone->{'zone'}?');">Remove Delegation</a>];
     }
     elsif ($isdelegate) {
         push @options, '<span class="disabled">Remove Delegation</span>';
     }
 
-# Move, Delegate, Re-Delegate
-    my $win_opts =  qq['width=640,height=480,scrollbars,resizable=yes'];
-    if ( $user->{'zone_write'} && !$isdelegate && !$zone->{'deleted'} ) {
-        push @options, qq[<a href="javascript:void window.open('move_zones.cgi?obj_list=$zone->{'nt_zone_id'}', 'move_win', $win_opts)">Move</a>] if $group->{'has_children'};
-    }
-    elsif ( !$isdelegate ) {
-        push @options, '<span class="disabled">Move</span>' if $group->{'has_children'};
-    }
-
-    if ( $user->{'zone_delegate'} && !$isdelegate && !$zone->{'deleted'} ) {
-        push @options, qq[<a href="javascript:void window.open('delegate_zones.cgi?obj_list=$zone->{'nt_zone_id'}', 'delegate_win', $win_opts)">Delegate</a>] if $group->{'has_children'};
-    }
-    elsif ( !$isdelegate ) {
-        push @options, '<span class="disabled">Delegate</span>' if $group->{'has_children'};
-    }
-    elsif ($user->{'zone_delegate'}
-        && $isdelegate
-        && $zone->{'delegate_delegate'} )
-    {
-        push @options, qq[<a href="javascript:void window.open('delegate_zones.cgi?obj_list=$zone->{'nt_zone_id'}', 'delegate_win', $win_opts)">Re-Delegate</a>] if $group->{'has_children'};
-    }
-    elsif ($isdelegate) {
-        push @options, '<span class="disabled">Re-Delegate</span>' if $group->{'has_children'};
-    }
-    print qq[
-<div id="zoneOptions" class="side_pad light_grey_bg">];
-
-    for my $x ( 1 .. $level ) {
-        my $img = $x == $level ? 'dirtree_elbow' : 'transparent';
-        print qq[\n<img src="$NicToolClient::image_dir/$img.gif" class="tee" alt="$img">];
-    }
-
+    my $tag = '';
+    my $pad = 19 * ($level - 1);
+    my $img_pre = qq[<img src="$NicToolClient::image_dir];
+    my $zone_img = qq[$img_pre/zone.gif" alt="zone">];
     if ($isdelegate) {
         my $type = ( $zone->{'pseudo'} ? 'pseudo' : 'delegated' );
-        print qq[<img src="$NicToolClient::image_dir/zone-$type.gif" alt="$type">];
-    }
-    else {
-        print qq[<img src="$NicToolClient::image_dir/zone.gif" alt="zone">];
+        print qq[$img_pre/zone-$type.gif" alt="$type">];
+
+        if ( !$zone->{'pseudo'} ) {
+            my $write = $zone->{'delegate_write'} ? 'write' : 'nowrite';
+            $tag = qq[&nbsp;$img_pre/perm-$write.gif" alt="permission">];
+        };
     }
 
-    my $tag = '';
-    if (  $isdelegate && !$zone->{'pseudo'} ) {
-        my $write = $zone->{'delegate_write'} ? 'write' : 'nowrite';
-        $tag = qq[&nbsp;<img src="$NicToolClient::image_dir/perm-$write.gif" alt="permission">];
-    };
+    print qq[
+<div id="zoneOptions" class="side_pad light_grey_bg">
+ <img style="padding-left: ${pad}px;" src="$NicToolClient::image_dir/dirtree_elbow.gif" class=tee alt=elbow>
+ $zone_img];
 
     if ($in_zone) {
         print qq[<b>$zone->{'zone'}</b>$tag];
@@ -460,64 +442,28 @@ sub display_zone_options {
     }
 
     print qq[
- <span class="float_r pad2">], join( ' | ', @options ), qq[</span>
+ <ul class="menu_r">];
+    my $c = 0;
+    foreach ( @options ) { 
+        if ( $c == 0 ) { print qq[\n  <li class=first>]; }
+        else           { print qq[\n  <li>]; };
+        print qq[$_</li>]; 
+        $c++;
+    };
+    print qq[
+ </ul>
 </div>];
 }
 
-sub display_nameserver_options {
-    my ( $self, $user, $group_id, $level, $in_ns_summary ) = @_;
-
-
-    print qq[
-<table id="nameserverOptions" class="fat">
- <tr class=light_grey_bg>
-  <td>
-   <table class="no_pad fat">
-    <tr>];
-
-    for my $x ( 1 .. $level ) {
-        my $tee = $x == $level ? 'dirtree_elbow' : 'transparent';
-        print qq[
-     <td><img src="$NicToolClient::image_dir/$tee.gif" class="tee" alt=""></td>];
-    }
-
-    print qq[
-     <td><img src="$NicToolClient::image_dir/folder_open.gif" alt="folder"></td>];
-
-    if ($in_ns_summary) {
-        print qq[
-     <td class="nowrap bold">Nameservers</td>];
-    }
-    else {
-        print qq[
-     <td class="nowrap"><a href="group_nameservers.cgi?nt_group_id=$group_id">Nameservers</a></td>];
-    }
-    print qq[
-     <td class="right fat">];
-
-    if ( !$in_ns_summary ) {
-        if ( $user->{'nameserver_create'} ) {
-            print qq[<a href="group_nameservers.cgi?nt_group_id=$group_id&amp;edit=1">New Nameserver</a>];
-        }
-        else {
-            print qq[<span class="disabled">New Nameserver</class>];
-        }
-    };
-
-    print
-     qq[
-     </td>
-    </tr>
-   </table>
-  </td>
- </tr>
-</table>];
-}
-
 sub paging_fields {
-    [   qw(quick_search search_value Search 1_field 1_option 1_value 1_inclusive 2_field 2_option 2_value 2_inclusive
-            3_field 3_option 3_value 3_inclusive 4_field 4_option 4_value 4_inclusive 5_field 5_option 5_value 5_inclusive
-            change_sortorder 1_sortfield 1_sortmod 2_sortfield 2_sortmod 3_sortfield 3_sortmod start limit page edit_search
+    [   qw(quick_search search_value Search 
+            1_field 1_option 1_value 1_inclusive 
+            2_field 2_option 2_value 2_inclusive
+            3_field 3_option 3_value 3_inclusive 
+            4_field 4_option 4_value 4_inclusive 
+            5_field 5_option 5_value 5_inclusive
+            change_sortorder 1_sortfield 1_sortmod 2_sortfield 2_sortmod 
+            3_sortfield 3_sortmod start limit page edit_search
             edit_sortorder include_subgroups)
     ];
 }
@@ -702,21 +648,23 @@ sub display_search_rows {
 
     my $state_string = join( '&amp;', @state_vars );
     $state_string .= "&amp;$morestr" if $morestr;
-    my $state_map = join( '&amp;', map( "$_=" . $q->escape( $q->param($_) ), @$state_fields ) );
-    $state_map .= "&amp;$morestr" if $morestr;
 
-    my @urls = (
-        qq[<a href="$cgi_name?$state_string&amp;edit_search=1">Advanced Search</a>],
-        qq[<a href="$cgi_name?$state_string&amp;edit_sortorder=1">Change Sort Order</a>],
-    );
+    my $browse_all = '<li class=first>';
     if ( $params->{'search_query'} ne 'ALL' ) {
-        push @urls, qq[<a href="$cgi_name?$state_map&amp;$state_map">Browse All</a>];
+        my $state_map = join( '&amp;', 
+            map( "$_=" . $q->escape( $q->param($_) ), @$state_fields ) );
+        $state_map .= "&amp;$morestr" if $morestr;
+        $browse_all .= qq[<a href="$cgi_name?$state_map&amp;$state_map">Browse All</a></li>
+  <li>];
     };
 
     print qq[
 <div id="searchRowResults" class="dark_grey_bg">
  <span>Search: $params->{'search_query'} found $rv->{'total'} records</span>
- <span class=float_r>] . join(' | ', @urls) . qq[</span>
+ <ul class=menu_r>
+  $browse_all<a href="$cgi_name?$state_string&amp;edit_sortorder=1">Change Sort Order</a></li>
+  <li><a href="$cgi_name?$state_string&amp;edit_search=1">Advanced Search</a></li>
+ </ul>
 </div>\n];
 }
 

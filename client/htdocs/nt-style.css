@@ -26,27 +26,23 @@ div {
   padding: 2px;
   margin: 2px;
 }
-div.navbar ul {
+ul.menu_r {
  float: right;
  list-style-type: none;
  margin: 0;
  padding: 0;
 }
-div.navbar li {
+ul.menu_r li {
  float: right;
  display: inline;
  border-right: 1px dotted;
  padding-right: 4px;
  padding-left: 2px;
 }
-div.navbar li.first {
+ul.menu_r li.first {
  border-right: none;
 }
-div.navbar li:hover {
- background-color: #336666;
- color: #FFFFFF;
-}
-div.navbar a:hover, div.navbar a:active {
+ul.menu_r li:hover {
  background-color: #336666;
  color: #FFFFFF;
 }
@@ -61,7 +57,7 @@ div.navbar a:hover, div.navbar a:active {
 .no_pad  { padding: 0px; }      /* 'cellpadding' equivalent */
 .pad1    { padding: 1px; }
 .pad2    { padding: 2px; }
-.pad4		 { padding: 4px; }
+.pad4	   { padding: 4px; }
 .padb2   { padding-bottom: 2px; }
 .padb4   { padding-bottom: 4px; }
 .nowrap  { white-space: nowrap; }
@@ -101,7 +97,11 @@ tr#tr_other { display: none; }
 
 a:link    { color: #336666 }
 a:visited { color: #336666 }
-a:active  { color: #336666 }
+/* a:active  { color: #336666 } */
+a:hover, a:active {
+ background-color: #336666;
+ color: #FFFFFF;
+}
 
 img {
  vertical-align: middle;

@@ -51,30 +51,23 @@ sub display {
     );
 
     my $level = $nt_obj->display_group_tree(
-        $user,
-        $user->{'nt_group_id'},
-        $q->param('nt_group_id'), 0
+        $user, $user->{'nt_group_id'}, $q->param('nt_group_id'), 0
     );
 
     print qq[ 
-<table class="fat">
- <tr class=light_grey_bg>
-  <td>
-   <table class="no_pad fat">
-    <tr>];
+<div class="light_grey_bg">];
+
+    my $pad = 0;
     for my $x ( 1 .. $level ) {
-        print qq[<td><img src="$NicToolClient::image_dir/]
-            . ( $x == $level ? 'dirtree_elbow' : 'transparent' )
-            . qq[.gif" class="tee" alt=""></td>];
+        if ( $x == $level ) {
+            print qq[<img src="$NicToolClient::image_dir/dirtree_elbow.gif" style="padding-left: ${pad}px" class="tee" alt="elbow">];
+        };
+        $pad += 21;
     }
 
-    print qq[ 
-     <td class="nowrap"><b>Log</b></td>
-     <td class="right fat">&nbsp;</td>
-    </tr>
-   </table>
-  </td></tr>
-</table>
+    print qq[
+ <span class="bold">Log</span>
+</div>
 ];
 
     display_log( $nt_obj, $q, $message );

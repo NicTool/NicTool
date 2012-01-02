@@ -295,30 +295,24 @@ sub display_zone_delegation {
     return if @{ $delegates->{'delegates'} } == 0;
 
     my $gid = $q->param('nt_group_id');
+    my $per_link = $nt_obj->help_link('delperms');
 
     print qq[
-<table id="zoneDelegateHeadline" class="fat">
- <tr class=dark_grey_bg>
-  <td class="fat bold">Zone Delegates </td>
- </tr>
-</table>
+<div id="zoneDelegateHeadline" class="dark_grey_bg bold side_pad">Zone Delegates</div>
 
 <table id="zoneDelegationTable" class="fat">
  <tr id="delegateHeader" class="light_grey_bg fat">
-  <td class="nowrap"> &nbsp;Delegated To Group</td>
-  <td class="nowrap"> &nbsp;Delegated By</td>
-  <td class="nowrap" colspan=3> &nbsp;Access Permissions], 
-    $nt_obj->help_link('delperms'),
-    qq[
-  </td>
+  <td class="nowrap side_pad">Delegated To Group</td>
+  <td class="nowrap side_pad">Delegated By</td>
+  <td class="nowrap side_pad" colspan=3>Access Permissions $per_link</td>
  </tr>];
 
     foreach my $del ( @{ $delegates->{'delegates'} } ) {
         print qq[
  <tr class=light_grey_bg>
-  <td class="nowrap middle"> &nbsp; <a href="group.cgi?nt_group_id=$del->{'nt_group_id'}"> <img src="$NicToolClient::image_dir/group.gif" alt="group">$del->{'group_name'}</a> </td>
-  <td class="nowrap middle"> &nbsp; <a href="user.cgi?nt_user_id=$del->{'delegated_by_id'}"> <img src="$NicToolClient::image_dir/user.gif" alt="user"> $del->{'delegated_by_name'} </a> </td>
-  <td class="nowrap"> &nbsp;
+  <td class="nowrap middle side_pad"><a href="group.cgi?nt_group_id=$del->{'nt_group_id'}"> <img src="$NicToolClient::image_dir/group.gif" alt="group">$del->{'group_name'}</a> </td>
+  <td class="nowrap middle side_pad"><a href="user.cgi?nt_user_id=$del->{'delegated_by_id'}"> <img src="$NicToolClient::image_dir/user.gif" alt="user"> $del->{'delegated_by_name'} </a> </td>
+  <td class="nowrap side_pad">
     <img src="$NicToolClient::image_dir/perm-]
         . ( $del->{delegate_write} ? 'checked' : 'unchecked' )
         . qq[.gif" alt="">&nbsp;Write &nbsp;<img src="$NicToolClient::image_dir/perm-]
@@ -427,8 +421,10 @@ sub display_nameservers {
     print qq[
 <div id="zoneNameservers" class="">
  <div id="zoneNameserverHeader" class="dark_grey_bg">
-  <span class="bold"> Nameservers</span>
-  <span class="float_r">];
+  <span class="bold">Nameservers</span>
+  <ul class="menu_r">
+   <li class=first id="znsHide" onClick="hideThis('zoneNameserverListDiv'); hideThis('znsHide'); showMenuItem('znsShow')">Hide</li>
+   <li class=first id="znsShow" style="display:none;" onClick="showThis('zoneNameserverListDiv'); showMenuItem('znsHide'); hideThis('znsShow')">Show</li>];
 
     if ( !$zone->{'deleted'} && $user->{'zone_write'}
         && ( $isdelegate ? $zone->{'delegate_write'} : 1 ) )
@@ -439,44 +435,43 @@ sub display_nameservers {
             $state .= "&amp;$_=" . $q->escape( $q->param($_) );
         }
         $state .= "&amp;nt_zone_id=$zone->{'nt_zone_id'}&amp;edit_zone=1";
-        print qq[<a href="zone.cgi?$state">Edit</a>];
+        print qq[<li><a href="zone.cgi?$state">Edit</a></li>];
     }
     else {
-        print qq[<span class="disabled">Edit</span>];
+        print qq[<li class="disabled">Edit</li>];
     }
     print qq[
-  </span>
+  </ul>
  </div>
- <table id="zoneNameserverList" class="pad1 fat">
-  <tr class="dark_grey_bg pad2">
-   <td class=center>name</td>
-   <td class=center>address</td>
-   <td class=center>description</td>
-  </tr>
+ <div id="zoneNameserverListDiv">
+  <table id="zoneNameserverList" class="pad1 fat">
+   <tr class="dark_grey_bg pad2">
+    <td class=center>name</td>
+    <td class=center>address</td>
+    <td class=center>description</td>
+   </tr>
   ];
 
     my $x = 1;
     foreach my $ns ( @{ $zone->{'nameservers'} } ) {
         my $bgcolor = $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg';
         print qq[
-  <tr class="$bgcolor">
-   <td>
-     <img class="no_pad" src="$NicToolClient::image_dir/nameserver.gif" alt="nameserver">
-     $ns->{name}</td>
-   <td> $ns->{address}</td>
-   <td>$ns->{description}</td>
-  </tr>];
+   <tr class="$bgcolor">
+    <td><img class="no_pad" src="$NicToolClient::image_dir/nameserver.gif" alt="nameserver">$ns->{name}</td>
+    <td>$ns->{address}</td>
+    <td>$ns->{description}</td>
+   </tr>];
     }
 
     print qq[
- </table>
+  </table>
+ </div>
 </div>];
 }
 
 sub display_zone_records {
     my ( $nt_obj, $user, $q, $zone ) = @_;
     my $group = $nt_obj->get_group( nt_group_id => $user->{'nt_group_id'} );
-    my $zonedelegate = exists $zone->{'delegated_by_id'};
 
     # process submitted form actions
     display_zone_records_new( $nt_obj, $user, $q, $zone );
@@ -525,30 +520,27 @@ sub display_zone_records {
     my $state_string = join('&amp;', @state_fields);
 
 # Display the RR header: Resource Records  New Resource Record | View Resource Record Log
-    my @options;
     my $gid = $q->param('nt_group_id');
     my $zid = $q->param('nt_zone_id');
-    if ( !$zone->{'deleted'} 
-        && $user->{'zonerecord_create'}
-        && (  $zonedelegate
-            ? $zone->{'delegate_write'} && $zone->{'delegate_add_records'}
-            : 1
-        )
-        )
-    {
-        push @options, qq[<a href="zone.cgi?$state_string&amp;nt_group_id=$gid&amp;nt_zone_id=$zid&amp;new_record=1#RECORD">New Resource Record</a>];
+    my $options = qq[<li class=first><a href="zone_record_log.cgi?nt_group_id=$gid&amp;nt_zone_id=$zid">View Resource Record Log</a></li>
+   ];
+
+    my $zonedelegate = exists $zone->{'delegated_by_id'};
+    my $has_dperm = $zonedelegate ? $zone->{'delegate_write'} && $zone->{'delegate_add_records'} : 1;
+    if ( !$zone->{'deleted'} && $user->{'zonerecord_create'} && $has_dperm ) {
+        $options .= qq[<li><a href="zone.cgi?nt_group_id=$gid&amp;nt_zone_id=$zid&amp;$state_string&amp;new_record=1#RECORD">New Resource Record</a></li>];
     }
     else {
-        push( @options, "<span class=disabled>New Resource Record</span>"
-        );
+        $options .= qq[<li class=disabled>New Resource Record</li>];
     }
-    push @options, qq[<a href="zone_record_log.cgi?nt_group_id=$gid&amp;nt_zone_id=$zid">View Resource Record Log</a>];
 
     print qq[
 <hr class="side_pad">
 <div class="dark_grey_bg side_pad">
-  <span class="bold">Resource Records</span>
-  <span class="float_r">], join( ' | ', @options ), qq[</span>
+  <b>Resource Records</b>
+  <ul class="menu_r">
+    $options 
+  </ul>
 </div>];
 
     $nt_obj->display_search_rows( $q, $rv, \%params, 'zone.cgi', [ 'nt_group_id', 'nt_zone_id' ] );

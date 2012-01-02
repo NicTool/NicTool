@@ -79,7 +79,11 @@ function showThis(showMe) {
     styleObject.visibility = "visible";
     styleObject.display = "block";
 }
-
+function showMenuItem(showMe) {
+    var styleObject = getStyleObject(showMe);
+    styleObject.visibility = "visible";
+    styleObject.display = "inline";
+}
 
 //access types
 function selectAllEdit(pForm, pAction) {
