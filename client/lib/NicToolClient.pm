@@ -1273,13 +1273,16 @@ sub display_nice_message {
         . join( qq(<br>\n<li style="color: blue;"> ), @msgs )
         . '<br>';
 
-    print qq{
-<table id="niceMessage" class="center fat">
-  <tr><td class="left dark_bg bold">$title</td></tr>
-  <tr><td class="left light_grey_bg">$message<p>$explain</td></tr>
-  <tr><td>&nbsp;</td></tr>
-</table>
-    };
+    print qq[
+<div id="niceMessage" class="left">
+ <div class="dark_bg bold">$title</div>
+ <div class="light_grey_bg">$message</div>];
+ if ( $explain ) {
+    print qq[
+ <div class="light_grey_bg">$explain</div>];
+ };
+    print qq[
+</div>];
     return 0;
 }
 
