@@ -177,7 +177,7 @@ sub display_list {
     $nt_obj->display_move_javascript( 'move_nameservers.cgi', 'nameserver' );
 
     print qq[
-<form method="post" action="move_users.cgi" target="move_win" name="list_form">];
+<form method="post" action="move_nameservers.cgi" target="move_win" name="list_form">];
     display_list_header( $nt_obj, $q, $rv, \@columns, \%labels, $user_group, \%sort_fields );
 
     print qq[\n <tbody>];
@@ -252,9 +252,9 @@ sub display_list_header {
 
     if ( $user_group->{'has_children'} ) {
         print qq[
-   <td class=center> ];
+   <td class=center id="selectAllCheckbox"> ];
 
-        if ( $rv->{'total'} != 1 ) {
+        if ( $rv->{'total'} > 1 ) {
             print $q->checkbox(
                 -name  => 'select_all_or_none',
                 -label => '',
@@ -271,17 +271,17 @@ sub display_list_header {
         if ( $sort_fields->{$_} ) {
             my $sortdir = uc( $sort_fields->{$_}->{'mod'} ) eq 'ASCENDING' ? 'up' : 'down';
             print qq[
-   <td class="dark_bg nowrap center"> $labels->{$_} &nbsp; &nbsp; $sort_fields->{$_}->{'order'}
+   <td class="dark_bg nowrap center" id="${_}Header"> $labels->{$_} &nbsp; &nbsp; $sort_fields->{$_}->{'order'}
      <img src="$NicToolClient::image_dir/$sortdir.gif" alt="$sortdir"></td>];
         }
         else {
             print qq[
-   <td class="center nowrap">$labels->{$_}</td>];
+   <td class="center nowrap" id="${_}Header">$labels->{$_}</td>];
         }
     }
 
     print qq[
-   <td class=width1></td>
+   <td class=width1 id="Trash"></td>
   </tr>
  </thead>];
 };
@@ -289,26 +289,24 @@ sub display_list_header {
 sub display_list_move_checkbox {
     my ( $q, $user, $user_group, $obj ) = @_;
 
+    return if ! $user_group->{'has_children'};
+
     print qq[
   <td class="width1 center">];
 
-        if ($user->{'nameserver_write'}
-            && ( !exists $obj->{'delegate_write'} || $obj->{'delegate_write'} )) {
+    if ($user->{'nameserver_write'}
+        && ( !exists $obj->{'delegate_write'} || $obj->{'delegate_write'} )) {
 
-            if ( $user_group->{'has_children'} ) {
-                print $q->checkbox(
-                    -name  => 'obj_list',
-                    -value => $obj->{'nt_nameserver_id'},
-                    -label => '',
-                );
-            };
-        }
-        else {
-            if ( $user_group->{'has_children'} ) {
-                print qq[<img src="$NicToolClient::image_dir/nobox.gif" alt="nobox">];
-            };
-        }
-        print qq[
+        print $q->checkbox(
+            -name  => 'obj_list',
+            -value => $obj->{'nt_nameserver_id'},
+            -label => '',
+        );
+    }
+    else {
+        print qq[<img src="$NicToolClient::image_dir/nobox.gif" alt="nobox">];
+    }
+    print qq[
   </td>];
 };
 
@@ -316,11 +314,8 @@ sub display_list_subgroups {
     my ( $width, $obj, $map ) = @_;
 
     print qq[
-  <td style="width:$width">
-   <table class="no_pad">
-    <tr>
-     <td><img src="$NicToolClient::image_dir/group.gif" alt="group"></td>
-     <td>];
+  <td style="width:1" class="nowrap">
+     <img src="$NicToolClient::image_dir/group.gif" alt="group">];
 
     my @list = (
         {   nt_group_id => $obj->{'nt_group_id'},
@@ -334,9 +329,6 @@ sub display_list_subgroups {
         map( qq[${url}$_->{'nt_group_id'}">$_->{'name'}</a>], @list ) );
 
     print qq[ $group_string
-     </td>
-    </tr>
-   </table>
   </td>];
 }
 
@@ -344,7 +336,7 @@ sub display_list_name {
     my ( $obj, $width ) = @_;
 
     print qq[
-  <td style="width:$width;">
+  <td class="nowrap side_pad" style="width:$width;">
      <a href="group_nameservers.cgi?nt_nameserver_id=$obj->{'nt_nameserver_id'}&amp;nt_group_id=$obj->{'nt_group_id'}&amp;edit=1">
       <img src="$NicToolClient::image_dir/nameserver.gif" alt="nameserver"> $obj->{'name'} </a>
   </td>];
