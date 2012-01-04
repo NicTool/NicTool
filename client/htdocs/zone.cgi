@@ -26,7 +26,7 @@ sub main {
     my $q      = new CGI();
     my $nt_obj = new NicToolClient($q);
 
-    return if ( $nt_obj->check_setup ne 'OK' );
+    return if $nt_obj->check_setup ne 'OK';
 
     my $user = $nt_obj->verify_session();
 
