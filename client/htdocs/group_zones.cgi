@@ -511,9 +511,10 @@ qq[ <a href="zones.cgi?nt_group_id=],$q->param('nt_group_id'),qq[">Batch</a></td
         -default => 'none'
         );
     my $ip = $q->param('newip') || "IP Address";
+    my $mailip = $q->param('mailip');
     print qq[
 IP: <input type="text" name="newip" size="17" maxlength="15" value="$ip" onFocus="if(this.value=='IP Address')this.value='';">
-Mail IP: <input type="text" name="mailip" size="17" maxlength="15">
+Mail IP: <input type="text" name="mailip" size="17" maxlength="15" value="$mailip">
     </td></tr>
 
     <tr class=dark_grey_bg><td colspan=2 class=center>],
