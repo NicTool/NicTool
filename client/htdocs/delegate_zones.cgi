@@ -48,119 +48,50 @@ sub display {
     );
 
     if ( $q->param('cancel_delegate') ) {   # do nothing
-        $nt_obj->_close_window();
+        print qq[<script> window.close(); </script>];
     }
-    elsif ( $q->param('Save') && $q->param('type') ne 'record' ) {
-        my %params = (
-            nt_group_id => $q->param('group_list'),
-            zone_list   => $q->param('obj_list')
-        );
-        my @perms
-            = qw(perm_write perm_delete perm_delegate zone_perm_add_records zone_perm_delete_records);
-        foreach (@perms) {
-            $params{$_} = $q->param($_) ? 1 : 0;
-        }
-        my $rv = $nt_obj->delegate_zones(%params);
-
-        #warn "delegate zone: ".Data::Dumper::Dumper($rv);
-        if ( $rv->{'error_code'} != 200 ) {
-
-            #$nt_obj->display_error($rv);
-            delegate_zones( $nt_obj, $user, $q, $rv );
-        }
-        else {
-            $nt_obj->_close_window();
-            $nt_obj->_center_bold('Zones Delegated');
-        }
-    }
-    elsif ( $q->param('Save') && $q->param('type') eq 'record' ) {
-        my %params = (
-            nt_group_id     => $q->param('group_list'),
-            zonerecord_list => $q->param('obj_list')
-        );
-        my @perms
-            = qw(perm_write perm_delete perm_delegate zone_perm_add_records zone_perm_delete_records );
-        foreach (@perms) {
-            $params{$_} = $q->param($_) ? 1 : 0;
-        }
-        my $rv = $nt_obj->delegate_zone_records(%params);
-        if ( $rv->{'error_code'} != 200 ) {
-
-            #$nt_obj->display_error($rv);
-            delegate_zones( $nt_obj, $user, $q, $rv );
-        }
-        else {
-            $nt_obj->_close_window();
-            $nt_obj->_center_bold('Zones Delegated');
-        }
-    }
-    elsif ( $q->param('Modify') && $q->param('type') ne 'record' ) {
-        my %params = (
-            nt_group_id => $q->param('nt_group_id'),
-            nt_zone_id  => $q->param('nt_zone_id')
-        );
-        my @perms
-            = qw(perm_write perm_delete perm_delegate  zone_perm_add_records zone_perm_delete_records);
-        foreach (@perms) {
-            $params{$_} = $q->param($_) ? 1 : 0;
-        }
-        my $rv = $nt_obj->edit_zone_delegation(%params);
-        if ( $rv->{'error_code'} != 200 ) {
-
-            #$nt_obj->display_error($rv);
-            delegate_zones( $nt_obj, $user, $q, $rv, 'edit' );
-        }
-        else {
-            $nt_obj->_close_window();
-            $nt_obj->_center_bold('Zones Delegated');
-        }
-    }
-    elsif ( $q->param('Modify') && $q->param('type') eq 'record' ) {
-        my %params = (
-            nt_group_id       => $q->param('nt_group_id'),
-            nt_zone_record_id => $q->param('obj_list')
-        );
-        my @perms
-            = qw(perm_write perm_delete perm_delegate  zone_perm_add_records zone_perm_delete_records);
-        foreach (@perms) {
-            $params{$_} = $q->param($_) ? 1 : 0;
-        }
-        my $rv = $nt_obj->edit_zone_record_delegation(%params);
-        if ( $rv->{'error_code'} != 200 ) {
-
-            #$nt_obj->display_error($rv);
-            delegate_zones( $nt_obj, $user, $q, $rv, 'edit' );
-        }
-        else {
-            $nt_obj->_close_window();
-            $nt_obj->_center_bold('Zones Delegated');
-        }
-    }
-    elsif ( $q->param('Remove') ) {
-        my %params = (
-            nt_group_id => $q->param('nt_group_id'),
-            nt_zone_id  => $q->param('nt_zone_id')
-        );
-        #warn Data::Dumper::Dumper( \%params );
-        my $rv = $nt_obj->delete_zone_delegation(%params);
-        if ( $rv->{'error_code'} != 200 ) {
-
-            #$nt_obj->display_error($rv);
-            delegate_zones( $nt_obj, $user, $q, $rv );
-        }
-        else {
-            $nt_obj->_close_window();
-            $nt_obj->_center_bold('Zones Delegated');
-        }
-    }
+    elsif ( $q->param('Save')   ) { do_save($nt_obj, $q, $user);   }
+    elsif ( $q->param('Modify') ) { do_modify($nt_obj, $q, $user); }
+    elsif ( $q->param('Remove') ) { do_remove($nt_obj, $q, $user); }
     else {
-        delegate_zones( $nt_obj, $user, $q, '',
-            $q->param("edit")
-            ? "edit"
-            : ( $q->param("delete") ? "delete" : "" ) );
+        my $d = $q->param("delete") ? "delete" : '';
+        my $e = $q->param("edit") ? "edit" : $d;
+        delegate_zones( $nt_obj, $user, $q, '', $e );
     }
 
     $nt_obj->parse_template($NicToolClient::end_html_template);
+}
+
+sub display_record {
+    my ($title, $zone, $zr) = @_;
+    print qq[
+<div id="delegateRecordHeadline" class="dark_bg bold">$title</div>
+<div id="delegateZoneList" class="light_grey_bg"> Record(s): 
+ <a href="zone.cgi?nt_group_id=$zone->{'nt_group_id'}&amp;nt_zone_id=$zone->{'nt_zone_id'}" target=body><img src="$NicToolClient::image_dir/zone.gif" > $zone->{'zone'}</a>
+</div>
+
+<table id="delegateRecordHeader" class="fat">
+ <tr class="dark_grey_bg"> <td colspan=6> Resource Record</td></tr>
+ <tr class=light_grey_bg>
+  <td class=center> Name</td>
+  <td class=center> Type</td>
+  <td class=center> Address</td>
+  <td class=center> TTL</td>
+  <td class=center> Weight</td>
+  <td class=center> Description</td>
+ </tr>
+ <tr class=light_grey_bg>
+  <td class="middle" style="width:25%;">
+   <a href="zone.cgi?nt_group_id=$zone->{'nt_group_id'}&amp;nt_zone_id=$zone->{'nt_zone_id'}&amp;nt_zone_record_id=$zr->{'nt_zone_record_id'}&amp;edit_record=1" target=body><img src="$NicToolClient::image_dir/r_record.gif" alt="record"> $zr->{'name'} </a>
+  </td>
+  <td> $zr->{'type'}</td>
+  <td> $zr->{'address'}</td>
+  <td> $zr->{'ttl'}</td>
+  <td> $zr->{'weight'}</td>
+  <td class="fat"> $zr->{'description'} </td>
+ </tr>
+</table>
+];
 }
 
 sub delegate_zones {
@@ -190,71 +121,26 @@ sub delegate_zones {
         $nt_obj->display_nice_error( $message, "Delegate Zones" ) if $message;
 
         #TODO handle 600 error where object is already delegated
+        my $dzone = join( ', ',
+            map( qq[<a href="zone.cgi?nt_group_id=$_->{'nt_group_id'}&amp;nt_zone_id=$_->{'nt_zone_id'}" target=body> <img src="$NicToolClient::image_dir/zone.gif" alt="zone"> $_->{'zone'} </a>], @$zones )
+            );
 
         print qq[
-<table id="delegateZoneHeadline" class="fat">
- <tr class=dark_bg>
-  <td colspan=2 class="bold">$title</td>
- </tr>
- <tr class=light_grey_bg>
-  <td class="nowrap middle"> Zone:</td>
-  <td class="middle">
-],
-        join( ', ',
-            map( qq[<a href="zone.cgi?nt_group_id=$_->{'nt_group_id'}&amp;nt_zone_id=$_->{'nt_zone_id'}" target=body> <img src="$NicToolClient::image_dir/zone.gif" alt="zone"> $_->{'zone'} </a>], @$zones )
-            ),
-    qq[
-  </td>
- </tr>
-</table>];
+<div id="delegateZoneHeadline" class="dark_bg bold">$title</div>
+<div id="delegateZoneList" class="light_grey_bg">Zone: $dzone</div>];
     }
     elsif ( $type eq 'record' ) {
-        my $zr = $nt_obj->get_zone_record(
-            nt_zone_record_id => $q->param('obj_list') );
+        my $zr = $nt_obj->get_zone_record( nt_zone_record_id => $q->param('obj_list') );
         my $zone = $nt_obj->get_zone( nt_zone_id => $q->param('nt_zone_id') );
 
         return $nt_obj->display_nice_error( $zr, "Get Zone Record Details" )
-            if ( $zr->{'error_code'} != 200 );
+            if $zr->{'error_code'} != 200;
         return $nt_obj->display_nice_error( $zone, "Get Zone Details" )
-            if ( $zone->{'error_code'} != 200 );
+            if $zone->{'error_code'} != 200;
 
-        $nt_obj->display_nice_error( $message, "Delegate Zone Records" )
-            if $message;
-
-        print qq(
-<table id="delegateRecordHeadline" class="fat">
- <tr class="dark_bg"><td colspan=2 class="bold">$title</td></tr>
- <tr class="light_grey_bg">
-  <td class="nowrap middle"> Zone: </td>
-  <td class="middle">
-   <a href="zone.cgi?nt_group_id=$zone->{'nt_group_id'}&amp;nt_zone_id=$zone->{'nt_zone_id'}" target=body><img src="$NicToolClient::image_dir/zone.gif" > $zone->{'zone'}</a>
-  </td>
- </tr>
-</table>
-
-<table id="delegateRecordHeader" class="fat">
- <tr class="dark_grey_bg"> <td colspan=6> Resource Record</td></tr>
- <tr class=light_grey_bg>
-  <td class=center> Name</td>
-  <td class=center> Type</td>
-  <td class=center> Address</td>
-  <td class=center> TTL</td>
-  <td class=center> Weight</td>
-  <td class=center> Description</td>
- </tr>
- <tr class=light_grey_bg>
-  <td class="middle" style="width:25%;">
-   <a href="zone.cgi?nt_group_id=$zone->{'nt_group_id'}&amp;nt_zone_id=$zone->{'nt_zone_id'}&amp;nt_zone_record_id=$zr->{'nt_zone_record_id'}&amp;edit_record=1" target=body><img src="$NicToolClient::image_dir/r_record.gif" alt="record"> $zr->{'name'} </a>
-  </td>
-  <td> $zr->{'type'}</td>
-  <td> $zr->{'address'}</td>
-  <td> $zr->{'ttl'}</td>
-  <td> $zr->{'weight'}</td>
-  <td class="fat"> $zr->{'description'} </td>
- </tr>
-</table>
-);
-    }
+        $nt_obj->display_nice_error( $message, "Delegate Zone Records" ) if $message;
+        display_record( $title, $zone, $zr);
+    };
 
     if ( !$edit ) {
         $nt_obj->display_group_list( $q, $user, 'delegate_zones.cgi',
@@ -286,35 +172,27 @@ sub delegate_zones {
             -name   => $edit
         ),
         "\n",
-            $q->hidden(
-            -name     => 'obj_list',
-            -value    => join( ',', $q->param('obj_list') ),
-            -override => 1
-            ),
-            "\n",
-        "\n", $q->hidden( -name => $edit, -value => 1 ), "\n",
+        $q->hidden(
+        -name     => 'obj_list',
+        -value    => join( ',', $q->param('obj_list') ),
+        -override => 1
+        ),
+        "\n", $q->hidden( -name => $edit, -value => 1 ),
         "\n", $q->hidden( -name => 'type', -value => $q->param('type') ),
-        "\n", $q->hidden(
-            -name  => 'nt_zone_id',
-            -value => $edit eq 'record'
-            ? $q->param('nt_zone_id')
-            : $q->param('obj_list')
+        "\n", $q->hidden( -name  => 'nt_zone_id',
+            -value => $edit eq 'record' ? $q->param('nt_zone_id') : $q->param('obj_list')
             ),
-        "\n", $q->hidden( -name=>'nt_group_id', -value=>$q->param('nt_group_id')), "\n";
+        "\n", $q->hidden( -name=>'nt_group_id', -value=>$q->param('nt_group_id')),
+        "\n";
 
         if ( ref $del ) {
             print qq[
+<div id="delegateRecordHeadline" class="dark_grey_bg dark">Delegation</div>
 <table class="fat">
- <tr class="dark_grey_bg dark"><td colspan=2> Delegation</td></tr>
  <tr class="light_grey_bg"><td>Group</td><td>Delegated By</td></tr>
  <tr class="light_grey_bg">
   <td class="nowrap middle">
-   <table>
-    <tr>
-     <td class="middle"><a href="group.cgi?nt_group_id=$del->{'nt_group_id'}"><img src="$NicToolClient::image_dir/group.gif"></a></td>
-     <td class="middle"><a href="group.cgi?nt_group_id=$del->{'nt_group_id'}">$del->{'group_name'}</a></td>
-    </tr>
-   </table>
+     <a href="group.cgi?nt_group_id=$del->{'nt_group_id'}"><img src="$NicToolClient::image_dir/group.gif">$del->{'group_name'}</a>
   </td>
   <td class="nowrap middle">
    <a href="user.cgi?nt_user_id=$del->{'delegated_by_id'}"><img src="$NicToolClient::image_dir/user.gif"> $del->{'delegated_by_name'}</a>
@@ -347,7 +225,6 @@ sub delegate_zones {
         $q->hidden( -name => 'type' ), "\n";
     print ":</td>
  </tr>";
-
 
     my %perms = (
         'perm_write' => "Edit this $obj"
@@ -418,18 +295,88 @@ sub delegate_zones {
     $q->end_form;
 }
 
-sub _center_bold {
-    my $self = shift;
-    my $text = shift;
-    return "<center><strong>$text</strong></center>";
+sub do_save {
+    my ($nt_obj, $q, $user) = @_;
+
+    my $plist    = 'zone_list';
+    my $function = 'delegate_zones';
+    my $message  = 'Zones Delegated';
+
+    if ( $q->param('type') eq 'record' ) {
+        $plist    = 'zonerecord_list';
+        $function = 'delegate_zone_records';
+        $message  = 'Zone Records Delegated';
+    };
+
+    my %params = (
+        nt_group_id => $q->param('group_list'),
+        $plist      => $q->param('obj_list'),
+    );
+
+    foreach ( qw/ perm_write perm_delete perm_delegate 
+                  zone_perm_add_records zone_perm_delete_records / ) { 
+        $params{$_} = $q->param($_) ? 1 : 0;
+    };
+
+    my $rv = $nt_obj->$function(%params);
+
+    if ( $rv->{'error_code'} != 200 ) {
+        delegate_zones( $nt_obj, $user, $q, $rv );
+    }
+    else {
+        print qq[<script> window.close(); </script>
+        <span class="center bold">$message</span>];
+    }
+}
+
+sub do_modify {
+    my ($nt_obj, $q, $user) = @_;
+
+    my $list_id  = 'nt_zone_id';
+    my $function = 'edit_zone_delegation';
+    my $message  = 'Zones Delegated';
+
+    if ( $q->param('type') eq 'record' ) {
+        $list_id  = 'nt_zone_record_id';
+        $function = 'edit_zone_record_delegation';
+        $message  = 'Zone Records Delegated';
+    };
+
+    my %params = (
+        nt_group_id => $q->param('nt_group_id'),
+        $list_id    => $q->param('obj_list')
+    );
+
+    foreach ( qw/ perm_write perm_delete perm_delegate  
+                zone_perm_add_records zone_perm_delete_records / ) {
+        $params{$_} = $q->param($_) ? 1 : 0;
+    }
+
+    my $rv = $nt_obj->$function(%params);
+
+    if ( $rv->{'error_code'} != 200 ) {
+        delegate_zones( $nt_obj, $user, $q, $rv, 'edit' );
+    }
+    else {
+        print qq[<script> window.close(); </script>
+        <span class="center bold">$message</span>];
+    }
 };
 
-sub _close_window {
-    return <<"EOJSCLOSE"
-<script>
-  window.close();
-</script>
-EOJSCLOSE
-;
-};
+sub do_remove {
+    my ($nt_obj, $q, $user) = @_;
+
+    my $rv = $nt_obj->delete_zone_delegation(
+                nt_group_id => $q->param('nt_group_id'),
+                nt_zone_id  => $q->param('nt_zone_id'),
+            );
+
+    if ( $rv->{'error_code'} != 200 ) {
+        delegate_zones( $nt_obj, $user, $q, $rv );
+    }
+    else {
+        print qq[<script> window.close(); </script>
+        <span class="center bold">Zone Delegation Deleted</span>];
+    }
+}
 
