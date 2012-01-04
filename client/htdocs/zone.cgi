@@ -45,8 +45,12 @@ sub display {
             nt_zone_record_id => $q->param('nt_zone_record_id') );
 
         my $rr_type = $zone_record->{'type'};
+        my $js;
+        if ( ! $q->param('delete_record') ) {
+            $js = qq[showFieldsForRRtype('$rr_type')];
+        };
         $nt_obj->parse_template( $NicToolClient::start_html_template,
-            ONLOAD_JS => "showFieldsForRRtype(\'$rr_type\')" );
+            ONLOAD_JS => "$js" );
     }
     else {
         $nt_obj->parse_template($NicToolClient::start_html_template);
@@ -758,6 +762,7 @@ sub display_zone_records_delete {
         nt_group_id       => $q->param('nt_group_id'),
         nt_zone_record_id => $q->param('nt_zone_record_id')
     );
+
     if ( $error->{'error_code'} != 200 ) {
         $nt_obj->display_nice_error( $error, "Delete Zone Record" );
     }
