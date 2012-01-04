@@ -716,8 +716,8 @@ sub new_zone {
 
     my %error = ( 'error_code' => 200, 'error_msg' => 'OK' );
 
-    my @columns
-        = qw(mailaddr description refresh retry expire minimum ttl serial nt_group_id zone);
+    my @columns = qw/ mailaddr description refresh retry expire minimum 
+                      ttl serial nt_group_id zone/;
 
     my $prev_data;
     my $default_serial = 0;
@@ -1111,8 +1111,9 @@ sub valid_label {
             $has_error++;
         };
 
-        # wildcard DNS not subject to the first/last character rules
-        next if $field eq 'name' && $label eq '*';
+        # exceptions to the first/last character rules
+        next if $field eq 'name' && $label eq '*';   # wildcards
+        next if $field eq 'zone' && $name =~ /(in-addr|ip6).arpa$/; # reverse
 
         my $err_prefix = "$field domain labels $label_explain must";
 

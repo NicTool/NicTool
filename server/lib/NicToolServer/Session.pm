@@ -165,7 +165,7 @@ SELECT u.*, s.*, g.name AS groupname
     # delete session and log logout if LOGOUT
     return $self->logout if $data->{action} eq 'LOGOUT';
 
-    $sql = "SELECT * FROM nt_perm WHERE deleted=0 AND nt_user_id=?";
+    my $sql = "SELECT * FROM nt_perm WHERE deleted=0 AND nt_user_id=?";
     my $perms = $self->exec_query( $sql, $data->{user}{nt_user_id} )
         or return $self->error_response( 505, $dbh->errstr );
 

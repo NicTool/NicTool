@@ -36,7 +36,7 @@ use NicToolTest;
 use NicTool;
 use Test;
 
-BEGIN { plan tests => 319 }
+BEGIN { plan tests => 325 }
 
 $user = new NicTool(
     cache_users  => 0,
@@ -370,6 +370,42 @@ sub doit {
             unless noerrok($res);
     }
 
+    my %rz1 = (
+        zone        => '3.2.1.in-addr.arpa',
+        serial      => 1,
+        ttl         => 86401,
+        nameservers => "$nsid1,$nsid2",
+        description => "test delete me also",
+        mailaddr    => "somebodyelse.somewhere.com",
+        refresh     => 100,
+        retry       => 200,
+        expire      => 300,
+        minimum     => 400,
+    );
+    $res = $group1->new_zone(%rz1);
+    die "couldn't make test reverse zone 1"
+        unless noerrok($res)
+            and ok( $res->get('nt_zone_id') => qr/^\d+$/ );
+    $rzid1 = $res->get('nt_zone_id');
+
+    my %rz2 = (
+        zone        => '3.2.1.ip6.arpa',
+        serial      => 1,
+        ttl         => 86401,
+        nameservers => "$nsid1,$nsid2",
+        description => "test delete me also",
+        mailaddr    => "somebodyelse.somewhere.com",
+        refresh     => 100,
+        retry       => 200,
+        expire      => 300,
+        minimum     => 400,
+    );
+    $res = $group1->new_zone(%rz2);
+    die "couldn't make test reverse zone 1"
+        unless noerrok($res)
+            and ok( $res->get('nt_zone_id') => qr/^\d+$/ );
+    $rzid2 = $res->get('nt_zone_id');
+
 ####################
     # get_zone         #
 ####################
@@ -541,10 +577,10 @@ sub doit {
     $res = $group1->get_group_zones;
     noerrok($res);
     ok( ref $res   => 'NicTool::List' );
-    ok( $res->size => 2 );
+    ok( $res->size => 4 );
     $saw1 = 0;
     $saw2 = 0;
-    if ( $res->size => 2 ) {
+    if ( $res->size => 4 ) {
         for $z ( $res->list ) {
             if ( $z->id eq $zid1 ) {
                 $saw1 = 1;
@@ -756,6 +792,26 @@ sub del {
     }
     else {
         ok( 1, 0, "Couldn't delete test zone 2" );
+    }
+
+    if ( defined $rzid1 ) {
+        $res = $user->delete_zones( zone_list => $rzid1 );
+        unless ( noerrok($res) ) {
+            warn Data::Dumper::Dumper($res);
+        }
+    }
+    else {
+        ok( 1, 0, "Couldn't delete test reverse zone 1" );
+    }
+
+    if ( defined $rzid2 ) {
+        $res = $user->delete_zones( zone_list => $rzid2 );
+        unless ( noerrok($res) ) {
+            warn Data::Dumper::Dumper($res);
+        }
+    }
+    else {
+        ok( 1, 0, "Couldn't delete test reverse zone 2" );
     }
 
     if ( defined $nsid1 ) {

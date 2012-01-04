@@ -18,24 +18,25 @@ sub new_zone {
         $self->error( 'zone', "invalid character in zone -- $1" );
     }
 
-    if ( $data->{zone} !~ /in-addr.arpa$/i && $data->{zone} =~ /\// ) {
-        $self->error( 'zone', 
-            "invalid character in zone '/'. Only allowed in reverse-lookup zones"
-        );
-    }
-
     $data->{zone} =~ s/\.$//;  # remove any trailing dot
-
-#    if ( $data->{zone} =~ /in-addr.arpa$/ ) {
-# TODO - any in-addr.arpa reverse DNS zone checks go here.
-# warn users if they try to make a PTR that points to an IP address rather
-# than a name. 2001.10.12, --aai
-#    }
 
     if ( $data->{zone} !~ /.+\..+$/ ) {
         $self->error( 'zone', 
             "Zone must be a valid domain name -- something.something"
         );
+    }
+
+    if ( $data->{zone} =~ /(in-addr|ip6).arpa$/ ) {
+# TODO - any in-addr.arpa reverse DNS zone checks go here.
+# warn users if they try to make a PTR that points to an IP address rather
+# than a name. 2001.10.12, --aai
+    }
+    else {
+        if ( $data->{zone} =~ /\// ) {
+            $self->error( 'zone', 
+                "invalid character in zone '/'. Only allowed in reverse-lookup zones"
+            );
+        }
     }
 
     $self->valid_label( 'zone', $data->{zone} );
