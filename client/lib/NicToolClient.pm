@@ -90,28 +90,19 @@ sub logout_user {
 sub display_login {
     my ( $self, $error ) = @_;
 
-    my $q = $self->{'CGI'};
+    $self->expire_cookie();
 
-    my $cookie = $q->cookie(
-        -name    => 'NicTool',
-        -value   => '',
-        -expires => '-1d',
-        -path    => '/'
-    );
-    print $q->header( -cookie => $cookie );
-    if ( !ref $error ) {
-        $error = { 'error_code' => 'XXX', 'error_msg' => $error };
-    }
-    if ( $error->{'error_code'} ne 200 ) {
-        $self->parse_template(
-            $NicToolClient::login_template,
-            'message' => $error->{'error_msg'}
-        );
+    my $message = '';
+    if ( ref $error ) {
+        if ( $error->{'error_code'} ne 200 ) {
+            $message = $error->{'error_msg'};
+        };
     }
     else {
-        $self->parse_template($NicToolClient::login_template);
-    }
+        $message = $error;
+    };
 
+    $self->parse_template( $NicToolClient::login_template, 'message' => $message);
 }
 
 sub verify_session {
@@ -139,14 +130,9 @@ sub verify_session {
         $error_msg = $response;
     }
 
-    my $cookie = $q->cookie(
-        -name    => 'NicTool',
-        -value   => '',
-        -expires => '-1d',
-        -path    => '/'
-    );
-    print $q->header( -cookie => $cookie ),
-    qq[<html>
+    $self->expire_cookie( $q );
+
+    print qq[<html>
  <script>
   parent.location = 'index.cgi?message=] . $q->escape($error_msg) . qq[';
  </script>
@@ -154,6 +140,35 @@ sub verify_session {
 
     $self->parse_template( $NicToolClient::login_template, 'message' => $error_msg );
 }
+
+sub set_cookie {
+    my ( $self, $value ) = @_;
+
+    my $q = $self->{'CGI'};
+
+    my $cookie = $q->cookie(
+        -path    => '/'
+        -name    => 'NicTool',
+        -value   => $value,
+        -expires => '+1M',
+    );
+
+    print $q->header( -cookie => $cookie );
+};
+
+sub expire_cookie {
+    my $self = shift;
+    my $q = shift || $self->{'CGI'};
+    my $value = shift || '';
+
+    my $cookie = $q->cookie(
+        -name    => 'NicTool',
+        -value   => $value,
+        -expires => '-1d',
+        -path    => '/'
+    );
+    print $q->header( -cookie => $cookie );
+};
 
 sub parse_template {
     my $self     = shift;
@@ -646,7 +661,7 @@ sub display_search_rows {
         push( @state_vars, "$_=" . $q->escape( $q->param($_) ) ) if $q->param($_);
     }
 
-    my $state_string = join( '&amp;', @state_vars );
+    $state_string = join( '&amp;', @state_vars );
     $state_string .= "&amp;$morestr" if $morestr;
 
     my $browse_all = '<li class=first>';

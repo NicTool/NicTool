@@ -169,35 +169,31 @@ SELECT u.*, s.*, g.name AS groupname
     my $perms = $self->exec_query( $sql, $data->{user}{nt_user_id} )
         or return $self->error_response( 505, $dbh->errstr );
 
-    my $groupperm;
     my $perm = $perms->[0];
 
-    $sql
-        = "SELECT nt_perm.* FROM nt_perm"
-        . " INNER JOIN nt_user ON nt_perm.nt_group_id = nt_user.nt_group_id "
-        . " WHERE ( nt_perm.deleted=0 "
-        . " AND nt_user.deleted=0 "
-        . " AND nt_user.nt_user_id = ? )";
+    $sql = "SELECT nt_perm.* FROM nt_perm
+        INNER JOIN nt_user ON nt_perm.nt_group_id = nt_user.nt_group_id
+        WHERE ( nt_perm.deleted=0
+            AND nt_user.deleted=0
+            AND nt_user.nt_user_id = ? )";
     $perms = $self->exec_query( $sql, $data->{user}{nt_user_id} )
         or return $self->error_response( 505, $dbh->errstr );
-    $groupperm = $perms->[0];
+    my $groupperm = $perms->[0];
 
     if ( !$perm ) {
         $perm = $groupperm;
     }
     else {
 
-        #for now usable_ns settings are always inherited from the group
+        # usable_ns settings are always inherited from the group
         for ( 0 .. 9 ) {
             $perm->{"usable_ns$_"} = $groupperm->{"usable_ns$_"};
         }
     }
 
     if ( !$perm ) {
-        return $self->error_response( 507,
-                  "Could not find permissions for user ("
-                . $data->{user}{nt_user_id}
-                . ")" );
+        my $uid =  $data->{user}{nt_user_id};
+        return $self->error_response( 507, "Could not find permissions for user id ($uid)" );
     }
     delete $perm->{nt_user_id};
     delete $perm->{nt_group_id};

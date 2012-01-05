@@ -26,51 +26,75 @@ sub main {
     my $q      = new CGI();
     my $nt_obj = new NicToolClient($q);
 
-    return if ( $nt_obj->check_setup ne 'OK' );
+    return if $nt_obj->check_setup ne 'OK';
 
     if ( $q->param('login') ) {
-        if ( $q->param('username') eq '' or $q->param('password') eq '' ) {
-            $nt_obj->display_login('Please enter you username and password!');
-        }
-        else {
-            my $data = $nt_obj->login_user();
-            if ( ref($data) ) {
-                if ( $data->{'error_code'} ) {
-                    $nt_obj->display_login($data);
-                }
-                else {
-                    display_frameset( $q, $nt_obj, $data );
-                }
-            }
-            else {
-                $nt_obj->display_login($data);
-            }
-        }
+        do_login( $nt_obj, $q );
+        return;
     }
-    elsif ( $q->param('logout') ) {
+    if ( $q->param('logout') ) {
         my $data = $nt_obj->logout_user();
         $nt_obj->display_login($data);
+        return;
     }
-    else {
+
+    my $cookie = $q->cookie('NicTool');
+    if ( ! $cookie ) {
         $nt_obj->display_login( $q->param('message') );
+        return;
     }
+
+    my $response = $nt_obj->{nt_server_obj}->send_request(
+        action          => "verify_session",
+        nt_user_session => $cookie,
+    );
+
+    if ( ! ref $response ) {
+        $nt_obj->display_login( $response );
+        return;
+    };
+
+    if ( $response->{'error_code'} ) {
+        #$nt_obj->expire_cookie( $q, $cookie );
+        $nt_obj->display_login( $response->{'error_msg'} );
+        return;
+    }
+
+    display_frameset( $nt_obj, $response );
 }
 
 sub display_frameset {
-    my ( $q, $nt_obj, $data ) = @_;
+    my ( $nt_obj, $data ) = @_;
 
-    my $cookie = $q->cookie(
-        -name    => 'NicTool',
-        -value   => $data->{'nt_user_session'},
-        -expires => '+30d',
-        -path    => '/'
-    );
-
-    print $q->header( -cookie => $cookie );
+    $nt_obj->set_cookie( $data->{nt_user_session} ); 
+ 
     $nt_obj->parse_template(
         $NicToolClient::frameset_template,
         nt_group_id => $data->{'nt_group_id'}
     );
 }
+
+sub do_login {
+    my ( $nt_obj, $q ) = @_;
+
+    # login form was submitted, make sure user/pass was too
+    if ( $q->param('username') eq '' or $q->param('password') eq '' ) {
+        $nt_obj->display_login('Please enter your username and password!');
+        return;
+    };
+
+    my $data = $nt_obj->login_user();
+    if ( ! ref($data) ) {
+        $nt_obj->display_login($data);
+        return;
+    };
+
+    if ( $data->{'error_code'} ) {
+        $nt_obj->display_login($data);
+        return;
+    }
+
+    display_frameset( $nt_obj, $data );
+};
 
 1;
