@@ -14,9 +14,9 @@ NicTool is the holy grail of DNS management packages. It works great for managin
 
 NicToolServer is the server component of NicTool. NicToolServer will be connected to a database engine where the authoritative DNS information resides. All changes to DNS (zones, records, nameservers) and DNS managers (users and groups of users) are verified and validated by NicToolServer before insertion into the database.
 
-<geeky>NicToolServer functions as a web service. It provides a SOAP or RPC-XML server for applications to connect to and pass requests. The format of those requests are defined in the reference API which is documented at http://www.nictool.com/docs/api/. The NicToolClient and NicTool API clients both connect to the NicToolServer via this web service.</geeky>
+<geeky>NicToolServer functions as a web service. It provides a SOAP or RPC-XML server for applications to make requests to. The format of requests are defined in the reference API which is documented at http://www.nictool.com/docs/api/. The NicToolClient and NicTool API clients both connect to the NicToolServer via this web service.</geeky>
 
-NicToolClient is a CGI application that provides a web interface to your NicTool DNS data. NicToolClient is a pretty basic perl CGI app with some customizable HTML templates for altering the appearance. What you and your users see in your browser window is NicToolClient.
+NicToolClient is a CGI application that provides a web interface to your NicTool DNS data. NicToolClient is a perl CGI app with customizable HTML templates and a CSS style sheet for altering the appearance. What you see in your browser window is NicToolClient.
 
 The NicTool api is a robust full featured API for connecting to the NicToolServer and managing DNS data. I (Matt) have written numerous scripts for managing DNS information over the years. The most notable are:
 

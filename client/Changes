@@ -1,81 +1,110 @@
 
+2.12    2012.01.04
+
+  * index.cgi honors valid cookies, so login sessions are preserved. Hooray!
+  * exclude reverse zones from domain label "first char is a letter" rule
+  * do not run onload for RR display when action=delete
+  * mailip is now remembered between form submissions
+  * aesthetic improvements
+    * replaced folder icons in navigation bar with object type icons
+  * readability/maintainability updates:
+    * rewrote many subs to exit early, removing many nested conditionals
+    * broke up many 100+ lines of code subs into smaller subs (PBP)
+    * nearly all HTML is outdented and enclosed in qq[ .. ] brackets
+    * replaced &method invocations with method (useless/inappropriate use)
+    * replaced postfix if with brackets (PBP)
+  * added syntax tests
+  * HUGE, HUGE, HUGE code cleanup: HTML 5, CSS, and JS validation
+    * to the extent possible, separated the perl from the HTML, making both
+      easier to read.
+    * replaced many layout tables with CSS styled <div>
+    * replaced hundreds of redundant print statements with qq[ ... ] blocks
+    * cleaned up JavaScript using JSLint
+    * moved display_perms_javascript sub to nt-script.js
+    * navigation menuitems are now CSS styled <ul> lists
+    * HTML 5 validation
+        * & -> &amp; in URLs
+        * deleted language declaration in <script> tags
+        * replaced $NicToolClient::*color* settings with CSS
+        * added missing alt tags to images
+        * replaced transparent gifs with CSS
+
 2.11    2011.11.27
-  - added type 99 SPF record to SPF templates
-  - zone record types are fetched via NicTool API (not statically coded). 
+  * added type 99 SPF record to SPF templates
+  * zone record types are fetched via NicTool API (not statically coded)
 
 2.10    2011.11.18
-  - packaging changes.
-  - default export_interval is 120s (was $ttl)
-  - added SPF record type
+  * packaging changes.
+  * default export_interval is 120s (was $ttl)
+  * added SPF record type
 
 2.08    2010.03
-  - display more than 20 groups in group tree
+  * display more than 20 groups in group tree
      - http://www.tnpi.net/support/forums/index.php/topic,936.0.html
-  - Allow to choose between AAAA records with and without PTR records
-  - next arrows in group view browse groups only (not zones) - thanks JPS
-  - default for 'exact match' is off
-  - fixed regex bug introduced with v2.07, reported by Ralph Forsythe
+  * Allow to choose between AAAA records with and without PTR records
+  * next arrows in group view browse groups only (not zones) * thanks JPS
+  * default for 'exact match' is off
+  * fixed regex bug introduced with v2.07, reported by Ralph Forsythe
 
 2.07    2008.09
-  - made 'include sub-groups' Advanced Search default to config file setting
+  * made 'include sub-groups' Advanced Search default to config file setting
     (previously defaulted to off)
-  - formatted all the source code using perltidy (ask Matt for .perltidyrc file)
-  - Allow adding a IPv6 AAAA address
+  * formatted all the source code using perltidy (ask Matt for .perltidyrc file)
+  * Allow adding a IPv6 AAAA address
 
 2.06    2007.10 (mps)
-  - added password length restrictions when changing user settings
+  * added password length restrictions when changing user settings
 
 2.05    2007.02 (mps)
 
-  - added support for SRV records (funded by Bryan Sarpad)
-  - start of HTML cleanups
+  * added support for SRV records (funded by Bryan Sarpad)
+  * start of HTML cleanups
       replaced 500+ font tags with a tiny bit of CSS
       replacing other bits of HTML markup with CSS & JS
-  - new records in zones named like in-addr.arpa default to PTR record
-  - Zone record edit form is dynamic, it only shows fields when they are relevant. Example: the Weight field is only available when the MX or SRV record type is selected.
-  - Only relevant record types are available. Example: PTR records are only available in reverse zones.
-  - When creating a new record in a reverse zone, the default record type is PTR.
+  * new records in zones named like in-addr.arpa default to PTR record
+  * Zone record edit form is dynamic, it only shows fields when they are relevant. Example: the Weight field is only available when the MX or SRV record type is selected.
+  * Only relevant record types are available. Example: PTR records are only available in reverse zones.
+  * When creating a new record in a reverse zone, the default record type is PTR.
 
 2.04    2007.01 (mps)
 
-    - added support for Yahoo Domain Keys (extremely long TXT records)
-    - new records in a zones named like in-addr.arpa default to PTR record
+    * added support for Yahoo Domain Keys (extremely long TXT records)
+    * new records in a zones named like in-addr.arpa default to PTR record
 
 2.03    2005.04.19
 
-    - new template feature - create a set of zone records when adding new zones (mps)
-    - a batch add feature - create add a list of new zones using a template (mps)
-    - added htdocs/zones.cgi, htdocs/templates.cgi, and added template support to htdocs/group_zones.cgi (mps)
-    - added zone_record_template_list and zone_record_template subs to lib/NicToolClient.pm (mps)
-    - templates are currently static, meaning you must edit the source code to add or modify them. (mps)
-    - tracked down and fixed the conditions that caused "use strict" pragma to fail. (mps)
+    * new template feature - create a set of zone records when adding new zones (mps)
+    * a batch add feature - create add a list of new zones using a template (mps)
+    * added htdocs/zones.cgi, htdocs/templates.cgi, and added template support to htdocs/group_zones.cgi (mps)
+    * added zone_record_template_list and zone_record_template subs to lib/NicToolClient.pm (mps)
+    * templates are currently static, meaning you must edit the source code to add or modify them. (mps)
+    * tracked down and fixed the conditions that caused "use strict" pragma to fail. (mps)
 
 2.02    2004.10.01
-    - added link to license and source on most output templates (aas)
-    - updated version to 2.02 (mps)
-    - updated license and source links to open in new window, it's icky when they launch in a frame. (mps)
+    * added link to license and source on most output templates (aas)
+    * updated version to 2.02 (mps)
+    * updated license and source links to open in new window, it's icky when they launch in a frame. (mps)
 
 2.01    2004.09.29
-    - added Affero-GPL license info
-    - added TXT rr type in NicToolClient.pm
-    - disabled use strict pragma in htdocs/*.cgi. This causes failures under perl 5.8 due to programming shortcuts used by previous authors. This needs to be fixed eventually.
+    * added Affero-GPL license info
+    * added TXT rr type in NicToolClient.pm
+    * disabled use strict pragma in htdocs/*.cgi. This causes failures under perl 5.8 due to programming shortcuts used by previous authors. This needs to be fixed eventually.
 
 2.00    2002.02.22
-    - updated to work with NicToolServer 2.00
-        - Permissions for Groups and Users
-            - Users can't access functions they don't have permission to do
-                - Edit/Create/Delete/Delegate
-        - Delegation of Zones and Zone Records
-            - Delegated Zones and Records have different icons
-            - Delegation information is viewable on the details page
-        - 
-    - UI improvements
-        - the Search box in the Group List can be used to search for Zones instead of Groups (see nictoolclient.conf)
-        - the "Include subgroups" checkbox in searches can be set to checked by default (see nictoolclient.conf)
-        - new "exact match" checkbox for quick searches. Can be set to default checked or not. (see nictoolclient.conf)
-        - new icons :)
-        - Delegated Zones, records, and pseudo-delegated zones show up differently in the Zones list.  Some permissions icons shown in the list for delegated Zones.  Number of records delegated shown for pseudo-delegated Zones.
-        - You can automatically jump to the Zone view of a new Zone after creating it (see nictoolclient.conf)
+    * updated to work with NicToolServer 2.00
+        * Permissions for Groups and Users
+            * Users can't access functions they don't have permission to do
+                * Edit/Create/Delete/Delegate
+        * Delegation of Zones and Zone Records
+            * Delegated Zones and Records have different icons
+            * Delegation information is viewable on the details page
+    * UI improvements
+        * the Search box in the Group List can be used to search for Zones instead of Groups (see nictoolclient.conf)
+        * the "Include subgroups" checkbox in searches can be set to checked by default (see nictoolclient.conf)
+        * new "exact match" checkbox for quick searches. Can be set to default checked or not. (see nictoolclient.conf)
+        * new icons :)
+        * Delegated Zones, records, and pseudo-delegated zones show up differently in the Zones list.  Some permissions icons shown in the list for delegated Zones.  Number of records delegated shown for pseudo-delegated Zones.
+        * You can automatically jump to the Zone view of a new Zone after creating it (see nictoolclient.conf)
 
 1.00	2001.09.06
-	- initial release
+	* initial release
