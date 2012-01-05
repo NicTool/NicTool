@@ -619,8 +619,7 @@ sub log_group {
         $data->{description} = 'initial creation';
     }
 
-    $sql
-        = "INSERT INTO nt_user_global_log("
+    $sql = "INSERT INTO nt_user_global_log("
         . join( ',', @g_columns )
         . ") VALUES("
         . join( ',', map( $dbh->quote( $data->{$_} ), @g_columns ) ) . ")";

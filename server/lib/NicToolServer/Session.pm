@@ -42,23 +42,21 @@ sub verify_login {
     return $self->auth_error('invalid group(s)')
         if !$self->populate_groups;    # sets $data->nt_group_id
 
-    my $sql
-        = "SELECT nt_user.*, nt_group.name AS groupname FROM nt_user, nt_group "
-        . "WHERE nt_user.nt_group_id = nt_group.nt_group_id AND "
-        . "nt_user.deleted=0 AND nt_user.nt_group_id IN ("
-        . join( ',', @{ $data->{groups} } )
-        . ") AND nt_user.username = ?";
+    my $sql = "SELECT nt_user.*, nt_group.name AS groupname 
+    FROM nt_user, nt_group 
+    WHERE nt_user.nt_group_id = nt_group.nt_group_id 
+      AND nt_user.deleted=0 
+      AND nt_user.nt_group_id IN (" . join( ',', @{ $data->{groups} } ) . ") 
+      AND nt_user.username = ?";
 
     my $users = $self->exec_query( $sql, $data->{username} )
         or return $self->error_response( 505, $dbh->errstr );
 
-    return $self->auth_error('no such username') if !$users;
-    return $self->auth_error('invalid username') if scalar @$users > 1;
+    return $self->auth_error('no such username') if scalar @$users == 0;
+    return $self->auth_error('invalid username') if scalar @$users  > 1;
 
     my $attempted_pass = $data->{password};
-    delete( $data->{password} );
-
-# delete the hashkey or perl maintains attempted_pass as a ref to the hash key's lvalue
+    delete $data->{password};
 
     $data->{user} = $users->[0];
 
@@ -78,18 +76,18 @@ sub verify_login {
     my $perms = $self->exec_query( $sql, $data->{user}{nt_user_id} )
         or return $self->error_response( 505, $dbh->errstr );
 
-    my $groupperm;
     my $perm = $perms->[0];
 
-    $sql
-        = "SELECT nt_perm.* FROM nt_perm"
-        . " INNER JOIN nt_user ON nt_perm.nt_group_id = nt_user.nt_group_id "
-        . " WHERE ( nt_perm.deleted=0 "
-        . " AND nt_user.deleted=0 "
-        . " AND nt_user.nt_user_id = ?" . " )";
+    $sql = "SELECT nt_perm.* 
+    FROM nt_perm
+    INNER JOIN nt_user ON nt_perm.nt_group_id = nt_user.nt_group_id
+    WHERE ( nt_perm.deleted=0 
+            AND nt_user.deleted=0
+            AND nt_user.nt_user_id = ? 
+           )";
     $perms = $self->exec_query( $sql, $data->{user}{nt_user_id} )
         or return $self->error_response( 505, $dbh->errstr );
-    $groupperm = $perms->[0];
+    my $groupperm = $perms->[0];
 
     if ( !$perm ) {
         $perm = $groupperm;
@@ -98,7 +96,7 @@ sub verify_login {
     else {
         $perm->{inherit_group_permissions} = 0;
 
-        #for now usable_ns settings are always inherited from the group
+        # usable_ns settings are always inherited from the group
         for ( 0 .. 9 ) {
             $perm->{"usable_ns$_"} = $groupperm->{"usable_ns$_"};
         }
@@ -149,7 +147,7 @@ SELECT u.*, s.*, g.name AS groupname
     ) or return $self->error_response( 505, $dbh->errstr );
 
     return $self->auth_error('Your session has expired. Please login again')
-        if !$sessions;
+        if ! $sessions->[0];
 
     $data->{user} = $sessions->[0];
 
@@ -310,10 +308,10 @@ sub clean_user_data {
     # delete unused and password data from DB-returned user hash
     my $data = $self->{client}->data();
 
-    my @fields = qw(password deleted nt_user_session_id last_access);
+    my @fields = qw/ password deleted nt_user_session_id last_access /;
 
     foreach my $f (@fields) {
-        delete( $data->{user}->{$f} ) if exists( $data->{user}->{$f} );
+        delete $data->{user}->{$f} if exists $data->{user}->{$f};
     }
 }
 
@@ -325,7 +323,7 @@ sub auth_error {
 sub session_id {
     my $self = shift;
 
-    return $ENV{UNIQUE_ID} if $ENV{UNIQUE_ID};  # mod_uniqeid sets this
+    return $ENV{UNIQUE_ID} if $ENV{UNIQUE_ID};  # mod_uniqueid sets this
 
     warn "mod_uniqueid not available - building my own unique ID.\n"
         if $self->debug;

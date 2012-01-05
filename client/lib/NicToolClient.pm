@@ -115,20 +115,13 @@ sub verify_session {
         action          => "verify_session",
         nt_user_session => $q->cookie('NicTool')
     );
-    my $error_msg;
+    my $error_msg = $response;
 
     #warn "verify_session response: ".Data::Dumper::Dumper($response);
-    if ( ref($response) ) {
-        if ( $response->{'error_code'} ) {
-            $error_msg = $response->{'error_msg'};
-        }
-        else {
-            return $response;
-        }
-    }
-    else {
-        $error_msg = $response;
-    }
+    if ( ref $response ) {
+        return $response if ! $response->{'error_code'};
+        $error_msg = $response->{'error_msg'};
+    };
 
     $self->expire_cookie( $q );
 
@@ -147,7 +140,7 @@ sub set_cookie {
     my $q = $self->{'CGI'};
 
     my $cookie = $q->cookie(
-        -path    => '/'
+        -path    => '/',
         -name    => 'NicTool',
         -value   => $value,
         -expires => '+1M',
@@ -159,13 +152,13 @@ sub set_cookie {
 sub expire_cookie {
     my $self = shift;
     my $q = shift || $self->{'CGI'};
-    my $value = shift || '';
+    my $value = shift || undef;
 
     my $cookie = $q->cookie(
         -name    => 'NicTool',
         -value   => $value,
         -expires => '-1d',
-        -path    => '/'
+        -path    => '/',
     );
     print $q->header( -cookie => $cookie );
 };
