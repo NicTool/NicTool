@@ -1023,133 +1023,96 @@ sub display_group_list {
 sub redirect_from_log {
     my ( $self, $q ) = @_;
 
-    my $message;
-
     if ( $q->param('object') eq 'zone' ) {
         my $obj = $self->get_zone(
             nt_group_id => $q->param('nt_group_id'),
             nt_zone_id  => $q->param('obj_id')
         );
 
-        if ( $obj->{'error_code'} != 200 ) {
-            $message = $obj;
-        }
-        else {
+        return $obj if  $obj->{'error_code'} != 200;
 
-#if( $obj->{'deleted'} ) {
-#$message = "$obj->{'zone'} is deleted. You are unable to view deleted zones.";
-#} else {
-            print $q->redirect(
-                "zone.cgi?nt_group_id=$obj->{'nt_group_id'}&amp;nt_zone_id=$obj->{'nt_zone_id'}"
-            );
-
-            #}
-        }
-    }
-    elsif ( $q->param('object') eq 'nameserver' ) {
+        print $q->redirect(
+            "zone.cgi?nt_group_id=$obj->{'nt_group_id'}&amp;nt_zone_id=$obj->{'nt_zone_id'}"
+        );
+        return;
+    };
+    if ( $q->param('object') eq 'nameserver' ) {
         my $obj = $self->get_nameserver(
             nt_group_id      => $q->param('nt_group_id'),
             nt_nameserver_id => $q->param('obj_id')
         );
 
-        if ( $obj->{'error_code'} != 200 ) {
-            $message = $obj;
-        }
-        else {
-            if ( $obj->{'deleted'} ) {
-                $message = {
-                    error_msg =>
-                        "Cannot view Nameserver '$obj->{'name'}': the object has been deleted.",
-                    error_desc => 'Object is deleted',
-                    error_code => 'client'
-                };
-            }
-            else {
-                print $q->redirect(
-                    "group_nameservers.cgi?nt_group_id=$obj->{'nt_group_id'}&amp;nt_nameserver_id=$obj->{'nt_nameserver_id'}&amp;edit=1"
-                );
-            }
-        }
-    }
-    elsif ( $q->param('object') eq 'user' ) {
+        return $obj if $obj->{'error_code'} != 200;
+
+        return {
+            error_msg =>
+                "Cannot view Nameserver '$obj->{'name'}': the object has been deleted.",
+            error_desc => 'Object is deleted',
+            error_code => 'client'
+        } if $obj->{'deleted'};
+
+        print $q->redirect(
+            "group_nameservers.cgi?nt_group_id=$obj->{'nt_group_id'}&amp;nt_nameserver_id=$obj->{'nt_nameserver_id'}&amp;edit=1"
+        );
+        return;
+    };
+    if ( $q->param('object') eq 'user' ) {
         my $obj = $self->get_user(
             nt_group_id => $q->param('nt_group_id'),
             nt_user_id  => $q->param('obj_id')
         );
 
-        if ( $obj->{'error_code'} != 200 ) {
-            $message = $obj;
-        }
-        else {
-            if ( $obj->{'deleted'} ) {
-                $message = {
-                    error_msg =>
-                        "Cannot view User '$obj->{'username'}': the object has been deleted.",
-                    error_desc => 'Object is deleted',
-                    error_code => 'client'
-                };
-            }
-            else {
-                print $q->redirect(
-                    "user.cgi?nt_group_id=$obj->{'nt_group_id'}&amp;nt_user_id=$obj->{'nt_user_id'}"
-                );
-            }
-        }
-    }
-    elsif ( $q->param('object') eq 'zone_record' ) {
-        my $obj = $self->get_zone_record(
-            nt_zone_record_id => $q->param('obj_id') );
+        return $obj if $obj->{'error_code'} != 200;
+        return {
+            error_msg =>
+                "Cannot view User '$obj->{'username'}': the object has been deleted.",
+            error_desc => 'Object is deleted',
+            error_code => 'client'
+        } if $obj->{'deleted'};
 
-        if ( $obj->{'error_code'} != 200 ) {
-            $message = $obj;
-        }
-        else {
-            if ( $obj->{'deleted'} ) {
-                $message = {
-                    error_msg =>
-                        "Cannot view Zone Record '$obj->{'name'}': the object has been deleted.",
-                    error_desc => 'Object is deleted',
-                    error_code => 'client'
-                };
-            }
-            else {
-                print $q->redirect( "zone.cgi?nt_group_id="
-                        . $q->param('nt_group_id')
-                        . "&amp;nt_zone_id=$obj->{'nt_zone_id'}&amp;nt_zone_record_id=$obj->{'nt_zone_record_id'}&amp;edit_record=1"
-                );
-            }
-        }
-    }
-    elsif ( $q->param('object') eq 'group' ) {
+        print $q->redirect(
+            "user.cgi?nt_group_id=$obj->{'nt_group_id'}&amp;nt_user_id=$obj->{'nt_user_id'}"
+        );
+        return;
+    };
+    if ( $q->param('object') eq 'zone_record' ) {
+        my $obj = $self->get_zone_record( nt_zone_record_id => $q->param('obj_id') );
+
+        return $obj if $obj->{'error_code'} != 200;
+        return {
+            error_msg =>
+                "Cannot view Zone Record '$obj->{'name'}': the object has been deleted.",
+            error_desc => 'Object is deleted',
+            error_code => 'client'
+        } if $obj->{'deleted'};
+
+        print $q->redirect( "zone.cgi?nt_group_id="
+                . $q->param('nt_group_id')
+                . "&amp;nt_zone_id=$obj->{'nt_zone_id'}&amp;nt_zone_record_id=$obj->{'nt_zone_record_id'}&amp;edit_record=1"
+        );
+        return;
+    };
+    if ( $q->param('object') eq 'group' ) {
         my $obj = $self->get_group( nt_group_id => $q->param('obj_id') );
 
-        if ( $obj->{'error_code'} != 200 ) {
-            $message = $obj;
-        }
-        else {
-            if ( $obj->{'deleted'} ) {
-                $message = {
-                    error_msg =>
-                        "Cannot view Group '$obj->{'name'}': the object has been deleted.",
-                    error_desc => 'Object is deleted',
-                    error_code => 'client'
-                };
-            }
-            else {
-                print $q->redirect(
-                    "group.cgi?nt_group_id=$obj->{'nt_group_id'}");
-            }
-        }
-    }
-    else {
-        $message = {
-            error_msg  => "Unable to find object",
-            error_desc => 'Not Found',
-            error_code => 'client'
-        };
-    }
+        return $obj if $obj->{'error_code'} != 200;
 
-    return $message;
+        return {
+            error_msg =>
+                "Cannot view Group '$obj->{'name'}': the object has been deleted.",
+            error_desc => 'Object is deleted',
+            error_code => 'client'
+        } if $obj->{'deleted'};
+
+        print $q->redirect( "group.cgi?nt_group_id=$obj->{'nt_group_id'}");
+        return;
+    };
+
+    return {
+        error_msg  => "Unable to find object",
+        error_desc => 'Not Found',
+        error_code => 'client'
+    };
 }
 
 sub display_move_javascript {

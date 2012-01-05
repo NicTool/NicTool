@@ -556,7 +556,7 @@ sub add_zone {
         $q->param( -name => 'object', -value => 'zone' );
         $q->param( -name => 'obj_id', -value => $error->{'nt_zone_id'} );
         $nt_obj->redirect_from_log($q);
-        return { nicemessage => [ $nice, "Zone Created" ] };
+        return;
     }
 
     $q->param( -name  => 'new_zone_id', -value => $error->{'nt_zone_id'} );
