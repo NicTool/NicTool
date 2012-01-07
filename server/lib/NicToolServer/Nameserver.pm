@@ -270,9 +270,10 @@ sub edit_nameserver {
     my $dbh = $self->{dbh};
     my @columns = grep { exists $data->{$_} }
         qw/ nt_group_id nt_nameserver_id name ttl description address
-        export_format logdir datadir export_interval /;
+            export_format logdir datadir export_interval export_serials /;
 
     my $prev_data = $self->find_nameserver( $data->{nt_nameserver_id} );
+    $data->{export_serials} = $data->{export_serials} ? 1 : 0;
 
     my $sql
         = "UPDATE nt_nameserver SET "

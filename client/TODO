@@ -1,8 +1,11 @@
 
-* expose nt_nameserver.export_serials for editing
+* add a "lost password" recovery feature
 
 * expose nt_zone_record.timestamp for editing
 
 ============  DONE ===============
+
+* expose nt_nameserver.export_serials for editing
+
 * restore nameserver export status (2011.11.18)
 

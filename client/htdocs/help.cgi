@@ -65,6 +65,11 @@ sub help_text {
                 'What can I put in the Address field of a Resource Record?',
             template => "help_rraddress.html",
         },
+        export_serials => {
+            name => 'Export Zone Serial Numbers',
+            description => 'Why disable serial numbers exports?',
+            template => "help_export_serials.html",
+        },
     }
 }
 

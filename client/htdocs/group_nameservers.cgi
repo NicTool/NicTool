@@ -26,7 +26,7 @@ sub main {
     my $q      = new CGI();
     my $nt_obj = new NicToolClient($q);
 
-    return if ( $nt_obj->check_setup ne 'OK' );
+    return if $nt_obj->check_setup ne 'OK';
 
     my $user = $nt_obj->verify_session();
 
@@ -54,55 +54,9 @@ sub display {
     );
     display_list_options( $user, $q->param('nt_group_id'), $level, 1 );
 
-    if ( $q->param('new') ) {
-        if ( $q->param('Create') ) {
-            my @fields = qw/ nt_group_id name ttl description address
-                            export_format logdir datadir export_interval /;
-            my %data;
-            foreach my $x (@fields) {
-                $data{$x} = $q->param($x);
-            }
-            my $error = $nt_obj->new_nameserver(%data);
-            if ( $error->{'error_code'} != 200 ) {
-                display_edit_nameserver( $nt_obj, $user, $q, $error, 'new' );
-            }
-        }
-        elsif ( $q->param('Cancel') ) { } # do nothing
-        else {
-            display_edit_nameserver( $nt_obj, $user, $q, '', 'new' );
-        }
-    }
-    if ( $q->param('edit') ) {
-        if ( $q->param('Save') ) {
-            my @fields
-                = qw(nt_group_id nt_nameserver_id name ttl description address export_format logdir datadir export_interval);
-            my %data;
-            foreach my $x (@fields) {
-                $data{$x} = $q->param($x);
-            }
-            my $error = $nt_obj->edit_nameserver(%data);
-            if ( $error->{'error_code'} != 200 ) {
-                display_edit_nameserver( $nt_obj, $user, $q, $error, 'edit' );
-            }
-        }
-        elsif ( $q->param('Cancel') ) {
-
-            # do nothing
-        }
-        else {
-            display_edit_nameserver( $nt_obj, $user, $q, '', 'edit' );
-        }
-    }
-
-    if ( $q->param('delete') ) {
-        my $error = $nt_obj->delete_nameserver(
-            nt_group_id      => $q->param('nt_group_id'),
-            nt_nameserver_id => $q->param('nt_nameserver_id')
-        );
-        if ( $error->{'error_code'} != 200 ) {
-            $nt_obj->display_nice_error( $error, "Delete Nameserver" );
-        }
-    }
+    do_new( $nt_obj, $q, $user );
+    do_edit( $nt_obj, $q, $user );
+    do_delete( $nt_obj, $q );
 
     my $group = $nt_obj->get_group( nt_group_id => $q->param('nt_group_id') );
 
@@ -110,6 +64,69 @@ sub display {
 
     $nt_obj->parse_template($NicToolClient::end_html_template);
 }
+
+sub do_new {
+    my ( $nt_obj, $q, $user ) = @_;
+
+    return if ! $q->param('new');
+    return if $q->param('Cancel');
+
+    if ( ! $q->param('Create') ) {
+        display_edit_nameserver( $nt_obj, $user, $q, '', 'new' );
+        return;
+    };
+
+    my @fields = qw/ nt_group_id name ttl description address logdir datadir
+                    export_format export_interval export_serials /;
+    my %data;
+    foreach my $x (@fields) {
+        $data{$x} = $q->param($x);
+    }
+    my $error = $nt_obj->new_nameserver(%data);
+    if ( $error->{'error_code'} != 200 ) {
+        display_edit_nameserver( $nt_obj, $user, $q, $error, 'new' );
+    }
+};
+
+sub do_delete {
+    my ( $nt_obj, $q ) = @_;
+
+    return if ! $q->param('delete');
+
+    my $error = $nt_obj->delete_nameserver(
+        nt_group_id      => $q->param('nt_group_id'),
+        nt_nameserver_id => $q->param('nt_nameserver_id')
+    );
+    if ( $error->{'error_code'} != 200 ) {
+        $nt_obj->display_nice_error( $error, "Delete Nameserver" );
+    }
+};
+
+sub do_edit {
+    my ( $nt_obj, $q, $user ) = @_;
+
+    return if ! $q->param('edit');  # nothing to do
+    return if $q->param('Cancel');  # user clicked Cancel
+
+    if ( ! $q->param('Save') ) {
+        display_edit_nameserver( $nt_obj, $user, $q, '', 'edit' );
+        return;
+    };
+
+    # user clicked the 'Save' button
+    my @fields = qw/ nt_group_id nt_nameserver_id name ttl description 
+                     address logdir datadir
+                     export_format export_serials export_interval /;
+
+    my %data;
+    foreach my $x (@fields) {
+        $data{$x} = $q->param($x);
+    }
+    my $error = $nt_obj->edit_nameserver(%data);
+    if ( $error->{'error_code'} != 200 ) {
+        display_edit_nameserver( $nt_obj, $user, $q, $error, 'edit' );
+    }
+};
 
 sub display_list {
     my ( $nt_obj, $q, $group, $user ) = @_;
@@ -407,7 +424,7 @@ sub display_edit_nameserver {
 
     my $nameserver;
     my @fields = qw/ name address export_format logdir datadir
-                     ttl export_interval description / ;
+                     ttl export_interval export_serials description / ;
 
     if ( $q->param('nt_nameserver_id') && !$q->param('Save') ) {
         # get current settings
@@ -437,7 +454,9 @@ sub display_edit_nameserver {
  <input type="hidden" name="$edit" value="]. $q->param($edit) .qq["  />
  <input type="hidden" name="nt_group_id" value="$gid"  />
  ];
-        print $q->hidden( -name => 'nt_nameserver_id' ) if $edit ne 'new';
+        if ( $edit ne 'new' ) {
+            print $q->hidden( -name => 'nt_nameserver_id' );
+        };
     }
 
     $nt_obj->display_nice_error($message) if $message;
@@ -446,17 +465,19 @@ sub display_edit_nameserver {
         $title = ucfirst($edit) . " Nameserver";
     };
 
-    my %labels = display_edit_nameserver_fields( $q, $nameserver, $modifyperm );
+    my %labels = display_edit_nameserver_fields( $nt_obj, $q, $nameserver, $modifyperm );
 
     print qq[
 <table class="fat">
  <tr class=dark_bg><td colspan=2 class="bold">$title</td></tr>];
 
-    foreach ( @fields ) {
+    foreach my $f ( @fields ) {
+        next if ( $f eq 'export_serials' 
+                && $nameserver->{export_format} eq 'bind' );
         print qq[
  <tr class=light_grey_bg>
-  <td class=right>$labels{$_}{label}:</td>
-  <td class="width70">$labels{$_}{value}</td>
+  <td class=right>$labels{$f}{label}:</td>
+  <td class="width70">$labels{$f}{value}</td>
  </tr>];
     };
 
@@ -475,7 +496,7 @@ sub display_edit_nameserver {
 }
 
 sub display_edit_nameserver_fields {
-    my ( $q, $nameserver, $modifyperm ) = @_;
+    my ( $nt_obj, $q, $nameserver, $modifyperm ) = @_;
 
     my $ttl = $q->param('ttl') || $NicToolClient::default_nameserver_ttl;
 
@@ -533,6 +554,17 @@ sub display_edit_nameserver_fields {
                         -labels  => $export_format_labels
                         )
                     : $export_format_labels->{ $nameserver->{'export_format'} },
+        },
+        export_serials   => {
+            label => $nt_obj->help_link('export_serials') . ' Export Serials',
+            value => $modifyperm
+                    ? $q->checkbox(
+                        -name    => 'export_serials',
+                        -checked => $nameserver->{'export_serials'},
+                        -value   => 1,
+                        -label   => '',
+                    )
+                    : $nameserver->{'export_serials'},
         },
         logdir          => {
             label => 'Logfile Directory',

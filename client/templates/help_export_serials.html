@@ -2,7 +2,8 @@
 
 <p class="left">Export serials controls whether the zone serial numbers are
 published in the nameserver exports. This option only appears if the
-nameserver type is tinydns.</p>
+nameserver type is tinydns. It is ignored by the export scripts for nameservers
+other than tinydns.</p>
 
 <p class="left">Tinydns has a feature that calculates automatic zone serial numbers based upon the timestamp of the data file. Not exporting serial numbers makes the data file smaller. A smaller data file exports faster, compiles faster, rsync copies faster, and probably serves faster too. It's a small optimization but for nameservers with tens or hundreds of thousands of zones, the difference can be significant.</p>
 
