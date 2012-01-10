@@ -757,7 +757,6 @@ sub new_zone {
 sub edit_zone {
     my ( $self, $data ) = @_;
 
-    my %error = ( 'error_code' => 200, 'error_msg' => 'OK' );
     if ( my $del = $self->get_param_meta( "nt_zone_id", "delegate" ) ) {
         delete $data->{nt_group_id};
         return $self->error_response( 404,
@@ -767,61 +766,21 @@ sub edit_zone {
     if ( exists $data->{deleted} && $data->{deleted} != '0' ) {
         delete $data->{deleted};
     }
-    my @columns = grep { exists $data->{$_} }
-        qw(nt_group_id mailaddr description refresh retry expire minimum ttl serial deleted);
-    my @values;
+    my @columns = qw/ nt_group_id mailaddr description refresh 
+                     retry expire minimum ttl serial deleted /;
+    @columns = grep { exists $data->{$_} } @columns;
 
     unless ( @columns || exists $data->{nameservers} ) {
         return $self->error_response(200);
     }
 
-    my $sql;
-    my $prev_data;
     my $default_serial = 0;
 
-    $prev_data = $self->find_zone( $data->{nt_zone_id} );
+    my $prev_data = $self->find_zone( $data->{nt_zone_id} );
     my $log_action = $prev_data->{deleted}
         && ( $data->{deleted} eq '0' ) ? 'recovered' : 'modified';
 
-    my %ns;
-    if ( exists $data->{nameservers} ) {
-
-        my %datans = map { $_ => 1 } split /,/, $data->{nameservers};
-
-        my @oldns = map { $prev_data->{$_} }
-            grep { $prev_data->{$_} } map {"ns$_"} ( 0 .. 9 );
-        my %zonens = map { $_ => 1 } @oldns;
-        my %newns;
-        foreach my $n ( keys %datans, keys %zonens ) {
-            if ( $self->get_access_permission( 'NAMESERVER', $n, 'read' ) ) {
-                if ( !$datans{$n} ) {
-
-                    #warn "YES: can read NAMESERVER $n: DELETE newns $n";
-                    delete $newns{$n};
-                }
-                else {
-
-                    #warn "YES: can read NAMESERVER $n: SET newns $n to 1";
-                    $newns{$n} = 1;
-                }
-            }
-            else {
-                $newns{$n} = $zonens{$n} if $zonens{$n};
-
-                #warn "NO: leaving zonens as $zonens{$n}";
-            }
-        }
-
-        %newns = map { $_ => 1 } grep { $newns{$_} } keys %newns;
-
-        my @newns = keys %newns;
-        $self->set_zone_nameservers( $data->{nt_zone_id}, \@newns );
-
-        #        @newns = map { $newns[$_] ? $newns[$_] : 0 } ( 0 .. 9 );
-
-        #warn "SET: newns is ".join(" ",@newns);
-        #        %ns = map { ( "ns$_" => $newns[$_] ) } ( 0 .. 9 );
-    }
+    $self->edit_zone_nameservers( $data, $prev_data );
 
     if ( $data->{serial} eq '' ) {
         $data->{serial} = $self->bump_serial( $data->{nt_zone_id} );
@@ -829,7 +788,7 @@ sub edit_zone {
     }
 
     my $dbh = $self->{dbh};
-    $sql = "UPDATE nt_zone SET " . join(
+    my $sql = "UPDATE nt_zone SET " . join(
         ',',
         map( "$_ = " . $dbh->quote( $data->{$_} ), @columns ),
     ) . " WHERE nt_zone_id = ?";
@@ -838,15 +797,56 @@ sub edit_zone {
     $data->{nt_group_id} = $prev_data->{nt_group_id} if !$data->{nt_group_id};
 
     return {
-        error_code => 600,
-        error_msg  => $self->{dbh}->errstr,
+        error_code => 600, error_msg  => $self->{dbh}->errstr,
         }
         if !$r;
 
     $self->log_zone( $data, $log_action, $prev_data, $default_serial );
 
-    return \%error;
+    return { 'error_code' => 200, 'error_msg' => 'OK' };
 }
+
+sub edit_zone_nameservers {
+    my ($self, $data, $prev_data) = @_;
+
+    return if ! exists $data->{nameservers};
+
+    my %datans = map { $_ => 1 } split /,/, $data->{nameservers};
+
+    my @oldns = map { $prev_data->{$_} }
+        grep { $prev_data->{$_} } map {"ns$_"} ( 0 .. 9 );
+    my %zonens = map { $_ => 1 } @oldns;
+    my %newns;
+    foreach my $n ( keys %datans, keys %zonens ) {
+        if ( $self->get_access_permission( 'NAMESERVER', $n, 'read' ) ) {
+            if ( !$datans{$n} ) {
+
+                #warn "YES: can read NAMESERVER $n: DELETE newns $n";
+                delete $newns{$n};
+            }
+            else {
+
+                #warn "YES: can read NAMESERVER $n: SET newns $n to 1";
+                $newns{$n} = 1;
+            }
+        }
+        else {
+            $newns{$n} = $zonens{$n} if $zonens{$n};
+
+            #warn "NO: leaving zonens as $zonens{$n}";
+        }
+    }
+
+    %newns = map { $_ => 1 } grep { $newns{$_} } keys %newns;
+
+    my @newns = keys %newns;
+    $self->set_zone_nameservers( $data->{nt_zone_id}, \@newns );
+
+    #        @newns = map { $newns[$_] ? $newns[$_] : 0 } ( 0 .. 9 );
+
+    #warn "SET: newns is ".join(" ",@newns);
+    #        %ns = map { ( "ns$_" => $newns[$_] ) } ( 0 .. 9 );
+};
 
 sub log_zone {
     my ( $self, $data, $action, $prev_data, $default_serial ) = @_;
