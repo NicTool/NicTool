@@ -73,7 +73,8 @@ sub display {
 sub display_zone {
     my ( $nt_obj, $user, $q, $zone ) = @_;
 
-    do_edit_zone( $nt_obj, $user, $q, $zone );
+    my $r = do_edit_zone( $nt_obj, $user, $q, $zone );
+    $zone = $r if $r;   # refresh zone with results of edit
     do_new_zone( $nt_obj, $user, $q, $zone );
     do_delete_delegation( $nt_obj, $q );
 
@@ -140,22 +141,27 @@ sub do_edit_zone {
         return;
     };
 
-    my @fields = qw/ nt_zone_id nt_group_id zone nameservers 
-        description mailaddr serial refresh retry expire ttl minimum /;
-    my %data = map { $_ => $q->param($_) } @fields;
+    my @fields = qw/ nt_zone_id nt_group_id zone description 
+                     mailaddr serial refresh retry expire ttl minimum /;
+    my %data;
+    foreach ( @fields ) {
+        next if ! defined $q->param($_);
+        $data{$_} = $q->param($_);
+    };
     $data{'nameservers'} = join( ',', $q->param('nameservers') );
-    $data{'deleted'} = 0 if $q->param('undelete');
+    if ( $q->param('undelete') ) {
+        $data{'deleted'} = 0;
+    };
 
     my $error = $nt_obj->edit_zone(%data);
     if ( $error->{'error_code'} != 200 ) {
         display_edit_zone( $nt_obj, $user, $q, $error, $zone, 'edit' );
-    }
-    else {
-        $zone = $nt_obj->get_zone(
-            nt_group_id => $q->param('nt_group_id'),
-            nt_zone_id  => $q->param('nt_zone_id')
-        );
-    }
+        return;
+    };
+    return $nt_obj->get_zone(
+        nt_group_id => $q->param('nt_group_id'),
+        nt_zone_id  => $q->param('nt_zone_id')
+    );
 };
 
 sub do_new_zone {
