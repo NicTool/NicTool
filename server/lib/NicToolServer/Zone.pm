@@ -764,7 +764,7 @@ sub edit_zone {
             'Not allowed to undelete delegated zones.' )
             if $data->{deleted} eq '0';
     }
-    if ( exists $data->{deleted} and $data->{deleted} != '0' ) {
+    if ( exists $data->{deleted} && $data->{deleted} != '0' ) {
         delete $data->{deleted};
     }
     my @columns = grep { exists $data->{$_} }
@@ -832,8 +832,6 @@ sub edit_zone {
     $sql = "UPDATE nt_zone SET " . join(
         ',',
         map( "$_ = " . $dbh->quote( $data->{$_} ), @columns ),
-
-        #map( "$_ = " . $ns{$_},                    keys %ns )
     ) . " WHERE nt_zone_id = ?";
     my $r = $self->exec_query( $sql, $data->{nt_zone_id} );
 

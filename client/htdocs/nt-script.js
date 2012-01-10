@@ -44,6 +44,10 @@ function showFieldsForRRtype(rrType) {
 
     // alert("rrType selected is " + rrType );
 
+    if (!getStyleObject('tr_weight') ){
+// RR edit form is not displayed, don't try updating it.
+        return false;
+    }
     hideThis('tr_weight');
     hideThis('tr_priority');
     hideThis('tr_other');

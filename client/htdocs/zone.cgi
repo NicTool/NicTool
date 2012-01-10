@@ -39,22 +39,7 @@ sub main {
 sub display {
     my ( $nt_obj, $q, $user ) = @_;
 
-    if ( defined $q->param('nt_zone_record_id') ) {
-
-        my $zone_record = $nt_obj->get_zone_record(
-            nt_zone_record_id => $q->param('nt_zone_record_id') );
-
-        my $rr_type = $zone_record->{'type'};
-        my $js;
-        if ( ! $q->param('delete_record') ) {
-            $js = qq[showFieldsForRRtype('$rr_type')];
-        };
-        $nt_obj->parse_template( $NicToolClient::start_html_template,
-            ONLOAD_JS => "$js" );
-    }
-    else {
-        $nt_obj->parse_template($NicToolClient::start_html_template);
-    }
+    $nt_obj->parse_template($NicToolClient::start_html_template);
     $nt_obj->parse_template(
         $NicToolClient::body_frame_start_template,
         username  => $user->{'username'},
@@ -380,10 +365,12 @@ sub display_zone_properties {
         && $user->{'zone_write'}
         && ( $isdelegate ? $zone->{'delegate_write'} : 1 ) )
     {
-        print qq[<li><a href="zone.cgi?$state">Edit</a></li>];
+        print qq[
+  <li><a href="zone.cgi?$state">Edit</a></li>];
     }
     else {
-        print qq[<li class="disabled">Edit</li>];
+        print qq[
+  <li class="disabled">Edit</li>];
     }
     print qq[
  </ul>
@@ -999,7 +986,13 @@ sub display_edit_record {
         : '&nbsp;', qq[
   </td>
  </tr>
-</table>];
+</table>
+
+<script>
+\$(document).ready(function(){
+  showFieldsForRRtype('$default_record_type');
+});
+</script>];
 
     print $q->end_form if $modifyperm;
 }
