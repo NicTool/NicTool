@@ -1204,7 +1204,7 @@ sub display_edit_zone {
 
     $nt_obj->display_nice_error($message) if $message;
 
-    print qq[<a name='ZONE'>
+    print qq[<a name="ZONE"></a>
 <table class="fat">
  <tr class=dark_bg><td colspan=2 class="bold">$action Zone</td></tr>
  <tr class=light_grey_bg>
@@ -1323,7 +1323,7 @@ sub display_edit_zone {
         ),
         qq[<input type="button" value="Default" onClick="this.form.mailaddr.value='hostmaster.$zone->{'zone'}'"> hostmaster.$zone->{'zone'}.],
         qq[</td>
- </tr>,
+ </tr>
  <tr class=dark_grey_bg>
   <td colspan=2 class=center>],
         $q->submit( $edit eq 'edit' ? 'Save' : 'Create' ),
