@@ -72,71 +72,33 @@ sub display {
 
 sub display_zone {
     my ( $nt_obj, $user, $q, $zone ) = @_;
+
+    do_edit_zone( $nt_obj, $user, $q, $zone );
+    do_new_zone( $nt_obj, $user, $q, $zone );
+    do_delete_delegation( $nt_obj, $q );
+
+    display_zone_deleted() if $zone->{'deleted'};
+
     my $isdelegate = exists $zone->{'delegated_by_id'};
-    if ( $q->param('edit_zone') ) {
-        if ( $q->param('Save') ) {
-            my @fields = qw/ nt_zone_id nt_group_id zone nameservers 
-                description mailaddr serial refresh retry expire ttl minimum /;
-            my %data = map { $_ => $q->param($_) } @fields;
-            $data{'nameservers'} = join( ',', $q->param('nameservers') );
-            $data{'deleted'} = 0 if $q->param('undelete');
-
-            my $error = $nt_obj->edit_zone(%data);
-            if ( $error->{'error_code'} != 200 ) {
-                display_edit_zone( $nt_obj, $user, $q, $error, $zone, 'edit' );
-            }
-            else {
-                $zone = $nt_obj->get_zone(
-                    nt_group_id => $q->param('nt_group_id'),
-                    nt_zone_id  => $q->param('nt_zone_id')
-                );
-            }
-        }
-        elsif ( $q->param('Cancel') ) {
-
-        }
-        else {
-            display_edit_zone( $nt_obj, $user, $q, '', $zone, 'edit' );
-        }
+    if ($isdelegate) {
+        display_zone_delegate( $nt_obj, $q, $user, $zone );
     }
-    if ( $q->param('new_zone') ) {
-        if ( $q->param('Create') ) {
-            my @fields = qw/ nt_group_id zone nameservers description mailaddr 
-                            serial refresh retry expire ttl minimum/;
-            my %data = map { $_ => $q->param($_) } @fields;
-            $data{'nameservers'} = join( ',', $q->param('nameservers') );
+    else {
+        display_zone_delegation( $nt_obj, $q, $user, $zone );
+    };
 
-            my $error = $nt_obj->new_zone(%data);
-            if ( $error->{'error_code'} != 200 ) {
-                display_edit_zone( $nt_obj, $user, $q, $error, $zone, 'new' );
-            }
-            else {
-                my $zid = $error->{'nt_zone_id'};
-                if ($NicToolClient::edit_after_new_zone) {
-                    $q->param( -name => 'object', -value => 'zone' );
-                    $q->param( -name => 'obj_id', -value => $zid );
-                    return $nt_obj->redirect_from_log($q);
-                }
-                $zone = $nt_obj->get_zone(
-                    nt_group_id => $q->param('nt_group_id'),
-                    nt_zone_id  => $zid,
-                );
-                if ( $zone->{'error_code'} != 200 ) {
-                    $nt_obj->display_nice_error( $zone, "Get Zone" );
-                }
-            }
-        }
-        elsif ( $q->param('Cancel') ) { }
-        else {
-            display_edit_zone( $nt_obj, $user, $q, '', $zone, 'new' );
-        }
-    }
+    display_zone_properties( $nt_obj, $q, $zone, $user );
 
-    if (   $q->param('deletedelegate')
-        && $q->param('type') ne 'record'
-        && $q->param('nt_zone_id')
-        && $q->param('delegate_group_id') )
-    {
+    return $zone;
+}
+
+sub do_delete_delegation {
+    my ($nt_obj, $q ) = @_;
+
+    return if ! $q->param('deletedelegate');
+    return if ! $q->param('delegate_group_id');
+
+    if ( $q->param('type') ne 'record' && $q->param('nt_zone_id') ) {
         my $error = $nt_obj->delete_zone_delegation(
             nt_zone_id  => $q->param('nt_zone_id'),
             nt_group_id => $q->param('delegate_group_id')
@@ -150,11 +112,7 @@ sub display_zone {
                 "Delegation Removed" );
         }
     }
-    elsif ($q->param('deletedelegate')
-        && $q->param('type') eq 'record'
-        && $q->param('nt_zone_record_id')
-        && $q->param('delegate_group_id') )
-    {
+    elsif ( $q->param('type') eq 'record' && $q->param('nt_zone_record_id') ) {
         my $error = $nt_obj->delete_zone_record_delegation(
             nt_zone_record_id => $q->param('nt_zone_record_id'),
             nt_group_id       => $q->param('delegate_group_id')
@@ -169,19 +127,72 @@ sub display_zone {
                 "Delegation Removed" );
         }
     }
+};
 
-    display_zone_deleted() if $zone->{'deleted'};
+sub do_edit_zone {
+    my ( $nt_obj, $user, $q, $zone ) = @_;
 
-    if ($isdelegate) {
-        display_zone_delegate( $nt_obj, $q, $user, $zone );
-    }
-    else {
-        display_zone_delegation( $nt_obj, $q, $user, $zone );
+    return if !$q->param('edit_zone');
+    return if $q->param('Cancel');
+
+    if ( ! $q->param('Save') ) {
+        display_edit_zone( $nt_obj, $user, $q, '', $zone, 'edit' );
+        return;
     };
 
-    display_zone_properties( $nt_obj, $q, $zone, $user );
+    my @fields = qw/ nt_zone_id nt_group_id zone nameservers 
+        description mailaddr serial refresh retry expire ttl minimum /;
+    my %data = map { $_ => $q->param($_) } @fields;
+    $data{'nameservers'} = join( ',', $q->param('nameservers') );
+    $data{'deleted'} = 0 if $q->param('undelete');
 
-    return $zone;
+    my $error = $nt_obj->edit_zone(%data);
+    if ( $error->{'error_code'} != 200 ) {
+        display_edit_zone( $nt_obj, $user, $q, $error, $zone, 'edit' );
+    }
+    else {
+        $zone = $nt_obj->get_zone(
+            nt_group_id => $q->param('nt_group_id'),
+            nt_zone_id  => $q->param('nt_zone_id')
+        );
+    }
+};
+
+sub do_new_zone {
+    my ( $nt_obj, $user, $q, $zone ) = @_;
+
+    return if !$q->param('new_zone');
+    return if $q->param('Cancel');
+
+    if ( ! $q->param('Create') ) {
+        display_edit_zone( $nt_obj, $user, $q, '', $zone, 'new' );
+        return;
+    };
+
+    my @fields = qw/ nt_group_id zone nameservers description mailaddr 
+                    serial refresh retry expire ttl minimum/;
+    my %data = map { $_ => $q->param($_) } @fields;
+    $data{'nameservers'} = join( ',', $q->param('nameservers') );
+
+    my $error = $nt_obj->new_zone(%data);
+    if ( $error->{'error_code'} != 200 ) {
+        display_edit_zone( $nt_obj, $user, $q, $error, $zone, 'new' );
+    }
+    else {
+        my $zid = $error->{'nt_zone_id'};
+        if ($NicToolClient::edit_after_new_zone) {
+            $q->param( -name => 'object', -value => 'zone' );
+            $q->param( -name => 'obj_id', -value => $zid );
+            return $nt_obj->redirect_from_log($q);
+        }
+        $zone = $nt_obj->get_zone(
+            nt_group_id => $q->param('nt_group_id'),
+            nt_zone_id  => $zid,
+        );
+        if ( $zone->{'error_code'} != 200 ) {
+            $nt_obj->display_nice_error( $zone, "Get Zone" );
+        }
+    }
 }
 
 sub display_zone_deleted {
@@ -352,27 +363,21 @@ sub display_zone_properties {
     $state .= "&amp;nt_zone_id=$zone->{'nt_zone_id'}&amp;edit_zone=1";
 
     my $isdelegate = exists $zone->{'delegated_by_id'};
-
-    print qq[
-<div id="propertiesHeader" class="side_pad dark_grey_bg">
- <b>Properties</b>
-
- <ul class="menu_r">
-  <li class=first id="zpHide" onClick="hideThis('zonePropertiesDiv'); hideThis('zpHide'); showMenuItem('zpShow')">Hide</li>
-  <li class=first id="zpShow" style="display:none;" onClick="showThis('zonePropertiesDiv'); showMenuItem('zpHide'); hideThis('zpShow')">Show</li>];
-
+    my $edit_opt = qq[<li class="disabled">Edit</li>];
     if ( !$zone->{'deleted'}
         && $user->{'zone_write'}
         && ( $isdelegate ? $zone->{'delegate_write'} : 1 ) )
     {
-        print qq[
-  <li><a href="zone.cgi?$state">Edit</a></li>];
+        $edit_opt = qq[<li><a href="zone.cgi?$state">Edit</a></li>];
     }
-    else {
-        print qq[
-  <li class="disabled">Edit</li>];
-    }
+
     print qq[
+<div id="propertiesHeader" class="side_pad dark_grey_bg">
+ <b>Properties</b>
+ <ul class="menu_r">
+  <li class=first id="zpHide" onClick="hideThis('zonePropertiesDiv'); hideThis('zpHide'); showMenuItem('zpShow')">Hide</li>
+  <li class=first id="zpShow" style="display:none;" onClick="showThis('zonePropertiesDiv'); showMenuItem('zpHide'); hideThis('zpShow')">Show</li>
+  $edit_opt
  </ul>
 </div>
 
@@ -381,11 +386,11 @@ sub display_zone_properties {
  <tr>
   <td class="width50">
    <table class="fat">];
-    foreach ( qw/ zone mailaddr description serial minimum / ) {
+    foreach ( qw/ mailaddr description serial minimum / ) {
         print qq[
     <tr class=light_grey_bg>
-     <td class="nowrap pad2">$_: </td>
-     <td class="fat pad2"> $zone->{$_} </td>
+     <td class="nowrap pad2">$_:</td>
+     <td class="fat pad2">$zone->{$_}</td>
     </tr>],
     }
     print qq[
@@ -396,8 +401,8 @@ sub display_zone_properties {
     foreach ( qw/ refresh retry expire ttl / ) {
         print qq[
      <tr class=light_grey_bg>
-      <td class="nowrap pad2">$_: </td>
-      <td class="fat pad2"> $zone->{$_} </td>
+      <td class="nowrap pad2">$_:</td>
+      <td class="fat pad2">$zone->{$_}</td>
      </tr>];
     }
 
@@ -418,7 +423,7 @@ sub display_nameservers {
 
     print qq[
 <div id="zoneNameservers" class="no_pad">
-<div id="zoneNameserverHeader" class="dark_grey_bg no_margin">
+<div id="zoneNameserverHeader" class="dark_grey_bg margin0">
   <span class="bold">Nameservers</span>
   <ul class="menu_r">
    <li class=first id="znsHide" onClick="hideThis('zoneNameserverListDiv'); hideThis('znsHide'); showMenuItem('znsShow')">Hide</li>
@@ -1171,38 +1176,35 @@ sub display_new_record_delegates {
 sub display_edit_zone {
     my ( $nt_obj, $user, $q, $message, $zone, $edit ) = @_;
 
-    my $action;
+    my $action = 'Edit';
 
-    print $q->start_form(
-        -action => 'zone.cgi',
-        -method => 'POST',
-        -name   => 'new_zone'
-    );
-    print $q->hidden( -name => 'nt_group_id' );
-    print $q->hidden( -name => 'nt_zone_id' ) if $edit eq 'edit';
-    print $q->hidden( -name => $edit . '_zone' );
+    print qq[
+<form method="post" action="zone.cgi" name="new_zone">];
+
+    my   @hiddens = 'nt_group_id';
+    push @hiddens, 'nt_zone_id' if $edit eq 'edit';
+    push @hiddens, $edit . '_zone';
 
     if ( $q->param('undelete') && $zone->{'deleted'} ) {
         $action = 'Recover';
-        print $q->hidden( -name => 'undelete' );
-
-    }
-    else {
-        $action = 'Edit';
+        push @hiddens, 'undelete';
     }
 
     foreach ( @{ $nt_obj->paging_fields() } ) {
-        print $q->hidden( -name => $_ ) if ( $q->param($_) );
+        next if ! $q->param($_);
+        push @hiddens, $_;
     }
+
+    foreach (@hiddens) {
+        print "\n ", $q->hidden( -name => $_ );
+    };
 
     $nt_obj->display_nice_error($message) if $message;
 
-    print qq[<a name="ZONE"></a>
+    print qq[
+<a name="ZONE"></a>
 <table class="fat">
- <tr class=dark_bg><td colspan=2 class="bold">$action Zone</td></tr>
- <tr class=light_grey_bg>
-  <td class=right>Zone:</td>
-  <td class="fat">$zone->{'zone'}</td></tr>
+ <tr class=dark_bg><td colspan=2 class="bold">$action Zone: $zone->{zone}</td></tr>
  <tr class=light_grey_bg>
   <td class="right top">Nameservers:</td>
   <td class="width80">\n];
@@ -1214,114 +1216,120 @@ sub display_edit_zone {
         nt_group_id => $q->param('nt_group_id'),
     );
 
-    foreach ( 1 .. scalar( @{ $ns_tree->{'nameservers'} } ) ) {
-
-        my $ns = $ns_tree->{'nameservers'}->[ $_ - 1 ];
-
-        print $q->checkbox(
-            -name    => "nameservers",
-            -checked => ( $zone_ns{ $ns->{'nt_nameserver_id'} } ? 1 : 0 ),
-            -value   => $ns->{'nt_nameserver_id'},
-            -label   => "$ns->{'description'} ($ns->{'name'})"
-            ),
-            "<BR>";
-        delete $zone_ns{ $ns->{'nt_nameserver_id'} };
-    }
     if ( @{ $ns_tree->{'nameservers'} } == 0 ) {
         print "No available nameservers.";
     }
-    foreach ( keys %zone_ns ) {
-        my $ns = $nt_obj->get_nameserver( nt_nameserver_id => $_ );
-        print "<li>$ns->{'description'} ($ns->{'name'})<BR>";
-    }
-    print qq[</td>
- </tr>];
+    else {
+        print qq[<ul class="nolist pad2 margin0">];
+        foreach ( 1 .. scalar( @{ $ns_tree->{'nameservers'} } ) ) {
 
-    print qq[
+            my $ns = $ns_tree->{'nameservers'}->[ $_ - 1 ];
+
+            print qq[\n<li>], $q->checkbox(
+                -name    => "nameservers",
+                -checked => ( $zone_ns{ $ns->{'nt_nameserver_id'} } ? 1 : 0 ),
+                -value   => $ns->{'nt_nameserver_id'},
+                -label   => "$ns->{'description'} ($ns->{'name'})"
+                ),
+                '</li>';
+            delete $zone_ns{ $ns->{'nt_nameserver_id'} };
+        }
+        print '</ul>';
+    };
+    if ( keys %zone_ns ) {
+        print qq[<ul class="nolist pad2 margin0">];
+        foreach ( keys %zone_ns ) {
+            my $ns = $nt_obj->get_nameserver( nt_nameserver_id => $_ );
+            print "<li>$ns->{'description'} ($ns->{'name'})</li>";
+        }
+        print '</ul>';
+    };
+    print qq[</td>
+ </tr>
  <tr class=light_grey_bg>
   <td class="right top">Description:</td>
   <td class="width80">],
-        $q->textarea(
+    $q->textarea(
         -name      => 'description',
         -cols      => 50,
         -rows      => 4,
         -maxlength => 255,
         -default   => $zone->{'description'}
-        ),
-        qq[</td>
+    ),
+    qq[</td>
  </tr>
  <tr class=light_grey_bg>
   <td class=right>TTL:</td>
   <td class="width80">],
-        $q->textfield(
+    $q->textfield(
         -name      => 'ttl',
         -size      => 8,
         -maxlength => 10,
         -default   => $zone->{'ttl'}
-        ),
+    ),
     qq[<input type="button" value="Default" onClick="this.form.ttl.value=$NicToolClient::default_zone_ttl"> $NicToolClient::default_zone_ttl </td>
  </tr>
  <tr class=light_grey_bg>
   <td class=right>Refresh:</td>
   <td class="width80">],
-        $q->textfield(
+    $q->textfield(
         -name      => 'refresh',
         -size      => 8,
         -maxlength => 10,
         -default   => $zone->{'refresh'}
-        ),
-        qq[<input type="button" value="Default" onClick="this.form.refresh.value=$NicToolClient::default_zone_refresh"> $NicToolClient::default_zone_refresh</td>
+    ),
+    qq[<input type="button" value="Default" onClick="this.form.refresh.value=$NicToolClient::default_zone_refresh"> $NicToolClient::default_zone_refresh</td>
  </tr>
  <tr class=light_grey_bg>
   <td class=right>Retry:</td>
   <td class="width80">],
-        $q->textfield(
+    $q->textfield(
         -name      => 'retry',
         -size      => 8,
         -maxlength => 10,
         -default   => $zone->{'retry'}
-        ),
-        qq[<input type="button" value="Default" onClick="this.form.retry.value=$NicToolClient::default_zone_retry"> $NicToolClient::default_zone_retry</td>
+    ),
+    qq[<input type="button" value="Default" onClick="this.form.retry.value=$NicToolClient::default_zone_retry"> $NicToolClient::default_zone_retry</td>
  </tr>
  <tr class=light_grey_bg>
   <td class=right>Expire:</td>
   <td class="width80">],
-        $q->textfield(
+    $q->textfield(
         -name      => 'expire',
         -size      => 8,
         -maxlength => 10,
         -default   => $zone->{'expire'}
         ),
-        qq[<input type="button" value="Default" onClick="this.form.expire.value=$NicToolClient::default_zone_expire"> $NicToolClient::default_zone_expire</td>
+    qq[<input type="button" value="Default" onClick="this.form.expire.value=$NicToolClient::default_zone_expire"> $NicToolClient::default_zone_expire</td>
  </tr>
  <tr class=light_grey_bg>
   <td class=right>Minimum:</td>
   <td class="width80">],
-        $q->textfield(
+    $q->textfield(
         -name      => 'minimum',
         -size      => 8,
         -maxlength => 10,
         -default   => $zone->{'minimum'}
-        ),
-        qq[<input type="button" value="Default" onClick="this.form.minimum.value=$NicToolClient::default_zone_minimum"> $NicToolClient::default_zone_minimum</td>
+    ),
+    qq[<input type="button" value="Default" onClick="this.form.minimum.value=$NicToolClient::default_zone_minimum"> $NicToolClient::default_zone_minimum</td>
  </tr>
  <tr class=light_grey_bg>
   <td class=right>MailAddr:</td>
   <td class="width80">],
-        $q->textfield(
+    $q->textfield(
         -name      => 'mailaddr',
         -size      => 25,
         -maxlength => 255,
         -default   => $zone->{'mailaddr'},
-        ),
-        qq[<input type="button" value="Default" onClick="this.form.mailaddr.value='hostmaster.$zone->{'zone'}'"> hostmaster.$zone->{'zone'}.],
-        qq[</td>
+    ),
+    qq[<input type="button" value="Default" onClick="this.form.mailaddr.value='hostmaster.$zone->{'zone'}'"> hostmaster.$zone->{'zone'}.],
+    qq[</td>
  </tr>
  <tr class=dark_grey_bg>
   <td colspan=2 class=center>],
-        $q->submit( $edit eq 'edit' ? 'Save' : 'Create' ),
-        $q->submit('Cancel'), qq[</td></tr>
+    $q->submit( $edit eq 'edit' ? 'Save' : 'Create' ),
+    $q->submit('Cancel'), qq[</td></tr>
 </table>],
-        $q->end_form;
+    $q->end_form;
 }
 
