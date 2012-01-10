@@ -51,12 +51,12 @@ ul.menu_r li:hover {
 .side_pad2{ padding-right: 2px; padding-left: 2px; }
 .side_pad { padding-right: 4px; padding-left: 4px; }
 .side_mar { margin-right: 4px; margin-left: 4px; }
-.no_margin { margin: 0px; }
+.margin0  { margin: 0px; }
 .margin2 { margin:  2px; }
 .margin4 { margin:  4px; }
 .margint4 { margin-top: 4px; }
 .marginb4 { margin-bottom: 4px; }
-.no_pad  { padding: 0px; }      /* 'cellpadding' equivalent */
+.no_pad   { padding: 0px; }      /* 'cellpadding' equivalent */
 .pad1    { padding: 1px; }
 .pad2    { padding: 2px; }
 .pad4	   { padding: 4px; }
@@ -76,6 +76,7 @@ ul.menu_r li:hover {
 .middle  { vertical-align: middle; }
 .top     { vertical-align: top; }
 .bold    { font-weight: bold; }
+.nolist  { list-style-type: none; }
 
 .disabled { color: #777777; }
 .dark     { color: #336666; }

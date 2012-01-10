@@ -284,7 +284,7 @@ sub display_list_zone_name {
     my $isdelegate = exists $zone->{'delegated_by_id'};
     print qq[
   <td style="width:$width;" class="$bgcolor" title="Zone Name">
-   <div class="no_pad no_margin">
+   <div class="no_pad margin0">
     ];
     if ( !$isdelegate ) {
         print qq[
@@ -318,7 +318,7 @@ sub display_list_group_name {
 
     print qq[
  <td style="width:$width;" title="Group Name">
-  <div class="no_pad no_margin">
+  <div class="no_pad margin0">
     <img src="$NicToolClient::image_dir/group.gif" alt="">];
             my @list = (
                 {   nt_group_id => $zone->{'nt_group_id'},
