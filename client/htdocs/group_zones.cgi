@@ -386,7 +386,8 @@ sub display_new_zone {
     print $q->hidden( -name => $edit );
 
     foreach ( @{ $nt_obj->paging_fields() } ) {
-        print $q->hidden( -name => $_ ) if $q->param($_);
+        next if ! defined $q->param($_);
+        print $q->hidden( -name => $_ );
     }
 
     $nt_obj->display_nice_error( $message, ucfirst($edit) . " Zone" ) if $message;
@@ -497,6 +498,7 @@ qq[ <a href="zones.cgi?nt_group_id=],$q->param('nt_group_id'),qq[">Batch</a></td
         -size      => 25,
         -maxlength => 255,
         -default   => $NicToolClient::default_zone_mailaddr || $q->param('mailaddr'),
+        -onFocus   => qq[if(this.form.mailaddr.value=='hostmaster.ZONE.TLD.'){this.form.mailaddr.value='hostmaster.'+this.form.zone.value+'.';};],
         ),
     qq[<input type="button" value="Default" onClick="this.form.mailaddr.value='hostmaster.'+this.form.zone.value+'.'"> $NicToolClient::default_zone_mailaddr </td></tr>
 

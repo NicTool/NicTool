@@ -74,8 +74,9 @@ sub display_zone {
     my ( $nt_obj, $user, $q, $zone ) = @_;
 
     my $r = do_edit_zone( $nt_obj, $user, $q, $zone );
-    $zone = $r if $r;   # refresh zone with results of edit
-    do_new_zone( $nt_obj, $user, $q, $zone );
+    $zone = $r if ref $r;   # refresh zone
+    $r = do_new_zone( $nt_obj, $user, $q, $zone );
+    $zone = $r if ref $r;   # refresh zone
     do_delete_delegation( $nt_obj, $q );
 
     display_zone_deleted() if $zone->{'deleted'};
@@ -183,22 +184,23 @@ sub do_new_zone {
     my $error = $nt_obj->new_zone(%data);
     if ( $error->{'error_code'} != 200 ) {
         display_edit_zone( $nt_obj, $user, $q, $error, $zone, 'new' );
+        return;
+    };
+
+    my $zid = $error->{'nt_zone_id'};
+    if ($NicToolClient::edit_after_new_zone) {
+        $q->param( -name => 'object', -value => 'zone' );
+        $q->param( -name => 'obj_id', -value => $zid );
+        return $nt_obj->redirect_from_log($q);
     }
-    else {
-        my $zid = $error->{'nt_zone_id'};
-        if ($NicToolClient::edit_after_new_zone) {
-            $q->param( -name => 'object', -value => 'zone' );
-            $q->param( -name => 'obj_id', -value => $zid );
-            return $nt_obj->redirect_from_log($q);
-        }
-        $zone = $nt_obj->get_zone(
-            nt_group_id => $q->param('nt_group_id'),
-            nt_zone_id  => $zid,
-        );
-        if ( $zone->{'error_code'} != 200 ) {
-            $nt_obj->display_nice_error( $zone, "Get Zone" );
-        }
+    $zone = $nt_obj->get_zone(
+        nt_group_id => $q->param('nt_group_id'),
+        nt_zone_id  => $zid,
+    );
+    if ( $zone->{'error_code'} != 200 ) {
+        $nt_obj->display_nice_error( $zone, "Get Zone" );
     }
+    return $zone;
 }
 
 sub display_zone_deleted {
@@ -1326,7 +1328,7 @@ sub display_edit_zone {
         -name      => 'mailaddr',
         -size      => 25,
         -maxlength => 255,
-        -default   => $zone->{'mailaddr'},
+        -default   => $zone->{'mailaddr'} == 'hostmaster.ZONE.TLD.' ? qq[hostmaster.$zone->{zone}.] : $zone->{mailaddr},
     ),
     qq[<input type="button" value="Default" onClick="this.form.mailaddr.value='hostmaster.$zone->{'zone'}'"> hostmaster.$zone->{'zone'}.],
     qq[</td>
