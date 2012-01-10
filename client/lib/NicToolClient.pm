@@ -294,39 +294,27 @@ sub display_zone_list_options {
 
     my $options='';
     my $first = 'first';
+    my $zones_title = qq[<b>Zones</b>];
     if ( ! $in_zone_list ) {
-        $options .= qq[<li class="$first"><a href="group_zones_log.cgi?nt_group_id=$group_id">View Zone Log</a></li>];
+        $options .= qq[\n  <li class="$first"><a href="group_zones_log.cgi?nt_group_id=$group_id">View Zone Log</a></li>];
         $first = '';
+        $zones_title = qq[<a href="group_zones.cgi?nt_group_id=$group_id">Zones</a>];
+
+        if ( $user->{'zone_create'} ) {
+            $options .= qq[\n  <li class="$first"><a href="group_zones.cgi?nt_group_id=$group_id&amp;new=1">New Zone</a></li>];
+        }
+        else {
+            $options .= qq[\n  <li class="$first disabled">New Zone</li>];
+        }
     };
-    if ( $user->{'zone_create'} ) {
-        if ( ! $in_zone_list ) {
-            $options .= qq[<li class="$first"><a href="group_zones.cgi?nt_group_id=$group_id&amp;new=1">New Zone</a></li>];
-        };
-    }
-    else {
-        if ( ! $in_zone_list ) {
-            $options .= qq[<li class="$first disabled">New Zone</li>];
-        };
-    }
-
-    print qq[
-<div id="zoneListOptions" class="light_grey_bg side_pad">];
-
     my $pad = 19 * ($level - 1);
+
     print qq[
+<div id="zoneListOptions" class="light_grey_bg side_pad">
  <img style="padding-left: ${pad}px;" src="$NicToolClient::image_dir/dirtree_elbow.gif" class="tee" alt="elbow">
- <img src="$NicToolClient::image_dir/folder_open.gif" class="tee" alt="folder">];
-
-    if ($in_zone_list) {
-        print qq[<b>Zones</b>];
-    }
-    else {
-        print qq[<a href="group_zones.cgi?nt_group_id=$group_id">Zones</a>];
-    }
-
-    print qq[
- <ul class="menu_r">$options
- </ul>
+ <img src="$NicToolClient::image_dir/folder_open.gif" class="tee" alt="folder">
+  $zones_title
+ <ul class="menu_r">$options\n </ul>
 </div>];
 }
 
