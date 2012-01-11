@@ -19,7 +19,7 @@ use lib '.';
 use lib 't';
 use lib 'lib';
 use NicToolTest;
-use Test::More tests => 27;
+use Test::More tests => 36;
 use Data::Dumper;
 
 
@@ -27,6 +27,7 @@ BEGIN {
     use_ok( 'DBIx::Simple' );
     use_ok( 'NicTool' );
     use_ok( 'NicToolServer' );
+    use_ok( 'NicToolServer::Zone' );
 };
 
 my $nts = NicToolServer->new();
@@ -90,6 +91,31 @@ foreach ( qw/ 0.0.0.0 0.0.0.1 255.255.255.255 / ) {
     my $ip = $nts->valid_ip_address( $_ );
     ok( ! $ip, "valid_ip_address: $_ -> $ip");
 };
+
+# serial number tests
+my $zone = NicToolServer::Zone->new(undef,undef,$dbh );
+my @datestr = localtime(time);
+my $year  = $datestr[5] + 1900;
+my $month = sprintf( "%02d", $datestr[4] + 1 );
+my $day   = sprintf( "%02d", $datestr[3] );
+
+my %serials = (
+    1 => 2,
+    2 => 3,
+    4294967294 => 4294967295,
+    4294967295 => 1,
+    4500000000 => 1,
+    2011010100 => $year . $month . $day . '00',
+    $year.$month.$day.'00' => $year . $month . $day . '01',
+);
+
+foreach my $k ( sort keys %serials ) {
+    my $r = $zone->bump_serial( 1, $k );
+    ok( $r == $serials{$k}, "bump_serial, $k -> $serials{$k} ($r)");
+};
+
+my $r = $zone->bump_serial( 'new' );
+ok( $r == $year.$month.$day.'00', "bump_serial, 'new'");
 
 #$r = $nts->is_subgroup(1,320);
 #ok( $r, "is_subgroup ($r)");

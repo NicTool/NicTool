@@ -766,31 +766,33 @@ sub edit_zone {
     if ( exists $data->{deleted} && $data->{deleted} != '0' ) {
         delete $data->{deleted};
     }
-    my @columns = qw/ nt_group_id mailaddr description refresh 
-                     retry expire minimum ttl serial deleted /;
-    @columns = grep { exists $data->{$_} } @columns;
+    my @columns = grep { exists $data->{$_} } 
+            qw/ nt_group_id mailaddr description refresh 
+                retry expire minimum ttl serial deleted /;
 
-    unless ( @columns || exists $data->{nameservers} ) {
-        return $self->error_response(200);
-    }
+    return $self->error_response(200)
+        if ( ! @columns && ! exists $data->{nameservers} );
 
     my $default_serial = 0;
 
     my $prev_data = $self->find_zone( $data->{nt_zone_id} );
-    my $log_action = $prev_data->{deleted}
-        && ( $data->{deleted} eq '0' ) ? 'recovered' : 'modified';
+    my $log_action = 'modified';
+    if ( $prev_data->{deleted} ) {
+        $log_action = 'recovered' if $data->{deleted} eq '0';
+    };
 
     $self->edit_zone_nameservers( $data, $prev_data );
 
-    if ( $data->{serial} eq '' ) {
-        $data->{serial} = $self->bump_serial( $data->{nt_zone_id} );
-        $default_serial = 1;
-    }
+    if ( ! defined $data->{serial} ) {   # requests won't normally include it
+        $data->{serial} = $prev_data->{serial};
+        push @columns, 'serial';
+    };
+    $default_serial = 1 if ! $data->{serial};
+    $data->{serial} = $self->bump_serial( $data->{nt_zone_id}, $data->{serial} );
 
     my $dbh = $self->{dbh};
-    my $sql = "UPDATE nt_zone SET " . join(
-        ',',
-        map( "$_ = " . $dbh->quote( $data->{$_} ), @columns ),
+    my $sql = "UPDATE nt_zone SET " . join( ',',
+        map( "$_=" . $dbh->quote( $data->{$_} ), @columns ),
     ) . " WHERE nt_zone_id = ?";
     my $r = $self->exec_query( $sql, $data->{nt_zone_id} );
 
@@ -840,24 +842,21 @@ sub edit_zone_nameservers {
     %newns = map { $_ => 1 } grep { $newns{$_} } keys %newns;
 
     my @newns = keys %newns;
-    $self->set_zone_nameservers( $data->{nt_zone_id}, \@newns );
-
-    #        @newns = map { $newns[$_] ? $newns[$_] : 0 } ( 0 .. 9 );
-
-    #warn "SET: newns is ".join(" ",@newns);
-    #        %ns = map { ( "ns$_" => $newns[$_] ) } ( 0 .. 9 );
+    if ( join(',', sort @oldns ) ne join(',', sort @newns ) ) {
+        $self->set_zone_nameservers( $data->{nt_zone_id}, \@newns );
+        $data->{nameservers} = join(',', sort @newns );
+    };
 };
 
 sub log_zone {
     my ( $self, $data, $action, $prev_data, $default_serial ) = @_;
 
-    my @columns
-        = qw(nt_group_id nt_zone_id nt_user_id action timestamp zone mailaddr description refresh retry expire ttl);
+    my @columns = qw/ nt_group_id nt_zone_id nt_user_id action timestamp zone
+                         mailaddr description refresh retry expire ttl /;
 
-    # only log serial if it wasn't set by default
-    $default_serial
-        ? delete( $data->{serial} )
-        : push( @columns, 'serial' );
+    # only log serial if it wasn't set 
+    if ( $default_serial ) { delete $data->{serial}; }
+    else                   { push @columns, 'serial'; }
 
     my $user = $data->{user};
     $data->{nt_user_id} = $user->{nt_user_id};
@@ -866,7 +865,8 @@ sub log_zone {
     $data->{zone}       = $prev_data->{zone} unless $data->{zone};
 
     foreach ( keys %$prev_data ) {
-        $data->{$_} = $prev_data->{$_} unless $data->{$_};
+        next if $data->{$_};    # prefer new data
+        $data->{$_} = $prev_data->{$_};  # fall back to old
     }
 
     my $dbh = $self->{dbh};
@@ -878,8 +878,8 @@ sub log_zone {
 
     my $insertid = $self->exec_query($sql) or warn $dbh->errstr;
 
-    my @g_columns
-        = qw(nt_user_id timestamp action object object_id log_entry_id title description);
+    my @g_columns = qw/ nt_user_id timestamp action object object_id
+                        log_entry_id title description /;
 
     $data->{object}       = 'zone';
     $data->{log_entry_id} = $insertid;
@@ -890,20 +890,17 @@ sub log_zone {
         $data->{description} = $self->diff_changes( $data, $prev_data );
     }
     elsif ( $action eq 'deleted' ) {
-        $data->{description} = 'deleted zone and all associated records';
+        $data->{description} = 'deleted zone';
     }
     elsif ( $action eq 'added' ) {
-        $data->{description} = 'initial creation';
+        $data->{description} = 'creation';
     }
     elsif ( $action eq 'moved' ) {
         $data->{description}
             = "moved from $data->{old_group_name} to $data->{group_name}";
     }
     elsif ( $action eq 'recovered' ) {
-
-     #TODO add 'recovered' to the enum for global_application_log action field
-     #$data->{action}='added';
-        $data->{description} = "recovered zone from deleted bin";
+        $data->{description} = "recovered zone";
     }
 
     $sql
@@ -1048,14 +1045,13 @@ sub get_zone_list {
 sub find_zone {
     my ( $self, $nt_zone_id ) = @_;
 
-    my $sql = "SELECT * FROM nt_zone WHERE nt_zone_id = ?";
-    my $zones = $self->exec_query( $sql, $nt_zone_id );
+    my $zones = $self->exec_query( 
+        "SELECT * FROM nt_zone WHERE nt_zone_id = ?", $nt_zone_id );
     return $zones->[0] || {};
 }
 
 sub set_zone_nameservers {
-    my $self = shift;
-    my ( $zone_id, $nsids ) = @_;
+    my ( $self, $zone_id, $nsids ) = @_;
 
     $self->exec_query( "DELETE FROM nt_zone_nameserver WHERE nt_zone_id=?",
         $zone_id );
@@ -1139,92 +1135,63 @@ sub valid_label {
 sub bump_serial {
     my ( $self, $nt_zone_id, $current_serial ) = @_;
 
-    my $serial;
+    return ($self->serial_date_str .'00') if $nt_zone_id eq 'new';
 
-    if ( $nt_zone_id eq 'new' ) {
-        $serial = $self->new_serial;
-    }
-    else {
-        if ( $current_serial eq '' ) {
-            my $serials = $self->exec_query( 
-                "SELECT serial FROM nt_zone WHERE nt_zone_id=?", $nt_zone_id );
-            $current_serial = $serials->[0]{serial};
-        }
-        $serial = $self->serial_increment($current_serial);
-    }
-
-    return $serial;
+    if ( ! defined $current_serial || $current_serial eq '' ) {
+        my $serials = $self->exec_query( 
+            "SELECT serial FROM nt_zone WHERE nt_zone_id=?", $nt_zone_id );
+        $current_serial = $serials->[0]{serial};
+    };
+    return $self->serial_increment($current_serial);
 }
 
 sub serial_increment {
     my ( $self, $serial_current ) = @_;
 
-    my $serial_new;
+    # patterns not using the YYYYMMDDNN pattern standard
+    return ++$serial_current if length $serial_current < 10;
+    return ++$serial_current if $serial_current <= 1970000000;
 
-    if (    ( length($serial_current) == 10 )
-        and $serial_current > 1970000000
-        and ( $serial_current =~ /^(\d{4,4})(\d{2,2})(\d{2,2})(\d{2,2})$/ ) )
-    {
+    # 4294967295 is the max. (32-bit int minus 1)
+    # when we hit this, reset counter to 1
+    return 1 if $serial_current + 1 >= 2**32;
 
-        # dated serials have 10 chars in form YYYYMMDDxx
-        my $s_year  = $1;
-        my $s_month = $2;
-        my $s_day   = $3;
-        my $s_digit = $4;
+    return ++$serial_current
+        if $serial_current !~ /^(\d{4,4})(\d{2,2})(\d{2,2})(\d{2,2})$/;
 
-        my $serial_str = $s_year . $s_month . $s_day;
-        my $new_str    = $self->serial_date_str;
+    # dated serials have 10 chars in form YYYYMMDDNN
+    $serial_current =~ /^(\d{4,4})(\d{2,2})(\d{2,2})(\d{2,2})$/;
 
-        if ( $serial_str < $new_str ) {
-            $serial_new = $new_str . '00';
-        }
-        else {
+    my ( $year, $month, $day, $digit ) = ( $1, $2, $3, $4 );
 
-            # serial_str >= new_str, so do serial number math, jumping
-            # into the next day/month/year as neccessary to keep incrementing
+    my $serial_str = $year . $month . $day;
+    my $new_str    = $self->serial_date_str;
 
-            $s_digit += 1;
+    # update date based serial # to today
+    return $new_str . '00' if $serial_str < $new_str;
 
-            if ( $s_digit > 99 ) {
-                $s_digit = '00';
-                $s_day += 1;
-                if ( $s_day > 99 ) {
-                    $s_day = '01';
-                    $s_month += 1;
-                    if ( $s_month > 99 ) {
-                        $s_month = '01';
-                        $s_year = sprintf( "%04d", $s_year + 1 );
-                    }
-                    $s_month = sprintf( "%02d", $s_month );
-                }
-                $s_day = sprintf( "%02d", $s_day );
+    # serial_str >= new_str, so do serial number math, jumping
+    # into the next day/month/year as neccessary to keep incrementing
+
+    $digit++;
+
+    if ( $digit > 99 ) {
+        $digit = '00';
+        $day += 1;
+        if ( $day > 99 ) {
+            $day = '01';
+            $month += 1;
+            if ( $month > 99 ) {
+                $month = '01';
+                $year = sprintf( "%04d", $year + 1 );
             }
-            $s_digit = sprintf( "%02d", $s_digit );
-
-            $serial_new = $s_year . $s_month . $s_day . $s_digit;
+            $month = sprintf( "%02d", $month );
         }
-
+        $day = sprintf( "%02d", $day );
     }
-    else {
-        $serial_new = $serial_current + 1;
-    }
+    $digit = sprintf( "%02d", $digit );
 
-    if ( $serial_new > ( ( 2**32 ) - 1 ) ) {
-        $serial_new = 1;
-
-        # 4294967295 is the max. (32-bit int minus 1)
-        # when we hit this, we have to roll over
-    }
-
-    return $serial_new;
-}
-
-sub new_serial {
-    my $self = shift;
-
-    return 1 if $NicToolServer::serial_format ne 'dated';
-
-    return $self->serial_date_str .'00';
+    return $year . $month . $day . $digit;
 }
 
 sub serial_date_str {

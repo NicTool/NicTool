@@ -661,11 +661,10 @@ sub doit {
     die "Couldn't get test zone $zid1 : " . errtext($zone1)
         unless noerrok($zone1)
             and ok( $zone1->id, $zid1 );
-    for (
-        qw(zone serial ttl description mailaddr refresh retry expire minimum))
-    {
+    for ( qw/zone ttl description mailaddr refresh retry expire minimum/ ) {
         ok( $zone1->get($_) => $z1{$_} );
     }
+    ok( $zone1->get('serial') => '3' );
     $saw1 = 0;
     $saw2 = 0;
     foreach ( @{ $zone1->get('nameservers') } ) {

@@ -1689,32 +1689,22 @@ sub diff_changes {
         );
 
     foreach my $f ( keys %$prev_data ) {
-        next unless exists $data->{$f};
-        if ( $f eq 'description' || $f eq 'password' )
-        {    # description field is too long & not critical
-            push( @changes, "changed $f" )
-                if ( $data->{$f} ne $prev_data->{$f} );
-            next;
+        next if ! exists $data->{$f};
+        next if $data->{$f} eq $prev_data->{$f};
+
+        if ( $f eq 'description' || $f eq 'password' ) {    
+            # description field is long & not critical
+            push @changes, "changed $f";
         }
         elsif ( exists $perms{$f} ) {
-            push( @changes,
-                      "changed "
-                    . $perms{$f}
-                    . " from '"
-                    . $prev_data->{$f}
-                    . "' to '"
-                    . $data->{$f}
-                    . "'" )
-                if ( $data->{$f} ne $prev_data->{$f} );
+            push @changes, qq[changed $perms{$f} from '$prev_data->{$f}' to '$data->{$f}'];
         }
         else {
-            push( @changes,
-                "changed $f from '$prev_data->{$f}' to '$data->{$f}'" )
-                if ( $data->{$f} ne $prev_data->{$f} );
+            push @changes, "changed $f from '$prev_data->{$f}' to '$data->{$f}'";
         }
     }
-    if ( !@changes ) {
-        push( @changes, "nothing modified" );
+    if ( ! scalar @changes ) {
+        push @changes, "nothing modified";
     }
     return join( ", ", @changes );
 }

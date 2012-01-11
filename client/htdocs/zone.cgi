@@ -1328,7 +1328,7 @@ sub display_edit_zone {
         -name      => 'mailaddr',
         -size      => 25,
         -maxlength => 255,
-        -default   => $zone->{'mailaddr'} == 'hostmaster.ZONE.TLD.' ? qq[hostmaster.$zone->{zone}.] : $zone->{mailaddr},
+        -default   => $zone->{'mailaddr'} eq 'hostmaster.ZONE.TLD.' ? qq[hostmaster.$zone->{zone}.] : $zone->{mailaddr},
     ),
     qq[<input type="button" value="Default" onClick="this.form.mailaddr.value='hostmaster.$zone->{'zone'}'"> hostmaster.$zone->{'zone'}.],
     qq[</td>
