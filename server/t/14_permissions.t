@@ -599,6 +599,10 @@ sub test_modify {
     noerrok($zone);
 
     foreach ( keys %zone ) {
+        if ( $_ eq 'serial' ) {
+            ok( $zone->get($_), ++$zone{$_} );
+            next;
+        }
         ok( $zone->get($_), $zone{$_} );
     }
 
