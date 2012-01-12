@@ -49,26 +49,16 @@ sub display {
     return $nt_obj->display_error($group) if $group->{'error_code'} != '200';
 
     my $gid = $group->{nt_group_id};
-    my $tee   = qq[<img src="$NicToolClient::image_dir/dirtree_tee.gif" alt="tee">];
     my $elbow = qq[<img src="$NicToolClient::image_dir/dirtree_elbow.gif" alt="elbow">];
-    my $folder = qq[<img src="$NicToolClient::image_dir/folder_closed.gif" alt="closed folder">];
     my $suffix = qq[cgi?nt_group_id=$gid" target="body];
     my $help = $nt_obj->help_link( 'all', 'Help' );
 
     print qq[
-<table id="navTopRow" class="fat">
- <tr class="dark_grey_bg">
-  <td>
-   <table class="no_pad fat">
-    <tr>
-     <td><img src="$NicToolClient::image_dir/group.gif" alt="group icon"></td>
-     <td class="nowrap"><a href="group.$suffix"> $group->{'name'} </a>$help</td>
-     <td class="right fat"><a href="javascript:window.location = window.location">refresh</a></td>
-    </tr>
-   </table>
-  </td>
- </tr>
-</table>];
+<div id="navTopRow" class="dark_grey_bg">
+  <img src="$NicToolClient::image_dir/group.gif" alt="group icon">
+  <a href="group.$suffix">$group->{'name'}</a> $help
+  <span class="float_r"><a href="javascript:window.location = window.location">refresh</a></span>
+</div>];
 
     display_group($group, '', '');
 
@@ -106,11 +96,12 @@ sub recurse_groups {
         my $img = qq[<img src="$NicToolClient::image_dir/dirtree_${porm}_$eort.gif" alt="dirtree $eort">];
 
         print qq[
-<table id="navGroupLevel$gid" class='no_pad'>
- <tr>$level_html
-  <td><a href="nav.cgi?] . expand_url( $expanded, 'expanded', $gid ) . qq[">$img</a></td>
-  <td><img src="$NicToolClient::image_dir/transparent.gif" style="width:4; height:1;" alt="transparent"><img src="$NicToolClient::image_dir/group.gif" alt="group"></td>
-  <td class="nowrap"><a href="group.$suffix"> $group->{'name'} </a> </td>
+<table id="navGroupLevel$gid" class='no_pad fat'>
+ <tr class="dark_grey_bg">
+  $level_html
+  <td class="left"><a href="nav.cgi?] . expand_url( $expanded, 'expanded', $gid ) . qq[">$img</a></td>
+  <td class="left nowrap fat" style="padding-right: 4px;"><a href="group.$suffix"> 
+  <img src="$NicToolClient::image_dir/group.gif" alt="group">$group->{'name'}</a></td>
  </tr>
 </table>];
 
@@ -156,7 +147,6 @@ sub display_group {
 
     my $gid = $group->{nt_group_id};
     my $suffix = qq[.cgi?nt_group_id=$gid" target="body];
-    my $folder = qq[$NicToolClient::image_dir/folder_closed.gif];
     my $tee    = qq[<img src="$NicToolClient::image_dir/dirtree_tee.gif" alt="tee">];
     my $elbow  = qq[<img src="$NicToolClient::image_dir/dirtree_elbow.gif" alt="elbow">];
 
@@ -166,7 +156,6 @@ sub display_group {
  <tr>$level_html
   $img2
   <td>$tee</td>
-  <td><a href="group_zones.$suffix"><img src="$folder" alt="Group Zones"></a></td>
   <td><a href="group_zones.$suffix">Zones</a></td>
  </tr>
 </table>
@@ -175,7 +164,6 @@ sub display_group {
  <tr>$level_html
   $img2
   <td>$tee</td>
-  <td><a href="group_nameservers.$suffix"><img src="$folder" alt="Group Nameservers"></a></td>
   <td><a href="group_nameservers.$suffix">Nameservers</a></td>
  </tr>
 </table>
@@ -184,7 +172,6 @@ sub display_group {
  <tr>$level_html
   $img2
   <td>$tee</td>
-  <td><a href="group_users.$suffix"><img src="$folder" alt="Group Users"></a></td>
   <td><a href="group_users.$suffix">Users</a></td>
  </tr>
 </table>
@@ -193,7 +180,6 @@ sub display_group {
  <tr>$level_html
   $img2
   <td>], $group->{'has_children'} ? $tee : $elbow, qq[</td>
-  <td><a href="group_log.$suffix"><img src="$folder" alt="Log"></a></td>
   <td><a href="group_log.$suffix">Log</a></td>
  </tr>
 </table>];
