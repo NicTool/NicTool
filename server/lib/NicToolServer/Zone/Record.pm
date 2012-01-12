@@ -252,11 +252,12 @@ sub get_zone_record {
 sub get_zone_record_log_entry {
     my ( $self, $data ) = @_;
 
-    my $sql
-        = "SELECT nt_zone_record_log.* FROM nt_zone_record_log "
-        . "   INNER JOIN nt_zone_record on nt_zone_record_log.nt_zone_record_id=nt_zone_record.nt_zone_record_id"
-        . "   WHERE nt_zone_record_log.nt_zone_record_log_id = ?"
-        . "   AND nt_zone_record.nt_zone_record_id=?";
+    my $sql = "SELECT zrl.*, t.name AS type
+    FROM nt_zone_record_log zrl
+      INNER JOIN nt_zone_record zr on zrl.nt_zone_record_id = zr.nt_zone_record_id
+      LEFT JOIN resource_record_type t ON zrl.type_id=t.id
+          WHERE zrl.nt_zone_record_log_id = ?
+            AND zr.nt_zone_record_id=?";
 
     my $zr_logs
         = $self->exec_query( $sql,
@@ -267,6 +268,7 @@ sub get_zone_record_log_entry {
         if !$zr_logs->[0];
 
     return {
+        %{ $zr_logs->[0] },
         error_code => 200,
         error_msg  => 'OK',
     };

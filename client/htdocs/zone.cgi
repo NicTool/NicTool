@@ -735,7 +735,7 @@ sub display_zone_records_edit {
     return if ! $q->param('edit_record');
     return if $q->param('Cancel'); # do nothing
 
-    return display_edit_record( $nt_obj, $user, $q, "", $zone, 'edit' )
+    return display_edit_record( $nt_obj, $user, $q, '', $zone, 'edit' )
         if ! $q->param('Save');
 
     my @fields = qw( nt_group_id nt_zone_id nt_zone_record_id name type
@@ -746,8 +746,7 @@ sub display_zone_records_edit {
     }
     my $error = $nt_obj->edit_zone_record(%data);
     if ( $error->{'error_code'} != 200 ) {
-        display_edit_record( $nt_obj, $user, $q, $error, $zone, 'edit' );
-        return;
+        return display_edit_record( $nt_obj, $user, $q, $error, $zone, 'edit' );
     }
     $nt_obj->display_nice_message(
             "Zone Record successfully modified.", "Edit Zone Record" );
@@ -804,9 +803,9 @@ sub display_edit_record {
         }
         else {
             $zone_record->{'name'} = $zone->{'zone'} . "."
-                if ( $zone_record->{'name'} eq "@" && $zone->{'zone'} );
+                if $zone_record->{'name'} eq "@" && $zone->{'zone'};
             $zone_record->{'address'} = $zone->{'zone'} . "."
-                if ( $zone_record->{'address'} eq "@" && $zone->{'zone'} );
+                if $zone_record->{'address'} eq "@" && $zone->{'zone'};
         }
     }
     my $isdelegate = exists $zone_record->{'delegated_by_id'};
@@ -858,15 +857,14 @@ sub display_edit_record {
     $nt_obj->display_nice_error($message2) if $message2;
     print qq[
 <a name="RECORD" id="RECORD"></a>
-<div class="dark_bg">Resource Record</div>];
+<div class="dark_bg">$action Resource Record</div>];
 
     # display delegation information
     if ( !$isdelegate && $edit ne 'new' ) {
         my $delegates = $nt_obj->get_zone_record_delegates(
             nt_zone_record_id => $zone_record->{'nt_zone_record_id'} );
         if ( $delegates->{error_code} ne 200 ) {
-            warn
-                "error get_zone_record_delegates(nt_zone_record_id=>$zone_record->{'nt_zone_record_id'}: "
+            warn "error get_zone_record_delegates(nt_zone_record_id=>$zone_record->{'nt_zone_record_id'}: "
                 . $delegates->{'error_code'} . " "
                 . $delegates->{'error_msg'};
         }
@@ -880,7 +878,6 @@ sub display_edit_record {
 
     print qq[
 <table class="fat">
- <tr class="dark_grey_bg"><td colspan=2> $action </td></tr>
  <tr class="light_grey_bg">
   <td class="right"> Name:</td>
   <td class="fat">], 
@@ -888,7 +885,7 @@ sub display_edit_record {
         -name      => 'name',
         -size      => 40,
         -maxlength => 127,
-        -default   => $zone_record->{'name'}
+        -default   => $zone_record->{'name'},
         ) : $zone_record->{'name'},
         ( $zone_record->{'name'} ne "$zone->{'zone'}." ? "<b>.$zone->{'zone'}.</b>" : ""),
         qq[
@@ -896,7 +893,7 @@ sub display_edit_record {
  </tr>];
 
     my $default_record_type = $zone_record->{'type'};
-    $default_record_type = 'PTR' if ( $zone->{'zone'} =~ /(in-addr|ip6)\.arpa/ );
+    $default_record_type = 'PTR' if $zone->{'zone'} =~ /(in-addr|ip6)\.arpa/;
 
     print qq[
  <tr class="light_grey_bg">
@@ -907,19 +904,16 @@ sub display_edit_record {
             -id      => 'rr_type',
             -values  => $type_values,
             -labels  => $type_labels,
-            -default => $default_record_type,
-            -onClick => "showFieldsForRRtype(value)",
-# not valid for popup menus (according to CGI.pm docs), but works
+            -default => $zone_record->{'type'} || $default_record_type,
             -onChange => "showFieldsForRRtype(value)",    # seems to work
-            -onFocus  => "showFieldsForRRtype(value)",
 # run, darn it, even if user doesn't change value and onClick isn't permitted
         )
         : $type_labels->{ $zone_record->{'type'} }, qq[
   </td>
  </tr>
  <tr class="light_grey_bg">
-  <td class="right"> Address:</td>
-  <td style="width:100%;">], $modifyperm
+  <td class="right">Address:</td>
+  <td class="fat">], $modifyperm
         ? $q->textfield(
         -name      => 'address',
         -size      => 50,
