@@ -1111,13 +1111,20 @@ sub valid_label {
 
         my $err_prefix = "$field domain labels $label_explain must";
 
-        # domain labels always begin with a letter
+        # domain labels must not be all numbers: RFC 1912
+        if ( $label =~ /^[\d]+$/ ) {
+            $self->error($field, "$err_prefix not be all numbers: RFC 1912");
+            $has_error++;
+        };
+
+        # domain labels always begin with a letter: RFC 1035
+        # Labels must end and begin only with a letter or digit: RFC 1123,1912
         my $first_char = substr($label, 0,1);
         if ( $field eq 'name' && $type eq 'SRV' && $first_char eq '_' ) {
             # except for SRV
         }
         elsif ( $first_char =~ /[^a-zA-Z]/ ) {
-            $self->error($field, "$err_prefix begin with a letter: RFC 1035");
+            $self->error($field, "$err_prefix begin with a letter or digit: RFC 1912");
             $has_error++;
         };
 
