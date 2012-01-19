@@ -26,13 +26,12 @@ sub main {
     my $q      = new CGI();
     my $nt_obj = new NicToolClient($q);
 
-    if ( $nt_obj->check_setup eq 'OK' ) {
+    return if $nt_obj->check_setup ne 'OK';
 
-        my $user = $nt_obj->verify_session();
-        if ($user) {
-            print $q->header;
-            display( $nt_obj, $q, $user );
-        }
+    my $user = $nt_obj->verify_session();
+    if ($user && ref $user) {
+        print $q->header;
+        display( $nt_obj, $q, $user );
     }
 }
 

@@ -1,5 +1,12 @@
 ----NEW----
 
+. RFC 3490, IDNA (International Domain Names in Applications)
+..  RFC 5890 - 5894 (IDNA 2008)
+
+. RFC 2181, RRSet restrictions
+.. Make sure TTL on RRs with identical label and type are identical
+.. If RR has identical label, type, and data as existing RR, reject as invalid
+
 . Support tinydns locations
     SQL & tinydns export portions completed 2011.11.14. See
     https://www.tnpi.net/support/forums/index.php/topic,1004.0.html

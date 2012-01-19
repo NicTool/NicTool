@@ -1,6 +1,11 @@
 
-2.13
-  * added ability to edit nameserver option, Export Serials
+2.13    2012.01.18
+
+  * removed images from left navigation menu
+  * restored ability to recover a zone record
+  * added ability to edit nameserver option, 'Export Serials'
+  * editing zone properties wasn't submitting form correctly
+  * fixed javascript error when editing RRs
 
 2.12    2012.01.04
 

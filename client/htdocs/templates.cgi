@@ -8,16 +8,14 @@ main();
 sub main {
     my $q = new CGI();
 
-    #	use CGI::Carp qw( fatalsToBrowser );
     use CGI::Carp qw( );
     my $nt_obj = new NicToolClient($q);
 
-    return if ( $nt_obj->check_setup ne 'OK' );
+    return if $nt_obj->check_setup ne 'OK';
 
     my $user = $nt_obj->verify_session();
-    bless($user);
 
-    if ($user) {
+    if ($user && ref $user ) {
         print $q->header;
         display( $nt_obj, $q, $user );
     }
@@ -64,9 +62,9 @@ sub show_zone_records {
 
     return if ( scalar( @{$recs} ) == 0 );
 
-    print qq{
+    print qq[
   <table style="width:100%; border-spacing:1;">
-    <tr class="dark_bg"> <td colspan="6" class="center"> $template </td> </tr> };
+    <tr class="dark_bg"><td colspan="6" class="center">$template</td></tr>];
 
     for ( my $i = 0; $i < scalar( @{$recs} ); $i++ ) {
         my %zone_record = (
@@ -78,7 +76,7 @@ sub show_zone_records {
             other    => $recs->[$i]->{'other'},
         );
 
-        print qq{ 
+        print qq|
             <tr class="light_grey_bg">
                 <td> $recs->[$i]->{'name'}</td>
                 <td> $recs->[$i]->{'type'}</td>
@@ -86,7 +84,7 @@ sub show_zone_records {
                 <td> $recs->[$i]->{'weight'}</td>
                 <td> $recs->[$i]->{'priority'}</td>
                 <td> $recs->[$i]->{'other'}</td>
-            </tr> };
+            </tr>|;
     }
 
     print qq{ </table> <br> };

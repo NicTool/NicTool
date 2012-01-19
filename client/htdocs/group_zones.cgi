@@ -30,7 +30,7 @@ sub main {
 
     my $user = $nt_obj->verify_session();
 
-    if ($user) {
+    if ($user && ref $user) {
         display( $nt_obj, $q, $user );
     }
 }

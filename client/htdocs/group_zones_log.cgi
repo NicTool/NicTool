@@ -30,7 +30,7 @@ sub main {
 
     my $user = $nt_obj->verify_session();
 
-    if ($user) {
+    if ($user && ref $user) {
         my $message;
         if ( $q->param('redirect') ) {
             $message = $nt_obj->redirect_from_log($q);
