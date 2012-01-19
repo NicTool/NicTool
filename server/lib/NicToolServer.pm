@@ -1397,12 +1397,21 @@ sub valid_ttl {
     my $self = shift;
     my $ttl = shift;
 
-    $self->error( 'ttl', "Invalid TTL -- required" ) if ! defined $ttl;
-    $self->error( 'ttl', "Invalid TTL -- must be numeric" ) if $ttl =~ /\D/;
+    if ( ! defined $ttl ) {
+        $self->error( 'ttl', "Invalid TTL -- required" );
+        return;
+    };
+    if ( $ttl =~ /\D/ ) {
+        $self->error( 'ttl', "Invalid TTL -- must be numeric" );
+        return;
+    };
     
-    return 1 if ( $ttl >= 300 && $ttl <= 2592000 );
+    return 1 if ( $ttl >= 0 && $ttl <= 2147483647 );
+# RFC 2181: Clarifications to the DNS specification
+# http://tools.ietf.org/html/rfc2181 
+# valid TTL is unsigned number from 0 to 2147483647
 
-    $self->error( 'ttl', "Invalid TTL -- ttl must be >= 300 and <= 2,592,000" );
+    $self->error( 'ttl', "Invalid TTL -- valid ttl range is 0 to 2,147,483,647: RFC 2181" );
     return;
 };
 

@@ -292,7 +292,7 @@ sub doit {
         }
     }
 
-    for ( 299, 2592001, 0, 1, 3000000, 'oops' ) {
+    for ( -299, -2592001, -2, -1, 2147483648, 'oops' ) {
 
         #invalid ttl
         $res = $group1->new_nameserver(
@@ -668,7 +668,7 @@ sub doit {
         ok( $res->get('error_desc') => qr/Sanity error/ );
     }
 
-    for ( qw/ 299 2592001 0 1 3000000 / ) {
+    for ( qw/ -299 -2592001 -2 -1 2147483648 / ) {
 
         #invalid ttl
         $res = $ns1->edit_nameserver( ttl => $_ );

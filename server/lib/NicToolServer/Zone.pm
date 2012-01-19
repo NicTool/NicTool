@@ -1113,7 +1113,7 @@ sub valid_label {
 
         # domain labels must not be all numbers: RFC 1912
         if ( $label =~ /^[\d]+$/ ) {
-            $self->error($field, "$err_prefix not be all numbers: RFC 1912");
+            $self->error($field, "domain labels must not be all numbers: RFC 1912");
             $has_error++;
         };
 
@@ -1123,7 +1123,7 @@ sub valid_label {
         if ( $field eq 'name' && $type eq 'SRV' && $first_char eq '_' ) {
             # except for SRV
         }
-        elsif ( $first_char =~ /[^a-zA-Z]/ ) {
+        elsif ( $first_char =~ /[^a-zA-Z0-9]/ ) {
             $self->error($field, "$err_prefix begin with a letter or digit: RFC 1912");
             $has_error++;
         };

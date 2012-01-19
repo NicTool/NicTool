@@ -1,5 +1,12 @@
 Revision history for NicToolServer
 
+
+2.13    2012.01.19
+    * allow domain labels to begin with a number (RFC 1123) 
+      https://www.tnpi.net/support/forums/index.php/topic,1014.0.html
+    * expand valid TTL range from 300-2592000 to 0-2147483647 (RFC 2181)
+    * editing zone properties or NS didn't increment zone serial #
+
 2.12    2012.01.04
 
     * added syntax testing for modules

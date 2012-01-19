@@ -289,7 +289,7 @@ sub doit {
         }
     }
 
-    for (qw(42 1 2592001 grover)) {
+    for (qw(-42 -1 2147483648 grover)) {
 
         #invalid ttl
         $res = $group1->new_zone(
@@ -521,7 +521,7 @@ sub doit {
         if ( $n1 > -1 ) {
             ok( $z[$n1]->id => $zid1 );
             for (
-                qw(zone serial ttl description mailaddr refresh retry expire minimum)
+                qw/zone serial ttl description mailaddr refresh retry expire minimum/
                 )
             {
                 ok( $z[$n1]->get($_) => $z1{$_} );
@@ -533,7 +533,7 @@ sub doit {
         if ( $n2 > -1 ) {
             ok( $z[$n2]->id => $zid2 );
             for (
-                qw(zone serial ttl description mailaddr refresh retry expire minimum)
+                qw/zone serial ttl description mailaddr refresh retry expire minimum/
                 )
             {
                 ok( $z[$n2]->get($_) => $z2{$_} );
@@ -631,7 +631,7 @@ sub doit {
     ok( $res->get('error_msg')  => 'nt_zone_id' );
     ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
 
-    for (qw(0 1 299 2592001 abc)) {
+    for (qw(-2 -1 -299 2147483648 abc)) {
         $res = $zone1->edit_zone( ttl => $_ );
         noerrok( $res, 300, "ttl $_" );
         ok( $res->get('error_msg')  => qr/Invalid TTL/ );

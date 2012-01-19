@@ -55,7 +55,7 @@ sub new_or_edit_basic_verify {
     $self->_expand_shortcuts( $data, $zone_text );  # expand @ and & shortcuts
 
     if ( $data->{name} =~ /^(.+)\.$zone_text\.$/ ) {  # ends in domain name
-        $data->{name} = $1; # strip domain. records are NOT stored absolute
+        $data->{name} = $1; # strip domain. record names are NOT stored absolute
     }
 
     $self->_valid_rr_type($data);
@@ -140,7 +140,7 @@ sub _expand_shortcuts {
         $data->{name} = $data->{name} . ".$zone_text.";
     }
 
-    if ( $data->{name} =~ /^\@$/ ) {    # replace @ with zone name
+    if ( $data->{name} eq '@' ) {    # replace @ with zone name
         $data->{name} = "$zone_text.";
     }
 
@@ -150,7 +150,7 @@ sub _expand_shortcuts {
         $data->{address} = $data->{address} . ".$zone_text.";
     }
 
-    if ( $data->{address} =~ /^\@$/ ) {    # replace @ with zone name
+    if ( $data->{address} eq '@' ) {    # replace @ with zone name
         $data->{address} = "$zone_text.";
     }
 
@@ -161,7 +161,7 @@ sub _expand_shortcuts {
         $data->{address} = $data->{address} . ".in-addr.arpa.";
     }
 
-    # no return, changes are made to the original hash via its reference
+    # no return, changes are made to the original hash via reference
 }
 
 sub _valid_name_chars {
@@ -210,8 +210,6 @@ sub _valid_name {
 sub _valid_address {
     my ( $self, $data, $zone_text ) = @_;
 
-# TODO make this check that record exists within nictool, or that it's absolute.
-
     if ( $zone_text =~ /(in-addr|ip6)\.arpa[\.]{0,1}$/i ) {
         $self->valid_reverse_label('address', $data->{address} );
     }
@@ -236,7 +234,7 @@ sub _valid_address_chars {
     };
 }
 
-sub _valid_fqdn {
+sub _is_fully_qualified {
     my ( $self, $data, $zone_text ) = @_;
 
     if ( $data->{address} !~ /\.$/ ) {    # if it does not end in .
@@ -246,7 +244,6 @@ sub _valid_fqdn {
 }
 
 sub _valid_rr_type {
-
     my ( $self, $data ) = @_;
 
     return if ! $data->{type};  # edit may not change type
@@ -369,6 +366,8 @@ sub _valid_mx {
     };
 
     # MX records must point to absolute hostnames
+    $self->_is_fully_qualified( $data, $zone_text );
+
     $self->error('address',
         "MX address must be a FQDN (not an IP): RFCs 1035, 2181" )
             if $self->valid_ip_address( $data->{address} );
@@ -379,7 +378,6 @@ sub _valid_mx {
 
     $self->_valid_address_chars( $data, $zone_text );
     $self->_valid_address( $data, $zone_text );  
-    $self->_valid_fqdn( $data, $zone_text );
 }
 
 sub _valid_ns {
@@ -407,6 +405,8 @@ sub _valid_ns {
     };
 
     # NS records must point to absolute hostnames
+    $self->_is_fully_qualified( $data, $zone_text );
+
     $self->error('address',
         "NS address must be a FQDN (not an IP): RFCs 1035, 2181" )
             if $self->valid_ip_address( $data->{address} );
@@ -417,7 +417,6 @@ sub _valid_ns {
 
     $self->_valid_address_chars( $data, $zone_text );
     $self->_valid_address( $data, $zone_text );  
-    $self->_valid_fqdn( $data, $zone_text );
 }
 
 sub _valid_srv {
@@ -469,13 +468,18 @@ sub _valid_srv {
         $self->error( 'address', "CNAME records must not point to a CNAME: RFC 2782" );
     };
 
-    $self->error('address',
-        "Address for SRV cannot be an IP address: RFC 2782" )
-            if $self->valid_ip_address( $data->{address} );
+    $self->_is_fully_qualified( $data, $zone_text );
+
+    if ( ! $self->valid_label( 'address', $data->{address} ) ) {
+        $self->error('address', "SRV address must be a FQDN: RFC 2782");
+    };
+
+    if ( $self->valid_ip_address( $data->{address} ) ) {
+        $self->error('address', "SRV address must not be an IP: RFC 2782" );
+    };
 
     $self->_valid_address_chars( $data, $zone_text );
     $self->_valid_address( $data, $zone_text );  
-    $self->_valid_fqdn( $data, $zone_text );
 }
 
 sub _valid_ptr {

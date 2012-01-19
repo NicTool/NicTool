@@ -77,7 +77,7 @@ ok( ! $r, "Delete zone fail");
 ok( ! $nts->is_subgroup(1,1), 'is_subgroup');
 
 # valid_ttl
-foreach ( qw/ 299 2592001 0 1 3000000 oops / ) {
+foreach ( qw/ -299 -2592001 -2 -1 2147483648 oops / ) {
     ok( ! $nts->valid_ttl( $_ ), "valid_ttl: $_");
 };
 
@@ -114,7 +114,7 @@ foreach my $k ( sort keys %serials ) {
     ok( $r == $serials{$k}, "bump_serial, $k -> $serials{$k} ($r)");
 };
 
-my $r = $zone->bump_serial( 'new' );
+$r = $zone->bump_serial( 'new' );
 ok( $r == $year.$month.$day.'00', "bump_serial, 'new'");
 
 #$r = $nts->is_subgroup(1,320);
