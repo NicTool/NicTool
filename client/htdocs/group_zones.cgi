@@ -317,23 +317,23 @@ sub display_list_zone_name {
 
 sub display_list_group_name {
     my ( $zone, $width, $map ) = @_;
-
+    my $gid = $zone->{'nt_group_id'};
     print qq[
- <td style="width:$width;" title="Group Name">
+ <td style="width:$width;">
   <div class="no_pad margin0">
     <img src="$NicToolClient::image_dir/group.gif" alt="">];
-            my @list = (
-                {   nt_group_id => $zone->{'nt_group_id'},
-                    name        => $zone->{'group_name'}
-                }
-            );
-            if ($map) { unshift @list, @{ $map->{ $zone->{'nt_group_id'} } }; };
+    my @list = (
+        {   nt_group_id => $gid,
+            name        => $zone->{'group_name'}
+        }
+    );
+    if ($map && $map->{$gid}) { unshift @list, @{ $map->{ $gid } }; };
 
-            my $url = qq[<a href="group.cgi?nt_group_id=];
-            my $group_string = join( ' / ',
-                map( qq[${url}$_->{'nt_group_id'}">$_->{'name'}</a>], @list ) );
+    my $url = qq[<a href="group.cgi?nt_group_id=];
+    my $group_string = join( ' / ',
+        map( qq[${url}$_->{'nt_group_id'}">$_->{'name'}</a>], @list ) );
 
-            print qq[ $group_string
+    print qq[ $group_string
   </div>
  </td>];
 };
