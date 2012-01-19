@@ -1117,6 +1117,9 @@ sub valid_label {
             $has_error++;
         };
 
+        # RFC 6376 has a special format for DKIM (thanks Christian Adler)
+        next if $type eq 'TXT' && $field eq 'name' && $label eq '_domainkey'; 
+
         # domain labels always begin with a letter: RFC 1035
         # Labels must end and begin only with a letter or digit: RFC 1123,1912
         my $first_char = substr($label, 0,1);
