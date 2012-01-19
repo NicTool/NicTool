@@ -636,10 +636,11 @@ sub display_search_rows {
 
     @state_vars = ();
     foreach ( @{ $self->paging_fields }, @$state_fields ) {
-        next if ( $_ eq 'edit_search' );
-        next if ( $_ eq 'edit_sortorder' );
+        next if $_ eq 'edit_search';
+        next if $_ eq 'edit_sortorder';
+        next if ! $q->param($_);
 
-        push( @state_vars, "$_=" . $q->escape( $q->param($_) ) ) if $q->param($_);
+        push @state_vars, "$_=" . $q->escape( $q->param($_) );
     }
 
     $state_string = join( '&amp;', @state_vars );
@@ -650,7 +651,7 @@ sub display_search_rows {
         my $state_map = join( '&amp;', 
             map( "$_=" . $q->escape( $q->param($_) ), @$state_fields ) );
         $state_map .= "&amp;$morestr" if $morestr;
-        $browse_all .= qq[<a href="$cgi_name?$state_map&amp;$state_map">Browse All</a></li>
+        $browse_all .= qq[<a href="$cgi_name?$state_map">Browse All</a></li>
   <li>];
     };
 

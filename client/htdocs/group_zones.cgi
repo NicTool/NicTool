@@ -152,7 +152,7 @@ sub display_list {
     if ($include_subgroups) {
         unshift( @columns, 'group_name' );
     }
-    unshift( @columns, 'zone' );
+    unshift @columns, 'zone';
 
     my %params = ( nt_group_id => $q->param('nt_group_id') );
     my %sort_fields;
@@ -212,17 +212,21 @@ sub display_list {
         $bgcolor = $hilite if $zone->{'nt_zone_id'} eq $q->param('new_zone_id');
         my $isdelegate = exists $zone->{'delegated_by_id'};
 
-        print qq[ <tr class="$bgcolor" id="zoneID$zone->{nt_zone_id}">];
+        print qq[
+ <tr class="$bgcolor" id="zoneID$zone->{nt_zone_id}">];
         display_list_move_checkbox( $zone, $user, $user_group );
         display_list_zone_name( $zone, $width, $bgcolor, $gid );
         display_list_group_name( $zone, $width, $map ) if $include_subgroups;
-        print qq[\n  <td style="width:$width;" title="Description">$zone->{'description'}</td>];
+        print qq[
+  <td style="width:$width;" title="Description">$zone->{'description'}</td>];
         display_list_delegate_icon( $zone, $user, $user_group );
         display_list_delete_icon( $zone, $user, $gid, $state_string );
-        print ' </tr>';
+        print qq[
+ </tr>];
     }
 
-    print qq[</table>
+    print qq[
+</table>
 </form>
 ];
 }
@@ -238,7 +242,7 @@ sub display_list_header {
         if ( $rv->{'total'} != 1 ) {
             print qq[<input type="checkbox" name="select_all_or_none" value="on" onclick="selectAllorNone(document.list_form.obj_list, this.checked);" />],
         };
-        print '</td>';
+        print qq[</td>];
     }
 
     foreach my $col (@$columns) {
@@ -284,19 +288,17 @@ sub display_list_zone_name {
     my $isdelegate = exists $zone->{'delegated_by_id'};
     print qq[
   <td style="width:$width;" class="$bgcolor" title="Zone Name">
-   <div class="no_pad margin0">
-    ];
+   <div class="no_pad margin0">];
     if ( !$isdelegate ) {
         print qq[
-    <a href="zone.cgi?nt_zone_id=$zone->{'nt_zone_id'}&amp;nt_group_id=$zone->{'nt_group_id'}">
-    <img src="$NicToolClient::image_dir/zone.gif" alt="zone"></a>
-    <a href="zone.cgi?nt_zone_id=$zone->{'nt_zone_id'}&amp;nt_group_id=$zone->{'nt_group_id'}">$zone->{'zone'}</a>];
+    <a href="zone.cgi?nt_zone_id=$zone->{'nt_zone_id'}&amp;nt_group_id=$zone->{'nt_group_id'}"><img src="$NicToolClient::image_dir/zone.gif" alt="zone">$zone->{'zone'}</a>];
     }
     else {
         my $img = "zone" . ( $zone->{'pseudo'} ? '-pseudo' : '-delegated' );
         print qq[
-<a href="zone.cgi?nt_zone_id=$zone->{'nt_zone_id'}&amp;nt_group_id=$gid"><img src="$NicToolClient::image_dir/$img.gif" alt=""></a>
-<a href="zone.cgi?nt_zone_id=$zone->{'nt_zone_id'}&amp;nt_group_id=$gid">$zone->{'zone'}</a>];
+    <a href="zone.cgi?nt_zone_id=$zone->{'nt_zone_id'}&amp;nt_group_id=$gid">
+    <img src="$NicToolClient::image_dir/$img.gif" alt="">
+    $zone->{'zone'}</a>];
         if ( $zone->{'pseudo'} ) {
             print qq[&nbsp; <span class=disabled>($zone->{'delegated_records'} record];
             print 's' if $zone->{'delegated_records'} gt 1;
@@ -308,9 +310,9 @@ sub display_list_zone_name {
             print qq[write.gif" alt="">];
         }
     }
-    print qq{
-  </div>
- </td>};
+    print qq[
+   </div>
+  </td>];
 };
 
 sub display_list_group_name {

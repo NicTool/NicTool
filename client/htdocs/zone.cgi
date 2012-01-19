@@ -56,7 +56,7 @@ sub display {
     );
 
     if ( $zone->{'error_code'} ne 200 ) {
-        $nt_obj->display_nice_error( $zone, "Get Zone" );
+        $nt_obj->display_nice_error( $zone, 'Get Zone' );
         return;
     }
 
@@ -198,7 +198,7 @@ sub do_new_zone {
         nt_zone_id  => $zid,
     );
     if ( $zone->{'error_code'} != 200 ) {
-        $nt_obj->display_nice_error( $zone, "Get Zone" );
+        $nt_obj->display_nice_error( $zone, 'Get Zone' );
     }
     return $zone;
 }
