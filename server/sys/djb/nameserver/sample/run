@@ -1,3 +1,0 @@
-#!/bin/sh
-exec 2>&1
-exec setuidgid USER envdir ./env DIR/nt_export_djb.pl -nsid NSID OPTS
