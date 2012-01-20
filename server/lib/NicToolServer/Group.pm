@@ -386,16 +386,11 @@ sub get_group_subgroups {
     my $sortby = $self->format_sort_conditions( $data, \%field_map,
         "nt_group.name" );
 
-    my @group_list;
+    my @group_list = $data->{nt_group_id};
     if ( $data->{include_subgroups} ) {
-        @group_list = (
-            $data->{nt_group_id},
-            @{ $self->get_subgroup_ids( $data->{start_group_id} ) }
-        );
-    }
-    else {
-        @group_list = ( $data->{nt_group_id} );
-    }
+        push @group_list,
+            @{ $self->get_subgroup_ids( $data->{start_group_id} ) };
+    };
 
     my $r_data = { error_code => 200, error_msg => 'OK', groups => [] };
 
@@ -417,7 +412,7 @@ sub get_group_subgroups {
     my $sort_string = join( ', ', @$sortby);
     $sql = "SELECT nt_group.* FROM nt_group 
 WHERE deleted=0 AND parent_group_id IN ($group_string)";
-    $sql .= " AND ($cond_string)" if @$conditions;
+    $sql .= " AND ($cond_string)" if scalar @$conditions;
     $sql .= " ORDER BY $sort_string" if (@$sortby);
     $sql .= " LIMIT " . ( $r_data->{start} - 1 ) . ", $r_data->{limit}";
     my $group_rows = $self->exec_query($sql);
@@ -432,15 +427,15 @@ WHERE deleted=0 AND parent_group_id IN ($group_string)";
             or return $self->error_response( 505, $self->{dbh}->errstr );
         $row->{has_children} = $c->[0]->{count};
 
-        push( @{ $r_data->{groups} }, $row );
+        push @{ $r_data->{groups} }, $row;
 
         $groups{ $row->{nt_group_id} } = 1;
     }
 
-    unshift(
-        @{ $r_data->{groups} },
-        $self->find_group( $data->{user}{nt_group_id} )
-    ) if ( $data->{include_parent} );
+    if ( $data->{include_parent} ) {
+        unshift @{ $r_data->{groups} },
+            $self->find_group( $data->{user}{nt_group_id} );
+    };
 
     $r_data->{group_map}
         = $self->get_group_map( $data->{start_group_id},

@@ -613,9 +613,12 @@ sub display_search_rows {
             . qq["><b><</b></a> &nbsp; ];
     }
 
-    my $curpage = $rv->{'end'} % $rv->{'limit'}
+    my $curpage = 1;
+    if ( $rv->{end} && $rv->{limit} ) {
+        $curpage = $rv->{'end'} % $rv->{'limit'}
                 ? int( $rv->{'end'} / $rv->{'limit'} ) + 1
                 : $rv->{'end'} / $rv->{'limit'};
+    };
 
     print qq[Page <input type="text" name="page" value="$curpage" size="4"> of $rv->{'total_pages'}];
 

@@ -1870,7 +1870,8 @@ sub set_paging_vars {
         $r_data->{limit} = 20;
     }
     else {
-        $r_data->{limit} = ( $data->{limit} <= 255 ? $data->{limit} : 255 );
+        $r_data->{limit} = $data->{limit};
+        $r_data->{limit} = 255 if $data->{limit} > 255;  # why? (mps Jan 2012)
     }
 
     if ( $data->{page} && ( $data->{page} =~ /^\d+$/ ) ) {
