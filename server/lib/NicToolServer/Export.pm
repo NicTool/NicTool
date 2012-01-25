@@ -184,9 +184,12 @@ sub export {
     $self->preflight or return;
     $self->get_active_nameservers;
 
+    my $last_ts = 'never';
     if ( ! $self->{export_required} && ! $self->{force} ) {
         my $last_copy = $self->get_last_ns_export(success=>1,copied=>1);
-        my $last_ts = substr( $last_copy->{date_end}, 5, 11 );
+        if ( $last_copy->{date_end} ) {
+            $last_ts = substr( $last_copy->{date_end}, 5, 11 );
+        };
         my $now_ts = substr( localtime( time ), 4, 15 );
         $self->set_status("no changes:$now_ts last:$last_ts");
         $self->elog("exiting",success=>1);
