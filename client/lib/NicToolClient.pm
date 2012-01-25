@@ -1431,6 +1431,12 @@ sub AUTOLOAD {
 1;
 __END__
 
+=pod
+
+=head1 NAME
+
+NicToolClient - CGI Interface to NicToolServer
+
 =head1 SYNOPSIS
 
 Methods used by the CGI files in the htdocs directory

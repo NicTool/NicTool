@@ -1997,6 +1997,12 @@ sub push_sanity_error {
 1;
 __END__
 
+=pod
+
+=head1 NAME
+
+NicToolServer - NicTool API reference server
+
 =head1 SYNOPSIS
 
 =cut
