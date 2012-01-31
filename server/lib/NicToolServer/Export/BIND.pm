@@ -13,6 +13,7 @@ sub new {
 
     my $self = bless {
         nte => shift,
+        zone_list => [],
     },
     $class;
 
@@ -25,9 +26,9 @@ sub export_db {
     my $self = shift;
 
     foreach my $z ( @{ $self->{nte}->get_ns_zones() } ) {
-        my $fh = $self->get_export_file(
-            $self->{nte}->get_export_dir, $z->{zone} )
-                or die "unable to figure out export name for zone $z->{zone}\n";
+        push @{$self->{zone_list}}, $z->{zone};
+        my $fh = $self->get_export_file( $z->{zone} )
+            or die "unable to figure out export name for zone $z->{zone}\n";
         $self->{nte}{zone_name} = $z->{zone};
         print $fh $self->{nte}->zr_soa( $z );
         print $fh $self->{nte}->zr_ns( $z );
@@ -46,8 +47,8 @@ sub export_db {
 
 sub get_export_file {
     my $self = shift;
-    my $dir = shift || $self->{nte}->get_export_dir or return;
     my $zone = shift or die $self->{nte}->elog("missing zone");
+    my $dir = shift || $self->{nte}->get_export_dir or return;
 
     my $file = "$dir/$zone";
     open my $FH, '>', $file
@@ -73,6 +74,15 @@ sub postflight {
 
 # TODO: 
 #   write out a named.conf file
+    my $dir = shift || $self->{nte}->get_export_dir or return;
+    my $fh = $self->get_export_file( 'named.conf.nictool', $dir );
+    foreach my $zone ( @{$self->{zone_list}} ) {
+        print $fh qq[
+zone "$zone" { type master; file "$dir/$zone"; };
+];
+    };
+    close $fh;
+
 #   validate it?
 #   restarted named
 
