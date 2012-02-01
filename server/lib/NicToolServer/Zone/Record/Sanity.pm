@@ -502,6 +502,8 @@ sub get_invalid_chars {
 
     # allow _ char for SRV name
     return '[^a-zA-Z0-9\-\._]' if $type eq 'SRV' && $field eq 'name';
+    # allow _ char for TXT name (DKIM: RFC 6376)
+    return '[^a-zA-Z0-9\-\._]' if $type eq 'TXT' && $field eq 'name';
 
     # allow / in reverse zones, for both name & address: RFC 2317
     return '[^a-zA-Z0-9\-\.\/]' if $zone_text =~ /(in-addr|ip6)\.arpa[\.]{0,1}$/i;
