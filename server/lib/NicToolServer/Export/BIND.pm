@@ -72,17 +72,16 @@ sub get_records {
 sub postflight {
     my $self = shift;
 
-# TODO: 
 #   write out a named.conf file
     my $dir = shift || $self->{nte}->get_export_dir or return;
     my $fh = $self->get_export_file( 'named.conf.nictool', $dir );
     foreach my $zone ( @{$self->{zone_list}} ) {
         print $fh qq[
-zone "$zone" { type master; file "$dir/$zone"; };
-];
+zone "$zone" { type master; file "$dir/$zone"; }; ];
     };
     close $fh;
 
+# TODO: 
 #   validate it?
 #   restarted named
 

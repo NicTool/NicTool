@@ -1,5 +1,10 @@
 Revision history for NicToolServer
 
+2.14    2012.02.
+
+    * fixed an undefined variable warning when exporting
+    * don't complain about BIND not being successful if not 'copied'
+    * enabled LOC records for new installs
 
 2.13    2012.01.19
     * removed sys/djb c++ export app (broken)

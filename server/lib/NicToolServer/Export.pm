@@ -185,8 +185,17 @@ sub export {
     $self->get_active_nameservers;
 
     my $last_ts = 'never';
-    if ( ! $self->{export_required} && ! $self->{force} ) {
-        my $last_copy = $self->get_last_ns_export(success=>1,copied=>1);
+    if ( $self->{force} ) {
+        $self->elog("forced");
+    }
+    elsif ( ! $self->{export_required} ) {
+        my $last_copy;
+        if ( $self->{export_format} eq 'tinydns' ) {
+            $last_copy = $self->get_last_ns_export(success=>1,copied=>1);
+        }
+        else {
+            $self->get_last_ns_export(success=>1);
+        }
         if ( $last_copy->{date_end} ) {
             $last_ts = substr( $last_copy->{date_end}, 5, 11 );
         };
@@ -196,16 +205,13 @@ sub export {
         return 1;
     };
 
-    $self->elog("forced") if $self->{force};
-
     my $before = time;
     $self->set_status("exporting from DB");
     $self->{export_class}->export_db();
-    my $elapsed = time - $before;
-    my $timed = " ($elapsed secs)" if $elapsed > 5;
-    $self->elog('exported'.$timed);
+    my $elapsed = '';
+    if ( (time - $before) > 5 ) { $elapsed = ' ('. (time - $before) . ' secs)' };
+    $self->elog('exported'.$elapsed);
 
-# TODO: detect and delete BIND zone files deleted in NicTool
     $self->postflight or return;
     return 1;
 }
@@ -321,9 +327,12 @@ sub get_last_ns_export {
     $sql .= " ORDER BY date_start DESC LIMIT 1";
 
     my $logs = $self->exec_query( $sql, \@args );
-    my $message = "no previous export";
-    $message = "no previous successful export" if defined $p{success} && $p{success} == 1;
-    $self->elog( $message ) if scalar @$logs == 0;
+    if ( scalar @$logs == 0 ) {
+        my $message = "no previous export";
+        $message = "no previous successful export" if defined $p{success} && $p{success} == 1;
+        $self->elog( $message );
+        return;
+    };
     return $logs->[0];
 }
 
@@ -535,11 +544,6 @@ sub preflight {
 
     return 1 if $self->{export_required} == 0; # already called
 
-# TODO: test when last export attempted. If less than export_interval seconds,
-# sleep until ready. This will prevent a rightously zealous init/supervise
-# program from causing a vicious loop. Allow override with -force on the 
-# command line.
-
     $self->get_log_id;
 
     # bail out if no export required
@@ -548,7 +552,7 @@ sub preflight {
     if ( $export ) {
         my $ts_success = $export->{date_start};
         if ( $ts_success ) {
-# do any zones for this nameserver have updates more recent than last successful export?
+# do any zones for this NS have changes since the last successful export?
             my $c = $self->get_modified_zones( since => $ts_success );
             if ( $c == 0 ) {
                 $self->{export_required} = 0;

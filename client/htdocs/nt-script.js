@@ -53,21 +53,8 @@ function showFieldsForRRtype(rrType) {
     hideThis('tr_other');
 
     switch (rrType) {
-    case 'A':
-        // alert("rrType selected is A-" + rrType );
-        break;
-    case 'AAAA':
-        break;
     case 'MX':
         showTableRow('tr_weight');
-        break;
-    case 'NS':
-        break;
-    case 'TXT':
-        break;
-    case 'CNAME':
-        break;
-    case 'PTR':
         break;
     case 'SRV':
         // alert("rrType selected is SRV" + rrType );
