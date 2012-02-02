@@ -10,22 +10,9 @@ use Cwd;
 use File::Copy;
 use Params::Validate qw/ :all /;
 use Time::TAI64 qw/ unixtai64 /;
+use base 'NicToolServer::Export::Base';
 
 # maybe TODO: append DB ids (but why?)
-
-sub new {
-    my $class = shift;
-
-    my $self = bless {
-        nte => shift,
-        FH  => undef,
-    },
-    $class;
-
-    warn "oops, a NicToolServer::Export object wasn't provided!" 
-        if ! $self->{nte};
-    return $self;
-}
 
 sub get_export_file {
     my $self = shift;

@@ -3,58 +3,8 @@ package NicToolServer::Export::MaraDNS;
 
 use strict;
 use warnings;
-
-use Cwd;
-use File::Copy;
 use Params::Validate qw/ :all /;
-
-sub new {
-    my $class = shift;
-
-    my $self = bless {
-        nte => shift,
-        zone_list => [],
-    },
-    $class;
-
-    warn "oops, a NicToolServer::Export object wasn't provided!" 
-        if ! $self->{nte};
-    return $self;
-}
-
-sub export_db {
-    my $self = shift;
-
-    foreach my $z ( @{ $self->{nte}->get_ns_zones() } ) {
-        push @{$self->{zone_list}}, $z->{zone};
-# ....
-        $self->{nte}{zone_name} = $z->{zone};
-#        print $fh $self->{nte}->zr_soa( $z );
-#        print $fh $self->{nte}->zr_ns( $z );
-
-        my $records = $self->get_records( $z->{nt_zone_id} );
-        foreach my $r ( @$records ) {
-            my $type   = lc( $r->{type} );
-            my $method = "zr_${type}";
-            $r->{location}  ||= '';
-#           print $fh $self->$method( $r );
-        }
-
-    }   
-};
-
-sub get_records {
-    my $self = shift;
-    my $zone_id = shift;
-
-    my $sql = "SELECT r.name, r.ttl, r.description, t.name AS type, r.address, r.weight, 
-    priority, other, location, UNIX_TIMESTAMP(timestamp) AS timestamp
-        FROM nt_zone_record r
-        LEFT JOIN resource_record_type t ON t.id=r.type_id
-         WHERE r.deleted=0 AND r.nt_zone_id=?";
-
-    return $self->{nte}->exec_query( $sql, $zone_id );
-}
+use base 'NicToolServer::Export::Base';
 
 sub postflight {
     my $self = shift;
