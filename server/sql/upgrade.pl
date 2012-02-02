@@ -30,7 +30,7 @@ prompt_last_chance();
 my $dbh  = DBIx::Simple->connect( $dsn, $db_user, $db_pass )
             or die DBIx::Simple->error;
 
-my @versions = qw/ 2.00 2.05 2.08 2.09 2.10 2.11 /;
+my @versions = qw/ 2.00 2.05 2.08 2.09 2.10 2.11 2.14 /;
 
 foreach my $version ( @versions ) { 
 # first, run a DB test query 
@@ -96,8 +96,40 @@ EO_SOME_DAY
 };
 
 
+sub _sql_test_2_14 {
+    my $sql = 'SELECT option_value FROM nt_options WHERE option_name="db_version"';
+    my $r;
+    eval { $r = $dbh->query( $sql )->list; };
+    return 1 if ! defined $r;   # query failed
+    return 0 if $r eq '2.11';   # do it! (no DB changes since v2.11)
+    return 1;                   # don't update
+};
+
+sub _sql_2_14 {
+    <<EO_SQL_2_14
+ALTER TABLE nt_nameserver MODIFY export_format VARCHAR(12) NOT NULL;
+ALTER TABLE nt_nameserver_log MODIFY export_format VARCHAR(12) NULL DEFAULT NULL;
+
+CREATE TABLE nt_nameserver_export_types (
+   id tinyint(3) unsigned NOT NULL AUTO_INCREMENT,
+   type varchar(12) NOT NULL DEFAULT '',
+   PRIMARY KEY (`id`)
+) DEFAULT CHARSET=utf8;
+
+INSERT INTO `nt_nameserver_export_types` (`id`, `type`)
+VALUES
+    (1,'tinydns'),
+    (2,'bind'),
+    (3,'maradns'),
+    (4,'powerdns');
+
+UPDATE nt_options SET option_value='2.14' WHERE option_name='db_version';
+EO_SQL_2_14
+;
+};
+
 sub _sql_test_2_11 {
-    my $sql = 'SELECT option_value FROM nt_options WHERE option_value="2.10"';
+    my $sql = 'SELECT option_value FROM nt_options WHERE option_name="db_version"';
     my $r;
     eval { $r = $dbh->query( $sql )->list; };
     return 1 if ! defined $r;   # query failed

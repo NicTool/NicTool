@@ -504,6 +504,8 @@ sub display_edit_nameserver_fields {
     my %export_formats = (
         'bind'    => "BIND (ISC's Berkeley Internet Named Daemon)",
         'tinydns' => 'tinydns (part of DJBDNS)',
+        'powerdns'=> 'PowerDNS',
+        'maradns' => 'MaraDNS',
     );
     my $export_format_values = [ sort keys %export_formats ];
     my $export_format_labels  = \%export_formats;

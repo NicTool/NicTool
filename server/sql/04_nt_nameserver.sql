@@ -11,7 +11,7 @@ CREATE TABLE nt_nameserver(
     address             VARCHAR(127) NOT NULL,
     logdir              VARCHAR(255),
     datadir             VARCHAR(255),
-    export_format       enum('tinydns','bind') NOT NULL,
+    export_format       VARCHAR(12) NOT NULL;
     export_interval     SMALLINT UNSIGNED,
     export_serials      tinyint(1) UNSIGNED NOT NULL DEFAULT '1',
     export_status       varchar(255) NULL DEFAULT NULL,
@@ -37,12 +37,21 @@ CREATE TABLE nt_nameserver_log(
     address             VARCHAR(127),
     logdir              VARCHAR(255),
     datadir             VARCHAR(255),
-    export_format       enum('tinydns','bind'),
+    export_format       VARCHAR(12) NOT NULL;
     export_interval     SMALLINT UNSIGNED,
     export_serials      tinyint(1) UNSIGNED NOT NULL DEFAULT '1'
 ) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 CREATE INDEX nt_nameserver_log_idx1 on nt_nameserver_log(nt_nameserver_id);
 CREATE INDEX nt_nameserver_log_idx2 on nt_nameserver_log(timestamp);
+
+CREATE TABLE nt_nameserver_export_types (
+   id tinyint(3) unsigned NOT NULL AUTO_INCREMENT,
+   type varchar(12) NOT NULL DEFAULT '',
+   PRIMARY KEY (`id`)
+) DEFAULT CHARSET=utf8;
+
+INSERT INTO `nt_nameserver_export_types` (`id`, `type`)
+VALUES (1,'tinydns'), (2,'bind'), (3,'maradns'), (4,'powerdns');
 
 INSERT INTO nt_nameserver(nt_group_id, name, ttl, description, address, 
   export_format, logdir, datadir, export_interval) values (1,'ns1.example.com.',86400,'ns east',

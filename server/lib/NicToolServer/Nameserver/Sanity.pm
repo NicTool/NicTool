@@ -48,8 +48,7 @@ sub new_nameserver {
     }
 
     # check that export_format is valid
-    unless ( $data->{export_format} eq 'tinydns' || $data->{export_format} eq 'bind')
-    {
+    if ( $data->{export_format} !~ /^tinydns|bind|maradns|powerdns$/ ) {
         $self->error( 'export_format', 'Invalid output format.' );
     }
 
@@ -121,11 +120,8 @@ sub edit_nameserver {
 
     # check that export_format is valid
     if ( exists $data->{export_format} ) {
-        unless ( $data->{export_format} eq "tinydns"
-            || $data->{export_format} eq "bind"
-            )
-        {
-            $self->error('export_format', "Invalid output format." );
+        if ( $data->{export_format} !~ /^tinydns|bind|maradns|powerdns$/ ) {
+            $self->error( 'export_format', 'Invalid output format.' );
         }
     }
 

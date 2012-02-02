@@ -533,8 +533,17 @@ sub get_active_nameservers {
     if ( $self->{export_format} eq 'bind' ) {
         $self->{export_class} = NicToolServer::Export::BIND->new( $self );
     }
-    else {
+    elsif ( $self->{export_format} eq 'tinydns' ) {
         $self->{export_class} = NicToolServer::Export::tinydns->new( $self );
+    }
+    elsif ( $self->{export_format} eq 'powerdns' ) {
+        $self->{export_class} = NicToolServer::Export::PowerDNS->new( $self );
+    }
+    elsif ( $self->{export_format} eq 'maradns' ) {
+        $self->{export_class} = NicToolServer::Export::Maradns->new( $self );
+    }
+    else {
+        die "unknown export format: $self->{export_format}\n";
     };
     return $self->{active_ns};
 }
