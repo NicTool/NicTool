@@ -9,83 +9,35 @@ use base 'NicToolServer::Export::Base';
 sub postflight {
     my $self = shift;
 
-# TODO: 
-
+    # write out a mararc include
+    my $dir = shift || $self->{nte}->get_export_dir or return;
+    my $fh = $self->get_export_file( 'mararc_databases.inc', $dir );
+    $fh->print(qq[ csv2["$_."] = "$_"\n ])
+        foreach(@{$self->{zone_list}});
+    $fh->close;
     return 1;
 }
 
-sub zr_a {
-    my ($self, $r) = @_;
-
-# Ahost.example.com.|7200|10.1.2.3
-    return "A$r->{name}|$r->{ttl}|$r->{address}\n";
+sub _zr_generic {
+    my ($self, $r, $type, @args) = @_;
+    my $args_txt = @args ? ' ' . join(' ', map { $r->{$_} } @args) : '';
+    return "$r->{name} +$r->{ttl} $type$args_txt $r->{address} ~\n";
 }
 
-sub zr_cname {
-    my ($self, $r) = @_;
-
-# Calias.example.org.|3200|realname.example.org.
-    return "C$r->{name}|$r->{ttl}|$r->{address}\n";
-}
-
-sub zr_mx {
-    my ($self, $r) = @_;
-
-# @example.com.|86400|10|mail.example.com.
-    return "\@$r->{name}|$r->{ttl}|$r->{weight}|$r->{address}\n";
-}
-
-sub zr_txt {
-    my ($self, $r) = @_;
-
-# Texample.com.|86400|Example.com: Buy example products online
-    return "T$r->{name}|$r->{ttl}|$r->{address}\n";
-}
-
-sub zr_ns {
-    my ($self, $r) = @_;
-
-# Nexample.com.|86400|ns.example.com.
-    return "N$r->{name}.|$r->{ttl}|$r->{address}\n";
-}
-
-sub zr_ptr {
-    my ($self, $r) = @_;
-
-# P3.2.1.10.in-addr.arpa.|86400|ns.example.com.
-    return "P$r->{name}|$r->{ttl}|$r->{address}\n";
-}
+sub zr_a        { return _zr_generic(@_, 'A')     }
+sub zr_aaaa     { return _zr_generic(@_, 'AAAA')  }
+sub zr_cname    { return _zr_generic(@_, 'CNAME') }
+sub zr_txt      { return _zr_generic(@_, 'TXT')   }
+sub zr_ns       { return _zr_generic(@_, 'NS')    }
+sub zr_ptr      { return _zr_generic(@_, 'PTR')   }
+sub zr_spf      { return _zr_generic(@_, 'SPF')   }
+sub zr_mx       { return _zr_generic(@_, 'MX',  'weight') }
+sub zr_srv      { return _zr_generic(@_, 'SRV', 'priority', 'weight') } # TODO "priority" def'd?
 
 sub zr_soa {
     my ($self, $z) = @_;
-
-# Sexample.net.|86400|example.net.|hostmaster@example.net.|19771108|7200|3600|604800|1800
-    return "S$z->{zone}.|$z->{ttl}|$z->{nsname}|$z->{mailaddr}|$z->{serial}|$z->{refresh}|$z->{retry}|$z->{expire}|$z->{minimum}\n";
-}
-
-sub zr_spf {
-    my ($self, $r) = @_;
-
-# Uexample.com|3600|40|\\010\\001\\002Kitchen sink data
-    return "U$r->{name}|$r->{ttl}|99|$r->{address}\n";
-}
-
-sub zr_srv {
-    my ($self, $r) = @_;
-
-# srvce.prot.name  ttl  class   rr  pri  weight port target
-# I suspect these can be completed by using a method just like in the tinydns
-# export. Needs testing...
-    return "";
-}
-
-sub zr_aaaa {
-    my ($self, $r) = @_;
-
-# TODO:
-# I suspect these can be completed by using a method just like in the tinydns
-# export. Needs testing...
-    return "";
+    # TODO $z->{nsname} or $z->{zone} again?
+    return "$z->{zone}. SOA $z->{nsname}. $z->{mailaddr} $z->{serial}|$z->{refresh} $z->{retry} $z->{expire} $z->{minimum} ~\n";
 }
 
 sub zr_loc {
@@ -94,10 +46,9 @@ sub zr_loc {
     return "";
 }
 
-
 1;
 
 __END__
 
 MaraDNS RR formats defined here:
-http://www.maradns.org/tutorial/man.csv1.html
+http://www.maradns.org/tutorial/man.csv2.html
