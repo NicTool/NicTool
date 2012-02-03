@@ -3,6 +3,7 @@
 # PowerDNS Coprocess backend, based on provided sample
 #
 # (C) 2002 Dajoba, LLC
+# (c) 2012 The Network People, Inc.
 #
 # Portions may be (C) Powerdns BV
 #
@@ -34,9 +35,9 @@ unless ( $line eq "HELO\t1" ) {
 }
 print "OK\tNicTool Backend firing up\n";    # print our banner
 
-my $dbh = DBI->connect( "DBI:mysql:database=nictool_new;host=localhost",
-    'nictool', '^FS*Dh27' )
-    || die "LOG\tUnable to connect to database: $!\nFAIL\n";
+my $dsn = "DBI:mysql:database=nictool;host=localhost";
+my $dbh = DBI->connect( $dsn, 'nictool', 'lootcin205' )
+    or die "LOG\tUnable to connect to database: $!\nFAIL\n";
 
 print "LOG\tPID $$\n" if $log;
 
@@ -119,13 +120,17 @@ sub get_axfr {
     my ( $type, $zoneid ) = @_;
     my $t = '';
 
-    my $sql = "SELECT * from nt_zone,nt_zone_record "
-        . " WHERE nt_zone.nt_zone_id=$zoneid "
-        . " AND nt_zone_record.nt_zone_id=nt_zone.nt_zone_id "
-        . " AND nt_zone.deleted='0' "
-        . " AND nt_zone_record.deleted='0' "
+    my $sql = qq[
+ SELECT z.nt_zone_id, z.zone, t.name AS type, 
+        r.name, r.ttl, r.address, r.weight, r.priority, r.other
+ FROM nt_zone z
+   LEFT JOIN nt_zone_record r ON z.nt_zone_id=r.nt_zone_id 
+   LEFT JOIN resource_record_type t ON r.type_id=t.id
+    WHERE z.nt_zone_id=$zoneid 
+      AND z.deleted=0
+      AND r.deleted=0 
+];
 
-        ;
     print STDERR "\t" . $sql . "\n" if $warnsql;
     my $sth = $dbh->prepare($sql);
     my @result;
@@ -177,28 +182,27 @@ sub get_records {
 
     }
 
-    my $sql = "SELECT * from nt_zone,nt_zone_record where ( " . join(
-        " OR ",
-        map {
-            " nt_zone.zone = "
-                . $dbh->quote( $_->{'zone'} )
-                . " AND nt_zone_record.name = "
-                . $dbh->quote( $_->{'record'} )
-            } @order
-        )
-        . " ) "
-        . " AND nt_zone_record.nt_zone_id=nt_zone.nt_zone_id "
-        . " AND ( nt_zone_record.type = '$qtype' OR nt_zone_record.type ='CNAME' ) "
-        . " AND ( "
-        . join(
-        " OR ",
-        map {"nt_zone.ns$_=$main::nt_nameserver_id"} ( 0 .. 9 )
-        )
-        . " ) "
-        . " AND nt_zone.deleted='0' "
-        . " AND nt_zone_record.deleted='0' "
+    my $sql = "
+ SELECT z.nt_zone_id, z.zone, t.name AS type, 
+        r.name, r.ttl, r.address, r.weight, r.priority, r.other,
+        r.nt_zone_record_id
+   FROM nt_zone z
+   LEFT JOIN nt_zone_record r ON z.nt_zone_id=r.nt_zone_id
+   LEFT JOIN resource_record_type t ON r.type_id=t.id
+   LEFT JOIN nt_zone_nameserver ns ON ns.nt_zone_id=z.nt_zone_id
+     WHERE ( " 
+        . join( " OR ",
+            map {
+                  " z.zone = " . $dbh->quote( $_->{'zone'} )
+                . " AND r.name = " . $dbh->quote( $_->{'record'} )
+                } @order
+            )
+        . " ) 
+         AND ( t.name = '$qtype' OR t.name ='CNAME' ) 
+         AND ns.nt_nameserver_id=$main::nt_nameserver_id
+         AND z.deleted=0
+         AND r.deleted=0 ";
 
-        ;
     print STDERR "\t" . $sql . "\n" if $warnsql;
     my $sth = $dbh->prepare($sql);
     my @result;
@@ -235,14 +239,15 @@ sub get_ns {
     my @order;
     my $t = '';
 
-    my $sql = "SELECT * from nt_zone,nt_nameserver where nt_zone.zone = "
-        . $dbh->quote($qname)
-        . " AND ( "
-        . join( " OR ",
-        map {" nt_nameserver.nt_nameserver_id=nt_zone.ns$_ "} ( 0 .. 9 ) )
-        . " ) "
-        . " AND nt_zone.deleted='0' "
-        . " AND nt_nameserver.deleted='0' ";
+    my $sql = "
+  SELECT z.nt_zone_id,
+         ns.ttl, ns.name, ns.address
+  FROM nt_zone z
+    LEFT JOIN nt_zone_nameserver zns ON z.nt_zone_id=zns.nt_zone_id
+    LEFT JOIN nt_nameserver ns ON zns.nt_nameserver_id=ns.nt_nameserver_id
+    WHERE z.zone = " . $dbh->quote($qname) . "
+      AND z.deleted=0 
+      AND ns.deleted=0 ";
     print STDERR "\t" . $sql . "\n" if $warnsql;
     my $sth = $dbh->prepare($sql);
     my @result;
@@ -271,12 +276,14 @@ sub get_soa {
     my @order;
     my $t = '';
 
-    my $sql
-        = "SELECT nt_nameserver.name,nt_zone.* from nt_zone,nt_nameserver where nt_zone.zone = "
-        . $dbh->quote($qname)
-        . " AND nt_nameserver.nt_nameserver_id=nt_zone.ns0 "
-        . " AND nt_zone.deleted='0' "
-        . " AND nt_nameserver.deleted='0' ";
+    my $sql = "
+SELECT ns.name, z.* 
+  FROM nt_zone z, nt_nameserver ns
+ WHERE z.zone = " . $dbh->quote($qname)
+. "AND ns.nt_nameserver_id=z.ns0 
+   AND z.deleted=0
+   AND ns.deleted=0
+     LIMIT 1";
     print STDERR "\t" . $sql . "\n" if $warnsql;
     my $sth = $dbh->prepare($sql);
     my @result;
@@ -301,7 +308,6 @@ sub get_soa {
     }
 
     return @result;
-
 }
 
 $dbh->disconnect;

@@ -4,10 +4,12 @@ package NicToolServer::Export::BIND;
 use strict;
 use warnings;
 
+use lib 'lib';
+use base 'NicToolServer::Export::Base';
+
 use Cwd;
 use File::Copy;
 use Params::Validate qw/ :all /;
-use base 'NicToolServer::Export::Base';
 
 sub postflight {
     my $self = shift;

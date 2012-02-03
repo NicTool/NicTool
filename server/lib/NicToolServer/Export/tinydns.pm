@@ -1,16 +1,16 @@
 package NicToolServer::Export::tinydns;
 # ABSTRACT: export NicTool DNS data to tinydns (part of djbdns)
 
-#use parent NicToolServer::Export;
-
 use strict;
 use warnings;
+
+use lib 'lib';
+use base 'NicToolServer::Export::Base';
 
 use Cwd;
 use File::Copy;
 use Params::Validate qw/ :all /;
 use Time::TAI64 qw/ unixtai64 /;
-use base 'NicToolServer::Export::Base';
 
 # maybe TODO: append DB ids (but why?)
 
