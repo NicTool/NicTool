@@ -2,8 +2,8 @@ Revision history for NicToolServer
 
 2.14    2012.02.
 
-    * added bin/nt_powerdns.pl
-    * added skeleton classes for export to PowerDNS & MaraDNS
+    * added PowerDNS support.
+    * added MaraDNS support   - Matthias Bethke
     * fixed an undefined variable warning when exporting
     * don't complain about BIND not being successful if not 'copied'
     * enabled LOC records for new installs

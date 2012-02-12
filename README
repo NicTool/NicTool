@@ -1,28 +1,30 @@
 
 NicTool is a free DNS management suite.
 
+NicTool is not a DNS server. NicTool exports DNS data to tinydns, BIND, MaraDNS, or PowerDNS for serving.
+
 Once installed and set up, NicTool takes the headaches out of managing DNS. NicTool includes:
   an attractive web interface for users, admins, and clients
   a rich API for provisioning systems
   validation of all DNS entries before acceptance
   logging of all DNS changes (who did what & when)
   granular permissions, for delegating the management of users, groups, zones, and even zone records to third parties.
+  DNS data is stored in a SQL database, allowing sophisticated ways to query and alter it.
 
-DNS data is stored in a database and is exported by scripts to the DNS server of choice (tinydns, BIND, PowerDNS).
 
-NicTool is the holy grail of DNS management packages. It works great for managing one zone, or a million of them.
+NicTool is the holy grail of DNS management packages. It works great for managing one zone or a million.
 
-NicToolServer is the server component of NicTool. NicToolServer will be connected to a database engine where the authoritative DNS information resides. All changes to DNS (zones, records, nameservers) and DNS managers (users and groups of users) are verified and validated by NicToolServer before insertion into the database.
+NicToolServer is the server component of NicTool. It connects to the database where the authoritative DNS information resides. All changes to DNS (zones, records, nameservers) and DNS managers (users and groups of users) are verified and validated by NicToolServer before insertion into the database.
 
-<geeky>NicToolServer functions as a web service. It provides a SOAP or RPC-XML server for applications to make requests to. The format of requests are defined in the reference API which is documented at http://www.nictool.com/docs/api/. The NicToolClient and NicTool API clients both connect to the NicToolServer via this web service.</geeky>
+<geeky>NicToolServer functions as a web service. It provides a SOAP or RPC-XML server for applications. The format of requests are defined in the reference API which is documented at http://www.nictool.com/docs/api/. The NicTool client and API both connect to NicToolServer via this web service.</geeky>
 
-NicToolClient is a CGI application that provides a web interface to your NicTool DNS data. NicToolClient is a perl CGI app with customizable HTML templates and a CSS style sheet for altering the appearance. What you see in your browser window is NicToolClient.
+NicToolClient is a CGI application. It provides a web interface for managing DNS data. NicToolClient is a CGI application with customizable HTML templates and a CSS style sheet. What you see in your browser window is NicToolClient.
 
-The NicTool api is a robust full featured API for connecting to the NicToolServer and managing DNS data. I (Matt) have written numerous scripts for managing DNS information over the years. The most notable are:
+The NicTool API is a robust full featured API for connecting to the NicToolServer and managing DNS data. I (Matt) have written numerous scripts for managing DNS information over the years. The most notable are:
 
-    Spry/VPSlink (2007-2010): DNS was already stored in NicTool when I arrived. I wrote the new Control Panels that allowed clients to control their VPS (Virtual Private Server). NicTool was one of the dozen APIs that our control panels integrated with. Our clients were provided with authoritative DNS servers to host their domains as well as IPs for their VPS. We provided a customized DNS manager that allowed them to manage the DNS for their domains and the rDNS for their IPs, all via the NicTool API. We also integrated NicTool into the provisioning system. When customers purchased a new IP, we automatically reset the rDNS for them, etc.
+    Spry/VPSlink (2007-2010): We wrote our own Control Panels that allowed clients to manage their VPS (Virtual Private Server). NicTool was one of the dozen APIs that our CP used. We provided a custom DNS manager that allowed them to manage the DNS for their domains and the rDNS for their IPs, all via the NicTool API. We also integrated NicTool into the provisioning system. When customers purchased a new IP, we automatically reset the rDNS for them, etc.
 
-    Layered Tech (2005-2007): DNS was managed in NicTool when I arrived. Management was limited to internal staff and was updated as needed. Which meant, lots of old poorly maintained data. I wrote a few scripts for common tasks like "reset the rDNS for these IPs" or "delegate these blocks of IPs to this NS".
+    Layered Tech (2005-2007): DNS management was limited to internal staff and was updated as needed. Which meant, lots of old poorly maintained data. I wrote a number of scripts for common tasks like "reset the rDNS for these IPs" or "delegate these blocks of IPs to this NS".
 
     Lightrealm/HostPro/Interland/Web.com (2000-2003): When I arrived at Lightrealm in 1999, DNS was managed on a few crusty old Sun servers running BIND 4. The DNS team members used a shared login for access and editing of the zone and named.conf files. We had 120,000 zones and reloading BIND took about 12 hours, so it was done once a day. If someone made an error, it might take 10 hours before BIND encountered it and croaked, extending the time-to-publish of DNS data to days.
-    With the pending merger of Lightrealm, Vservers, and HostPro, our number of zones was going to almost triple. We desparately wanted a better solution. We found NicTool and contracted with Dajoba (the publisher) to extend the features and ended up with a DNS system that elegantly managed 400,000 zones, millions of zone records, and published changes in under a minute. NicTool remained in use at Web.com for many years after I departed, and may still be.
+    With the pending merger of Lightrealm, Vservers, and HostPro, our number of zones was going to almost triple. We desperately wanted a better solution. We found NicTool and contracted with Dajoba (the publisher) to extend the features and ended up with a DNS system that elegantly managed 400,000 zones, millions of zone records, and published changes in under a minute. NicTool remained in use at Web.com for many years after I departed.

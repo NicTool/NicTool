@@ -32,6 +32,7 @@
 . Fix hostmaster.ZONE.TLD entries in nt_zone table.
 ..  UPDATE nt_zone SET mailaddr=CONCAT('hostmaster.',zone,'.') WHERE mailaddr LIKE 'hostmaster.ZONE.TLD%';
 ..  Fix up Zone::new_zone to automatically rewrite those entries before insertion.
+..  Update the javascript to format that value more intelligently
 
 ==== COMPLETED =====
 
