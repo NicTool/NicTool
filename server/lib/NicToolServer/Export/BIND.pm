@@ -91,7 +91,7 @@ sub zr_spf {
 # SPF record support was added in BIND v9.4.0
 
 # name  ttl  class  type  type-specific-data
-    return "$r->{name}	$r->{ttl}	SPF	$r->{address}\n";
+    return "$r->{name}	$r->{ttl}	SPF	\"$r->{address}\"\n";
 }
 
 sub zr_srv {
