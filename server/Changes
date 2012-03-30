@@ -1,8 +1,10 @@
 Revision history for NicToolServer
 
-2.14    2012.02.
+2.14    2012.03.30
 
-    * added PowerDNS support.
+    * added quotes to BIND SPF record
+    * export a named.conf.local file (for inclusion in named.conf)
+    * updated and included PowerDNS backend (server/bin/nt_powerdns.pl)
     * added MaraDNS support   - Matthias Bethke
     * fixed an undefined variable warning when exporting
     * don't complain about BIND not being successful if not 'copied'

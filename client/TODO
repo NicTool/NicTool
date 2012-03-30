@@ -3,6 +3,9 @@
 
 * expose nt_zone_record.timestamp for editing
 
+* Searching in Zones. E.g. for names by type to do a mass update of the ttl.
+  (Jörg Site)
+
 ============  DONE ===============
 
 * expose nt_nameserver.export_serials for editing
