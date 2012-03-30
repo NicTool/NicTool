@@ -3,8 +3,10 @@ package NicToolServer::Export::MaraDNS;
 
 use strict;
 use warnings;
-use Params::Validate qw/ :all /;
+
+use lib 'lib';
 use base 'NicToolServer::Export::Base';
+use Params::Validate qw/ :all /;
 
 sub postflight {
     my $self = shift;
