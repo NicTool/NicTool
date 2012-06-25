@@ -1,5 +1,5 @@
 
-To upgrade NicTool to v2.10, the following steps should be taken:
+To upgrade NicTool to v2.10+, the following steps should be taken:
 
 1. shut down export processes (stop DNS server updates)
      # $local/etc/rc.d/svscan stop
@@ -14,6 +14,8 @@ To upgrade NicTool to v2.10, the following steps should be taken:
 3. install NicTool client & server
      http://www.nictool.com/docs/client/install.shtml
      http://www.nictool.com/docs/server/install.shtml
+
+     Note the default path changes and apply them as shown.
 
 4. run the database migration scripts
      # cd /usr/local/nictool/server
@@ -32,6 +34,7 @@ To upgrade NicTool to v2.10, the following steps should be taken:
     # cd ns1.example.com
     # ln -s ../server/bin/nt_export.pl .
     # ./nt_export.pl -nsid N  (run without a NSID to see a list)
+    # chown -R nictool data-*
 
 After a successful export, this last step will leave behind:
   1. 'run' file
@@ -41,6 +44,10 @@ After a successful export, this last step will leave behind:
     # ./run  (test the run file)
 
 Since this is an upgrade, presumably you already have an existing run file, export users, and ssh keys all set up. If so, this should "just work."
+
+    # vi run
+
+Once you have successfully run the export, edit the run file and select a daemon or cron entry. The run file has instructions within.
 
     # ln -s /usr/local/nictool/ns1.example.com /service/
 
