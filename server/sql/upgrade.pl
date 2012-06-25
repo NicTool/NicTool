@@ -30,7 +30,7 @@ prompt_last_chance();
 my $dbh  = DBIx::Simple->connect( $dsn, $db_user, $db_pass )
             or die DBIx::Simple->error;
 
-my @versions = qw/ 2.00 2.05 2.08 2.09 2.10 2.11 2.14 /;
+my @versions = qw/ 2.00 2.05 2.08 2.09 2.10 2.11 2.14 2.15 /;
 
 foreach my $version ( @versions ) { 
 # first, run a DB test query 
@@ -95,6 +95,22 @@ EO_SOME_DAY
 ;
 };
 
+
+sub _sql_test_2_15 {
+    my $sql = 'SELECT option_value FROM nt_options WHERE option_name="db_version"';
+    my $r;
+    eval { $r = $dbh->query( $sql )->list; };
+    return 1 if ! defined $r;   # query failed
+    return 0 if $r eq '2.14';   # do it!
+    return 1;                   # don't update
+};
+
+sub _sql_2_15 {
+    <<EO_SQL_2_15
+UPDATE nt_zone_record SET address = REPLACE(address,'\\072',':');
+EO_SQL_2_15
+;
+};
 
 sub _sql_test_2_14 {
     my $sql = 'SELECT option_value FROM nt_options WHERE option_name="db_version"';
