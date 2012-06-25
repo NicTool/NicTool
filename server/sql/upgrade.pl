@@ -107,6 +107,7 @@ sub _sql_test_2_15 {
 
 sub _sql_2_15 {
     <<EO_SQL_2_15
+/* submitted by Arthur Gouros, remove legacy \072 chars */
 UPDATE nt_zone_record SET address = REPLACE(address,'\\072',':');
 EO_SQL_2_15
 ;
