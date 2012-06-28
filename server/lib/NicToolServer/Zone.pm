@@ -1109,31 +1109,33 @@ sub valid_label {
         next if $field eq 'name' && $label eq '*';   # wildcards
         next if $field eq 'zone' && $name =~ /(in-addr|ip6).arpa$/; # reverse
 
-        my $err_prefix = "$field domain labels $label_explain must";
+        my $warn_prefix = "when used for host names, $field domain labels $label_explain ";
 
-        # domain labels must not be all numbers: RFC 1912
+        # domain labels can be any binary characters: RFC 2181
+
         if ( $label =~ /^[\d]+$/ ) {
-            $self->error($field, "domain labels must not be all numbers: RFC 1912");
-            $has_error++;
+            # labels used for hostnames must not be all numbers: RFC 1912
+            $self->error($field, "$warn_prefix must not be all numbers: RFC 1912");
+            #$has_error++;  # this is probably, but not certainly an error
         };
 
         # RFC 6376 has a special format for DKIM (thanks Christian Adler)
         next if $type eq 'TXT' && $field eq 'name' && $label eq '_domainkey'; 
 
-        # domain labels always begin with a letter: RFC 1035
-        # Labels must end and begin only with a letter or digit: RFC 1123,1912
+        # Labels used for host names always begin with a letter: RFC 1035
+        # Labels used for host names must end and begin only with a letter or digit: RFC 1123,1912
         my $first_char = substr($label, 0,1);
         if ( $field eq 'name' && $type eq 'SRV' && $first_char eq '_' ) {
             # except for SRV
         }
         elsif ( $first_char =~ /[^a-zA-Z0-9]/ ) {
-            $self->error($field, "$err_prefix begin with a letter or digit: RFC 1912");
-            $has_error++;
+            $self->error($field, "$warn_prefix should not begin with a letter or digit: RFC 1912");
+            #$has_error++;
         };
 
         if ( substr($label, -1,1) !~ /[a-zA-Z0-9]/ ) {
-            $self->error($field, "$err_prefix end with a letter or digit: RFC 1035");
-            $has_error++;
+            $self->error($field, "$warn_prefix should not end with a letter or digit: RFC 1035");
+            #$has_error++;
         };
         last if $has_error;
     };
