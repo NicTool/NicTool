@@ -13,19 +13,19 @@
 
 . Support BIND views
 
-. If a user does not have delete permission for a zone/zone record, they 
+. If a user does not have delete permission for a zone/zone record, they
     should not have restore permissions
     https://www.tnpi.net/support/forums/index.php/topic,797.0.html
 
 . Fix bug: login returns nt_perm_id and perm_name in user hash, and should not.
 
-. Support other databases: 
-..  remove all ENUM columns from database
+. Support other database engines:
+..  remove all MySQL specific ENUM columns
 
 . Support for NAPTR records: http://tools.ietf.org/html/rfc3403
 
-. SPF records: when creating or editing a SPF record, check for an TXT record. 
-    If TXT doesn't exist, create it. If exists, update it with SPF record. 
+. SPF records: when creating or editing a SPF record, check for an TXT record.
+    If TXT doesn't exist, create it. If exists, update it with SPF record.
     RFC 4408 ("recommends to always provide a TXT based SPF RR...and duplicate
     the information")
 
@@ -48,12 +48,12 @@
 
 . Crypt the user passwords (requires schema changes)
 
-. Make sure password length is not longer than SQL table allows. otherwise, 
-   matching password will get truncated in the table and won't match upon 
+. Make sure password length is not longer than SQL table allows. otherwise,
+   matching password will get truncated in the table and won't match upon
    auth attempts. DONE - mps 10/13/2007
 
 . Update documentation for API to note limit of 100 record max.
-   (https://www.tnpi.net/support/forums/index.php/topic,800.0.html) 
+   (https://www.tnpi.net/support/forums/index.php/topic,800.0.html)
    - DONE - mps 10/13/2007
 
 . Fix Sanity checks which have changed with API/Permissions changes
@@ -77,7 +77,7 @@ failures.
         - add nt_perm tables
         - add entries in nt_perm for all groups
         - prompt install person for permissions for non-root groups?
-        
+
 . Complete test scripts to test new features, verify old things work
 correctly:
         6a. make sure Client Framework code is good/is working
@@ -103,7 +103,7 @@ finishing NicTool
 - sanity when moving objects
 - security when moving objects
 - tweaks for gracefully handling reverse DNS
-- nt_zone_nameserver_log 
+- nt_zone_nameserver_log
 - import tools
 	- BINDParse, DJBParse perl modules
 	- web interface tools
