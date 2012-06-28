@@ -1095,6 +1095,8 @@ sub valid_label {
 
     my $label_explain = "(the bits of a name between the dots)";
     foreach my $label ( split(/\./, $name) ) {
+
+        # domain labels can be any binary characters: RFC 2181
         if ( length $label > 63 ) {
             $self->error($field, "Max length of a $field label $label_explain is 63 octets (characters): RFC 2181");
             $has_error++;
@@ -1104,23 +1106,42 @@ sub valid_label {
             $self->error($field, "Minimum length of a $field label $label_explain is 1 octet (character): RFC 2181");
             $has_error++;
         };
+    };
 
-        # exceptions to the first/last character rules
-        next if $field eq 'name' && $label eq '*';   # wildcards
-        next if $field eq 'zone' && $name =~ /(in-addr|ip6).arpa$/; # reverse
+    return $has_error == 0 ? 1 : 0;
+};
 
-        my $warn_prefix = "when used for host names, $field domain labels $label_explain ";
+sub valid_hostname {
+    my $self = shift;
+    my ( $field, $name, $type ) = @_;
+
+    $self->error($field, "missing hostname") if ! defined $name;
+
+    # don't repeat the valid_label tests
+
+    my $has_error = my $depth = 0;
+
+    my $label_explain = "(the bits of a name between the dots)";
+    foreach my $label ( split(/\./, $name) ) {
+
+        $depth++;
 
         # domain labels can be any binary characters: RFC 2181
+        # but hosts and mail server names have restrictions
+
+        # exceptions to the first/last character rules
+        next if $field eq 'name' && $depth == 1 && $label eq '*';   # wildcards
+        next if $field eq 'zone' && $name =~ /(in-addr|ip6).arpa$/; # reverse
+
+        my $warn_prefix = "when used for host names, domain labels $label_explain ";
 
         if ( $label =~ /^[\d]+$/ ) {
-            # labels used for hostnames must not be all numbers: RFC 1912
-            $self->error($field, "$warn_prefix must not be all numbers: RFC 1912");
-            #$has_error++;  # this is probably, but not certainly an error
+            $self->error( $field, "$warn_prefix must not be all numbers: RFC 1912");
+            $has_error++;
         };
 
-        # RFC 6376 has a special format for DKIM (thanks Christian Adler)
-        next if $type eq 'TXT' && $field eq 'name' && $label eq '_domainkey'; 
+        # RFC 6376 adds a special format for DKIM (thanks Christian Adler)
+        next if $type eq 'TXT' && $field eq 'name' && $label eq '_domainkey';
 
         # Labels used for host names always begin with a letter: RFC 1035
         # Labels used for host names must end and begin only with a letter or digit: RFC 1123,1912
@@ -1129,15 +1150,14 @@ sub valid_label {
             # except for SRV
         }
         elsif ( $first_char =~ /[^a-zA-Z0-9]/ ) {
-            $self->error($field, "$warn_prefix should not begin with a letter or digit: RFC 1912");
-            #$has_error++;
+            $self->error( $field, "$warn_prefix must begin with a letter or digit: RFC 1912");
+            $has_error++;
         };
 
         if ( substr($label, -1,1) !~ /[a-zA-Z0-9]/ ) {
-            $self->error($field, "$warn_prefix should not end with a letter or digit: RFC 1035");
-            #$has_error++;
+            $self->error( $field, "$warn_prefix must end with a letter or digit: RFC 1035");
+            $has_error++;
         };
-        last if $has_error;
     };
 
     return $has_error == 0 ? 1 : 0;
