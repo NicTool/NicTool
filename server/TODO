@@ -1,5 +1,9 @@
 ----NEW----
 
+. Exports: make sure another export for the same NSID is not running. This can
+          happen on a NS with extremely large (many hundreds of thousands) record
+          sets and very short export intervals.
+
 . RFC 3490, IDNA (International Domain Names in Applications)
 ..  RFC 5890 - 5894 (IDNA 2008)
 
