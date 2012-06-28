@@ -20,12 +20,6 @@ sub new_zone {
 
     $data->{zone} =~ s/\.$//;  # remove any trailing dot
 
-    if ( $data->{zone} !~ /.+\..+$/ ) {
-        $self->error( 'zone', 
-            "Zone must be a valid domain name -- something.something"
-        );
-    }
-
     if ( $data->{zone} =~ /(in-addr|ip6).arpa$/ ) {
 # TODO - any in-addr.arpa reverse DNS zone checks go here.
 # warn users if they try to make a PTR that points to an IP address rather
