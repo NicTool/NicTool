@@ -145,7 +145,7 @@ sub export_db {
     my $fh = $self->get_export_file() or return;
 
 # the while loop fetches a row at at time. Grabbing them all in one pass is
-# no faster. It takes 3 seconds to fetch 150,000 zones either way. The while 
+# no faster. It takes 3 seconds to fetch 150,000 zones either way. The while
 # loop uses 150MB less RAM.
     my @sql = $self->{nte}->get_ns_zones(query_result=>1);
     my $result = $self->{nte}{dbix_r}->query( @sql );
@@ -156,12 +156,12 @@ sub export_db {
 # print SOA & NS records
         print $fh $self->{nte}->zr_soa( $z );
         print $fh $self->{nte}->zr_ns( $z );
-    } 
+    }
     $result->finish;
 
 # print all the rest
     @sql = $self->{nte}->get_ns_records(query_result=>1);
-    $result = $self->{nte}{dbix_r}->query( @sql ) 
+    $result = $self->{nte}{dbix_r}->query( @sql )
         or die $self->{nte}{dbix_r}->error;
     $self->{nte}->elog( $result->rows . " records" );
     while ( my $r = $result->hash ) {
@@ -285,7 +285,7 @@ sub zr_spf {
     return ":"                                    # special char (none = generic)
         . $self->qualify( $r->{name} )            # fqdn
         . ':99'                                   # n
-        . ':' . $self->characterCount($r->{address}) 
+        . ':' . $self->characterCount($r->{address})
               . $self->escape( $r->{address} )    # rdata
         . ':' . $r->{ttl}                         # ttl
         . ':' . $r->{timestamp}                   # timestamp
@@ -424,6 +424,35 @@ sub zr_loc {
         . ':' . $r->{timestamp}                   # timestamp
         . ':' . $r->{location}                    # lo
         . "\n";
+}
+
+sub zr_naptr {
+    my $self = shift;
+    my $r = shift or die;
+
+# from djbdnsRecordBuilder
+# :example.com:35:\000\012\000\144\001u\007E2U+sip\036!^.*$!sip\072info@example.com.br!\000:300
+#                 |-order-|-pref--|flag|-services-|---------------regexp---------------|re-|
+
+    my $result = ':'                           # special char (none = generic)
+        . $self->qualify( $r->{name} )         # fqdn
+        . ":35:"                               # IANA RR ID
+        . $self->escapeNumber( $r->{'order'} ) # rdata
+        . $self->escapeNumber( $r->{'preference'} )
+        . $self->characterCount( $r->{'flag'} )     . $r->{'flag'}
+        . $self->characterCount( $r->{'services'} ) . $self->escape( $r->{'services'} )
+        . $self->characterCount( $r->{'regexp'} )   . $self->escape( $r->{'regexp'} );
+
+    if ( $r->{'replacement'} ne '' ) {
+        $result .= $self->characterCount( $r->{'replacement'} ) . $self->escape( $r->{'replacement'} );
+    };
+
+    $result .= "\\000:";
+    $result .= ':' . $r->{ttl};                # ttl
+    $result .= ':' . $r->{timestamp};          # timestamp
+    $result .= ':' . $r->{location};           # lo
+
+    return $result . "\n";
 }
 
 sub qualify {
