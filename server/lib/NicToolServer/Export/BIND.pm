@@ -34,42 +34,43 @@ sub zr_a {
     my ($self, $r) = @_;
 
 # name  ttl  class  type  type-specific-data
-    return "$r->{name}	$r->{ttl}	A	$r->{address}\n";
+    return "$r->{name}	$r->{ttl}	IN  A	$r->{address}\n";
 }
 
 sub zr_cname {
     my ($self, $r) = @_;
 
 # name  ttl  class   rr     canonical name
-    return "$r->{name}	$r->{ttl}	CNAME	$r->{address}\n";
+    return "$r->{name}	$r->{ttl}	IN  CNAME	$r->{address}\n";
 }
 
 sub zr_mx {
     my ($self, $r) = @_;
 
 #name           ttl  class   rr  pref name
-    return "$r->{name}	$r->{ttl}	MX	$r->{weight}	$r->{address}\n";
+    return "$r->{name}	$r->{ttl}	IN  MX	$r->{weight}	$r->{address}\n";
 }
 
 sub zr_txt {
     my ($self, $r) = @_;
 
 # name  ttl  class   rr     text
-    return "$r->{name}	$r->{ttl}	TXT	\"$r->{address}\"\n";
+    return "$r->{name}	$r->{ttl}	IN  TXT	\"$r->{address}\"\n";
 }
 
 sub zr_ns {
     my ($self, $r) = @_;
 
+    my $name = $self->qualify( $r->{name} );
 # name  ttl  class  type  type-specific-data
-    return "$r->{name}.	$r->{ttl}	NS	$r->{address}\n";
+    return "$name.	$r->{ttl}	IN  NS	$r->{address}\n";
 }
 
 sub zr_ptr {
     my ($self, $r) = @_;
 
 # name  ttl  class  type  type-specific-data
-    return "$r->{name}	$r->{ttl}	PTR	$r->{address}\n";
+    return "$r->{name}	$r->{ttl}	IN  PTR	$r->{address}\n";
 }
 
 sub zr_soa {
@@ -91,7 +92,7 @@ sub zr_spf {
 # SPF record support was added in BIND v9.4.0
 
 # name  ttl  class  type  type-specific-data
-    return "$r->{name}	$r->{ttl}	SPF	\"$r->{address}\"\n";
+    return "$r->{name}	$r->{ttl}	IN  SPF	\"$r->{address}\"\n";
 }
 
 sub zr_srv {
@@ -102,19 +103,19 @@ sub zr_srv {
     my $port     = $self->{nte}->is_ip_port( $r->{other} );
 
 # srvce.prot.name  ttl  class   rr  pri  weight port target
-    return "$r->{name}	$r->{ttl}	SRV	$priority	$weight	$port	$r->{address}\n";
+    return "$r->{name}	$r->{ttl}	IN  SRV	$priority	$weight	$port	$r->{address}\n";
 }
 
 sub zr_aaaa {
     my ($self, $r) = @_;
 
 # name  ttl  class  type  type-specific-data
-    return "$r->{name}	$r->{ttl}	AAAA	$r->{address}\n";
+    return "$r->{name}	$r->{ttl}	IN  AAAA	$r->{address}\n";
 }
 
 sub zr_loc {
     my ($self, $r) = @_;
-    return "$r->{name}	$r->{ttl}	LOC	$r->{address}\n";
+    return "$r->{name}	$r->{ttl}	IN  LOC	$r->{address}\n";
 }
 
 
