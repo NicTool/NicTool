@@ -18,8 +18,7 @@ sub postflight {
     my $dir = shift || $self->{nte}->get_export_dir or return;
     my $fh = $self->get_export_file( 'named.conf.nictool', $dir );
     foreach my $zone ( @{$self->{zone_list}} ) {
-        print $fh qq[
-zone "$zone" { type master; file "$dir/$zone"; }; ];
+        print $fh qq[zone "$zone"\t{ type master; file "$dir/$zone"; };\n];
     };
     close $fh;
 
