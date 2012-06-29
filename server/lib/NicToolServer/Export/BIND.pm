@@ -117,6 +117,20 @@ sub zr_loc {
     return "$r->{name}	$r->{ttl}	IN  LOC	$r->{address}\n";
 }
 
+sub zr_naptr {
+    my ($self, $r) = @_;
+
+# http://www.ietf.org/rfc/rfc2915.txt
+
+    my $order = $self->{nte}->is_ip_port( $r->{weight}   );
+    my $pref  = $self->{nte}->is_ip_port( $r->{priority} );
+    my ($flags, $service, $regexp, $replace) = split '__', $r->{address};
+    $regexp =~ s/\\/\\\\/g;  # escape any \ characters
+
+# Domain TTL Class Type Order Preference Flags Service Regexp Replacement
+    return qq[$r->{name} $r->{ttl}   IN  NAPTR   $order  $pref   "$flags"  "$service"    "$regexp" $replace\n];
+}
+
 
 1;
 
