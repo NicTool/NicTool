@@ -58,13 +58,25 @@ sub export_db {
 
         my $records = $self->get_records( $z->{nt_zone_id} );
         foreach my $r ( @$records ) {
-            my $type   = lc( $r->{type} );
-            my $method = "zr_${type}";
+            my $method = 'zr_' . lc $r->{type};
             $r->{location}  ||= '';
             $fh->print($self->$method($r));
         }
         close $fh;
     }   
+}
+
+sub qualify {
+    my $self = shift;
+    my $record = shift;
+    return $record if '.' eq substr($record,-1,1);  # record ends in .
+    my $zone = shift || $self->{nte}{zone_name} or return $record;
+
+# substr is measurably faster than the regexp
+#return $record if $record =~ /$zone$/;   # ends in zone, just no .
+    return $record if $zone eq substr($record,(-1*length($zone)),length($zone));
+
+    return "$record.$zone"       # append zone name
 }
 
 1;

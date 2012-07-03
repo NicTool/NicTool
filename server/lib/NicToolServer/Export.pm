@@ -691,9 +691,4 @@ sub qualify {
     return "$record.$zone"                 # append missing zone name
 }
 
-
 1;
-
-__END__
-
-

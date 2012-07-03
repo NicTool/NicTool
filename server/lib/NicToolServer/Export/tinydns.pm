@@ -166,10 +166,9 @@ sub export_db {
     $self->{nte}->elog( $result->rows . " records" );
     while ( my $r = $result->hash ) {
         $self->{nte}{zone_name} = $r->{zone_name};
-        my $type   = lc( $r->{type} );
         $r->{location}  ||= '';
         $r->{timestamp} = $self->format_timestamp($r->{timestamp}),
-        my $method = "zr_${type}";
+        my $method = 'zr_' . lc $r->{type};
         print $fh $self->$method( $r );
     };
     $result->finish;
@@ -282,7 +281,7 @@ sub zr_spf {
     my $r = shift or die;
 
 # assistance from djbdnsRecordBuilder
-    return ":"                                    # special char (none = generic)
+    return ':'                                    # special char (none = generic)
         . $self->qualify( $r->{name} )            # fqdn
         . ':99'                                   # n
         . ':' . $self->characterCount($r->{address})
@@ -366,24 +365,24 @@ sub zr_loc {
     my ($alt, $size, $horiz_pre, $vert_pre, $latitude, $longitude, $altitude);
     if ($string &&
             $string =~ /^ (\d+) \s+     # deg lat
-            ((\d+) \s+)?                # min lat
-            (([\d.]+) \s+)?             # sec lat
+            (?:(\d+) \s+)?              # min lat
+            (?:([\d.]+) \s+)?           # sec lat
             (N|S) \s+                   # hem lat
             (\d+) \s+                   # deg lon
-            ((\d+) \s+)?                # min lon
-            (([\d.]+) \s+)?             # sec lon
+            (?:(\d+) \s+)?              # min lon
+            (?:([\d.]+) \s+)?           # sec lon
             (E|W) \s+                   # hem lon
             (-?[\d.]+) m?               # altitude
-            (\s+ ([\d.]+) m?)?          # size
-            (\s+ ([\d.]+) m?)?          # horiz precision
-            (\s+ ([\d.]+) m?)?          # vert precision
+            (?:\s+ ([\d.]+) m?)?        # size
+            (?:\s+ ([\d.]+) m?)?        # horiz precision
+            (?:\s+ ([\d.]+) m?)?        # vert precision
             /ix) {
 
         my $version = 0;
 
-        my ($latdeg, $latmin, $latsec, $lathem) = ($1, $3, $5, $6);
-        my ($londeg, $lonmin, $lonsec, $lonhem) = ($7, $9, $11, $12);
-           ($alt, $size, $horiz_pre, $vert_pre) = ($13, $15, $17, $19);
+        my ($latdeg, $latmin, $latsec, $lathem) = ($1, $2, $3, $4);
+        my ($londeg, $lonmin, $lonsec, $lonhem) = ($5, $6, $7, $8);
+           ($alt, $size, $horiz_pre, $vert_pre) = ($9, $10, $11, $12);
 
         $latmin    ||= 0;
         $latsec    ||= 0;
@@ -416,7 +415,7 @@ sub zr_loc {
                          precsize_valton($vert_pre))
            . pack('N3', $latitude, $longitude, $altitude);
 
-    return ":"                                    # special char (none = generic)
+    return ':'                                    # special char (none = generic)
         . $self->qualify( $r->{name} )            # fqdn
         . ':29'                                   # n
         . ':' . $rdata                            # rdata
@@ -434,17 +433,19 @@ sub zr_naptr {
 # :example.com:35:\000\012\000\144\001u\007E2U+sip\036!^.*$!sip\072info@example.com.br!\000:300
 #                 |-order-|-pref--|flag|-services-|---------------regexp---------------|re-|
 
+    my ($flag, $services, $regexp, $replace) = split '__', $r->{address};
+
     my $result = ':'                           # special char (none = generic)
         . $self->qualify( $r->{name} )         # fqdn
         . ":35:"                               # IANA RR ID
-        . $self->escapeNumber( $r->{'order'} ) # rdata
-        . $self->escapeNumber( $r->{'preference'} )
-        . $self->characterCount( $r->{'flag'} )     . $r->{'flag'}
-        . $self->characterCount( $r->{'services'} ) . $self->escape( $r->{'services'} )
-        . $self->characterCount( $r->{'regexp'} )   . $self->escape( $r->{'regexp'} );
+        . $self->escapeNumber( $r->{'weight'} ) # order
+        . $self->escapeNumber( $r->{'priority'} )  # pref
+        . $self->characterCount( $flag )     . $flag
+        . $self->characterCount( $services ) . $self->escape( $services )
+        . $self->characterCount( $regexp )   . $self->escape( $regexp );
 
-    if ( $r->{'replacement'} ne '' ) {
-        $result .= $self->characterCount( $r->{'replacement'} ) . $self->escape( $r->{'replacement'} );
+    if ( $replace ne '' ) {
+        $result .= $self->characterCount( $replace ) . $self->escape( $replace );
     };
 
     $result .= "\\000:";

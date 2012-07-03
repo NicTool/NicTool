@@ -278,12 +278,14 @@ sub get_soa {
 
     my $sql = "
 SELECT ns.name, z.* 
-  FROM nt_zone z, nt_nameserver ns
+  FROM nt_zone z
+LEFT JOIN nt_zone_nameserver zns ON z.nt_zone_id=zns.nt_zone_id
+LEFT JOIN nt_nameserver ns ON zns.`nt_nameserver_id`=ns.`nt_nameserver_id`
  WHERE z.zone = " . $dbh->quote($qname)
-. "AND ns.nt_nameserver_id=z.ns0 
-   AND z.deleted=0
+." AND z.deleted=0
    AND ns.deleted=0
-     LIMIT 1";
+ LIMIT 1";
+
     print STDERR "\t" . $sql . "\n" if $warnsql;
     my $sth = $dbh->prepare($sql);
     my @result;

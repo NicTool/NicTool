@@ -488,6 +488,37 @@ sub _valid_ptr {
     $self->_valid_address_chars( $data, $zone_text );
 };
 
+sub _valid_naptr {
+    my ( $self, $data, $zone_text ) = @_;
+
+    # Preference and Order must be 16 bit integers
+    my %values_to_check = (
+        'weight'   => 'Order',
+        'priority' => 'Preference',
+    );
+
+    foreach my $check ( keys %values_to_check ) {
+        if ( !$self->valid_16bit_int( $check, $data->{$check} ) ) {
+            $self->error( $check,
+                "$values_to_check{$check} is required to be a 16bit integer, see RFC 2782"
+            );
+        }
+    }
+
+# TODO: the following fields should be validated:
+# http://www.ietf.org/rfc/rfc2915.txt
+
+# Flags Service Regexp Replacement
+# IN NAPTR 100  10  ""   ""  "/urn:cid:.+@([^\.]+\.)(.*)$/\2/i"    .
+# IN NAPTR 100  50  "s"  "z3950+I2L+I2C"     ""  _z3950._tcp.gatech.edu.
+# IN NAPTR 100  50  "s"  "rcds+I2C"          ""  _rcds._udp.gatech.edu.
+# IN NAPTR 100  50  "s"  "http+I2L+I2C+I2R"  ""  _http._tcp.gatech.edu.
+
+
+# ADDRESS
+    $self->_is_fully_qualified( $data, $zone_text );
+}
+
 sub get_invalid_chars {
     my ( $self, $type, $field, $zone_text ) = @_;
 
