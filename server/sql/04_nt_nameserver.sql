@@ -11,7 +11,7 @@ CREATE TABLE nt_nameserver(
     address             VARCHAR(127) NOT NULL,
     logdir              VARCHAR(255),
     datadir             VARCHAR(255),
-    export_format       VARCHAR(12) NOT NULL;
+    export_format       VARCHAR(12) NOT NULL,
     export_interval     SMALLINT UNSIGNED,
     export_serials      tinyint(1) UNSIGNED NOT NULL DEFAULT '1',
     export_status       varchar(255) NULL DEFAULT NULL,
@@ -37,7 +37,7 @@ CREATE TABLE nt_nameserver_log(
     address             VARCHAR(127),
     logdir              VARCHAR(255),
     datadir             VARCHAR(255),
-    export_format       VARCHAR(12) NOT NULL;
+    export_format       VARCHAR(12) NOT NULL,
     export_interval     SMALLINT UNSIGNED,
     export_serials      tinyint(1) UNSIGNED NOT NULL DEFAULT '1'
 ) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
