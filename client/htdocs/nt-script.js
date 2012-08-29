@@ -62,6 +62,11 @@ function showFieldsForRRtype(rrType) {
         showTableRow('tr_priority');
         showTableRow('tr_other');
         break;
+    case 'NAPTR':
+        // alert("rrType selected is NAPTR" + rrType );
+        showTableRow('tr_weight');
+        showTableRow('tr_priority');
+        break;
     }
 }
 
