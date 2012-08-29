@@ -483,7 +483,7 @@ sub get_zone_records {
         type => {
             timefield   => 0,
             quicksearch => 0,
-            field       => 'nt_zone_record.type'
+            field       => 'rrt.name'
         },
         address => {
             timefield   => 0,
@@ -514,17 +514,22 @@ sub get_zone_records {
     my $del = $self->get_param_meta( "nt_zone_id", "delegate" );
     if ( $del && $del->{pseudo} ) {
         $sql
-            = "SELECT COUNT(*) AS count FROM nt_zone_record "
-            . "LEFT JOIN nt_delegate ON (nt_delegate.nt_group_id=$group_id AND nt_delegate.nt_object_id=nt_zone_record.nt_zone_record_id AND nt_delegate.nt_object_type='ZONERECORD' ) "
-            . "WHERE nt_zone_record.nt_zone_id = $data->{nt_zone_id} "
-            . "AND nt_zone_record.deleted=0 "
-            . "AND nt_delegate.deleted=0 "
+            = "SELECT COUNT(*) AS count
+ FROM nt_zone_record
+   LEFT JOIN nt_delegate ON (nt_delegate.nt_group_id=$group_id AND nt_delegate.nt_object_id=nt_zone_record.nt_zone_record_id AND nt_delegate.nt_object_type='ZONERECORD' )
+   LEFT JOIN resource_record_type rrt ON nt_zone_record.type_id=rrt.id
+     WHERE nt_zone_record.nt_zone_id = $data->{nt_zone_id}
+       AND nt_zone_record.deleted=0
+       AND nt_delegate.deleted=0 "
             . (
             @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
     }
     else {
-        $sql = "SELECT COUNT(*) AS count FROM nt_zone_record 
-            WHERE nt_zone_record.deleted=0 AND nt_zone_record.nt_zone_id = $data->{nt_zone_id}"
+        $sql = "SELECT COUNT(*) AS count
+        FROM nt_zone_record
+        LEFT JOIN resource_record_type rrt ON nt_zone_record.type_id=rrt.id
+          WHERE nt_zone_record.deleted=0
+            AND nt_zone_record.nt_zone_id = $data->{nt_zone_id}"
             . (
             @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
     }
@@ -692,7 +697,7 @@ sub get_group_zone_query_log {
         nt_nameserver.name AS nameserver
         FROM nt_nameserver_qlog, nt_zone, nt_nameserver
         WHERE nt_zone.nt_zone_id IN(" . join( ',', @zone_ids ) . ")
-          AND nt_nameserver_qlog.nt_zone_id = nt_zone.nt_zone_id 
+          AND nt_nameserver_qlog.nt_zone_id = nt_zone.nt_zone_id
           AND nt_nameserver_qlog.nt_nameserver_id = nt_nameserver.nt_nameserver_id ";
     $sql .= 'AND (' . join( ' ', @$conditions ) . ') ' if @$conditions;
     $sql .= "ORDER BY " . join( ', ', @$sortby ) . " " if (@$sortby);
