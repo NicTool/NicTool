@@ -18,7 +18,7 @@ sub postflight {
     my $dir = shift || $self->{nte}->get_export_dir or return;
     my $fh = $self->get_export_file( 'named.conf.nictool', $dir );
     foreach my $zone ( @{$self->{zone_list}} ) {
-        print $fh qq[zone "$zone"\t{ type master; file "$dir/$zone"; };\n];
+        print $fh qq[zone "$zone"\t IN { type master; file "$dir/$zone"; };\n];
     };
     close $fh;
 
@@ -61,13 +61,10 @@ sub zr_ns {
     my ($self, $r) = @_;
 
     my $name = $self->qualify( $r->{name} );
+    $name .= '.' if '.' ne substr($name, -1, 1);
+
 # name  ttl  class  type  type-specific-data
-    if ( $r->{name} eq $self->{nte}{zone_name} ) { # record is fully qualified
-        return "$name.  $r->{ttl}   IN  NS  $r->{address}\n";
-    }
-    else {
-        return "$name   $r->{ttl}   IN  NS  $r->{address}\n";
-    }
+    return "$name	$r->{ttl}	IN	NS	$r->{address}\n";
 }
 
 sub zr_ptr {
@@ -81,7 +78,10 @@ sub zr_soa {
     my ($self, $z) = @_;
 
 # name        ttl class rr    name-server email-addr  (sn ref ret ex min)
-    return "$z->{zone}.		$z->{ttl}	IN	SOA	$z->{nsname}    $z->{mailaddr} (
+    return "
+\$TTL    $z->{ttl};
+\$ORIGIN $z->{zone}.
+$z->{zone}.		IN	SOA	$z->{nsname}    $z->{mailaddr} (
 					$z->{serial}    ; serial
 					$z->{refresh}   ; refresh
 					$z->{retry}     ; retry
