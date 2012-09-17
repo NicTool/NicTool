@@ -62,7 +62,12 @@ sub zr_ns {
 
     my $name = $self->qualify( $r->{name} );
 # name  ttl  class  type  type-specific-data
-    return "$name.	$r->{ttl}	IN  NS	$r->{address}\n";
+    if ( $r->{name} eq $self->{nte}{zone_name} ) { # record is fully qualified
+        return "$name.  $r->{ttl}   IN  NS  $r->{address}\n";
+    }
+    else {
+        return "$name   $r->{ttl}   IN  NS  $r->{address}\n";
+    }
 }
 
 sub zr_ptr {
@@ -124,7 +129,7 @@ sub zr_naptr {
 
     my $order = $self->{nte}->is_ip_port( $r->{weight}   );
     my $pref  = $self->{nte}->is_ip_port( $r->{priority} );
-    my ($flags, $service, $regexp, $replace) = split '__', $r->{address};
+    my ($flags, $service, $regexp, $replace) = split /__/, $r->{address};
     $regexp =~ s/\\/\\\\/g;  # escape any \ characters
 
 # Domain TTL Class Type Order Preference Flags Service Regexp Replacement

@@ -69,12 +69,15 @@ sub export_db {
 sub qualify {
     my $self = shift;
     my $record = shift;
-    return $record if '.' eq substr($record,-1,1);  # record ends in .
+    return $record if '.' eq substr($record,-1,1);  # record is already FQDN
     my $zone = shift || $self->{nte}{zone_name} or return $record;
 
 # substr is measurably faster than the regexp
 #return $record if $record =~ /$zone$/;   # ends in zone, just no .
-    return $record if $zone eq substr($record,(-1*length($zone)),length($zone));
+    my $chars = length($zone);
+    if ( $zone eq substr( $record, (-1 * $chars), $chars ) ) {
+        return $record;    # name included zone name
+    };
 
     return "$record.$zone"       # append zone name
 }
