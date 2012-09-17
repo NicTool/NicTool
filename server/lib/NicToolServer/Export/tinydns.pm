@@ -433,7 +433,7 @@ sub zr_naptr {
 # :example.com:35:\000\012\000\144\001u\007E2U+sip\036!^.*$!sip\072info@example.com.br!\000:300
 #                 |-order-|-pref--|flag|-services-|---------------regexp---------------|re-|
 
-    my ($flag, $services, $regexp, $replace) = split '__', $r->{address};
+    my ($flag, $services, $regexp, $replace) = split /__/, $r->{address};
 
     my $result = ':'                           # special char (none = generic)
         . $self->qualify( $r->{name} )         # fqdn

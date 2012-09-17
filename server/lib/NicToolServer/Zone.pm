@@ -744,7 +744,7 @@ sub new_zone {
 
     $self->log_zone( $data, 'added', $prev_data, $default_serial );
 
-    foreach my $ns ( split ',', $data->{nameservers} ) {
+    foreach my $ns ( split /,/, $data->{nameservers} ) {
         $self->exec_query(
             "INSERT INTO nt_zone_nameserver SET nt_zone_id=?, nt_nameserver_id=?",
             [ $insertid, $ns ],
