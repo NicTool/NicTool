@@ -62,7 +62,12 @@ sub zr_ns {
 
     my $name = $self->qualify( $r->{name} );
 # name  ttl  class  type  type-specific-data
-    return "$name.	$r->{ttl}	IN  NS	$r->{address}\n";
+    if ( $r->{name} eq $self->{nte}{zone_name} ) { # record is fully qualified
+        return "$name.  $r->{ttl}   IN  NS  $r->{address}\n";
+    }
+    else {
+        return "$name   $r->{ttl}   IN  NS  $r->{address}\n";
+    }
 }
 
 sub zr_ptr {
