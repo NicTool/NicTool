@@ -10,7 +10,7 @@ use Data::Dumper;
 use English;
 use Getopt::Long;
 use Params::Validate qw/:all/;
-#$Data::Dumper::Sortkeys=1;
+$Data::Dumper::Sortkeys=1;
 
 use NicToolServer::Import::tinydns;
 
@@ -35,7 +35,7 @@ my $fn = $nti->get_import_file( $filename )
     or die "unable to find import file. Specify with -file option";
 print "file: $filename, $fn\n";
 
-my $nt = $nti->nt_connect($nt_host, $nt_port, $nt_user, $nt_port);
+my $nt = $nti->nt_connect($nt_host, $nt_port, $nt_user, $nt_pass);
 
 $nti->import_records();
 
