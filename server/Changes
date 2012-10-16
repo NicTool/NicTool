@@ -1,5 +1,16 @@
 Revision history for NicToolServer
 
+2.15    2012.10.16
+
+    * new server/bin/nt_import.pl, imports from tinydns data files
+    * updates for BIND exports (see git commits)
+    * fix for finding zone records with Type specified
+    * more support for NAPTR records
+    * fixed copy/paste errors in SQL
+    * powerdns export fix for get_soa SQL query
+    * optimized tinydns exports for speed
+    * allow zone names with only one label (TLDs)
+
 2.14    2012.03.30
 
     * added quotes to BIND SPF record

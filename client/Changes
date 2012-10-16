@@ -1,4 +1,8 @@
 
+2.15    2012.10.31
+
+  * added support for NAPTR records
+
 2.13    2012.01.19
 
   * removed images from left navigation menu
