@@ -1731,107 +1731,97 @@ sub throw_sanity_error {
 sub format_search_conditions {
     my ( $self, $data, $field_map ) = @_;
 
+    my @conditions = $self->get_advanced_search_conditions( $data, $field_map );
+    push @conditions, $self->get_quick_search_conditions( $data, $field_map );
+    return \@conditions;
+};
+
+sub get_quick_search_conditions {
+    my ($self, $data, $field_map ) = @_;
+
+    return if ! $data->{quick_search};
+
     my $dbh = $self->{dbh};
+    my $value = $dbh->quote( $data->{search_value} );
 
     my @conditions;
-    if ( $data->{Search} ) {
-        for my $i ( 1 .. 5 ) {
-            next unless $data->{ $i . '_field' };
-            $data->{ $i . '_option' } = 'CONTAINS' if ! exists $data->{ $i . '_option' };
-            my $cond = $i == 1 ? '' : uc( $data->{ $i . '_inclusive' } ) . ' ';
-            $cond .= $field_map->{ $data->{ $i . '_field' } }->{field};
+    my $x = 1;
+    foreach my $key ( keys %$field_map ) {
+        next if ! $field_map->{$key}->{quicksearch};
+        my $s = $x++ == 1 ? ' ' : ' OR ';
+        $s .= $field_map->{$key}->{field};
 
-            if ( uc( $data->{ $i . "_option" } ) eq 'EQUALS' ) {
-                if ( $field_map->{ $data->{ $i . '_field' } }->{timefield} ) {
-                    $cond
-                        .= "="
-                        . "UNIX_TIMESTAMP("
-                        . $dbh->quote( $data->{ $i . '_value' } ) . ")";
-                }
-                else {
-                    $cond .= "=" . $dbh->quote( $data->{ $i . '_value' } );
-                }
-            }
-            elsif ( uc( $data->{ $i . "_option" } ) eq 'CONTAINS' ) {
-                if ( $field_map->{ $data->{ $i . '_field' } }->{timefield} ) {
-                    $cond
-                        .= "="
-                        . "UNIX_TIMESTAMP("
-                        . $dbh->quote( $data->{ $i . '_value' } ) . ")";
-                }
-                else {
-                    my $val = $dbh->quote( $data->{ $i . '_value' } );
-                    $val =~ s/^'/'%/;
-                    $val =~ s/'$/%'/;
-                    $cond .= " LIKE $val";
-                }
-            }
-            elsif ( uc( $data->{ $i . "_option" } ) eq 'STARTS WITH' ) {
-                if ( $field_map->{ $data->{ $i . '_field' } }->{timefield} ) {
-                    $cond
-                        .= "="
-                        . "UNIX_TIMESTAMP("
-                        . $dbh->quote( $data->{ $i . '_value' } ) . ")";
-                }
-                else {
-                    my $val = $dbh->quote( $data->{ $i . '_value' } );
-                    $val =~ s/'$/%'/;
-                    $cond .= " LIKE $val";
-                }
-            }
-            elsif ( uc( $data->{ $i . "_option" } ) eq 'ENDS WITH' ) {
-                if ( $field_map->{ $data->{ $i . '_field' } }->{timefield} ) {
-                    $cond
-                        .= "="
-                        . "UNIX_TIMESTAMP("
-                        . $dbh->quote( $data->{ $i . '_value' } ) . ")";
-                }
-                else {
-                    my $val = $dbh->quote( $data->{ $i . '_value' } );
-                    $val =~ s/^'/'%/;
-                    $cond .= " LIKE $val";
-                }
+        if ( $data->{exact_match} ) {
+            $s .= ' = ';
+        }
+        else {
+            $s .= ' LIKE ';
+            $value =~ s/^'/'%/;
+            $value =~ s/'$/%'/;
+        };
+
+        $s .= $value;
+        push @conditions, $s;
+    }
+    return @conditions;
+}
+
+sub get_advanced_search_conditions {
+    my ( $self, $data, $field_map ) = @_;
+
+    return if ! $data->{Search};
+    my $dbh = $self->{dbh};
+    my @conditions;
+
+    for my $i ( 1 .. 5 ) {
+        my $field  = $i . '_field';
+        my $option = $i . '_option';
+        my $value  = $i . '_value';
+
+        next unless $data->{ $field };
+        $data->{ $option } = 'CONTAINS' if ! exists $data->{ $option };
+
+        my $cond = $i == 1 ? '' : uc( $data->{ $i . '_inclusive' } ) . ' ';
+        $cond .= $field_map->{ $data->{ $field } }->{field};
+
+        my $qv = $dbh->quote( $data->{ $value } );
+        my $ucopt = uc( $data->{ $option } );
+
+        if ( $field_map->{ $data->{ $field } }->{timefield} ) {
+            if ( $ucopt =~ /^(?:EQUALS|CONTAINS|STARTS|ENDS)/ ) {
+                $cond .= $data->{ $option } . "UNIX_TIMESTAMP( $qv )";
             }
             else {
-                if ( $field_map->{ $data->{ $i . '_field' } }->{timefield} ) {
-                    $cond
-                        .= $data->{ $i . "_option" }
-                        . "UNIX_TIMESTAMP("
-                        . $dbh->quote( $data->{ $i . '_value' } ) . ")";
-                }
-                else {
-                    $cond .= $data->{ $i . "_option" }
-                        . $dbh->quote( $data->{ $i . '_value' } );
-                }
-            }
-
-            push( @conditions, $cond );
+                $cond .= "=UNIX_TIMESTAMP( $qv )";
+            };
         }
+        elsif ( $ucopt eq 'EQUALS' ) {
+            $cond .= "=$qv";
+        }
+        elsif ( $ucopt eq 'CONTAINS' ) {
+            my $val = $qv;
+            $val =~ s/^'/'%/;
+            $val =~ s/'$/%'/;
+            $cond .= " LIKE $val";
+        }
+        elsif ( $ucopt eq 'STARTS WITH' ) {
+            my $val = $qv;
+            $val =~ s/'$/%'/;
+            $cond .= " LIKE $val";
+        }
+        elsif ( $ucopt eq 'ENDS WITH' ) {
+            my $val = $qv;
+            $val =~ s/^'/'%/;
+            $cond .= " LIKE $val";
+        }
+        else {
+            $cond .= $data->{ $option } . $qv;
+        }
+
+        push @conditions, $cond;
     }
 
-    if ( $data->{quick_search} ) {
-        my $value = $dbh->quote( $data->{search_value} );
-        $value =~ s/^'/'%/ unless $data->{exact_match};
-        $value =~ s/'$/%'/ unless $data->{exact_match};
-
-        my $x = 1;
-        foreach ( keys %$field_map ) {
-            if ( $field_map->{$_}->{quicksearch} ) {
-                unless ( $data->{exact_match} ) {
-                    push( @conditions,
-                        ( $x++ == 1 ? " " : " OR " )
-                            . "$field_map->{$_}->{field} LIKE $value" );
-                }
-                else {
-                    push( @conditions,
-                        ( $x++ == 1 ? " " : " OR " )
-                            . "$field_map->{$_}->{field} = $value" );
-                }
-            }
-        }
-    }
-
-    return \@conditions;
+    return @conditions;
 }
 
 sub format_sort_conditions {
