@@ -13,11 +13,15 @@ use Params::Validate qw/ :all /;
 
 sub postflight {
     my $self = shift;
-
-#   write out a named.conf file
     my $dir = shift || $self->{nte}->get_export_dir or return;
     my $fh = $self->get_export_file( 'named.conf.nictool', $dir );
     foreach my $zone ( @{$self->{zone_list}} ) {
+        my $tmpl = $self->get_template($dir, $zone);
+        if ( $tmpl ) {
+            print $fh $tmpl;
+            next;
+        };
+
         print $fh qq[zone "$zone"\t IN { type master; file "$dir/$zone"; };\n];
     };
     close $fh;
@@ -27,6 +31,32 @@ sub postflight {
 #   restarted named
 
     return 1;
+}
+
+sub get_template {
+    my ($self, $export_dir, $zone) = @_;
+
+    return if ! $zone;
+    my $tmpl_dir = "$export_dir/templates";
+    return if ! -d $tmpl_dir;
+
+    my $tmpl;
+    foreach my $f ( $zone, 'default' ) {
+        next if ! -f "$tmpl_dir/$f";
+        $tmpl = "$tmpl_dir/$f";
+        last;
+    };    
+    return if ! $tmpl;
+
+    open my $FH, '<', $tmpl or do {
+        warn "unable to open $tmpl\n";
+        return;
+    };
+    my @lines = <$FH>;
+    close $FH;
+
+    foreach ( @lines ) { $_ =~ s/ZONE/$zone/g; };
+    return join('', @lines); # stringify the array
 }
 
 sub zr_a {
@@ -141,4 +171,41 @@ sub zr_naptr {
 
 __END__
 
+=head1 NAME
 
+NicToolServer::Export::BIND
+
+=head1 named.conf.local
+
+This class will export a named.conf.nictool file with all the NicTool zones assigned to a NicTool BIND nameserver. It is expected that this file will be included into a named.conf file via an include entry like this:
+
+ include "/etc/namedb/master/named.conf.nictool";
+
+
+=head1 Templates
+
+Paul Hamby contributed a patch to add support for zone templates. By default, a line such as this is added for each zone:
+
+ zone "example.com"  IN { type master; file "/etc/namedb/master/example.com"; };
+
+Templates provide a way to customize the additions that NicTool makes to named.conf.
+
+Templates are configured by creating a 'templates' directory in the BIND export directory (as defined within the NicTool nameserver config). Populate the templates directory with a 'default' template, and/or templates that match specific zone names you wish to customize.
+
+=head2 Example template
+
+ zone "ZONE" {
+    type master;
+    file "/etc/namedb/master/ZONE";
+    notify yes;
+    also-notify {
+        10.1.1.1;
+    };
+    allow-transfer {
+        10.1.1.1;
+    };
+ };
+
+Any instances of the keyword ZONE in a template are replaced by the zone name.
+
+=cut
