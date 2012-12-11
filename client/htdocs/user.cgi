@@ -58,96 +58,45 @@ sub display {
 
     #warn "user info: ".Data::Dumper::Dumper($user);
     my $edit_message;
-    my @fields = qw/ user_create user_delete user_write group_create group_delete group_write zone_create zone_delegate zone_delete zone_write zonerecord_create zonerecord_delegate zonerecord_delete zonerecord_write nameserver_create nameserver_delete nameserver_write self_write /;
 
-    if ( $q->param('edit') ) {
-        if ( $q->param('Save') ) {
-            my %data;
-            my @ns;
-            foreach (
-                qw(nt_user_id username first_name last_name email password password2 current_password)
-                )
-            {
-                $data{$_} = $q->param($_);
-            }
+# send the request to NicToolServer and parse result
+    if (   ( $q->param('edit') && $q->param('Save') )
+        || ( $q->param('new') && $q->param('Create') )   ) {
 
-            #warn "group_defaults is ".$q->param('group_defaults');
-            if ( $q->param('group_defaults') eq '0' ) {
-                @ns = $q->param("usable_nameservers");
-                $data{"usable_nameservers"} = join( ",", @ns )
-                    if $q->param("usable_nameservers");
-                foreach (@fields) {
-                    $data{$_} = $q->param($_) ? 1 : 0;
-                }
-            }
-            else {
-                $data{'inherit_group_permissions'} = 1;
-            }
-            my $error;
-            if ( @ns < 11 ) {
+        my ( $error, %data );
+        my @fields = qw/ user_create user_delete user_write group_create group_delete group_write zone_create zone_delegate zone_delete zone_write zonerecord_create zonerecord_delegate zonerecord_delete zonerecord_write nameserver_create nameserver_delete nameserver_write self_write /;
+        my @new_fields  = qw/ nt_group_id username first_name last_name email password password2 /;
+        my @edit_fields = qw/ nt_user_id username first_name last_name email password password2 current_password/;
 
-                #warn "editing user: ".Data::Dumper::Dumper(\%data);
-                $error = $nt_obj->edit_user(%data);
-            }
-            else {
-                $error = {
-                    error_code    => 'xxx',
-                    error_message => 'Please select up to 10 nameservers'
-                };
-            }
-
-            #warn "error = $error\n";
-            if ( $error->{'error_code'} != 200 ) {
-                $edit_message = $error;
-            }
-            else {
-                $duser = $nt_obj->get_user(
-                    nt_user_id => $q->param('nt_user_id') );
+        #warn "group_defaults is ".$q->param('group_defaults');
+        if ( $q->param('group_defaults') eq '0' ) {
+            foreach (@fields) {
+                $data{$_} = $q->param($_) ? 1 : 0;
             }
         }
-    }
-    if ( $q->param('new') ) {
-        if ( $q->param('Create') ) {
-            my %data;
-            my @ns;
-            foreach (
-                qw(nt_group_id username first_name last_name email password password2 )
-                )
-            {
-                $data{$_} = $q->param($_);
-            }
-            if ( $q->param('group_defaults') eq '0' ) {
-                @ns = $q->param("usable_nameservers");
-                $data{"usable_nameservers"} = join( ",", @ns )
-                    if $q->param("usable_nameservers");
-                foreach (@fields) {
-                    $data{$_} = $q->param($_) ? 1 : 0;
-                }
-            }
-            else {
-                $data{'inherit_group_permissions'} = 1;
-            }
-            my $error;
-            if ( @ns or @ns < 11 ) {
-                $error = $nt_obj->new_user(%data);
-            }
-            else {
-                $error = {
-                    error_code    => 'xxx',
-                    error_message => 'Please select up to 10 nameservers'
-                };
-            }
+        else {
+            $data{'inherit_group_permissions'} = 1;
+        }
 
+        if ( $q->param('edit') ) {
+            foreach ( @edit_fields ) { $data{$_} = $q->param($_); }
+            $error = $nt_obj->edit_user(%data);
+        }
+        elsif ( $q->param('new') ) {
+            foreach ( @new_fields ) { $data{$_} = $q->param($_); }
+            $error = $nt_obj->new_user(%data);
+        }
+
+        if ( $error->{'error_code'} != 200 ) {
+            $edit_message = $error;
             #warn "error = ".Data::Dumper::Dumper($error);
-            if ( $error->{'error_code'} != 200 ) {
-                $edit_message = $error;
-            }
-            else {
-
-#$duser = $nt_obj->get_user( nt_group_id => $q->param('nt_group_id'), nt_user_id => $q->param('nt_user_id') );
-            }
         }
-    }
+
+        # refresh the user info displayed in form
+        if ( $q->param('nt_user_id') ) {
+            $duser = $nt_obj->get_user( nt_user_id => $q->param('nt_user_id') );
+        };
+    };
 
     $q->param( 'nt_group_id', $duser->{'nt_group_id'} );
 
@@ -595,7 +544,7 @@ sub display_edit {
             my $color;
             foreach my $type (@order) {
                 $color = ( $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' );
-                print qq[ 
+                print qq[
   <tr> <td class="right bold">] . ucfirst($type) . qq[:</td>];
                 foreach my $perm ( @{ $perms{$type} } ) {
                     if ( $perm eq '.' ) {
