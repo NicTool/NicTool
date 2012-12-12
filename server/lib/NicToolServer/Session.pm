@@ -62,7 +62,7 @@ sub verify_login {
 
     # RCC - Handle HMAC passwords
     if ( $data->{user}{password} =~ /[0-9a-f]{40}/ ) {
-        $attempted_pass = hmac_sha1_hex( $attempted_pass, $data->{username} );
+        $attempted_pass = hmac_sha1_hex( $attempted_pass, lc($data->{username}) );
     }
 
     return $self->auth_error('invalid password')

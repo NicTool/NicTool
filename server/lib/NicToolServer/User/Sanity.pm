@@ -39,13 +39,13 @@ sub edit_user {
     $self->_valid_email($data)    if exists $data->{email};
     $self->_valid_username($data) if exists $data->{username};
 
-    if ( exists $data->{password} && $data->{password} ne '' ) {
+    if ( exists $data->{password} && $data->{password} ne '' && ! $dataobj->{is_admin} ) {
 
         unless ( exists $data->{current_password}
             && $self->_check_current_password($data) )
         {
             $self->error('current_password', 
-                "You must enter the correct current password to change a user's password."
+                "You must enter the correct current password to set a new one."
             );
         }
 
@@ -108,9 +108,9 @@ sub _check_current_password {
     my ( $db_pass, $db_user ) = ( $user->{password}, $user->{username} );
 
     # RCC - Handle HMAC passwords
-    if ( $db_pass =~ /[0-9a-f]{40}/ ) {
+    if ( $db_pass =~ /[0-9a-f]{40}/ ) {    # it's a hash
         $data->{current_password}
-            = hmac_sha1_hex( $data->{current_password}, $db_user );
+            = hmac_sha1_hex( $data->{current_password}, lc($db_user) );
     }
 
     return $db_pass eq $data->{current_password} ? 1 : 0;

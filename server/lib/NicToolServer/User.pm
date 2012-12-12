@@ -7,7 +7,7 @@ use Digest::HMAC_SHA1 qw(hmac_sha1_hex);
 @NicToolServer::User::ISA = qw(NicToolServer);
 
 sub perm_fields_select {
-    qq(
+    qq/
     nt_perm.group_write, 
     nt_perm.group_create,
     nt_perm.group_delete,
@@ -42,15 +42,15 @@ sub perm_fields_select {
     nt_perm.usable_ns7,
     nt_perm.usable_ns8,
     nt_perm.usable_ns9
-    );
+    /;
 }
 
 sub perm_fields {
-    qw(group_create group_delete group_write
+    qw/ group_create group_delete group_write
         zone_create zone_delegate zone_delete zone_write
         zonerecord_create zonerecord_delegate zonerecord_delete zonerecord_write
         user_create user_delete user_write self_write
-        nameserver_create nameserver_delete nameserver_write);
+        nameserver_create nameserver_delete nameserver_write/;
 }
 
 sub get_user {
@@ -130,15 +130,10 @@ sub new_user {
     my $dbh = $self->{dbh};
     my %error = ( 'error_code' => 200, 'error_msg' => 'OK' );
 
-    my @columns
-        = qw(nt_group_id first_name last_name username email password);
-
-# only update the password if the field isn't NULL (has been provided)
-#push(@columns, 'password') if (exists($data->{password}) && $data->{password} ne '');
+    my @columns = qw/nt_group_id first_name last_name username email password/;
 
     # RCC - use hmac to store the password using the username as a key
-    $data->{password}
-        = hmac_sha1_hex( $data->{password}, $data->{username} );
+    $data->{password} = hmac_sha1_hex( $data->{password}, lc($data->{username}) );
 
     my $sql
         = "INSERT INTO nt_user("
@@ -160,12 +155,6 @@ sub new_user {
     my @permcols = $self->perm_fields;
     if ( $insertid && @permcols && !$data->{inherit_group_permissions} ) {
 
-#XXX can set usable ns stuff explicitly for user but has no effect (see NicToolServer/Session.pm and  get_user function
-        my @usable = split( /,/, $data->{usable_nameservers} );
-
-        @usable = @usable[ 0 .. 9 ] if scalar @usable gt 10;
-        my @ns = map {"usable_ns$_"} ( 0 .. scalar @usable - 1 );
-
         foreach (@permcols) {
             $data->{$_} = 0 unless exists $data->{$_};
             $data->{$_} = 0 unless $self->{user}{$_};
@@ -173,12 +162,10 @@ sub new_user {
 
         $sql
             = "INSERT INTO nt_perm("
-            . join( ',', 'nt_group_id', 'nt_user_id', @permcols, @ns )
+            . join( ',', 'nt_group_id', 'nt_user_id', @permcols )
             . ") VALUES("
-            . join( ',',
-            0, $insertid, map( $dbh->quote( $data->{$_} ), @permcols ),
-            @usable )
-            . ")";
+            . join( ',', 0, $insertid, map( $dbh->quote( $data->{$_} ), @permcols ) )
+            . ')';
 
         $self->exec_query($sql) or do {
             $error{error_code} = 600;
@@ -209,14 +196,12 @@ sub edit_user {
         push( @columns, 'password' );
 
         # RCC - use hmac to store the password using the username as a key
-        $data->{password}
-            = hmac_sha1_hex( $data->{password}, $data->{username} );
+        $data->{password} = hmac_sha1_hex( $data->{password}, lc($data->{username}) );
     }
 
     my ( $sql, $action );
 
-    my $prev_data
-        = $self->get_user( { nt_user_id => $data->{nt_user_id} } );
+    my $prev_data = $self->get_user( { nt_user_id => $data->{nt_user_id} } );
     return $prev_data if $self->is_error_response($prev_data);
 
     if (@columns) {
@@ -249,17 +234,6 @@ sub edit_user {
         = map { $_ => 1 } grep { !$data->{user}{$_} } $self->perm_fields;
     my @permcols = grep { exists $data->{$_} && $data->{user}{$_} }
         $self->perm_fields;
-
-#XXX can set usable_nameservers explicitly for a user, but they will always be inherited. (see get_user and Session.pm)
-    my @usable = split( /,/, $data->{usable_nameservers} );
-
-    my %ns;
-    my @nskeys;
-    if (@usable) {
-        @usable = map { $usable[$_] ? $usable[$_] : 0 } ( 0 .. 9 );
-        @nskeys = map {"usable_ns$_"} ( 0 .. 9 );
-        %ns = map { ( "usable_ns$_" => $usable[$_] ) } ( 0 .. 9 );
-    }
 
     if ( !$prev_data->{inherit_group_permissions} ) {
 
@@ -296,13 +270,10 @@ sub edit_user {
         else {
 
             #ok, update the user perms which are allowed
-            if ( @permcols + keys %ns ) {
+            if ( @permcols ) {
                 $sql = "UPDATE nt_perm SET "
-                    . join( ',',
-                    map( "$_ = " . $dbh->quote( $data->{$_} ), @permcols ),
-                    map( "$_ = " . $ns{$_},                    keys %ns ) )
-                    . " WHERE nt_user_id = "
-                    . $data->{nt_user_id};
+                    . join( ',', map( "$_ = " . $dbh->quote( $data->{$_} ), @permcols ) )
+                    . " WHERE nt_user_id = " . $data->{nt_user_id};
             }
             else {
                 $sql = '';
@@ -320,18 +291,15 @@ sub edit_user {
             }
         }
     }
-    elsif ( !$data->{inherit_group_permissions} && ( @permcols + @nskeys ) )
-    {
+    elsif ( !$data->{inherit_group_permissions} && ( @permcols ) ) {
 
         #no preexisting permissions. insert into db
         $sql
             = "INSERT INTO nt_perm("
-            . join( ',', 'nt_group_id', 'nt_user_id', @permcols, @nskeys )
+            . join( ',', 'nt_group_id', 'nt_user_id', @permcols )
             . ") VALUES("
-            . join( ',',
-            0, $data->{nt_user_id},
-            map( $dbh->quote( $data->{$_} ), @permcols ),
-            map( $ns{$_},                    @nskeys ) )
+            . join( ',', 0, $data->{nt_user_id},
+            map( $dbh->quote( $data->{$_} ), @permcols ),)
             . ")";
 
         warn "$sql\n" if $self->debug_sql;
@@ -349,8 +317,7 @@ sub edit_user {
         # perms are inherited and inherit_group_permissions is 1: do nothing
     }
 
-    $data->{nt_group_id} = $prev_data->{nt_group_id}
-        unless $data->{nt_group_id};
+    $data->{nt_group_id} = $prev_data->{nt_group_id} unless $data->{nt_group_id};
     if ($action) {
         $self->log_user( $data, $action, $prev_data );
     }
