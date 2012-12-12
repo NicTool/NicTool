@@ -105,8 +105,7 @@ sub display {
         $user->{'nt_group_id'},
         $q->param('nt_group_id'), 0
     );
-    $nt_obj->display_user_list_options( $user, $q->param('nt_group_id'),
-        $level, 0 );
+    $nt_obj->display_user_list_options( $user, $q->param('nt_group_id'), $level, 0 );
 
     $level++;
 
@@ -121,6 +120,7 @@ sub display {
     else {
         push @options, "<span class=disabled>Delete</span>";
     }
+
     if (   $user->{'user_write'}
         && $user->{'nt_user_id'} ne $duser->{'nt_user_id'} )
     {
@@ -168,9 +168,7 @@ sub display_properties {
                 display_edit( $nt_obj, $q, $message, $user, $duser, 'new' );
             }
         }
-        elsif ( $q->param('Cancel') ) {
-
-        }
+        elsif ( $q->param('Cancel') ) { }
         else {
             display_edit( $nt_obj, $q, '', $user, $duser, 'new' );
         }
@@ -181,9 +179,7 @@ sub display_properties {
                 display_edit( $nt_obj, $q, $message, $user, $duser, 'edit' );
             }
         }
-        elsif ( $q->param('Cancel') ) {
-
-        }
+        elsif ( $q->param('Cancel') ) { }
         else {
             display_edit( $nt_obj, $q, '', $user, $duser, 'edit' );
         }
@@ -438,14 +434,17 @@ sub display_edit {
     </tr>";
 
     if ($modifyperm) {
+        if ( ! $user->{is_admin} ) {    # note that is_admin is global
         print qq[<tr class=dark_grey_bg><td colspan=2>Change Password</td></tr>
 <tr class=light_grey_bg>
 <td class="right nowrap">Current Password:</td>
 <td class="fat">],
             $q->password_field( -name => 'current_password', -override => 1 ),
             qq[</td>
-</tr>
-<tr class=light_grey_bg><td colspan=2>&nbsp;</td></tr>
+</tr>];
+        };
+
+        print qq[<tr class=light_grey_bg><td colspan=2>&nbsp;</td></tr>
 <tr class=light_grey_bg>
 <td class="right nowrap">New Password:</td>
 <td class="fat">],
