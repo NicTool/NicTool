@@ -192,17 +192,24 @@ sub display_properties {
     }
 
     print qq[<table class="fat">
-    <tr class=dark_grey_bg><td><table class="no_pad fat">
-    <tr> <td><b>Properties</b></td>];
+    <tr class=dark_grey_bg>
+     <td>
+      <table class="no_pad fat">
+       <tr>
+        <td><b>Properties</b></td>];
     my $modname = 'View Details';
-		$modname = "Edit" if $modifyperm;
-		my $gid = $q->param('nt_group_id');
-		my $uid = $duser->{'nt_user_id'};
+	   $modname = "Edit" if $modifyperm;
+    my $gid = $q->param('nt_group_id');
+    my $uid = $duser->{'nt_user_id'};
 
-    print qq[<td class=right><a href="user.cgi?], join( '&amp;', @state_fields ),
+    print qq[
+        <td class=right><a href="user.cgi?], join( '&amp;', @state_fields ),
 qq[&amp;nt_group_id=$gid&amp;nt_user_id=$uid&amp;edit=1">$modname</a></td>
-</tr></table>
-</td></tr></table>];
+       </tr>
+      </table>
+     </td>
+    </tr>
+   </table>];
 
     print qq[
 <table class="fat" cellspacing=0>
@@ -217,7 +224,7 @@ qq[&amp;nt_group_id=$gid&amp;nt_user_id=$uid&amp;edit=1">$modname</a></td>
     </tr>
    </table>
   </td>
-	<td class="width50">
+  <td class="width50">
    <table class="fat">
     <tr class=light_grey_bg>
      <td class="nowrap">First Name: </td> <td class="fat">$duser->{'first_name'}</td>
@@ -405,7 +412,7 @@ sub display_edit {
     $nt_obj->display_nice_error( $message, ucfirst($edit) . " User" )
         if $message;
 
-    print qq[<a name='ZONE'>
+    print qq[<a name='ZONE'></a>
 <table class="fat">
  <tr class=dark_bg><td colspan=2><b>$modname</b></td></tr>
  <tr class=light_grey_bg>

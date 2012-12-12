@@ -335,20 +335,20 @@ sub display_user_list_options {
     print qq[<img src="$NicToolClient::image_dir/folder_open.gif" alt="folder">];
 
     if ($in_user_list) {
-        print qq[<b>Users</b>];
-    }
-    else {
-        print qq[<a href="group_users.cgi?nt_group_id=$group_id">Users</a>
+        print qq[<b>Users</b></div>];
+        return;
+    };
+
+    print qq[<a href="group_users.cgi?nt_group_id=$group_id">Users</a>
  <ul>];
 
-        if ( $user->{'user_create'} ) {
-            print qq[
-  <li class=first><a href="group_users.cgi?nt_group_id=$group_id&amp;new=1">New User</a></li>];
-        }
-        else {
-            print qq[
-  <li class="first disabled">New User</li>];
-        }
+    if ( $user->{'user_create'} ) {
+        print qq[
+    <li class=first><a href="group_users.cgi?nt_group_id=$group_id&amp;new=1">New User</a></li>];
+    }
+    else {
+        print qq[
+    <li class="first disabled">New User</li>];
     }
 
     print qq[

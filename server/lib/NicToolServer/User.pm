@@ -32,7 +32,7 @@ sub perm_fields_select {
 
     nt_perm.self_write,
 
-    nt_perm.usable_ns,
+    nt_perm.usable_ns
     /;
 }
 
@@ -62,9 +62,7 @@ sub get_user {
 
     $rv{password} = '' if exists $rv{password};
 
-    $sql
-        = "SELECT "
-        . $self->perm_fields_select
+    $sql = "SELECT " . $self->perm_fields_select
         . " FROM nt_perm WHERE deleted=0"
         . " AND nt_user_id = ?";
     my $perms = $self->exec_query( $sql, $data->{nt_user_id} )
@@ -72,9 +70,7 @@ sub get_user {
 
     my $perm = $perms->[0];
 
-    $sql
-        = "SELECT "
-        . $self->perm_fields_select
+    $sql = "SELECT " . $self->perm_fields_select
         . " FROM nt_perm"
         . " INNER JOIN nt_user ON nt_perm.nt_group_id = nt_user.nt_group_id "
         . " WHERE ( nt_perm.deleted=0 "
@@ -196,8 +192,7 @@ sub edit_user {
     if (@columns) {
         $sql
             = "UPDATE nt_user SET "
-            . join( ',',
-            map( "$_ = " . $dbh->quote( $data->{$_} ), @columns ) )
+            . join( ',', map( "$_ = " . $dbh->quote( $data->{$_} ), @columns ) )
             . " WHERE nt_user_id = ?";
         $action = 'modified';
         if ( $self->exec_query( $sql, $data->{nt_user_id} ) ) {

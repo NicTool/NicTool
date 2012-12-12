@@ -10,6 +10,7 @@ Revision history for NicToolServer
     * fix for hashed passwords with and non-all-lower username
     * remove Apache2::SOAP dependency
     * added BIND zone templates (Paul Hamby)
+    * admins don't need current password to modify user passwords
 
 2.15    2012.10.16
 

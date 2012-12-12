@@ -3,6 +3,8 @@
 
   * expanded length of address from 255 to 512 bytes (DKIM)
   * remove current password requirement when admins update one
+  * admins don't need current password to modify user passwords
+  * closed an open <a> anchor in user.cgi
 
 2.15    2012.10.31
 

@@ -1,6 +1,4 @@
 
-* NicTool admins don't need the old password to reset
-
 * add a "lost password" recovery feature
 
 * expose nt_zone_record.timestamp for editing
@@ -9,6 +7,8 @@
   (Jörg Site)
 
 ============  DONE ===============
+
+* NicTool admins don't need the old password to reset (2012.12.11)
 
 * expose nt_nameserver.export_serials for editing
 

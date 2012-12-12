@@ -39,15 +39,18 @@ sub edit_user {
     $self->_valid_email($data)    if exists $data->{email};
     $self->_valid_username($data) if exists $data->{username};
 
-    if ( exists $data->{password} && $data->{password} ne '' && ! $dataobj->{is_admin} ) {
+    if ( exists $data->{password} && $data->{password} ne '' ) {
 
-        unless ( exists $data->{current_password}
-            && $self->_check_current_password($data) )
-        {
-            $self->error('current_password', 
-                "You must enter the correct current password to set a new one."
-            );
-        }
+        if ( ! $data->{user}{is_admin} ) {  # logged in user (not form user)
+            unless ( exists $data->{current_password}
+                && $self->_check_current_password($data) )
+            {
+                $self->error('current_password',
+                    "You must enter the correct current password to set a new one."
+                );
+                #$self->error('current_password', Data::Dumper::Dumper($data) );
+            }
+        };
 
         $self->_valid_password($data);
     }
@@ -243,6 +246,6 @@ __END__
 
 =head1 SYNOPSIS
 
-    
+
 =cut
 
