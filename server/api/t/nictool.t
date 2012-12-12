@@ -60,16 +60,7 @@ ok( exists $user->user->{'store'}->{'nameserver_delete'} );
 ok( exists $user->user->{'store'}->{'user_create'} );
 ok( exists $user->user->{'store'}->{'user_write'} );
 ok( exists $user->user->{'store'}->{'user_delete'} );
-ok( exists $user->user->{'store'}->{'usable_ns0'} );
-ok( exists $user->user->{'store'}->{'usable_ns1'} );
-ok( exists $user->user->{'store'}->{'usable_ns2'} );
-ok( exists $user->user->{'store'}->{'usable_ns3'} );
-ok( exists $user->user->{'store'}->{'usable_ns4'} );
-ok( exists $user->user->{'store'}->{'usable_ns5'} );
-ok( exists $user->user->{'store'}->{'usable_ns6'} );
-ok( exists $user->user->{'store'}->{'usable_ns7'} );
-ok( exists $user->user->{'store'}->{'usable_ns8'} );
-ok( exists $user->user->{'store'}->{'usable_ns9'} );
+ok( exists $user->user->{'store'}->{'usable_ns'} );
 
 #test permissions shortcut calls
 ok( !$user->can_zone_barf );

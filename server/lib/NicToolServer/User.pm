@@ -32,16 +32,7 @@ sub perm_fields_select {
 
     nt_perm.self_write,
 
-    nt_perm.usable_ns0,
-    nt_perm.usable_ns1,
-    nt_perm.usable_ns2,
-    nt_perm.usable_ns3,
-    nt_perm.usable_ns4,
-    nt_perm.usable_ns5,
-    nt_perm.usable_ns6,
-    nt_perm.usable_ns7,
-    nt_perm.usable_ns8,
-    nt_perm.usable_ns9
+    nt_perm.usable_ns,
     /;
 }
 
@@ -100,10 +91,8 @@ sub get_user {
     else {
         $perm->{inherit_group_permissions} = 0;
 
-        #for now usable_ns settings are always inherited from the group
-        for ( 0 .. 9 ) {
-            $perm->{"usable_ns$_"} = $groupperm->{"usable_ns$_"};
-        }
+        #usable_ns settings are always inherited from the group
+        $perm->{usable_ns} = $groupperm->{usable_ns};
     }
     if ( !$perm ) {
         return $self->error_response( 507,

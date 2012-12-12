@@ -1,4 +1,9 @@
 
+2.16    2012.12.11
+
+  * expanded length of address from 255 to 512 bytes (DKIM)
+  * remove current password requirement when admins update one
+
 2.15    2012.10.31
 
   * added support for NAPTR records

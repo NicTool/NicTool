@@ -31,16 +31,7 @@ sub perm_fields_select {
 
     nt_perm.self_write,
 
-    nt_perm.usable_ns0,
-    nt_perm.usable_ns1,
-    nt_perm.usable_ns2,
-    nt_perm.usable_ns3,
-    nt_perm.usable_ns4,
-    nt_perm.usable_ns5,
-    nt_perm.usable_ns6,
-    nt_perm.usable_ns7,
-    nt_perm.usable_ns8,
-    nt_perm.usable_ns9
+    nt_perm.usable_ns
     );
 }
 
@@ -77,23 +68,18 @@ sub new_group {
         user_create user_delete user_write self_write
         nameserver_create nameserver_delete nameserver_write /;
 
-    my @usable = split( /,/, $data->{usable_nameservers} );
-
-    my @ns = map {"usable_ns$_"} ( 0 .. 9 );
-    @usable = map { $usable[$_] || 0 } ( 0 .. 9 );
 
     #cannot change permissions unless you have those permissions
     foreach (@permcols) {
         $data->{$_} = 0 unless $data->{user}{$_};
     }
 
-    $sql
-        = "INSERT INTO nt_perm("
-        . join( ',', 'nt_group_id', @permcols, @ns )
+    $sql = "INSERT INTO nt_perm("
+        . join( ',', 'nt_group_id', @permcols, 'usable_ns' )
         . ") VALUES(??)";
 
     my @values = map( $data->{$_}, @permcols );
-    push @values, @usable;
+    push @values, join(',', $data->{usable_nameservers} );
     my $permid = $self->exec_query( $sql, [ $insertid, @values ] );
     warn "$sql\n" if $self->debug_sql;
 
@@ -125,21 +111,20 @@ sub edit_group {
     my $sql;
 
     if ( $data->{nt_group_id} == $data->{user}{nt_group_id} ) {
-        return $self->error_response( 600,
-            'You may not edit the group you belong to' );
+        return $self->error_response( 600, 'You may not edit the group you belong to' );
     }
 
-    my @columns = grep { exists $data->{$_} } qw(parent_group_id name);
+    my @columns = grep { exists $data->{$_} } qw/ parent_group_id name /;
 
-    my ( $action, $prev_data );
-    $prev_data = $self->find_group( $data->{nt_group_id} );
+    my $action;
+    my $prev_data = $self->find_group( $data->{nt_group_id} );
     $data->{modified_group_id} = $data->{nt_group_id};
+
     if (@columns) {
-        $sql
-            = "UPDATE nt_group SET "
+        $sql = "UPDATE nt_group SET "
             . join( ',',
             map( "$_ = " . $dbh->quote( $data->{$_} ), @columns ) )
-            . " WHERE nt_group_id = ?";
+            . " WHERE nt_group_id=?";
 
         $self->exec_query( $sql, $data->{nt_group_id} )
             or return $self->error_response( 505, $dbh->errstr );
@@ -151,88 +136,69 @@ sub edit_group {
         zone_create zone_delegate zone_delete zone_write
         zonerecord_create zonerecord_delegate zonerecord_delete zonerecord_write
         user_create user_delete user_write self_write
-        nameserver_create nameserver_delete nameserver_write
+        nameserver_create nameserver_delete nameserver_write 
     );
-    my @permcols
-        = grep { exists $data->{$_} && $data->{user}{$_} } @perms;
+    my @permcols = grep { exists $data->{$_} && $data->{user}{$_} } @perms;
 
-    my @usable = split( /,/, $data->{usable_nameservers} );
+    my %usable = map { $_ => 1 } split( /,/, $data->{usable_nameservers} );
 
-    my %ns;
-
-    #warn "usable is @usable and ".scalar @usable;
     #merge the usable nameservers settings
     $sql = "SELECT * from nt_perm WHERE nt_group_id = ?";
-    my $perms = $self->exec_query( $sql, $data->{nt_group_id} )
-        or return $self->error_response( 505, $dbh->errstr );
-    my $gperm = $perms->[0];
-    %$prev_data = ( %$prev_data, map { $_ => $gperm->{$_} } @perms );
+    my $gperms = $self->exec_query( $sql, $data->{nt_group_id} ) or return $self->error_response( 505, $dbh->errstr );
+       $gperms = $gperms->[0];
+    %$prev_data = ( %$prev_data, map { $_ => $gperms->{$_} } @perms );
 
-    if ($gperm) {
+    if ($gperms) {
 
-        my %datans = map { $_ => 1 } @usable;
-        my %userns = map { $data->{user}->{$_} => 1 }
-            grep { $data->{user}->{$_} } map {"usable_ns$_"} ( 0 .. 9 );
-        my @oldns = map { $gperm->{$_} }
-            grep { $gperm->{$_} } map {"usable_ns$_"} ( 0 .. 9 );
-        my %groupns = map { $_ => 1 } @oldns;
+        my %userns  = map { $_ => 1 } split(/,/, $data->{user}{usable_ns} );
+        my %groupns = map { $_ => 1 } split(/,/, $gperms->{usable_ns} );
 
-        #for each of the previous usable_ns settings
         foreach my $n ( keys %groupns ) {
-            if (   $userns{$n}
-                or $self->get_access_permission( 'NAMESERVER', $n, 'read' ) )
-            {
+            if ( $userns{$n} || $self->get_access_permission( 'NAMESERVER', $n, 'read' ) ) {
 
           #if the user has access to the nameserver
           #delete it or set it to true according to presence in the data array
-                delete $groupns{$n} unless $datans{$n};
-                $groupns{$n} = 1 if $datans{$n};
-                delete $datans{$n};
+                delete $groupns{$n} unless $usable{$n};
+                $groupns{$n} = 1 if $usable{$n};
+                delete $usable{$n};
             }
         }
 
         #add the nameservers that weren't present before
-        foreach my $n ( keys %datans ) {
+        foreach my $n ( keys %usable ) {
             $groupns{$n} = 1;
         }
 
         #leave the rest
         my @newns;
-        foreach (@oldns) {
+        foreach ( keys %groupns ) {
             push @newns, $_ if exists $groupns{$_};
             delete $groupns{$_};
         }
-        foreach ( keys %groupns ) {
-            push @newns, $_;
-        }
-
-        #@usable = map {$usable[$_]?$usable[$_]:0} (0 .. 9);
-        @newns = map { $newns[$_] ? $newns[$_] : 0 } ( 0 .. 9 );
-        %ns = map { ( "usable_ns$_" => $newns[$_] ) } ( 0 .. 9 );
-
-        #warn " new ns is ".join(",",map{"$_=>$ns{$_}"} keys %ns);
+        $data->{usable_ns} = join(',', @newns);
     }
     else {
         return $self->error_response( 507,
             "No permissions found for group ID $data->{nt_group_id}." );
     }
 
-    if ( @permcols + keys %ns ) {
-        my @s = (
-            map( "$_ = " . $dbh->quote( $data->{$_} ), @permcols ),
-            map( "$_ = " . $ns{$_},                    keys %ns )
-        );
-        $sql
-            = "UPDATE nt_perm SET "
-            . join( ',', @s )
-            . " WHERE nt_group_id = ?";
-
+    if ( @permcols ) {
+        my @s = map( "$_ = " . $dbh->quote( $data->{$_} ), @permcols );
+        $sql = "UPDATE nt_perm SET " . join(',', @s ) . " WHERE nt_group_id=?";
         $self->exec_query( $sql, $data->{nt_group_id} )
             or return $self->error_response( 505, $dbh->errstr );
 
         #TODO rollback the nt_group changes above if error?
         $action = 'modified';
     }
+
+    if ( $data->{usable_ns} ) {
+        $sql = "UPDATE nt_perm SET usable_ns=? WHERE nt_group_id=?";
+        $self->exec_query( $sql, [$data->{usable_ns}, $data->{nt_group_id}] )
+            or return $self->error_response( 505, $dbh->errstr );
+        $action = 'modified';
+    };
+
     $self->log_group( $data, $action, $prev_data ) if $action;
 
     return \%error;
@@ -324,8 +290,7 @@ sub get_group {
     }
 
     if ( $rv{nt_group_id} ) {
-        $sql
-            = "SELECT COUNT(*) AS count FROM nt_group WHERE deleted=0 AND parent_group_id = ?";
+        $sql = "SELECT COUNT(*) AS count FROM nt_group WHERE deleted=0 AND parent_group_id = ?";
         my $r = $self->exec_query( $sql, $rv{nt_group_id} );
         $rv{has_children} = $r->[0]->{count};
     }

@@ -97,9 +97,7 @@ sub verify_login {
         $perm->{inherit_group_permissions} = 0;
 
         # usable_ns settings are always inherited from the group
-        for ( 0 .. 9 ) {
-            $perm->{"usable_ns$_"} = $groupperm->{"usable_ns$_"};
-        }
+        $perm->{usable_ns} = $groupperm->{usable_ns};
     }
 
     my $uid = $data->{user}{nt_user_id};
@@ -184,9 +182,7 @@ SELECT u.*, s.*, g.name AS groupname
     else {
 
         # usable_ns settings are always inherited from the group
-        for ( 0 .. 9 ) {
-            $perm->{"usable_ns$_"} = $groupperm->{"usable_ns$_"};
-        }
+        $perm->{usable_ns} = $groupperm->{usable_ns};
     }
 
     if ( !$perm ) {

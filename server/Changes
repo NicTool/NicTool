@@ -1,5 +1,16 @@
 Revision history for NicToolServer
 
+2.16    2012.12.11
+
+    * expanded length of record address from 255 to 512 bytes, to accommodate
+      longer DKIM keys
+    * removed all the usable_nsX nonsense, replaced with a comma packed field
+      - this further improves upon the SQL fixes to support > 10 nameservers
+    * remove current password requirement when admins update one
+    * fix for hashed passwords with and non-all-lower username
+    * remove Apache2::SOAP dependency
+    * added BIND zone templates (Paul Hamby)
+
 2.15    2012.10.16
 
     * new server/bin/nt_import.pl, imports from tinydns data files
@@ -23,7 +34,7 @@ Revision history for NicToolServer
 
 2.13    2012.01.19
     * removed sys/djb c++ export app (broken)
-    * allow domain labels to begin with a number (RFC 1123) 
+    * allow domain labels to begin with a number (RFC 1123)
       https://www.tnpi.net/support/forums/index.php/topic,1014.0.html
     * expand valid TTL range from 300-2592000 to 0-2147483647 (RFC 2181)
     * editing zone properties or NS didn't increment zone serial #
@@ -47,9 +58,9 @@ Revision history for NicToolServer
 
     * nt_export.pl will catch signals and exit gracefully
     * automatically clean up the many "success, 0 changed zones" entries in
-      nt_nameserver_export_log 
+      nt_nameserver_export_log
     * added valid wildcard record tests
-    * added wildcard and SRV exceptions to valid_label 
+    * added wildcard and SRV exceptions to valid_label
     * fixed some SQL errors where logging failed due to missing data
     * added zone record tests for AAAA, SRV, SPF, and TXT records
     * added sanity tests for SRV records

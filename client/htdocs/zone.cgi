@@ -618,7 +618,7 @@ sub display_zone_records {
         # display formatting problem with DomainKey entries.
         if ( length $r_record->{address} > 48 ) {
             my $max = 0;
-            my @lines;
+            my @lines = ();
             while ( $max < length $r_record->{address} ) {
                 push @lines, substr( $r_record->{address}, $max, 48 );
                 $max += 48;
@@ -917,7 +917,7 @@ sub display_edit_record {
         ? $q->textfield(
         -name      => 'address',
         -size      => 50,
-        -maxlength => 255,
+        -maxlength => 512,
         -default   => $zone_record->{'address'},
         )
         : $zone_record->{'address'},
@@ -1321,7 +1321,7 @@ sub display_edit_zone {
     $q->textfield(
         -name      => 'mailaddr',
         -size      => 25,
-        -maxlength => 255,
+        -maxlength => 512,
         -default   => $zone->{'mailaddr'} eq 'hostmaster.ZONE.TLD.' ? qq[hostmaster.$zone->{zone}.] : $zone->{mailaddr},
     ),
     qq[<input type="button" value="Default" onClick="this.form.mailaddr.value='hostmaster.$zone->{'zone'}'"> hostmaster.$zone->{'zone'}.],

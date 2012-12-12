@@ -8,7 +8,7 @@ use RPC::XML;
 use Data::Dumper;
 use Net::IP;
 
-$NicToolServer::VERSION = '2.15';
+$NicToolServer::VERSION = '2.16';
 
 $NicToolServer::MIN_PROTOCOL_VERSION = '1.0';
 $NicToolServer::MAX_PROTOCOL_VERSION = '1.0';
@@ -945,12 +945,10 @@ sub check_permission {
 
 # allow "publish" access to usable nameservers (when modifying/creating a zone)
     if ( $type eq 'NAMESERVER' and $access eq 'read' ) {
-        foreach ( map {"usable_ns$_"} ( 0 .. 9 ) ) {
-            if ( $permissions->{$_} eq $id ) {
-                warn "YES usable nameserver: $debug"
-                    if $self->debug_permissions;
-                return undef;
-            }
+        my %usable_ns = map { $_ => 1 } split /,/, $permissions->{usable_ns};
+        if ( $usable_ns{$id} ) {
+            warn "YES usable nameserver: $debug" if $self->debug_permissions;
+            return undef;
         }
     }
 
@@ -1566,11 +1564,10 @@ sub exec_query {
     my ( $query, $params, $extra ) = @_;
 
     my @caller = caller;
-    my $err
-        = sprintf( "exec_query called by %s, %s\n", $caller[0], $caller[2] );
+    my $err = sprintf( "exec_query called by %s, %s\n", $caller[0], $caller[2] );
     $err .= "\t$query\n\t";
 
-    die "invalid arguments to exec_query!" if $extra;
+    die "invalid arguments to exec_query! ($err)" if $extra;
 
     my @params;
     if ( defined $params ) {    # dereference $params into @params

@@ -9,7 +9,6 @@ sub get_usable_nameservers {
     my ( $self, $data ) = @_;
 
     my @groups;
-    my @usable;
     if ( $data->{nt_group_id} ) {
         my $res = $self->NicToolServer::Group::get_group_branch($data);
         return $res if $self->is_error_response($res);
@@ -17,10 +16,7 @@ sub get_usable_nameservers {
     }
 
     push @groups, $self->{user}{nt_group_id};
-    foreach ( 0 .. 9 ) {
-        push @usable, $self->{user}{"usable_ns$_"}
-            if $self->{user}->{"usable_ns$_"} ne 0;
-    }
+    my @usable = split /,/, $self->{user}{usable_ns};
 
     my $r_data = $self->error_response(200);
     $r_data->{nameservers} = [];

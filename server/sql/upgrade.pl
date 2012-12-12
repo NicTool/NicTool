@@ -30,7 +30,7 @@ prompt_last_chance();
 my $dbh  = DBIx::Simple->connect( $dsn, $db_user, $db_pass )
             or die DBIx::Simple->error;
 
-my @versions = qw/ 2.00 2.05 2.08 2.09 2.10 2.11 2.14 2.15 /;
+my @versions = qw/ 2.00 2.05 2.08 2.09 2.10 2.11 2.14 2.15 2.16 /;
 
 foreach my $version ( @versions ) { 
 # first, run a DB test query 
@@ -95,6 +95,34 @@ EO_SOME_DAY
 ;
 };
 
+
+sub _sql_test_2_16 {
+    my $sql = 'SELECT option_value FROM nt_options WHERE option_name="db_version"';
+    my $r;
+    eval { $r = $dbh->query( $sql )->list; };
+    return 1 if ! defined $r;   # query failed
+    return 0 if $r eq '2.15';   # do it!
+    return 1;                   # don't update
+};
+
+sub _sql_2_16 {
+    <<EO_SQL_2_16
+ALTER TABLE nt_perm ADD column usable_ns VARCHAR(50) AFTER self_write;
+UPDATE nt_perm SET usable_ns=(CONCAT_WS(',', usable_ns0,usable_ns1,usable_ns2,usable_ns3,usable_ns4,usable_ns5,usable_ns6,usable_ns7,usable_ns8,usable_ns9));
+ALTER TABLE nt_perm DROP column usable_ns0;
+ALTER TABLE nt_perm DROP column usable_ns1;
+ALTER TABLE nt_perm DROP column usable_ns2;
+ALTER TABLE nt_perm DROP column usable_ns3;
+ALTER TABLE nt_perm DROP column usable_ns4;
+ALTER TABLE nt_perm DROP column usable_ns5;
+ALTER TABLE nt_perm DROP column usable_ns6;
+ALTER TABLE nt_perm DROP column usable_ns7;
+ALTER TABLE nt_perm DROP column usable_ns8;
+ALTER TABLE nt_perm DROP column usable_ns9;
+ALTER TABLE nt_zone_record MODIFY address VARCHAR(512) NOT NULL;
+ALTER TABLE nt_zone_record_log MODIFY address VARCHAR(512) NOT NULL;
+EO_SQL_2_16
+};
 
 sub _sql_test_2_15 {
     my $sql = 'SELECT option_value FROM nt_options WHERE option_name="db_version"';
