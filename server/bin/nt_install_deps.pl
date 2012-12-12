@@ -14,7 +14,7 @@ my $deps = {
         { module => 'LWP'           , info => { port => 'p5-libwww' }, },
         { module => 'RPC::XML'      , info => { }, },
         { module => 'SOAP::Lite'    , info => { }, },
-        { module => 'Apache2::SOAP' , info => { }, },
+        #{ module => 'Apache2::SOAP' , info => { }, },
         { module => 'DBI'           , info => { }, },
         { module => 'DBD::mysql'    , info => { }, },
         { module => 'DBIx::Simple'  , info => { }, },
