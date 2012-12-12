@@ -25,6 +25,7 @@ CREATE TABLE nt_user(
     username            VARCHAR(50) NOT NULL,
     password            VARCHAR(128) NOT NULL,
     email               VARCHAR(100) NOT NULL,
+    is_admin            TINYINT(1) UNSIGNED DEFAULT NULL,
     deleted             TINYINT(1) UNSIGNED DEFAULT 0 NOT NULL
 ) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 CREATE INDEX nt_user_idx1 on nt_user(username, password);

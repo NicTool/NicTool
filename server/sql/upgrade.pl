@@ -121,6 +121,10 @@ ALTER TABLE nt_perm DROP column usable_ns8;
 ALTER TABLE nt_perm DROP column usable_ns9;
 ALTER TABLE nt_zone_record MODIFY address VARCHAR(512) NOT NULL;
 ALTER TABLE nt_zone_record_log MODIFY address VARCHAR(512) NOT NULL;
+UPDATE nt_options SET option_value='2.16' WHERE option_name='db_version';
+
+/* doesn't matter if this fails, b/c it was already present */
+ALTER TABLE nt_user ADD COLUMN is_admin TINYINT(1) UNSIGNED default '0' AFTER email;
 EO_SQL_2_16
 };
 
@@ -137,6 +141,7 @@ sub _sql_2_15 {
     <<EO_SQL_2_15
 /* submitted by Arthur Gouros, remove legacy \072 chars */
 UPDATE nt_zone_record SET address = REPLACE(address,'\\072',':');
+UPDATE nt_options SET option_value='2.15' WHERE option_name='db_version';
 EO_SQL_2_15
 ;
 };
@@ -426,7 +431,6 @@ ALTER TABLE nt_nameserver_export_log DROP column stat3;
 ALTER TABLE nt_nameserver_export_log DROP column stat2;
 ALTER TABLE nt_nameserver_export_log DROP column stat1;
 
-ALTER TABLE nt_user DROP COLUMN is_admin;
 EO_SQL_2_09
 ;
 };

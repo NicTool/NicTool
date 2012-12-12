@@ -11,6 +11,8 @@ Revision history for NicToolServer
     * remove Apache2::SOAP dependency
     * added BIND zone templates (Paul Hamby)
     * admins don't need current password to modify user passwords
+    * SQL: restored nt_user.is_admin column (it's used now)
+    * SQL: added missing DB version update to v2.15 updater
 
 2.15    2012.10.16
 
