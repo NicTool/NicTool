@@ -36,5 +36,7 @@ DNS.pm is a good example of how to encapsulate NicTool API methods for automated
 
 For a modern high(er) quality example, check out the NicTool module from Provision::Unix. You can find Provision::Unix on CPAN.
 
+For a complete working example donated by ColocateUSA Inc., download the ColoUSA package from http://www.nictool.com/download/ColoUSA-1.02.tar.gz  Included in the package are scripts for resetting rDNS (via CGI or CLI) and updating a hostname (PTRs, A, AAAA).
+
 Matt
 
