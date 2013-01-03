@@ -558,7 +558,7 @@ sub display_zone_records {
     return if ! scalar @$zone_records;
 
     # show only columns used in the records in this zone
-    @columns = qw(name type address ttl );
+    @columns = qw/ name type address ttl /;
 
     my %has_type;
     foreach my $r_record (@$zone_records) {
@@ -682,9 +682,12 @@ sub display_zone_records {
             && ( $zonedelegate ? $zone->{'delegate_delete_records'} : 1 )
             )
         {
+            my $quoted_address = $r_record->{'address'};
+            $quoted_address =~ s/["']//g;  # remove " or ' from TXT/SPF records
+            $quoted_address =~ s/<br>//g;  # remove <br> inserted 64 lines above
             print qq[
    <td class=center>
-    <a href="zone.cgi?$state_string&amp;nt_zone_id=$zone->{'nt_zone_id'}&amp;nt_group_id=$gid&amp;nt_zone_record_id=$r_record->{'nt_zone_record_id'}&amp;delete_record=$r_record->{'nt_zone_record_id'}" onClick=\"return confirm('Are you sure you want to delete $zone->{'zone'} $r_record->{'type'} record $r_record->{'name'} that points to $r_record->{'address'} ?')">
+    <a href="zone.cgi?$state_string&amp;nt_zone_id=$zone->{'nt_zone_id'}&amp;nt_group_id=$gid&amp;nt_zone_record_id=$r_record->{'nt_zone_record_id'}&amp;delete_record=$r_record->{'nt_zone_record_id'}" onClick=\"return confirm('Are you sure you want to delete $zone->{'zone'} $r_record->{'type'} record $r_record->{'name'} that points to $quoted_address ?')">
     <img src="$NicToolClient::image_dir/trash.gif" alt="trash"></a></td>];
 
         }
