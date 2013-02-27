@@ -11,7 +11,7 @@ use RPC::XML::Parser;
 sub new {
     my $class = shift;
     my $r     = shift;
-    my %self  = ();
+    my $self  = {};
 
     my $contype = $r->headers_in->{'Content-Type'};
     my $conlen  = $r->headers_in->{'Content-Length'};
@@ -20,14 +20,14 @@ sub new {
     # read content if it's xml.  $r->content only works if content-type
     # is 'application/x-www-form-urlencoded' :(
     if ( $contype =~ /^text\/xml$/ ) {
-        $r->read( $content, $conlen ) if ( $conlen gt 0 );
+        $r->read( $content, $conlen ) if $conlen gt 0;
     }
 
-    $self{data} = {};
-    $self{data} = decode_data( $content, $r->headers_in->{'Content-Type'} );
-    $self{protocol_version} = $self{data}{nt_protocol_version};
+    #$self->{data} = {};
+    $self->{data} = decode_data( $content, $r->headers_in->{'Content-Type'} );
+    $self->{protocol_version} = $self{data}{nt_protocol_version};
 
-    bless \%self, $class;
+    bless $self, $class;
 }
 
 sub decode_data {
