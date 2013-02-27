@@ -2,6 +2,7 @@
 # test using the protocol version
 ##########
 
+use lib 'lib';
 use lib 't';
 use TestConfig (15);
 use Test;

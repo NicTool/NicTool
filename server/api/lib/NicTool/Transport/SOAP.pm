@@ -30,10 +30,9 @@ sub send_request {
     my $url  = shift;
     my %vars = @_;
     $url .= "/soap";
-    my $func = $vars{action};
-    delete $vars{action};
+    my $func = delete $vars{action};
     foreach ( keys %vars ) {
-        $vars{$_} = "" unless defined $vars{$_};
+        $vars{$_} = '' unless defined $vars{$_};
     }
     $vars{nt_user_session} = $self->_nt->{nt_user_session}
         if defined $self->_nt->{nt_user_session};
@@ -51,7 +50,7 @@ sub send_request {
     warn "URI: " . $soap->uri . ", proxy: " . $url . "\n"
         if $self->_nt->{debug_soap_setup};
     warn "Calling soap function \"$func\" with params:\n"
-        . Dumper( \%vars ) . '\n'
+        . Dumper( \%vars ) . "\n"
         if $self->_nt->{debug_soap_request};
 
     #make soap call and evaluate response.
@@ -61,7 +60,7 @@ sub send_request {
     if ( !ref $som ) {
 
         #scalar means transport error
-        warn "SOAP result SCALAR: " . Dumper($som) . '\n'
+        warn "SOAP result SCALAR: " . Dumper($som) . "\n"
             if $self->_nt->{debug_soap_response};
         return {
             error_code => $soap->transport->code,
@@ -71,7 +70,7 @@ sub send_request {
         };
     }
     elsif ( $som->isa('SOAP::SOM') && !$som->fault ) {
-        warn "SOAP result: " . Dumper( $som->result ) . '\n'
+        warn "SOAP result: " . Dumper( $som->result ) . "\n"
             if $self->_nt->{debug_soap_response};
         warn "function $func = \n params{"
             . Dumper( \%vars ) . "}\n"
@@ -81,7 +80,7 @@ sub send_request {
         return $som->result;
     }
     elsif ( $som->isa('SOAP::SOM') && $som->fault ) {
-        warn "SOAP result: " . Dumper( $som->result ) . '\n'
+        warn "SOAP result: " . Dumper( $som->result ) . "\n"
             if $self->_nt->{debug_soap_response};
         return {
             'error_code' => $som->faultcode,
@@ -89,7 +88,7 @@ sub send_request {
         };
     }
     else {
-        warn "SOAP result: Unknown: " . Dumper($som) . '\n'
+        warn "SOAP result: Unknown: " . Dumper($som) . "\n"
             if $self->_nt->{debug_soap_response};
         return {
             'error_code' => '??',
