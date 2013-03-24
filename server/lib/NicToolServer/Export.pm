@@ -210,7 +210,7 @@ sub export {
 
     my $before = time;
     $self->set_status("exporting from DB");
-    $self->{export_class}->export_db();
+    $self->{export_class}->export_db() or return;
     my $elapsed = '';
     if ( (time - $before) > 5 ) { $elapsed = ' ('. (time - $before) . ' secs)' };
     $self->elog('exported'.$elapsed);

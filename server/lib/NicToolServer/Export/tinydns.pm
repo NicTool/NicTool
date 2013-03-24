@@ -56,7 +56,8 @@ sub compile_cdb {
     $self->{nte}->set_status("compiling cdb");
     system ('make data.cdb') == 0 or do {
         $self->{nte}->set_status("last: FAILED compiling cdb: $?");
-        die $self->{nte}->elog("unable to compile cdb: $?");
+        $self->{nte}->elog("unable to compile cdb: $?");
+        return;
     };
     my $elapsed = time - $before;
     my $message = "compiled";
@@ -130,7 +131,8 @@ sub rsync_cdb {
     my $before = time;
     system ('make remote') == 0 or do {
         $self->{nte}->set_status("last: FAILED rsync: $?");
-        die $self->{nte}->elog("unable to rsync cdb: $?");
+        $self->{nte}->elog("unable to rsync cdb: $?");
+        return;
     };
     my $elapsed = time - $before;
     my $message = "copied";
