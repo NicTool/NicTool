@@ -13,6 +13,8 @@ use Params::Validate qw/:all/;
 
 use NicToolServer::Export;
 
+$|++;  # output autoflush (so log msgs aren't buffered)
+
 # process command line options
 Getopt::Long::GetOptions(
     'daemon'    => \my $daemon,
