@@ -54,9 +54,12 @@ sub daemon {
     if ( defined $self->{ns_ref}{export_interval} ) {
         $waitleft = $self->{ns_ref}{export_interval} - ( $end - $self->{time_start} );
     };
-    if ( $waitleft > 0 ) {
-        print ", sleeping $waitleft seconds\n";
-        sleep $waitleft;
+    my $nsid = $self->{ns_id};
+    print "nsid $nsid sleeping $waitleft seconds\n" if $waitleft > 0;
+    while ( $waitleft > 0 ) {
+        print "nsid $nsid sleeping $waitleft seconds\n" if $waitleft % 100 == 0;
+        sleep 1;
+        $waitleft--;
     };
 };
 
