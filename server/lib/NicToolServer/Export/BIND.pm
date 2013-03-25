@@ -26,9 +26,12 @@ sub postflight {
     };
     close $fh;
 
-# TODO: 
-#   validate it?
-#   restarted named
+    return 1 if ! $self->{nte}{postflight_extra};
+
+    $self->write_makefile() or return;
+    $self->compile() or return;
+    $self->rsync()   or return;
+    $self->restart() or return;
 
     return 1;
 }
@@ -58,6 +61,134 @@ sub get_template {
     foreach ( @lines ) { $_ =~ s/ZONE/$zone/g; };
     return join('', @lines); # stringify the array
 }
+
+sub compile {
+    my $self = shift;
+
+    my $dir = $self->{nte}{export_dir};
+
+    $self->{nte}->set_status("compile");
+    my $before = time;
+    system ('make compile') == 0 or do {
+        $self->{nte}->set_status("last: FAILED compile: $?");
+        $self->{nte}->elog("unable to compile: $?");
+        return;
+    };
+    my $elapsed = time - $before;
+    my $message = "compiled";
+    $message .= " ($elapsed secs)" if $elapsed > 5;
+    $self->{nte}->elog($message);
+    return 1;
+};
+
+sub restart {
+    my $self = shift;
+
+    return 1 if ! defined $self->{nte}{ns_ref}{address};
+
+    my $before = time;
+    $self->{nte}->set_status("remote restart");
+    system ('make restart') == 0 or do {
+        $self->{nte}->set_status("last: FAILED restart: $?");
+        $self->{nte}->elog("unable to restart: $?");
+        return;
+    };
+    my $elapsed = time - $before;
+    my $message = "restarted";
+    $message .= " ($elapsed secs)" if $elapsed > 5;
+    $self->{nte}->elog($message);
+    return 1;
+};
+
+sub rsync {
+    my $self = shift;
+
+    my $dir = $self->{nte}{export_dir};
+
+    return 1 if ! defined $self->{nte}{ns_ref}{address};  # no rsync
+
+    $self->{nte}->set_status("remote rsync");
+    my $before = time;
+    system ('make remote') == 0 or do {
+        $self->{nte}->set_status("last: FAILED rsync: $?");
+        $self->{nte}->elog("unable to rsync: $?");
+        return;
+    };
+    my $elapsed = time - $before;
+    my $message = "copied";
+    $message .= " ($elapsed secs)" if $elapsed > 5;
+    $self->{nte}->elog($message);
+    return 1;
+};
+
+sub write_makefile {
+    my $self = shift;
+
+    return 1 if -e 'Makefile';   # already exists
+
+    my $address = $self->{nte}{ns_ref}{address} || '127.0.0.1';
+    my $datadir = $self->{nte}{ns_ref}{datadir} || getcwd . '/data-all';
+    $datadir =~ s/\/$//;  # strip off any trailing /
+    my $exportdir = $self->{nte}->get_export_dir or die "no export dir!";
+    open my $M, '>', 'Makefile' or do {
+        warn "unable to open ./Makefile: $!\n";
+        return;
+    };
+    print $M <<MAKE
+# After a successful export, 3 make targets are run: compile, rsync, restart
+# Each target can do anything you'd like. Examples are shown for several BIND
+# compatible NS daemons. Remove comments (#) to activate the ones you wish.
+
+################################
+#########  BIND 9  #############
+################################
+# note that all 3 phases do nothing by default. It is expected that you are
+# using BINDs zone transfers. With these options, can also use rsync instead.
+
+compile: $exportdir/named.conf.nictool
+\ttest 1
+
+remote: $exportdir/named.conf.nictool
+\t#rsync -az $exportdir/ bind\@$address:$datadir/
+\ttest 1
+
+restart: $exportdir/named.conf.nictool
+\t#ssh bind\@$address rndc reload
+\ttest 1
+
+################################
+#########    NSD   #############
+################################
+# Note: you will need to configure zonesdir in nsd.conf to point to this
+# export directory. Make sure the export directory reflected below is correct
+# then uncomment each of the targets.
+
+#compile: $exportdir/named.conf.nictool
+#\tnsdc rebuild
+#
+#remote: /var/db/nsd/nsd.db
+#\trsync -az /var/db/nsd/nsd.db nsd\@$address:/var/db/nsd/
+#
+#restart: nsd.db
+#\tssh nsd\@$address nsdc reload
+
+################################
+#########  PowerDNS  ###########
+################################
+
+#compile: $exportdir/named.conf.nictool
+#\ttest 1
+#
+#remote: $exportdir/named.conf.nictool
+#\trsync -az $exportdir/ powerdns\@$address:$datadir/
+#
+#restart: $exportdir/named.conf.nictool
+#\tssh powerdns\@$address pdns_control cycle
+MAKE
+;
+    close $M;
+    return 1;
+};
 
 sub zr_a {
     my ($self, $r) = @_;
@@ -175,9 +306,13 @@ __END__
 
 NicToolServer::Export::BIND
 
+=head1 SYNOPSIS
+
+Export DNS information from NicTool as BIND zone files. These exports are also suitable for use with any BIND compatible authoritative name servers like PowerDNS, NSD, and Knot DNS.
+
 =head1 named.conf.local
 
-This class will export a named.conf.nictool file with all the NicTool zones assigned to a NicTool BIND nameserver. It is expected that this file will be included into a named.conf file via an include entry like this:
+This class will export a named.conf.nictool file with all the NicTool zones assigned to that NicTool BIND nameserver. It is expected that this file will be included into a named.conf file via an include entry like this:
 
  include "/etc/namedb/master/named.conf.nictool";
 

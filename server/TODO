@@ -1,8 +1,10 @@
 ----NEW----
 
+. add SSHFP record type: http://www.openssh.org/txt/rfc4255.txt
+
 . Exports: make sure another export for the same NSID is not running. This can
-          happen on a NS with extremely large (many hundreds of thousands) record
-          sets and very short export intervals.
+    happen on a NS with extremely large (many hundreds of thousands) record
+    sets and very short export intervals. Consider an export concurrency limit.
 
 . RFC 3490, IDNA (International Domain Names in Applications)
 ..  RFC 5890 - 5894 (IDNA 2008)

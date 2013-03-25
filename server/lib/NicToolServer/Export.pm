@@ -23,6 +23,7 @@ sub new {
         {   ns_id => { type => SCALAR },
             debug => { type => BOOLEAN, optional => 1 },
             force => { type => BOOLEAN, optional => 1 },
+            pfextra=> { type => BOOLEAN, optional => 1 },
         }
     );
 
@@ -39,9 +40,10 @@ sub new {
         export_serials => undef,       # export serials for this nsid?
         log_id         => undef,       # current log ID
         active_ns_ids  => undef,       # nsids for a zone
-        ns_ref => undef,
+        ns_ref     => undef,
         time_start => time,
-        dir_orig => Cwd::getcwd,
+        dir_orig   => Cwd::getcwd,
+        postflight_extra => $p{pfextra},
         },
         $class;
 }
@@ -100,6 +102,26 @@ sub set_copied {
         [ $copied, $self->{ns_id}, $self->{log_id} ] 
     );
 }
+
+sub set_no_change {
+    my $self = shift;
+
+    my $last_ts = 'never';
+    my $last_copy;
+    if ( $self->{export_format} eq 'tinydns' ) {
+        $last_copy = $self->get_last_ns_export(success=>1,copied=>1);
+    }
+    else {
+        $self->get_last_ns_export(success=>1);
+    }
+    if ( $last_copy->{date_end} ) {
+        $last_ts = substr( $last_copy->{date_end}, 5, 11 );
+    };
+    my $now_ts = substr( localtime( time ), 4, 15 );
+    $self->set_status("no changes:$now_ts last:$last_ts");
+    $self->elog("exiting",success=>1);
+    return 1;
+};
 
 sub set_partial {
     my $self   = shift;
@@ -187,25 +209,11 @@ sub export {
     $self->preflight or return;
     $self->get_active_nameservers;
 
-    my $last_ts = 'never';
     if ( $self->{force} ) {
         $self->elog("forced");
     }
     elsif ( ! $self->{export_required} ) {
-        my $last_copy;
-        if ( $self->{export_format} eq 'tinydns' ) {
-            $last_copy = $self->get_last_ns_export(success=>1,copied=>1);
-        }
-        else {
-            $self->get_last_ns_export(success=>1);
-        }
-        if ( $last_copy->{date_end} ) {
-            $last_ts = substr( $last_copy->{date_end}, 5, 11 );
-        };
-        my $now_ts = substr( localtime( time ), 4, 15 );
-        $self->set_status("no changes:$now_ts last:$last_ts");
-        $self->elog("exiting",success=>1);
-        return 1;
+        return $self->set_no_change();
     };
 
     my $before = time;

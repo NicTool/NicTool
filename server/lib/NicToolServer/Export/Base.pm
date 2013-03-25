@@ -64,6 +64,7 @@ sub export_db {
         }
         close $fh;
     }   
+    return 1;
 }
 
 sub qualify {

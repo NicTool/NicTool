@@ -5,6 +5,7 @@ use warnings;
 
 use lib '.';
 use lib 'lib';
+use lib '../lib';
 use lib '../server/lib';
 #use Data::Dumper;
 use Getopt::Long;
@@ -19,12 +20,16 @@ $|++;  # output autoflush (so log msgs aren't buffered)
 Getopt::Long::GetOptions(
     'daemon'    => \my $daemon,
     'dsn=s'     => \my $dsn,
+    'help'      => \my $usage,
     'force'     => \my $force,
     'nsid=i'    => \my $nsid,
     'user=s'    => \my $db_user,
     'pass=s'    => \my $db_pass,
+    'pfextra'   => \my $postflight_extra,
     'verbose'   => \my $verbose,
 ) or die "error parsing command line options";
+
+usage() and exit if $usage;
 
 if ( ! defined $dsn || ! defined $db_user || ! defined $db_pass ) {
     get_db_creds_from_nictoolserver_conf();
@@ -38,6 +43,7 @@ $db_pass = ask( "database pass", password => 1 ) if ! $db_pass;
 my $export = NicToolServer::Export->new( 
     ns_id => $nsid || 0,
     force => $force || 0,
+    pfextra => $postflight_extra ? 1 : 0,
     debug => $verbose || 0,
     );
 $export->get_dbh( dsn => $dsn, user => $db_user, pass => $db_pass,) 
@@ -53,7 +59,7 @@ local $SIG{SEGV} = \&graceful_exit;
 local $SIG{ALRM} = \&graceful_exit;
 
 my $count = $export->get_modified_zones();
-print "nsid $nsid found $count zones";
+print "nsid $nsid found $count zones\n";
 if ( $daemon ) { $export->daemon(); }
 else           { $export->export(); };
 
@@ -106,7 +112,8 @@ sub get_db_creds_from_nictoolserver_conf {
     $file = "nictoolserver.conf" if ! -f $file;
     return if ! -f $file;
 
-    print "nsid $nsid reading DB settings from $file\n";
+    print "nsid $nsid " if $nsid;
+    print "reading DB settings from $file\n";
     my $contents = `cat $file`;
 
     if ( ! $dsn ) {
@@ -128,3 +135,20 @@ sub graceful_exit {
     exit;
 }
 
+sub usage {
+    print <<EOHELP
+
+  $0 -nsid <N> [-daemon] [-force] [-verbose]
+
+If nt_export is unable to locate/access nictoolserver.conf, you can supply
+the database connection properties manually:
+
+   -dsn   DBI:mysql:database=nictool;host=localhost;port=3306
+   -user  root
+   -pass  mySecretPassWord
+
+Run the script without any -nsid argument to see a list of NSIDs available.
+
+EOHELP
+;
+};
