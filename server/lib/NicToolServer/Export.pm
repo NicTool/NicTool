@@ -119,7 +119,7 @@ sub set_no_change {
     };
     my $now_ts = substr( localtime( time ), 4, 15 );
     $self->set_status("no changes:$now_ts last:$last_ts");
-    $self->elog("exiting",success=>1);
+    $self->elog("exiting\n",success=>1);
     return 1;
 };
 
@@ -564,6 +564,8 @@ sub preflight {
 
     return 1 if $self->{export_required} == 0; # already called
 
+    my $total_zones = $self->get_modified_zones();
+
     $self->get_log_id;
 
     # bail out if no export required
@@ -576,11 +578,8 @@ sub preflight {
             my $c = $self->get_modified_zones( since => $ts_success );
             if ( $c == 0 ) {
                 $self->{export_required} = 0;
-                $self->elog("No changed zones");
-            }
-            else {
-                $self->elog("$c changed zones");
             };
+            $self->elog( "nsid $self->{ns_id} has $total_zones zones, $c changed");
         };
     };
     $self->elog("export required") if $self->{export_required};

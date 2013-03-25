@@ -58,8 +58,6 @@ local $SIG{USR1} = \&graceful_exit;
 local $SIG{SEGV} = \&graceful_exit;
 local $SIG{ALRM} = \&graceful_exit;
 
-my $count = $export->get_modified_zones();
-print "nsid $nsid found $count zones\n";
 if ( $daemon ) { $export->daemon(); }
 else           { $export->export(); };
 

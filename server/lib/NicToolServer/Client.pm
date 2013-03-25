@@ -25,7 +25,7 @@ sub new {
 
     #$self->{data} = {};
     $self->{data} = decode_data( $content, $r->headers_in->{'Content-Type'} );
-    $self->{protocol_version} = $self{data}{nt_protocol_version};
+    $self->{protocol_version} = $self->{data}{nt_protocol_version};
 
     bless $self, $class;
 }
