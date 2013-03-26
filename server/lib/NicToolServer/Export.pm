@@ -10,11 +10,9 @@ use File::Path;
 use Params::Validate qw/ :all /;
 
 use lib 'lib';
-use NicToolServer::Export::tinydns;
-use NicToolServer::Export::BIND;
 
-# this class and subclasses support nt_export.pl
-# subclasses (see tinydns & BIND ^^) have server specific export logic
+# this class and its subclasses support nt_export.pl
+# subclasses (tinydns, BIND, PowerDNS, MaraDNS) have server specific logic
 
 sub new {
     my $class = shift;
@@ -462,7 +460,7 @@ sub get_log_id {
         }
     );
     return $self->{log_id} if defined $self->{log_id};
-    my $message = "started";
+    my $message = "init";
     my $sql   = "INSERT INTO nt_nameserver_export_log 
         SET nt_nameserver_id=?, date_start=CURRENT_TIMESTAMP(), message=?";
 
@@ -531,7 +529,6 @@ sub get_active_nameservers {
         $r->{export_serials}++ if $r->{export_format} ne 'tinydns';
     }
 
-    my $export_format;
     if ( $self->{ns_id} ) {
         $self->{ns_ref} = $self->{active_ns_ids}{$self->{ns_id}};
         $self->{export_format} = $self->{ns_ref}{export_format};
@@ -541,23 +538,34 @@ sub get_active_nameservers {
         $self->{export_format} = $first->{export_format} if $first->{export_format};
     };
 
+    $self->load_export_class();
+
+    return $self->{active_ns};
+}
+
+sub load_export_class {
+    my $self = shift;
+
     if ( $self->{export_format} eq 'bind' ) {
+        require NicToolServer::Export::BIND;
         $self->{export_class} = NicToolServer::Export::BIND->new( $self );
     }
     elsif ( $self->{export_format} eq 'tinydns' ) {
+        require NicToolServer::Export::tinydns;
         $self->{export_class} = NicToolServer::Export::tinydns->new( $self );
     }
     elsif ( $self->{export_format} eq 'powerdns' ) {
+        require NicToolServer::Export::PowerDNS;
         $self->{export_class} = NicToolServer::Export::PowerDNS->new( $self );
     }
     elsif ( $self->{export_format} eq 'maradns' ) {
+        require NicToolServer::Export::MaraDNS;
         $self->{export_class} = NicToolServer::Export::Maradns->new( $self );
     }
     else {
         die "unknown export format: $self->{export_format}\n";
     };
-    return $self->{active_ns};
-}
+};
 
 sub preflight {
     my $self = shift;
