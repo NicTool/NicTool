@@ -135,7 +135,7 @@ sub write_makefile {
         return;
     };
     print $M <<MAKE
-# After a successful export, 3 make targets are run: compile, rsync, restart
+# After a successful export, 3 make targets are run: compile, remote, restart
 # Each target can do anything you'd like. Examples are shown for several BIND
 # compatible NS daemons. Remove comments (#) to activate the ones you wish.
 
