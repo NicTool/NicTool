@@ -33,7 +33,7 @@ $export->get_dbh(
 );
 
 my $r;
-my $count = $export->get_modified_zones();
+my $count = $export->get_modified_zones_count();
 
 isa_ok( $export, 'NicToolServer::Export');
 ok( defined $count, "found $count zones");

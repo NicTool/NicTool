@@ -70,10 +70,11 @@ sub elog {
         @_,
         {   success => { type => BOOLEAN, optional => 1 },
             partial => { type => BOOLEAN, optional => 1 },
+            sc      => { type => BOOLEAN, optional => 1 },
         }
     );
     my $logid = $self->get_log_id();
-    my $sql = "UPDATE nt_nameserver_export_log 
+    my $sql = "UPDATE nt_nameserver_export_log
     SET message=CONCAT_WS(', ',message,?)";
 
     my @args = $message;
@@ -87,17 +88,18 @@ sub elog {
     push @args, $self->{ns_id}, $logid;
     $sql .= "WHERE nt_nameserver_id=? AND nt_nameserver_export_log_id=?";
     $self->exec_query( $sql, \@args );
-    print ", $message";
+    print ", " if ! $p{sc};  # comma prefix
+    print $message;
     return $message;
 }
 
 sub set_copied {
     my $self   = shift;
     my $copied = shift;
-    $self->exec_query( 
+    $self->exec_query(
         "UPDATE nt_nameserver_export_log SET copied=? WHERE nt_nameserver_id=?
             AND nt_nameserver_export_log_id=?",
-        [ $copied, $self->{ns_id}, $self->{log_id} ] 
+        [ $copied, $self->{ns_id}, $self->{log_id} ]
     );
 }
 
@@ -124,19 +126,19 @@ sub set_no_change {
 sub set_partial {
     my $self   = shift;
     my $boolean = shift;
-    $self->exec_query( 
-        "UPDATE nt_nameserver_export_log SET partial=? 
+    $self->exec_query(
+        "UPDATE nt_nameserver_export_log SET partial=?
         WHERE nt_nameserver_id=? AND nt_nameserver_export_log_id=?",
-        [ $boolean, $self->{ns_id}, $self->{log_id} ] 
+        [ $boolean, $self->{ns_id}, $self->{log_id} ]
     );
 }
 
 sub set_status {
     my $self    = shift;
     my $message = shift;
-    $self->exec_query( 
+    $self->exec_query(
         "UPDATE nt_nameserver SET export_status=?  WHERE nt_nameserver_id=?",
-         [ $message, $self->{ns_id} ] 
+         [ $message, $self->{ns_id} ]
     );
 }
 
@@ -145,7 +147,7 @@ sub cleanup_db {
 
 # delete the "started, 0 changed zones, exiting" log entries older than today
     $self->exec_query(
-        "DELETE FROM nt_nameserver_export_log 
+        "DELETE FROM nt_nameserver_export_log
           WHERE copied=0 AND success=1
             AND date_start < DATE_SUB( CURRENT_TIMESTAMP, INTERVAL 1 DAY)
             AND nt_nameserver_id=?",
@@ -320,7 +322,7 @@ sub get_last_ns_export {
         }
     );
 
-    my $sql = "SELECT nt_nameserver_export_log_id AS id, 
+    my $sql = "SELECT nt_nameserver_export_log_id AS id,
         date_start, date_end, message
       FROM nt_nameserver_export_log
         WHERE nt_nameserver_id=?";
@@ -359,7 +361,7 @@ sub get_ns_id {
         if ( !$p{id} && !$p{name} && !$p{id} );
 
     my @args;
-    my $sql = "SELECT nt_nameserver_id AS id FROM nt_nameserver 
+    my $sql = "SELECT nt_nameserver_id AS id FROM nt_nameserver
         WHERE deleted=0";
 
     if ( defined $p{id} ) {
@@ -383,19 +385,19 @@ sub get_ns_zones {
     my $self = shift;
     my %p = validate( @_,
         { last_modified => { type => SCALAR, optional => 1 },
-          query_result  => { type => BOOLEAN, optional => 1 }, 
+          query_result  => { type => BOOLEAN, optional => 1 },
         },
     );
 
     my $sql = "SELECT z.nt_zone_id, z.zone, z.mailaddr, z.serial, z.refresh,
         z.retry, z.expire, z.minimum, z.ttl, z.location, z.last_modified,
- (SELECT GROUP_CONCAT(nt_nameserver_id) FROM nt_zone_nameserver n 
+ (SELECT GROUP_CONCAT(nt_nameserver_id) FROM nt_zone_nameserver n
     WHERE n.nt_zone_id=z.nt_zone_id) AS nsids
      FROM nt_zone z";
 
     my @args;
-    if ( $self->{ns_id} == 0 ) {
-        $sql .= " WHERE z.deleted=0";  # all zones, regardless of NS pref
+    if ( $self->{ns_id} == 0 ) {    # all zones, regardless of NS pref
+        $sql .= " WHERE z.deleted=0";
     }
     else {
         $sql .= "
@@ -419,11 +421,11 @@ sub get_ns_records {
     my $self = shift;
     my %p = validate( @_,
         { last_modified => { type => SCALAR, optional => 1 },
-          query_result  => { type => BOOLEAN, optional => 1 }, 
+          query_result  => { type => BOOLEAN, optional => 1 },
         },
     );
 
-    my $sql = "SELECT r.name, r.ttl, t.name AS type, r.address, r.weight, 
+    my $sql = "SELECT r.name, r.ttl, t.name AS type, r.address, r.weight,
         r.priority, r.other, r.location, z.zone AS zone_name,
         UNIX_TIMESTAMP(timestamp) AS timestamp
       FROM nt_zone_record r
@@ -476,17 +478,17 @@ sub get_log_id {
     return $self->{log_id};
 }
 
-sub get_modified_zones {
+sub get_modified_zones_count {
     my $self = shift;
     my %p = validate( @_, { since => { type => SCALAR | UNDEF, optional => 1 }, } );
 
-    my $sql = "SELECT COUNT(*) AS count FROM nt_zone z WHERE 1=1";
+    my $sql = "SELECT COUNT(*) AS count FROM nt_zone z WHERE z.deleted=0";
     my @args;
 
     if ( defined $self->{ns_id} && $self->{ns_id} != 0 ) {
         $sql = "SELECT COUNT(*) AS count FROM nt_zone_nameserver zn
         LEFT JOIN nt_zone z ON zn.nt_zone_id=z.nt_zone_id
-        WHERE zn.nt_nameserver_id=?";
+        WHERE z.deleted=0 AND zn.nt_nameserver_id=? ";
         @args = $self->{ns_id};
     };
 
@@ -517,7 +519,7 @@ sub get_active_nameservers {
     my $self = shift;
     return $self->{active_ns} if defined $self->{active_ns};
 
-    my $sql = "SELECT * FROM nt_nameserver WHERE deleted=0 
+    my $sql = "SELECT * FROM nt_nameserver WHERE deleted=0
         ORDER BY nt_nameserver_id";
     $self->{active_ns} = $self->exec_query($sql);    # populated
 
@@ -572,7 +574,8 @@ sub preflight {
 
     return 1 if $self->{export_required} == 0; # already called
 
-    my $total_zones = $self->get_modified_zones();
+    my $total_zones = $self->get_modified_zones_count();
+    $self->elog( "nsid $self->{ns_id} has $total_zones zones",sc=>1);
 
     $self->get_log_id;
 
@@ -583,11 +586,11 @@ sub preflight {
         my $ts_success = $export->{date_start};
         if ( $ts_success ) {
 # do any zones for this NS have changes since the last successful export?
-            my $c = $self->get_modified_zones( since => $ts_success );
+            my $c = $self->get_modified_zones_count( since => $ts_success );
             if ( $c == 0 ) {
                 $self->{export_required} = 0;
             };
-            $self->elog( "nsid $self->{ns_id} has $total_zones zones, $c changed");
+            $self->elog( "$c changed");
         };
     };
     $self->elog("export required") if $self->{export_required};
@@ -609,7 +612,7 @@ sub postflight {
     $self->cleanup_db();
 
     # mark export successful
-    $self->elog("complete", success=>1);
+    $self->elog("complete\n", success=>1);
 }
 
 sub update_status {
@@ -672,7 +675,7 @@ sub zr_soa {
     return $r;
 }
 
-sub zr_ns { 
+sub zr_ns {
     my $self = shift;
     my $z = shift;
     my $r;
