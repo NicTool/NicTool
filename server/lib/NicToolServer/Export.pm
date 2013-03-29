@@ -642,6 +642,10 @@ sub write_runfile {
        $suffix = '"';
     };
     my $nsid = "-nsid " . $self->{ns_id};
+    my $user;  # try to work out nictool export username (if exists)
+       $user   = 'nt_export' if getpwnam('nt_export');
+       $user ||= 'nictool'   if getpwnam('nictool');
+       $user ||= 'nt_export_user';   # ugly enough they'll want to change it
 
     open my $F, '>', 'run' or return;
     print $F <<EORUN
@@ -649,22 +653,47 @@ sub write_runfile {
 #
 # direct STDERR to STDOUT
 exec 2>&1
+cd $self->{dir_orig}
 #
-EXPORT_USER=nt_export
+EXPORT_USER=$user
 #
 # when this run file is executed, it will run the nt_export.pl script with the
-# privileges of the EXPORT_USER.
+# privileges of the EXPORT_USER. To export successfully, the enclosing
+# directory likely needs write permission by the export user. If it doesn't,
+# try this: chown -R $user $self->{dir_orig}
 #
+# Choose from one of the three deployment models, using comments to
+# activate only one exec entry.
+#
+######################################################
 # For use with init, upstart, daemontools, or comparable.
+######################################################
 #exec $su ./nt_export.pl $nsid -daemon | logger $suffix
 #
-# For cron, at, or other periodic triggers, this works nicely
-#exec $su ./nt_export.pl $nsid | logger $suffix
+# for daemontools, symlink this directory into the service directory.
+# If svscan is running, the export will run almost immediately.
+#   ln -s $self->{dir_orig} /var/service
 #
-# For interactive human use. You may need to set the ownership of the export
-# directory. The -force option is included because if you are running this
-# by hand, you likely want the export to happen regardless of any DB changes.
+######################################################
+# For use with periodic triggers like cron and at
+######################################################
+#exec /usr/bin/perl ./nt_export.pl $nsid | logger
+#
+# this entry is suitable for addition to /etc/crontab
+# */3\t*\t*\t*\t*\t$user $self->{dir_orig}/run
+#
+# this entry is suitable for addition to ${user}'s crontab:
+# */3\t*\t*\t*\t*\t$self->{dir_orig}/run
+#
+######################################################
+# For interactive human use.
+######################################################
+# Note that the -force option is included, as you likely want to export
+# regardless of DB changes since the last successful export.
 exec $su ./nt_export.pl $nsid -force $suffix
+
+# return to whence we came
+cd -
 EORUN
 ;
     close $F;
