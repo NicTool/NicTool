@@ -297,6 +297,11 @@ sub zr_naptr {
     return qq[$r->{name} $r->{ttl}   IN  NAPTR   $order  $pref   "$flags"  "$service"    "$regexp" $replace\n];
 }
 
+sub zr_sshfp {
+    my ($self, $r) = @_;
+    return "$r->{name}	$r->{ttl}	IN  SSHFP	$r->{address}\n";
+}
+
 
 1;
 

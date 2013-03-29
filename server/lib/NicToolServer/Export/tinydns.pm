@@ -173,7 +173,8 @@ sub export_db {
         $r->{location}  ||= '';
         $r->{timestamp} = $self->format_timestamp($r->{timestamp}),
         my $method = 'zr_' . lc $r->{type};
-        print $fh $self->$method( $r );
+        eval { print $fh $self->$method( $r ); };
+        $self->{nte}->elog( $@ ) if $@;
     };
     $result->finish;
 
@@ -459,6 +460,44 @@ sub zr_naptr {
 
     return $result . "\n";
 }
+
+sub zr_sshfp {
+    my $self = shift;
+    my $r = shift or die;
+
+# http://www.openssh.org/txt/rfc4255.txt
+# http://tools.ietf.org/html/draft-os-ietf-sshfp-ecdsa-sha2-00
+
+    my @chunks = split /\s+/, $r->{address};
+    my $algo;    #  1=RSA,   2=DSS,     3=ECDSA
+    my $type;    #  1=SHA-1, 2=SHA-256
+    my $fingerprint;
+    if ( 3 == @chunks ) {  # if they put it in address field with spaces
+        ($algo, $type, $fingerprint) = @chunks;
+    }
+    else {                 # they ommitted the whitespace. why? try anyway
+        $algo = substr( $r->{address}, 0, 1 );
+        $type = substr( $r->{address}, 1, 1 );
+        $fingerprint = substr( $r->{address}, 2 );
+    };
+
+    my $hexed_fp;
+    # next 5 lines tx to Henning Brauer
+    $algo = sprintf("\\%03o", $algo);
+    $type = sprintf("\\%03o", $type );
+    for (my $i = 0; $i < length($fingerprint); $i += 2) {
+        $hexed_fp .= sprintf("\\%03o", hex substr($fingerprint, $i, 2));
+    };
+
+    return ':'                                    # special char (generic)
+        . $self->qualify( $r->{name} )            # fqdn
+        . ':44'                                   # n
+        . ':' . $algo . $type . $hexed_fp         # rdata
+        . ':' . $r->{ttl}                         # ttl
+        . ':' . $r->{timestamp}                   # timestamp
+        . ':' . $r->{location}                    # lo
+        . "\n";
+};
 
 sub qualify {
     my $self = shift;
