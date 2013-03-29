@@ -20,7 +20,7 @@ if ( ! defined $dsn || ! defined $db_user || ! defined $db_pass ) {
     get_db_creds_from_nictoolserver_conf();
 }
 
-$dsn     = ask( "database DSN", default  => 
+$dsn     = ask( "database DSN", default  =>
         'DBI:mysql:database=nictool;host=localhost;port=3306') if ! $dsn;
 $db_user = ask( "database user", default => 'root' ) if ! $db_user;
 $db_pass = ask( "database pass", password => 1 ) if ! $db_pass;
@@ -30,10 +30,10 @@ prompt_last_chance();
 my $dbh  = DBIx::Simple->connect( $dsn, $db_user, $db_pass )
             or die DBIx::Simple->error;
 
-my @versions = qw/ 2.00 2.05 2.08 2.09 2.10 2.11 2.14 2.15 2.16 /;
+my @versions = qw/ 2.00 2.05 2.08 2.09 2.10 2.11 2.14 2.15 2.16 2.18 /;
 
-foreach my $version ( @versions ) { 
-# first, run a DB test query 
+foreach my $version ( @versions ) {
+# first, run a DB test query
     my $test_sub = '_sql_test_' . $version;  # assemble sub name
     $test_sub =~ s/\./_/g;                   # replace . with _
     no strict 'refs';
@@ -95,11 +95,29 @@ EO_SOME_DAY
 ;
 };
 
+sub _sql_test_2_18 {
+    my $r = _get_db_version();
+    return 1 if ! defined $r;   # query failed
+    return 0 if $r eq '2.16';   # do it!
+    return 1;                   # don't update
+};
+
+sub _sql_2_18 {
+    <<EO_SQL_2_18
+INSERT INTO `resource_record_type`
+ (`id`, `name`, `description`, `reverse`, `forward`)
+VALUES
+ (35,'NAPTR','Naming Authority Pointer',0,1),
+ (44,'SSHFP','Secure Shell Key Fingerprints',0,1),
+ (46,'RRSIG','Resource Record Signature',0,0),
+ (47,'NSEC','Next Secure',0,0);
+
+UPDATE nt_options SET option_value='2.18' WHERE option_name='db_version';
+EO_SQL_2_18
+};
 
 sub _sql_test_2_16 {
-    my $sql = 'SELECT option_value FROM nt_options WHERE option_name="db_version"';
-    my $r;
-    eval { $r = $dbh->query( $sql )->list; };
+    my $r = _get_db_version();
     return 1 if ! defined $r;   # query failed
     return 0 if $r eq '2.15';   # do it!
     return 1;                   # don't update
@@ -129,9 +147,7 @@ EO_SQL_2_16
 };
 
 sub _sql_test_2_15 {
-    my $sql = 'SELECT option_value FROM nt_options WHERE option_name="db_version"';
-    my $r;
-    eval { $r = $dbh->query( $sql )->list; };
+    my $r = _get_db_version();
     return 1 if ! defined $r;   # query failed
     return 0 if $r eq '2.14';   # do it!
     return 1;                   # don't update
@@ -147,9 +163,7 @@ EO_SQL_2_15
 };
 
 sub _sql_test_2_14 {
-    my $sql = 'SELECT option_value FROM nt_options WHERE option_name="db_version"';
-    my $r;
-    eval { $r = $dbh->query( $sql )->list; };
+    my $r = _get_db_version();
     return 1 if ! defined $r;   # query failed
     return 0 if $r eq '2.11';   # do it! (no DB changes since v2.11)
     return 1;                   # don't update
@@ -179,9 +193,7 @@ EO_SQL_2_14
 };
 
 sub _sql_test_2_11 {
-    my $sql = 'SELECT option_value FROM nt_options WHERE option_name="db_version"';
-    my $r;
-    eval { $r = $dbh->query( $sql )->list; };
+    my $r = _get_db_version();
     return 1 if ! defined $r;   # query failed
     return 0 if $r eq '2.10';   # do it!
     return 1;                   # don't update
@@ -736,4 +748,10 @@ Hit return to continue...
     my $r = <STDIN>;
 };
 
+sub _get_db_version {
+    my $sql = 'SELECT option_value FROM nt_options WHERE option_name="db_version"';
+    my $r;
+    eval { $r = $dbh->query( $sql )->list; };
+    return $r;
+};
 
