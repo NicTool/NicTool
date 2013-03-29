@@ -638,9 +638,10 @@ sub write_runfile {
     my $su = 'setuidgid $EXPORT_USER';
     my $suffix = '';
     if ( ! -x "/usr/local/bin/setuidgid" ) {
-       $su = 'su -m $EXPORT_USER -c \'';
-       $suffix = "'";
+       $su = 'su -m $EXPORT_USER -c "';
+       $suffix = '"';
     };
+    my $nsid = "-nsid " . $self->{ns_id};
 
     open my $F, '>', 'run' or return;
     print $F <<EORUN
@@ -650,21 +651,20 @@ sub write_runfile {
 exec 2>&1
 #
 EXPORT_USER=nt_export
-NSID=$self->{ns_id}
 #
 # when this run file is executed, it will run the nt_export.pl script with the
 # privileges of the EXPORT_USER.
 #
 # For use with init, upstart, daemontools, or comparable.
-#exec $su ./nt_export.pl -nsid \$NSID -daemon | logger $suffix
+#exec $su ./nt_export.pl $nsid -daemon | logger $suffix
 #
 # For cron, at, or other periodic triggers, this works nicely
-#exec $su ./nt_export.pl -nsid \$NSID | logger $suffix
+#exec $su ./nt_export.pl $nsid | logger $suffix
 #
 # For interactive human use. You may need to set the ownership of the export
 # directory. The -force option is included because if you are running this
 # by hand, you likely want the export to happen regardless of any DB changes.
-exec $su ./nt_export.pl -nsid \$NSID -force $suffix
+exec $su ./nt_export.pl $nsid -force $suffix
 EORUN
 ;
     close $F;
