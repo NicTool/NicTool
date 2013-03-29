@@ -112,6 +112,7 @@ VALUES
  (46,'RRSIG','Resource Record Signature',0,0),
  (47,'NSEC','Next Secure',0,0);
 
+UPDATE nt_zone SET mailaddr=CONCAT('hostmaster.',zone,'.') WHERE mailaddr LIKE 'hostmaster.ZONE.TLD%';
 UPDATE nt_options SET option_value='2.18' WHERE option_name='db_version';
 EO_SQL_2_18
 };

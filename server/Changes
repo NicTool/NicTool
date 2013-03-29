@@ -1,5 +1,14 @@
 Revision history for NicToolServer
 
+2.18    2013.03.28
+
+    * SQL: added record types: NAPTR, SSHFP, RRSIG, NSEC
+    * corrected zone count in export log entries
+    * added BIND postflight export options (compile,remote,restart), enabling
+      easier integration with PowerDNS and NSD
+    * be a better behaved daemon when encountering tinydns export errors
+    * while sleeping, print status messages in the log every 100 seconds
+
 2.16    2012.12.11
 
     * expanded length of record address from 255 to 512 bytes, to accommodate

@@ -1,7 +1,5 @@
 ----NEW----
 
-. add SSHFP record type: http://www.openssh.org/txt/rfc4255.txt
-
 . Exports: make sure another export for the same NSID is not running. This can
     happen on a NS with extremely large (many hundreds of thousands) record
     sets and very short export intervals. Consider an export concurrency limit.
@@ -27,6 +25,7 @@
 
 . Support other database engines:
 ..  remove all MySQL specific ENUM columns
+..  test against sqlite
 
 . Support for NAPTR records: http://tools.ietf.org/html/rfc3403
 
@@ -36,11 +35,15 @@
     the information")
 
 . Fix hostmaster.ZONE.TLD entries in nt_zone table.
-..  UPDATE nt_zone SET mailaddr=CONCAT('hostmaster.',zone,'.') WHERE mailaddr LIKE 'hostmaster.ZONE.TLD%';
-..  Fix up Zone::new_zone to automatically rewrite those entries before insertion.
-..  Update the javascript to format that value more intelligently
+..  Have Zone::new_zone automatically rewrite those entries before insertion.
+..  Update the JS to format that value more intelligently
 
 ==== COMPLETED =====
+
+. Fix hostmaster.ZONE.TLD entries in nt_zone table.
+..  UPDATE nt_zone SET mailaddr=CONCAT('hostmaster.',zone,'.') WHERE mailaddr LIKE 'hostmaster.ZONE.TLD%';
+
+. add SSHFP record type: http://www.openssh.org/txt/rfc4255.txt
 
 . Limit the num of export logs retained. Prune successful "0 zones changed" log entries older than 1 day.
 
