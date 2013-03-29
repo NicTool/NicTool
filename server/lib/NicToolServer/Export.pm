@@ -463,7 +463,7 @@ sub get_log_id {
     );
     return $self->{log_id} if defined $self->{log_id};
     my $message = "init";
-    my $sql   = "INSERT INTO nt_nameserver_export_log 
+    my $sql   = "INSERT INTO nt_nameserver_export_log
         SET nt_nameserver_id=?, date_start=CURRENT_TIMESTAMP(), message=?";
 
     my @args = ( $self->{ns_id}, $message );
@@ -507,7 +507,7 @@ sub get_zone_ns_ids {
     ref $zone or die "invalid zone object";
 
     return $self->{dbix_r}->query(
-        "SELECT zn.nt_nameserver_id 
+        "SELECT zn.nt_nameserver_id
           FROM nt_zone_nameserver zn
             LEFT JOIN nt_nameserver n ON zn.nt_nameserver_id=n.nt_nameserver_id
                 WHERE zn.nt_zone_id=? AND n.deleted=0",
@@ -635,6 +635,13 @@ sub write_runfile {
 
     chdir $self->{dir_orig};
     return if -f 'run';
+    my $su = 'setuidgid $EXPORT_USER';
+    my $suffix = '';
+    if ( ! -x "/usr/local/bin/setuidgid" ) {
+       $su = 'su -m $EXPORT_USER -c \'';
+       $suffix = "'";
+    };
+
     open my $F, '>', 'run' or return;
     print $F <<EORUN
 #!/bin/sh
@@ -642,19 +649,22 @@ sub write_runfile {
 # direct STDERR to STDOUT
 exec 2>&1
 #
-# if run file is started by something like init, upstart, or daemontools,
-# setuidgid to the 'nictool' user, and run the export, logging to syslog.
-#exec setuidgid nictool ./nt_export.pl -nsid $self->{ns_id} -daemon | logger
+EXPORT_USER=nt_export
+NSID=$self->{ns_id}
 #
-# For cron, at, or other periodic trigger
-#exec setuidgid nictool ./nt_export.pl -nsid $self->{ns_id} | logger
+# when this run file is executed, it will run the nt_export.pl script with the
+# privileges of the EXPORT_USER.
 #
-# For interactive use by a human. If said human is logged in as the
-# 'nictool' user, this works well. Otherwise, you may have to alter
-# ownership of the files created. The -force option is included because
-# odds are, if you are running this by hand, you want the export to complete
-# regardless of any DB changes.
-exec setuidgid nictool ./nt_export.pl -nsid $self->{ns_id} -force
+# For use with init, upstart, daemontools, or comparable.
+#exec $su ./nt_export.pl -nsid \$NSID -daemon | logger $suffix
+#
+# For cron, at, or other periodic triggers, this works nicely
+#exec $su ./nt_export.pl -nsid \$NSID | logger $suffix
+#
+# For interactive human use. You may need to set the ownership of the export
+# directory. The -force option is included because if you are running this
+# by hand, you likely want the export to happen regardless of any DB changes.
+exec $su ./nt_export.pl -nsid \$NSID -force $suffix
 EORUN
 ;
     close $F;
