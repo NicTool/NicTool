@@ -290,7 +290,7 @@ sub get_export_dir {
                 $self->{export_dir} = $dir;
                 return $dir;
             };
-            $self->elog("export dir ($dir) not writable");
+            $self->elog("export dir ($dir) not writable\n");
             return;
         }
     }
@@ -308,7 +308,7 @@ sub get_export_dir {
         $self->{export_dir} = $dir;
         return $dir;     # I have write permission
     };
-    $self->elog("unable to create dir ($dir): $@");
+    $self->elog("unable to create dir ($dir): $@\n");
     return;
 };
 
