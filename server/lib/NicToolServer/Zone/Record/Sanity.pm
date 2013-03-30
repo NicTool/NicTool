@@ -85,9 +85,9 @@ sub record_exists {
     my $sql = "SELECT r.*, t.name AS type
     FROM nt_zone_record r
     LEFT JOIN resource_record_type t ON r.type_id=t.id
-      WHERE r.deleted=0 
+      WHERE r.deleted=0
         AND t.name=?
-        AND r.nt_zone_id = ? 
+        AND r.nt_zone_id = ?
         AND r.name = ?";
 
     $sql .= " AND r.nt_zone_record_id <> $rid" if $rid;
@@ -107,7 +107,7 @@ sub _name_collision {
 # we're here, so name is something like blah, or blah.blah
 
 # if zone is zone.com., it's the origin, which should have already been checked
-# for subdomain collisions. If it isn't, check ... 
+# for subdomain collisions. If it isn't, check ...
 # split input in case it's like blah.blah.blah.zone.com and blah.blah.zone.com exists as a domain.
     my @nparts = split( /\./, $data->{name} );
     my @tocheck;
@@ -121,7 +121,7 @@ sub _name_collision {
 
         #warn "checking if exists $name";
         if ( $self->zone_exists( $name, 0 ) ) {
-            $self->error( 'name', 
+            $self->error( 'name',
                 "Cannot create/edit Record '$data->{name}' in zone '$z->{zone}': it conflicts with existing zone '$name'."
             );
             last;
@@ -250,14 +250,14 @@ sub _valid_rr_type {
 
     # the get_record_type will match numeric record IDs and convert them to
     # their codes. For validation here, exclude that ability.
-    $self->error('type', "Invalid record type $data->{type}" ) 
+    $self->error('type', "Invalid record type $data->{type}" )
         if $data->{type} =~ /^\d+$/;
 
     # the form is upper case. The following checks catch
     # the correct type, even if user f's with form input
-    $data->{type} =~ tr/a-z/A-Z/; 
+    $data->{type} =~ tr/a-z/A-Z/;
 
-    $self->error('type', "Invalid record type $data->{type}" ) 
+    $self->error('type', "Invalid record type $data->{type}" )
         if ! $self->get_record_type( { type => $data->{type} } );
 }
 
@@ -265,7 +265,7 @@ sub _valid_cname {
     my ( $self, $data, $zone_text ) = @_;
 
 # NAME
-    my @args = ( $data->{name}, 'CNAME', 
+    my @args = ( $data->{name}, 'CNAME',
         $data->{nt_zone_id}, $data->{nt_zone_record_id} );
 
     if ($self->record_exists( @args ) ) {
@@ -281,7 +281,7 @@ sub _valid_cname {
     };
 
 # ADDRESS
-    $self->_valid_address( $data, $zone_text );  
+    $self->_valid_address( $data, $zone_text );
     $self->_valid_address_chars( $data, $zone_text );
 }
 
@@ -291,7 +291,7 @@ sub _valid_a {
 # validation plan: name, address
 
 # NAME
-    if ( $self->record_exists( 
+    if ( $self->record_exists(
         $data->{name}, 'CNAME', $data->{nt_zone_id}, $data->{nt_zone_record_id} ) ) {
             $self->error( 'name', "record $data->{name} already exists within zone as an Alias (CNAME) record." );
     };
@@ -299,13 +299,13 @@ sub _valid_a {
 # ADDRESS
     $self->_valid_address_chars( $data, $zone_text );
 
-    Net::IP::ip_is_ipv4( $data->{address} ) or 
-        $self->error( 'address', 
+    Net::IP::ip_is_ipv4( $data->{address} ) or
+        $self->error( 'address',
             'Address for A records must be a valid IP address.'
         );
-    
-    $self->valid_ip_address( $data->{address} ) or 
-        $self->error( 'address', 
+
+    $self->valid_ip_address( $data->{address} ) or
+        $self->error( 'address',
             'Address for A records must be a valid IP address.'
         );
 }
@@ -331,13 +331,13 @@ sub _valid_aaaa {
     $self->_valid_address_chars( $data, $zone_text );
 
 # TODO: add support for IPv4 transitional IPs: 2001:db8::1.2.3.4
-    Net::IP::ip_is_ipv6( $data->{address} )  
-        or $self->error( 'address', 
+    Net::IP::ip_is_ipv6( $data->{address} )
+        or $self->error( 'address',
             'Address for AAAA records must be a valid IPv6 address.'
         );
 
-    $self->valid_ip_address( $data->{address} ) or 
-        $self->error( 'address', 
+    $self->valid_ip_address( $data->{address} ) or
+        $self->error( 'address',
             'Address for A records must be a valid IP address.'
         );
 }
@@ -349,7 +349,7 @@ sub _valid_mx {
 
 # NAME
     # MX records cannot share a name with a CNAME
-    if ($self->record_exists( $data->{name}, 'CNAME', 
+    if ($self->record_exists( $data->{name}, 'CNAME',
             $data->{nt_zone_id}, $data->{nt_zone_record_id} ) ) {
         $self->error( 'name', "MX records must not exist as a CNAME: RFCs 1034, 2181" );
     };
@@ -360,11 +360,23 @@ sub _valid_mx {
 
 # ADDRESS
     # MX records must not point to a CNAME
-    if ($self->record_exists( $data->{address}, 'CNAME', 
+    if ($self->record_exists( $data->{address}, 'CNAME',
             $data->{nt_zone_id}, $data->{nt_zone_record_id} ) ) {
         $self->error( 'address', "MX records must not point to a CNAME: RFC 2181" );
     };
 
+    # if MX target is in zone, assure it does not exist as a CNAME
+    if ( $data->{address} =~ /(.*)\.$zone_text\.$/ ) {
+        if ($self->record_exists( $1, 'CNAME',
+                $data->{nt_zone_id}, $data->{nt_zone_record_id} ) ) {
+            $self->error( 'address', "MX records must not point to a CNAME: RFC 2181" );
+        };
+    }
+    else {
+        # TODO: use Net::DNS to query the target and assure it's not a CNAME
+    };
+
+# reject if CNAME = 'mail'
     # MX records must point to absolute hostnames
     $self->_is_fully_qualified( $data, $zone_text );
 
@@ -377,7 +389,7 @@ sub _valid_mx {
     };
 
     $self->_valid_address_chars( $data, $zone_text );
-    $self->_valid_address( $data, $zone_text );  
+    $self->_valid_address( $data, $zone_text );
 }
 
 sub _valid_ns {
@@ -389,7 +401,7 @@ sub _valid_ns {
     # _valid_name will check the name label for validity
 
     # catch redundant NS records. Creating or editing NS Records with 'name'
-    # set to 'zone' is disallowed (these records are created automatically 
+    # set to 'zone' is disallowed (these records are created automatically
     # at export time). -gws
     if ( $data->{name} eq "$zone_text." ) {
         $self->error( 'name',
@@ -399,7 +411,7 @@ sub _valid_ns {
 
 # ADDRESS
     # NS records must not point to a CNAME
-    if ($self->record_exists( $data->{address}, 'CNAME', 
+    if ($self->record_exists( $data->{address}, 'CNAME',
             $data->{nt_zone_id}, $data->{nt_zone_record_id} ) ) {
         $self->error( 'address', "NS records must not point to a CNAME: RFC 2181" );
     };
@@ -416,7 +428,7 @@ sub _valid_ns {
     };
 
     $self->_valid_address_chars( $data, $zone_text );
-    $self->_valid_address( $data, $zone_text );  
+    $self->_valid_address( $data, $zone_text );
 }
 
 sub _valid_srv {
@@ -463,7 +475,7 @@ sub _valid_srv {
 
 # ADDRESS
     # SRV records must not point to a CNAME
-    if ($self->record_exists( $data->{address}, 'CNAME', 
+    if ($self->record_exists( $data->{address}, 'CNAME',
             $data->{nt_zone_id}, $data->{nt_zone_record_id} ) ) {
         $self->error( 'address', "CNAME records must not point to a CNAME: RFC 2782" );
     };
@@ -479,12 +491,12 @@ sub _valid_srv {
     };
 
     $self->_valid_address_chars( $data, $zone_text );
-    $self->_valid_address( $data, $zone_text );  
+    $self->_valid_address( $data, $zone_text );
 }
 
 sub _valid_ptr {
     my ( $self, $data, $zone_text) = @_;
-    $self->_valid_address( $data, $zone_text );  
+    $self->_valid_address( $data, $zone_text );
     $self->_valid_address_chars( $data, $zone_text );
 };
 
@@ -551,7 +563,7 @@ sub valid_reverse_label {
 
     if ( length $name < 1 ) {
         $self->error($type, "A domain label must have at least 1 octets (character): RFC 2181");
-    };  
+    };
 
     if ( length $name > 255 ) {
         $self->error($type, "A full domain name is limited to 255 octets (characters): RFC 2181");
@@ -561,7 +573,7 @@ sub valid_reverse_label {
     foreach my $label ( split(/\./, $name) ) {
         if ( length $label > 63 ) {
             $self->error($type, "Max length of a label $label_explain is 63 octets (characters): RFC 2181");
-        }; 
+        };
 
         if ( length $label < 1 ) {
             $self->error($type, "Minimum length of a label $label_explain is 1 octet (character): RFC 2181");
@@ -584,6 +596,6 @@ __END__
 
 =head1 SYNOPSIS
 
-    
+
 =cut
 
