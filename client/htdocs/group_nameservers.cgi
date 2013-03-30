@@ -543,7 +543,7 @@ sub display_edit_nameserver_fields {
         address         => {
             label => 'IP Address',
             value => $modifyperm
-                    ? $q->textfield( -name => 'address', -size => 15, -maxlength => 15)
+                    ? $q->textfield( -name => 'address', -size => 25, -maxlength => 39)
                     : $nameserver->{'address'},
         },
         export_format   => {
@@ -573,7 +573,7 @@ sub display_edit_nameserver_fields {
             value => $modifyperm
                     ? $q->textfield(
                         -name      => 'logdir',
-                        -size      => 40,
+                        -size      => 60,
                         -maxlength => 255
                         )
                     : $nameserver->{'logdir'},
@@ -583,7 +583,7 @@ sub display_edit_nameserver_fields {
             value => $modifyperm
                     ? $q->textfield(
                         -name      => 'datadir',
-                        -size      => 40,
+                        -size      => 60,
                         -maxlength => 255
                         )
                     : $nameserver->{'datadir'},
