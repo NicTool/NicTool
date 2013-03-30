@@ -33,6 +33,7 @@ sub new {
         debug  => defined $p{debug} ? $p{debug} : 0,
         export_class => undef,
         export_dir => undef,
+        export_data_dir => undef,
         export_format => 'tinydns',
         export_required => 1,
         export_serials => undef,       # export serials for this nsid?
@@ -258,6 +259,11 @@ sub get_dbh {
     ) or die DBIx::Simple->error;
     return $self->{dbix_r};
 }
+
+sub get_export_data_dir {
+    my $self = shift;
+    return $self->{ns_ref}{datadir};
+};
 
 sub get_export_dir {
     my $self = shift;

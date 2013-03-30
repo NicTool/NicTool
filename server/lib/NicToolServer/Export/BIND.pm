@@ -14,6 +14,7 @@ use Params::Validate qw/ :all /;
 sub postflight {
     my $self = shift;
     my $dir = shift || $self->{nte}->get_export_dir or return;
+    my $datadir = $self->{nte}->get_export_data_dir || $dir;
     my $fh = $self->get_export_file( 'named.conf.nictool', $dir );
     foreach my $zone ( @{$self->{zone_list}} ) {
         my $tmpl = $self->get_template($dir, $zone);
@@ -22,7 +23,7 @@ sub postflight {
             next;
         };
 
-        print $fh qq[zone "$zone"\t IN { type master; file "$dir/$zone"; };\n];
+        print $fh qq[zone "$zone"\t IN { type master; file "$datadir/$zone"; };\n];
     };
     close $fh;
 
