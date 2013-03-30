@@ -49,7 +49,7 @@ sub get_template {
         next if ! -f "$tmpl_dir/$f";
         $tmpl = "$tmpl_dir/$f";
         last;
-    };    
+    };
     return if ! $tmpl;
 
     open my $FH, '<', $tmpl or do {
@@ -215,6 +215,10 @@ sub zr_mx {
 sub zr_txt {
     my ($self, $r) = @_;
 
+# BIND will croak if the length of the text record is longer than 255
+    if ( length $r->{address} > 255 ) {
+        $r->{address} = join( "\" \"", unpack("(a255)*", $r->{address} ) );
+    };
 # name  ttl  class   rr     text
     return "$r->{name}	$r->{ttl}	IN  TXT	\"$r->{address}\"\n";
 }
