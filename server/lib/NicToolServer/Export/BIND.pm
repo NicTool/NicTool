@@ -320,6 +320,16 @@ sub zr_dnskey {
     return "$r->{name}	$r->{ttl}	IN  DNSKEY	$flags $protocol $algorithm $r->{address}\n";
 }
 
+sub zr_ds {
+    my ($self, $r) = @_;
+
+    my $tag         = $r->{weight};
+    my $algorithm   = $r->{priority};
+    my $digest_type = $r->{other};
+
+    return "$r->{name}	$r->{ttl}	IN  DS	$tag $algorithm $digest_type $r->{address}\n";
+}
+
 
 1;
 

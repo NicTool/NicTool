@@ -499,12 +499,65 @@ sub zr_dnskey {
     my $protocol = $r->{priority};   # protocol:  1 octet
     my $algorithm = $r->{other};     # algorithm: 1 octet
 
+    $self->{nte}->elog( "ERROR, protocol for $r->{name} not 3!" ) if $protocol != 3;
+
     my $rdata = sprintf("\\%06o\\%03o\\%03o", $flags, $protocol, $algorithm);
     $rdata .= $r->{address};         # and finally, the key itself
 
     return ':'                                    # special char (generic)
         . $self->qualify( $r->{name} )            # fqdn
         . ':48'                                   # n
+        . ':' . $rdata                            # rdata
+        . ':' . $r->{ttl}                         # ttl
+        . ':' . $r->{timestamp}                   # timestamp
+        . ':' . $r->{location}                    # lo
+        . "\n";
+};
+
+sub zr_rrsig {
+    my $self = shift;
+    my $r = shift or die;
+
+    # RRSIG: http://www.ietf.org/rfc/rfc4034.txt
+
+# Type Covered, 2 octets
+# Algorithm, 1 octet
+# Labels, 1 octet
+# Original TTL, 4 octet
+# Signature Expiration, 4 octet
+# Signature Inception, 4 octet
+# Key , 2 octet
+# Signer's Name,
+# Signature
+
+    my $rdata;
+
+    return ':'                                    # special char (generic)
+        . $self->qualify( $r->{name} )            # fqdn
+        . ':46'                                   # n
+        . ':' . $rdata                            # rdata
+        . ':' . $r->{ttl}                         # ttl
+        . ':' . $r->{timestamp}                   # timestamp
+        . ':' . $r->{location}                    # lo
+        . "\n";
+};
+
+sub zr_ds {
+    my $self = shift;
+    my $r = shift or die;
+
+    # DS: http://www.ietf.org/rfc/rfc4034.txt
+
+    my $tag         = $r->{weight};     # Key Tag, 2 octets
+    my $algorithm   = $r->{priority};   # Algorithm, 1 octet
+    my $digest_type = $r->{other};      # Digest Type, 1 octet
+
+    my $rdata = sprintf("\\%06o\\%03o\\%03o", $tag, $algorithm, $digest_type);
+    $rdata .= $r->{address};            # Digest
+
+    return ':'                                    # special char (generic)
+        . $self->qualify( $r->{name} )            # fqdn
+        . ':43'                                   # n
         . ':' . $rdata                            # rdata
         . ':' . $r->{ttl}                         # ttl
         . ':' . $r->{timestamp}                   # timestamp
