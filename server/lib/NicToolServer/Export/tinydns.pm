@@ -475,18 +475,37 @@ sub zr_sshfp {
         $fingerprint = substr( $r->{address}, 2 );
     };
 
-    my $hexed_fp;
-    # next 5 lines tx to Henning Brauer
-    $algo = sprintf("\\%03o", $algo);
-    $type = sprintf("\\%03o", $type );
-    for (my $i = 0; $i < length($fingerprint); $i += 2) {
-        $hexed_fp .= sprintf("\\%03o", hex substr($fingerprint, $i, 2));
+    my $rdata = sprintf("\\%03o" x 2, $algo, $type);
+    foreach ( unpack "(a2)*", $fingerprint ) {
+        $rdata .= sprintf("\\%03o", hex $_ );
     };
 
     return ':'                                    # special char (generic)
         . $self->qualify( $r->{name} )            # fqdn
         . ':44'                                   # n
-        . ':' . $algo . $type . $hexed_fp         # rdata
+        . ':' . $rdata                            # rdata (algo.type.fp)
+        . ':' . $r->{ttl}                         # ttl
+        . ':' . $r->{timestamp}                   # timestamp
+        . ':' . $r->{location}                    # lo
+        . "\n";
+};
+
+sub zr_dnskey {
+    my $self = shift;
+    my $r = shift or die;
+
+    # DNSKEY: http://www.ietf.org/rfc/rfc4034.txt
+    my $flags = $r->{weight};        # flags:     2 octet
+    my $protocol = $r->{priority};   # protocol:  1 octet
+    my $algorithm = $r->{other};     # algorithm: 1 octet
+
+    my $rdata = sprintf("\\%06o\\%03o\\%03o", $flags, $protocol, $algorithm);
+    $rdata .= $r->{address};         # and finally, the key itself
+
+    return ':'                                    # special char (generic)
+        . $self->qualify( $r->{name} )            # fqdn
+        . ':48'                                   # n
+        . ':' . $rdata                            # rdata
         . ':' . $r->{ttl}                         # ttl
         . ':' . $r->{timestamp}                   # timestamp
         . ':' . $r->{location}                    # lo

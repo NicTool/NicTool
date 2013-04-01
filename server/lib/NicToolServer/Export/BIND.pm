@@ -310,6 +310,16 @@ sub zr_sshfp {
     return "$r->{name}	$r->{ttl}	IN  SSHFP	$r->{address}\n";
 }
 
+sub zr_dnskey {
+    my ($self, $r) = @_;
+
+    my $flags    = $r->{weight};
+    my $protocol = $r->{priority};
+    my $algorithm = $r->{other};
+
+    return "$r->{name}	$r->{ttl}	IN  DNSKEY	$flags $protocol $algorithm $r->{address}\n";
+}
+
 
 1;
 
