@@ -243,6 +243,9 @@ sub zr_ptr {
 sub zr_soa {
     my ($self, $z) = @_;
 
+    # empty mailaddr makes BIND angry, set a default
+    $z->{mailaddr} ||= 'hostmaster.' . $z->{zone};
+
 # name        ttl class rr    name-server email-addr  (sn ref ret ex min)
     return "
 \$TTL    $z->{ttl};
