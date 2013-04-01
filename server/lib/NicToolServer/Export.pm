@@ -674,7 +674,7 @@ EXPORT_USER=$user
 ######################################################
 # For use with init, upstart, daemontools, or comparable.
 ######################################################
-#exec $su ./nt_export.pl $nsid -daemon | logger $suffix
+#exec $su ./nt_export.pl $nsid -daemon -pfextra | logger $suffix
 #
 # for daemontools, symlink this directory into the service directory.
 # If svscan is running, the export will run almost immediately.
@@ -683,7 +683,7 @@ EXPORT_USER=$user
 ######################################################
 # For use with periodic triggers like cron and at
 ######################################################
-#exec /usr/bin/perl ./nt_export.pl $nsid | logger
+#exec /usr/bin/perl ./nt_export.pl $nsid -pfextra | logger
 #
 # this entry is suitable for addition to /etc/crontab
 # */3\t*\t*\t*\t*\t$user $self->{dir_orig}/run
@@ -696,7 +696,7 @@ EXPORT_USER=$user
 ######################################################
 # Note that the -force option is included, as you likely want to export
 # regardless of DB changes since the last successful export.
-exec $su ./nt_export.pl $nsid -force $suffix
+exec $su ./nt_export.pl $nsid -force -pfextra $suffix
 
 # return to whence we came
 cd -
