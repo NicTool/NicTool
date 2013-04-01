@@ -329,32 +329,26 @@ sub zr_aaaa {
     my $self = shift;
     my $r = shift or die;
 
-# AAAA - from djbdnsRecordBuilder
 # ffff:1234:5678:9abc:def0:1234:0:0
 # :example.com:28:\377\377\022\064\126\170\232\274\336\360\022\064\000\000\000\000
 
-    my $colons = $r->{address} =~ tr/:/:/;
-# insert any compressed colons (there has to be a joke here somewhere..)
+# next 2 lines from djbdnsRecordBuilder, restores any compressed colons
+    my $colons = $r->{address} =~ tr/:/:/;  # count the colons
     if ($colons < 7) { $r->{address} =~ s/::/':' x (9-$colons)/e; }
 
-    my ( $a, $b, $c, $d, $e, $f, $g, $h ) = split /:/, $r->{address};
-    if ( !defined $h ) {
-        die "Didn't get a valid-looking IPv6 address\n";
-    }
-
-    $a = escapeHex( sprintf "%04s", $a );
-    $b = escapeHex( sprintf "%04s", $b );
-    $c = escapeHex( sprintf "%04s", $c );
-    $d = escapeHex( sprintf "%04s", $d );
-    $e = escapeHex( sprintf "%04s", $e );
-    $f = escapeHex( sprintf "%04s", $f );
-    $g = escapeHex( sprintf "%04s", $g );
-    $h = escapeHex( sprintf "%04s", $h );
+    # convert from AAAA compressed notation (8 groups of 4 hex digits) to
+    # 16 escaped octal digits
+    my $oct_ip = sprintf( '\\%.3lo' x 16, # output as escaped octal
+            map { hex $_ }                # convert 2 digit hex to binary
+            map { unpack "(a2)*", $_ }    # split 4 digit hex group in two
+            map { sprintf "%04s", $_ }    # restore leading zero
+            split /:/, $r->{address}      # split into hex groups
+            );
 
     return ':'                            # generic record format
         . $self->qualify( $r->{name} )    # fqdn
         . ':28'                           # n
-        . ':' . "$a$b$c$d$e$f$g$h"        # rdata
+        . ':' . $oct_ip                   # rdata
         . ':' . $r->{ttl}                 # ttl
         . ':' . $r->{timestamp}           # timestamp
         . ':' . $r->{location}            # location
@@ -518,7 +512,7 @@ sub format_timestamp {
     return substr unixtai64( $ts ), 1;
 };
 
-# next 4 subs based on http://www.anders.com/projects/sysadmin/djbdnsRecordBuilder/
+# next 3 subs based on http://www.anders.com/projects/sysadmin/djbdnsRecordBuilder/
 sub escape {
     my $line = pop @_;
     my $out;
@@ -532,18 +526,6 @@ sub escape {
             $out .= $char;
         }
     }
-    return $out;
-}
-
-sub escapeHex {
-
-    # takes a 4 character hex value and converts it to two escaped numbers
-    my $line = pop @_;
-    my @chars = split //, $line;
-
-    my $out = sprintf "\\%.3lo", hex "$chars[0]$chars[1]";
-    $out .= sprintf "\\%.3lo", hex "$chars[2]$chars[3]";
-
     return $out;
 }
 
