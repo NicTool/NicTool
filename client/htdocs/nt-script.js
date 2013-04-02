@@ -87,7 +87,7 @@ function resetZoneRecordFormFields() {
   for ( var i=0; i < rrFields.length; i++ ) {
     $('tr#tr_' + rrFields[i] ).hide();
     $('td#'+rrFields[i] +'_label').text( ucfirst( rrFields[i] ) );
-    $('input#'+rrFields[i] ).attr('readonly', false);
+    $('input#'+rrFields[i] ).val('').attr('readonly', false);
   };
 };
 
