@@ -383,8 +383,8 @@ sub display_zone_properties {
 <div id="propertiesHeader" class="side_pad dark_grey_bg">
  <b>Properties</b>
  <ul class="menu_r">
-  <li class=first id="zpHide" onClick="hideThis('zonePropertiesDiv'); hideThis('zpHide'); showMenuItem('zpShow')">Hide</li>
-  <li class=first id="zpShow" style="display:none;" onClick="showThis('zonePropertiesDiv'); showMenuItem('zpHide'); hideThis('zpShow')">Show</li>
+  <li class=first id="zpHide" onClick="\$('zonePropertiesDiv').hide(); \$('zpHide').hide(); \$('zpShow').show();">Hide</li>
+  <li class=first id="zpShow" style="display:none;" onClick="\$('zonePropertiesDiv').show(); \$('zpHide').show(); \$('zpShow').hide();">Show</li>
   $edit_opt
  </ul>
 </div>
@@ -434,8 +434,8 @@ sub display_nameservers {
 <div id="zoneNameserverHeader" class="dark_grey_bg margin0">
   <span class="bold">Nameservers</span>
   <ul class="menu_r">
-   <li class=first id="znsHide" onClick="hideThis('zoneNameserverListDiv'); hideThis('znsHide'); showMenuItem('znsShow')">Hide</li>
-   <li class=first id="znsShow" style="display:none;" onClick="showThis('zoneNameserverListDiv'); showMenuItem('znsHide'); hideThis('znsShow')">Show</li>];
+   <li class=first id="znsHide" onClick="(\$'zoneNameserverListDiv').hide(); \$('znsHide').hide(); \$('znsShow').show();">Hide</li>
+   <li class=first id="znsShow" style="display:none;" onClick="\$('zoneNameserverListDiv').show(); \$('znsHide').show(); \$('znsShow').hide();">Show</li>];
 
     if ( !$zone->{'deleted'} && $user->{'zone_write'}
         && ( $isdelegate ? $zone->{'delegate_write'} : 1 ) )
@@ -549,7 +549,7 @@ sub display_zone_records {
 <div class="dark_grey_bg side_pad">
   <b>Resource Records</b>
   <ul class="menu_r">
-    $options 
+    $options
   </ul>
 </div>];
 
@@ -817,9 +817,9 @@ sub display_edit_record {
     my ( $type_values, $type_labels );
 
     my $rr_types = $nt_obj->rr_types;
-    my %forwards = map { $_->{name} => "$_->{description} ($_->{name})" } 
+    my %forwards = map { $_->{name} => "$_->{description} ($_->{name})" }
         grep( $_->{forward} == 1, @$rr_types);
-    my %reverse  = map { $_->{name} => "$_->{description} ($_->{name})" } 
+    my %reverse  = map { $_->{name} => "$_->{description} ($_->{name})" }
         grep( $_->{reverse} == 1, @$rr_types);
 
     # present RR types appropriate for the type of zone
@@ -883,7 +883,7 @@ sub display_edit_record {
 <table class="fat">
  <tr class="light_grey_bg">
   <td class="right"> Name:</td>
-  <td class="fat">], 
+  <td class="fat">],
         $modifyperm ? $q->textfield(
         -name      => 'name',
         -size      => 40,
@@ -901,23 +901,23 @@ sub display_edit_record {
     print qq[
  <tr class="light_grey_bg">
   <td class=right> Type:</td>
-  <td class="fat">], 
+  <td class="fat">],
         $modifyperm ? $q->popup_menu(
             -name    => 'type',
             -id      => 'rr_type',
             -values  => $type_values,
             -labels  => $type_labels,
             -default => $zone_record->{'type'} || $default_record_type,
-            -onChange => "showFieldsForRRtype(value)",    # seems to work
-# run, darn it, even if user doesn't change value and onClick isn't permitted
+            -onChange => "selectedRRType(value)",
         )
         : $type_labels->{ $zone_record->{'type'} }, qq[
   </td>
  </tr>
  <tr class="light_grey_bg">
-  <td class="right">Address:</td>
-  <td class="fat">], $modifyperm
+  <td id=address_label class="right">Address:</td>
+  <td id=address class="fat">], $modifyperm
         ? $q->textfield(
+        -id        => 'address',
         -name      => 'address',
         -size      => 50,
         -maxlength => 512,
@@ -927,9 +927,10 @@ sub display_edit_record {
         $nt_obj->help_link('rraddress') . qq[
   </td>
  </tr>
- <tr id="tr_weight" class="light_grey_bg">
-  <td class="right"> Weight:</td>
-  <td class="fat">], $modifyperm ? $q->textfield(
+ <tr id=tr_weight class="light_grey_bg">
+  <td id=weight_label class="right"> Weight:</td>
+  <td id=weight class="fat">], $modifyperm ? $q->textfield(
+        -id        => 'weight',
         -name      => 'weight',
         -size      => 5,
         -maxlength => 10,
@@ -941,9 +942,10 @@ sub display_edit_record {
   </td>
  </tr>
  <tr id="tr_priority" class="light_grey_bg">
-  <td class="right"> Priority:</td>
-  <td class="fat">], $modifyperm
+  <td id=priority_label class="right"> Priority:</td>
+  <td id=priority class="fat">], $modifyperm
         ? $q->textfield(
+        -id        => 'priority',
         -name      => 'priority',
         -size      => 5,
         -maxlength => 10,
@@ -954,8 +956,9 @@ sub display_edit_record {
   </td>
  </tr>
  <tr id="tr_other" class="light_grey_bg">
-  <td class="right"> Port:</td>
-  <td class="fat">], $modifyperm ? $q->textfield(
+  <td id=other_label class="right"> Port:</td>
+  <td id=other class="fat">], $modifyperm ? $q->textfield(
+        -id        => 'other',
         -name      => 'other',
         -size      => 5,
         -maxlength => 10,
@@ -1000,7 +1003,7 @@ sub display_edit_record {
 
 <script>
 \$(document).ready(function(){
-  showFieldsForRRtype('$default_record_type');
+  selectedRRType('$default_record_type');
 });
 </script>];
 
@@ -1065,7 +1068,7 @@ sub display_edit_record_delegates {
         else {
             print qq[<span class=disabled>Edit</span>];
         }
-        print qq[ 
+        print qq[
      </td>
      <td class="nowrap center width1">];
 
@@ -1081,8 +1084,8 @@ sub display_edit_record_delegates {
      </td>
     </tr>];
     }
-    print qq[ 
-   </table> 
+    print qq[
+   </table>
   </td>
  </tr>
 </table>];
@@ -1096,13 +1099,13 @@ sub display_new_record_delegates {
 <div class="dark_grey_bg side_pad"> <b>Delegation</b> </div>
 
 <table class="fat">
- <tr> 
+ <tr>
   <td class=top>
    <table class="fat">
     <tr class=light_grey_bg>
      <td class="nowrap"> Delegated by: </td>
-     <td class="fat"> 
-      <table> 
+     <td class="fat">
+      <table>
        <tr>
         <td class=middle><img src="$NicToolClient::image_dir/user.gif" alt="user"></td>
         <td class=middle> $zone_record->{'delegated_by_name'}</td>

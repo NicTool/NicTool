@@ -1,4 +1,9 @@
 
+2.18    2013.04.01
+
+  * updated jquery to 1.9.1
+  * added support for DNSKEY, DS, SSHFP records
+
 2.17    2013.01.
 
   * fixed zone record display error caused by " in SPF records breaking HTML/JS

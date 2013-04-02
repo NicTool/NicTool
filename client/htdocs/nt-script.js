@@ -2,84 +2,99 @@
 
 "use strict";
 
-function getStyleObject(objectId) {
-    /* function getStyleObject(string) -> returns style object
-    **  given a string containing the id of an object
-    **  the function returns the stylesheet of that object
-    **  or false. 
-    **  Should handle browser compatibility issues.
-    */
-    if (document.getElementById && document.getElementById(objectId)) {
-        return document.getElementById(objectId).style; // W3C DOM
-    }
-    if (document.all && document.all(objectId)) {
-        return document.all(objectId).style; // MSIE 4
-    }
-    if (document.layers && document.layers[objectId]) {
-        return document.layers[objectId]; // NN 4
-    }
-    alert('could not get element id: ' + objectId);
-    return false;
-}
+function selectedRRType(rrType) {
 
-function hideThis(hideMe) {
+    if ( ! rrType ) return false;
 
-    var styleObject = getStyleObject(hideMe); // get the DOM object
-
-    // http://www.w3.org/wiki/CSS/Properties/visibility
-    styleObject.visibility = "hidden";
-    // http://www.w3.org/wiki/CSS/Properties/display
-    styleObject.display = "none";
-}
-
-function showTableRow(showMe) {
-    var styleObject = getStyleObject(showMe);
-
-    // display the hidden row
-    styleObject.visibility = "visible";
-    styleObject.display = "table-row";
-}
-
-function showFieldsForRRtype(rrType) {
-
-    // alert("rrType selected is " + rrType );
-
-    if (!getStyleObject('tr_weight') ){
-// RR edit form is not displayed, don't try updating it.
-        return false;
-    }
-    hideThis('tr_weight');
-    hideThis('tr_priority');
-    hideThis('tr_other');
+    resetZoneRecordFormFields();
 
     switch (rrType) {
-    case 'MX':
-        showTableRow('tr_weight');
+      case 'MX':
+        $('tr#tr_weight').show();
         break;
-    case 'SRV':
-        // alert("rrType selected is SRV" + rrType );
-        showTableRow('tr_weight');
-        showTableRow('tr_priority');
-        showTableRow('tr_other');
+      case 'SRV':
+        $('tr#tr_weight').show();
+        $('tr#tr_priority').show();
+        $('tr#tr_other').show();
+        $('td#other_label').text('Port');
         break;
-    case 'NAPTR':
-        // alert("rrType selected is NAPTR" + rrType );
-        showTableRow('tr_weight');
-        showTableRow('tr_priority');
+      case 'NAPTR':
+        $('tr#tr_weight').show();
+        $('tr#tr_priority').show();
         break;
+      case 'SSHFP':
+        setFormRRTypeSSHFP();  break;
+      case 'DNSKEY':
+        setFormRRTypeDNSKEY(); break;
+      case 'DS':
+        setFormRRTypeDS();     break;
     }
 }
 
-function showThis(showMe) {
-    var styleObject = getStyleObject(showMe);
-    styleObject.visibility = "visible";
-    styleObject.display = "block";
+function setFormRRTypeSSHFP() {
+
+    $('td#address_label').text('Fingerprint');
+
+    $('tr#tr_weight').show();
+    $('td#weight_label').text('Algorithm');
+    var w = $('input#weight');
+    if ( w.val() == '' ) w.val('3');   // 1=RSA, 2=DSS, 3=ECDSA
+
+    $('tr#tr_priority').show();
+    $('td#priority_label').text('Type');
+    var p = $('input#priority');
+    if ( p.val() == '' ) p.val('2');  // 1=SHA-1, 2=SHA-256
 }
-function showMenuItem(showMe) {
-    var styleObject = getStyleObject(showMe);
-    styleObject.visibility = "visible";
-    styleObject.display = "inline";
+
+function setFormRRTypeDNSKEY() {
+
+    $('td#address_label').text('Public Key');
+
+    $('tr#tr_weight').show();
+    $('td#weight_label').text('Flags');
+
+    $('tr#tr_priority').show();
+    $('td#priority_label').text('Protocol');
+    $('input#priority').val('3').attr('readonly', true);
+
+    // 1=RSA/MD5, 2=Diffie-Hellman, 3=DSA/SHA-1, 4=Elliptic Curve, 5=RSA/SHA-1
+    $('tr#tr_other').show();
+    $('td#other_label').text('Algorithm');
+    var o = $('input#other');
+    if ( o.val() == '' ) o.val('5');
 }
+
+function setFormRRTypeDS() {
+
+    $('td#address_label').text('Digest');
+
+    $('tr#tr_weight').show();
+    $('td#weight_label').text('Tag');
+
+    $('tr#tr_priority').show();
+    $('td#priority_label').text('Algorithm');
+    var p = $('input#priority');
+    if ( ! p.val() ) p.val('5');  // RSA/SHA1
+
+    $('tr#tr_other').show();
+    $('td#other_label').text('Digest Type');
+    $('input#other').val('1').attr('readonly', true);  // SHA-1 is only one defined
+}
+
+function resetZoneRecordFormFields() {
+
+  var rrFields = [ 'address', 'weight', 'priority', 'other' ];
+  for ( var i=0; i < rrFields.length; i++ ) {
+    $('tr#tr_' + rrFields[i] ).hide();
+    $('td#'+rrFields[i] +'_label').text( ucfirst( rrFields[i] ) );
+    $('input#'+rrFields[i] ).attr('readonly', false);
+  };
+};
+
+function ucfirst(string) {
+  return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
 
 //access types
 function selectAllEdit(pForm, pAction) {
