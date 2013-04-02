@@ -9,6 +9,7 @@ use base 'NicToolServer::Export::Base';
 
 use Cwd;
 use File::Copy;
+use MIME::Base64;
 use Params::Validate qw/ :all /;
 use Time::TAI64 qw/ unixtai64 /;
 
@@ -171,7 +172,7 @@ sub export_db {
     while ( my $r = $result->hash ) {
         $self->{nte}{zone_name} = $r->{zone_name};
         $r->{location}  ||= '';
-        $r->{timestamp} = $self->format_timestamp($r->{timestamp}),
+        $r->{timestamp} = $self->format_timestamp($r->{timestamp});
         my $method = 'zr_' . lc $r->{type};
         eval { print $fh $self->$method( $r ); };
         $self->{nte}->elog( $@ ) if $@;
@@ -407,17 +408,17 @@ sub zr_loc {
         return '';
     };
 
-# TODO: convert this from binary to octal \nnn codes
-    my $rdata = pack('C', 0)
-           . pack('C3',  precsize_valton($size),
+    my $rdata = pack('C4N3', 0,
+                         precsize_valton($size),
                          precsize_valton($horiz_pre),
-                         precsize_valton($vert_pre))
-           . pack('N3', $latitude, $longitude, $altitude);
+                         precsize_valton($vert_pre),
+                         $latitude, $longitude, $altitude
+                    );
 
     return ':'                                    # special char (none = generic)
         . $self->qualify( $r->{name} )            # fqdn
         . ':29'                                   # n
-        . ':' . $rdata                            # rdata
+        . ':' . escape( $rdata )                  # rdata
         . ':' . $r->{ttl}                         # ttl
         . ':' . $r->{timestamp}                   # timestamp
         . ':' . $r->{location}                    # lo
@@ -462,18 +463,9 @@ sub zr_sshfp {
 # http://www.openssh.org/txt/rfc4255.txt
 # http://tools.ietf.org/html/draft-os-ietf-sshfp-ecdsa-sha2-00
 
-    my @chunks = split /\s+/, $r->{address};
-    my $algo;    #  1=RSA,   2=DSS,     3=ECDSA
-    my $type;    #  1=SHA-1, 2=SHA-256
-    my $fingerprint;
-    if ( 3 == @chunks ) {  # if they put it in address field with spaces
-        ($algo, $type, $fingerprint) = @chunks;
-    }
-    else {                 # they ommitted the whitespace. why? try anyway
-        $algo = substr( $r->{address}, 0, 1 );
-        $type = substr( $r->{address}, 1, 1 );
-        $fingerprint = substr( $r->{address}, 2 );
-    };
+    my $algo = $r->{weight};    #  1=RSA,   2=DSS,     3=ECDSA
+    my $type = $r->{priority};  #  1=SHA-1, 2=SHA-256
+    my $fingerprint = $r->{address};
 
     my $rdata = sprintf("\\%03o" x 2, $algo, $type);
     foreach ( unpack "(a2)*", $fingerprint ) {
@@ -495,19 +487,23 @@ sub zr_dnskey {
     my $r = shift or die;
 
     # DNSKEY: http://www.ietf.org/rfc/rfc4034.txt
-    my $flags = $r->{weight};        # flags:     2 octet
-    my $protocol = $r->{priority};   # protocol:  1 octet
-    my $algorithm = $r->{other};     # algorithm: 1 octet
 
-    $self->{nte}->elog( "ERROR, protocol for $r->{name} not 3!" ) if $protocol != 3;
+    my $public_key = decode_base64( $r->{address} ) or do {
+        $self->{nte}->elog("failed to base 64 decode $r->{name} DNSKEY in $r->{zone}");
+        return '';
+    };
 
-    my $rdata = sprintf("\\%06o\\%03o\\%03o", $flags, $protocol, $algorithm);
-    $rdata .= $r->{address};         # and finally, the key itself
+    my $rdata = pack("nCCa*",
+        $r->{weight},             # flags:     2 octets
+        $r->{priority},           # protocol:  1 octet
+        $r->{other},              # algorithm: 1 octet
+        $public_key               # public key
+        );
 
     return ':'                                    # special char (generic)
         . $self->qualify( $r->{name} )            # fqdn
         . ':48'                                   # n
-        . ':' . $rdata                            # rdata
+        . ':' . escape( $rdata )                  # rdata
         . ':' . $r->{ttl}                         # ttl
         . ':' . $r->{timestamp}                   # timestamp
         . ':' . $r->{location}                    # lo
@@ -542,23 +538,42 @@ sub zr_rrsig {
         . "\n";
 };
 
+sub zr_nsec {
+    my $self = shift;
+    my $r = shift or die;
+
+    # NSEC: http://www.ietf.org/rfc/rfc4034.txt
+
+    my $rdata;
+
+# TTL should be same as zone minimum: RFC 2308
+
+    return ':'                                    # special char (generic)
+        . $self->qualify( $r->{name} )            # fqdn
+        . ':47'                                   # n
+        . ':' . $rdata                            # rdata
+        . ':' . $r->{ttl}                         # ttl
+        . ':' . $r->{timestamp}                   # timestamp
+        . ':' . $r->{location}                    # lo
+        . "\n";
+};
+
 sub zr_ds {
     my $self = shift;
     my $r = shift or die;
 
     # DS: http://www.ietf.org/rfc/rfc4034.txt
-
-    my $tag         = $r->{weight};     # Key Tag, 2 octets
-    my $algorithm   = $r->{priority};   # Algorithm, 1 octet
-    my $digest_type = $r->{other};      # Digest Type, 1 octet
-
-    my $rdata = sprintf("\\%06o\\%03o\\%03o", $tag, $algorithm, $digest_type);
-    $rdata .= $r->{address};            # Digest
+    my $rdata = pack("nCCa*",
+        $r->{weight},             # Key Tag,     2 octets
+        $r->{priority},           # Algorithm,   1 octet
+        $r->{other},              # Digest Type, 1 octet
+        $r->{address},            # Digest      20 octets (SHA-1)
+        );
 
     return ':'                                    # special char (generic)
         . $self->qualify( $r->{name} )            # fqdn
         . ':43'                                   # n
-        . ':' . $rdata                            # rdata
+        . ':' . escape( $rdata )                  # rdata
         . ':' . $r->{ttl}                         # ttl
         . ':' . $r->{timestamp}                   # timestamp
         . ':' . $r->{location}                    # lo
@@ -588,15 +603,8 @@ sub format_timestamp {
 sub escape {
     my $line = pop @_;
     my $out;
-
-    foreach my $char ( split //, $line ) {
-        #if ( $char =~ /[\r\n\t: \\\/]/ ) {
-        if ( $char =~ /[\r\n\t:\\\/]/ ) {    # removed space
-            $out .= sprintf "\\%.3lo", ord $char;
-        }
-        else {
-            $out .= $char;
-        }
+    foreach ( split //, $line ) {
+        $out .= $_ =~ /[A-Za-z0-9]/ ? $_ : sprintf('\%.3lo', ord $_);
     }
     return $out;
 }
@@ -609,10 +617,7 @@ sub escapeNumber {
         $highNumber = int( $number / 256 );
         $number = $number - ( $highNumber * 256 );
     }
-    my $out = sprintf "\\%.3lo", $highNumber;
-    $out .= sprintf "\\%.3lo", $number;
-
-    return $out;
+    return sprintf "\\%.3lo" x 2, $highNumber, $number;
 }
 
 sub characterCount {
@@ -655,9 +660,15 @@ sub precsize_valton {
 #  'SOA,NS,A' =>  . fqdn : ip : x:ttl:timestamp:lo
 #  GENERIC    =>  : fqdn : n  : rdata:ttl:timestamp:lo
 #  IGNORE     =>  - fqdn : ip : ttl:timestamp:lo
-
+#
+# 'You may use octal \nnn codes to include arbitrary bytes inside rdata'
 1;
 
 __END__
 
+=head1 Instructions for Use
+
+https://github.com/msimerson/NicTool/wiki/Export-to-tinydns
+
+=cut
 

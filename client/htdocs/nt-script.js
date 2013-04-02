@@ -31,6 +31,16 @@ function selectedRRType(rrType) {
     }
 }
 
+function resetZoneRecordFormFields() {
+
+  var rrFields = [ 'address', 'weight', 'priority', 'other' ];
+  for ( var i=0; i < rrFields.length; i++ ) {
+    $('tr#tr_' + rrFields[i] ).hide();
+    $('td#'+rrFields[i] +'_label').text( ucfirst( rrFields[i] ) );
+    $('input#'+rrFields[i] ).attr('readonly', false);
+  };
+};
+
 function setFormRRTypeSSHFP() {
 
     $('td#address_label').text('Fingerprint');
@@ -80,16 +90,6 @@ function setFormRRTypeDS() {
     $('td#other_label').text('Digest Type');
     $('input#other').val('1').attr('readonly', true);  // SHA-1 is only one defined
 }
-
-function resetZoneRecordFormFields() {
-
-  var rrFields = [ 'address', 'weight', 'priority', 'other' ];
-  for ( var i=0; i < rrFields.length; i++ ) {
-    $('tr#tr_' + rrFields[i] ).hide();
-    $('td#'+rrFields[i] +'_label').text( ucfirst( rrFields[i] ) );
-    $('input#'+rrFields[i] ).val('').attr('readonly', false);
-  };
-};
 
 function ucfirst(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);

@@ -307,7 +307,9 @@ sub zr_naptr {
 
 sub zr_sshfp {
     my ($self, $r) = @_;
-    return "$r->{name}	$r->{ttl}	IN  SSHFP	$r->{address}\n";
+    my $algo   = $r->{weight};     #  1=RSA,   2=DSS,     3=ECDSA
+    my $type   = $r->{priority};   #  1=SHA-1, 2=SHA-256
+    return "$r->{name} $r->{ttl}     IN  SSHFP   $algo $type $r->{address}\n";
 }
 
 sub zr_dnskey {

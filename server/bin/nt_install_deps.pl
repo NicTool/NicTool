@@ -24,6 +24,7 @@ my $deps = {
         { module => 'Digest::HMAC'  , info => { }, },
         { module => 'Params::Validate', info => { }, },
         { module => 'Time::TAI64'   , info => { }, },
+        { module => 'MIME::Base64'  , info => { }, },
     ],
     'apps' => [
         { app => 'expat'         , info => { port => 'expat2',         dport=>'expat2' }, },
