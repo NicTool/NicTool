@@ -319,7 +319,7 @@ sub zr_srv {
     return ':'                                      # special char (generic)
         . escape( $self->qualify( $r->{name} ) )    # fqdn
         . ':33'                                     # n
-        . ':' . $priority . $weight . $port . $target . "\\000"    # rdata
+        . ':' . $priority . $weight . $port . $target . '\000'     # rdata
         . ':' . $r->{ttl}                                          # ttl
         . ':' . $r->{timestamp}                                    # timestamp
         . ':' . $r->{location}                                     # lo
@@ -338,13 +338,12 @@ sub zr_aaaa {
     if ($colons < 7) { $r->{address} =~ s/::/':' x (9-$colons)/e; }
 
     # convert from AAAA compressed notation (8 groups of 4 hex digits) to
-    # 16 escaped octal digits
-    my $oct_ip = sprintf( '\\%.3lo' x 16, # output as escaped octal
-            map { hex $_ }                # convert 2 digit hex to binary
-            map { unpack "(a2)*", $_ }    # split 4 digit hex group in two
-            map { sprintf "%04s", $_ }    # restore leading zero
-            split /:/, $r->{address}      # split into hex groups
-            );
+    # 16 escaped octals
+    my $oct_ip = sprintf '\%03lo' x 16,   # output as escaped octal
+            map { hex $_             }    # convert hex to binary
+            map { unpack '(a2)*', $_ }    # split into 2 hex digit chunks
+            map { sprintf '%04s', $_ }    # restore compressed leading zero(s)
+            split /:/, $r->{address};     # split into hex groups
 
     return ':'                            # generic record format
         . $self->qualify( $r->{name} )    # fqdn
@@ -418,7 +417,7 @@ sub zr_loc {
     return ':'                                    # special char (none = generic)
         . $self->qualify( $r->{name} )            # fqdn
         . ':29'                                   # n
-        . ':' . escape( $rdata )                  # rdata
+        . ':' . escape_rdata( $rdata )            # rdata
         . ':' . $r->{ttl}                         # ttl
         . ':' . $r->{timestamp}                   # timestamp
         . ':' . $r->{location}                    # lo
@@ -463,13 +462,13 @@ sub zr_sshfp {
 # http://www.openssh.org/txt/rfc4255.txt
 # http://tools.ietf.org/html/draft-os-ietf-sshfp-ecdsa-sha2-00
 
-    my $algo = $r->{weight};    #  1=RSA,   2=DSS,     3=ECDSA
-    my $type = $r->{priority};  #  1=SHA-1, 2=SHA-256
-    my $fingerprint = $r->{address};
+    my $algo = $r->{weight};    #  1 octet - 1=RSA, 2=DSS, 3=ECDSA
+    my $type = $r->{priority};  #  1 octet - 1=SHA-1, 2=SHA-256
+    my $fingerprint = $r->{address};  # in hex
 
-    my $rdata = sprintf("\\%03o" x 2, $algo, $type);
+    my $rdata = sprintf '\%03lo' x 2, $algo, $type;
     foreach ( unpack "(a2)*", $fingerprint ) {
-        $rdata .= sprintf("\\%03o", hex $_ );
+        $rdata .= sprintf '\%03lo', hex $_;
     };
 
     return ':'                                    # special char (generic)
@@ -503,7 +502,7 @@ sub zr_dnskey {
     return ':'                                    # special char (generic)
         . $self->qualify( $r->{name} )            # fqdn
         . ':48'                                   # n
-        . ':' . escape( $rdata )                  # rdata
+        . ':' . escape_rdata( $rdata )            # rdata
         . ':' . $r->{ttl}                         # ttl
         . ':' . $r->{timestamp}                   # timestamp
         . ':' . $r->{location}                    # lo
@@ -516,17 +515,17 @@ sub zr_rrsig {
 
     # RRSIG: http://www.ietf.org/rfc/rfc4034.txt
 
-# Type Covered, 2 octets
-# Algorithm, 1 octet
-# Labels, 1 octet
-# Original TTL, 4 octet
-# Signature Expiration, 4 octet
-# Signature Inception, 4 octet
-# Key , 2 octet
-# Signer's Name,
+# Type Covered   2 octet
+# Algorithm      1 octet
+# Labels         1 octet
+# Original TTL   4 octet
+# Signature Expiration  4 octet (32-bit ui) L
+# Signature Inception   4 octet (32-bit ui) L
+# Key Tag        2 octet  n
+# Signer's Name
 # Signature
 
-    my $rdata;
+    my $rdata = $r->{address};
 
     return ':'                                    # special char (generic)
         . $self->qualify( $r->{name} )            # fqdn
@@ -543,14 +542,72 @@ sub zr_nsec {
     my $r = shift or die;
 
     # NSEC: http://www.ietf.org/rfc/rfc4034.txt
+# TTL should be same as zone SOA minimum: RFC 2308
+
+    my $next = $r->{address};    # Next Domain Name
+    my $tbm  = $r->{weight};     # Type Bit Maps
+    # TBM: 256 window blocks, low order 8 bits of 16-bit RR type
 
     my $rdata;
-
-# TTL should be same as zone minimum: RFC 2308
+    foreach my $label ( split /\./, $next ) {
+    };
 
     return ':'                                    # special char (generic)
         . $self->qualify( $r->{name} )            # fqdn
         . ':47'                                   # n
+        . ':' . $rdata                            # rdata
+        . ':' . $r->{ttl}                         # ttl
+        . ':' . $r->{timestamp}                   # timestamp
+        . ':' . $r->{location}                    # lo
+        . "\n";
+};
+
+sub zr_nsec3 {
+    my $self = shift;
+    my $r = shift or die;
+
+    # NSEC3: https://tools.ietf.org/html/rfc5155
+
+    my $rdata = $r->{address};
+    # Hash Algorithm   1 octet
+    # Flags            1 octet
+    # Iterations      16 bit ui,lf(n)
+    # Salt Length      1 octet
+    # Salt            binary octets, length varies -^ (0-N)
+    # Hash Length      1 octet
+    # Next Hashed Owner Name - unmodified binary hash value
+    # Type Bit Maps
+
+# TTL should be same as zone SOA minimum: RFC 2308
+
+    return ':'                                    # special char (generic)
+        . $self->qualify( $r->{name} )            # fqdn
+        . ':50'                                   # n
+        . ':' . $rdata                            # rdata
+        . ':' . $r->{ttl}                         # ttl
+        . ':' . $r->{timestamp}                   # timestamp
+        . ':' . $r->{location}                    # lo
+        . "\n";
+};
+
+sub zr_nsec3param {
+    my $self = shift;
+    my $r = shift or die;
+
+    # NSEC3: https://tools.ietf.org/html/rfc5155
+
+    my $rdata = $r->{address};
+    # Hash Algorithm   1 octet
+    # Flag Fields      1 octet
+    # Iterations      16 bit ui,lf(n)
+    # Salt Length      1 octet
+    # Salt            N binary octets (0-N)
+
+# TTL should be same as zone SOA minimum: RFC 2308
+
+    return ':'                                    # special char (generic)
+        . $self->qualify( $r->{name} )            # fqdn
+        . ':51'                                   # n
         . ':' . $rdata                            # rdata
         . ':' . $r->{ttl}                         # ttl
         . ':' . $r->{timestamp}                   # timestamp
@@ -563,17 +620,23 @@ sub zr_ds {
     my $r = shift or die;
 
     # DS: http://www.ietf.org/rfc/rfc4034.txt
-    my $rdata = pack("nCCa*",
+    my $rdata = escape_rdata( pack("nCC",
         $r->{weight},             # Key Tag,     2 octets
         $r->{priority},           # Algorithm,   1 octet
-        $r->{other},              # Digest Type, 1 octet
-        $r->{address},            # Digest      20 octets (SHA-1)
-        );
+        $r->{other},              # Digest Type, 1 octet (1=SHA-1, 2=SHA-256)
+    ) );
+    my $digest = $r->{address};   # Digest, in hex
+    $digest =~ s/\s+//g;          # remove spaces
+
+    # Digest is 20 octets for SHA-1, 32 for SHA-256
+    foreach ( unpack "(a2)*", $digest ) {     # nibble off 2 hex chars
+        $rdata .= sprintf '\%03lo', hex $_;   # from hex to escaped octal
+    };
 
     return ':'                                    # special char (generic)
         . $self->qualify( $r->{name} )            # fqdn
         . ':43'                                   # n
-        . ':' . escape( $rdata )                  # rdata
+        . ':' . $rdata                            # rdata
         . ':' . $r->{ttl}                         # ttl
         . ':' . $r->{timestamp}                   # timestamp
         . ':' . $r->{location}                    # lo
@@ -599,15 +662,29 @@ sub format_timestamp {
     return substr unixtai64( $ts ), 1;
 };
 
+sub escape_rdata {
+    my $line = pop @_;
+    my $out;
+    foreach ( split //, $line ) {
+        if ( $_ =~ /[^A-Za-z0-9]/ ) {
+            $out .= sprintf '\%03lo', ord $_;
+        }
+        else {
+            $out .= $_;
+        }
+    }
+    return $out;
+}
+
 # next 3 subs based on http://www.anders.com/projects/sysadmin/djbdnsRecordBuilder/
 sub escape {
     my $line = pop @_;
     my $out;
     foreach ( split //, $line ) {
-        $out .= $_ =~ /[A-Za-z0-9]/ ? $_ : sprintf('\%.3lo', ord $_);
+        $out .= $_ =~ /[^\r\n\t:\\\/]/ ? $_ : sprintf '\%03lo', ord $_;
     }
     return $out;
-}
+};
 
 sub escapeNumber {
     my $number     = pop @_;
@@ -617,13 +694,11 @@ sub escapeNumber {
         $highNumber = int( $number / 256 );
         $number = $number - ( $highNumber * 256 );
     }
-    return sprintf "\\%.3lo" x 2, $highNumber, $number;
+    return sprintf '\%03lo' x 2, $highNumber, $number;
 }
 
 sub characterCount {
-    my $line  = pop @_;
-    my @chars = split //, $line;
-    return sprintf "\\%.3lo", scalar @chars;
+    return sprintf '\%03lo', scalar split //, pop @_;
 }
 
 # next 2 subs lifted from Net::DNS::RR::LOC

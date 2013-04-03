@@ -1,5 +1,7 @@
 ----NEW----
 
+. RFC 4035: modify CNAME to allow it to coexist with NSEC & RRSIG
+
 . Exports: make sure another export for the same NSID is not running. This can
     happen on a NS with extremely large (many hundreds of thousands) record
     sets and very short export intervals. Consider an export concurrency limit.

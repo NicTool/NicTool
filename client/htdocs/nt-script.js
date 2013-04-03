@@ -28,6 +28,14 @@ function selectedRRType(rrType) {
         setFormRRTypeDNSKEY(); break;
       case 'DS':
         setFormRRTypeDS();     break;
+      case 'NSEC':
+        setFormRRTypeNSEC();  break;
+      case 'NSEC3':
+        setFormRRTypeNSEC();  break;
+      case 'NSEC3PARAM':
+        setFormRRTypeNSEC();  break;
+      case 'RRSIG':
+        setFormRRTypeRRSIG();  break;
     }
 }
 
@@ -61,7 +69,7 @@ function setFormRRTypeDNSKEY() {
     $('td#address_label').text('Public Key');
 
     $('tr#tr_weight').show();
-    $('td#weight_label').text('Flags');
+    $('td#weight_label').text('Flag');
 
     $('tr#tr_priority').show();
     $('td#priority_label').text('Protocol');
@@ -79,7 +87,7 @@ function setFormRRTypeDS() {
     $('td#address_label').text('Digest');
 
     $('tr#tr_weight').show();
-    $('td#weight_label').text('Tag');
+    $('td#weight_label').text('Key Tag');
 
     $('tr#tr_priority').show();
     $('td#priority_label').text('Algorithm');
@@ -88,7 +96,16 @@ function setFormRRTypeDS() {
 
     $('tr#tr_other').show();
     $('td#other_label').text('Digest Type');
-    $('input#other').val('1').attr('readonly', true);  // SHA-1 is only one defined
+    var o = $('input#other');
+    if ( ! o.val() ) o.val('2');  // 1=SHA-1 , 2=SHA-256
+}
+
+function setFormRRTypeNSEC() {
+    $('td#address_label').text('Next Domain Name');
+
+    $('td#weight_label').text('Type Bit Map');
+}
+function setFormRRTypeRRSIG() {
 }
 
 function ucfirst(string) {

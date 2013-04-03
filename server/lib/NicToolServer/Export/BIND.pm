@@ -316,8 +316,9 @@ sub zr_dnskey {
     my ($self, $r) = @_;
 
     my $flags    = $r->{weight};
-    my $protocol = $r->{priority};
+    my $protocol = $r->{priority};  # always 3, RFC 4034
     my $algorithm = $r->{other};
+    # 1=RSA/MD5, 2=Diffie-Hellman, 3=DSA/SHA-1, 4=Elliptic Curve, 5=RSA/SHA-1
 
     return "$r->{name}	$r->{ttl}	IN  DNSKEY	$flags $protocol $algorithm $r->{address}\n";
 }
@@ -325,11 +326,31 @@ sub zr_dnskey {
 sub zr_ds {
     my ($self, $r) = @_;
 
-    my $tag         = $r->{weight};
-    my $algorithm   = $r->{priority};
-    my $digest_type = $r->{other};
+    my $key_tag     = $r->{weight};
+    my $algorithm   = $r->{priority}; # same as DNSKEY algo -^
+    my $digest_type = $r->{other};    # 1=SHA-1 (RFC 4034), 2=SHA-256 (RFC 4509)
 
-    return "$r->{name}	$r->{ttl}	IN  DS	$tag $algorithm $digest_type $r->{address}\n";
+    return "$r->{name}	$r->{ttl}	IN  DS	$key_tag $algorithm $digest_type $r->{address}\n";
+}
+
+sub zr_rrsig {
+    my ($self, $r) = @_;
+    return "$r->{name}	$r->{ttl}	IN  RRSIG $r->{address}\n";
+}
+
+sub zr_nsec {
+    my ($self, $r) = @_;
+    return "$r->{name}	$r->{ttl}	IN  NSEC $r->{address}\n";
+}
+
+sub zr_nsec3 {
+    my ($self, $r) = @_;
+    return "$r->{name}	$r->{ttl}	IN  NSEC3 $r->{address}\n";
+}
+
+sub zr_nsec3param {
+    my ($self, $r) = @_;
+    return "$r->{name}	$r->{ttl}	IN  NSEC3PARAM $r->{address}\n";
 }
 
 
