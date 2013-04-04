@@ -432,7 +432,7 @@ sub get_ns_records {
     );
 
     my $sql = "SELECT r.name, r.ttl, t.name AS type, r.address, r.weight,
-        r.priority, r.other, r.location, z.zone AS zone_name,
+        r.priority, r.other, r.location, r.description, z.zone AS zone_name,
         UNIX_TIMESTAMP(timestamp) AS timestamp
       FROM nt_zone_record r
         LEFT JOIN resource_record_type t ON t.id=r.type_id
@@ -506,6 +506,32 @@ sub get_modified_zones_count {
     my $r = $self->exec_query( $sql, \@args );
     return $r->[0]{count};
 }
+
+sub get_rr_types {
+    my $self = shift;
+    return $self->{rr_types} if $self->{rr_types};
+
+    $self->{rr_types} = $self->exec_query(
+        "SELECT id,name,description FROM resource_record_type"
+    );
+    foreach ( @{ $self->{rr_types} } ) {
+        $self->{rr_type_map}{ids}{ $_->{id} } = $_->{name};
+        $self->{rr_type_map}{names}{ $_->{name} } = $_->{id};
+    };
+    return $self->{rr_types};
+};
+
+sub get_rr_id {
+    my ($self, $name) = @_;
+    $self->get_rr_types() unless defined $self->{rr_type_map};
+    return $self->{rr_type_map}{names}{$name};
+};
+
+sub get_rr_name {
+    my ($self, $id) = @_;
+    $self->get_rr_types() unless defined $self->{rr_type_map};
+    return $self->{rr_type_map}{ids}{$id};
+};
 
 sub get_zone_ns_ids {
     my $self = shift;
@@ -741,7 +767,7 @@ sub zr_ns {
 
 sub is_ip_port {
     my ( $self, $port ) = @_;
-
+    return if $port =~ /[^\d]/;  # has non-digit chars
     return $port if ( $port >= 0 && $port <= 65535 );
     warn "value not within IP port range: 0 - 65535";
     return 0;

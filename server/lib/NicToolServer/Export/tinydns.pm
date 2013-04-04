@@ -542,14 +542,39 @@ sub zr_nsec {
     my $r = shift or die;
 
     # NSEC: http://www.ietf.org/rfc/rfc4034.txt
-# TTL should be same as zone SOA minimum: RFC 2308
-
-    my $next = $r->{address};    # Next Domain Name
-    my $tbm  = $r->{weight};     # Type Bit Maps
-    # TBM: 256 window blocks, low order 8 bits of 16-bit RR type
 
     my $rdata;
-    foreach my $label ( split /\./, $next ) {
+    # Next Domain Name
+    foreach my $label ( split /\./, $self->qualify( $r->{address} ) ) {
+        $rdata .= escape_rdata( pack( 'CA*', length( $label ), $label ) );
+    };
+    $rdata .= '\000';   # end of field
+
+    # Type Bit Maps Field = ( Window Block # | Bitmap Length | Bitmap )+
+
+    # build RR id lookup table from list of RR types
+    my %rec_ids;
+    foreach my $label ( split /\s+/, $r->{description} ) {
+        $label =~ s/[\(\)]//g;  # remove ( and )
+        $rec_ids{ $self->{nte}->get_rr_id( $label ) } = $label;
+    };
+
+    my ($highest_rr_id) = (sort keys %rec_ids)[-1];
+
+    my $bm_octets  = int( $highest_rr_id / 8 );
+       $bm_octets += $highest_rr_id % 8 == 0 ? 0 : 1;
+
+    # TODO: in the very distant future, if RR type ids increase above 255,
+    # this will need to become a loop with a varying window block number
+    $rdata .= sprintf('\%03lo' x 2, 0, $bm_octets);
+
+    foreach my $octet ( 0 .. $bm_octets - 1 ) {
+        my $start = $octet * 8;
+        my $bitstring = join '',
+            map { defined $rec_ids{ $_ } ? 1 : 0 }
+            $start .. $start+7;
+#print "bitstring: $bitstring\n";
+        $rdata .= sprintf '\%03lo', oct('0b'.$bitstring);
     };
 
     return ':'                                    # special char (generic)
@@ -666,7 +691,7 @@ sub escape_rdata {
     my $line = pop @_;
     my $out;
     foreach ( split //, $line ) {
-        if ( $_ =~ /[^A-Za-z0-9]/ ) {
+        if ( $_ =~ /[^A-Za-z0-9\-]/ ) {
             $out .= sprintf '\%03lo', ord $_;
         }
         else {

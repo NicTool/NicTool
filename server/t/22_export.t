@@ -26,7 +26,7 @@ $Data::Dumper::Sortkeys=1;
 
 my $nsid = 0;
 my $export = NicToolServer::Export->new( ns_id=>$nsid );
-$export->get_dbh( 
+$export->get_dbh(
     dsn  => Config('dsn'),
     user => Config('db_user'),
     pass => Config('db_pass'),
@@ -38,18 +38,57 @@ my $count = $export->get_modified_zones_count();
 isa_ok( $export, 'NicToolServer::Export');
 ok( defined $count, "found $count zones");
 
-done_testing();
-exit;
+my $types = $export->get_rr_types();
+ok( $types, 'get_rr_types' );
+#print Dumper($types);
 
-# Test::More doesn't like the output of these, and I'm not sure why
-# TODO: fix this Nov 18, 2011 - mps
-ok( $export->preflight, 'preflight');  # check if export can succeed
+cmp_ok( $export->get_rr_id('A'), '==', 1, 'get_rr_id');
+cmp_ok( $export->get_rr_id('NS'), '==', 2, 'get_rr_id');
 
-ok( $export->export(), "export (nsid $nsid)");
+cmp_ok( $export->get_rr_name(1), 'eq', 'A', 'get_rr_name');
+cmp_ok( $export->get_rr_name(2), 'eq', 'NS', 'get_rr_name');
 
-#warn Dumper($r);
-done_testing();
-exit;
+# this will get all zones, since we haven't given it a 'since' time
+$r = $export->get_modified_zones_count();
+ok( defined $r, "get_modified_zones_count, $r");
+
+my @bad_ports = qw/ -100 -1 65536 1000000 a /;
+my @good_ports = qw/ 1 53 995 65535 /;
+
+foreach ( @bad_ports ) {
+    ok( ! $export->is_ip_port($_), "is_ip_port, invalid, $_");
+};
+foreach ( @good_ports ) {
+    ok( $export->is_ip_port($_), "is_ip_port, valid, $_");
+};
+
+done_testing() and exit;
+
+$export->load_export_class();
+$r = $export->{export_class}->zr_nsec( {
+    name      => 'localhost.simerson.com.',
+    address   => 'mbp-hires.simerson.com.',
+    description => '(A RRSIG NSEC)',
+    ttl       => '86400',
+    timestamp => '',
+    location  => '',
+} );
+cmp_ok( $r, 'eq', ':localhost.simerson.com.:47:\011mbp-hires\010simerson\003com\000\000\006\100\000\000\000\000\003:86400::
+', 'zr_nsec');
+
+$r = $export->{export_class}->zr_nsec( {
+    name      => 'localhost.simerson.com.',
+    address   => 'mbp-hires.simerson.com.',
+    description => 'A RRSIG NSEC',
+    ttl       => '86400',
+    timestamp => '',
+    location  => '',
+} );
+cmp_ok( $r, 'eq', ':localhost.simerson.com.:47:\011mbp-hires\010simerson\003com\000\000\006\100\000\000\000\000\003:86400::
+', 'zr_nsec');
+print $r;
+
+done_testing() and exit;
 
 #$r = $export->get_last_ns_export();
 #ok( $r, "get_last_ns_export, $nsid");
@@ -73,5 +112,9 @@ ok( $r, "get_last_ns_export, nsid $nsid, success, partial");
 #warn Data::Dumper::Dumper($r);
 #exit;
 
-#warn Data::Dumper::Dumper($r);
+# Test::More doesn't like the output of these, and I'm not sure why
+# TODO: fix this Nov 18, 2011 - mps
+ok( $export->preflight, 'preflight');  # check if export can succeed
+
+ok( $export->export(), "export (nsid $nsid)");
 
