@@ -340,7 +340,8 @@ sub zr_rrsig {
 
 sub zr_nsec {
     my ($self, $r) = @_;
-    return "$r->{name}	$r->{ttl}	IN  NSEC $r->{address}\n";
+    $r->{description} =~ s/[\(\)]//g;
+    return "$r->{name}	$r->{ttl}	IN  NSEC $r->{address} ( $r->{description} )\n";
 }
 
 sub zr_nsec3 {
