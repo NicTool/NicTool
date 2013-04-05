@@ -102,8 +102,7 @@ function setFormRRTypeDS() {
 
 function setFormRRTypeNSEC() {
     $('td#address_label').text('Next Domain Name');
-
-    $('td#weight_label').text('Type Bit Map');
+    $('td#description_label').text('Type Bit Map');
 }
 function setFormRRTypeRRSIG() {
 }

@@ -89,6 +89,8 @@ ul.menu_r li:hover {
 .light_grey_bg { background: #EEEEEE; }
 .light_hilite_bg { background: #ffffee; }
 .dark_hilite_bg { background: #eeeedd; }
+.red { color: red; }
+.fixedwidth { font-family: "Courier New", "Courier", monospace; }
 .error_bg {
   background: red;
   color: white;

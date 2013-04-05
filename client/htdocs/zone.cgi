@@ -142,7 +142,7 @@ sub do_edit_zone {
         return;
     };
 
-    my @fields = qw/ nt_zone_id nt_group_id zone description 
+    my @fields = qw/ nt_zone_id nt_group_id zone description
                      mailaddr serial refresh retry expire ttl minimum /;
     my %data;
     foreach ( @fields ) {
@@ -176,7 +176,7 @@ sub do_new_zone {
         return;
     };
 
-    my @fields = qw/ nt_group_id zone nameservers description mailaddr 
+    my @fields = qw/ nt_group_id zone nameservers description mailaddr
                     serial refresh retry expire ttl minimum/;
     my %data = map { $_ => $q->param($_) } @fields;
     $data{'nameservers'} = join( ',', $q->param('nameservers') );
@@ -263,7 +263,7 @@ sub display_zone_delegate {
      <tr class=light_grey_bg>
       <td class="nowrap"> With Permissions: </td>
       <td class="fat">
-       <table> 
+       <table>
         <tr class=light_grey_bg>];
         my %perms = (
             'write'          => "Write",
@@ -332,7 +332,7 @@ sub display_zone_delegation {
         . qq[.gif" alt="">&nbsp;Add Records &nbsp;<img src="$NicToolClient::image_dir/perm-]
         . ( $del->{delegate_delete_records} ? 'checked' : 'unchecked' )
         . qq[.gif" alt="">&nbsp;Delete Records
-  </td> 
+  </td>
   <td class="nowrap width1">];
 
         if ( !$zone->{'deleted'} && $user->{zone_delegate} ) {
@@ -342,7 +342,7 @@ sub display_zone_delegation {
             print "<span class=disabled>Edit</span>";
         }
         print qq[
-  </td> 
+  </td>
   <td class="nowrap center width1" title="Remove Delegation">];
 
         if ( !$zone->{'deleted'} && $user->{zone_delegate} ) {
@@ -353,7 +353,7 @@ sub display_zone_delegation {
         }
 
         print qq[
-  </td> 
+  </td>
  </tr>];
     }
     print qq[
@@ -814,29 +814,16 @@ sub display_edit_record {
     my $isdelegate = exists $zone_record->{'delegated_by_id'};
     my $pseudo     = $zone_record->{'pseudo'};
 
-    my ( $type_values, $type_labels );
-
-    my $rr_types = $nt_obj->rr_types;
-    my %forwards = map { $_->{name} => "$_->{description} ($_->{name})" }
-        grep( $_->{forward} == 1, @$rr_types);
-    my %reverse  = map { $_->{name} => "$_->{description} ($_->{name})" }
-        grep( $_->{reverse} == 1, @$rr_types);
-
-    # present RR types appropriate for the type of zone
-    if ( $zone->{'zone'} =~ /(in-addr|ip6)\.arpa$/ ) {
-        $type_values = [ sort keys %reverse ];
-        $type_labels = \%reverse;
-    }
-    else {
-        $type_values = [ sort keys %forwards ];
-        $type_labels = \%forwards;
-    }
-
     # does user have Edit permissions?
     my $modifyperm = !$isdelegate && $user->{'zonerecord_write'}
         || $isdelegate
         && $user->{'zonerecord_write'}
         && $zone_record->{'delegate_write'};
+
+    my $default_record_type = $zone_record->{'type'};
+    $default_record_type = 'PTR' if $zone->{'zone'} =~ /(in-addr|ip6)\.arpa/;
+
+    my $rr_type_popup = _build_rr_type_menu( $nt_obj, $q, $zone, $zone_record, $default_record_type, $modifyperm );
 
     if ($modifyperm) {
         print qq[
@@ -855,6 +842,7 @@ sub display_edit_record {
     else {
         $action = 'View' if $action eq 'Edit';
     }
+
 
     $nt_obj->display_nice_error($message)  if $message;
     $nt_obj->display_nice_error($message2) if $message2;
@@ -881,7 +869,7 @@ sub display_edit_record {
 
     print qq[
 <table class="fat">
- <tr class="light_grey_bg">
+ <tr id=name class="light_grey_bg">
   <td class="right"> Name:</td>
   <td class="fat">],
         $modifyperm ? $q->textfield(
@@ -890,30 +878,15 @@ sub display_edit_record {
         -maxlength => 127,
         -default   => $zone_record->{'name'},
         ) : $zone_record->{'name'},
-        ( $zone_record->{'name'} ne "$zone->{'zone'}." ? "<b>.$zone->{'zone'}.</b>" : ""),
+        ( $zone_record->{'name'} ne "$zone->{'zone'}." ? "<b>.$zone->{'zone'}.</b>" : ''),
         qq[
-  </td>
- </tr>];
-
-    my $default_record_type = $zone_record->{'type'};
-    $default_record_type = 'PTR' if $zone->{'zone'} =~ /(in-addr|ip6)\.arpa/;
-
-    print qq[
- <tr class="light_grey_bg">
-  <td class=right> Type:</td>
-  <td class="fat">],
-        $modifyperm ? $q->popup_menu(
-            -name    => 'type',
-            -id      => 'rr_type',
-            -values  => $type_values,
-            -labels  => $type_labels,
-            -default => $zone_record->{'type'} || $default_record_type,
-            -onChange => "selectedRRType(value)",
-        )
-        : $type_labels->{ $zone_record->{'type'} }, qq[
   </td>
  </tr>
  <tr class="light_grey_bg">
+  <td class=right> Type:</td>
+  <td class="fixedwidth fat"> $rr_type_popup </td>
+ </tr>
+ <tr id=address class="light_grey_bg">
   <td id=address_label class="right">Address:</td>
   <td id=address class="fat">], $modifyperm
         ? $q->textfield(
@@ -969,7 +942,7 @@ sub display_edit_record {
         qq[
   </td>
  </tr>
- <tr class="light_grey_bg">
+ <tr id=ttl class="light_grey_bg">
   <td class="right"> TTL:</td>
   <td class="fat">], $modifyperm ? $q->textfield(
         -name      => 'ttl',
@@ -980,9 +953,10 @@ sub display_edit_record {
         : $zone_record->{'ttl'}, qq[
   </td>
  </tr>
- <tr class="light_grey_bg">
-  <td class="right"> Description:</td>
-  <td class="fat">], $modifyperm ? $q->textfield(
+ <tr id=description class="light_grey_bg">
+  <td id=description_label class="right"> Description:</td>
+  <td id=description class="fat">], $modifyperm ? $q->textfield(
+        -id        => 'description',
         -name      => 'description',
         -size      => 60,
         -maxlength => 128,
@@ -992,7 +966,7 @@ sub display_edit_record {
         qq[
   </td>
  </tr>
- <tr class="dark_grey_bg">
+ <tr id=submit class="dark_grey_bg">
   <td colspan="2" class="center">],
         $modifyperm ? $q->submit( $edit eq 'edit' ? 'Save' : 'Create' )
         . $q->submit('Cancel')
@@ -1009,6 +983,67 @@ sub display_edit_record {
 
     print $q->end_form if $modifyperm;
 }
+
+sub _build_rr_type_menu {
+    my ( $nt_obj, $q, $zone, $zone_record, $default_record_type, $modifyperm ) = @_;
+
+    my ( $type_values, $type_labels );
+
+    my $rr_types = $nt_obj->rr_types;
+    $q->autoEscape(undef) if $modifyperm;
+
+    # present RR types appropriate for the type of zone
+    if ( $zone->{'zone'} =~ /(in-addr|ip6)\.arpa$/ ) {
+
+        my %reverse  = map {
+            my $spa = '&nbsp;' x (9-length $_->{name});
+            $_->{name} => $_->{name} . ${spa} . $_->{description} }
+            grep( $_->{reverse} == 1, @$rr_types);
+
+        $type_values = [ sort keys %reverse ];
+        $type_labels = \%reverse;
+    }
+    else {
+        my %forwards = map {
+            my $spa = '&nbsp;' x (9-length $_->{name});  # white space
+            $_->{name} => $_->{name} . ${spa} . $_->{description} }
+            grep( $_->{forward} == 1, @$rr_types);
+
+        $type_values = [ sort keys %forwards ];
+        if ( grep {/(?:DNSKEY|DS|RRSIG|NSEC)/} @$type_values ) {
+            my (@others, @dnssec);
+            foreach ( @$type_values ) {
+                if ( $_ =~ /^(?:DNSKEY|DS|RRSIG|NSEC|NSEC3|NSEC3PARAM)$/ ) {
+                    push @dnssec, $_;
+                }
+                else {
+                    push @others, $_;
+                };
+            };
+            push @others, sprintf $q->optgroup(
+                -name=>'DNSSEC', -values => [ @dnssec ], -labels => \%forwards );
+            $type_values = \@others;
+        };
+        $type_labels = \%forwards;
+    };
+
+    if ( ! $modifyperm ) {
+        return $type_labels->{ $zone_record->{'type'} };
+    };
+
+    my $popup = sprintf('%s', $q->popup_menu(
+            -name    => 'type',
+            -id      => 'rr_type',
+            -class   => 'fixedwidth',
+            -style   => 'font-family: inherit;',
+            -values  => $type_values,
+            -labels  => $type_labels,
+            -default => $zone_record->{'type'} || $default_record_type,
+            -onChange => "selectedRRType(value);",
+        ) );
+    $q->autoEscape(1);
+    return $popup;
+};
 
 sub display_edit_record_delegates {
     my ($nt_obj, $q, $user, $zone_record, $delegates  ) = @_;
@@ -1115,12 +1150,12 @@ sub display_new_record_delegates {
     </tr>
     <tr class=light_grey_bg>
      <td class="nowrap"> Belonging to group: </td>
-     <td class="fat"> 
-      <table> 
+     <td class="fat">
+      <table>
        <tr>
         <td class=middle><img src="$NicToolClient::image_dir/group.gif" alt="group"></td>
         <td class=middle> $zone_record->{'group_name'}</td>
-       </tr> 
+       </tr>
       </table>
      </td>
     </tr>
