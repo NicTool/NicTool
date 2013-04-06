@@ -11,6 +11,7 @@ use Cwd;
 use File::Copy;
 use MIME::Base64;
 use Params::Validate qw/ :all /;
+use Time::Local;
 use Time::TAI64 qw/ unixtai64 /;
 
 # maybe TODO: append DB ids (but why?)
@@ -509,23 +510,59 @@ sub zr_dnskey {
         . "\n";
 };
 
+sub datestamp_to_int {
+    my ($self, $ds) = @_;
+
+    # serial arrives in YYYYMMDDHHmmSS UTC format (14 digits): RFC 4034, 3.2
+    return timegm(
+        substr($ds, 12, 2),       # seconds
+        substr($ds, 10, 2),       # minutes
+        substr($ds,  8, 2),       # hour
+        substr($ds,  6, 2),       # day
+        substr($ds,  4, 2) -1,    # month
+        substr($ds,  0, 4)        # year
+    );
+};
+
+sub pack_domain_name {
+    my ($self, $name) = @_;
+
+    my $r;
+    foreach my $label ( split /\./, $self->qualify( $name ) ) {
+        $r .= escape_rdata( pack( 'CA*', length( $label ), $label ) );
+    };
+    $r.= '\000';   # end of field
+    return $r;
+};
+
 sub zr_rrsig {
     my $self = shift;
     my $r = shift or die;
 
     # RRSIG: http://www.ietf.org/rfc/rfc4034.txt
+    my ($type, $algorithm, $label_count, $orig_ttl, $sig_exp, undef, $sig_inc,
+        $key_tag, $signers_name, $signature) = split /\s+/, $r->{address}, 10;
 
-# Type Covered   2 octet
-# Algorithm      1 octet
-# Labels         1 octet
-# Original TTL   4 octet
-# Signature Expiration  4 octet (32-bit ui) L
-# Signature Inception   4 octet (32-bit ui) L
-# Key Tag        2 octet  n
-# Signer's Name
-# Signature
+    $type = $self->{nte}->get_rr_id( $type ); # convert from RR name to ID
 
-    my $rdata = $r->{address};
+    $signature =~ s/\s+//g; chop $signature;  # remove spaces and trailing )
+    $signature = decode_base64( $signature );
+
+    $sig_exp = $self->datestamp_to_int( $sig_exp );
+    $sig_inc = $self->datestamp_to_int( $sig_inc );
+
+    my $rdata = escape_rdata( pack("nCCNNNn",
+        $type,                              # Type Covered   2 octet
+        $algorithm,                         # Algorithm      1 octet
+        $label_count,                       # Labels         1 octet
+        $orig_ttl,                          # Original TTL   4 octet
+        $sig_exp,                           # Signature Expiration  4 octet
+        $sig_inc,                           # Signature Inception   4 octet
+        $key_tag,                           # Key Tag        2 octet
+    ) );
+
+    $rdata .= $self->pack_domain_name( $signers_name ); # Signer's Name
+    $rdata .= escape_rdata( pack "a*", $signature );    # Signature
 
     return ':'                                    # special char (generic)
         . $self->qualify( $r->{name} )            # fqdn
@@ -543,12 +580,7 @@ sub zr_nsec {
 
     # NSEC: http://www.ietf.org/rfc/rfc4034.txt
 
-    my $rdata;
-    # Next Domain Name
-    foreach my $label ( split /\./, $self->qualify( $r->{address} ) ) {
-        $rdata .= escape_rdata( pack( 'CA*', length( $label ), $label ) );
-    };
-    $rdata .= '\000';   # end of field
+    my $rdata = $self->pack_domain_name( $r->{address} ); # Next Domain Name
 
     # Type Bit Maps Field = ( Window Block # | Bitmap Length | Bitmap )+
 
@@ -559,22 +591,28 @@ sub zr_nsec {
         $rec_ids{ $self->{nte}->get_rr_id( $label ) } = $label;
     };
 
-    my ($highest_rr_id) = (sort keys %rec_ids)[-1];
+    my ($highest_rr_id) = (sort keys %rec_ids)[-1];  # find the highest ID
 
-    my $bm_octets  = int( $highest_rr_id / 8 );
-       $bm_octets += $highest_rr_id % 8 == 0 ? 0 : 1;
+    my $highest_window = int( $highest_rr_id / 256 );
+       $highest_window += ( $highest_rr_id % 256 == 0 ? 0 : 1 );
 
-    # TODO: in the very distant future, if RR type ids increase above 255,
-    # this will need to become a loop with a varying window block number
-    $rdata .= sprintf('\%03lo' x 2, 0, $bm_octets);
+    foreach my $window ( 0 .. $highest_window ) {
+        my $base = $window * 256;
+        next unless grep { $_ >= $base && $_ < $base + 256 } %rec_ids;
+        my $highest_in_this_window = $highest_rr_id - $base;
 
-    foreach my $octet ( 0 .. $bm_octets - 1 ) {
-        my $start = $octet * 8;
-        my $bitstring = join '',
-            map { defined $rec_ids{ $_ } ? 1 : 0 }
-            $start .. $start+7;
-#print "bitstring: $bitstring\n";
-        $rdata .= sprintf '\%03lo', oct('0b'.$bitstring);
+        my $bm_octets = int( $highest_in_this_window / 8 );
+           $bm_octets += $highest_in_this_window % 8 == 0 ? 0 : 1;
+
+        $rdata .= sprintf('\%03lo' x 2, $window, $bm_octets);
+
+        foreach my $octet ( 0 .. $bm_octets - 1 ) {
+            my $start = $octet * 8;
+            my $bitstring = join '',
+                map { defined $rec_ids{ $_ } ? 1 : 0 }
+                $start .. $start+7;
+            $rdata .= sprintf '\%03lo', oct('0b'.$bitstring);
+        };
     };
 
     return ':'                                    # special char (generic)
@@ -691,7 +729,7 @@ sub escape_rdata {
     my $line = pop @_;
     my $out;
     foreach ( split //, $line ) {
-        if ( $_ =~ /[^A-Za-z0-9\-]/ ) {
+        if ( $_ =~ /[^A-Za-z0-9\-\.]/ ) {
             $out .= sprintf '\%03lo', ord $_;
         }
         else {

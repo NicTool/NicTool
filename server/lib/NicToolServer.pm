@@ -1405,8 +1405,7 @@ sub valid_ttl {
     };
     
     return 1 if ( $ttl >= 0 && $ttl <= 2147483647 );
-# RFC 2181: Clarifications to the DNS specification
-# http://tools.ietf.org/html/rfc2181 
+# Clarifications to the DNS specification: http://tools.ietf.org/html/rfc2181
 # valid TTL is unsigned number from 0 to 2147483647
 
     $self->error( 'ttl', "Invalid TTL -- valid ttl range is 0 to 2,147,483,647: RFC 2181" );

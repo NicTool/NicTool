@@ -1185,7 +1185,7 @@ sub bump_serial {
 sub serial_increment {
     my ( $self, $serial_current ) = @_;
 
-    # patterns not using the YYYYMMDDNN pattern standard
+    # patterns not using the YYYYMMDDNN pattern standard (RFC 1982)
     return ++$serial_current if length $serial_current < 10;
     return ++$serial_current if $serial_current <= 1970000000;
 
@@ -1221,11 +1221,11 @@ sub serial_increment {
             if ( $month > 99 ) {
                 $month = '01';
                 $year = sprintf( "%04d", $year + 1 );
-            }
+            };
             $month = sprintf( "%02d", $month );
-        }
+        };
         $day = sprintf( "%02d", $day );
-    }
+    };
     $digit = sprintf( "%02d", $digit );
 
     return $year . $month . $day . $digit;
