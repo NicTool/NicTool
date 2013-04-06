@@ -173,7 +173,7 @@ sub export_db {
     while ( my $r = $result->hash ) {
         $self->{nte}{zone_name} = $r->{zone_name};
         $r->{location}  ||= '';
-        $r->{timestamp} = $self->format_timestamp($r->{timestamp});
+        $r->{timestamp} = $self->to_tai64($r->{timestamp});
         my $method = 'zr_' . lc $r->{type};
         eval { print $fh $self->$method( $r ); };
         $self->{nte}->elog( $@ ) if $@;
@@ -269,92 +269,78 @@ sub zr_soa {
     my $z = shift or die;
 
 # using sprintf versus concatenation takes the same amount of time.
-    return 'Z' . "$z->{zone}"     # fqdn
-        . ":$z->{nsname}"         # mname
-        . ":$z->{mailaddr}"       # rname
-        . ":$z->{serial}"         # serial
-        . ":$z->{refresh}"        # refresh
-        . ":$z->{retry}"          # retry
-        . ":$z->{expire}"         # expire
-        . ":$z->{minimum}"        # min
-        . ":$z->{ttl}"            # ttl
-        . ":$z->{timestamp}"      # timestamp
-        . ":$z->{location}"       # location
+    return 'Z'. $z->{zone}           # fqdn
+        . ':' . $z->{nsname}         # mname
+        . ':' . $z->{mailaddr}       # rname
+        . ':' . $z->{serial}         # serial
+        . ':' . $z->{refresh}        # refresh
+        . ':' . $z->{retry}          # retry
+        . ':' . $z->{expire}         # expire
+        . ':' . $z->{minimum}        # min
+        . ':' . $z->{ttl}            # ttl
+        . ':' . $z->{timestamp}      # timestamp
+        . ':' . $z->{location}       # location
         . "\n";
 }
+
+sub zr_generic {
+    my ($self, $rrid, $r, $rdata) = @_;
+    return ':'                             # special char (none = generic)
+        . $self->qualify( $r->{name} )     # fqdn
+        . ':' . $rrid                      # n
+        . ':' . $rdata                     # rdata
+        . ':' . $r->{ttl}                  # ttl
+        . ':' . $r->{timestamp}            # timestamp
+        . ':' . $r->{location}             # lo
+        . "\n";
+};
 
 sub zr_spf {
     my $self = shift;
     my $r = shift or die;
 
 # assistance from djbdnsRecordBuilder
-    return ':'                                    # special char (none = generic)
-        . $self->qualify( $r->{name} )            # fqdn
-        . ':99'                                   # n
-        . ':' . $self->characterCount($r->{address})
-              . $self->escape( $r->{address} )    # rdata
-        . ':' . $r->{ttl}                         # ttl
-        . ':' . $r->{timestamp}                   # timestamp
-        . ':' . $r->{location}                    # lo
-        . "\n";
+    my $rdata = $self->characterCount( $r->{address} )
+              . $self->escape( $r->{address} );
+
+    return $self->zr_generic( 99, $r, $rdata );
 }
 
 sub zr_srv {
     my $self = shift;
     my $r = shift or die;
 
-    # :fqdn:n:rdata:ttl:timestamp:lo (Generic record)
-    my $priority = escapeNumber( $self->{nte}->is_ip_port( $r->{priority} ) );
-    my $weight   = escapeNumber( $self->{nte}->is_ip_port( $r->{weight} ) );
-    my $port     = escapeNumber( $self->{nte}->is_ip_port( $r->{other} ) );
+    # SRV - https://www.ietf.org/rfc/rfc2782.txt
+    # format of SRV record derived from djbdnsRecordBuilder
 
-# SRV - from djbdnsRecordBuilder
-# :sip.tcp.example.com:33:\000\001\000\002\023\304\003pbx\007example\003com\000
+    my $rdata = escape_rdata( pack "nnn",
+        $self->{nte}->is_ip_port( $r->{priority} ),   # Priority, 16 bit (n)
+        $self->{nte}->is_ip_port( $r->{weight} ),     # Weight,   16 bit (n)
+        $self->{nte}->is_ip_port( $r->{other} ),      # Port,     16 bit (n)
+    );
 
-    my $target = "";
-    my @chunks = split /\./, $self->qualify( $r->{address} );
-    foreach my $chunk (@chunks) {
-        $target .= characterCount($chunk) . $chunk;
-    }
+    $rdata .= $self->pack_domain_name( $r->{address} ); # Target, domain name
 
-    return ':'                                      # special char (generic)
-        . escape( $self->qualify( $r->{name} ) )    # fqdn
-        . ':33'                                     # n
-        . ':' . $priority . $weight . $port . $target . '\000'     # rdata
-        . ':' . $r->{ttl}                                          # ttl
-        . ':' . $r->{timestamp}                                    # timestamp
-        . ':' . $r->{location}                                     # lo
-        . "\n";
+    return $self->zr_generic( 33, $r, $rdata );
 }
 
 sub zr_aaaa {
     my $self = shift;
     my $r = shift or die;
 
-# ffff:1234:5678:9abc:def0:1234:0:0
-# :example.com:28:\377\377\022\064\126\170\232\274\336\360\022\064\000\000\000\000
+    my $aaaa = $self->expand_aaaa( $r->{address} );
 
-# next 2 lines from djbdnsRecordBuilder, restores any compressed colons
-    my $colons = $r->{address} =~ tr/:/:/;  # count the colons
-    if ($colons < 7) { $r->{address} =~ s/::/':' x (9-$colons)/e; }
+    # convert from AAAA (possibly compressed) notation (8 groups of 4 hex
+    # digits) to 16 escaped octals
+    my $rdata = sprintf '\%03lo' x 16,    # output num as escaped octal
+            map { hex $_             }    # convert hex string to number
+            map { unpack '(a2)*', $_ }    # split each quad into 2 hex digits
+            split /:/, $aaaa;             # split hex quads
 
-    # convert from AAAA compressed notation (8 groups of 4 hex digits) to
-    # 16 escaped octals
-    my $oct_ip = sprintf '\%03lo' x 16,   # output as escaped octal
-            map { hex $_             }    # convert hex to binary
-            map { unpack '(a2)*', $_ }    # split into 2 hex digit chunks
-            map { sprintf '%04s', $_ }    # restore compressed leading zero(s)
-            split /:/, $r->{address};     # split into hex groups
+    $self->aaaa_to_ptr( $aaaa ) if 1 == 0; # TODO: add option to enable
 
-    return ':'                            # generic record format
-        . $self->qualify( $r->{name} )    # fqdn
-        . ':28'                           # n
-        . ':' . $oct_ip                   # rdata
-        . ':' . $r->{ttl}                 # ttl
-        . ':' . $r->{timestamp}           # timestamp
-        . ':' . $r->{location}            # location
-        . "\n";
-}
+    return $self->zr_generic( 28, $r, $rdata );
+};
 
 sub zr_loc {
     my $self = shift;
@@ -408,21 +394,14 @@ sub zr_loc {
         return '';
     };
 
-    my $rdata = pack('C4N3', 0,
+    my $rdata = escape_rdata( pack 'C4N3', 0,
                          precsize_valton($size),
                          precsize_valton($horiz_pre),
                          precsize_valton($vert_pre),
                          $latitude, $longitude, $altitude
                     );
 
-    return ':'                                    # special char (none = generic)
-        . $self->qualify( $r->{name} )            # fqdn
-        . ':29'                                   # n
-        . ':' . escape_rdata( $rdata )            # rdata
-        . ':' . $r->{ttl}                         # ttl
-        . ':' . $r->{timestamp}                   # timestamp
-        . ':' . $r->{location}                    # lo
-        . "\n";
+    return $self->zr_generic( 29, $r, $rdata );
 }
 
 sub zr_naptr {
@@ -435,25 +414,18 @@ sub zr_naptr {
 
     my ($flag, $services, $regexp, $replace) = split /__/, $r->{address};
 
-    my $result = ':'                           # special char (none = generic)
-        . $self->qualify( $r->{name} )         # fqdn
-        . ":35:"                               # IANA RR ID
-        . $self->escapeNumber( $r->{'weight'} ) # order
-        . $self->escapeNumber( $r->{'priority'} )  # pref
-        . $self->characterCount( $flag )     . $flag
-        . $self->characterCount( $services ) . $self->escape( $services )
-        . $self->characterCount( $regexp )   . $self->escape( $regexp );
+    my $rdata = $self->escapeNumber( $r->{'weight'} )    # order
+              . $self->escapeNumber( $r->{'priority'} )  # pref
+              . $self->characterCount( $flag )     . $flag
+              . $self->characterCount( $services ) . $self->escape( $services )
+              . $self->characterCount( $regexp )   . $self->escape( $regexp );
 
     if ( $replace ne '' ) {
-        $result .= $self->characterCount( $replace ) . $self->escape( $replace );
+        $rdata .= $self->characterCount( $replace ) . $self->escape( $replace );
     };
+    $rdata .= '\000:';
 
-    $result .= "\\000:";
-    $result .= ':' . $r->{ttl};                # ttl
-    $result .= ':' . $r->{timestamp};          # timestamp
-    $result .= ':' . $r->{location};           # lo
-
-    return $result . "\n";
+    return $self->zr_generic( 35, $r, $rdata );
 }
 
 sub zr_sshfp {
@@ -472,14 +444,7 @@ sub zr_sshfp {
         $rdata .= sprintf '\%03lo', hex $_;
     };
 
-    return ':'                                    # special char (generic)
-        . $self->qualify( $r->{name} )            # fqdn
-        . ':44'                                   # n
-        . ':' . $rdata                            # rdata (algo.type.fp)
-        . ':' . $r->{ttl}                         # ttl
-        . ':' . $r->{timestamp}                   # timestamp
-        . ':' . $r->{location}                    # lo
-        . "\n";
+    return $self->zr_generic( 44, $r, $rdata );
 };
 
 sub zr_dnskey {
@@ -493,46 +458,14 @@ sub zr_dnskey {
         return '';
     };
 
-    my $rdata = pack("nCCa*",
+    my $rdata = escape_rdata( pack "nCCa*",
         $r->{weight},             # flags:     2 octets
         $r->{priority},           # protocol:  1 octet
         $r->{other},              # algorithm: 1 octet
         $public_key               # public key
         );
 
-    return ':'                                    # special char (generic)
-        . $self->qualify( $r->{name} )            # fqdn
-        . ':48'                                   # n
-        . ':' . escape_rdata( $rdata )            # rdata
-        . ':' . $r->{ttl}                         # ttl
-        . ':' . $r->{timestamp}                   # timestamp
-        . ':' . $r->{location}                    # lo
-        . "\n";
-};
-
-sub datestamp_to_int {
-    my ($self, $ds) = @_;
-
-    # serial arrives in YYYYMMDDHHmmSS UTC format (14 digits): RFC 4034, 3.2
-    return timegm(
-        substr($ds, 12, 2),       # seconds
-        substr($ds, 10, 2),       # minutes
-        substr($ds,  8, 2),       # hour
-        substr($ds,  6, 2),       # day
-        substr($ds,  4, 2) -1,    # month
-        substr($ds,  0, 4)        # year
-    );
-};
-
-sub pack_domain_name {
-    my ($self, $name) = @_;
-
-    my $r;
-    foreach my $label ( split /\./, $self->qualify( $name ) ) {
-        $r .= escape_rdata( pack( 'CA*', length( $label ), $label ) );
-    };
-    $r.= '\000';   # end of field
-    return $r;
+    return $self->zr_generic( 48, $r, $rdata );
 };
 
 sub zr_rrsig {
@@ -564,14 +497,7 @@ sub zr_rrsig {
     $rdata .= $self->pack_domain_name( $signers_name ); # Signer's Name
     $rdata .= escape_rdata( pack "a*", $signature );    # Signature
 
-    return ':'                                    # special char (generic)
-        . $self->qualify( $r->{name} )            # fqdn
-        . ':46'                                   # n
-        . ':' . $rdata                            # rdata
-        . ':' . $r->{ttl}                         # ttl
-        . ':' . $r->{timestamp}                   # timestamp
-        . ':' . $r->{location}                    # lo
-        . "\n";
+    return $self->zr_generic( 46, $r, $rdata );
 };
 
 sub zr_nsec {
@@ -615,14 +541,7 @@ sub zr_nsec {
         };
     };
 
-    return ':'                                    # special char (generic)
-        . $self->qualify( $r->{name} )            # fqdn
-        . ':47'                                   # n
-        . ':' . $rdata                            # rdata
-        . ':' . $r->{ttl}                         # ttl
-        . ':' . $r->{timestamp}                   # timestamp
-        . ':' . $r->{location}                    # lo
-        . "\n";
+    return $self->zr_generic( 47, $r, $rdata );
 };
 
 sub zr_nsec3 {
@@ -643,14 +562,7 @@ sub zr_nsec3 {
 
 # TTL should be same as zone SOA minimum: RFC 2308
 
-    return ':'                                    # special char (generic)
-        . $self->qualify( $r->{name} )            # fqdn
-        . ':50'                                   # n
-        . ':' . $rdata                            # rdata
-        . ':' . $r->{ttl}                         # ttl
-        . ':' . $r->{timestamp}                   # timestamp
-        . ':' . $r->{location}                    # lo
-        . "\n";
+    return $self->zr_generic( 50, $r, $rdata );
 };
 
 sub zr_nsec3param {
@@ -668,14 +580,7 @@ sub zr_nsec3param {
 
 # TTL should be same as zone SOA minimum: RFC 2308
 
-    return ':'                                    # special char (generic)
-        . $self->qualify( $r->{name} )            # fqdn
-        . ':51'                                   # n
-        . ':' . $rdata                            # rdata
-        . ':' . $r->{ttl}                         # ttl
-        . ':' . $r->{timestamp}                   # timestamp
-        . ':' . $r->{location}                    # lo
-        . "\n";
+    return $self->zr_generic( 51, $r, $rdata );
 };
 
 sub zr_ds {
@@ -696,33 +601,34 @@ sub zr_ds {
         $rdata .= sprintf '\%03lo', hex $_;   # from hex to escaped octal
     };
 
-    return ':'                                    # special char (generic)
-        . $self->qualify( $r->{name} )            # fqdn
-        . ':43'                                   # n
-        . ':' . $rdata                            # rdata
-        . ':' . $r->{ttl}                         # ttl
-        . ':' . $r->{timestamp}                   # timestamp
-        . ':' . $r->{location}                    # lo
-        . "\n";
+    return $self->zr_generic( 43, $r, $rdata );
 };
 
-sub qualify {
-    my $self = shift;
-    my $record = shift;
-    return $record if substr($record,-1,1) eq '.';  # record ends in .
-    my $zone = shift || $self->{nte}{zone_name} or return $record;
+sub aaaa_to_ptr {
+    my ( $self, $r ) = @_;
+    my $aaaa = $self->expand_aaaa( $r->{address} );
+    my @nibbles = reverse map { split //, $_ } split /:/, $aaaa;
+    return $self->zr_ptr( {
+            name       => join('.', @nibbles) . '.ip6.arpa.',
+            address    => $r->{name},
+            ttl        => $r->{ttl},
+            timestamp  => $r->{timestamp},
+            location   => $r->{location},
+        });
+};
 
-# substr is measurably faster than the regexp
-    #return $record if $record =~ /$zone$/;   # ends in zone, just no .
-    return $record if $zone eq substr($record,(-1*length($zone)),length($zone));
+sub datestamp_to_int {
+    my ($self, $ds) = @_;
 
-    return "$record.$zone"       # append missing zone name
-}
-
-sub format_timestamp {
-    my ($self, $ts) = @_;
-    return '' if ! $ts;
-    return substr unixtai64( $ts ), 1;
+    # serial arrives in YYYYMMDDHHmmSS UTC format (14 digits): RFC 4034, 3.2
+    return timegm(
+        substr($ds, 12, 2),       # seconds
+        substr($ds, 10, 2),       # minutes
+        substr($ds,  8, 2),       # hour
+        substr($ds,  6, 2),       # day
+        substr($ds,  4, 2) -1,    # month
+        substr($ds,  0, 4)        # year
+    );
 };
 
 sub escape_rdata {
@@ -738,6 +644,50 @@ sub escape_rdata {
     }
     return $out;
 }
+
+sub expand_aaaa {
+    my ( $self, $aaaa ) = @_;
+
+# from djbdnsRecordBuilder, contributed by Matija Nalis
+    my $colons = $aaaa =~ tr/:/:/;             # count the colons
+    if ($colons < 7) {
+        $aaaa =~ s/::/':' x (9-$colons)/e;     # restore compressed colons
+    };
+
+# restore any compressed leading zeros
+    $aaaa = join ':', map { sprintf '%04s', $_ } split /:/, $aaaa;
+    return $aaaa;
+};
+
+sub pack_domain_name {
+    my ($self, $name) = @_;
+
+    my $r;
+    foreach my $label ( split /\./, $self->qualify( $name ) ) {
+        $r .= escape_rdata( pack( 'CA*', length( $label ), $label ) );
+    };
+    $r.= '\000';   # end of field
+    return $r;
+};
+
+sub qualify {
+    my $self = shift;
+    my $record = shift;
+    return $record if substr($record,-1,1) eq '.';  # record ends in .
+    my $zone = shift || $self->{nte}{zone_name} or return $record;
+
+# substr is measurably faster than the regexp
+    #return $record if $record =~ /$zone$/;   # ends in zone, just no .
+    return $record if $zone eq substr($record,(-1*length($zone)),length($zone));
+
+    return "$record.$zone"       # append missing zone name
+}
+
+sub to_tai64 {
+    my ($self, $ts) = @_;
+    return '' if ! $ts;
+    return substr unixtai64( $ts ), 1;
+};
 
 # next 3 subs based on http://www.anders.com/projects/sysadmin/djbdnsRecordBuilder/
 sub escape {
