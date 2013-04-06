@@ -617,13 +617,19 @@ sub display_zone_records {
         # shorten the max width of the address field (workaround for
         # display formatting problem with DomainKey entries.
         if ( length $r_record->{address} > 48 ) {
-            my $max = 0;
-            my @lines = ();
-            while ( $max < length $r_record->{address} ) {
-                push @lines, substr( $r_record->{address}, $max, 48 );
-                $max += 48;
+            if ( $r_record->{type} =~ /^(?:DNSKEY|RRSIG)$/ ) {
+                $r_record->{title} = $r_record->{address};
+                $r_record->{address} = substr($r_record->{address}, 0, 35) . ' ... (tip: hover)';
             }
-            $r_record->{address} = join "<br>", @lines;
+            else {
+                my $max = 0;
+                my @lines = ();
+                while ( $max < length $r_record->{address} ) {
+                    push @lines, substr( $r_record->{address}, $max, 48 );
+                    $max += 48;
+                }
+                $r_record->{address} = join "<br>", @lines;
+            };
         }
 
         foreach (@columns) {
@@ -651,7 +657,7 @@ sub display_zone_records {
             }
             elsif ( $_ =~ /address|ttl|weight|priority|other/i ) {
                 print qq[
-  <td class="right"> $r_record->{$_} </td>];
+  <td class="right" title="$r_record->{title}"> $r_record->{$_} </td>];
             }
             else {
                 print qq[
@@ -882,22 +888,13 @@ sub display_edit_record {
         qq[
   </td>
  </tr>
- <tr class="light_grey_bg">
-  <td class=right> Type:</td>
-  <td class="fixedwidth fat"> $rr_type_popup </td>
+ <tr id=type class="light_grey_bg">
+  <td id=type_label class=right> Type:</td>
+  <td id=type class="fixedwidth fat"> $rr_type_popup </td>
  </tr>
  <tr id=address class="light_grey_bg">
   <td id=address_label class="right">Address:</td>
-  <td id=address class="fat">], $modifyperm
-        ? $q->textfield(
-        -id        => 'address',
-        -name      => 'address',
-        -size      => 50,
-        -maxlength => 512,
-        -default   => $zone_record->{'address'},
-        )
-        : $zone_record->{'address'},
-        $nt_obj->help_link('rraddress') . qq[
+  <td id=address class="fat">], _build_rr_address( $q, $zone_record, $modifyperm ), $nt_obj->help_link('rraddress'), qq[
   </td>
  </tr>
  <tr id=tr_weight class="light_grey_bg">
@@ -1043,6 +1040,20 @@ sub _build_rr_type_menu {
         ) );
     $q->autoEscape(1);
     return $popup;
+};
+
+sub _build_rr_address {
+    my ( $q, $zone_record, $modifyperm) = @_;
+
+    return $zone_record->{'address'} if ! $modifyperm;
+
+    return $q->textfield(
+        -id        => 'address',
+        -name      => 'address',
+        -size      => 50,
+        -maxlength => 512,
+        -default   => $zone_record->{'address'},
+        );
 };
 
 sub display_edit_record_delegates {
