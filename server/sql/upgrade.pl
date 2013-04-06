@@ -104,13 +104,20 @@ sub _sql_test_2_18 {
 
 sub _sql_2_18 {
     <<EO_SQL_2_18
-INSERT INTO `resource_record_type`
- (`id`, `name`, `description`, `reverse`, `forward`)
+
+ALTER TABLE resource_record_type ADD column obsolete TINYINT(1) AFTER forward;
+REPLACE INTO `resource_record_type`
+ (`id`, `name`, `description`, `reverse`, `forward`, `obsolete`)
 VALUES
- (35,'NAPTR','Naming Authority Pointer',0,1),
- (44,'SSHFP','Secure Shell Key Fingerprints',0,1),
- (46,'RRSIG','Resource Record Signature',0,0),
- (47,'NSEC','Next Secure',0,0);
+ (35,'NAPTR','Naming Authority Pointer',0,1,0),
+ (39,'DNAME','Delegation Name',0,0,0),
+ (43,'DS','Delegation Signer',0,1,0),
+ (44,'SSHFP','Secure Shell Key Fingerprints',0,1,0),
+ (46,'RRSIG','Resource Record Signature',0,1,0),
+ (47,'NSEC','Next Secure',0,1,0),
+ (48,'DNSKEY','DNS Public Key',0,1,0),
+ (50,'NSEC3','Next Secure v3',0,0,0),
+ (51,'NSEC3PARAM','NSEC3 Parameters',0,0,0) ;
 
 UPDATE nt_zone SET mailaddr=CONCAT('hostmaster.',zone,'.') WHERE mailaddr LIKE 'hostmaster.ZONE.TLD%';
 UPDATE nt_options SET option_value='2.18' WHERE option_name='db_version';
