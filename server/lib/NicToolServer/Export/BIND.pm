@@ -295,6 +295,7 @@ sub zr_naptr {
     my ($self, $r) = @_;
 
 # http://www.ietf.org/rfc/rfc2915.txt
+# https://www.ietf.org/rfc/rfc3403.txt
 
     my $order = $self->{nte}->is_ip_port( $r->{weight}   );
     my $pref  = $self->{nte}->is_ip_port( $r->{priority} );

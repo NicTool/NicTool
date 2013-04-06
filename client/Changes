@@ -1,8 +1,13 @@
 
-2.18    2013.04.01
+2.18    2013.04.05
 
+  * lengthen NS IP field to allow AAAA to fit
+  * group the DNSSEC record types together in record type menu
+  * only display partial DNSKEY & RRSIG records (they're very long), hover
+    over them or edit to see the entire record.
   * updated jquery to 1.9.1
-  * added support for DNSKEY, DS, SSHFP records
+  * added DNSSEC records (DNSKEY, DS, RRSIG, NSEC)
+  * added SSHFP records (SSH Fingerprint)
 
 2.17    2013.01.
 

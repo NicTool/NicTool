@@ -330,12 +330,8 @@ sub zr_aaaa {
 
     my $aaaa = $self->expand_aaaa( $r->{address} );
 
-    # convert from AAAA (possibly compressed) notation (8 groups of 4 hex
-    # digits) to 16 escaped octals
-    my $rdata = sprintf '\%03lo' x 16,    # output num as escaped octal
-            map { hex $_             }    # convert hex string to number
-            map { unpack '(a2)*', $_ }    # split each quad into 2 hex digits
-            split /:/, $aaaa;             # split hex quads
+    # from AAAA notation (8 groups of 4 hex digits) to 16 escaped octals
+    my $rdata = $self->pack_hex( join '', split /:/, $aaaa );
 
     $self->aaaa_to_ptr( $aaaa ) if 1 == 0; # TODO: add option to enable
 
@@ -408,22 +404,23 @@ sub zr_naptr {
     my $self = shift;
     my $r = shift or die;
 
+    # https://www.ietf.org/rfc/rfc3403.txt
 # from djbdnsRecordBuilder
 # :example.com:35:\000\012\000\144\001u\007E2U+sip\036!^.*$!sip\072info@example.com.br!\000:300
 #                 |-order-|-pref--|flag|-services-|---------------regexp---------------|re-|
 
     my ($flag, $services, $regexp, $replace) = split /__/, $r->{address};
 
-    my $rdata = $self->escapeNumber( $r->{'weight'} )    # order
-              . $self->escapeNumber( $r->{'priority'} )  # pref
-              . $self->characterCount( $flag )     . $flag
-              . $self->characterCount( $services ) . $self->escape( $services )
-              . $self->characterCount( $regexp )   . $self->escape( $regexp );
+    my $rdata = $self->escapeNumber( $r->{'weight'} )    # order, 16-bit
+           . $self->escapeNumber( $r->{'priority'} )     # pref,  16-bit
+           . $self->characterCount( $flag )     . $flag  # Flags
+           . $self->characterCount( $services ) . $self->escape( $services )
+           . $self->characterCount( $regexp )   . $self->escape( $regexp );
 
     if ( $replace ne '' ) {
         $rdata .= $self->characterCount( $replace ) . $self->escape( $replace );
     };
-    $rdata .= '\000:';
+    $rdata .= '\000';
 
     return $self->zr_generic( 35, $r, $rdata );
 }
@@ -440,9 +437,7 @@ sub zr_sshfp {
     my $fingerprint = $r->{address};  # in hex
 
     my $rdata = sprintf '\%03lo' x 2, $algo, $type;
-    foreach ( unpack "(a2)*", $fingerprint ) {
-        $rdata .= sprintf '\%03lo', hex $_;
-    };
+    $rdata .= $self->pack_hex( $fingerprint );
 
     return $self->zr_generic( 44, $r, $rdata );
 };
@@ -597,9 +592,7 @@ sub zr_ds {
     $digest =~ s/\s+//g;          # remove spaces
 
     # Digest is 20 octets for SHA-1, 32 for SHA-256
-    foreach ( unpack "(a2)*", $digest ) {     # nibble off 2 hex chars
-        $rdata .= sprintf '\%03lo', hex $_;   # from hex to escaped octal
-    };
+    $rdata .= $self->pack_hex( $digest );
 
     return $self->zr_generic( 43, $r, $rdata );
 };
@@ -667,6 +660,16 @@ sub pack_domain_name {
         $r .= escape_rdata( pack( 'CA*', length( $label ), $label ) );
     };
     $r.= '\000';   # end of field
+    return $r;
+};
+
+sub pack_hex {
+    my ($self, $string) = @_;
+
+    my $r;
+    foreach ( unpack "(a2)*", $string ) {  # nibble off 2 hex digits
+        $r .= sprintf '\%03lo', hex $_;    # pack 'em into an escaped ocatal
+    };
     return $r;
 };
 

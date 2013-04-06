@@ -64,29 +64,28 @@ foreach ( @good_ports ) {
 
 done_testing() and exit;
 
+# TODO: specify NS type when loading, so we can run these NS specific tests
 $export->load_export_class();
-$r = $export->{export_class}->zr_nsec( {
-    name      => 'localhost.simerson.com.',
-    address   => 'mbp-hires.simerson.com.',
-    description => '(A RRSIG NSEC)',
-    ttl       => '86400',
-    timestamp => '',
-    location  => '',
-} );
-cmp_ok( $r, 'eq', ':localhost.simerson.com.:47:\011mbp-hires\010simerson\003com\000\000\006\100\000\000\000\000\003:86400::
-', 'zr_nsec');
+$r = $export->{export_class}->datestamp_to_int( '20130401101010' );
+cmp_ok( $r, '==', 1364811010, "datestamp_to_int, $r");
 
-$r = $export->{export_class}->zr_nsec( {
-    name      => 'localhost.simerson.com.',
-    address   => 'mbp-hires.simerson.com.',
-    description => 'A RRSIG NSEC',
-    ttl       => '86400',
-    timestamp => '',
-    location  => '',
-} );
-cmp_ok( $r, 'eq', ':localhost.simerson.com.:47:\011mbp-hires\010simerson\003com\000\000\006\100\000\000\000\000\003:86400::
-', 'zr_nsec');
-print $r;
+$r = $export->{export_class}->expand_aaaa( '2607:f060:b008:feed::6' );
+cmp_ok( $r, 'eq', '2607:f060:b008:feed:0000:0000:0000:0006', 'expand_aaaa');
+#print "r: $r\n";
+
+$r = $export->{export_class}->aaaa_to_ptr( {
+    address    => $r,
+    name       => 'ns2.cadillac.net.',
+    ttl        => 86400,
+    timestamp  => '',
+    location   => '',
+    } );
+cmp_ok( $r, 'eq', '^6.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.d.e.e.f.8.0.0.b.0.6.0.f.7.0.6.2.ip6.arpa.:ns2.cadillac.net.:86400::
+', 'aaaa_to_ptr');
+
+#print "r: $r\n";
+#_zr_nsec();
+#_zr_rrsig();
 
 done_testing() and exit;
 
@@ -118,3 +117,47 @@ ok( $export->preflight, 'preflight');  # check if export can succeed
 
 ok( $export->export(), "export (nsid $nsid)");
 
+sub _zr_rrsig {
+    $r = $export->{export_class}->zr_rrsig( {
+        name      => 'localhost.simerson.com.',
+        address   => 'A 5 3 86411 20130701084611 ( 20130402084611 52071 simerson.com. kFuXL2wTkWD7BYt0x3e5GkZru5mCnf1
+        AmkBh Xo7BASMnkRWi0hoaQKQ68jhVnk+Tede9tbPi EBgdg
+        Ol7LkOMAdtnByoMdczV8kTgRcNA5nWh ttfT+X7lPeOXn2ig
+        Luik7ceyWHyWiCheDzyP XAgntcZQWKUVDJCEq6DO1IEOwWF
+        RAgWYoGnX VNNaKWP0Iho6CSXujK8lvRdALY+WY3q60GTB J
+        worRIIp6xEZW3JkbvVbCioyBm8VQ5rvRjft M0ru4GACbMpz
+        5Ysga7bJWZodbGk5xERlXLGO iZF5f1+zgWR/igooqsPvGSJ
+        AXPL6QCDhn6V8cooWRtib2PLrgdexGw== )',
+        description => '',
+        ttl       => '86400',
+        timestamp => '',
+        location  => '',
+    } );
+    cmp_ok( $r, 'eq', 'A 5 3 86411 20130701084611 20130402084611 52071 simerson.com. kFuXL2wTkWD7BYt0x3e5GkZru5mCnf1AmkBhXo7BASMnkRWi0hoaQKQ68jhVnk+Tede9tbPiEBgdgOl7LkOMAdtnByoMdczV8kTgRcNA5nWhttfT+X7lPeOXn2igLuik7ceyWHyWiCheDzyPXAgntcZQWKUVDJCEq6DO1IEOwWFRAgWYoGnXVNNaKWP0Iho6CSXujK8lvRdALY+WY3q60GTBJworRIIp6xEZW3JkbvVbCioyBm8VQ5rvRjftM0ru4GACbMpz5Ysga7bJWZodbGk5xERlXLGOiZF5f1+zgWR/igooqsPvGSJAXPL6QCDhn6V8cooWRtib2PLrgdexGw==
+', 'zr_rrsig');
+};
+
+sub _zr_nsec {
+    $r = $export->{export_class}->zr_nsec( {
+        name      => 'localhost.simerson.com.',
+        address   => 'mbp-hires.simerson.com.',
+        description => '(A RRSIG NSEC)',
+        ttl       => '86400',
+        timestamp => '',
+        location  => '',
+    } );
+    cmp_ok( $r, 'eq', ':localhost.simerson.com.:47:\011mbp-hires\010simerson\003com\000\000\006\100\000\000\000\000\003:86400::
+    ', 'zr_nsec');
+
+    $r = $export->{export_class}->zr_nsec( {
+        name      => 'localhost.simerson.com.',
+        address   => 'mbp-hires.simerson.com.',
+        description => 'A RRSIG NSEC',
+        ttl       => '86400',
+        timestamp => '',
+        location  => '',
+    } );
+    cmp_ok( $r, 'eq', ':localhost.simerson.com.:47:\011mbp-hires\010simerson\003com\000\000\006\100\000\000\000\000\003:86400::
+    ', 'zr_nsec');
+    print $r;
+};
