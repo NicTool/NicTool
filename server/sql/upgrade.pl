@@ -119,7 +119,9 @@ VALUES
  (50,'NSEC3','Next Secure v3',0,0,0),
  (51,'NSEC3PARAM','NSEC3 Parameters',0,0,0) ;
 
+UPDATE nt_zone SET mailaddr=CONCAT('hostmaster.',zone,'.') WHERE mailaddr IS NULL';
 UPDATE nt_zone SET mailaddr=CONCAT('hostmaster.',zone,'.') WHERE mailaddr LIKE 'hostmaster.ZONE.TLD%';
+UPDATE nt_zone SET mailaddr=SUBSTRING(mailaddr, 1, LENGTH(mailaddr)-1) WHERE mailaddr LIKE '%.';
 UPDATE nt_options SET option_value='2.18' WHERE option_name='db_version';
 EO_SQL_2_18
 };
