@@ -198,6 +198,28 @@ sub fill_template_vars {
     }
 }
 
+sub display_group_menu {
+    my ( $self, $user, $rv ) = @_;
+
+    my %menu = ();
+
+    my $count = scalar( @{ $rv->{'groups'} } ) - 1;
+
+    foreach my $navG ( 0 .. $count ) {
+        my $group = $rv->{'groups'}->[$navG];
+        my $gid = $group->{'nt_group_id'};
+
+        $menu{$gid} = qq[<a href="group.cgi?nt_group_id=$gid">$group->{name}</a>];
+    };
+    
+    print qq[<ul id=group_menu>\n];
+    foreach my $item ( sort keys %menu ) {
+        print qq[<li>$menu{$item}</li>\n];
+    };
+    print qq[</ul>\n];
+
+};
+
 sub display_group_tree {
     my ( $self, $user, $user_group, $curr_group, $in_summary ) = @_;
 
@@ -218,30 +240,23 @@ sub display_group_tree {
         );
     }
 
+    #$self->display_group_menu( $user, $rv );
+
     my $count = scalar( @{ $rv->{'groups'} } ) - 1;
     my @list;
 
     foreach my $navG ( 0 .. $count ) {
         my $group = $rv->{'groups'}->[$navG];
-        push( @list, $group->{'name'} );
+        push @list, $group->{'name'};
 
         my @options;
         if ( $group->{'nt_group_id'} != $user_group ) {
-            my $name = 'View Details';
-            if ($user->{'group_write'}
-                && ( !exists $group->{'delegate_write'} || $group->{'delegate_write'} )
-                )
-            {
-                $name = 'Edit';
-            };
+
+            my $name = _can_group_write($user, $group) ? 'Edit' : 'View Details';
             push @options, qq[<a href="group.cgi?nt_group_id=$group->{'nt_group_id'}&amp;edit=1">$name</a>];
-            if ($user->{"group_delete"}
-                && ( !exists $group->{'delegate_delete'} || $group->{'delegate_delete'} )
-                )
-            {
-                push @options, qq[<a href="group.cgi?nt_group_id=$group->{'parent_group_id'}&amp;delete=$group->{'nt_group_id'}" onClick="return confirm('Delete ]
-                    . join( ' / ', @list )
-                    . qq[ and all associated data?');">Delete</a>];
+
+            if ( _can_group_delete($user,$group) ) {
+                push @options, qq[<a href="group.cgi?nt_group_id=$group->{'parent_group_id'}&amp;delete=$group->{'nt_group_id'}" onClick="return confirm('Delete ] . join( ' / ', @list ) . qq[ and all associated data?');">Delete</a>];
             }
             else {
                 push @options, qq[<span class="disabled">Delete</span>];
@@ -288,6 +303,22 @@ sub display_group_tree {
 
     return $count + 1;
 }
+
+sub _can_group_delete {
+    my ($user,$group) = @_;
+
+    return if ! $user->{'group_delete'};
+    return 1 if ( !exists $group->{'delegate_delete'} || $group->{'delegate_delete'} );
+    return 0;
+};
+
+sub _can_group_write {
+    my ($user,$group) = @_;
+
+    return if ! $user->{'group_write'};
+    return 1 if ( !exists $group->{'delegate_write'} || $group->{'delegate_write'} );
+    return 0;
+};
 
 sub display_zone_list_options {
     my ( $self, $user, $group_id, $level, $in_zone_list ) = @_;

@@ -181,10 +181,7 @@ sub display_group_list {
     my @columns = qw/ group /;
     my $cgi = 'group.cgi';
 
-    my %labels = (
-        group      => 'Group',
-        sub_groups => '*Sub Groups',
-    );
+    my %labels = ( group => 'Group', sub_groups => '*Sub Groups' );
 
     my $include_subgroups = $group->{'has_children'} ? 'sub-groups' : undef;
 
@@ -194,10 +191,11 @@ sub display_group_list {
     );
     my %sort_fields;
     $nt_obj->prepare_search_params( $q, \%labels, \%params, \%sort_fields, 10 );
+    $sort_fields{'group'} = { 'order' => 1, 'mod' => 'Ascending' } if ! %sort_fields;
 
-    $sort_fields{'group'} = { 'order' => 1, 'mod' => 'Ascending' }
-        unless %sort_fields;
     my $rv = $nt_obj->get_group_subgroups(%params);
+
+    _display_group_create_link( $nt_obj, $q, $user);
 
     if ( $q->param('edit_sortorder') ) {
         $nt_obj->display_sort_options( $q, \@columns, \%labels, $cgi,
@@ -213,26 +211,6 @@ sub display_group_list {
 
     my $groups = $rv->{'groups'};
     my $map    = $rv->{'group_map'};
-
-    my $options;
-    if ( $user->{'group_create'} ) {
-        my $state = 'nt_group_id=' . $q->param('nt_group_id')
-                  . '&amp;parent_group_id=' . $q->param('nt_group_id');
-        foreach ( @{ $nt_obj->paging_fields } ) {
-            next if ! $q->param($_);
-            $state .= "&amp;$_=" . $q->escape( $q->param($_) );
-        }
-        $options = ( qq[<a href="group.cgi?$state&amp;new=1">New Sub-Group</a>] );
-    }
-    else {
-        $options = ( "<span class=disabled>New Sub-Group</span>");
-    }
-
-    print qq[
-<div class="dark_grey_bg margint4">
- <b>Sub-Group List</b>
- <span class="float_r">$options</span>
-</div>];
 
     $nt_obj->display_search_rows( $q, $rv, \%params, $cgi, ['nt_group_id'], $include_subgroups );
 
@@ -299,6 +277,27 @@ sub display_group_list {
 </div>";
     }
 }
+
+sub _display_group_create_link {
+    my ($nt_obj, $q, $user) = @_;
+
+    print qq[
+<div class="dark_grey_bg margint4"><b>Sub-Group List</b><span class="float_r">];
+
+    if ( ! $user->{'group_create'} ) {
+        print qq[<span class=disabled>New Sub-Group</span></span></div>];
+        return;
+    };
+
+    my $state = 'nt_group_id=' . $q->param('nt_group_id')
+                . '&amp;parent_group_id=' . $q->param('nt_group_id');
+
+    foreach ( @{ $nt_obj->paging_fields } ) {
+        next if ! $q->param($_);
+        $state .= "&amp;$_=" . $q->escape( $q->param($_) );
+    }
+    print qq[<a href="group.cgi?$state&amp;new=1">New Sub-Group</a></span></div>];
+};
 
 sub display_edit {
     my ( $nt_obj, $user, $q, $edit ) = @_;
