@@ -37,20 +37,8 @@ sub main {
 
 sub display {
     my ( $nt_obj, $q, $user ) = @_;
-    my @nicemessage;
-    my @newzone;
 
-    if ( $q->param('new') ) {
-        if    ( $q->param('Cancel') ) { }   # do nothing
-        elsif ( $q->param('Create') ) {
-            my $r = add_zone( $nt_obj, $q, $user ) or return;
-            @newzone = @{ $r->{newzone} } if $r->{newzone};
-            @nicemessage = @{ $r->{nicemessage} } if $r->{nicemessage};
-        }
-        else {
-            @newzone = ( $nt_obj, $q, '', 'new' );
-        }
-    }
+    my ($newzone, $nicemessage) = _display_new( $nt_obj, $q, $user );
 
     print $q->header;
     $nt_obj->parse_template($NicToolClient::start_html_template);
@@ -72,67 +60,100 @@ sub display {
     my $group = $nt_obj->get_group( nt_group_id => $q->param('nt_group_id') );
 
     if ( $q->param('new') ) {
-        $nt_obj->display_nice_message(@nicemessage) if @nicemessage;
-        display_new_zone(@newzone) if @newzone;
-    }
-    if ( $q->param('edit') ) {
-        if ( $q->param('Save') ) {
-            my @fields = qw/ nt_zone_id nt_group_id zone nameservers
-                description serial refresh retry expire minimum mailaddr ttl /;
-            my %data;
-            foreach (@fields) { $data{$_} = $q->param($_); }
-            $data{'nameservers'} = join( ',', $q->param('nameservers') );
-
-            my $error = $nt_obj->edit_zone(%data);
-            if ( $error->{'error_code'} != 200 ) {
-                display_new_zone( $nt_obj, $q, $error, 'edit' );
-            }
-        }
-        elsif ( $q->param('Cancel') ) { } # do nothing
-        else {
-            display_new_zone( $nt_obj, $q, '', 'edit' );
-        }
+        $nt_obj->display_nice_message(@$nicemessage) if $nicemessage;
+        display_new_zone(@$newzone) if $newzone;
     }
 
-    if ( $q->param('delete') && $q->param('zone_list') ) {
-        my @zl = $q->param('zone_list');
-        my $error = $nt_obj->delete_zones( zone_list => join( ',', @zl ) );
-        my $plural;
-        $plural = 's' if scalar @zl > 1;
-        if ( $error->{'error_code'} != 200 ) {
-            $nt_obj->display_nice_error( $error, "Delete Zones" );
-        }
-        else {
-            $nt_obj->display_nice_message(
-                "The "
-                    . ( $plural ? "zones were" : "zone was" )
-                    . " successfully removed.",
-                "Zone$plural Removed"
-            );
-        }
-    }
-    if (   $q->param('deletedelegate')
-        && $q->param('nt_zone_id')
-        && $q->param('nt_group_id') )
-    {
-        my $error = $nt_obj->delete_zone_delegation(
-            nt_zone_id  => $q->param('nt_zone_id'),
-            nt_group_id => $q->param('nt_group_id')
-        );
-        if ( $error->{'error_code'} != 200 ) {
-            $nt_obj->display_nice_error( $error, "Remove Zone Delegation" );
-        }
-        else {
-            $nt_obj->display_nice_message(
-                "The zone delegation was successfully removed.",
-                "Delegation Removed" );
-        }
-    }
+    _display_edit( $nt_obj, $q );
+    _display_delete( $nt_obj, $q );
+    _display_delete_delegate( $nt_obj, $q );
 
     display_list( $nt_obj, $q, $group, $user );
 
     $nt_obj->parse_template($NicToolClient::end_html_template);
 }
+
+sub _display_delete {
+    my ($nt_obj, $q) = @_;
+
+    return if ! $q->param('delete');
+    return if ! $q->param('zone_list');
+
+    my @zl = $q->param('zone_list');
+    my $error = $nt_obj->delete_zones( zone_list => join( ',', @zl ) );
+
+    if ( $error->{'error_code'} != 200 ) {
+        $nt_obj->display_nice_error( $error, "Delete Zones" );
+        return;
+    };
+
+    my $plural;
+    $plural = 's' if scalar @zl > 1;
+    $nt_obj->display_nice_message(
+        "The " . ( $plural ? "zones were" : "zone was" )
+            . " successfully removed.",
+        "Zone$plural Removed"
+    );
+};
+
+sub _display_delete_delegate {
+    my ($nt_obj, $q) = @_;
+
+    return if ! $q->param('deletedelegate');
+    return if ! $q->param('nt_zone_id');
+    return if ! $q->param('nt_group_id');
+
+    my $error = $nt_obj->delete_zone_delegation(
+        nt_zone_id  => $q->param('nt_zone_id'),
+        nt_group_id => $q->param('nt_group_id')
+    );
+    if ( $error->{'error_code'} != 200 ) {
+        $nt_obj->display_nice_error( $error, "Remove Zone Delegation" );
+        return;
+    };
+
+    $nt_obj->display_nice_message(
+        "The zone delegation was successfully removed.",
+        "Delegation Removed" );
+};
+
+sub _display_edit {
+    my ($nt_obj, $q) = @_;
+
+    return if ! $q->param('edit');
+    return if $q->param('Cancel');   # do nothing
+
+    if ( $q->param('Save') ) {
+        my @fields = qw/ nt_zone_id nt_group_id zone nameservers
+            description serial refresh retry expire minimum mailaddr ttl /;
+
+        my %data;
+        foreach (@fields) { $data{$_} = $q->param($_); }
+        $data{'nameservers'} = join( ',', $q->param('nameservers') );
+
+        my $error = $nt_obj->edit_zone(%data);
+        if ( $error->{'error_code'} != 200 ) {
+            display_new_zone( $nt_obj, $q, $error, 'edit' );
+        }
+    }
+    else {
+        display_new_zone( $nt_obj, $q, '', 'edit' );
+    }
+};
+
+sub _display_new {
+    my ($nt_obj, $q, $user) = @_;
+
+    return if ! $q->param('new');
+    return if $q->param('Cancel');  # do nothing
+
+    if ( ! $q->param('Create') ) {
+        return [ $nt_obj, $q, '', 'new' ];
+    };
+
+    my $r = add_zone( $nt_obj, $q, $user ) or return;
+    return ( $r->{newzone}, $r->{nicemessage} );
+};
 
 sub display_list {
     my ( $nt_obj, $q, $group, $user ) = @_;
@@ -383,85 +404,43 @@ sub display_new_zone {
         -action => 'group_zones.cgi',
         -method => 'POST',
         -name   => 'new_zone'
-    );
-    print $q->hidden( -name => 'nt_group_id' );
-    print $q->hidden( -name => $edit );
+    ),
+    $q->hidden( -name => 'nt_group_id' ),
+    $q->hidden( -name => $edit );
 
     foreach ( @{ $nt_obj->paging_fields() } ) {
         next if ! defined $q->param($_);
         print $q->hidden( -name => $_ );
-    }
+    };
 
     $nt_obj->display_nice_error( $message, ucfirst($edit) . " Zone" ) if $message;
+
+    my $zone_input = _get_new_zone_name( $q );
+    my $ns_list   = _get_available_nameservers( $nt_obj, $q );
+    my $descrip   = _get_new_description( $q );
+    my $ttl_input = _get_new_ttl( $q );
+    my $refresh_input = _get_new_refresh( $q );
 
     print qq[
 <table class="fat">
  <tr class=dark_bg><td colspan=2 class="bold">New Zone</td></tr>
  <tr class=light_grey_bg>
-  <td class=right>Zone:</td>
-  <td class="fat">],
-        $q->textfield( -name => 'zone', -size => 40, -maxlength => 128 ),
-qq[ <a href="zones.cgi?nt_group_id=],$q->param('nt_group_id'),qq[">Batch</a></td></tr>
-<tr class=light_grey_bg>
- <td class="right top">Nameservers:</td>
- <td style="width:80%;">\n ];
-
-    # get list of available nameservers
-    my $ns_tree = $nt_obj->get_usable_nameservers(
-        nt_group_id => $q->param('nt_group_id')
-    );
-    foreach ( 1 .. scalar( @{ $ns_tree->{'nameservers'} } ) ) {
-        last if ( $_ > 10 );
-
-        my $ns = $ns_tree->{'nameservers'}->[ $_ - 1 ];
-
-        print $q->checkbox(
-            -name    => "nameservers",
-            -checked => ( $_ < 4 ? 1 : 0 ),
-            -value   => $ns->{'nt_nameserver_id'},
-            -label   => "$ns->{'description'} ($ns->{'name'})"
-            ),
-            "<BR>";
-    }
-    if ( @{ $ns_tree->{'nameservers'} } == 0 ) {
-        print "No available nameservers.";
-    }
-    print qq[</td></tr>
-
-<tr class=light_grey_bg>
- <td class="right top">Description:</td>
- <td style="width:80%;">],
-        $q->textarea(
-        -name      => 'description',
-        -cols      => 50,
-        -rows      => 4,
-        -maxlength => 255
-        ),
-        qq[</td></tr>
-
-<tr class=light_grey_bg>
- <td class=right>TTL:</td>
- <td style="width:80%;">],
-        $q->textfield(
-        -name      => 'ttl',
-        -size      => 8,
-        -maxlength => 10,
-        -default   => $NicToolClient::default_zone_ttl || $q->param('ttl'),
-        );
-    print qq[<input type="button" value="Default" onClick="this.form.ttl.value=$NicToolClient::default_zone_ttl"> $NicToolClient::default_zone_ttl </td></tr>
-    <tr class=light_grey_bg>
-    <td class=right>Refresh:</td>
-    <td style="width:80%;">],
-        $q->textfield(
-        -name      => 'refresh',
-        -size      => 8,
-        -maxlength => 10,
-        -default   => $NicToolClient::default_zone_refresh || $q->param('refresh'),
-        ),
-    qq[<input type="button" value="Default" onClick="this.form.refresh.value=$NicToolClient::default_zone_refresh"> $NicToolClient::default_zone_refresh </td></tr>
-    <tr class=light_grey_bg>
-    <td class=right>Retry:</td>
-    <td style="width:80%;">],
+  <td class=right>Zone:</td><td class="fat"> $zone_input </td>
+ </tr>
+ <tr class=light_grey_bg>
+  <td class="right top">Nameservers:</td><td style="width:80%;"> $ns_list </td>
+ </tr>
+ <tr class=light_grey_bg>
+  <td class="right top">Description:</td><td style="width:80%;"> $descrip </td>
+ </tr>
+ <tr class=light_grey_bg>
+  <td class=right>TTL:</td><td style="width:80%;"> $ttl_input </td>
+ </tr>
+ <tr class=light_grey_bg>
+  <td class=right>Refresh:</td><td style="width:80%;"> $refresh_input </td>
+ </tr>
+ <tr class=light_grey_bg>
+  <td class=right>Retry:</td><td style="width:80%;">],
         $q->textfield(
         -name      => 'retry',
         -size      => 8,
@@ -496,8 +475,9 @@ qq[ <a href="zones.cgi?nt_group_id=],$q->param('nt_group_id'),qq[">Batch</a></td
     <td class=right>MailAddr:</td>
     <td style="width:80%;">],
         $q->textfield(
+        -id        => 'mailaddr',
         -name      => 'mailaddr',
-        -size      => 25,
+        -size      => 35,
         -maxlength => 255,
         -default   => $NicToolClient::default_zone_mailaddr || $q->param('mailaddr'),
         -onFocus   => qq[if(this.form.mailaddr.value=='hostmaster.ZONE.TLD.'){this.form.mailaddr.value='hostmaster.'+this.form.zone.value+'.';};],
@@ -526,6 +506,88 @@ Mail IP: <input type="text" name="mailip" size="25" maxlength="39" value="$maili
     $q->submit('Cancel'), "</td></tr></table>",
     $q->end_form;
 }
+
+sub _get_new_zone_name {
+    my ($q) = @_;
+
+    my $gid = $q->param('nt_group_id');
+
+    return sprintf( $q->textfield(
+        -id        => 'zone',
+        -name      => 'zone',
+        -size      => 40,
+        -maxlength => 128,
+        -onChange  => 'changeNewZoneName();',
+        )
+    )
+    . qq[<a href="zones.cgi?nt_group_id=$gid">Batch</a>];
+};
+
+sub _get_available_nameservers {
+    my ($nt_obj, $q) = @_;
+
+    my $ns_tree = $nt_obj->get_usable_nameservers(
+        nt_group_id => $q->param('nt_group_id')
+    );
+
+    if ( @{ $ns_tree->{'nameservers'} } == 0 ) {
+        return "No available nameservers.";
+    };
+
+    my $ns_list;
+    foreach ( 1 .. scalar( @{ $ns_tree->{'nameservers'} } ) ) {
+        last if ( $_ > 10 );
+
+        my $ns = $ns_tree->{'nameservers'}->[ $_ - 1 ];
+
+        $ns_list .= sprintf( $q->checkbox(
+            -name    => "nameservers",
+            -checked => ( $_ < 4 ? 1 : 0 ),
+            -value   => $ns->{'nt_nameserver_id'},
+            -label   => "$ns->{'description'} ($ns->{'name'})"
+            )
+        )
+        . "<BR>";
+    };
+    return $ns_list;
+};
+
+sub _get_new_description {
+    my ($q) = @_;
+    return sprintf $q->textarea(
+        -name      => 'description',
+        -cols      => 50,
+        -rows      => 4,
+        -maxlength => 255
+    ),
+};
+
+sub _get_new_ttl {
+    my ($q) = @_;
+
+    return sprintf( $q->textfield(
+        -name      => 'ttl',
+        -size      => 8,
+        -maxlength => 10,
+        -default   => $NicToolClient::default_zone_ttl || $q->param('ttl'),
+        )
+    )
+    .
+    qq[<input type="button" value="Default" onClick="this.form.ttl.value=$NicToolClient::default_zone_ttl"> $NicToolClient::default_zone_ttl];
+};
+
+sub _get_new_refresh {
+    my ( $q ) = @_;
+
+    sprintf( $q->textfield(
+        -name      => 'refresh',
+        -size      => 8,
+        -maxlength => 10,
+        -default   => $NicToolClient::default_zone_refresh || $q->param('refresh'),
+        )
+    ) .
+    qq[<input type="button" value="Default" onClick="this.form.refresh.value=$NicToolClient::default_zone_refresh"> $NicToolClient::default_zone_refresh ];
+};
 
 sub add_zone {
     my ($nt_obj, $q, $user) = @_;

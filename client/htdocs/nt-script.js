@@ -2,6 +2,14 @@
 
 "use strict";
 
+function changeNewZoneName() {
+  var zoneName = $('input#zone');
+  var mailAddr = $('input#mailaddr');
+  if ( mailAddr.val() === 'hostmaster.'+zoneName.val()+'.' )
+    return;
+  mailAddr.val( 'hostmaster.'+zoneName.val() + '.' );
+};
+
 function selectedRRType(rrType) {
 
     if ( ! rrType ) return false;

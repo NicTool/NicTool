@@ -489,16 +489,9 @@ sub display_zone_records {
     display_zone_records_delete( $nt_obj, $q );
 
     my @columns = qw/ name type address ttl weight priority other description/;
-    my %labels = (
-        name        => 'Name',
-        type        => 'Type',
-        address     => 'Address',
-        ttl         => 'TTL',
-        weight      => 'Weight',
-        priority    => 'Priority',
-        other       => 'Port',
-        description => 'Description',
-    );
+    my %labels = map { $_ => ucfirst($_) } @columns;
+    $labels{ttl} = 'TTL';
+    $labels{other} = 'Port';
 
     if ( $q->param('edit_sortorder') ) {
         $nt_obj->display_sort_options( $q, \@columns, \%labels, 'zone.cgi',
@@ -718,11 +711,9 @@ sub display_zone_records_new {
         if ! $q->param('Create');
 
     my @fields = qw/ nt_group_id nt_zone_id name type address
-                    weight priority other ttl description /;
-    my %data;
-    foreach my $x (@fields) {
-        $data{$x} = $q->param($x);
-    }
+                     weight priority other ttl description /;
+
+    my %data = map { $_ => $q->param($_) } @fields;
 
     my $error = $nt_obj->new_zone_record(%data);
     if ( $error->{'error_code'} != 200 ) {
@@ -730,10 +721,8 @@ sub display_zone_records_new {
         return;
     };
 
-    $q->param(
-            -name  => 'new_record_id',
-            -value => $error->{'nt_zone_record_id'}
-            );
+    $q->param( -name  => 'new_record_id',
+               -value => $error->{'nt_zone_record_id'} );
     $nt_obj->display_nice_message(
             "New Zone Record '$data{name}' Created", "New Zone Record" );
 };

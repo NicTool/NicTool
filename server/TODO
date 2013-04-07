@@ -36,11 +36,11 @@
     RFC 4408 ("recommends to always provide a TXT based SPF RR...and duplicate
     the information")
 
+==== COMPLETED =====
+
 . Fix hostmaster.ZONE.TLD entries in nt_zone table.
 ..  Have Zone::new_zone automatically rewrite those entries before insertion.
 ..  Update the JS to format that value more intelligently
-
-==== COMPLETED =====
 
 . Fix hostmaster.ZONE.TLD entries in nt_zone table.
 ..  UPDATE nt_zone SET mailaddr=CONCAT('hostmaster.',zone,'.') WHERE mailaddr LIKE 'hostmaster.ZONE.TLD%';
