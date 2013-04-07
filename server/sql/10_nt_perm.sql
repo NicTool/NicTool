@@ -55,7 +55,7 @@ CREATE TABLE nt_perm(
 CREATE INDEX nt_perm_idx1 on nt_perm(nt_group_id,nt_user_id);
 CREATE INDEX nt_perm_idx2 on nt_perm(nt_user_id);
 
-INSERT into nt_perm VALUES(1,1,0,NULL,NULL,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,0,0,0,0,0,0,0,0,0);
+INSERT into nt_perm VALUES(1,1,0,NULL,NULL,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,0);
 
 DROP TABLE IF EXISTS nt_delegate;
 CREATE TABLE nt_delegate(
