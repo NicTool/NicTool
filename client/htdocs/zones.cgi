@@ -33,21 +33,15 @@ sub display {
         userid    => $user->{'nt_user_id'}
     );
 
-    my $level = $nt_obj->display_group_tree(
-        $user,
-        $user->{'nt_group_id'},
-        $q->param('nt_group_id'), 0
-    );
+    my $gid = $q->param('nt_group_id');
+    my $level = $nt_obj->display_group_tree( $user, $user->{'nt_group_id'}, $gid, 0);
 
-    $nt_obj->display_zone_list_options( $user, $q->param('nt_group_id'),
-        $level, 1 );
+    $nt_obj->display_zone_list_options( $user, $gid, $level, 1 );
 
-    my $group = $nt_obj->get_group( nt_group_id => $q->param('nt_group_id') );
+    my $group = $nt_obj->get_group( nt_group_id => $gid );
 
     my %vars = setup_http_vars( $q, 1 );
-    $vars{'ns_tree'} = $nt_obj->get_usable_nameservers(
-        nt_group_id      => $q->param('nt_group_id'),
-    );
+    $vars{'ns_tree'} = $nt_obj->get_usable_nameservers( nt_group_id => $gid );
 
     print_zone_request_form( $nt_obj, $q, %vars );
 
@@ -58,14 +52,9 @@ sub display {
         print "form action:  $vars{'action'} <br>\n"
             if ( $vars{'action'} && $vars{'debug'} );
         %vars = verify_global_vars( $q, %vars );
-        if ( $vars{'message'} ) {
-            print "$vars{'message'} <br>\n";
-            return 0;
-        }
+        if ( $vars{'message'} ) { print "$vars{'message'} <br>\n"; return 0; };
 
         my $zones = $vars{'zones'};
-
-        #print "zones: $zones<br>\n";
 
         if ( $q->param('action') eq "add" ) {
             foreach my $zone (@$zones) {
@@ -90,78 +79,77 @@ sub print_zone_request_form {
     my @templates = $nt_obj->zone_record_template_list();
     my @actions   = ("add");
 
+    my $gid = $q->param('nt_group_id');
     print $q->start_form,
-        $q->hidden(
-        -name    => 'nt_group_id',
-        -default => $q->param('nt_group_id')
-        );
+        $q->hidden( -name => 'nt_group_id', -default => $gid );
 
-    print qq{ <table class="fat">
-			  <tr class="dark_bg"> 
-                <td colspan="4" class="center"><b>Batch Zone Creation</b></td>
-              </tr> },
-
-        qq{ <tr class="light_grey_bg">
-                <td class="right"> Action: </td>
-                <td> },
+    print qq{
+<table class="fat">
+ <tr class="dark_bg">
+  <td colspan="4" class="center"><b>Batch Zone Creation</b></td>
+ </tr>
+ <tr class="light_grey_bg">
+  <td class="right"> Action: </td>
+  <td> },
         $q->popup_menu(
         -name    => 'action',
         -values  => [@actions],
         -default => $q->param('action')
         ),
         qq{   </td>
-                <td class="right">New IP:</td><td> },
+  <td class="right">New IP:</td>
+  <td> },
         $q->textfield(
         -name  => 'newip',
         -size  => 15,
         -value => $q->param('newip')
         ),
-        qq{   </td>
-             </tr> };
-
-    print qq{<tr class="light_grey_bg">
-               <td><a href="javascript:void window.open('templates.cgi','templates_win','width=640,height=580,scrollbars,resizable=yes')"> Template:</a></td>
-               <td> },
+        qq{
+  </td>
+ </tr>
+ <tr class="light_grey_bg">
+  <td><a href="javascript:void window.open('templates.cgi','templates_win','width=640,height=580,scrollbars,resizable=yes')"> Template:</a></td>
+  <td> },
         $q->popup_menu( -name => 'template', -values => [@templates] ),
-        qq{ </td>
-               <td class="right">Mail IP: </td>
-               <td> },
+        qq{
+  </td>
+  <td class="right">Mail IP: </td>
+  <td> },
         $q->textfield(
         -name  => 'mailip',
         -size  => 15,
         -value => $q->param('mailip')
         ),
-        qq{<br>(if different than new) </td>
-             </tr>
-
-             <tr class="light_grey_bg">
-               	<td> Nameservers </td>
-                <td colspan="3">}, print_ns_tree( $q, %vars ), qq{ </td>
-             </tr>
-
-             <tr class="light_grey_bg">
-                <td></td>
-                <td colspan="3" class="center"><br>
+  qq{<br>(if different than new) </td>
+ </tr>
+ <tr class="light_grey_bg">
+  <td> Nameservers </td>
+  <td colspan="3">}, print_ns_tree( $q, %vars ), qq{ </td>
+ </tr>
+ <tr class="light_grey_bg">
+  <td></td>
+  <td colspan="3" class="center"><br>
     Zones must be a zone or list of zones, entered one per line. Zones have only two parts.<br>
-              </tr>
-              <tr class="light_grey_bg">
-                <td>Zones:</td>
-                <td colspan="2">
-					<textarea name="zone_list" rows="10" cols="40"> },
+  </td>
+ </tr>
+ <tr class="light_grey_bg">
+  <td>Zones:</td>
+  <td colspan="2"> <textarea name="zone_list" rows="10" cols="40"> },
         $q->param('zone_list'), qq{ </textarea></td>
-				 <td>A zone is also known as a domain name.<br>The same rules apply.<br>
-					<br>This is a zone: example.com<br><br>This is NOT: www.example.com</td>
-              </tr>
-              <tr class="light_grey_bg"> 
-				 <td>Options:</td>
-                 <td colspan="3"> },
-        $q->checkbox( -name => 'debug', -label => ' Debug' ), ' <br> ',
-        qq{   </td>
-              </tr>
-               },
-
+  <td>A zone is also known as a domain name.<br>The same rules apply.<br>
+	<br>This is a zone: example.com<br><br>This is NOT: www.example.com
+  </td>
+ </tr>
+ <tr class="light_grey_bg">
+  <td>Options:</td>
+  <td colspan="3"> }, $q->checkbox( -name => 'debug', -label => ' Debug' ), ' <br> ',
+        qq{
+  </td>
+ </tr> },
         $q->td( { -colspan => '4', -class => 'center' }, $q->submit, ),
-        qq{ </tr></table> },
+        qq{
+ </tr>
+</table> },
         $q->end_form;
 }
 
@@ -202,29 +190,14 @@ sub zone_add {
     if ($id) { print "exists, skipping.<br>"; return 0; }
 
     my %zone_vars = (
-        mailaddr =>,
-        "hostmaster.$zone.",
-        description =>,
-        "batch created",
-        refresh =>,
-        $vars{'refresh'},
-        retry =>,
-        $vars{'retry'},
-        expire =>,
-        $vars{'expire'},
-        minimum =>,
-        $vars{'minimum'},
-        ttl =>,
-        $vars{'ttl'},
-        serial =>,
-        $vars{'serial'},
-        nt_group_id =>,
-        $vars{'nt_group_id'},
-        zone =>,
-        $zone,
-        nameservers =>,
-        join( ',', $q->param('nameservers') ),
+        mailaddr    => "hostmaster.$zone.",
+        description => "batch created",
+        zone        => $zone,
+        nameservers => join( ',', $q->param('nameservers') ),
     );
+    foreach my $s ( qw/ refresh retry expire minimum ttl serial nt_group_id / ) {
+        $zone_vars{$s} = $vars{$s};
+    };
 
     print Data::Dumper::Dumper(%zone_vars) if $vars{'debug'};
 
@@ -251,39 +224,33 @@ sub zone_add {
         )
     );
 
-    print "success.<br>";
-
-    # return success
+    print "success.<br>"; # return success
 }
 
 sub add_zone_records {
     my ( $nt, $q, $recs ) = @_;
 
-    if ( scalar( @{$recs} ) > 0 ) {
-        for ( my $i = 0; $i < scalar( @{$recs} ); $i++ ) {
-            my %zone_record = (
-                nt_zone_id  => $recs->[$i]->{'nt_zone_id'},
-                name        => $recs->[$i]->{'name'},
-                ttl         => "3600",
-                description => "batch added",
-                type        => $recs->[$i]->{'type'},
-                address     => $recs->[$i]->{'address'},
-                weight      => $recs->[$i]->{'weight'}
-            );
-            if ( $q->param('debug') ) {
-                print
-                    "add_zone_records: $recs->[$i]->{'nt_zone_id'}, $recs->[$i]->{'name'}, ";
-                print
-                    "$recs->[$i]->{'type'}, $recs->[$i]->{'address'}, $recs->[$i]->{'weight'}\n";
+    return if scalar( @{$recs} ) <= 0;
 
-                #print Data::Dumper::Dumper(%zone_record);
-            }
-            my $r = $nt->new_zone_record(%zone_record);
-            if ( $r->{'error_code'} ne "200" ) {
-                print
-                    "ZONE RECORD FAILED: $r->{'error_msg'}, $r->{'error_code'}\n";
-                print Data::Dumper::Dumper($r);
-            }
+    for ( my $i = 0; $i < scalar( @{$recs} ); $i++ ) {
+        my %zone_record = (
+            nt_zone_id  => $recs->[$i]->{'nt_zone_id'},
+            name        => $recs->[$i]->{'name'},
+            ttl         => '3600',
+            description => 'batch added',
+            type        => $recs->[$i]->{'type'},
+            address     => $recs->[$i]->{'address'},
+            weight      => $recs->[$i]->{'weight'}
+        );
+        if ( $q->param('debug') ) {
+            print "add_zone_records: $recs->[$i]->{'nt_zone_id'}, $recs->[$i]->{'name'}, ";
+            print "$recs->[$i]->{'type'}, $recs->[$i]->{'address'}, $recs->[$i]->{'weight'}\n";
+            #print Data::Dumper::Dumper(%zone_record);
+        }
+        my $r = $nt->new_zone_record(%zone_record);
+        if ( $r->{'error_code'} ne "200" ) {
+            print "ZONE RECORD FAILED: $r->{'error_msg'}, $r->{'error_code'}\n";
+            print Data::Dumper::Dumper($r);
         }
     }
 }
@@ -291,7 +258,7 @@ sub add_zone_records {
 sub verify_global_vars {
     my ( $q, %vars ) = @_;
 
-    if ( $q->param('newip') eq "" && $q->param('template') ne "blank" ) {
+    if ( $q->param('newip') eq '' && $q->param('template') ne "blank" ) {
         $vars{'message'} = "The field New IP must not be blank!";
     }
     return %vars;

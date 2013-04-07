@@ -30,10 +30,10 @@ sub main {
 
     my $user = $nt_obj->verify_session();
 
-    if ($user && ref $user) {
-        print $q->header;
-        display( $nt_obj, $q, $user );
-    }
+    return if ! $user || ! ref $user;
+
+    print $q->header;
+    display( $nt_obj, $q, $user );
 }
 
 sub display {
@@ -47,53 +47,15 @@ sub display {
         userid    => $user->{'nt_user_id'}
     );
 
-    my $error;
-
     my @fields = qw/ user_create user_delete user_write group_create group_delete group_write zone_create zone_delegate zone_delete zone_write zonerecord_create zonerecord_delegate zonerecord_delete zonerecord_write nameserver_create nameserver_delete nameserver_write self_write /;
 
+    my $error;
     if ( $q->param('new') && $q->param('Create') ) {
-        my %params = (
-            nt_group_id => $q->param('nt_group_id'),
-            name        => $q->param('name')
-        );
-        my @ns = $q->param("usable_nameservers");
-        if ( @ns < 11 ) {
-            $params{"usable_nameservers"} = join( ",", @ns );
-            foreach (@fields) {
-                $params{$_} = $q->param($_) ? 1 : 0;
-            }
-
-            $error = $nt_obj->new_group(%params);
-        }
-        else {
-            $error = {
-                error_code => 'xxx',
-                error_msg  => 'Please select up to 10 nameservers.'
-            };
-        }
-
+        $error = _display_new_group( $nt_obj, $q, \@fields );
     }
     elsif ( $q->param('edit') && $q->param('Save') ) {
-        my %params = (
-            nt_group_id => $q->param('nt_group_id'),
-            name        => $q->param('name')
-        );
-        my @ns = $q->param("usable_nameservers");
-        if ( @ns < 11 ) {
-            $params{"usable_nameservers"} = join( ",", @ns );
-            foreach (@fields) {
-                $params{$_} = $q->param($_) ? 1 : 0;
-            }
-
-            $error = $nt_obj->edit_group(%params);
-        }
-        else {
-            $error = {
-                error_code => 'xxx',
-                error_msg  => 'Please select up to 10 nameservers.'
-            };
-        }
-    }
+        $error = _display_edit_group( $nt_obj, $q, \@fields );
+    };
 
     $nt_obj->display_group_tree(
         $user,
@@ -143,6 +105,39 @@ sub display {
     display_group_list( $nt_obj, $q, $group, $user );
 
     $nt_obj->parse_template($NicToolClient::end_html_template);
+}
+
+sub _display_new_group {
+    my ( $nt_obj, $q, $fields ) = @_;
+
+    my %params = (
+        nt_group_id => $q->param('nt_group_id'),
+        name        => $q->param('name')
+    );
+    my @ns = $q->param("usable_nameservers");
+    $params{"usable_nameservers"} = join( ',', @ns );
+    foreach (@$fields) {
+        $params{$_} = $q->param($_) ? 1 : 0;
+    };
+
+    return $nt_obj->new_group(%params);
+};
+
+sub _display_edit_group {
+    my ( $nt_obj, $q, $fields ) = @_;
+
+    my %params = (
+        nt_group_id => $q->param('nt_group_id'),
+        name        => $q->param('name'),
+    );
+
+    my @ns = $q->param("usable_nameservers");
+    $params{"usable_nameservers"} = join( ",", @ns );
+    foreach (@$fields) {
+        $params{$_} = $q->param($_) ? 1 : 0;
+    };
+
+    return $nt_obj->edit_group(%params);
 }
 
 sub display_zone_search {
