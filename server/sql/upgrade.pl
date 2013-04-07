@@ -105,7 +105,7 @@ sub _sql_test_2_18 {
 sub _sql_2_18 {
     <<EO_SQL_2_18
 
-ALTER TABLE resource_record_type ADD column obsolete TINYINT(1) AFTER forward;
+ALTER TABLE resource_record_type ADD column obsolete TINYINT(1) NOT NULL DEFAULT '0' AFTER forward;
 REPLACE INTO `resource_record_type`
  (`id`, `name`, `description`, `reverse`, `forward`, `obsolete`)
 VALUES
