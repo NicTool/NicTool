@@ -612,7 +612,11 @@ sub display_zone_records {
         if ( length $r_record->{address} > 48 ) {
             if ( $r_record->{type} =~ /^(?:DNSKEY|RRSIG)$/ ) {
                 $r_record->{title} = $r_record->{address};
-                $r_record->{address} = substr($r_record->{address}, 0, 35) . ' ... (tip: hover)';
+                $r_record->{address} = substr($r_record->{address}, 0, 35) . ' ...<br>(tip: hover over address)';
+            }
+            elsif ( $r_record->{type} =~ /^(?:TXT)$/ && length $r_record->{address} > 100 ) {
+                $r_record->{title} = $r_record->{address};
+                $r_record->{address} = substr($r_record->{address}, 0, 35) . ' ...<br>(tip: hover over address)';
             }
             else {
                 my $max = 0;
@@ -624,6 +628,10 @@ sub display_zone_records {
                 $r_record->{address} = join "<br>", @lines;
             };
         }
+
+        if ( $r_record->{type} eq 'AAAA' ) {
+            $r_record->{address} =~ s/:[0]+/:/g;  # compress leading zeros
+        };
 
         foreach (@columns) {
             if ( $_ eq 'name' ) {
