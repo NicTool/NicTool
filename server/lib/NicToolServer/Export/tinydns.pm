@@ -428,6 +428,20 @@ sub zr_naptr {
     return $self->zr_generic( 35, $r, $rdata );
 }
 
+sub zr_dname {
+    my $self = shift;
+    my $r = shift or die;
+
+    # https://tools.ietf.org/html/rfc6672
+    # https://tools.ietf.org/html/rfc2672 (obsolete)
+
+    my $rdata = $self->pack_domain_name(
+        $self->qualify( $r->{address} )
+    );
+
+    return $self->zr_generic( 39, $r, $rdata );
+};
+
 sub zr_sshfp {
     my $self = shift;
     my $r = shift or die;

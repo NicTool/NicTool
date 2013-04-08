@@ -306,6 +306,13 @@ sub zr_naptr {
     return qq[$r->{name} $r->{ttl}   IN  NAPTR   $order  $pref   "$flags"  "$service"    "$regexp" $replace\n];
 }
 
+sub zr_dname {
+    my ($self, $r) = @_;
+
+# name  ttl  class   rr     target
+    return "$r->{name}	$r->{ttl}	IN  DNAME	$r->{address}\n";
+}
+
 sub zr_sshfp {
     my ($self, $r) = @_;
     my $algo   = $r->{weight};     #  1=RSA,   2=DSS,     3=ECDSA
