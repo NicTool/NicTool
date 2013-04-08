@@ -26,6 +26,8 @@ function selectedRRType(rrType) {
         setFormRRTypeNAPTR();  break;
       case 'SSHFP':
         setFormRRTypeSSHFP();  break;
+      case 'IPSECKEY':
+        setFormRRTypeIPSECKEY();break;
       case 'DNSKEY':
         setFormRRTypeDNSKEY(); break;
       case 'DS':
@@ -128,6 +130,22 @@ function setFormRRTypeNSEC() {
 }
 function setFormRRTypeRRSIG() {
 }
+
+function setFormRRTypeIPSECKEY() {
+  $('td#address_label').text('Gateway');
+  $('td#description_label').text( 'Public Key' );
+
+  $('tr#tr_weight').show();
+  $('td#weight_label').text('Precedence');
+
+  $('tr#tr_priority').show();
+  $('td#priority_label').text('Gateway Type');
+
+  $('tr#tr_other').show();
+  $('td#other_label').text('Algorithm Type');
+//  var p = $('input#other');
+//  if ( p.val() == '' ) p.val('2');  // 0=none, 1=DSA, 2=RSA
+};
 
 function ucfirst(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);

@@ -320,6 +320,18 @@ sub zr_sshfp {
     return "$r->{name} $r->{ttl}     IN  SSHFP   $algo $type $r->{address}\n";
 }
 
+sub zr_ipseckey {
+    my ($self, $r) = @_;
+
+    my $precedence = $r->{weight};
+    my $gw_type    = $r->{priority};
+    my $algorithm  = $r->{other};
+    my $gateway    = $r->{address};
+    my $public_key = $r->{description};
+
+    return "$r->{name}	$r->{ttl}	IN  IPSECKEY	( $precedence $gw_type $algorithm $gateway $public_key )\n";
+};
+
 sub zr_dnskey {
     my ($self, $r) = @_;
 

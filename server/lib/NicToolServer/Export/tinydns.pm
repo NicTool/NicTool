@@ -10,6 +10,7 @@ use base 'NicToolServer::Export::Base';
 use Cwd;
 use File::Copy;
 use MIME::Base64;
+use Net::IP;
 use Params::Validate qw/ :all /;
 use Time::Local;
 use Time::TAI64 qw/ unixtai64 /;
@@ -459,6 +460,50 @@ sub zr_sshfp {
     return $self->zr_generic( 44, $r, $rdata );
 };
 
+sub zr_ipseckey {
+    my $self = shift;
+    my $r = shift or die;
+
+    # http://www.faqs.org/rfcs/rfc4025.html
+# IN IPSECKEY ( precedence gateway-type algorithm gateway base64-public-key )
+
+    my $rdata = $self->escape_rdata( pack('nnn',
+        $r->{weight},         # Precedence     1 octet
+        $r->{priority},       # Gateway Type   1 octet, see Gateway
+        $r->{other},          # Algorithm Type 1 octet, 0=none, 1-DSA, 2=RSA
+    ));
+
+    my $gw_type = $r->{priority};
+    my $gateway = $r->{address};            # Gateway
+
+    if ( $gw_type == 0 ) {
+        $rdata .= sprintf('%03lo', '.');    #  0 - no gateway
+    }
+    elsif ( $gw_type == 1 ) {               #  1 - 32-bit(N) IPv4 address
+        my $ip_as_int = new Net::IP ($gateway)->intip or do {
+            warn "$r->{name} IPSECKEY gateway not an IPv4 address!\n";
+            return;
+        };
+        $rdata .= $self->escape_rdata( $ip_as_int );
+    }
+    elsif ( $gw_type == 2 ) {               # 2 - 128-bit, net order, IPv6
+        my $ip_as_hex = new Net::IP ($gateway)->hexip or do {
+            warn "$r->{name} IPSECKEY gateway not an IPv6 address!\n";
+            return;
+        };
+        $rdata .= $self->pack_hex( $ip_as_hex );
+    }
+    elsif ( $gw_type == 3 ) {              #  3 - a wire encoded domain name
+        $rdata .= $self->pack_domain_name( $gateway );
+    };
+
+    # Public Key     optional, base 64 encoded
+    my $public_key = $r->{description};
+    $rdata .= $self->escape_rdata( $public_key ) if $public_key;
+
+    return $self->zr_generic( 45, $r, $rdata );
+};
+
 sub zr_dnskey {
     my $self = shift;
     my $r = shift or die;
@@ -646,13 +691,13 @@ sub expand_aaaa {
 sub pack_domain_name {
     my ($self, $name) = @_;
 
-    # having read more than a few DNS RFC's of late, this appears to be
-    # a standard wire format for DNS names. (1 octet length + string)
+    # RFC 1035, 3.3 Standard RRs
+    # The standard wire format for DNS names. (1 octet length + string)
     my $r;
     foreach my $label ( split /\./, $self->qualify( $name ) ) {
         $r .= escape_rdata( pack( 'CA*', length( $label ), $label ) );
     };
-    $r.= '\000';   # end of field
+    $r.= '\000';   # terminating with a zero length label
     return $r;
 };
 
