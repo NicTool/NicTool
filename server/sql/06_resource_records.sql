@@ -27,7 +27,7 @@ VALUES
     (29,'LOC','Location',0,1,0),
     (30,'NXT','Next',0,0,1),
     (33,'SRV','Service',0,1,0),
-    (35,'NAPTR','Naming Authority Pointer',0,1,0),
+    (35,'NAPTR','Naming Authority Pointer',1,1,0),
     (39,'DNAME','Delegation Name',0,0,0),
     (43,'DS','Delegation Signer',0,1,0),
     (44,'SSHFP','Secure Shell Key Fingerprints',0,1,0),

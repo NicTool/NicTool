@@ -109,7 +109,7 @@ ALTER TABLE resource_record_type ADD column obsolete TINYINT(1) NOT NULL DEFAULT
 REPLACE INTO `resource_record_type`
  (`id`, `name`, `description`, `reverse`, `forward`, `obsolete`)
 VALUES
- (35,'NAPTR','Naming Authority Pointer',0,1,0),
+ (35,'NAPTR','Naming Authority Pointer',1,1,0),
  (39,'DNAME','Delegation Name',0,0,0),
  (43,'DS','Delegation Signer',0,1,0),
  (44,'SSHFP','Secure Shell Key Fingerprints',0,1,0),
