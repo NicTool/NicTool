@@ -21,15 +21,9 @@ function selectedRRType(rrType) {
         $('tr#tr_weight').show();
         break;
       case 'SRV':
-        $('tr#tr_weight').show();
-        $('tr#tr_priority').show();
-        $('tr#tr_other').show();
-        $('td#other_label').text('Port');
-        break;
+        setFormRRTypeSRV();    break;
       case 'NAPTR':
-        $('tr#tr_weight').show();
-        $('tr#tr_priority').show();
-        break;
+        setFormRRTypeNAPTR();  break;
       case 'SSHFP':
         setFormRRTypeSSHFP();  break;
       case 'DNSKEY':
@@ -37,11 +31,11 @@ function selectedRRType(rrType) {
       case 'DS':
         setFormRRTypeDS();     break;
       case 'NSEC':
-        setFormRRTypeNSEC();  break;
+        setFormRRTypeNSEC();   break;
       case 'NSEC3':
-        setFormRRTypeNSEC();  break;
+        setFormRRTypeNSEC();   break;
       case 'NSEC3PARAM':
-        setFormRRTypeNSEC();  break;
+        setFormRRTypeNSEC();   break;
       case 'RRSIG':
         setFormRRTypeRRSIG();  break;
     }
@@ -58,6 +52,24 @@ function resetZoneRecordFormFields() {
   $('input#priority' ).attr('readonly', false);
   $('td#description_label').text( 'Description' );
 };
+
+function setFormRRTypeSRV() {
+    $('tr#tr_weight').show();
+    $('tr#tr_priority').show();
+    $('tr#tr_other').show();
+    $('td#other_label').text('Port');
+}
+
+function setFormRRTypeNAPTR() {
+    $('tr#tr_weight').show();
+    $('td#weight_label').text('Order');
+
+    $('tr#tr_priority').show();
+    $('td#priority_label').text('Preference');
+
+    $('td#address_label').text('Flags, Services, Regexp');
+    $('td#description_label').text('Replacement');
+}
 
 function setFormRRTypeSSHFP() {
 

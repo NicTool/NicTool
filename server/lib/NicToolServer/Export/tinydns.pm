@@ -285,6 +285,9 @@ sub zr_soa {
 
 sub zr_generic {
     my ($self, $rrid, $r, $rdata) = @_;
+
+# 'You may use octal \nnn codes to include arbitrary bytes inside rdata'
+
     return ':'                             # special char (none = generic)
         . $self->qualify( $r->{name} )     # fqdn
         . ':' . $rrid                      # n
@@ -502,39 +505,7 @@ sub zr_nsec {
     # NSEC: http://www.ietf.org/rfc/rfc4034.txt
 
     my $rdata = $self->pack_domain_name( $r->{address} ); # Next Domain Name
-
-    # Type Bit Maps Field = ( Window Block # | Bitmap Length | Bitmap )+
-
-    # build RR id lookup table from list of RR types
-    my %rec_ids;
-    foreach my $label ( split /\s+/, $r->{description} ) {
-        $label =~ s/[\(\)]//g;  # remove ( and )
-        $rec_ids{ $self->{nte}->get_rr_id( $label ) } = $label;
-    };
-
-    my ($highest_rr_id) = (sort keys %rec_ids)[-1];  # find the highest ID
-
-    my $highest_window = int( $highest_rr_id / 256 );
-       $highest_window += ( $highest_rr_id % 256 == 0 ? 0 : 1 );
-
-    foreach my $window ( 0 .. $highest_window ) {
-        my $base = $window * 256;
-        next unless grep { $_ >= $base && $_ < $base + 256 } %rec_ids;
-        my $highest_in_this_window = $highest_rr_id - $base;
-
-        my $bm_octets = int( $highest_in_this_window / 8 );
-           $bm_octets += $highest_in_this_window % 8 == 0 ? 0 : 1;
-
-        $rdata .= sprintf('\%03lo' x 2, $window, $bm_octets);
-
-        foreach my $octet ( 0 .. $bm_octets - 1 ) {
-            my $start = $octet * 8;
-            my $bitstring = join '',
-                map { defined $rec_ids{ $_ } ? 1 : 0 }
-                $start .. $start+7;
-            $rdata .= sprintf '\%03lo', oct('0b'.$bitstring);
-        };
-    };
+    $rdata .= $self->pack_type_bitmap( $r->{description} );
 
     return $self->zr_generic( 47, $r, $rdata );
 };
@@ -544,18 +515,23 @@ sub zr_nsec3 {
     my $r = shift or die;
 
     # NSEC3: https://tools.ietf.org/html/rfc5155
-
-    my $rdata = $r->{address};
-    # Hash Algorithm   1 octet
-    # Flags            1 octet
-    # Iterations      16 bit ui,lf(n)
-    # Salt Length      1 octet
-    # Salt            binary octets, length varies -^ (0-N)
-    # Hash Length      1 octet
-    # Next Hashed Owner Name - unmodified binary hash value
-    # Type Bit Maps
-
 # TTL should be same as zone SOA minimum: RFC 2308
+
+# IN NSEC3 1 1 12 aabbccdd ( 2t7b4g4vsa5smi47k61mv5bv1a22bojr MX DNSKEY NS SOA NSEC3PARAM RRSIG )
+    my ($hash_algo, $flags, $iters, $salt, undef, $next_hash) =
+        split /\s+/, $r->{address}, 6;
+
+    my $rdata = escape_rdata( pack 'CCnCa*Ca*',
+        $hash_algo,           # Hash Algorithm   1 octet
+        $flags,               # Flags            1 octet
+        $iters,               # Iterations      16 bit ui,lf(n)
+        length( $salt ),      # Salt Length      1 octet
+        $salt,                # Salt             binary octets
+        length( $next_hash),  # Hash Length      1 octet
+        $next_hash            # Next Hashed Owner Name - unmodified binary hash value
+    );
+
+    $rdata .= $self->pack_type_bitmap( $r->{description} ); # Type Bit Maps
 
     return $self->zr_generic( 50, $r, $rdata );
 };
@@ -571,7 +547,7 @@ sub zr_nsec3param {
     # Flag Fields      1 octet
     # Iterations      16 bit ui,lf(n)
     # Salt Length      1 octet
-    # Salt            N binary octets (0-N)
+    # Salt             N binary octets (0-N)
 
 # TTL should be same as zone SOA minimum: RFC 2308
 
@@ -613,7 +589,8 @@ sub aaaa_to_ptr {
 sub datestamp_to_int {
     my ($self, $ds) = @_;
 
-    # serial arrives in YYYYMMDDHHmmSS UTC format (14 digits): RFC 4034, 3.2
+    # In an RRSIG, serial arrives in YYYYMMDDHHmmSS UTC format (14 digits):
+    # see RFC 4034, 3.2
     return timegm(
         substr($ds, 12, 2),       # seconds
         substr($ds, 10, 2),       # minutes
@@ -655,6 +632,8 @@ sub expand_aaaa {
 sub pack_domain_name {
     my ($self, $name) = @_;
 
+    # having read more than a few DNS RFC's of late, this appears to be
+    # a standard wire format for DNS names. (1 octet length + string)
     my $r;
     foreach my $label ( split /\./, $self->qualify( $name ) ) {
         $r .= escape_rdata( pack( 'CA*', length( $label ), $label ) );
@@ -668,9 +647,49 @@ sub pack_hex {
 
     my $r;
     foreach ( unpack "(a2)*", $string ) {  # nibble off 2 hex digits
-        $r .= sprintf '\%03lo', hex $_;    # pack 'em into an escaped ocatal
+        $r .= sprintf '\%03lo', hex $_;    # pack 'em into an escaped octal
     };
     return $r;
+};
+
+sub pack_type_bitmap {
+    my ( $self, $rr_type_list ) = @_;
+
+    # Type Bit Maps Field = ( Window Block # | Bitmap Length | Bitmap )+
+    # Described in RFC 4034, used in NSEC and NSEC3 records
+
+    # build RR id lookup table from list of RR types
+    my %rec_ids;
+    foreach my $label ( split /\s+/, $rr_type_list ) {
+        $label =~ s/[\(\)]//g;  # remove ( and )
+        $rec_ids{ $self->{nte}->get_rr_id( $label ) } = $label;
+    };
+
+    my ($highest_rr_id) = (sort keys %rec_ids)[-1];  # find the highest ID
+
+    my $highest_window = int( $highest_rr_id / 256 );
+       $highest_window += ( $highest_rr_id % 256 == 0 ? 0 : 1 );
+
+    my $bitmap;
+    foreach my $window ( 0 .. $highest_window ) {
+        my $base = $window * 256;
+        next unless grep { $_ >= $base && $_ < $base + 256 } %rec_ids;
+        my $highest_in_this_window = $highest_rr_id - $base;
+
+        my $bm_octets = int( $highest_in_this_window / 8 );
+           $bm_octets += $highest_in_this_window % 8 == 0 ? 0 : 1;
+
+        $bitmap .= sprintf('\%03lo' x 2, $window, $bm_octets);
+
+        foreach my $octet ( 0 .. $bm_octets - 1 ) {
+            my $start = $octet * 8;
+            my $bitstring = join '',
+                map { defined $rec_ids{ $_ } ? 1 : 0 }
+                $start .. $start+7;
+            $bitmap .= sprintf '\%03lo', oct('0b'.$bitstring);
+        };
+    };
+    return $bitmap;
 };
 
 sub qualify {
@@ -751,8 +770,7 @@ sub precsize_valton {
 #  'SOA,NS,A' =>  . fqdn : ip : x:ttl:timestamp:lo
 #  GENERIC    =>  : fqdn : n  : rdata:ttl:timestamp:lo
 #  IGNORE     =>  - fqdn : ip : ttl:timestamp:lo
-#
-# 'You may use octal \nnn codes to include arbitrary bytes inside rdata'
+
 1;
 
 __END__

@@ -29,14 +29,14 @@
 ..  remove all MySQL specific ENUM columns
 ..  test against sqlite
 
-. Support for NAPTR records: http://tools.ietf.org/html/rfc3403
-
 . SPF records: when creating or editing a SPF record, check for an TXT record.
     If TXT doesn't exist, create it. If exists, update it with SPF record.
     RFC 4408 ("recommends to always provide a TXT based SPF RR...and duplicate
     the information")
 
 ==== COMPLETED =====
+
+. Support for NAPTR records: http://tools.ietf.org/html/rfc3403
 
 . Fix hostmaster.ZONE.TLD entries in nt_zone table.
 ..  Have Zone::new_zone automatically rewrite those entries before insertion.
