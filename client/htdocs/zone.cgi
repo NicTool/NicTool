@@ -993,7 +993,7 @@ sub _build_rr_type_menu {
     if ( $zone->{'zone'} =~ /(in-addr|ip6)\.arpa$/ ) {
 
         my %reverse  = map {
-            my $spa = '&nbsp;' x (9-length $_->{name});
+            my $spa = '&nbsp;' x (11-length $_->{name});
             $_->{name} => $_->{name} . ${spa} . $_->{description} }
             grep( $_->{reverse} == 1, @$rr_types);
 
@@ -1002,7 +1002,7 @@ sub _build_rr_type_menu {
     }
     else {
         my %forwards = map {
-            my $spa = '&nbsp;' x (9-length $_->{name});  # white space
+            my $spa = '&nbsp;' x (11-length $_->{name});  # white space
             $_->{name} => $_->{name} . ${spa} . $_->{description} }
             grep( $_->{forward} == 1, @$rr_types);
 

@@ -585,17 +585,11 @@ sub zr_nsec3 {
     if ( ')' eq substr( $data[-1], -1, 1) ) { chop $data[-1]; };
 
     my ($hash_algo, $flags, $iters, $salt, $next_hash, @types ) = @data;
-    if   ( $salt eq '-' ) { $salt = ''; }
-    else                  { $salt = pack 'H*', $salt };  # to binary
 
+    my $rdata = $self->pack_nsec3_params( $hash_algo, $flags, $iters, $salt );
     $next_hash = $self->base32str_to_bin( $next_hash );
 
-    my $rdata = escape_rdata( pack 'CCnCa*Ca*',
-        $hash_algo,           # Hash Algorithm   1 octet
-        $flags,               # Flags            1 octet
-        $iters,               # Iterations      16 bit ui,lf(n)
-        length( $salt ),      # Salt Length      1 octet
-        $salt,                # Salt             binary octets
+    $rdata .= escape_rdata( pack 'Ca*',
         length( $next_hash),  # Hash Length      1 octet
         $next_hash            # Next Hashed Owner Name - unmodified binary hash value
     );
@@ -610,16 +604,11 @@ sub zr_nsec3param {
     my $self = shift;
     my $r = shift or die;
 
-    # NSEC3: https://tools.ietf.org/html/rfc5155
+    # NSEC3PARAM: https://tools.ietf.org/html/rfc5155
+    my ($hash_algo, $flags, $iters, $salt) = split /\s+/, $r->{address};
 
-    my $rdata = $r->{address};
-    # Hash Algorithm   1 octet
-    # Flag Fields      1 octet
-    # Iterations      16 bit ui,lf(n)
-    # Salt Length      1 octet
-    # Salt             N binary octets (0-N)
-
-# TTL should be same as zone SOA minimum: RFC 2308
+#  RDATA mirrors the first four fields in the NSEC3
+    my $rdata = $self->pack_nsec3_params( $hash_algo, $flags, $iters, $salt );
 
     return $self->zr_generic( 51, $r, $rdata );
 };
@@ -720,6 +709,21 @@ sub pack_hex {
         $r .= sprintf '\%03lo', hex $_;    # pack 'em into an escaped octal
     };
     return $r;
+};
+
+sub pack_nsec3_params {
+    my ($self, $hash_algo, $flags, $iters, $salt ) = @_;
+
+    if   ( $salt eq '-' ) { $salt = ''; }
+    else                  { $salt = pack 'H*', $salt };  # to binary
+
+    return escape_rdata( pack 'CCnCa*',
+        $hash_algo,           # Hash Algorithm   1 octet
+        $flags,               # Flags            1 octet
+        $iters,               # Iterations      16 bit ui,lf(n)
+        length( $salt ),      # Salt Length      1 octet
+        $salt,                # Salt             binary octets
+    );
 };
 
 sub pack_type_bitmap {

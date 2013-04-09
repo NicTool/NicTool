@@ -35,9 +35,9 @@ function selectedRRType(rrType) {
       case 'NSEC':
         setFormRRTypeNSEC();   break;
       case 'NSEC3':
-        setFormRRTypeNSEC();   break;
+        setFormRRTypeNSEC3();  break;
       case 'NSEC3PARAM':
-        setFormRRTypeNSEC();   break;
+        setFormRRTypeNSECPARAM(); break;
       case 'RRSIG':
         setFormRRTypeRRSIG();  break;
     }
@@ -127,6 +127,10 @@ function setFormRRTypeDS() {
 function setFormRRTypeNSEC() {
     $('td#address_label').text('Next Domain Name');
     $('td#description_label').text('Type Bit Map');
+}
+function setFormRRTypeNSEC3() {
+}
+function setFormRRTypeNSEC3PARAM() {
 }
 function setFormRRTypeRRSIG() {
 }

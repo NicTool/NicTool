@@ -62,7 +62,7 @@ foreach ( @good_ports ) {
     ok( $export->is_ip_port($_), "is_ip_port, valid, $_");
 };
 
-#done_testing() and exit;
+done_testing() and exit;
 
 # TODO: specify NS type when loading, so we can run these NS specific tests
 $export->load_export_class();
@@ -73,6 +73,7 @@ _zr_rrsig();
 _aaaa_to_ptr();
 _datestamp_to_int();
 _zr_nsec3();
+_zr_nsec3param();
 _zr_ipseckey();
 
 done_testing() and exit;
@@ -186,7 +187,6 @@ sub _zr_nsec3 {
 
 };
 
-
 sub _zr_ipseckey {
     $r = $export->{export_class}->zr_ipseckey( {
         name      => 'ipsec.simerson.com.',
@@ -203,3 +203,18 @@ sub _zr_ipseckey {
 ', 'zr_ipseckey');
 
 };
+
+sub _zr_nsec3param {
+    $r = $export->{export_class}->zr_nsec3param( {
+        name      => 'nsec3param.simerson.com.',
+        address   => '1 1 12 aabbccdd 2t7b4g4vsa5smi47k61mv5bv1a22bojr',
+        description => '',
+        ttl       => '86400',
+        timestamp => '',
+        location  => '',
+    } );
+    cmp_ok( $r, 'eq', ':nsec3param.simerson.com.:51:\001\001\000\014\004\252\273\314\335:86400::
+', 'zr_nsec3param');
+
+};
+
