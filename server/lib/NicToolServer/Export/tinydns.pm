@@ -468,7 +468,7 @@ sub zr_ipseckey {
     # http://www.faqs.org/rfcs/rfc4025.html
 # IN IPSECKEY ( precedence gateway-type algorithm gateway base64-public-key )
 
-    my $rdata = $self->escape_rdata( pack('nnn',
+    my $rdata = $self->escape_rdata( pack('CCC',
         $r->{weight},         # Precedence     1 octet
         $r->{priority},       # Gateway Type   1 octet, see Gateway
         $r->{other},          # Algorithm Type 1 octet, 0=none, 1-DSA, 2=RSA
@@ -499,8 +499,9 @@ sub zr_ipseckey {
     };
 
     # Public Key     optional, base 64 encoded
-    my $public_key = $r->{description};
-    $rdata .= $self->escape_rdata( $public_key ) if $public_key;
+    if ( $r->{description} ) {
+        $rdata .= $self->escape_rdata( decode_base64( $r->{description} ) );
+    };
 
     return $self->zr_generic( 45, $r, $rdata );
 };

@@ -73,6 +73,7 @@ _zr_rrsig();
 _aaaa_to_ptr();
 _datestamp_to_int();
 _zr_nsec3();
+_zr_ipseckey();
 
 done_testing() and exit;
 
@@ -182,5 +183,23 @@ sub _zr_nsec3 {
     } );
     cmp_ok( $r, 'eq', ':nsec3.simerson.com.:50:\001\001\000\014\004\252\273\314\335\024\027N\262\100\237\342\213\313H\207\241\203o\225\177\012\204\045\342\173\000\007\042\001\000\000\000\002\220:86400::
 ', 'zr_nsec3');
+
+};
+
+
+sub _zr_ipseckey {
+    $r = $export->{export_class}->zr_ipseckey( {
+        name      => 'ipsec.simerson.com.',
+        weight    => 1,    # precedence
+        priority  => 3,    # gateway type
+        other     => 2,    # algorithm
+        address   => 'matt.simerson.net.',  # gateway
+        description => '0sAQPeOwAGDPLrDebL1q5Lg8XW9B/d9MnxqlzIYKXhvZPWEHNYGP7AwA RT/tmkeDNn7HPMtgM6GIwQ4p0KGLfSRoUKbjtPlRVeWYLbsnNXeFU5bc hyYef0efYiKlxZdo',   # public key
+        ttl       => '86400',
+        timestamp => '',
+        location  => '',
+    } );
+    cmp_ok( $r, 'eq', ':ipsec.simerson.com.:45:\001\003\002\004matt\010simerson\003net\000\322\300\020\075\343\260\000\140\317.\260\336l\275j\344\270\074\135oA\375\337L\237\032\245\314\206\012\136\033\331\075a\0075\201\217\354\014\000E\077\355\232G\2036\176\307\074\313\1403\241\210\301\016\051\320\241\213\175\044hP\246\343\264\371QU\345\230-\273\0475w\205S\226\334\207\046\036\177G\237b\042\245\305\227h:86400::
+', 'zr_ipseckey');
 
 };
