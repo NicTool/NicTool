@@ -491,7 +491,7 @@ sub display_zone_records {
     my @columns = qw/ name type address ttl weight priority other description/;
     my %labels = map { $_ => ucfirst($_) } @columns;
     $labels{ttl} = 'TTL';
-    $labels{other} = 'Port';
+    $labels{other} = 'Other';
 
     if ( $q->param('edit_sortorder') ) {
         $nt_obj->display_sort_options( $q, \@columns, \%labels, 'zone.cgi',
@@ -524,68 +524,17 @@ sub display_zone_records {
 
 # Display the RR header: Resource Records  New Resource Record | View Resource Record Log
     my $gid = $q->param('nt_group_id');
-    my $zid = $q->param('nt_zone_id');
-    my $options = qq[<li class=first><a href="zone_record_log.cgi?nt_group_id=$gid&amp;nt_zone_id=$zid">View Resource Record Log</a></li>
-   ];
-
     my $zonedelegate = exists $zone->{'delegated_by_id'};
-    my $has_dperm = $zonedelegate ? $zone->{'delegate_write'} && $zone->{'delegate_add_records'} : 1;
-    if ( !$zone->{'deleted'} && $user->{'zonerecord_create'} && $has_dperm ) {
-        $options .= qq[<li><a href="zone.cgi?nt_group_id=$gid&amp;nt_zone_id=$zid&amp;$state_string&amp;new_record=1#RECORD">New Resource Record</a></li>];
-    }
-    else {
-        $options .= qq[<li class=disabled>New Resource Record</li>];
-    }
 
-    print qq[
-<hr class="side_pad">
-<div class="dark_grey_bg side_pad">
-  <b>Resource Records</b>
-  <ul class="menu_r">
-    $options
-  </ul>
-</div>];
+    display_zone_records_head( $q, $user, $zone, $state_string);
 
     $nt_obj->display_search_rows( $q, $rv, \%params, 'zone.cgi', [ 'nt_group_id', 'nt_zone_id' ] );
 
     return if ! scalar @$zone_records;
 
     # show only columns used in the records in this zone
-    @columns = qw/ name type address ttl /;
-
-    my %has_type;
-    foreach my $r_record (@$zone_records) {
-        $has_type{ $r_record->{'type'} }++;
-    }
-    if ( $has_type{'MX'} || $has_type{'SRV'} ) {
-        push @columns, 'weight';
-    }
-    if ( $has_type{'SRV'} ) {
-        push @columns, 'priority', 'other';
-    }
-    push @columns, 'description';
-
-    print qq[
-<table id="zoneRecordTable" class="fat">
- <tr id="zoneRecordHeaderRow" class=dark_grey_bg>];
-
-    foreach (@columns) {
-        if ( $sort_fields{$_} ) {
-            my $dir = uc( $sort_fields{$_}->{'mod'} ) eq 'ASCENDING' ? 'up' : 'down';
-            print qq[
-  <td class="dark_bg center">
-     $labels{$_} &nbsp; &nbsp; $sort_fields{$_}->{'order'}
-     <img src="$NicToolClient::image_dir/$dir.gif" alt="sort order">
-  </td>];
-        }
-        else {
-            print qq[\n  <td class=center>$labels{$_}</td>];
-        }
-    }
-    print qq[
-  <td class="center width1"></td>
-  <td class="center width1"></td>
- </tr>];
+    @columns = display_zone_records_columns( $zone_records );
+    display_zone_records_table_head( \@columns, \%sort_fields, \%labels );
 
     my $x = 0;
     my ( $isdelegate, $img );
@@ -603,9 +552,10 @@ sub display_zone_records {
 
         $r_record->{name} = "@ ($zone->{'zone'})" if $r_record->{name} eq "@";
 
-        if ( $r_record->{type} !~ /^MX|SRV$/i ) {
-            $r_record->{weight} = '';
-        }
+        # hide all them zeroes so numbers with values stand out
+        foreach my $f ( qw/ weight priority other / ) {
+            $r_record->{$f} = '' if $r_record->{$f} == 0;
+        };
 
         # shorten the max width of the address field (workaround for
         # display formatting problem with DomainKey entries.
@@ -781,6 +731,78 @@ sub display_zone_records_delete {
     }
 };
 
+sub display_zone_records_head {
+    my ($q, $user, $zone, $state_string) = @_;
+
+    my $gid = $q->param('nt_group_id');
+    my $zid = $q->param('nt_zone_id');
+
+    my $options = qq[<li class=first><a href="zone_record_log.cgi?nt_group_id=$gid&amp;nt_zone_id=$zid">View Resource Record Log</a></li>
+   ];
+
+    my $zonedelegate = exists $zone->{'delegated_by_id'};
+    my $has_dperm = $zonedelegate ? $zone->{'delegate_write'} && $zone->{'delegate_add_records'} : 1;
+    if ( !$zone->{'deleted'} && $user->{'zonerecord_create'} && $has_dperm ) {
+        $options .= qq[<li><a href="zone.cgi?nt_group_id=$gid&amp;nt_zone_id=$zid&amp;$state_string&amp;new_record=1#RECORD">New Resource Record</a></li>];
+    }
+    else {
+        $options .= qq[<li class=disabled>New Resource Record</li>];
+    }
+
+    print qq[
+<hr class="side_pad">
+<div class="dark_grey_bg side_pad">
+  <b>Resource Records</b>
+  <ul class="menu_r">
+    $options
+  </ul>
+</div>];
+};
+
+sub display_zone_records_columns {
+    my ($zone_records) = @_;
+
+    my @columns = qw/ name type address ttl /;
+
+    if ( grep { $_->{type} =~ /^(?:MX|SRV|DS|IPSECKEY|DNSKEY|SSHFP|NAPTR)$/ } @$zone_records ) {
+        push @columns, 'weight';
+    };
+    if ( grep { $_->{type} =~ /^(?:SRV|DS|IPSECKEY|DNSKEY|SSHFP|NAPTR)$/ } @$zone_records ) {
+        push @columns, 'priority';
+    };
+    if ( grep { $_->{type} =~ /^(?:SRV|DS|IPSECKEY|DNSKEY)$/ } @$zone_records ) {
+        push @columns, 'other';
+    }
+    push @columns, 'description';
+    return @columns;
+};
+
+sub display_zone_records_table_head {
+    my ( $columns, $sort_fields, $labels ) = @_;
+
+    print qq[
+<table id="zoneRecordTable" class="fat">
+ <tr id="zoneRecordHeaderRow" class=dark_grey_bg>];
+
+    foreach (@$columns) {
+        if ( $sort_fields->{$_} ) {
+            my $dir = uc( $sort_fields->{$_}->{'mod'} ) eq 'ASCENDING' ? 'up' : 'down';
+            print qq[
+  <td class="dark_bg center">
+     $labels->{$_} &nbsp; &nbsp; $sort_fields->{$_}->{'order'}
+     <img src="$NicToolClient::image_dir/$dir.gif" alt="sort order">
+  </td>];
+        }
+        else {
+            print qq[\n  <td class=center>$labels->{$_}</td>];
+        }
+    }
+    print qq[
+  <td class="center width1"></td>
+  <td class="center width1"></td>
+ </tr>];
+};
+
 sub display_edit_record {
     my ( $nt_obj, $user, $q, $message, $zone, $edit ) = @_;
 
@@ -912,7 +934,7 @@ sub display_edit_record {
   </td>
  </tr>
  <tr id="tr_other" class="light_grey_bg">
-  <td id=other_label class="right"> Port:</td>
+  <td id=other_label class="right">Other:</td>
   <td id=other class="fat">],
     _build_rr_other( $q, $zone_record, $modifyperm ), qq[
   </td>
