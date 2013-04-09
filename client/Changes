@@ -1,4 +1,9 @@
 
+2.19    2013.
+
+  * added NSEC3, NSEC3PARAM, IPSECKEY, DNAME record types
+  * added option lists to SSHFP new record form
+
 2.18    2013.04.05
 
   * lengthen NS IP field to allow AAAA to fit

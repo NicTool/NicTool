@@ -436,10 +436,7 @@ sub zr_dname {
 
     # https://tools.ietf.org/html/rfc6672
     # https://tools.ietf.org/html/rfc2672 (obsolete)
-
-    my $rdata = $self->pack_domain_name(
-        $self->qualify( $r->{address} )
-    );
+    my $rdata = $self->pack_domain_name( $self->qualify( $r->{address} ) );
 
     return $self->zr_generic( 39, $r, $rdata );
 };
@@ -451,7 +448,7 @@ sub zr_sshfp {
 # http://www.openssh.org/txt/rfc4255.txt
 # http://tools.ietf.org/html/draft-os-ietf-sshfp-ecdsa-sha2-00
 
-    my $algo = $r->{weight};    #  1 octet - 1=RSA, 2=DSS, 3=ECDSA
+    my $algo = $r->{weight};    #  1 octet - 1=RSA, 2=DSA, 3=ECDSA
     my $type = $r->{priority};  #  1 octet - 1=SHA-1, 2=SHA-256
     my $fingerprint = $r->{address};  # in hex
 

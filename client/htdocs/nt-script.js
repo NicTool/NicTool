@@ -37,7 +37,7 @@ function selectedRRType(rrType) {
       case 'NSEC3':
         setFormRRTypeNSEC3();  break;
       case 'NSEC3PARAM':
-        setFormRRTypeNSECPARAM(); break;
+        setFormRRTypeNSEC3PARAM(); break;
       case 'RRSIG':
         setFormRRTypeRRSIG();  break;
     }
@@ -52,25 +52,29 @@ function resetZoneRecordFormFields() {
   };
 
   $('input#priority' ).attr('readonly', false);
+  $('select#priority').hide().empty();
+
+  $('select#weight').hide().empty();
+
   $('td#description_label').text( 'Description' );
 };
 
 function setFormRRTypeSRV() {
-    $('tr#tr_weight').show();
-    $('tr#tr_priority').show();
-    $('tr#tr_other').show();
-    $('td#other_label').text('Port');
+  $('tr#tr_weight').show();
+  $('tr#tr_priority').show();
+  $('tr#tr_other').show();
+  $('td#other_label').text('Port');
 }
 
 function setFormRRTypeNAPTR() {
-    $('tr#tr_weight').show();
-    $('td#weight_label').text('Order');
+  $('tr#tr_weight').show();
+  $('td#weight_label').text('Order');
 
-    $('tr#tr_priority').show();
-    $('td#priority_label').text('Preference');
+  $('tr#tr_priority').show();
+  $('td#priority_label').text('Preference');
 
-    $('td#address_label').text('Flags, Services, Regexp');
-    $('td#description_label').text('Replacement');
+  $('td#address_label').text('Flags, Services, Regexp');
+  $('td#description_label').text('Replacement');
 }
 
 function setFormRRTypeSSHFP() {
@@ -79,54 +83,75 @@ function setFormRRTypeSSHFP() {
 
     $('tr#tr_weight').show();
     $('td#weight_label').text('Algorithm');
-    var w = $('input#weight');
-    if ( w.val() == '' ) w.val('3');   // 1=RSA, 2=DSS, 3=ECDSA
 
+    var algoTypes = { '1' : 'RSA', '2' : 'DSA', '3' : 'ECDSA', };
+    var w = $('input#weight');
+    if ( w.val() == '' ) w.val('3');
+
+    var selWeight = $('select#weight').show();
+    $.each(algoTypes, function(key, value) {
+        selWeight
+        .append($('<option>', { value : key })
+        .text(value));
+    });
+    selWeight.val( w.val() );
+
+// Priority field stores the Fingerprint Type
     $('tr#tr_priority').show();
     $('td#priority_label').text('Type');
+
+    var fpTypes = { '1' : 'SHA-1', '2' : 'SHA-256', };
     var p = $('input#priority');
-    if ( p.val() == '' ) p.val('2');  // 1=SHA-1, 2=SHA-256
+    if ( p.val() == '' ) p.val('2');   // set the default
+
+    var selPri = $('select#priority').show();
+    $.each(fpTypes, function(key, value) {
+        selPri
+        .append($('<option>', { value : key })
+        .text(value));
+    });
+    selPri.val( p.val() );
 }
 
 function setFormRRTypeDNSKEY() {
 
-    $('td#address_label').text('Public Key');
+  $('td#address_label').text('Public Key');
 
-    $('tr#tr_weight').show();
-    $('td#weight_label').text('Flag');
+  $('tr#tr_weight').show();
+  $('td#weight_label').text('Flag');
 
-    $('tr#tr_priority').show();
-    $('td#priority_label').text('Protocol');
-    $('input#priority').val('3').attr('readonly', true);
+  $('tr#tr_priority').show();
+  $('td#priority_label').text('Protocol');
+  $('input#priority').val('3').attr('readonly', true);
 
-    // 1=RSA/MD5, 2=Diffie-Hellman, 3=DSA/SHA-1, 4=Elliptic Curve, 5=RSA/SHA-1
-    $('tr#tr_other').show();
-    $('td#other_label').text('Algorithm');
-    var o = $('input#other');
-    if ( o.val() == '' ) o.val('5');
+  // 1=RSA/MD5, 2=Diffie-Hellman, 3=DSA/SHA-1, 4=Elliptic Curve, 5=RSA/SHA-1
+  $('tr#tr_other').show();
+  $('td#other_label').text('Algorithm');
+  var o = $('input#other');
+  if ( o.val() == '' ) o.val('5');
 }
 
 function setFormRRTypeDS() {
 
-    $('td#address_label').text('Digest');
+  $('td#address_label').text('Digest');
 
-    $('tr#tr_weight').show();
-    $('td#weight_label').text('Key Tag');
+  $('tr#tr_weight').show();
+  $('td#weight_label').text('Key Tag');
 
-    $('tr#tr_priority').show();
-    $('td#priority_label').text('Algorithm');
-    var p = $('input#priority');
-    if ( ! p.val() ) p.val('5');  // RSA/SHA1
+  $('tr#tr_priority').show();
+  $('td#priority_label').text('Algorithm');
+  var p = $('input#priority');
+  if ( ! p.val() ) p.val('5');  // RSA/SHA1
 
-    $('tr#tr_other').show();
-    $('td#other_label').text('Digest Type');
-    var o = $('input#other');
-    if ( ! o.val() ) o.val('2');  // 1=SHA-1 , 2=SHA-256
+  $('tr#tr_other').show();
+  $('td#other_label').text('Digest Type');
+  var o = $('input#other');
+  if ( ! o.val() ) o.val('2');  // 1=SHA-1 , 2=SHA-256
 }
 
 function setFormRRTypeNSEC() {
-    $('td#address_label').text('Next Domain Name');
-    $('td#description_label').text('Type Bit Map');
+  $('td#address_label').text('Next Domain Name');
+  $('td#description_label').text('Type Bit Map');
 }
 function setFormRRTypeNSEC3() {
 }

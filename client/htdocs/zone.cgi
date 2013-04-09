@@ -894,49 +894,27 @@ sub display_edit_record {
  </tr>
  <tr id=address class="light_grey_bg">
   <td id=address_label class="right">Address:</td>
-  <td id=address class="fat">], _build_rr_address( $q, $zone_record, $modifyperm ), $nt_obj->help_link('rraddress'), qq[
+  <td id=address class="fat">],
+    _build_rr_address( $q, $zone_record, $modifyperm ), $nt_obj->help_link('rraddress'),
+    qq[
   </td>
  </tr>
  <tr id=tr_weight class="light_grey_bg">
   <td id=weight_label class="right"> Weight:</td>
-  <td id=weight class="fat">], $modifyperm ? $q->textfield(
-        -id        => 'weight',
-        -name      => 'weight',
-        -size      => 5,
-        -maxlength => 10,
-        -default   => '10',
-        -default   => $zone_record->{'weight'}
-        )
-        : $zone_record->{'weight'},
-        qq[
+  <td id=weight class="fat">],
+    _build_rr_weight( $q, $zone_record, $modifyperm ), qq[
   </td>
  </tr>
  <tr id="tr_priority" class="light_grey_bg">
   <td id=priority_label class="right"> Priority:</td>
-  <td id=priority class="fat">], $modifyperm
-        ? $q->textfield(
-        -id        => 'priority',
-        -name      => 'priority',
-        -size      => 5,
-        -maxlength => 10,
-        -default   => '10',
-        -default   => $zone_record->{'priority'}
-        )
-        : $zone_record->{'priority'}, qq[
+  <td id=priority class="fat">],
+    _build_rr_priority( $q, $zone_record, $modifyperm ), qq[
   </td>
  </tr>
  <tr id="tr_other" class="light_grey_bg">
   <td id=other_label class="right"> Port:</td>
-  <td id=other class="fat">], $modifyperm ? $q->textfield(
-        -id        => 'other',
-        -name      => 'other',
-        -size      => 5,
-        -maxlength => 10,
-        -default   => '10',
-        -default   => $zone_record->{'other'}
-        )
-        : $zone_record->{'other'},
-        qq[
+  <td id=other class="fat">],
+    _build_rr_other( $q, $zone_record, $modifyperm ), qq[
   </td>
  </tr>
  <tr id=ttl class="light_grey_bg">
@@ -1054,6 +1032,54 @@ sub _build_rr_address {
         -maxlength => 512,
         -default   => $zone_record->{'address'},
         );
+};
+
+sub _build_rr_weight {
+    my ( $q, $zone_record, $modifyperm) = @_;
+
+    return $zone_record->{'weight'} if ! $modifyperm;
+    return $q->textfield(
+        -id        => 'weight',
+        -name      => 'weight',
+        -size      => 5,
+        -maxlength => 10,
+        -default   => $zone_record->{'weight'},
+        -onChange  => q[$('select#weight').val(this.value);],
+    )
+    . q[<select id=weight class='hidden' onChange="$('input#weight').val(this.value);"></select>
+];
+};
+
+sub _build_rr_priority {
+    my ( $q, $zone_record, $modifyperm) = @_;
+
+    return $zone_record->{'priority'} if ! $modifyperm;
+    return $q->textfield(
+        -id        => 'priority',
+        -name      => 'priority',
+        -size      => 5,
+        -maxlength => 10,
+        -default   => $zone_record->{'priority'},
+        -onChange  => q[$('select#priority').val(this.value);],
+        )
+    . q[<select id=priority class='hidden' onChange="$('input#priority').val(this.value);"></select>
+];
+};
+
+sub _build_rr_other {
+    my ( $q, $zone_record, $modifyperm) = @_;
+
+    return $zone_record->{'other'} if ! $modifyperm;
+    return $q->textfield(
+        -id        => 'other',
+        -name      => 'other',
+        -size      => 5,
+        -maxlength => 10,
+        -default   => $zone_record->{'other'},
+        -onChange  => q[$('select#other').val(this.value);],
+        )
+    . q[<select id=other class='hidden' onChange="$('input#other').val(this.value);"></select>
+];
 };
 
 sub display_edit_record_delegates {
