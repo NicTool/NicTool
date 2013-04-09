@@ -9,6 +9,7 @@ use base 'NicToolServer::Export::Base';
 
 use Cwd;
 use File::Copy;
+use MIME::Base32;
 use MIME::Base64;
 use Net::IP;
 use Params::Validate qw/ :all /;
@@ -577,8 +578,16 @@ sub zr_nsec3 {
 # TTL should be same as zone SOA minimum: RFC 2308
 
 # IN NSEC3 1 1 12 aabbccdd ( 2t7b4g4vsa5smi47k61mv5bv1a22bojr MX DNSKEY NS SOA NSEC3PARAM RRSIG )
-    my ($hash_algo, $flags, $iters, $salt, undef, $next_hash) =
-        split /\s+/, $r->{address}, 6;
+    my @data = split /\s+/, $r->{address};
+    @data = grep { $_ ne '(' && $_ ne ')' } @data; # make parens optional
+    if ( '(' eq substr( $data[0], 0, 1) ) { $data[0] = substr $data[0], 1; };
+    if ( ')' eq substr( $data[-1], -1, 1) ) { chop $data[-1]; };
+
+    my ($hash_algo, $flags, $iters, $salt, $next_hash, @types ) = @data;
+    if   ( $salt eq '-' ) { $salt = ''; }
+    else                  { $salt = pack 'H*', $salt };  # to binary
+
+    $next_hash = $self->base32str_to_bin( $next_hash );
 
     my $rdata = escape_rdata( pack 'CCnCa*Ca*',
         $hash_algo,           # Hash Algorithm   1 octet
@@ -590,7 +599,8 @@ sub zr_nsec3 {
         $next_hash            # Next Hashed Owner Name - unmodified binary hash value
     );
 
-    $rdata .= $self->pack_type_bitmap( $r->{description} ); # Type Bit Maps
+    my $bitmap_list = scalar @types ? join(' ', @types) : $r->{description};
+    $rdata .= $self->pack_type_bitmap( $bitmap_list ); # Type Bit Maps
 
     return $self->zr_generic( 50, $r, $rdata );
 };
@@ -724,15 +734,16 @@ sub pack_type_bitmap {
         $rec_ids{ $self->{nte}->get_rr_id( $label ) } = $label;
     };
 
-    my ($highest_rr_id) = (sort keys %rec_ids)[-1];  # find the highest ID
+    my ($highest_rr_id) = (sort { $a <=> $b} keys %rec_ids)[-1]; # find highest ID
 
-    my $highest_window = int( $highest_rr_id / 256 );
+    my $highest_window = int( $highest_rr_id / 256 );  # how many windows needed?
        $highest_window += ( $highest_rr_id % 256 == 0 ? 0 : 1 );
 
     my $bitmap;
     foreach my $window ( 0 .. $highest_window ) {
         my $base = $window * 256;
-        next unless grep { $_ >= $base && $_ < $base + 256 } %rec_ids;
+        next unless grep { $_ >= $base && $_ < $base + 256 } keys %rec_ids;
+
         my $highest_in_this_window = $highest_rr_id - $base;
 
         my $bm_octets = int( $highest_in_this_window / 8 );
@@ -768,6 +779,26 @@ sub to_tai64 {
     my ($self, $ts) = @_;
     return '' if ! $ts;
     return substr unixtai64( $ts ), 1;
+};
+
+sub base32str_to_bin {
+    my ($self, $str) = @_;
+
+    # RFC 5155 (NSEC3) suggests using Base32 with Extended Hex Alphabet as
+    # described in RFC 4648).
+
+    # Convert::Base32 implements Base32 per RACE 03 (ie, differently). First
+    # clue? It dies on the NSEC3 RFC example with "non-Base32 characters"
+    #return Convert::Base32::decode_base32( $str );
+
+    # MIME::Base32 in 'RFC' mode implements RFC 3548, which is RFC 4648 minus
+    # the 'base32 extended hex alphabet'. It won't suffice.
+
+    # The MB fallback method is encode_09AV, which will work if we uc the
+    # string first.
+    return MIME::Base32::decode( uc $str );
+
+#TODO: patch MIME::Base32 to implement RFC 4648
 };
 
 # next 3 subs based on http://www.anders.com/projects/sysadmin/djbdnsRecordBuilder/
