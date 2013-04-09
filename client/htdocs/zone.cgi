@@ -609,7 +609,7 @@ sub display_zone_records {
 
         # shorten the max width of the address field (workaround for
         # display formatting problem with DomainKey entries.
-        if ( length $r_record->{address} > 48 ) {
+        if ( length $r_record->{address} > 45 ) {
             if ( $r_record->{type} =~ /^(?:DNSKEY|RRSIG)$/ ) {
                 $r_record->{title} = $r_record->{address};
                 $r_record->{address} = substr($r_record->{address}, 0, 35) . ' ...<br>(tip: hover over address)';
@@ -622,12 +622,15 @@ sub display_zone_records {
                 my $max = 0;
                 my @lines = ();
                 while ( $max < length $r_record->{address} ) {
-                    push @lines, substr( $r_record->{address}, $max, 48 );
-                    $max += 48;
+                    push @lines, substr( $r_record->{address}, $max, 40 );
+                    $max += 40;
                 }
                 $r_record->{address} = join "<br>", @lines;
             };
         }
+        if ( $r_record->{type} eq 'IPSECKEY' ) {
+            $r_record->{description} = substr( $r_record->{description}, 0, 10 ) . ' ...';
+        };
 
         if ( $r_record->{type} eq 'AAAA' ) {
             $r_record->{address} =~ s/:[0]+/:/g;  # compress leading zeros
