@@ -244,7 +244,11 @@ sub zr_soa {
     my ($self, $z) = @_;
 
     # empty mailaddr makes BIND angry, set a default
-    $z->{mailaddr} ||= 'hostmaster.' . $z->{zone};
+    $z->{mailaddr} ||= 'hostmaster.' . $z->{zone} . '.';
+    if ( '.' ne substr( $z->{mailaddr}, -1, 1) ) {   # not fully qualified
+        $z->{mailaddr} = $self->{nte}->qualify( $z->{mailaddr} ); # append domain
+        $z->{mailaddr} .= '.';     # append trailing dot
+    };
 
 # name        ttl class rr    name-server email-addr  (sn ref ret ex min)
     return "
