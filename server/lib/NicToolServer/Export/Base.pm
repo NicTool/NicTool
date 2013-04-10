@@ -46,9 +46,9 @@ sub get_records {
 }
 
 sub export_db {
-    my $self = shift;
+    my ($self) = @_;
 
-    foreach my $z ( @{ $self->{nte}->get_ns_zones } ) {
+    foreach my $z ( @{ $self->{nte}->get_ns_zones() } ) {
         push @{$self->{zone_list}}, $z->{zone};
         my $fh = $self->get_export_file( $z->{zone} );
         $self->{nte}{zone_name} = $z->{zone};

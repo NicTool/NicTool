@@ -21,6 +21,7 @@ Getopt::Long::GetOptions(
     'daemon'    => \my $daemon,
     'dsn=s'     => \my $dsn,
     'help'      => \my $usage,
+    'incremental'=>\my $incremental,
     'force'     => \my $force,
     'nsid=i'    => \my $nsid,
     'user=s'    => \my $db_user,
@@ -45,6 +46,7 @@ my $export = NicToolServer::Export->new(
     force => $force || 0,
     pfextra => $postflight_extra ? 1 : 0,
     debug => $verbose || 0,
+    incremental => $incremental || 0,
     );
 $export->get_dbh( dsn => $dsn, user => $db_user, pass => $db_pass,) 
     or die "database connection failed";

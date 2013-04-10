@@ -43,6 +43,7 @@ sub new {
         time_start => time,
         dir_orig   => Cwd::getcwd,
         postflight_extra => $p{pfextra},
+        incremental=> undef,
         },
         $class;
 }
@@ -110,6 +111,7 @@ sub set_no_change {
     my $last_ts = 'never';
     my $last_copy;
     if ( $self->{export_format} eq 'tinydns' ) {
+# if last export failed to copy, try again this time
         $last_copy = $self->get_last_ns_export(success=>1,copied=>1);
     }
     else {
@@ -125,8 +127,7 @@ sub set_no_change {
 };
 
 sub set_partial {
-    my $self   = shift;
-    my $boolean = shift;
+    my ($self, $boolean) = @_;
     $self->exec_query(
         "UPDATE nt_nameserver_export_log SET partial=?
         WHERE nt_nameserver_id=? AND nt_nameserver_export_log_id=?",
@@ -135,8 +136,7 @@ sub set_partial {
 }
 
 sub set_status {
-    my $self    = shift;
-    my $message = shift;
+    my ($self, $message) = @_;
     $self->exec_query(
         "UPDATE nt_nameserver SET export_status=?  WHERE nt_nameserver_id=?",
          [ $message, $self->{ns_id} ]
@@ -213,7 +213,7 @@ sub export {
     if ( $self->{force} ) {
         $self->elog("forced");
     }
-    elsif ( ! $self->{export_required} ) {
+    elsif ( ! $self->export_required ) {
         return $self->set_no_change();
     };
 
@@ -416,6 +416,12 @@ sub get_ns_zones {
         $sql .= " AND z.last_modified > ?";
         push @args, $p{last_modified};
     }
+    else {
+        if ( $self->{incremental} && $self->export_required > 1 ) {
+            $sql .= " AND z.last_modified > ?";
+            push @args, $self->export_required;
+        };
+    }
 
     return ($sql,@args) if $p{query_result};
     my $r = $self->exec_query( $sql, \@args ) or return [];
@@ -468,16 +474,16 @@ sub get_log_id {
         }
     );
     return $self->{log_id} if defined $self->{log_id};
-    my $message = "init";
+    my $message = 'init';
     my $sql   = "INSERT INTO nt_nameserver_export_log
         SET nt_nameserver_id=?, date_start=CURRENT_TIMESTAMP(), message=?";
 
     my @args = ( $self->{ns_id}, $message );
+
     foreach (qw/ success partial copied /) {
-        if ( defined $p{$_} ) {
-            $sql .= ",$_=?";
-            push @args, $p{$_};
-        }
+        next if ! defined $p{$_};
+        $sql .= ",$_=?";
+        push @args, $p{$_};
     }
 
     $self->{log_id} = $self->exec_query( $sql, \@args );
@@ -604,7 +610,7 @@ sub load_export_class {
 sub preflight {
     my $self = shift;
 
-    return 1 if $self->{export_required} == 0; # already called
+    return 1 if $self->export_required == 0; # already called
 
     my $total_zones = $self->get_modified_zones_count();
     $self->elog( "nsid $self->{ns_id} has $total_zones zones",sc=>1);
@@ -617,19 +623,17 @@ sub preflight {
     if ( $export ) {
         my $ts_success = $export->{date_start};
         if ( $ts_success ) {
-# do any zones for this NS have changes since the last successful export?
+# have any zones for this NS changed since the last successful export?
             my $c = $self->get_modified_zones_count( since => $ts_success );
-            if ( $c == 0 ) {
-                $self->{export_required} = 0;
-            };
+# store the last success ts for incrementals
+            $self->export_required( $c == 0 ? 0 : $ts_success );
             $self->elog( "$c changed");
         };
     };
-    $self->elog("export required") if $self->{export_required};
+    $self->elog("export required") if $self->export_required;
 
-    # determine export directory
-    $self->get_export_dir or return;
-    $self->write_runfile();
+    $self->get_export_dir or return;   # determine export directory
+    $self->write_runfile();            # provide a default 'run' file
 
     return 1;
 }
@@ -782,5 +786,12 @@ sub qualify {
     return $record if $zone eq substr($record,(-1*length($zone)),length($zone));
     return "$record.$zone"                 # append missing zone name
 }
+
+sub export_required {
+    my ($self, $er ) = @_;
+    return $self->{export_required} if ! defined $er;
+    $self->{export_required} = $er;
+    return $er;
+};
 
 1;
