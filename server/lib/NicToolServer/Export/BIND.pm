@@ -8,12 +8,32 @@ use lib 'lib';
 use base 'NicToolServer::Export::Base';
 
 use Cwd;
+use IO::File;
 use File::Copy;
 use Params::Validate qw/ :all /;
 
 sub postflight {
     my $self = shift;
     my $dir = shift || $self->{nte}->get_export_dir or return;
+
+    $self->update_named_include( $dir ) or return;
+
+    return 1 if ! $self->{nte}{postflight_extra};
+
+    $self->write_makefile() or return;
+    $self->compile() or return;
+    $self->rsync()   or return;
+    $self->restart() or return;
+
+    return 1;
+}
+
+sub update_named_include {
+    my ($self, $dir) = @_;
+    if ( $self->incremental ) {
+        return $self->update_named_include_incremental( $dir );
+    };
+# full export, write a new include  file
     my $datadir = $self->{nte}->get_export_data_dir || $dir;
     my $fh = $self->get_export_file( 'named.conf.nictool', $dir );
     foreach my $zone ( @{$self->{zone_list}} ) {
@@ -26,16 +46,56 @@ sub postflight {
         print $fh qq[zone "$zone"\t IN { type master; file "$datadir/$zone"; };\n];
     };
     close $fh;
-
-    return 1 if ! $self->{nte}{postflight_extra};
-
-    $self->write_makefile() or return;
-    $self->compile() or return;
-    $self->rsync()   or return;
-    $self->restart() or return;
-
     return 1;
-}
+};
+
+sub update_named_include_incremental {
+    my ($self, $dir) = @_;
+    my $datadir = $self->{nte}->get_export_data_dir || $dir;
+
+# check that the zone that was modified since our last export is in the
+# include file, else append it.
+#
+# there's likely to be more lines in the include file than zones to append
+# build a lookup table of changed zones and pass through the file once
+    my %to_append;
+    foreach my $zone ( @{$self->{zone_list}} ) {
+        my $match = "zone $zone";
+
+        my $tmpl = $self->get_template($dir, $zone);
+        if ( $tmpl ) {
+            $to_append{$match} = $tmpl;
+            next;
+        };
+        $to_append{$match} = qq[zone "$zone"\t IN { type master; file "$datadir/$zone"; };\n];
+    };
+
+    my $fh = IO::File->new("$dir/named.conf.nictool", '<') or do {
+            warn "unable to read $dir/named.conf.nictool\n";
+            return;
+        };
+
+    while ( my $line = <$fh> ) {
+        my $match = join('', (split( /\"/, $line, 3))[0,1] );
+        if ( $to_append{$match} ) {
+            delete $to_append{$match};  # already exists
+        };
+    };
+    close $fh;
+
+    return 1 if ( 0 == scalar keys %to_append );
+
+    $fh = IO::File->new("$dir/named.conf.nictool", '>>') or do {
+            warn "unable to append $dir/named.conf.nictool\n";
+            return;
+        };
+
+    foreach my $key ( keys %to_append ) {
+        print $fh, $to_append{$key};
+    };
+    close $fh;
+    return 1;
+};
 
 sub get_template {
     my ($self, $export_dir, $zone) = @_;
@@ -130,7 +190,10 @@ sub write_makefile {
     my $address = $self->{nte}{ns_ref}{address} || '127.0.0.1';
     my $datadir = $self->{nte}{ns_ref}{datadir} || getcwd . '/data-all';
     $datadir =~ s/\/$//;  # strip off any trailing /
-    my $exportdir = $self->{nte}->get_export_dir or die "no export dir!";
+    my $exportdir = $self->{nte}->get_export_dir or do {
+        warn "no export dir!";
+        return;
+    };
     open my $M, '>', 'Makefile' or do {
         warn "unable to open ./Makefile: $!\n";
         return;

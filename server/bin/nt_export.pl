@@ -46,8 +46,8 @@ my $export = NicToolServer::Export->new(
     force => $force || 0,
     pfextra => $postflight_extra ? 1 : 0,
     debug => $verbose || 0,
-    incremental => $incremental || 0,
     );
+$export->incremental( $incremental || 0);
 $export->get_dbh( dsn => $dsn, user => $db_user, pass => $db_pass,) 
     or die "database connection failed";
 

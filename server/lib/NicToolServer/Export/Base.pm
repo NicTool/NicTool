@@ -27,8 +27,10 @@ sub get_export_file {
     my $dir = shift || $self->{nte}->get_export_dir or return;
 
     my $file = "$dir/$zone";
-    my $fh = IO::File->new($file, '>')
-        or die $self->{nte}->elog("unable to open `$file' for writing: $!");
+    my $fh = IO::File->new($file, '>') or do {
+        warn $self->{nte}->elog("unable to open `$file' for writing: $!");
+        return;
+    };
     return $fh;
 };
 
@@ -53,6 +55,7 @@ sub export_db {
         my $fh = $self->get_export_file( $z->{zone} );
         $self->{nte}{zone_name} = $z->{zone};
 
+        # these records don't exist in DB, generate them here
         $fh->print($self->{nte}->zr_soa( $z ));
         $fh->print($self->{nte}->zr_ns(  $z ));
 

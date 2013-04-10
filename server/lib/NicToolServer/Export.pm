@@ -794,4 +794,11 @@ sub export_required {
     return $er;
 };
 
+sub incremental {
+    my ($self, $val ) = @_;
+    return $self->{incremental} if ! defined $val;
+    $self->{incremental} = $val;
+    return $val;
+};
+
 1;
