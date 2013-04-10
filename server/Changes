@@ -1,5 +1,11 @@
 Revision history for NicToolServer
 
+2.19    2013
+
+    * added support for NSEC3, NSEC3PARAM, IPSECKEY, DNAME record types
+    * fixed NSEC bitmap ceiling, was sorted by ASCII instead of num value
+    * fully qualify SOA mailaddr in BIND exports
+
 2.18    2013.04.05
 
     * BIND & tinydns exports: added records DNSKEY, NSEC, RRSIG, & DS
