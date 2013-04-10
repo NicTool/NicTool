@@ -2,6 +2,7 @@ Revision history for NicToolServer
 
 2.19    2013
 
+    * added BIND incremental export option (anonymous sponsor)
     * added support for NSEC3, NSEC3PARAM, IPSECKEY, DNAME record types
     * fixed NSEC bitmap ceiling, was sorted by ASCII instead of num value
     * fully qualify SOA mailaddr in BIND exports

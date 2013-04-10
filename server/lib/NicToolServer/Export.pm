@@ -417,7 +417,7 @@ sub get_ns_zones {
         push @args, $p{last_modified};
     }
     else {
-        if ( $self->{incremental} && $self->export_required > 1 ) {
+        if ( $self->incremental && $self->export_required > 1 ) {
             $sql .= " AND z.last_modified > ?";
             push @args, $self->export_required;
         };

@@ -5,7 +5,7 @@ use strict;
 use warnings;
 
 use lib 'lib';
-use base 'NicToolServer::Export::Base';
+use parent 'NicToolServer::Export::Base';
 use Params::Validate qw/ :all /;
 
 sub postflight {

@@ -5,7 +5,6 @@ use strict;
 use warnings;
 
 use lib 'lib';
-#use base 'NicToolServer::Import::Base';
 
 use Cwd;
 use Data::Dumper;

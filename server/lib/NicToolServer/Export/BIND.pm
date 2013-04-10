@@ -5,7 +5,7 @@ use strict;
 use warnings;
 
 use lib 'lib';
-use base 'NicToolServer::Export::Base';
+use parent 'NicToolServer::Export::Base';
 
 use Cwd;
 use IO::File;
@@ -30,7 +30,7 @@ sub postflight {
 
 sub update_named_include {
     my ($self, $dir) = @_;
-    if ( $self->incremental ) {
+    if ( $self->{nte}->incremental ) {
         return $self->update_named_include_incremental( $dir );
     };
 # full export, write a new include  file
