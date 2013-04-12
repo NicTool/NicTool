@@ -4,5 +4,5 @@ The latest version is available here:
    http://www.nictool.com/docs/server/install.shtml
 
 
-To upgrade, update your database with sql/upgrade.pl and install the newest version of NicTool per the install instructions. 
+To upgrade, install the newest version of NicTool and then update your database with sql/upgrade.pl.
 
