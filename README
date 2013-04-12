@@ -1,7 +1,9 @@
 
-NicTool is a free DNS management suite that takes the headaches out of managing DNS data. NicTool works great for managing one zone or millions of them.
+NicTool is a free DNS management suite that takes the headaches out of managing DNS data. NicTool works great for managing one zone or millions of them. It works well with one nameserver or dozens of them.
 
-NicTool is not a DNS server. NicTool exports sanitized and validated DNS data to authoritative DNS servers such as tinydns, BIND, MaraDNS, or PowerDNS.
+NicTool is not a DNS server. NicTool exports sanitized and validated DNS data to authoritative DNS servers such as tinydns, BIND, PowerDNS, NSD, and MaraDNS.
+
+NicTool is Open Source, you can fork it on GitHub: https://github.com/msimerson/NicTool
 
 NicTool includes:
 
