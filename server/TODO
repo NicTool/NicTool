@@ -1,23 +1,11 @@
 ----NEW----
 
-. RFC 4035: modify CNAME to allow it to coexist with NSEC & RRSIG
+ See the Issue Tracker on GitHub:
 
-. Exports: make sure another export for the same NSID is not running. This can
-    happen on a NS with extremely large (many hundreds of thousands) record
-    sets and very short export intervals. Consider an export concurrency limit.
+    https://github.com/msimerson/NicTool/issues?state=open
 
 . RFC 3490, IDNA (International Domain Names in Applications)
 ..  RFC 5890 - 5894 (IDNA 2008)
-
-. RFC 2181, RRSet restrictions
-.. Make sure TTL on RRs with identical label and type are identical
-.. If RR has identical label, type, and data as existing RR, reject as invalid
-
-. Support tinydns locations
-    SQL & tinydns export portions completed 2011.11.14. See
-    https://www.tnpi.net/support/forums/index.php/topic,1004.0.html
-
-. Support BIND views
 
 . If a user does not have delete permission for a zone/zone record, they
     should not have restore permissions
@@ -25,25 +13,13 @@
 
 . Fix bug: login returns nt_perm_id and perm_name in user hash, and should not.
 
-. Support other database engines:
-..  remove all MySQL specific ENUM columns
-..  test against sqlite
-
-. SPF records: when creating or editing a SPF record, check for an TXT record.
-    If TXT doesn't exist, create it. If exists, update it with SPF record.
-    RFC 4408 ("recommends to always provide a TXT based SPF RR...and duplicate
-    the information")
 
 ==== COMPLETED =====
 
-. Support for NAPTR records: http://tools.ietf.org/html/rfc3403
+ More entries in the Issue Tracker on GitHub:
 
-. Fix hostmaster.ZONE.TLD entries in nt_zone table.
-..  Have Zone::new_zone automatically rewrite those entries before insertion.
-..  Update the JS to format that value more intelligently
+   https://github.com/msimerson/NicTool/issues?page=1&state=closed
 
-. Fix hostmaster.ZONE.TLD entries in nt_zone table.
-..  UPDATE nt_zone SET mailaddr=CONCAT('hostmaster.',zone,'.') WHERE mailaddr LIKE 'hostmaster.ZONE.TLD%';
 
 . add SSHFP record type: http://www.openssh.org/txt/rfc4255.txt
 
