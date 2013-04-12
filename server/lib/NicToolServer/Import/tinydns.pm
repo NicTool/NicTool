@@ -332,6 +332,14 @@ sub zr_soa {
     };
 }
 
+sub zr_generic {
+    my $self = shift;
+    die "oops, no generic support yet!\n";
+    my $r = shift or die;
+    print "Generic : $r\n";
+    my ( $fqdn, $ip, $host, $ttl, $timestamp, $location ) = split(':', $r);
+}
+
 sub nt_create_zone {
     my $self = shift;
 
