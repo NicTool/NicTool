@@ -97,6 +97,8 @@ sub write_makefile {
     $datadir =~ s/\/$//;  # strip off any trailing /
     open my $M, '>', "$export_dir/Makefile";
     print $M <<MAKE
+# See https://www.gnu.org/software/make/manual/make.html
+#
 # compiles data.cdb using the tinydns-data program.
 # make sure the path to tinydns-data is correct
 # test this target by running 'make data.cdb' in this directory
@@ -105,17 +107,17 @@ data.cdb: data
 
 # copies the data file to the remote host. The address is the nameservers IP
 # as defined in the NicTool database. Adjust it if necessary. Add additional
-# rsync lines to copy to additional hosts.
+# rsync lines to copy to additional hosts. See the FAQ for details:
+#    FAQ: https://github.com/msimerson/NicTool/wiki/FAQ
 remote: data.cdb
 \trsync -az data.cdb tinydns\@$address:$datadir/data.cdb
 
-# If the DNS server is running locally and rsync is not necessary, trick
-# the export process into thinking it worked by setting the 'remote' make
-# target to any system command that will succeed. An example is provided.
+# If the DNS server is running locally and rsync is not necessary, tell the
+# export process the 'remote' make target succeeded. An example is provided.
 # test by running the 'make remote' target and make sure it succeeds:
-#   make test && echo "it worked"
-noremote: data.cdb
-\ttest 1
+#
+#  example useless entry
+test:\n\techo "it worked"
 MAKE
 ;
     close $M;
