@@ -842,7 +842,6 @@ sub display_edit_record {
         $action = 'View' if $action eq 'Edit';
     }
 
-
     $nt_obj->display_nice_error($message)  if $message;
     $nt_obj->display_nice_error($message2) if $message2;
     print qq[
@@ -909,15 +908,7 @@ sub display_edit_record {
  </tr>
  <tr id=description class="light_grey_bg">
   <td id=description_label class="right"> Description:</td>
-  <td id=description class="fat">], $modifyperm ? $q->textfield(
-        -id        => 'description',
-        -name      => 'description',
-        -size      => 60,
-        -maxlength => 128,
-        -default   => $zone_record->{'description'}
-        )
-        : $zone_record->{'description'} || "&nbsp;",
-        qq[
+  <td id=description class="fat">], _build_rr_description( $q, $zone_record, $modifyperm ), qq[
   </td>
  </tr>
  <tr id=submit class="dark_grey_bg">
@@ -1151,6 +1142,19 @@ sub _build_rr_other {
         )
     . q[<select id=other class='hidden' onChange="$('input#other').val(this.value);"></select>
 ];
+};
+
+sub _build_rr_description {
+    my ( $q, $zone_record, $modifyperm) = @_;
+
+    return $zone_record->{'description'} || '&nbsp;' if ! $modifyperm;
+    return $q->textfield(
+        -id        => 'description',
+        -name      => 'description',
+        -size      => 60,
+        -maxlength => 128,
+        -default   => $zone_record->{'description'}
+    );
 };
 
 sub display_edit_record_delegates {

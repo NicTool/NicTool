@@ -121,7 +121,7 @@ function setFormRRTypeNAPTR() {
   $('input#priority').attr('placeholder','10');
 
   $('td#address_label').text('Flags, Services, Regexp');
-  $('input#address').attr('placeholder','/urn:cid:.+@([^\\.]+\\.)(.*)$/\\2/i');
+  $('input#address').attr('placeholder','"", "", "/urn:cid:.+@([^\\.]+\\.)(.*)$/\\2/i"');
 
   $('td#description_label').text('Replacement');
 }
