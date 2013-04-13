@@ -13,7 +13,8 @@ Try: git clone https://github.com/msimerson/NicTool.git $gitdir\n";
 };
 
 
-my $exclude = '--exclude nictoolclient.conf --exclude nictoolserver.conf --exclude test.cfg';
+my @exclude = qw/ NicToolTest.pm test.cfg nictoolclient.conf nictoolserver.conf /;
+my $exclude = '--exclude ' . join(' --exclude ', @exclude);
 my $server = "$rsync $exclude $gitdir/server/ $ntdir/server/";
 my $client = "$rsync $exclude $gitdir/client/ $ntdir/client/";
 
