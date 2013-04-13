@@ -17,28 +17,23 @@ function selectedRRType(rrType) {
     resetZoneRecordFormFields();
 
     switch (rrType) {
-      case 'MX':
-        setFormRRTypeMX();    break;
-      case 'SRV':
-        setFormRRTypeSRV();    break;
-      case 'NAPTR':
-        setFormRRTypeNAPTR();  break;
-      case 'SSHFP':
-        setFormRRTypeSSHFP();  break;
-      case 'IPSECKEY':
-        setFormRRTypeIPSECKEY();break;
-      case 'DNSKEY':
-        setFormRRTypeDNSKEY(); break;
-      case 'DS':
-        setFormRRTypeDS();     break;
-      case 'NSEC':
-        setFormRRTypeNSEC();   break;
-      case 'NSEC3':
-        setFormRRTypeNSEC3();  break;
-      case 'NSEC3PARAM':
-        setFormRRTypeNSEC3PARAM(); break;
-      case 'RRSIG':
-        setFormRRTypeRRSIG();  break;
+      case 'A':          setFormRRTypeA();          break;
+      case 'AAAA':       setFormRRTypeAAAA();       break;
+      case 'NS':         setFormRRTypeNS();         break;
+      case 'MX':         setFormRRTypeMX();         break;
+      case 'CNAME':      setFormRRTypeCNAME();      break;
+      case 'SRV':        setFormRRTypeSRV();        break;
+      case 'SPF':        setFormRRTypeSPF();        break;
+      case 'NAPTR':      setFormRRTypeNAPTR();      break;
+      case 'LOC':        setFormRRTypeLOC();        break;
+      case 'SSHFP':      setFormRRTypeSSHFP();      break;
+      case 'IPSECKEY':   setFormRRTypeIPSECKEY();   break;
+      case 'DNSKEY':     setFormRRTypeDNSKEY();     break;
+      case 'DS':         setFormRRTypeDS();         break;
+      case 'NSEC':       setFormRRTypeNSEC();       break;
+      case 'NSEC3':      setFormRRTypeNSEC3();      break;
+      case 'NSEC3PARAM': setFormRRTypeNSEC3PARAM(); break;
+      case 'RRSIG':      setFormRRTypeRRSIG();      break;
     }
 }
 
@@ -48,6 +43,7 @@ function resetZoneRecordFormFields() {
   for ( var i=0; i < rrOptions.length; i++ ) {
     $('tr#' + rrOptions[i] ).hide();         // hide conditional rows
     $('select#'+rrOptions[i]).hide().empty(); // hide and empty option lists
+    $('input#' +rrOptions[i]).val('');
   };
 
   var rrAll = $.merge( rrOptions, ['name','address','description'] );
@@ -62,6 +58,21 @@ function resetZoneRecordFormFields() {
   $('input#address').attr('size', 50);
 };
 
+function setFormRRTypeA() {
+  $('input#name').attr('placeholder','host');
+  $('input#address').attr('placeholder','192.0.99.5');
+}
+
+function setFormRRTypeAAAA() {
+  $('input#name').attr('placeholder','host');
+  $('input#address').attr('placeholder','2001:db8:f00d::2');
+}
+
+function setFormRRTypeNS() {
+  $('input#name').attr('placeholder','subdomain');
+  $('input#address').attr('placeholder','ns1.example.com.');
+}
+
 function setFormRRTypeMX() {
   $('tr#weight').show();
   $('input#name').attr('placeholder','@');
@@ -69,11 +80,28 @@ function setFormRRTypeMX() {
   $('input#weight').attr('placeholder', '10');
 }
 
+function setFormRRTypeCNAME() {
+  $('input#name').attr('placeholder','host');
+  $('input#address').attr('placeholder','fqdn.example.com.');
+}
+
 function setFormRRTypeSRV() {
+  $('input#name').attr('placeholder','_dns._udp');
+  $('input#address').attr('placeholder','ns1.example.com.');
+
   $('tr#weight').show();
+  $('input#weight').attr('placeholder','10');
+
   $('tr#priority').show();
+
   $('tr#other').show();
   $('td#other_label').text('Port');
+  $('input#other').attr('placeholder','53');
+}
+
+function setFormRRTypeSPF() {
+  $('input#name').attr('placeholder','@');
+  $('input#address').attr('placeholder','v=spf1 mx a -all');
 }
 
 function setFormRRTypeNAPTR() {
@@ -87,9 +115,15 @@ function setFormRRTypeNAPTR() {
   $('td#description_label').text('Replacement');
 }
 
+function setFormRRTypeLOC() {
+  $('input#name').attr('placeholder','host');
+  $('input#address').attr('placeholder','47 43 47.000 N 122 21 35.000 W 132.00m 100m 100m 2m');
+}
+
 function setFormRRTypeSSHFP() {
 
     $('td#address_label').text('Fingerprint');
+    $('input#address').attr('placeholder','hint: ssh-keygen -r');
 
     $('tr#weight').show();
     $('td#weight_label').text('Algorithm');
@@ -196,11 +230,17 @@ function setFormRRTypeIPSECKEY() {
 
   $('tr#priority').show();
   $('td#priority_label').text('Gateway Type');
+  var gwTypes = {
+    '0' : 'none',          '1' : 'IPv4 address',
+    '2' : 'IPv6 address',  '3' : 'domain name',
+  };
+  addValuesToSelect( gwTypes, 'priority' );
 
   $('tr#other').show();
   $('td#other_label').text('Algorithm Type');
-//  var p = $('input#other');
-//  if ( p.val() == '' ) p.val('2');  // 0=none, 1=DSA, 2=RSA
+  $('input#other').attr('placeholder','2');
+  var algoTypes = { '0' : 'none', '1' : 'DSA', '2' : 'RSA', };
+  addValuesToSelect( algoTypes, 'other' );
 };
 
 function addValuesToSelect(array,selectName) {
