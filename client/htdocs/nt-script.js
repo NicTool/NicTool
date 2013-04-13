@@ -173,8 +173,28 @@ function setFormRRTypeNSEC3() {
 function setFormRRTypeNSEC3PARAM() {
 }
 function setFormRRTypeRRSIG() {
-  // var algoTypes = getDnssecAlgorithms();
-  // addValuesToSelect(algoTypes, 'other');
+
+/*
+ We don't have enough fields in the RR table to enter the 9 pieces of data separately. Instead, just require them to be in the canonical presentation format, and pack it all into the Address field.
+
+host.example.com. 86400 IN RRSIG A 5 3 86400 20030322173103 (
+                                  20030220173103 2642 example.com.
+                                  oJB1W6WNGv+ldvQ3WDG0MQkg5IEhjRip8WTr
+                                  PYGv07h108dUKGMeDPKijVCHX3DDKdfb+v6o
+                                  B9wfuh3DTJXUAfI/M0zmO/zz8bW0Rznl8O3t
+                                  GNazPwQKkRN20XPXV6nwwfoXmJQbsLNrLfkG
+                                  J5D6fwFm8nN+6pBzeDQfsS3Ap3o= )
+*/
+  var iA = $('input#address');
+  if ( iA.val() == '' )
+    iA.val( 'A 5 3 86400 20030322173103 ( 20030220173103 2642 example.com. oJB1W6...)' );
+
+  iA.attr('size', 100 );   // suggest that we're expecting a very long value
+
+  iA.focus( function() {
+    if ( this.value=='A 5 3 86400 20030322173103 ( 20030220173103 2642 example.com. oJB1W6...)' )
+      this.value='';
+  });
 }
 
 function setFormRRTypeIPSECKEY() {
