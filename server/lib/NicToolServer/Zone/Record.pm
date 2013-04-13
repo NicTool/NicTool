@@ -69,12 +69,14 @@ sub _add_matching_spf_record {
        AND address=?",
        [ $data->{nt_zone_id}, $data->{name}, $data->{address}, ],
     );
-    return if scalar @$zrs;
+    return if scalar @$zrs; # already exists
 
-    $col_string =~ s/, 99,/, 16,/;  # convert SPF rec type to TXT type
+    # make sure the position of type_id column didn't move
+    return if $values->[4] != 99;
 
+    $values->[4] = 16;  # switch SPF rec type to TXT type
     $self->exec_query(
-        "INSERT INTO nt_zone_record($col_string) VALUES(??)", @$values);
+        "INSERT INTO nt_zone_record($col_string) VALUES(??)", $values);
 };
 
 sub edit_zone_record {
