@@ -52,9 +52,10 @@ function resetZoneRecordFormFields() {
   };
 
   $('input#priority' ).attr('readonly', false);
-  $('select#priority').hide().empty();
 
+  $('select#priority').hide().empty();
   $('select#weight').hide().empty();
+  $('select#other').hide().empty();
 
   $('td#description_label').text( 'Description' );
 };
