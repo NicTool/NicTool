@@ -6,6 +6,7 @@ Revision history for NicToolServer
     * added support for NSEC3, NSEC3PARAM, IPSECKEY, DNAME record types
     * fixed NSEC bitmap ceiling, was sorted by ASCII instead of num value
     * fully qualify SOA mailaddr in BIND exports
+    * add matching TXT record when SPF record created (RFC 4408)
 
 2.18    2013.04.05
 
