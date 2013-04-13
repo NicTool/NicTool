@@ -884,19 +884,19 @@ sub display_edit_record {
     qq[
   </td>
  </tr>
- <tr id=tr_weight class="light_grey_bg">
+ <tr id=weight class="light_grey_bg">
   <td id=weight_label class="right"> Weight:</td>
   <td id=weight class="fat">],
     _build_rr_weight( $q, $zone_record, $modifyperm ), qq[
   </td>
  </tr>
- <tr id="tr_priority" class="light_grey_bg">
+ <tr id="priority" class="light_grey_bg">
   <td id=priority_label class="right"> Priority:</td>
   <td id=priority class="fat">],
     _build_rr_priority( $q, $zone_record, $modifyperm ), qq[
   </td>
  </tr>
- <tr id="tr_other" class="light_grey_bg">
+ <tr id="other" class="light_grey_bg">
   <td id=other_label class="right">Other:</td>
   <td id=other class="fat">],
     _build_rr_other( $q, $zone_record, $modifyperm ), qq[

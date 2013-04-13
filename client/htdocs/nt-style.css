@@ -96,9 +96,9 @@ ul.menu_r li:hover {
   color: white;
 }
 
-tr#tr_weight { display: none; }
-tr#tr_priority { display: none; }
-tr#tr_other { display: none; }
+tr#weight { display: none; }
+tr#priority { display: none; }
+tr#other { display: none; }
 
 a:link    { color: #336666 }
 a:visited { color: #336666 }
