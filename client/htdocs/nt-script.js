@@ -102,10 +102,21 @@ function setFormRRTypeSSHFP() {
   addValuesToSelect(fpTypes, 'priority');
 }
 
+function getDnssecAlgorithms() {
+  return {
+    '1' : 'RSA/MD5',     '2' : 'Diffie-Hellman',
+    '3' : 'DSA/SHA-1',   '4' : 'Elliptic Curve',
+    '5' : 'RSA/SHA-1',
+  };
+};
+
 function setFormRRTypeDNSKEY() {
 
   $('td#address_label').text('Public Key');
 
+  // Flags: this would be a great place to do an AJAX validation call to the
+  // server, and use Net::DNS::SEC to validate this field, and then apply
+  // suitable constraints.
   $('tr#tr_weight').show();
   $('td#weight_label').text('Flag');
 
@@ -118,13 +129,7 @@ function setFormRRTypeDNSKEY() {
   var o = $('input#other');
   if ( o.val() == '' ) o.val('5');
 
-  var algoTypes = {
-    '1' : 'RSA/MD5',
-    '2' : 'Diffie-Hellman',
-    '3' : 'DSA/SHA-1',
-    '4' : 'Elliptic Curve',
-    '5' : 'RSA/SHA-1',
-  };
+  var algoTypes = getDnssecAlgorithms();
   addValuesToSelect(algoTypes, 'other');
 }
 
@@ -149,11 +154,14 @@ function setFormRRTypeDS() {
   $('td#priority_label').text('Algorithm');
   var p = $('input#priority');
   if ( ! p.val() ) p.val('5');  // RSA/SHA1
+  addValuesToSelect( getDnssecAlgorithms(), 'priority');
 
   $('tr#tr_other').show();
   $('td#other_label').text('Digest Type');
   var o = $('input#other');
-  if ( ! o.val() ) o.val('2');  // 1=SHA-1 , 2=SHA-256
+  if ( ! o.val() ) o.val('2');
+  var digestTypes = { '1' : 'SHA-1', '2' : 'SHA-256', };
+  addValuesToSelect( digestTypes, 'other' );
 }
 
 function setFormRRTypeNSEC() {
@@ -165,6 +173,8 @@ function setFormRRTypeNSEC3() {
 function setFormRRTypeNSEC3PARAM() {
 }
 function setFormRRTypeRRSIG() {
+  // var algoTypes = getDnssecAlgorithms();
+  // addValuesToSelect(algoTypes, 'other');
 }
 
 function setFormRRTypeIPSECKEY() {
