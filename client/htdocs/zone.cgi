@@ -17,6 +17,7 @@
 #
 
 use strict;
+#use warnings;
 
 require 'nictoolclient.conf';
 
@@ -806,39 +807,9 @@ sub display_zone_records_table_head {
 sub display_edit_record {
     my ( $nt_obj, $user, $q, $message, $zone, $edit ) = @_;
 
-    my $zone_record = { 'ttl' => $NicToolClient::default_zone_record_ttl };
-    my $action = 'New';
-    my $message2;
+    my ($zone_record, $action, $message2) =
+        _display_edit_record_action( $nt_obj, $q, $zone );
 
-    # is this a Save or Edit operation?
-    if ( $q->param('nt_zone_record_id') && !$q->param('Save') ) {
-
-        if ( $q->param('nt_zone_record_log_id') ) {
-            $action      = 'Recover';
-            $zone_record = $nt_obj->get_zone_record_log_entry(
-                nt_zone_record_id     => $q->param('nt_zone_record_id'),
-                nt_zone_record_log_id => $q->param('nt_zone_record_log_id')
-            );
-        }
-        else {
-            $action      = 'Edit';
-            $zone_record = $nt_obj->get_zone_record(
-                nt_group_id       => $q->param('nt_group_id'),
-                nt_zone_id        => $q->param('nt_zone_id'),
-                nt_zone_record_id => $q->param('nt_zone_record_id')
-            );
-        }
-
-        if ( $zone_record->{'error_code'} != 200 ) {
-            $message2 = $zone_record;
-        }
-        else {
-            $zone_record->{'name'} = $zone->{'zone'} . "."
-                if $zone_record->{'name'} eq "@" && $zone->{'zone'};
-            $zone_record->{'address'} = $zone->{'zone'} . "."
-                if $zone_record->{'address'} eq "@" && $zone->{'zone'};
-        }
-    }
     my $isdelegate = exists $zone_record->{'delegated_by_id'};
     my $pseudo     = $zone_record->{'pseudo'};
 
@@ -899,15 +870,7 @@ sub display_edit_record {
 <table class="fat">
  <tr id=name class="light_grey_bg">
   <td class="right"> Name:</td>
-  <td class="fat">],
-        $modifyperm ? $q->textfield(
-        -name      => 'name',
-        -size      => 40,
-        -maxlength => 127,
-        -default   => $zone_record->{'name'},
-        ) : $zone_record->{'name'},
-        ( $zone_record->{'name'} ne "$zone->{'zone'}." ? "<b>.$zone->{'zone'}.</b>" : ''),
-        qq[
+  <td class="fat">], _build_rr_name( $q, $zone_record, $zone, $modifyperm ), qq[
   </td>
  </tr>
  <tr id=type class="light_grey_bg">
@@ -941,13 +904,7 @@ sub display_edit_record {
  </tr>
  <tr id=ttl class="light_grey_bg">
   <td class="right"> TTL:</td>
-  <td class="fat">], $modifyperm ? $q->textfield(
-        -name      => 'ttl',
-        -size      => 5,
-        -maxlength => 10,
-        -default   => $zone_record->{'ttl'}
-        )
-        : $zone_record->{'ttl'}, qq[
+  <td class="fat">], _build_rr_ttl( $q, $zone_record, $modifyperm), qq[
   </td>
  </tr>
  <tr id=description class="light_grey_bg">
@@ -980,6 +937,65 @@ sub display_edit_record {
 
     print $q->end_form if $modifyperm;
 }
+
+sub _display_edit_record_action {
+    my ($nt_obj, $q, $zone ) = @_;
+
+    my $zone_record = { 'ttl' => $NicToolClient::default_zone_record_ttl };
+
+    # we return the action (New|Save|Edit) and any error result
+
+    return ( $zone_record, 'New', '' ) if ! $q->param('nt_zone_record_id');
+    return ( $zone_record, 'New', '' ) if $q->param('Save');
+
+    # this a Recover or Edit
+
+    my $action;
+    if ( $q->param('nt_zone_record_log_id') ) {
+        $action = 'Recover';
+        $zone_record = $nt_obj->get_zone_record_log_entry(
+            nt_zone_record_id     => $q->param('nt_zone_record_id'),
+            nt_zone_record_log_id => $q->param('nt_zone_record_log_id')
+        );
+    }
+    else {
+        $action = 'Edit';
+        $zone_record = $nt_obj->get_zone_record(
+            nt_group_id       => $q->param('nt_group_id'),
+            nt_zone_id        => $q->param('nt_zone_id'),
+            nt_zone_record_id => $q->param('nt_zone_record_id')
+        );
+    }
+
+    if ( $zone_record->{'error_code'} != 200 ) {
+        return ( $zone_record, $action, $zone_record );
+    };
+
+    $zone_record->{'name'} = $zone->{'zone'} . "."
+        if $zone_record->{'name'} eq "@" && $zone->{'zone'};
+    $zone_record->{'address'} = $zone->{'zone'} . "."
+        if $zone_record->{'address'} eq "@" && $zone->{'zone'};
+
+    return ($zone_record, $action, '');
+};
+
+sub _build_rr_name {
+    my ( $q, $zone_record, $zone, $modifyperm ) = @_;
+
+    my $suffix = '';
+    $suffix = "<strong>.$zone->{'zone'}.</strong>" if $zone_record->{'name'} ne "$zone->{'zone'}.";
+
+    return $zone_record->{'name'} . $suffix if ! $modifyperm;
+
+    return $q->textfield(
+        -id        => 'name',
+        -name      => 'name',
+        -size      => 40,
+        -maxlength => 127,
+        -default   => $zone_record->{'name'},
+    )
+    . $suffix;
+};
 
 sub _build_rr_type_menu {
     my ( $nt_obj, $q, $zone, $zone_record, $default_record_type, $modifyperm ) = @_;
@@ -1054,6 +1070,35 @@ sub _build_rr_address {
         -maxlength => 512,
         -default   => $zone_record->{'address'},
         );
+};
+
+sub _build_rr_ttl {
+    my ( $q, $zone_record, $modifyperm) = @_;
+
+    return $zone_record->{'ttl'} if ! $modifyperm;
+
+    return $q->textfield(
+        -id        => 'ttl',
+        -name      => 'ttl',
+        -size      => 5,
+        -maxlength => 10,
+        -default   => $zone_record->{'ttl'},
+        -onChange  => q[$('select#ttl').val(this.value);],
+        )
+    . q[
+<select id=ttl class='hidden' onChange="$('input#ttl').val(this.value);">
+ <option value=''></option>
+ <option value=60>1 minute</option>
+ <option value=300>5 minutes</option>
+ <option value=3600>1 hour</option>
+ <option value=86400>1 day</option>
+ <option value=604800>1 week</option>
+</select>
+<script>
+if ( $('select#ttl').val() == '' && $('input#ttl').val() != '' )
+    $('select#ttl').val( $('input#ttl').val() );
+</script>
+];
 };
 
 sub _build_rr_weight {
