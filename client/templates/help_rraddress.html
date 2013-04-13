@@ -1,13 +1,13 @@
-Type <B>A</B> Records require that the Address field be an IP address.
-</td></tr>
-<tr><td class="light_grey_bg">
-All other Types (<b>CNAME</b>, <b>MX</B>, <B>NS</B>, <B>PTR</B>) require a domain name in the Address field.
-<p>
-If the domain name is not fully qualified (ending with '.') then it will be 
-automatically qualified by appending the name of the Zone:<p>
+Type <strong>A</strong> and <strong>AAAA</strong> records require that the Address field be an IP address.
+</td></tr><tr><td class="light_grey_bg">
+Types <strong>CNAME, MX, NS</strong>, and <strong>PTR</strong> require a domain name in the Address field. 
+
+<p>If the domain name is not fully qualified (ending with '.'), it will be qualified by appending the Zone name:</p>
+
         'www' =&gt; 'www.myzone.com.'
-</td></tr>
-<tr><td class="light_grey_bg">
+
+</td></tr><tr><td class="light_grey_bg">
+
 Some characters have special meaning and use:
 <table><tr><td class=dark_grey_bg>Character</td><td class="dark_grey_bg center">Meaning</td><td class="dark_grey_bg center">Example</td></tr>
 <tr>

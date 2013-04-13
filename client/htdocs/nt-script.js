@@ -22,6 +22,7 @@ function selectedRRType(rrType) {
       case 'NS':         setFormRRTypeNS();         break;
       case 'MX':         setFormRRTypeMX();         break;
       case 'CNAME':      setFormRRTypeCNAME();      break;
+      case 'DNAME':      setFormRRTypeDNAME();      break;
       case 'SRV':        setFormRRTypeSRV();        break;
       case 'SPF':        setFormRRTypeSPF();        break;
       case 'NAPTR':      setFormRRTypeNAPTR();      break;
@@ -85,6 +86,12 @@ function setFormRRTypeCNAME() {
   $('input#address').attr('placeholder','fqdn.example.com.');
 }
 
+function setFormRRTypeDNAME() {
+  $('input#name').attr('placeholder','subdomain');
+  $('td#address_label').text('Target');
+  $('input#address').attr('placeholder','fqdn.example.com.');
+}
+
 function setFormRRTypeSRV() {
   $('input#name').attr('placeholder','_dns._udp');
   $('input#address').attr('placeholder','ns1.example.com.');
@@ -107,20 +114,29 @@ function setFormRRTypeSPF() {
 function setFormRRTypeNAPTR() {
   $('tr#weight').show();
   $('td#weight_label').text('Order');
+  $('input#weight').attr('placeholder','100');
 
   $('tr#priority').show();
   $('td#priority_label').text('Preference');
+  $('input#priority').attr('placeholder','10');
 
   $('td#address_label').text('Flags, Services, Regexp');
+  $('input#address').attr('placeholder','/urn:cid:.+@([^\\.]+\\.)(.*)$/\\2/i');
+
   $('td#description_label').text('Replacement');
 }
 
 function setFormRRTypeLOC() {
   $('input#name').attr('placeholder','host');
-  $('input#address').attr('placeholder','47 43 47.000 N 122 21 35.000 W 132.00m 100m 100m 2m');
+  $('input#address')
+    .attr('placeholder','47 43 47.000 N 122 21 35.000 W 132.00m 100m 100m 2m')
+    .attr('size', 65);
+  $('td#address_label').text('Location');
 }
 
 function setFormRRTypeSSHFP() {
+
+    $('input#name').attr('placeholder','host');
 
     $('td#address_label').text('Fingerprint');
     $('input#address').attr('placeholder','hint: ssh-keygen -r');
@@ -191,7 +207,7 @@ function setFormRRTypeDS() {
 
 function setFormRRTypeNSEC() {
   $('td#address_label').text('Next Domain Name');
-  $('input#address').attr('placeholder','host.example.com');
+  $('input#address').attr('placeholder','host.example.com.');
 
   $('td#description_label').text('Type Bit Map');
   $('input#description').attr('placeholder','A MX TXT');
