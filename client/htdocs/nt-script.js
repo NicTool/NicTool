@@ -85,33 +85,21 @@ function setFormRRTypeSSHFP() {
     $('tr#tr_weight').show();
     $('td#weight_label').text('Algorithm');
 
-    var algoTypes = { '1' : 'RSA', '2' : 'DSA', '3' : 'ECDSA', };
     var w = $('input#weight');
     if ( w.val() == '' ) w.val('3');
-
     var selWeight = $('select#weight').show();
-    $.each(algoTypes, function(key, value) {
-        selWeight
-        .append($('<option>', { value : key })
-        .text(value));
-    });
-    selWeight.val( w.val() );
 
-// Priority field stores the Fingerprint Type
-    $('tr#tr_priority').show();
-    $('td#priority_label').text('Type');
+    var algoTypes = { '1' : 'RSA', '2' : 'DSA', '3' : 'ECDSA', };
+    addValuesToSelect(algoTypes, 'weight');
 
-    var fpTypes = { '1' : 'SHA-1', '2' : 'SHA-256', };
-    var p = $('input#priority');
-    if ( p.val() == '' ) p.val('2');   // set the default
+  $('tr#tr_priority').show();   // Priority field stores the Fingerprint Type
+  $('td#priority_label').text('Type');
 
-    var selPri = $('select#priority').show();
-    $.each(fpTypes, function(key, value) {
-        selPri
-        .append($('<option>', { value : key })
-        .text(value));
-    });
-    selPri.val( p.val() );
+  var p = $('input#priority');
+  if ( p.val() == '' ) p.val('2');   // set the default
+
+  var fpTypes = { '1' : 'SHA-1', '2' : 'SHA-256', };
+  addValuesToSelect(fpTypes, 'priority');
 }
 
 function setFormRRTypeDNSKEY() {
@@ -125,11 +113,29 @@ function setFormRRTypeDNSKEY() {
   $('td#priority_label').text('Protocol');
   $('input#priority').val('3').attr('readonly', true);
 
-  // 1=RSA/MD5, 2=Diffie-Hellman, 3=DSA/SHA-1, 4=Elliptic Curve, 5=RSA/SHA-1
   $('tr#tr_other').show();
   $('td#other_label').text('Algorithm');
   var o = $('input#other');
   if ( o.val() == '' ) o.val('5');
+
+  var algoTypes = {
+    '1' : 'RSA/MD5',
+    '2' : 'Diffie-Hellman',
+    '3' : 'DSA/SHA-1',
+    '4' : 'Elliptic Curve',
+    '5' : 'RSA/SHA-1',
+  };
+  addValuesToSelect(algoTypes, 'other');
+}
+
+function addValuesToSelect(array,selectName) {
+  var selObj = $('select#'+selectName).show();
+  $.each(array, function(key, value) {
+      selObj
+      .append($('<option>', { value : key })
+      .text(value));
+  });
+  selObj.val( $('input#'+selectName).val() );
 }
 
 function setFormRRTypeDS() {
