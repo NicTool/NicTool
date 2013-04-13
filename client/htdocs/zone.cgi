@@ -993,6 +993,8 @@ sub _build_rr_name {
         -size      => 40,
         -maxlength => 127,
         -default   => $zone_record->{'name'},
+        -required  => 'required',
+#       -pattern   => 'TODO: apply label rules here',
     )
     . $suffix;
 };
@@ -1053,6 +1055,7 @@ sub _build_rr_type_menu {
             -labels  => $type_labels,
             -default => $zone_record->{'type'} || $default_record_type,
             -onChange => "selectedRRType(value);",
+            -required  => 'required',
         ) );
     $q->autoEscape(1);
     return $popup;
@@ -1069,7 +1072,8 @@ sub _build_rr_address {
         -size      => 50,
         -maxlength => 512,
         -default   => $zone_record->{'address'},
-        );
+        -required  => 'required',
+    );
 };
 
 sub _build_rr_ttl {
