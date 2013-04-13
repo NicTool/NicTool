@@ -18,8 +18,7 @@ function selectedRRType(rrType) {
 
     switch (rrType) {
       case 'MX':
-        $('tr#tr_weight').show();
-        break;
+        setFormRRTypeMX();    break;
       case 'SRV':
         setFormRRTypeSRV();    break;
       case 'NAPTR':
@@ -45,33 +44,43 @@ function selectedRRType(rrType) {
 
 function resetZoneRecordFormFields() {
 
-  var rrFields = [ 'address', 'weight', 'priority', 'other' ];
-  for ( var i=0; i < rrFields.length; i++ ) {
-    $('tr#tr_' + rrFields[i] ).hide();
-    $('td#'+rrFields[i] +'_label').text( ucfirst( rrFields[i] ) );
+  var rrOptions = [ 'weight', 'priority', 'other' ];
+  for ( var i=0; i < rrOptions.length; i++ ) {
+    $('tr#' + rrOptions[i] ).hide();         // hide conditional rows
+    $('select#'+rrOptions[i]).hide().empty(); // hide and empty option lists
   };
 
-  $('input#priority' ).attr('readonly', false);
-
-  $('select#priority').hide().empty();
-  $('select#weight').hide().empty();
-  $('select#other').hide().empty();
+  var rrAll = $.merge( rrOptions, ['name','address','description'] );
+  for ( var i=0; i < rrAll.length; i++ ) {
+    $('td#' + rrAll[i] +'_label').text( ucfirst( rrOptions[i] ) );
+    $('input#'+rrAll[i])
+      .attr('placeholder', '')
+      .attr('readonly', false);
+  };
 
   $('td#description_label').text( 'Description' );
+  $('input#address').attr('size', 50);
 };
 
+function setFormRRTypeMX() {
+  $('tr#weight').show();
+  $('input#name').attr('placeholder','@');
+  $('input#address').attr('placeholder','mail.example.com.');
+  $('input#weight').attr('placeholder', '10');
+}
+
 function setFormRRTypeSRV() {
-  $('tr#tr_weight').show();
-  $('tr#tr_priority').show();
-  $('tr#tr_other').show();
+  $('tr#weight').show();
+  $('tr#priority').show();
+  $('tr#other').show();
   $('td#other_label').text('Port');
 }
 
 function setFormRRTypeNAPTR() {
-  $('tr#tr_weight').show();
+  $('tr#weight').show();
   $('td#weight_label').text('Order');
 
-  $('tr#tr_priority').show();
+  $('tr#priority').show();
   $('td#priority_label').text('Preference');
 
   $('td#address_label').text('Flags, Services, Regexp');
@@ -82,99 +91,134 @@ function setFormRRTypeSSHFP() {
 
     $('td#address_label').text('Fingerprint');
 
-    $('tr#tr_weight').show();
+    $('tr#weight').show();
     $('td#weight_label').text('Algorithm');
 
-    var algoTypes = { '1' : 'RSA', '2' : 'DSA', '3' : 'ECDSA', };
     var w = $('input#weight');
     if ( w.val() == '' ) w.val('3');
-
     var selWeight = $('select#weight').show();
-    $.each(algoTypes, function(key, value) {
-        selWeight
-        .append($('<option>', { value : key })
-        .text(value));
-    });
-    selWeight.val( w.val() );
 
-// Priority field stores the Fingerprint Type
-    $('tr#tr_priority').show();
-    $('td#priority_label').text('Type');
+    var algoTypes = { '1' : 'RSA', '2' : 'DSA', '3' : 'ECDSA', };
+    addValuesToSelect(algoTypes, 'weight');
 
-    var fpTypes = { '1' : 'SHA-1', '2' : 'SHA-256', };
-    var p = $('input#priority');
-    if ( p.val() == '' ) p.val('2');   // set the default
+  $('tr#priority').show();   // Priority field stores the Fingerprint Type
+  $('td#priority_label').text('Type');
 
-    var selPri = $('select#priority').show();
-    $.each(fpTypes, function(key, value) {
-        selPri
-        .append($('<option>', { value : key })
-        .text(value));
-    });
-    selPri.val( p.val() );
+  var p = $('input#priority');
+  if ( p.val() == '' ) p.val('2');   // set the default
+
+  var fpTypes = { '1' : 'SHA-1', '2' : 'SHA-256', };
+  addValuesToSelect(fpTypes, 'priority');
 }
 
 function setFormRRTypeDNSKEY() {
 
   $('td#address_label').text('Public Key');
 
-  $('tr#tr_weight').show();
+  // Flags: this would be a great place to do an AJAX validation call to the
+  // server, and use Net::DNS::SEC to validate this field, and then apply
+  // suitable constraints.
+  $('tr#weight').show();
   $('td#weight_label').text('Flag');
 
-  $('tr#tr_priority').show();
+  $('tr#priority').show();
   $('td#priority_label').text('Protocol');
   $('input#priority').val('3').attr('readonly', true);
 
-  // 1=RSA/MD5, 2=Diffie-Hellman, 3=DSA/SHA-1, 4=Elliptic Curve, 5=RSA/SHA-1
-  $('tr#tr_other').show();
+  $('tr#other').show();
   $('td#other_label').text('Algorithm');
   var o = $('input#other');
   if ( o.val() == '' ) o.val('5');
+
+  var algoTypes = getDnssecAlgorithms();
+  addValuesToSelect(algoTypes, 'other');
 }
 
 function setFormRRTypeDS() {
 
   $('td#address_label').text('Digest');
 
-  $('tr#tr_weight').show();
+  $('tr#weight').show();
   $('td#weight_label').text('Key Tag');
 
-  $('tr#tr_priority').show();
+  $('tr#priority').show();
   $('td#priority_label').text('Algorithm');
   var p = $('input#priority');
   if ( ! p.val() ) p.val('5');  // RSA/SHA1
+  addValuesToSelect( getDnssecAlgorithms(), 'priority');
 
-  $('tr#tr_other').show();
+  $('tr#other').show();
   $('td#other_label').text('Digest Type');
   var o = $('input#other');
-  if ( ! o.val() ) o.val('2');  // 1=SHA-1 , 2=SHA-256
+  if ( ! o.val() ) o.val('2');
+  var digestTypes = { '1' : 'SHA-1', '2' : 'SHA-256', };
+  addValuesToSelect( digestTypes, 'other' );
 }
 
 function setFormRRTypeNSEC() {
   $('td#address_label').text('Next Domain Name');
+  $('input#address').attr('placeholder','host.example.com');
+
   $('td#description_label').text('Type Bit Map');
+  $('input#description').attr('placeholder','A MX TXT');
 }
 function setFormRRTypeNSEC3() {
+  $('input#address')
+    .attr('placeholder', '1 1 12 aabbccdd ( 2t7b4g4vsa5smi47k61mv5bv1a22bojr MX DNSKEY NS SOA NSEC3PARAM RRSIG )')
+    .attr('size', 100 );
 }
 function setFormRRTypeNSEC3PARAM() {
+  $('input#address')
+    .attr('placeholder', '1 1 12 aa99ffdd');
 }
 function setFormRRTypeRRSIG() {
+
+/*
+ We don't have enough fields in the RR table to enter the 9 pieces of data separately. Instead, just require them to be in the canonical presentation format, and pack it all into the Address field.
+
+host.example.com. 86400 IN RRSIG A 5 3 86400 20030322173103 (
+                                  20030220173103 2642 example.com.
+                                  oJB1W6WNGv+ldvQ3WDG0MQkg5IEhjRip8WTr
+                                  <snip 3 lines>
+                                  J5D6fwFm8nN+6pBzeDQfsS3Ap3o= )
+*/
+  var iA = $('input#address');
+  iA.attr('size', 100 )    // suggest that we're expecting a very long value
+    .attr('placeholder', 'A 5 3 86400 20030322173103 ( 20030220173103 2642 example.com. oJB1W6...)' );
 }
 
 function setFormRRTypeIPSECKEY() {
   $('td#address_label').text('Gateway');
   $('td#description_label').text( 'Public Key' );
 
-  $('tr#tr_weight').show();
+  $('tr#weight').show();
   $('td#weight_label').text('Precedence');
 
-  $('tr#tr_priority').show();
+  $('tr#priority').show();
   $('td#priority_label').text('Gateway Type');
 
-  $('tr#tr_other').show();
+  $('tr#other').show();
   $('td#other_label').text('Algorithm Type');
 //  var p = $('input#other');
 //  if ( p.val() == '' ) p.val('2');  // 0=none, 1=DSA, 2=RSA
+};
+
+function addValuesToSelect(array,selectName) {
+  var selObj = $('select#'+selectName).show();
+  $.each(array, function(key, value) {
+      selObj
+      .append($('<option>', { value : key })
+      .text(value));
+  });
+  selObj.val( $('input#'+selectName).val() );
+}
+
+function getDnssecAlgorithms() {
+  return {
+    '1' : 'RSA/MD5',     '2' : 'Diffie-Hellman',
+    '3' : 'DSA/SHA-1',   '4' : 'Elliptic Curve',
+    '5' : 'RSA/SHA-1',
+  };
 };
 
 function ucfirst(string) {
