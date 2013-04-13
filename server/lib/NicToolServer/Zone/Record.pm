@@ -1,5 +1,5 @@
 package NicToolServer::Zone::Record;
-# ABSTRACT: manage DNS zone records 
+# ABSTRACT: manage DNS zone records
 
 use strict;
 
@@ -20,6 +20,7 @@ sub new_zone_record {
     $self->exec_query( "UPDATE nt_zone SET serial = ? WHERE nt_zone_id = ?",
         [ $new_serial, $data->{nt_zone_id} ] );
 
+    # build insert query
     my $col_string = 'nt_zone_id';
     my @values = $data->{nt_zone_id};
     foreach my $c ( qw/name ttl description type address weight priority other/ ) {
@@ -35,7 +36,7 @@ sub new_zone_record {
         };
     };
 
-    my $insertid = $self->exec_query( 
+    my $insertid = $self->exec_query(
         "INSERT INTO nt_zone_record($col_string) VALUES(??)", \@values)
             or return {
                 error_code => 600,
@@ -45,12 +46,36 @@ sub new_zone_record {
     $data->{nt_zone_record_id} = $insertid;
     $self->log_zone_record( $data, 'added', undef, $z );
 
+    $self->_add_matching_spf_record( $data, $col_string, \@values );
+
     return {
-        error_code => 200, 
+        error_code => 200,
         error_msg => 'OK',
         nt_zone_record_id => $insertid,
     };
 }
+
+sub _add_matching_spf_record {
+    my ( $self, $data, $col_string, $values ) = @_;
+
+    return if $data->{type} ne 'SPF';  # only try for type SPF
+
+    # see if matching TXT record exists
+    my $zrs = $self->exec_query(
+    "SELECT nt_zone_record_id FROM nt_zone_record
+     WHERE  nt_zone_id=?
+       AND  type_id=16
+       AND  name=?
+       AND address=?",
+       [ $data->{nt_zone_id}, $data->{name}, $data->{address}, ],
+    );
+    return if scalar @$zrs;
+
+    $col_string =~ s/, 99,/, 16,/;  # convert SPF rec type to TXT type
+
+    $self->exec_query(
+        "INSERT INTO nt_zone_record($col_string) VALUES(??)", @$values);
+};
 
 sub edit_zone_record {
     my ( $self, $data ) = @_;
@@ -60,9 +85,9 @@ sub edit_zone_record {
     my $z = $self->find_zone( $data->{nt_zone_id} );
 
     # bump the zone's serial number
-    $self->exec_query( "UPDATE nt_zone SET serial = ? WHERE nt_zone_id = ?", 
+    $self->exec_query( "UPDATE nt_zone SET serial = ? WHERE nt_zone_id = ?",
         [ $self->bump_serial( $data->{nt_zone_id}, $z->{serial} ),
-          $data->{nt_zone_id} 
+          $data->{nt_zone_id}
         ] );
 
     my $prev_data = $self->find_zone_record( $data->{nt_zone_record_id} );
@@ -165,7 +190,7 @@ sub log_zone_record {
         push @values, $data->{$c};
     };
 
-    my $insertid = $self->exec_query( 
+    my $insertid = $self->exec_query(
         "INSERT INTO nt_zone_record_log($col_string) VALUES(??)", \@values);
 
 
@@ -214,7 +239,7 @@ sub get_zone_record {
     $data->{sortby} ||= 'name';
 
     my $sql = "SELECT r.*, t.name AS type
-    FROM nt_zone_record r 
+    FROM nt_zone_record r
       LEFT JOIN resource_record_type t ON r.type_id=t.id
         WHERE r.nt_zone_record_id=?
          ORDER BY r.$data->{sortby}";
@@ -286,7 +311,7 @@ sub get_record_type {
     my $lookup = $data->{type};
 
     if ( ! $self->{record_types} ) {
-        my $sql = "SELECT id,name,description,reverse,forward 
+        my $sql = "SELECT id,name,description,reverse,forward
             FROM resource_record_type WHERE description IS NOT NULL";
         my $types = $self->exec_query($sql);
         foreach my $t ( @$types ) {
@@ -302,7 +327,7 @@ sub get_record_type {
     elsif ( $lookup eq 'ALL' ) {
         return {
             types      => $self->{record_types}{'ALL'},
-            error_code => 200, 
+            error_code => 200,
             error_msg => 'OK',
         };
     };
@@ -316,6 +341,6 @@ __END__
 
 =head1 SYNOPSIS
 
-    
+
 =cut
 
