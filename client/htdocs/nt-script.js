@@ -157,11 +157,19 @@ function setFormRRTypeDS() {
 
 function setFormRRTypeNSEC() {
   $('td#address_label').text('Next Domain Name');
+  $('input#address').attr('placeholder','host.example.com');
+
   $('td#description_label').text('Type Bit Map');
+  $('input#description').attr('placeholder','A MX TXT');
 }
 function setFormRRTypeNSEC3() {
+  $('input#address')
+    .attr('placeholder', '1 1 12 aabbccdd ( 2t7b4g4vsa5smi47k61mv5bv1a22bojr MX DNSKEY NS SOA NSEC3PARAM RRSIG )')
+    .attr('size', 100 );
 }
 function setFormRRTypeNSEC3PARAM() {
+  $('input#address')
+    .attr('placeholder', '1 1 12 aa99ffdd');
 }
 function setFormRRTypeRRSIG() {
 
