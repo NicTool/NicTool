@@ -57,24 +57,29 @@ function resetZoneRecordFormFields() {
 
   $('td#description_label').text( 'Description' );
   $('input#address').attr('size', 50);
+  $('span#rfc_help').html('');
 };
 
 function setFormRRTypeA() {
+  setRfcHelp(['1035']);
   $('input#name').attr('placeholder','host');
   $('input#address').attr('placeholder','192.0.99.5');
 }
 
 function setFormRRTypeAAAA() {
+  setRfcHelp(['3596']);
   $('input#name').attr('placeholder','host');
   $('input#address').attr('placeholder','2001:db8:f00d::2');
 }
 
 function setFormRRTypeNS() {
+  setRfcHelp(['1035']);
   $('input#name').attr('placeholder','subdomain');
   $('input#address').attr('placeholder','ns1.example.com.');
 }
 
 function setFormRRTypeMX() {
+  setRfcHelp(['1035']);
   $('tr#weight').show();
   $('input#name').attr('placeholder','@');
   $('input#address').attr('placeholder','mail.example.com.');
@@ -82,17 +87,20 @@ function setFormRRTypeMX() {
 }
 
 function setFormRRTypeCNAME() {
+  setRfcHelp(['1035']);
   $('input#name').attr('placeholder','host');
   $('input#address').attr('placeholder','fqdn.example.com.');
 }
 
 function setFormRRTypeDNAME() {
+  setRfcHelp(['2672']);
   $('input#name').attr('placeholder','subdomain');
   $('td#address_label').text('Target');
   $('input#address').attr('placeholder','fqdn.example.com.');
 }
 
 function setFormRRTypeSRV() {
+  setRfcHelp(['2782']);
   $('input#name').attr('placeholder','_dns._udp');
   $('input#address').attr('placeholder','ns1.example.com.');
 
@@ -107,11 +115,13 @@ function setFormRRTypeSRV() {
 }
 
 function setFormRRTypeSPF() {
+  setRfcHelp(['4408']);
   $('input#name').attr('placeholder','@');
   $('input#address').attr('placeholder','v=spf1 mx a -all');
 }
 
 function setFormRRTypeNAPTR() {
+  setRfcHelp(['3403']);
   $('tr#weight').show();
   $('td#weight_label').text('Order');
   $('input#weight').attr('placeholder','100');
@@ -127,6 +137,7 @@ function setFormRRTypeNAPTR() {
 }
 
 function setFormRRTypeLOC() {
+  setRfcHelp(['1876']);
   $('input#name').attr('placeholder','host');
   $('input#address')
     .attr('placeholder','47 43 47.000 N 122 21 35.000 W 132.00m 100m 100m 2m')
@@ -135,33 +146,29 @@ function setFormRRTypeLOC() {
 }
 
 function setFormRRTypeSSHFP() {
+  setRfcHelp(['4255']);
 
-    $('input#name').attr('placeholder','host');
+  $('input#name').attr('placeholder','host');
 
-    $('td#address_label').text('Fingerprint');
-    $('input#address').attr('placeholder','hint: ssh-keygen -r');
+  $('td#address_label').text('Fingerprint');
+  $('input#address').attr('placeholder','hint: ssh-keygen -r');
 
-    $('tr#weight').show();
-    $('td#weight_label').text('Algorithm');
-
-    var w = $('input#weight');
-    if ( w.val() == '' ) w.val('3');
-    var selWeight = $('select#weight').show();
-
-    var algoTypes = { '1' : 'RSA', '2' : 'DSA', '3' : 'ECDSA', };
-    addValuesToSelect(algoTypes, 'weight');
+  $('tr#weight').show();
+  $('td#weight_label').text('Algorithm');
+  $('input#weight').attr('placeholder','3');
+  var algoTypes = { '1' : 'RSA', '2' : 'DSA', '3' : 'ECDSA' };
+  addValuesToSelect(algoTypes, 'weight');
+  $('select#weight').show();
 
   $('tr#priority').show();   // Priority field stores the Fingerprint Type
   $('td#priority_label').text('Type');
-
-  var p = $('input#priority');
-  if ( p.val() == '' ) p.val('2');   // set the default
-
-  var fpTypes = { '1' : 'SHA-1', '2' : 'SHA-256', };
-  addValuesToSelect(fpTypes, 'priority');
+  $('input#priority').attr('placeholder','2');
+  addValuesToSelect( { '1' : 'SHA-1', '2' : 'SHA-256', }, 'priority');
+  $('select#priority').show();
 }
 
 function setFormRRTypeDNSKEY() {
+  setRfcHelp(['4034']);
 
   $('td#address_label').text('Public Key');
 
@@ -185,6 +192,7 @@ function setFormRRTypeDNSKEY() {
 }
 
 function setFormRRTypeDS() {
+  setRfcHelp(['4034']);
 
   $('td#address_label').text('Digest');
 
@@ -206,6 +214,7 @@ function setFormRRTypeDS() {
 }
 
 function setFormRRTypeNSEC() {
+  setRfcHelp(['4034']);
   $('td#address_label').text('Next Domain Name');
   $('input#address').attr('placeholder','host.example.com.');
 
@@ -213,15 +222,19 @@ function setFormRRTypeNSEC() {
   $('input#description').attr('placeholder','A MX TXT');
 }
 function setFormRRTypeNSEC3() {
+  setRfcHelp(['5155']);
   $('input#address')
     .attr('placeholder', '1 1 12 aabbccdd ( 2t7b4g4vsa5smi47k61mv5bv1a22bojr MX DNSKEY NS SOA NSEC3PARAM RRSIG )')
     .attr('size', 100 );
 }
 function setFormRRTypeNSEC3PARAM() {
+  setRfcHelp(['5155']);
   $('input#address')
     .attr('placeholder', '1 1 12 aa99ffdd');
 }
+
 function setFormRRTypeRRSIG() {
+  setRfcHelp(['4034']);
 
 /*
  We don't have enough fields in the RR table to enter the 9 pieces of data separately. Instead, just require them to be in the canonical presentation format, and pack it all into the Address field.
@@ -238,6 +251,7 @@ host.example.com. 86400 IN RRSIG A 5 3 86400 20030322173103 (
 }
 
 function setFormRRTypeIPSECKEY() {
+  setRfcHelp(['4025']);
   $('td#address_label').text('Gateway');
   $('td#description_label').text( 'Public Key' );
 
@@ -281,6 +295,14 @@ function ucfirst(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
+function setRfcHelp(rfcList) {
+  for ( var i=0; i < rfcList.length; i++ ) {
+    $('span#rfc_help').html(
+      $('span#rfc_help').html() +
+        ' <a target="_blank" href="https://tools.ietf.org/html/rfc'+rfcList[i]+'">RFC '+rfcList[i]+'</a>'
+    );
+  };
+}
 
 //access types
 function selectAllEdit(pForm, pAction) {

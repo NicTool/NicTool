@@ -822,7 +822,7 @@ sub display_edit_record {
     my $default_record_type = $zone_record->{'type'};
     $default_record_type = 'PTR' if $zone->{'zone'} =~ /(in-addr|ip6)\.arpa/;
 
-    my $rr_type_popup = _build_rr_type_menu( $nt_obj, $q, $zone, $zone_record, $default_record_type, $modifyperm );
+    my $rr_type_popup = _build_rr_type( $nt_obj, $q, $zone, $zone_record, $default_record_type, $modifyperm );
 
     if ($modifyperm) {
         print qq[
@@ -990,7 +990,7 @@ sub _build_rr_name {
     . $suffix;
 };
 
-sub _build_rr_type_menu {
+sub _build_rr_type {
     my ( $nt_obj, $q, $zone, $zone_record, $default_record_type, $modifyperm ) = @_;
 
     my ( $type_values, $type_labels );
@@ -1049,7 +1049,7 @@ sub _build_rr_type_menu {
             -required  => 'required',
         ) );
     $q->autoEscape(1);
-    return $popup;
+    return $popup . q[ <span id=rfc_help></span>];
 };
 
 sub _build_rr_address {
