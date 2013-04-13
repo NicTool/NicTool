@@ -3,6 +3,8 @@
 
   * added NSEC3, NSEC3PARAM, IPSECKEY, DNAME record types
   * added option lists to SSHFP new record form
+  * added placeholder text to most RR types, improving ease of use
+  * added <select>, making it easier to enter correct DNSSEC values
 
 2.18    2013.04.05
 
