@@ -23,11 +23,45 @@ sub new {
 
 sub get_zone {
     my ($self, $fqdn) = @_;
+    chop $fqdn if ( substr($fqdn,-1,1) eq '.' );  # remove trailing dot
     my @bits = split /\./, $fqdn;
     my $host = shift @bits;
     my $zone = join '.', @bits;
     print "h: $host, z: $zone ($fqdn)\n";
     return ($host, $zone);
+};
+
+sub get_zone_id {
+    my ($self, $fqdn) = @_;
+
+    chop $fqdn if '.' eq substr $fqdn, -1, 1;
+
+    my ($host, $zone) = $self->get_zone($fqdn);
+    if ( ! $zone ) {
+        die "unable to work out zone from $fqdn\n";
+    };
+
+    # try host .. example.com
+    my $zone_id = $self->nt_get_zone_id( zone => $zone );
+    if ( $zone_id ) {
+        return ($zone_id, $host);
+    };
+
+    # try going left ( sub.dom .. example.com )
+    my ($host2, $zone2) = $self->get_zone($zone);
+    $zone_id = $self->nt_get_zone_id( zone => $zone2 );
+    if ( $zone_id ) {
+        return ($zone_id, "$host.$host2" );
+    };
+
+
+    # try going right ( example.com )
+    $zone_id = $self->nt_get_zone_id( zone => "$host.$zone" );
+    if ( $zone_id ) {
+        return ($zone_id, "$host.$zone.");
+    };
+
+    die "could not find zone for $fqdn\n";
 };
 
 sub nt_create_zone {
@@ -51,6 +85,7 @@ sub nt_create_zone {
         }
     );
 
+    print "creating zone $p{zone}\n";
     my $nt = $self->nt_connect();
 
     my $group_id = $p{group_id} || $self->group_id
@@ -132,8 +167,7 @@ sub nt_create_record {
 sub nt_get_zone_id {
     my $self = shift;
 
-    my %p = validate(
-        @_,
+    my %p = validate( @_,
         {   'zone'  => { type => SCALAR },
             'fatal' => { type => BOOLEAN, optional => 1, default => 1 },
             'debug' => { type => BOOLEAN, optional => 1, default => 1 },

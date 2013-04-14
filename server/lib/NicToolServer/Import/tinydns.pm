@@ -90,19 +90,7 @@ sub zr_a {
     print "A  : $r\n";
     my ( $fqdn, $ip, $ttl, $timestamp, $location ) = split(':', $r);
 
-    my ($host, $zone) = $self->get_zone($fqdn);
-    if ( ! $zone ) {
-        die "unable to work out zone from $fqdn\n";
-    };
-    my $zone_id = $self->nt_get_zone_id( zone => $zone );
-    if ( ! $zone_id ) {
-        $zone_id = $self->nt_get_zone_id( zone => $fqdn );
-        $host = $fqdn;
-        if ( ! $zone_id ) {
-            warn "skipping, could not find zone: $zone\n";
-            return;
-        };
-    };
+    my ($zone_id, $host) = $self->get_zone_id( $fqdn );
 
     $self->nt_create_record(
         zone_id => $zone_id,
@@ -117,22 +105,10 @@ sub zr_cname {
     my $self = shift;
     my $r = shift or die;
 
-    print "CNA: $r\n";
+    print "CNAME: $r\n";
     my ( $fqdn, $addr, $ttl, $timestamp, $location ) = split(':', $r);
 
-    my ($host, $zone) = $self->get_zone($fqdn);
-    if ( ! $zone ) {
-        die "unable to work out zone from $fqdn\n";
-    };
-    my $zone_id = $self->nt_get_zone_id( zone => $zone );
-    if ( ! $zone_id ) {
-        $zone_id = $self->nt_get_zone_id( zone => $fqdn );
-        $host = $fqdn;
-        if ( ! $zone_id ) {
-            warn "skipping, could not find zone: $zone\n";
-            return;
-        };
-    };
+    my ($zone_id, $host) = $self->get_zone_id( $fqdn );
 
     $self->nt_create_record(
         zone_id => $zone_id,
@@ -150,19 +126,7 @@ sub zr_mx {
     print "MX : $r\n";
     my ( $fqdn, $ip, $addr, $distance, $ttl, $timestamp, $location ) = split(':', $r);
 
-    my ($host, $zone) = $self->get_zone($fqdn);
-    if ( ! $zone ) {
-        die "unable to work out zone from $fqdn\n";
-    };
-    my $zone_id = $self->nt_get_zone_id( zone => $zone );
-    if ( ! $zone_id ) {
-        $zone_id = $self->nt_get_zone_id( zone => $fqdn );
-        $host = $fqdn;
-        if ( ! $zone_id ) {
-            warn "skipping, could not find zone: $zone\n";
-            return;
-        };
-    };
+    my ($zone_id, $host) = $self->get_zone_id( $fqdn );
 
     $self->nt_create_record(
         zone_id => $zone_id,
@@ -181,19 +145,7 @@ sub zr_txt {
     print "TXT: $r\n";
     my ( $fqdn, $addr, $ttl, $timestamp, $location ) = split(':', $r);
 
-    my ($host, $zone) = $self->get_zone($fqdn);
-    if ( ! $zone ) {
-        die "unable to work out zone from $fqdn\n";
-    };
-    my $zone_id = $self->nt_get_zone_id( zone => $zone );
-    if ( ! $zone_id ) {
-        $zone_id = $self->nt_get_zone_id( zone => $fqdn );
-        $host = $fqdn;
-        if ( ! $zone_id ) {
-            warn "skipping, could not find zone: $zone\n";
-            return;
-        };
-    };
+    my ($zone_id, $host) = $self->get_zone_id( $fqdn );
 
     $self->nt_create_record(
         zone_id => $zone_id,
@@ -218,15 +170,8 @@ sub zr_ptr {
 
     print "PTR: $r\n";
     my ( $fqdn, $addr, $ttl, $timestamp, $location ) = split(':', $r);
-    my ($host, $zone) = $self->get_zone($fqdn);
-    if ( ! $zone ) {
-        die "unable to work out zone from $fqdn\n";
-    };
-    my $zone_id = $self->nt_get_zone_id( zone => $zone );
-    if ( ! $zone_id ) {
-        warn "skipping, could not find zone: $zone\n";
-        return;
-    };
+
+    my ($zone_id, $host) = $self->get_zone_id( $fqdn );
 
     $self->nt_create_record(
         zone_id => $zone_id,
@@ -242,15 +187,15 @@ sub zr_soa {
     my $r = shift or die;
 
     print "SOA: $r\n";
-    my ( $zone, $mname, $rname, $serial, $refresh, $retry, $expire, $min, $ttl, $timestamp, $location ) = split(':', $r);
+    my ( $zone, $mname, $rname, $serial, $refresh, $retry, $expire, $min, $ttl, $timestamp, $location )
+        = split(':', $r);
 
     my $zid = $self->nt_get_zone_id( zone => $zone );
     if ( $zid ) {
         print "zid: $zid\n";
         return $zid;
     };
- 
-    print "creating zone $zone\n";
+
     $self->nt_create_zone(
         zone        => $zone,
         description => '',
@@ -265,11 +210,66 @@ sub zr_soa {
 
 sub zr_generic {
     my $self = shift;
-    die "oops, no generic support yet!\n";
     my $r = shift or die;
     print "Generic : $r\n";
-    my ( $fqdn, $ip, $host, $ttl, $timestamp, $location ) = split(':', $r);
+    my ( $fqdn, $n, $rdata, $ttl, $timestamp, $location ) = split(':', $r);
+    return $self->zr_spf( $r ) if $n == 99;
+    return $self->zr_aaaa( $r ) if $n == 28;
+    die "oops, no generic support yet record type $n: $fqdn!\n";
 }
+
+sub zr_spf {
+    my $self = shift;
+    my $r = shift or die;
+    print "SPF : $r\n";
+    my ( $fqdn, $n, $rdata, $ttl, $timestamp, $location ) = split(':', $r);
+
+    my ($zone_id, $host) = $self->get_zone_id( $fqdn );
+
+    $rdata = $self->unescape_octal( $rdata );
+
+    $self->nt_create_record(
+        zone_id => $zone_id,
+        type    => 'SPF',
+        name    => $host,
+        address => $rdata,
+        ttl     => $ttl,
+    );
+}
+
+sub zr_aaaa {
+    my $self = shift;
+    my $r = shift or die;
+    print "AAAA : $r\n";
+    my ( $fqdn, $n, $rdata, $ttl, $timestamp, $location ) = split(':', $r);
+
+    my ($zone_id, $host) = $self->get_zone_id( $fqdn );
+
+    $rdata = $self->unescape_packed_hex( $rdata );
+
+    $self->nt_create_record(
+        zone_id => $zone_id,
+        type    => 'AAAA',
+        name    => $host,
+        address => $rdata,
+        ttl     => $ttl,
+    );
+}
+
+sub unescape_octal {
+    my ($self, $str) = @_;
+    # convert escapes back to ascii
+    $str =~ s/(\\)([0-9]{3})/chr(oct($2))/eg;
+    return $str;
+};
+
+sub unescape_packed_hex {
+    my ($self, $str) = @_;
+    # convert escaped hex back hex chars, like in a AAAA
+    $str =~ s/(\\)([0-9]{3})/sprintf('%02x',oct($2))/eg;
+    $str = join(':', unpack("(a4)*", $str));
+    return $str;
+};
 
 
 1;
