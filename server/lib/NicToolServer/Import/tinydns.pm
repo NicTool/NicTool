@@ -12,6 +12,7 @@ use Data::Dumper;
 use English;
 use File::Copy;
 use Params::Validate qw/ :all /;
+use Time::HiRes;
 use Time::TAI64 qw/ unixtai64 /;
 
 sub get_import_file {
@@ -38,7 +39,7 @@ sub import_records {
         next if $record =~ /^#/;     # comment
         next if $record =~ /^\s+$/;  # blank line
         next if $record =~ /^\-/;       #  IGNORE     =>  - fqdn : ip : ttl:timestamp:lo
-        sleep 1;
+        Time::HiRes::sleep 0.1;  # go slow enough we can read
 
         my $first = substr($record, 0, 1 );
         my $record = substr($record, 1 );
@@ -102,19 +103,8 @@ sub zr_a {
             return;
         };
     };
-    my $recs = $self->nt_get_zone_records(
-        zone_id => $zone_id,
-        name    => $host,
-        type    => 'A',
-        address => $ip,
-    );
-    if ( scalar $recs ) {
-        print "record exists\n"; # . Dumper($recs);
-        return;
-    };
 
-    print "adding record \n";
-    my $rid = $self->nt_create_record(
+    $self->nt_create_record(
         zone_id => $zone_id,
         type    => 'A',
         name    => $host,
@@ -143,18 +133,8 @@ sub zr_cname {
             return;
         };
     };
-    my $recs = $self->nt_get_zone_records(
-        zone_id => $zone_id,
-        name    => $host,
-        type    => 'CNAME',
-    );
-    if ( scalar $recs ) {
-        print "record exists\n"; # . Dumper($recs);
-        return;
-    };
 
-    print "adding record \n";
-    my $rid = $self->nt_create_record(
+    $self->nt_create_record(
         zone_id => $zone_id,
         type    => 'CNAME',
         name    => $host,
@@ -183,19 +163,8 @@ sub zr_mx {
             return;
         };
     };
-    my $recs = $self->nt_get_zone_records(
-        zone_id => $zone_id,
-        type    => 'MX',
-        name    => $host,
-        address => $addr,
-    );
-    if ( scalar $recs ) {
-        print "record exists\n"; # . Dumper($recs);
-        return;
-    };
 
-    print "adding record \n";
-    my $rid = $self->nt_create_record(
+    $self->nt_create_record(
         zone_id => $zone_id,
         type    => 'MX',
         name    => $host,
@@ -225,18 +194,8 @@ sub zr_txt {
             return;
         };
     };
-    my $recs = $self->nt_get_zone_records(
-        zone_id => $zone_id,
-        name    => $host,
-        type    => 'TXT',
-    );
-    if ( scalar $recs ) {
-        print "record exists\n"; # . Dumper($recs);
-        return;
-    };
 
-    print "adding record \n";
-    my $rid = $self->nt_create_record(
+    $self->nt_create_record(
         zone_id => $zone_id,
         type    => 'TXT',
         name    => $host,
@@ -249,8 +208,8 @@ sub zr_ns {
     my $self = shift;
     my $r = shift or die;
 
-    print "NS : $r\n";
-    my ( $fqdn, $ip, $host, $ttl, $timestamp, $location ) = split(':', $r);
+    print "NS : $r\n";  # created automatically in NicTool
+    #my ( $fqdn, $ip, $host, $ttl, $timestamp, $location ) = split(':', $r);
 }
 
 sub zr_ptr {
@@ -268,19 +227,8 @@ sub zr_ptr {
         warn "skipping, could not find zone: $zone\n";
         return;
     };
-    my $recs = $self->nt_get_zone_records(
-        zone_id => $zone_id,
-        name    => $host,
-        type    => 'PTR',
-        address => $addr,
-    );
-    if ( scalar $recs ) {
-        print "record exists\n"; # . Dumper($recs);
-        return;
-    };
 
-    print "adding record \n";
-    my $rid = $self->nt_create_record(
+    $self->nt_create_record(
         zone_id => $zone_id,
         type    => 'PTR',
         name    => $host,
@@ -305,8 +253,6 @@ sub zr_soa {
     print "creating zone $zone\n";
     $self->nt_create_zone(
         zone        => $zone,
-        group_id    => 238,   # TODO: make this a CLI option
-        nameservers => [ 3,4,5 ],
         description => '',
         contact     => $rname,
         ttl         => $ttl,

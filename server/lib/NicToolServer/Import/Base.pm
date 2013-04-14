@@ -14,7 +14,10 @@ use Params::Validate qw/ :all /;
 
 sub new {
     my $class = shift;
-    my $self = bless {}, $class;
+    my $self = bless {
+            group_id    => undef,
+            nameservers => undef,
+        }, $class;
     return $self;
 };
 
@@ -30,10 +33,9 @@ sub get_zone {
 sub nt_create_zone {
     my $self = shift;
 
-    my %p = validate(
-        @_,
-        {   'zone'     => { type => SCALAR },
-            'group_id' => { type => SCALAR, optional => 1, default => 1 },
+    my %p = validate( @_, {
+            'zone'     => { type => SCALAR },
+            'group_id' => { type => SCALAR, optional => 1 },
             'description' => { type => SCALAR },
             'contact' => { type => SCALAR, optional => 1 },
             'ttl'     => { type => SCALAR, optional => 1, default => 86400 },
@@ -41,8 +43,7 @@ sub nt_create_zone {
             'retry'   => { type => SCALAR, optional => 1, default => 2048 },
             'expire' => { type => SCALAR, optional => 1, default => 1048576 },
             'minimum' => { type => SCALAR, optional => 1, default => 2560 },
-            'nameservers' =>
-                { type => ARRAYREF, optional => 1, default => [ 3, 4 ] },
+            'nameservers' => { type => ARRAYREF, optional => 1 },
             'template' => { type => SCALAR, optional => 1, },
             'ip'       => { type => SCALAR, optional => 1, },
             'mailip'   => { type => SCALAR, optional => 1, },
@@ -52,13 +53,16 @@ sub nt_create_zone {
 
     my $nt = $self->nt_connect();
 
-    my $nameservers = $p{nameservers};
+    my $group_id = $p{group_id} || $self->group_id
+        or die "group ID not set!\n";
+    my $nameservers = $p{nameservers} || $self->nameservers 
+        or die "nameservers unset!\n";
     $nameservers = join( ',', @{$nameservers} );
 
     my $r = $nt->new_zone(
         nt_zone_id  => undef,
-        nt_group_id => $p{group_id},
-        zone        => $p{zone},
+        nt_group_id => $group_id,
+        zone        => lc $p{zone},
         ttl         => $p{ttl},
         serial      => undef,
         description => $p{description},
@@ -76,7 +80,7 @@ sub nt_create_zone {
     }
 
     my $zone_id = $r->{store}{nt_zone_id};
-    warn "created zone $p{zone} ( $zone_id ) ";
+    warn "created zone $p{zone} ( $zone_id )\n";
     return $zone_id;
 };
 
@@ -99,10 +103,12 @@ sub nt_create_record {
 
     my %request = (
         nt_zone_id => $p{zone_id},
-        name       => $p{name},
-        address    => $p{address},
+        name       => lc $p{name},
+        address    => lc $p{address},
         type       => $p{type},
     );
+
+    $self->record_exists( \%request ) and return;
 
     $request{ttl}         = $p{ttl}         if $p{ttl};
     $request{weight}      = $p{weight}      if defined $p{weight};
@@ -110,9 +116,9 @@ sub nt_create_record {
     $request{other}       = $p{other}       if defined $p{other};
     $request{description} = $p{description} if $p{description};
 
-    # create it
+    print "adding record \n";
     my $nt = $self->nt_connect();
-    my $r = $nt->new_zone_record(%request);
+    my $r = $nt->new_zone_record(%request);  # submit to NicToolServer
 
     if ( $r->{store}{error_code} != 200 ) {
         warn "$r->{store}{error_desc} ( $r->{store}{error_msg} )";
@@ -165,8 +171,7 @@ sub nt_get_zone_id {
 sub nt_get_zone_records {
     my $self = shift;
 
-    my %p = validate(
-        @_,
+    my %p = validate( @_,
         {   'zone_id' => { type => SCALAR },
             'name'    => { type => SCALAR, optional => 1 },
             'type'    => { type => SCALAR, optional => 1 },
@@ -273,6 +278,38 @@ sub fully_qualify {
     my ($self, $host) = @_;
     return $host if substr($host, -1, 1) eq '.';
     return "$host.";
+};
+
+sub record_exists {
+    my ($self, $record) = @_;
+
+    my $recs = $self->nt_get_zone_records(
+        zone_id => $record->{nt_zone_id},
+        name    => $record->{name},
+        type    => $record->{type},
+        address => $record->{address},
+    );
+    if ( scalar $recs ) {
+        print "record exists\n"; # . Dumper($recs);
+        return 1;
+    };
+    return 0;
+};
+
+sub nameservers {
+    my ($self, $ns) = @_;
+    return $self->{nameservers} if ! $ns;
+    foreach my $nsid ( @$ns ) {
+    };
+    $self->{nameservers} = $ns;
+    return $ns;
+};
+
+sub group_id {
+    my ($self, $gid) = @_;
+    return $self->{group_id} if ! $gid;
+    $self->{group_id} = $gid;
+    return $gid;
 };
 
 1;
