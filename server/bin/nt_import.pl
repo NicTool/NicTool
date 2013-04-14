@@ -12,7 +12,7 @@ use Getopt::Long;
 use Params::Validate qw/:all/;
 $Data::Dumper::Sortkeys=1;
 
-use NicToolServer::Import::tinydns;
+use NicToolServer::Import::Base;
 
 # process command line options
 Getopt::Long::GetOptions(
@@ -23,15 +23,15 @@ Getopt::Long::GetOptions(
     'nameservers=s'=>\my $nameservers,
     'user=s'    => \my $nt_user,
     'pass=s'    => \my $nt_pass,
+    'type=s'    => \my $type,
     'verbose'   => \my $verbose,
 ) or die "error parsing command line options";
 
 $nt_user ||= ask( "nicool user" ) if ! $nt_user;
 $nt_pass ||= ask( "nictool pass", password => 1 ) if ! $nt_pass;
 
-my $nti = NicToolServer::Import::tinydns->new(
-    debug => $verbose || 0,
-    );
+my $nti;
+$type ||= get_type(); load_type($type);
 my $nt = $nti->nt_connect($nt_host, $nt_port, $nt_user, $nt_pass);
 
 $group_id ||= $nt->result->{store}{nt_group_id} || die "unable to get group ID\n";
@@ -41,11 +41,31 @@ $nti->nameservers( [ split /,/, $nameservers ] );
 
 my $fn = $nti->get_import_file( $filename ) 
     or die "unable to find import file. Specify with -file option";
-print "file: $filename, $fn\n";
+print "file: $filename\n";
 
 $nti->import_records();
 
 exit 0;
+
+sub load_type {
+    my $type = shift;
+    print "loading type: $type\n";
+    if ( $type =~ /bind/i ) {
+        require NicToolServer::Import::BIND;
+        $nti = NicToolServer::Import::BIND->new( debug => $verbose || 0 );
+        return;
+    }
+    elsif ( $type =~ /tinydns/i ) {
+        require NicToolServer::Import::tinydns;
+        $nti = NicToolServer::Import::tinydns->new( debug => $verbose || 0 );
+        return;
+    };
+    die "unknown type: $type\n";
+};
+
+sub get_type {
+    return ask("are you importing from tinydns or BIND?", default=>'BIND');
+};
 
 sub ask {
     my $question = shift;

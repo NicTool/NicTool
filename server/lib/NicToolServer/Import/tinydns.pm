@@ -39,7 +39,7 @@ sub import_records {
         next if $record =~ /^#/;     # comment
         next if $record =~ /^\s+$/;  # blank line
         next if $record =~ /^\-/;       #  IGNORE     =>  - fqdn : ip : ttl:timestamp:lo
-        Time::HiRes::sleep 0.1;  # go slow enough we can read
+        Time::HiRes::sleep 0.2;  # go slow enough we can read
 
         my $first = substr($record, 0, 1 );
         my $record = substr($record, 1 );

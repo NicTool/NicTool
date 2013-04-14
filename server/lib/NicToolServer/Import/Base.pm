@@ -15,6 +15,8 @@ use Params::Validate qw/ :all /;
 sub new {
     my $class = shift;
     my $self = bless {
+            nt_user     => undef,
+            nt_pass     => undef,
             group_id    => undef,
             nameservers => undef,
         }, $class;
@@ -27,7 +29,7 @@ sub get_zone {
     my @bits = split /\./, $fqdn;
     my $host = shift @bits;
     my $zone = join '.', @bits;
-    print "h: $host, z: $zone ($fqdn)\n";
+    #print "h: $host, z: $zone ($fqdn)\n";
     return ($host, $zone);
 };
 
@@ -35,14 +37,21 @@ sub get_zone_id {
     my ($self, $fqdn) = @_;
 
     chop $fqdn if '.' eq substr $fqdn, -1, 1;
+    $fqdn = lc $fqdn;
 
-    my ($host, $zone) = $self->get_zone($fqdn);
+    # try going right:  host.example.com,  most specific first
+    my $zone_id = $self->nt_get_zone_id( zone => $fqdn );
+    if ( $zone_id ) {
+        return ($zone_id, "$fqdn.");
+    };
+
+    my ($host, $zone) = $self->get_zone( lc $fqdn);
     if ( ! $zone ) {
         die "unable to work out zone from $fqdn\n";
     };
 
-    # try host .. example.com
-    my $zone_id = $self->nt_get_zone_id( zone => $zone );
+    # try:  host .. example.com
+    $zone_id = $self->nt_get_zone_id( zone => $zone );
     if ( $zone_id ) {
         return ($zone_id, $host);
     };
@@ -54,11 +63,11 @@ sub get_zone_id {
         return ($zone_id, "$host.$host2" );
     };
 
-
-    # try going right ( example.com )
-    $zone_id = $self->nt_get_zone_id( zone => "$host.$zone" );
+    # try more left ( sub.sub.dom .. example.com )
+    my ($host3, $zone3) = $self->get_zone($zone2);
+    $zone_id = $self->nt_get_zone_id( zone => $zone3 );
     if ( $zone_id ) {
-        return ($zone_id, "$host.$zone.");
+        return ($zone_id, "$host.$host2.$host3" );
     };
 
     die "could not find zone for $fqdn\n";
@@ -156,8 +165,7 @@ sub nt_create_record {
     my $r = $nt->new_zone_record(%request);  # submit to NicToolServer
 
     if ( $r->{store}{error_code} != 200 ) {
-        warn "$r->{store}{error_desc} ( $r->{store}{error_msg} )";
-        return;
+        die "$r->{store}{error_desc} ( $r->{store}{error_msg} )";
     }
 
     my $record_id = $r->{store}{nt_zone_record_id} || 1;
@@ -283,6 +291,10 @@ sub nt_connect {
     my ($nt_host, $nt_port, $nt_user, $nt_pass) = @_;
 
     return $self->{nt} if $self->{nt};
+
+    $nt_user ||= $self->{nt_user};
+    $nt_pass ||= $self->{nt_pass};
+    die "no credentials!\n" if ! $nt_pass;
 
     eval { require NicTool; };
 
