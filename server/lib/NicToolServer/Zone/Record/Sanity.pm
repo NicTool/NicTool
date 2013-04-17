@@ -534,7 +534,9 @@ sub _valid_naptr {
 sub get_invalid_chars {
     my ( $self, $type, $field, $zone_text ) = @_;
 
-    # valid domain label characters are defined in RFC 1035. The strict match
+    # valid domain label characters are defined in RFC 1035. Valid hostnames
+    # are defined in RFC 952 and RFC 1123
+    # (allow hostnames to start with a digit). The strict match
     # is the fall-through (last) return. The exceptions precede it. These
     # regexp strings match all characters except those in their definition.
 
@@ -543,10 +545,15 @@ sub get_invalid_chars {
     return '[^a-fA-F0-9:]' if $type eq 'AAAA' && $field eq 'address';
     return '[^0-9\.]'      if $type eq 'A'    && $field eq 'address';
 
-    # allow _ char for SRV name
-    return '[^a-zA-Z0-9\-\._]' if $type eq 'SRV' && $field eq 'name';
-    # allow _ char for TXT name (DKIM: RFC 6376)
-    return '[^a-zA-Z0-9\-\._]' if $type eq 'TXT' && $field eq 'name';
+    if ( $field eq 'name' ) {
+        # allow _ char for SRV, NS (delegated SRV), & TXT (DKIM, DMARC)
+        return '[^a-zA-Z0-9\-\._]' if $type =~ /^(?:SRV|TXT|NS)$/;
+
+        # DNS & BIND, 4.5: Names that are not host names can consist of any
+        # printable ASCII character. I feel like this is providing enough rope
+        # for users to hang themselves. The code is here, but disabled.
+        #return '[^ -~]' if $type !~ /^(?:A|AAAA|MX|LOC|SPF|SSHFP)$/;
+    };
 
     # allow / in reverse zones, for both name & address: RFC 2317
     return '[^a-zA-Z0-9\-\.\/]' if $zone_text =~ /(in-addr|ip6)\.arpa[\.]{0,1}$/i;
