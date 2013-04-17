@@ -1345,84 +1345,34 @@ sub zone_record_template {
     #       mail             IN     A      xx.xxx.xx.xx
     #       www.zone.com.    IN     CNAME  zone.com.
 
-    my %record1 = (
-        nt_zone_id => $id,
-        name       => "$zone.",
-        type       => "A",
-        address    => $newip
-    );
-    my %record2 = (
-        nt_zone_id => $id,
-        name       => "mail",
-        type       => "A",
-        address    => $mailip
-    );
-    my %record3 = (
-        nt_zone_id => $id,
-        name       => "www",
-        type       => "CNAME",
-        address    => "$zone."
-    );
-    my %record4 = (
-        nt_zone_id => $id,
-        name       => "$zone.",
-        type       => "MX",
-        address    => "mail.$zone.",
-        weight     => "10"
-    );
+    my %idh   = ( nt_zone_id => $id );
+    my %spf   = ( address => "v=spf1 a mx -all" );
+    my %mx    = ( address => "mail.$zone.", weight => '10' );
+    my %dmarc = ( address => "v=DMARC1; p=none; rua=mailto: postmaster\@$zone; ruf=mailto: postmaster\@$zone.com;" );
+
+    my %record1 = ( %idh, name => "$zone.", type => 'A', address => $newip );
+    my %record2 = ( %idh, name => "mail",   type => 'A', address => $mailip);
+    my %record3 = ( %idh, name => "www",  type=>'CNAME', address => "$zone.");
+    my %record4 = ( %idh, name => "$zone.", type => 'MX', %mx );
     my @zr = ( \%record1, \%record2, \%record3, \%record4 );
 
     if ( $template eq "wildcard" ) {
-
-        #          template Basic with hostname wildcard
-        #       zone.com.        IN     A      NN.NNN.NN.NN
-        #       zone.com.        IN  10 MX     mail.zone.com.
-        #       mail             IN     A      NN.NNN.NN.NN
-        #       *.zone.com.      IN     CNAME  zone.com.
-        #
-        %record3 = (
-            nt_zone_id => $id,
-            name       => "*",
-            type       => "CNAME",
-            address    => "$zone."
-        );
-        @zr = ( \%record1, \%record2, \%record3, \%record4 );
+        %record3 = ( %idh, name => '*', type => "CNAME", address => "$zone.");
+        return ( \%record1, \%record2, \%record3, \%record4 );
     }
-    elsif ( $template eq "basic-spf" ) {
-        my %record5 = (
-            nt_zone_id => $id,
-            name       => "$zone.",
-            type       => "TXT",
-            address    => "v=spf1 a mx -all"
-        );
-        my %record6 = (
-            nt_zone_id => $id,
-            name       => "$zone.",
-            type       => "SPF",
-            address    => "v=spf1 a mx -all"
-        );
-        @zr = ( \%record1, \%record2, \%record3, \%record4, \%record5, \%record6 );
+    if ( $template eq "basic-spf" ) {
+        return ( \%record1, \%record2, \%record3, \%record4,
+                { %idh, name => "$zone.", type => 'TXT', %spf },
+                { %idh, name => "$zone.", type => 'SPF', %spf },
+                { %idh, name => "_dmarc", type => 'TXT', %dmarc },
+            );
     }
-    elsif ( $template eq "wildcard-spf" ) {
-        %record3 = (
-            nt_zone_id => $id,
-            name       => "*",
-            type       => "CNAME",
-            address    => "$zone."
-        );
-        my %record5 = (
-            nt_zone_id => $id,
-            name       => "$zone.",
-            type       => "TXT",
-            address    => "v=spf1 a mx -all"
-        );
-        my %record6 = (
-            nt_zone_id => $id,
-            name       => "$zone.",
-            type       => "SPF",
-            address    => "v=spf1 a mx -all"
-        );
-        @zr = ( \%record1, \%record2, \%record3, \%record4, \%record5, \%record6 );
+    if ( $template eq "wildcard-spf" ) {
+        %record3 = ( %idh, name => '*', type => "CNAME", address => "$zone.");
+        return ( \%record1, \%record2, \%record3, \%record4,
+                { %idh, name => "$zone.", type => 'TXT', %spf },
+                { %idh, name => "$zone.", type => 'SPF', %spf },
+            );
     }
 
     return \@zr;
