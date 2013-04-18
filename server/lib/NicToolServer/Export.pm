@@ -493,16 +493,24 @@ sub get_log_id {
 
 sub get_modified_zones_count {
     my $self = shift;
-    my %p = validate( @_, { since => { type => SCALAR | UNDEF, optional => 1 }, } );
+    my %p = validate( @_, {
+            since   => { type => SCALAR | UNDEF, optional => 1 },
+            deleted => { type => BOOLEAN, optional => 1 },
+        } );
 
-    my $sql = "SELECT COUNT(*) AS count FROM nt_zone z WHERE z.deleted=0";
     my @args;
+    my $sql = "SELECT COUNT(*) AS count FROM nt_zone z WHERE 1=1";
 
     if ( defined $self->{ns_id} && $self->{ns_id} != 0 ) {
         $sql = "SELECT COUNT(*) AS count FROM nt_zone_nameserver zn
         LEFT JOIN nt_zone z ON zn.nt_zone_id=z.nt_zone_id
-        WHERE z.deleted=0 AND zn.nt_nameserver_id=? ";
-        @args = $self->{ns_id};
+        WHERE zn.nt_nameserver_id=?";
+        push @args, $self->{ns_id};
+    };
+
+    if ( defined $p{deleted} ) {
+        $sql .= " AND z.deleted=?";
+        push @args, $p{deleted};
     };
 
     if ( defined $p{since} ) {
@@ -613,7 +621,7 @@ sub preflight {
 
     return 1 if $self->export_required == 0; # already called
 
-    my $total_zones = $self->get_modified_zones_count();
+    my $total_zones = $self->get_modified_zones_count(deleted=>0);
     $self->elog( "nsid $self->{ns_id} has $total_zones zones",sc=>1);
 
     $self->get_log_id;
