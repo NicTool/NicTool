@@ -51,13 +51,44 @@ sub update_named_include {
 
 sub update_named_include_incremental {
     my ($self, $dir) = @_;
-    my $datadir = $self->{nte}->get_export_data_dir || $dir;
 
 # check that the zone that was modified since our last export is in the
 # include file, else append it.
 #
 # there's likely to be more lines in the include file than zones to append
 # build a lookup table of changed zones and pass through the file once
+    my $to_append = $self->get_changed_zones( $dir );
+
+    my $fh = IO::File->new("$dir/named.conf.nictool", '<') or do {
+            warn "unable to read $dir/named.conf.nictool\n";
+            return;
+        };
+
+    while ( my $line = <$fh> ) {
+        my $match = join('', (split( /\"/, $line, 3))[0,1] );
+        if ( $to_append->{$match} ) {
+            delete $to_append->{$match};  # already exists
+        };
+    };
+    close $fh;
+
+    return 1 if ( 0 == scalar keys %$to_append );
+
+    $fh = IO::File->new("$dir/named.conf.nictool", '>>') or do {
+            warn "unable to append $dir/named.conf.nictool\n";
+            return;
+        };
+
+    foreach my $key ( keys %$to_append ) {
+        print $fh, $to_append->{$key};
+    };
+    close $fh;
+    return 1;
+};
+
+sub get_changed_zones {
+    my ($self, $dir) = @_;
+    my $datadir = $self->{nte}->get_export_data_dir || $dir;
     my %to_append;
     foreach my $zone ( @{$self->{zone_list}} ) {
         my $match = "zone $zone";
@@ -69,32 +100,7 @@ sub update_named_include_incremental {
         };
         $to_append{$match} = qq[zone "$zone"\t IN { type master; file "$datadir/$zone"; };\n];
     };
-
-    my $fh = IO::File->new("$dir/named.conf.nictool", '<') or do {
-            warn "unable to read $dir/named.conf.nictool\n";
-            return;
-        };
-
-    while ( my $line = <$fh> ) {
-        my $match = join('', (split( /\"/, $line, 3))[0,1] );
-        if ( $to_append{$match} ) {
-            delete $to_append{$match};  # already exists
-        };
-    };
-    close $fh;
-
-    return 1 if ( 0 == scalar keys %to_append );
-
-    $fh = IO::File->new("$dir/named.conf.nictool", '>>') or do {
-            warn "unable to append $dir/named.conf.nictool\n";
-            return;
-        };
-
-    foreach my $key ( keys %to_append ) {
-        print $fh, $to_append{$key};
-    };
-    close $fh;
-    return 1;
+    return \%to_append;
 };
 
 sub get_template {
