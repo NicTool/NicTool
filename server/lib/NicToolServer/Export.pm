@@ -392,6 +392,7 @@ sub get_ns_zones {
     my %p = validate( @_,
         { last_modified => { type => SCALAR, optional => 1 },
           query_result  => { type => BOOLEAN, optional => 1 },
+          deleted       => { type => BOOLEAN, optional => 1, default=>0 },
         },
     );
 
@@ -401,14 +402,14 @@ sub get_ns_zones {
     WHERE n.nt_zone_id=z.nt_zone_id) AS nsids
      FROM nt_zone z";
 
-    my @args;
+    my @args = $p{deleted};
     if ( $self->{ns_id} == 0 ) {    # all zones, regardless of NS pref
-        $sql .= " WHERE z.deleted=0";
+        $sql .= " WHERE z.deleted=?";
     }
     else {
         $sql .= "
   LEFT JOIN nt_zone_nameserver n ON z.nt_zone_id=n.nt_zone_id
-    WHERE n.nt_nameserver_id=? AND z.deleted=0";
+    WHERE z.deleted=? AND n.nt_nameserver_id=?";
         push @args, $self->{ns_id};
     }
 
