@@ -1,3 +1,4 @@
 .cshrc
+.travis.yml
 client/bin/do_build_test.sh
 server/bin/do_build_test.sh
