@@ -57,50 +57,54 @@ sub update_named_include_incremental {
 #
 # there's likely to be more lines in the include file than zones to append
 # build a lookup table of changed zones and pass through the file once
-    my $to_append = $self->get_changed_zones( $dir );
+    my $to_add = $self->get_changed_zones( $dir );
+    my $to_del = $self->get_deleted_zones( $dir );
+    my $file   = "$dir/named.conf.nictool";
 
-    my $fh = IO::File->new("$dir/named.conf.nictool", '<') or do {
-            warn "unable to read $dir/named.conf.nictool\n";
+    my $in = IO::File->new($file, '<') or do {
+            warn "unable to read $file\n";
             return;
         };
 
-    while ( my $line = <$fh> ) {
-        my $match = join('', (split( /\"/, $line, 3))[0,1] );
-        if ( $to_append->{$match} ) {
-            delete $to_append->{$match};  # already exists
-        };
-    };
-    close $fh;
-
-    return 1 if ( 0 == scalar keys %$to_append );
-
-    $fh = IO::File->new("$dir/named.conf.nictool", '>>') or do {
-            warn "unable to append $dir/named.conf.nictool\n";
+    my $out = IO::File->new("$file.tmp", '>') or do {
+            warn "unable to append $file.tmp\n";
             return;
         };
 
-    foreach my $key ( keys %$to_append ) {
-        print $fh, $to_append->{$key};
+# zone "simerson.net"  IN { type master; file "/etc/namedb/nictool/simerson.net"; };
+    while ( my $line = <$in> ) {
+        my $zone = (split( /\"/, $line, 3))[1];
+        if ( $to_add->{$zone} ) {
+            delete $to_add->{$zone};   # exists, remove from add list
+        };
+        if ( ! $to_del->{$zone} ) {
+            print $out, $line;
+        };
     };
-    close $fh;
+    close $in;
+
+    foreach my $key ( keys %$to_add ) {
+        print $out, $to_add->{$key};
+    };
+    close $out;
+    unlink $file;
+    File::Copy::move("$file.tmp", $file);
     return 1;
 };
 
 sub get_changed_zones {
     my ($self, $dir) = @_;
     my $datadir = $self->{nte}->get_export_data_dir || $dir;
-    my %to_append;
+    my %has_changes;
     foreach my $zone ( @{$self->{zone_list}} ) {
-        my $match = "zone $zone";
-
         my $tmpl = $self->get_template($dir, $zone);
         if ( $tmpl ) {
-            $to_append{$match} = $tmpl;
+            $has_changes{$zone} = $tmpl;
             next;
         };
-        $to_append{$match} = qq[zone "$zone"\t IN { type master; file "$datadir/$zone"; };\n];
+        $has_changes{$zone} = qq[zone "$zone"\t IN { type master; file "$datadir/$zone"; };\n];
     };
-    return \%to_append;
+    return \%has_changes;
 };
 
 sub get_template {
@@ -129,10 +133,22 @@ sub get_template {
     return join('', @lines); # stringify the array
 }
 
+sub get_deleted_zones {
+    my ($self, $dir) = @_;
+
+    my %deletes;
+    foreach my $zone ( @{ $self->{nte}->get_ns_zones( deleted => 1) } ) {
+        next if ! -f "$dir/$zone";
+        $deletes{$zone} = 1;
+        my $file = "$dir/$zone";
+        print "unlink $file\n";
+        unlink $file;
+    };
+    return \%deletes;
+};
+
 sub compile {
     my $self = shift;
-
-    my $dir = $self->{nte}{export_dir};
 
     $self->{nte}->set_status("compile");
     my $before = time;
@@ -169,8 +185,6 @@ sub restart {
 
 sub rsync {
     my $self = shift;
-
-    my $dir = $self->{nte}{export_dir};
 
     return 1 if ! defined $self->{nte}{ns_ref}{address};  # no rsync
 
@@ -219,7 +233,7 @@ compile: $exportdir/named.conf.nictool
 \ttest 1
 
 remote: $exportdir/named.conf.nictool
-\t#rsync -az $exportdir/ bind\@$address:$datadir/
+\t#rsync -az --delete $exportdir/ bind\@$address:$datadir/
 \ttest 1
 
 restart: $exportdir/named.conf.nictool
@@ -237,7 +251,7 @@ restart: $exportdir/named.conf.nictool
 #\tnsdc rebuild
 #
 #remote: /var/db/nsd/nsd.db
-#\trsync -az /var/db/nsd/nsd.db nsd\@$address:/var/db/nsd/
+#\trsync -az --delete /var/db/nsd/nsd.db nsd\@$address:/var/db/nsd/
 #
 #restart: nsd.db
 #\tssh nsd\@$address nsdc reload
@@ -250,7 +264,7 @@ restart: $exportdir/named.conf.nictool
 #\ttest 1
 #
 #remote: $exportdir/named.conf.nictool
-#\trsync -az $exportdir/ powerdns\@$address:$datadir/
+#\trsync -az --delete $exportdir/ powerdns\@$address:$datadir/
 #
 #restart: $exportdir/named.conf.nictool
 #\tssh powerdns\@$address pdns_control cycle
