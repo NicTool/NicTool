@@ -16,7 +16,7 @@ sub new {
     },
     $class;
 
-    warn "oops, a NicToolServer::Export object wasn't provided!" 
+    warn "oops, a NicToolServer::Export object wasn't provided!"
         if ! $self->{nte};
     return $self;
 }
@@ -38,7 +38,7 @@ sub get_records {
     my $self = shift;
     my $zone_id = shift;
 
-    my $sql = "SELECT r.name, r.ttl, r.description, t.name AS type, r.address, r.weight, 
+    my $sql = "SELECT r.name, r.ttl, r.description, t.name AS type, r.address, r.weight,
     priority, other, location, UNIX_TIMESTAMP(timestamp) AS timestamp
         FROM nt_zone_record r
         LEFT JOIN resource_record_type t ON t.id=r.type_id
@@ -50,6 +50,7 @@ sub get_records {
 sub export_db {
     my ($self) = @_;
 
+    # for incremental, get_ns_zones returns only changed zones.
     foreach my $z ( @{ $self->{nte}->get_ns_zones() } ) {
         push @{$self->{zone_list}}, $z->{zone};
         my $fh = $self->get_export_file( $z->{zone} );
@@ -65,8 +66,20 @@ sub export_db {
             $r->{location}  ||= '';
             $fh->print($self->$method($r));
         }
-        close $fh;
-    }   
+        $fh->close;
+    }
+    my $dir = $self->{nte}->get_export_dir or die "missing export dir!\n";
+    foreach my $z ( @{ $self->{nte}->get_ns_zones( deleted => 1) } ) {
+        my $zone = $z->{zone};
+        my $file = "$dir/$zone";
+        if ( unlink $file ) {
+            $self->{nte}->elog("deleted $zone");
+        }
+        else {
+            $self->{nte}->elog("error deleting $file: $!");
+        };
+        $self->{nte}{zones_deleted}{$zone} = 1;
+    };
     return 1;
 }
 

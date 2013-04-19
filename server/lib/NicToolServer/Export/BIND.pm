@@ -58,7 +58,6 @@ sub update_named_include_incremental {
 # there's likely to be more lines in the include file than zones to append
 # build a lookup table of changed zones and pass through the file once
     my $to_add = $self->get_changed_zones( $dir );
-    my $to_del = $self->get_deleted_zones( $dir );
     my $file   = "$dir/named.conf.nictool";
 
     my $in = IO::File->new($file, '<') or do {
@@ -77,16 +76,16 @@ sub update_named_include_incremental {
         if ( $to_add->{$zone} ) {
             delete $to_add->{$zone};   # exists, remove from add list
         };
-        if ( ! $to_del->{$zone} ) {
-            print $out, $line;
+        if ( ! $self->{nte}{zones_deleted}{$zone} ) {
+            $out->print( $line );
         };
     };
-    close $in;
+    $in->close;
 
     foreach my $key ( keys %$to_add ) {
-        print $out, $to_add->{$key};
+        $out->print( $to_add->{$key} );
     };
-    close $out;
+    $out->close;
     unlink $file;
     File::Copy::move("$file.tmp", $file);
     return 1;
@@ -132,20 +131,6 @@ sub get_template {
     foreach ( @lines ) { $_ =~ s/ZONE/$zone/g; };
     return join('', @lines); # stringify the array
 }
-
-sub get_deleted_zones {
-    my ($self, $dir) = @_;
-
-    my %deletes;
-    foreach my $zone ( @{ $self->{nte}->get_ns_zones( deleted => 1) } ) {
-        next if ! -f "$dir/$zone";
-        $deletes{$zone} = 1;
-        my $file = "$dir/$zone";
-        print "unlink $file\n";
-        unlink $file;
-    };
-    return \%deletes;
-};
 
 sub compile {
     my $self = shift;
