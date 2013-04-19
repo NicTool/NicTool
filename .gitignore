@@ -1,3 +1,4 @@
+.DS_Store
 .cshrc
 .travis.yml
 client/bin/do_build_test.sh

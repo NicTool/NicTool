@@ -1,0 +1,25 @@
+docs/api.htm
+docs/apiindex.htm
+docs/apinotes.htm
+docs/Changes
+docs/changes.htm
+docs/delegationfuncs.htm
+docs/docbook.css
+docs/functions.htm
+docs/generalfuncs.htm
+docs/groupsfuncs.htm
+docs/i4866.htm
+docs/i7664.htm
+docs/img/nictool.gif
+docs/index.htm
+docs/objects.htm
+docs/permissionsfuncs.htm
+docs/typo.htm
+docs/usersfuncs.htm
+docs/zonerecordsfuncs.htm
+docs/zonesfuncs.htm
+Makefile.PL
+MANIFEST			This list of files
+MANIFEST.SKIP
+README
+META.yml
