@@ -1,9 +1,12 @@
 Revision history for NicToolServer
 
-2.19    2013
+2.19    2013.04.18
 
-    * added BIND incremental export option (anonymous sponsor)
-    * added support for NSEC3, NSEC3PARAM, IPSECKEY, DNAME record types
+    * new feature: BIND import (all but DNSSEC records working)
+    * new option: BIND incremental exports (anonymous sponsor)
+    * allow NS name to have _ char (Oliver Koch)
+    * BIND zone file cleanup after deletion in NicTool (anon sponsor)
+    * added support for NSEC3, NSEC3PARAM, IPSECKEY, DNAME, SSHFP record types
     * fixed NSEC bitmap ceiling, was sorted by ASCII instead of num value
     * fully qualify SOA mailaddr in BIND exports
     * add matching TXT record when SPF record created (RFC 4408)

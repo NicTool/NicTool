@@ -1,10 +1,13 @@
 
-2.19    2013.
+2.19    2013.04.18
 
+  * add RFC links next to RR type on new Record form
+  * added DMARC record to SPF template
   * added NSEC3, NSEC3PARAM, IPSECKEY, DNAME record types
   * added option lists to SSHFP new record form
-  * added placeholder text to most RR types, improving ease of use
+  * added placeholder text to most RR types, showing example syntax
   * added <select>, making it easier to enter correct DNSSEC values
+  * added <select> menu with common TTL values
 
 2.18    2013.04.05
 
