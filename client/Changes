@@ -1,4 +1,8 @@
 
+2.20    2013.
+
+  * fix for zone creation templates (broken in 2.19)
+
 2.19    2013.04.18
 
   * add RFC links next to RR type on new Record form
