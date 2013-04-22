@@ -547,6 +547,7 @@ sub get_invalid_chars {
 
     if ( $field eq 'name' ) {
         # allow _ char for SRV, NS (delegated SRV), & TXT (DKIM, DMARC)
+        # DKIM: delegated _domainkey in RFC 5016, 5.3
         return '[^a-zA-Z0-9\-\._]' if $type =~ /^(?:SRV|TXT|NS)$/;
 
         # DNS & BIND, 4.5: Names that are not host names can consist of any
