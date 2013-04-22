@@ -1322,7 +1322,7 @@ sub display_error {
 sub zone_record_template_list {
 
     # the templates available in zone_record_template
-    return qw( none basic wildcard basic-spf wildcard-spf );
+    return qw( none basic wildcard basic-auth wildcard-auth );
 }
 
 sub zone_record_template {
@@ -1348,7 +1348,7 @@ sub zone_record_template {
     my %idh   = ( nt_zone_id => $id );
     my %spf   = ( address => "v=spf1 a mx -all" );
     my %mx    = ( address => "mail.$zone.", weight => '10' );
-    my %dmarc = ( address => "v=DMARC1; p=none; rua=mailto: postmaster\@$zone; ruf=mailto: postmaster\@$zone.com;" );
+    my %dmarc = ( address => "v=DMARC1; p=none; rua=mailto:postmaster\@$zone; ruf=mailto:postmaster\@$zone;" );
 
     my %record1 = ( %idh, name => "$zone.", type => 'A', address => $newip );
     my %record2 = ( %idh, name => "mail",   type => 'A', address => $mailip);
@@ -1358,21 +1358,22 @@ sub zone_record_template {
 
     if ( $template eq "wildcard" ) {
         %record3 = ( %idh, name => '*', type => "CNAME", address => "$zone.");
-        return ( \%record1, \%record2, \%record3, \%record4 );
+        return [ \%record1, \%record2, \%record3, \%record4 ];
     }
-    if ( $template eq "basic-spf" ) {
-        return ( \%record1, \%record2, \%record3, \%record4,
+    if ( $template eq "basic-auth" ) {
+        return [ \%record1, \%record2, \%record3, \%record4,
                 { %idh, name => "$zone.", type => 'TXT', %spf },
                 { %idh, name => "$zone.", type => 'SPF', %spf },
                 { %idh, name => "_dmarc", type => 'TXT', %dmarc },
-            );
+            ];
     }
-    if ( $template eq "wildcard-spf" ) {
+    if ( $template eq "wildcard-auth" ) {
         %record3 = ( %idh, name => '*', type => "CNAME", address => "$zone.");
-        return ( \%record1, \%record2, \%record3, \%record4,
+        return [ \%record1, \%record2, \%record3, \%record4,
                 { %idh, name => "$zone.", type => 'TXT', %spf },
                 { %idh, name => "$zone.", type => 'SPF', %spf },
-            );
+                { %idh, name => "_dmarc", type => 'TXT', %dmarc },
+            ];
     }
 
     return \@zr;
