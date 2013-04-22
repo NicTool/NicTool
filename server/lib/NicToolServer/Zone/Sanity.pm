@@ -14,13 +14,13 @@ sub new_zone {
         'Cannot add zone to a deleted group!' )
         if $self->check_object_deleted( 'group', $data->{nt_group_id} );
 
-    if ( $data->{zone} =~ /([^\/a-zA-Z0-9\-\.])/ ) {
+    if ( $data->{zone} =~ /([^\/a-zA-Z0-9\-\._])/ ) {
         $self->error( 'zone', "invalid character in zone -- $1" );
     }
 
     $data->{zone} =~ s/\.$//;  # remove any trailing dot
 
-    if ( $data->{zone} =~ /(in-addr|ip6).arpa$/ ) {
+    if ( $data->{zone} =~ /(?:in-addr|ip6).arpa$/ ) {
 # TODO - any in-addr.arpa reverse DNS zone checks go here.
 # warn users if they try to make a PTR that points to an IP address rather
 # than a name. 2001.10.12, --aai
