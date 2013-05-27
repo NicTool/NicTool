@@ -1,5 +1,9 @@
 Revision history for NicToolServer
 
+2.20    2013.05.26
+
+    * allow _ char in some types of zone names
+
 2.19    2013.04.18
 
     * new feature: BIND import (all but DNSSEC records working)

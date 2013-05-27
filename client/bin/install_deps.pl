@@ -5,7 +5,7 @@
 
 # v1.7 - 2013-04-20
 #      - get list of modules from Makefile.PL or dist.ini
-#
+#      - abstracted yum and apt into subs
 # v1.6 - 2013-04-01
 #      - improved error reporting for FreeBSD port installs
 #
