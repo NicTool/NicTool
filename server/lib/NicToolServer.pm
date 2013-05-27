@@ -109,7 +109,7 @@ sub ver_check {
 
 sub api_commands {
     my $self = shift;
-    {
+    return {
 
         # user API
         'get_user' => {
