@@ -118,6 +118,7 @@ sub get_perl_modules_from_ini {
         next if ! $in;
         print "line: $line\n";
         last if '[' eq substr($line,0,1);  # [...] starts a new section
+        next if ';' eq substr($line,0,1);  # skip comments
         my ($mod,$ver) = split /\s*=\s*/, $line;
         $mod =~ s/\s*//g;   # remove whitespace
         next if ! $mod;
