@@ -28,10 +28,10 @@ use English qw( -no_match_vars );
 my $apps = [
     { app => 'expat'         , info => { port => 'expat2',         dport=>'expat2' }, },
     { app => 'gettext'       , info => {}, },
-    { app => 'gmake'         , info => { yum => 'make'  }, },
-    { app => 'mysql-server-5', info => { port => 'mysql50-server', dport=>'mysql5',  yum => 'mysql-server' }, },
-    { app => 'apache22'      , info => { dport=>'', yum => 'httpd' }, },
-    { app => 'mod_perl2'     , info => { dport=>'', yum => 'mod_perl' }, },
+    { app => 'gmake'         , info => { yum => 'make', apt => 'make' }, },
+    { app => 'mysql-server-5', info => { port => 'mysql50-server', dport=>'mysql5', yum => 'mysql-server', apt => 'mysql-server' }, },
+    { app => 'apache22'      , info => { dport=>'', yum => 'httpd', apt=>'apache2' }, },
+    { app => 'mod_perl2'     , info => { dport=>'', yum => 'mod_perl', apt=>'libapache2-mod-perl2' }, },
     { app => 'rsync'         , info => { }, },
 ];
 
