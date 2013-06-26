@@ -583,7 +583,7 @@ sub get_active_nameservers {
         $self->{export_format} = $self->{ns_ref}{export_format};
     }
     else {
-        my $first = $self->{active_ns_ids}{ $self->{active_ns}[0] };
+        my $first = $self->{active_ns}[0];
         $self->{export_format} = $first->{export_format} if $first->{export_format};
     };
 
