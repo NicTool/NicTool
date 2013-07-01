@@ -199,12 +199,12 @@ sub zr_soa {
     $self->nt_create_zone(
         zone        => $zone,
         description => '',
-        contact     => $rname,
-        ttl         => $ttl,
-        refresh     => $refresh,
-        retry       => $retry,
-        expire      => $expire,
-        minimum     => $min,
+        defined $rname   ? ( contact => $rname )   : (),  # only include
+        defined $ttl     ? ( ttl     => $ttl )     : (),  # these values in
+        defined $refresh ? ( refresh => $refresh ) : (),  # the request when
+        defined $retry   ? ( retry   => $retry )   : (),  # they are defined
+        defined $expire  ? ( expire  => $expire )  : (),
+        defined $min     ? ( minimum => $min )     : (),
     );
 }
 
@@ -213,7 +213,7 @@ sub zr_generic {
     my $r = shift or die;
     print "Generic : $r\n";
     my ( $fqdn, $n, $rdata, $ttl, $timestamp, $location ) = split(':', $r);
-    return $self->zr_spf( $r ) if $n == 99;
+    return $self->zr_spf(  $r ) if $n == 99;
     return $self->zr_aaaa( $r ) if $n == 28;
     die "oops, no generic support yet record type $n: $fqdn!\n";
 }
@@ -233,7 +233,7 @@ sub zr_spf {
         type    => 'SPF',
         name    => $host,
         address => $rdata,
-        ttl     => $ttl,
+        defined $ttl ? ( ttl => $ttl ) : (),
     );
 }
 
@@ -265,12 +265,9 @@ sub unescape_octal {
 
 sub unescape_packed_hex {
     my ($self, $str) = @_;
-    # convert escaped hex back hex chars, like in a AAAA
+    # convert escaped hex back to hex chars, like in a AAAA
     $str =~ s/(\\)([0-9]{3})/sprintf('%02x',oct($2))/eg;
-    $str = join(':', unpack("(a4)*", $str));
-    return $str;
+    return join(':', unpack("(a4)*", $str));
 };
 
-
 1;
-
