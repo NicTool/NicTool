@@ -84,7 +84,7 @@ sub nt_create_zone {
             'ttl'     => { type => SCALAR, optional => 1, default => 86400 },
             'refresh' => { type => SCALAR, optional => 1, default => 16384 },
             'retry'   => { type => SCALAR, optional => 1, default => 2048 },
-            'expire' => { type => SCALAR, optional => 1, default => 1048576 },
+            'expire'  => { type => SCALAR, optional => 1, default => 1048576},
             'minimum' => { type => SCALAR, optional => 1, default => 2560 },
             'nameservers' => { type => ARRAYREF, optional => 1 },
             'template' => { type => SCALAR, optional => 1, },
@@ -154,11 +154,9 @@ sub nt_create_record {
 
     $self->record_exists( \%request ) and return;
 
-    $request{ttl}         = $p{ttl}         if $p{ttl};
-    $request{weight}      = $p{weight}      if defined $p{weight};
-    $request{priority}    = $p{priority}    if defined $p{priority};
-    $request{other}       = $p{other}       if defined $p{other};
-    $request{description} = $p{description} if $p{description};
+    foreach ( qw/ ttl weight priority other description / ) {
+        $request{$_} = $p{$_} if defined $p{$_};
+    };
 
     print "adding record \n";
     my $nt = $self->nt_connect();
