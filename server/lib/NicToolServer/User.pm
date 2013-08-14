@@ -173,12 +173,9 @@ sub edit_user {
         qw/ nt_group_id first_name last_name username email /;
 
     # only update the password and username fields are not NULL
-    if (   exists $data->{password}
-        && $data->{password} ne ''
-        && exists $data->{username}
-        && $data->{username} ne '' )
-    {
-        push( @columns, 'password' );
+    if (   exists $data->{password} && $data->{password} ne ''
+        && exists $data->{username} && $data->{username} ne '' ) {
+        push @columns, 'password';
 
         # RCC - use hmac to store the password using the username as a key
         $data->{password} = hmac_sha1_hex( $data->{password}, lc($data->{username}) );
