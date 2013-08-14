@@ -304,7 +304,7 @@ sub clean_user_data {
     # delete unused and password data from DB-returned user hash
     my $data = $self->{client}->data();
 
-    my @fields = qw/ password deleted is_admin nt_user_session_id last_access /;
+    my @fields = qw/ password deleted nt_user_session_id last_access /;
 
     foreach my $f (@fields) {
         delete $data->{user}->{$f} if exists $data->{user}->{$f};
