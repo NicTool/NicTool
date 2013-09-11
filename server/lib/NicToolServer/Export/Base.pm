@@ -72,6 +72,7 @@ sub export_db {
     foreach my $z ( @{ $self->{nte}->get_ns_zones( deleted => 1) } ) {
         my $zone = $z->{zone};
         my $file = "$dir/$zone";
+        next if ! -f $file;  # already deleted
         if ( unlink $file ) {
             $self->{nte}->elog("deleted $zone");
         }

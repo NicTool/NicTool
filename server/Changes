@@ -1,5 +1,9 @@
 Revision history for NicToolServer
 
+2.22    2013.
+
+    * check if zone file exists before delete attempt
+
 2.21    2013.08.14
 
     * additional installer updates, for smooter installs
