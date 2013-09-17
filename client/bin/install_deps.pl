@@ -1,24 +1,5 @@
 #!/usr/bin/perl
 
-# by Matt Simerson & Phil Nadeau
-# circa 2008, based on installer in Mail::Toaster dating back to the 20th century
-
-# v1.7 - 2013-04-20
-#      - get list of modules from Makefile.PL or dist.ini
-#      - abstracted yum and apt into subs
-# v1.6 - 2013-04-01
-#      - improved error reporting for FreeBSD port installs
-#
-# v1.5 - 2013-03-27
-#      - added option to specify port category
-#
-# v1.4 - 2012-10-23
-#      - improved yum & apt-get module installer
-#
-# v1.3 - 2012-10-23
-#      - added apt-get support
-#      - added app install support
-
 use strict;
 use warnings;
 
