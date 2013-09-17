@@ -6,7 +6,7 @@ Revision history for NicToolServer
 
 2.21    2013.08.14
 
-    * additional installer updates, for smooter installs
+    * additional installer updates, for smoother installs
     * don't strip is_admin from $user object
     * improved Ubuntu / apt support -Thomas Miedema
 
