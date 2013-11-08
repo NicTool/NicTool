@@ -4,7 +4,7 @@
 DROP TABLE IF EXISTS nt_group;
 CREATE TABLE nt_group (
     nt_group_id         INT UNSIGNED AUTO_INCREMENT NOT NULL PRIMARY KEY,
-    parent_group_id     INT UNSIGNED NOT NULL,
+    parent_group_id     INT UNSIGNED DEFAULT 0 NOT NULL,
     name                VARCHAR(255) NOT NULL,
     deleted             TINYINT(1) UNSIGNED DEFAULT 0 NOT NULL
 ) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
