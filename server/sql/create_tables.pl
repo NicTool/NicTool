@@ -134,11 +134,11 @@ foreach( sort readdir(DIR) ) {
 close(DIR);
 
 print "importing contents of temp.sql .. ";
-my $temp =<<END;
-INSERT INTO nt_user(nt_group_id, first_name, last_name, username, password, email) values (1, 'Root', 'User', 'root', '$nt_root_pw', '$nt_root_email');
-INSERT INTO nt_user_log(nt_group_id, nt_user_id, action, timestamp, modified_user_id, first_name, last_name, username, password, email) values (1,1,'added', UNIX_TIMESTAMP(), 1, 'Root', 'User', 'root', '$nt_root_pw', '$nt_root_email');
-INSERT INTO nt_user_global_log(nt_user_id, timestamp, action, object, object_id, log_entry_id, title, description) values (1,UNIX_TIMESTAMP(),'added', 'user', 1, 1, 'root', 'initial user creation');
-END
+my $temp =<<EO_TEMP;
+INSERT INTO nt_user(nt_group_id, first_name, last_name, username, password, email) values (0, 'Root', 'User', 'root', '$nt_root_pw', '$nt_root_email');
+INSERT INTO nt_user_log(nt_group_id, nt_user_id, action, timestamp, modified_user_id, first_name, last_name, username, password, email) values (0,0,'added', UNIX_TIMESTAMP(), 0, 'Root', 'User', 'root', '$nt_root_pw', '$nt_root_email');
+INSERT INTO nt_user_global_log(nt_user_id, timestamp, action, object, object_id, log_entry_id, title, description) values (0,UNIX_TIMESTAMP(),'added', 'user', 1, 1, 'root', 'user creation');
+EO_TEMP
 open(TEMP,">temp.sql") || die "Unable to create file temp.sql: $!\n";
 print TEMP $temp;
 close(TEMP);
