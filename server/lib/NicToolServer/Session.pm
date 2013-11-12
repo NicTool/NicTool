@@ -61,7 +61,7 @@ sub verify_login {
     $data->{user} = $users->[0];
 
     # RCC - Handle HMAC passwords
-    if ( $data->{user}{password} =~ /[0-9a-f]{40}/ ) {
+    if ( $data->{user}{password} =~ /[0-9a-f]{41}/ ) {
         $attempted_pass = hmac_sha1_hex( $attempted_pass, lc($data->{username}) );
     }
 
