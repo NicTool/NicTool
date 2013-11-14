@@ -19,6 +19,7 @@
 use strict;
 use DBI;
 use English;
+use Digest::HMAC_SHA1 qw(hmac_sha1_hex);
 
 my $test_run = $ARGV[0] eq '-test';
 
@@ -77,6 +78,7 @@ while(!$nt_root_pw){
     $nt_root_pw = $response if $response and ($response eq $response2);
     print "\nPasswords didn't match!\n" unless $nt_root_pw;
 }
+$nt_root_pw = hmac_sha1_hex( $nt_root_pw, 'root' );
 print "\n";
 
 while(!$nt_root_email){
