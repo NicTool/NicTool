@@ -2,7 +2,6 @@ Revision history for NicToolServer
 
 2.22    2013.11.__
 
-    * assign 'root' user to group ID 0 - darkuncle
     * define default values in schema to avoid errors from MySQL >= 5.6
     * check if zone file exists before delete attempt
 

@@ -40,6 +40,6 @@ CREATE TABLE nt_group_subgroups(
     /* CONSTRAINT `nt_group_subgroups_ibfk_1` FOREIGN KEY (`nt_group_id`) REFERENCES `nt_group` (`nt_group_id`) ON DELETE CASCADE ON UPDATE CASCADE */
 ) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
-INSERT INTO nt_group(nt_group_id, name) VALUES (0, 'NicTool');
-INSERT INTO nt_group_log(nt_group_id, nt_user_id, action, timestamp, modified_group_id, parent_group_id) VALUES (0, 0, 'added', UNIX_TIMESTAMP(), 1, 0);
+INSERT INTO nt_group(nt_group_id, name) VALUES (1, 'NicTool');
+INSERT INTO nt_group_log(nt_group_id, nt_user_id, action, timestamp, modified_group_id, parent_group_id) VALUES (1, 1, 'added', UNIX_TIMESTAMP(), 1, 0);
 
