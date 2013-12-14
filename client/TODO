@@ -1,4 +1,7 @@
 
+* add an option to update PTR when editing A record
+  (if reverse zone exists and user had permission to edit PTR)
+
 * add a "lost password" recovery feature
 
 * expose nt_zone_record.timestamp for editing
