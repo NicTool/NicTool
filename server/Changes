@@ -203,7 +203,7 @@ Revision history for NicToolServer
          $ mysql -u nictool -p nictool < sql/upgrade/update_v2_08.sql
     * Added file existence test before comparing for differences in 
       nt_export_djb.pl 
-    * Updated the Ipv6 implementation to choose between AAAA records with and
+    * Updated the IPv6 implementation to choose between AAAA records with and
       without auto created PTR records. Lines prefixed with a 6 will have 
       both an AAAA and a PTR record created. Those prefixed with a 3 will only 
       have an AAAA record created. 
@@ -213,7 +213,7 @@ Revision history for NicToolServer
 
 2.07     2008.09
 
-    * Updated the export routine to djbdns so it supports Ipv6 adresses
+    * Updated the export routine to djbdns so it supports IPv6 adresses
     * Add the option to add IPv6 AAAA addresses checked by Net::IP
     * fixed a bug that prevented Advanced Search feature from working
     * removed 28 lines of redundant code (thanks, maxv)
