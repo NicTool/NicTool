@@ -358,8 +358,7 @@ sub display_edit {
  </tr>];
 
     my $ns_tree = $nt_obj->get_usable_nameservers(%param);
-    my %nsmap = map { $data->{"usable_ns$_"} => 1 }
-        grep { $data->{"usable_ns$_"} != 0 } ( 0 .. 9 );
+    my %nsmap = map { $_ => 1 } split(',', $data->{'usable_ns'});
 
     #show nameservers
     print qq[

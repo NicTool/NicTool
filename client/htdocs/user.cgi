@@ -494,8 +494,7 @@ sub display_edit {
             my %nsmap;
             my $ns_tree;
             if ($showusablens) {
-                %nsmap = map { $group->{"usable_ns$_"} => 1 }
-                    grep { $group->{"usable_ns$_"} != 0 } ( 0 .. 9 );
+                %nsmap = map { $_ => 1 } split(',', $data->{'usable_ns'});
                 $ns_tree = $nt_obj->get_nameserver_list(
                     nameserver_list => join( ",", keys %nsmap ) );
             }
@@ -580,8 +579,7 @@ sub display_edit {
             my %nsmap;
             my $ns_tree;
             if ($showusablens) {
-                %nsmap = map { $duser->{"usable_ns$_"} => 1 }
-                    grep { $duser->{"usable_ns$_"} != 0 } ( 0 .. 9 );
+                %nsmap = map { $_ => 1 } split(',', $duser->{'usable_ns'});
                 $ns_tree = $nt_obj->get_usable_nameservers
                     ;    #(nt_group_id=>$user->{'nt_group_id'});
             }

@@ -1,4 +1,9 @@
 
+2.22    2013.12.
+
+  * update usable_ns in user.cgi and group.cgi
+      - fix issue #24, reported by Hans Svensson
+
 2.21    2013.05.26
 
   * improved install_deps.pl
