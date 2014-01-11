@@ -545,16 +545,17 @@ sub get_invalid_chars {
     return '[^a-fA-F0-9:]' if $type eq 'AAAA' && $field eq 'address';
     return '[^0-9\.]'      if $type eq 'A'    && $field eq 'address';
 
-    if ( $field eq 'name' ) {
-        # allow _ char for SRV, NS (delegated SRV), SPF, & TXT (DKIM, DMARC)
-        # DKIM: delegated _domainkey in RFC 5016, 5.3
-        return '[^a-zA-Z0-9\-\._]' if $type =~ /^(?:SRV|TXT|SPF|NS)$/;
+    # allow _ char for SRV, NS (delegated SRV), SPF, & TXT (DKIM, DMARC)
+    # DKIM: delegated _domainkey in RFC 5016, 5.3
+    # CNAME: delegated _dmarc (and perhaps other uses)
+    return '[^a-zA-Z0-9\-\._]' if $type =~ /^(?:SRV|TXT|SPF|NS|CNAME)$/;
 
-        # DNS & BIND, 4.5: Names that are not host names can consist of any
-        # printable ASCII character. I feel like this is providing enough rope
-        # for users to hang themselves. The code is here, but disabled.
-        #return '[^ -~]' if $type !~ /^(?:A|AAAA|MX|LOC|SPF|SSHFP)$/;
-    };
+    # DNS & BIND, 4.5: Names that are not host names can consist of any
+    # printable ASCII character. I feel like this is providing enough rope
+    # for users to hang themselves. The code is here, but disabled.
+#   if ( $field eq 'name' ) {
+#       return '[^ -~]' if $type !~ /^(?:A|AAAA|MX|LOC|SPF|SSHFP)$/;
+#   };
 
     # allow / in reverse zones, for both name & address: RFC 2317
     return '[^a-zA-Z0-9\-\.\/]' if $zone_text =~ /(in-addr|ip6)\.arpa[\.]{0,1}$/i;

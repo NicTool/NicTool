@@ -1154,6 +1154,9 @@ sub valid_hostname {
         if ( $field eq 'name' && $type eq 'SRV' && $first_char eq '_' ) {
             # except for SRV
         }
+        elsif ( $type eq 'CNAME' && $first_char eq '_' ) {
+            # CNAME can delegate DMARC records, and perhaps others
+        }
         elsif ( $first_char =~ /[^a-zA-Z0-9]/ ) {
             $self->error( $field, "$warn_prefix must begin with a letter or digit: RFC 1912");
             $has_error++;
