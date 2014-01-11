@@ -260,7 +260,7 @@ sub doit {
     );
     noerrok( $res, 300 );
     ok( $res->get('error_msg') =>
-            qr/Password too short, must be 6-30 characters long./ );
+            qr/Password too short, must be 8-30 characters long./ );
     ok( $res->get('error_desc') => qr/Sanity error/ );
     if ( !$res->is_error ) {
         $res = $nt_obj->delete_users( user_list => $res->get('nt_user_id') );
@@ -472,7 +472,7 @@ sub doit {
     );
     noerrok( $res, 300 );
     ok( $res->get('error_msg') =>
-            qr/Password too short, must be 6-30 characters long./ );
+            qr/Password too short, must be 8-30 characters long./ );
     ok( $res->get('error_desc') => qr/Sanity error/ );
 
     #change password mismatched

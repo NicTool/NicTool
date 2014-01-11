@@ -202,15 +202,15 @@ sub _valid_email {
 sub _valid_password {
     my ( $self, $data ) = @_;
 
-    if ( length( $data->{password} ) < 6 ) {
+    if ( length( $data->{password} ) < 8 ) {
         $self->error( 'password',
-            "Password too short, must be 6-30 characters long."
+            "Password too short, must be 8-30 characters long."
         );
     }
 
     if ( length( $data->{password} ) > 30 ) {
         $self->error( 'password',
-            "Password too long, must be 6-30 characters long."
+            "Password too long, must be 8-30 characters long."
         );
     }
 
