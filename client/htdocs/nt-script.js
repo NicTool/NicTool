@@ -5,14 +5,13 @@
 function changeNewZoneName() {
   var zoneName = $('input#zone');
   var mailAddr = $('input#mailaddr');
-  if ( mailAddr.val() === 'hostmaster.'+zoneName.val()+'.' )
-    return;
-  mailAddr.val( 'hostmaster.'+zoneName.val() + '.' );
+  if (mailAddr.val() === 'hostmaster.'+zoneName.val()+'.') return;
+  mailAddr.val('hostmaster.'+zoneName.val() + '.');
 };
 
 function selectedRRType(rrType) {
 
-    if ( ! rrType ) return false;
+    if (!rrType) return false;
 
     resetZoneRecordFormFields();
 
@@ -47,15 +46,15 @@ function resetZoneRecordFormFields() {
     $('input#' +rrOptions[i]).val('');
   };
 
-  var rrAll = $.merge( rrOptions, ['name','address','description'] );
+  var rrAll = $.merge(rrOptions, ['name','address','description']);
   for ( var i=0; i < rrAll.length; i++ ) {
-    $('td#' + rrAll[i] +'_label').text( ucfirst( rrOptions[i] ) );
+    $('td#' + rrAll[i] +'_label').text(ucfirst(rrOptions[i]));
     $('input#'+rrAll[i])
       .attr('placeholder', '')
       .attr('readonly', false);
   };
 
-  $('td#description_label').text( 'Description' );
+  $('td#description_label').text('Description');
   $('input#address').attr('size', 50);
   $('span#rfc_help').html('');
 };
@@ -131,7 +130,7 @@ function setFormRRTypeNAPTR() {
   $('input#priority').attr('placeholder','10');
 
   $('td#address_label').text('Flags, Services, Regexp');
-  $('input#address').attr('placeholder','"", "", "/urn:cid:.+@([^\\.]+\\.)(.*)$/\\2/i"');
+  $('input#address').attr('placeholder','"" "" "/urn:cid:.+@([^\\.]+\\.)(.*)$/\\2/i"');
 
   $('td#description_label').text('Replacement');
 }
@@ -296,7 +295,7 @@ function ucfirst(string) {
 }
 
 function setRfcHelp(rfcList) {
-  for ( var i=0; i < rfcList.length; i++ ) {
+  for (var i=0; i < rfcList.length; i++) {
     $('span#rfc_help').html(
       $('span#rfc_help').html() +
         ' <a target="_blank" href="https://tools.ietf.org/html/rfc'+rfcList[i]+'">RFC '+rfcList[i]+'</a>'

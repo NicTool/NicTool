@@ -819,8 +819,8 @@ sub display_edit_record {
         && $user->{'zonerecord_write'}
         && $zone_record->{'delegate_write'};
 
-    my $default_record_type = $zone_record->{'type'};
-    $default_record_type = 'PTR' if $zone->{'zone'} =~ /(in-addr|ip6)\.arpa/;
+    my $default_record_type = $zone_record->{type};
+    $default_record_type = 'PTR' if $zone->{zone} =~ /(in-addr|ip6)\.arpa/;
 
     my $rr_type_popup = _build_rr_type( $nt_obj, $q, $zone, $zone_record, $default_record_type, $modifyperm );
 
@@ -935,12 +935,10 @@ sub _display_edit_record_action {
     my $zone_record = { 'ttl' => $NicToolClient::default_zone_record_ttl };
 
     # we return the action (New|Save|Edit) and any error result
-
     return ( $zone_record, 'New', '' ) if ! $q->param('nt_zone_record_id');
     return ( $zone_record, 'New', '' ) if $q->param('Save');
 
     # this a Recover or Edit
-
     my $action;
     if ( $q->param('nt_zone_record_log_id') ) {
         $action = 'Recover';
@@ -1108,7 +1106,7 @@ sub _build_rr_weight {
         -default   => $zone_record->{'weight'},
         -onChange  => q[$('select#weight').val(this.value);],
     )
-    . q[<select id=weight class='hidden' onChange="$('input#weight').val(this.value);"></select>
+    . q[<select id=weight class='hidden' onChange="if (this.value.length) $('input#weight').val(this.value);"></select>
 ];
 };
 
@@ -1124,7 +1122,7 @@ sub _build_rr_priority {
         -default   => $zone_record->{'priority'},
         -onChange  => q[$('select#priority').val(this.value);],
         )
-    . q[<select id=priority class='hidden' onChange="$('input#priority').val(this.value);"></select>
+    . q[<select id=priority class='hidden' onChange="if (this.value.length) $('input#priority').val(this.value);"></select>
 ];
 };
 
@@ -1140,7 +1138,7 @@ sub _build_rr_other {
         -default   => $zone_record->{'other'},
         -onChange  => q[$('select#other').val(this.value);],
         )
-    . q[<select id=other class='hidden' onChange="$('input#other').val(this.value);"></select>
+    . q[<select id=other class='hidden' onChange="if (this.value.length) $('input#other').val(this.value);"></select>
 ];
 };
 
