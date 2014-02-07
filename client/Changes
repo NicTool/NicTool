@@ -1,6 +1,7 @@
 
-2.22    2013.12.
+2.22    2014.02.07
 
+  * fix: when editing RRs with extra fields, input wasn't populated
   * update usable_ns in user.cgi and group.cgi
       - fix issue #24, reported by Hans Svensson
 
