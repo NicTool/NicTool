@@ -9,10 +9,20 @@ function changeNewZoneName() {
   mailAddr.val('hostmaster.'+zoneName.val() + '.');
 };
 
+function changeRRType(rrType) {
+    if (!rrType) return false;
+
+		var rrOptions = [ 'weight', 'priority', 'other' ];
+		for ( var i=0; i < rrOptions.length; i++ ) {
+				$('input#' +rrOptions[i]).val('');
+		}
+
+		selectedRRType(rrType);
+}
+
 function selectedRRType(rrType) {
 
     if (!rrType) return false;
-
     resetZoneRecordFormFields();
 
     switch (rrType) {
@@ -43,7 +53,6 @@ function resetZoneRecordFormFields() {
   for ( var i=0; i < rrOptions.length; i++ ) {
     $('tr#' + rrOptions[i] ).hide();         // hide conditional rows
     $('select#'+rrOptions[i]).hide().empty(); // hide and empty option lists
-    $('input#' +rrOptions[i]).val('');
   };
 
   var rrAll = $.merge(rrOptions, ['name','address','description']);

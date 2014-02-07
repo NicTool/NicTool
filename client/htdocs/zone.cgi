@@ -1043,7 +1043,7 @@ sub _build_rr_type {
             -values  => $type_values,
             -labels  => $type_labels,
             -default => $zone_record->{'type'} || $default_record_type,
-            -onChange => "selectedRRType(value);",
+            -onChange => "changeRRType(value);",
             -required  => 'required',
         ) );
     $q->autoEscape(1);
@@ -1106,7 +1106,7 @@ sub _build_rr_weight {
         -default   => $zone_record->{'weight'},
         -onChange  => q[$('select#weight').val(this.value);],
     )
-    . q[<select id=weight class='hidden' onChange="if (this.value.length) $('input#weight').val(this.value);"></select>
+    . q[<select id=weight class='hidden' onChange="$('input#weight').val(this.value);"></select>
 ];
 };
 
@@ -1122,7 +1122,7 @@ sub _build_rr_priority {
         -default   => $zone_record->{'priority'},
         -onChange  => q[$('select#priority').val(this.value);],
         )
-    . q[<select id=priority class='hidden' onChange="if (this.value.length) $('input#priority').val(this.value);"></select>
+    . q[<select id=priority class='hidden' onChange="$('input#priority').val(this.value);"></select>
 ];
 };
 
@@ -1138,7 +1138,7 @@ sub _build_rr_other {
         -default   => $zone_record->{'other'},
         -onChange  => q[$('select#other').val(this.value);],
         )
-    . q[<select id=other class='hidden' onChange="if (this.value.length) $('input#other').val(this.value);"></select>
+    . q[<select id=other class='hidden' onChange="$('input#other').val(this.value);"></select>
 ];
 };
 
