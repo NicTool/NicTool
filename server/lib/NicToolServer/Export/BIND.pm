@@ -371,7 +371,10 @@ sub zr_naptr {
 
     my $order = $self->{nte}->is_ip_port( $r->{weight}   );
     my $pref  = $self->{nte}->is_ip_port( $r->{priority} );
-    my ($flags, $service, $regexp, $replace) = split /__/, $r->{address};
+    my ($flags, $service, $regexp) = split /" "/, $r->{address};
+    $regexp =~ s/"//g;  # strip off leading "
+    $flags =~ s/"//g;   # strip off trailing "
+    my $replace = $r->{description};
     $regexp =~ s/\\/\\\\/g;  # escape any \ characters
 
 # Domain TTL Class Type Order Preference Flags Service Regexp Replacement

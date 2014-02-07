@@ -266,10 +266,11 @@ sub zr_naptr {
         zone_id => $zone_id,
         type    => 'NAPTR',
         name    => $host,
-        address => join(' ', $rr->flags, $rr->service, $rr->regexp),
+        address => '"' . join('" "', $rr->flags, $rr->service, $rr->regexp) . '"',
         weight  => $rr->order,
         priority=> $rr->preference,
         ttl     => $rr->ttl,
+        description=>$rr->replacement,
     );
 };
 
