@@ -110,8 +110,7 @@ sub set_no_change {
 
     my $last_ts = 'never';
     my $last_copy;
-    if ( $self->{export_format} eq 'tinydns' ) {
-# if last export failed to copy, try again this time
+    if ( $self->{export_format} =~ /tinydns|bind/i ) {
         $last_copy = $self->get_last_ns_export(success=>1,copied=>1);
     }
     else {
@@ -652,9 +651,7 @@ sub postflight {
     my $self = shift;
 
     $self->{export_class}->postflight or return;
-
     $self->update_status();
-
     $self->cleanup_db();
 
     # mark export successful

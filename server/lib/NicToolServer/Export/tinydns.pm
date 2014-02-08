@@ -41,7 +41,6 @@ sub get_export_file {
 sub postflight {
     my $self = shift;
 
-    $self->{nte}->set_copied(1);  # we intend to copy...
     $self->compile_cdb or return; # compile data to data.cdb
     $self->rsync_cdb or return;   # rsync file into place
 
@@ -53,7 +52,7 @@ sub compile_cdb {
 
     # compile data -> data.cdb
     my $export_dir = $self->{nte}{export_dir};
-    $self->write_makefile() if ! -e "$export_dir/Makefile";
+    $self->write_makefile();
 
     chdir $export_dir;
     my $before = time;
@@ -92,6 +91,7 @@ MAKE
 sub write_makefile {
     my $self = shift;
     my $export_dir = $self->{nte}{export_dir};
+    return 1 if -e "$export_dir/Makefile";     # already exists
     my $address = $self->{nte}{ns_ref}{address} || '127.0.0.1';
     my $datadir = $self->{nte}{ns_ref}{datadir} || getcwd . '/data-all';
     $datadir =~ s/\/$//;  # strip off any trailing /
@@ -121,6 +121,7 @@ test:\n\techo "it worked"
 MAKE
 ;
     close $M;
+    return 1;
 };
 
 sub rsync_cdb {
@@ -146,6 +147,7 @@ sub rsync_cdb {
     my $message = "copied";
     $message .= " ($elapsed secs)" if $elapsed > 5;
     $self->{nte}->elog($message);
+    $self->{nte}->set_copied(1);  # we copied
     return 1;
 };
 

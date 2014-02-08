@@ -183,6 +183,7 @@ sub rsync {
     my $elapsed = time - $before;
     my $message = "copied";
     $message .= " ($elapsed secs)" if $elapsed > 5;
+    $self->{nte}->set_copied(1);
     $self->{nte}->elog($message);
     return 1;
 };
@@ -190,16 +191,16 @@ sub rsync {
 sub write_makefile {
     my $self = shift;
 
-    return 1 if -e 'Makefile';   # already exists
-
-    my $address = $self->{nte}{ns_ref}{address} || '127.0.0.1';
-    my $datadir = $self->{nte}{ns_ref}{datadir} || getcwd . '/data-all';
-    $datadir =~ s/\/$//;  # strip off any trailing /
     my $exportdir = $self->{nte}->get_export_dir or do {
         warn "no export dir!";
         return;
     };
-    open my $M, '>', 'Makefile' or do {
+    return 1 if -e "$exportdir/Makefile";   # already exists
+
+    my $address = $self->{nte}{ns_ref}{address} || '127.0.0.1';
+    my $datadir = $self->{nte}{ns_ref}{datadir} || getcwd . '/data-all';
+    $datadir =~ s/\/$//;  # strip off any trailing /
+    open my $M, '>', "$exportdir/Makefile" or do {
         warn "unable to open ./Makefile: $!\n";
         return;
     };

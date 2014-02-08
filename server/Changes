@@ -1,5 +1,9 @@
 Revision history for NicToolServer
 
+2.23    2014.0_.__
+
+    * BIND exports: after successful copy, update DB indicating so
+
 2.22    2014.02.07
 
     * fix import/export of NAPTR records
