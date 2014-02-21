@@ -334,16 +334,15 @@ sub get_last_ns_export {
 
     my @args = $self->{ns_id};
     foreach my $f (qw/ success partial copied /) {
-        if ( defined $p{$f} ) {
-            $sql .= " AND $f=?";
-            push @args, $p{$f};
-        }
+        next if ! defined $p{$f};
+        $sql .= " AND $f=?";
+        push @args, $p{$f};
     }
 
     $sql .= " ORDER BY date_start DESC LIMIT 1";
 
     my $logs = $self->exec_query( $sql, \@args );
-    if ( scalar @$logs == 0 ) {
+    if ($logs && scalar @$logs == 0) {
         my $message = "no previous export";
         $message = "no previous successful export" if defined $p{success} && $p{success} == 1;
         $self->elog( $message );
