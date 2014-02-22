@@ -777,7 +777,10 @@ sub zr_ns {
 
 sub is_ip_port {
     my ( $self, $port ) = @_;
-    return 0 if $port =~ /[^\d]/;  # has non-digit chars
+    if ($port =~ /[\d]/) {   # has non-digit chars
+        warn "non-numeric chars in port: $port";
+        return 0;
+    };
     return $port if ( $port >= 0 && $port <= 65535 );
     warn "value not within IP port range: 0 - 65535";
     return 0;
