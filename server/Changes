@@ -4,6 +4,7 @@ Revision history for NicToolServer
 
     * BIND exports: after successful copy, update DB indicating so
     * force export if get_last_export(success=>1) fails (see 44a9da0bca)
+    * Exports::is_ip_port now throws warnings for missing/invalid values
 
 2.22    2014.02.07
 

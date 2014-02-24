@@ -26,6 +26,23 @@ $Data::Dumper::Sortkeys=1;
 
 my $nsid = 0;
 my $export = NicToolServer::Export->new( ns_id=>$nsid );
+my @bad_ports = qw/ -100 -1 65536 1000000 a buzz /;
+push @bad_ports, ('', undef);
+my @good_ports = qw/ 0 1 53 995 65535 /;
+
+foreach ( @good_ports ) {
+    my $r = $export->is_ip_port($_);
+    ok(defined $r, "is_ip_port, valid, $_");
+};
+foreach ( @bad_ports ) {
+    if (defined $_) {
+        ok( ! $export->is_ip_port($_), "is_ip_port, invalid, $_");
+    }
+    else {
+        ok( ! $export->is_ip_port($_), "is_ip_port, undef");
+    }
+};
+
 $export->get_dbh(
     dsn  => Config('dsn'),
     user => Config('db_user'),
@@ -51,16 +68,6 @@ cmp_ok( $export->get_rr_name(2), 'eq', 'NS', 'get_rr_name');
 # this will get all zones, since we haven't given it a 'since' time
 $r = $export->get_modified_zones_count();
 ok( defined $r, "get_modified_zones_count, $r");
-
-my @bad_ports = qw/ -100 -1 65536 1000000 a /;
-my @good_ports = qw/ 1 53 995 65535 /;
-
-foreach ( @bad_ports ) {
-    ok( ! $export->is_ip_port($_), "is_ip_port, invalid, $_");
-};
-foreach ( @good_ports ) {
-    ok( $export->is_ip_port($_), "is_ip_port, valid, $_");
-};
 
 done_testing() and exit;
 
