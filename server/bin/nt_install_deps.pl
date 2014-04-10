@@ -377,7 +377,7 @@ sub name_overrides {
 # couple rules. When that doesn't work, add entries here for FreeBSD (port),
 # MacPorts ($dport), yum, and apt.
     my @modules = (
-        { module=>'LWP::UserAgent', info => { cat=>'www', port=>'p5-libwww', dport=>'p5-libwww-perl', yum=>'perl-libwww-perl' }, },
+        { module=>'LWP::UserAgent', info => { cat=>'www', port=>'libwww', dport=>'p5-libwww-perl', yum=>'perl-libwww-perl' }, },
         { module=>'Mail::Send'    , info => { port => 'Mail::Tools', }  },
     );
     my ($match) = grep { $_->{module} eq $mod } @modules;
