@@ -259,11 +259,15 @@ sub install_module_freebsd {
 
     print " from ports...$portname...";
 
-    if ( `/usr/sbin/pkg_info | /usr/bin/grep $portname` ) { ## no critic (Backtick)
-        return print "$module is installed.\n";
+    if ( -x '/usr/sbin/pkg_info' ) {
+        if ( `/usr/sbin/pkg_info | /usr/bin/grep $portname` ) { ## no critic (Backtick)
+            return print "$module is installed.\n";
+        }
     }
-    if ( `/usr/sbin/pkg info -x $portname` ) { ## no critic (Backtick)
-        return print "$module is installed.\n";
+    if ( -x '/usr/sbin/pkg' ) {
+        if ( `/usr/sbin/pkg info -x $portname` ) { ## no critic (Backtick)
+            return print "$module is installed.\n";
+        }
     }
 
     print "installing $module ...";
@@ -272,7 +276,7 @@ sub install_module_freebsd {
     my ($portdir) = glob "/usr/ports/$category/$portname";
 
     if ( ! $portdir || ! -d $portdir ) {
-        print "oops, no match at /usr/ports/$category/$portname\n";
+        print "no match at /usr/ports/$category/$portname\n";
         return;
     };
 
