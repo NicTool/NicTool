@@ -210,14 +210,18 @@ function setFormRRTypeDS() {
   $('tr#priority').show();
   $('td#priority_label').text('Algorithm');
   var p = $('input#priority');
-  if ( ! p.val() ) p.val('5');  // RSA/SHA1
+  if ( ! p.val() ) p.val('8');
   addValuesToSelect( getDnssecAlgorithms(), 'priority');
 
   $('tr#other').show();
   $('td#other_label').text('Digest Type');
   var o = $('input#other');
   if ( ! o.val() ) o.val('2');
-  var digestTypes = { '1' : 'SHA-1', '2' : 'SHA-256', };
+  // https://www.iana.org/assignments/ds-rr-types/ds-rr-types.xhtml
+  var digestTypes = {
+    '1' : 'SHA-1',           '2' : 'SHA-256',
+    '3' : 'GOST R 34.11-94', '4' : 'SHA-384',
+  };
   addValuesToSelect( digestTypes, 'other' );
 }
 
