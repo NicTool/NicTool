@@ -292,10 +292,15 @@ function addValuesToSelect(array,selectName) {
 }
 
 function getDnssecAlgorithms() {
+// http://www.iana.org/assignments/dns-sec-alg-numbers/dns-sec-alg-numbers.xhtml
   return {
-    '1' : 'RSA/MD5',     '2' : 'Diffie-Hellman',
-    '3' : 'DSA/SHA-1',   '4' : 'Elliptic Curve',
-    '5' : 'RSA/SHA-1',
+    '1' : 'RSA/MD5 (deprecated)', '2' : 'Diffie-Hellman',
+    '3' : 'DSA/SHA-1',            '4' : 'Elliptic Curve (deprecated)',
+    '5' : 'RSA/SHA-1',            '6' : 'DSA-NSEC3-SHA1',
+    '7' : 'RSASHA1-NSEC3-SHA1',   '8' : 'RSA/SHA-256',
+    '10': 'RSA/SHA-512',          '12': 'GOST R 34.10-2001',
+    '13': 'ECDSA Curve P-256 with SHA-256',
+    '14': 'ECDSA Curve P-384 with SHA-384',
   };
 };
 
