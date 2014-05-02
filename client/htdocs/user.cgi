@@ -494,7 +494,7 @@ sub display_edit {
             my %nsmap;
             my $ns_tree;
             if ($showusablens) {
-                %nsmap = map { $_ => 1 } split(',', $data->{'usable_ns'});
+                %nsmap = map { $_ => 1 } split(',', $duser->{'usable_ns'});
                 $ns_tree = $nt_obj->get_nameserver_list(
                     nameserver_list => join( ",", keys %nsmap ) );
             }
