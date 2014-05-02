@@ -1332,6 +1332,11 @@ sub valid_16bit_int {
     
     my $rc = 1;
 
+    if ( $value eq '' ) {
+        $self->error( $type, "$type is required." );
+        $rc = 0;
+    }
+
     #   check for non-digits
     if ( $value =~ /\D/ ) {
         $self->error( $type, "Non-numeric digits are not allowed. ($value)" );
