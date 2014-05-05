@@ -1005,6 +1005,20 @@ sub _build_rr_type {
             grep( $_->{reverse} == 1, @$rr_types);
 
         $type_values = [ sort keys %reverse ];
+	if ( grep { /(?:DS)/} @$type_values) {
+   	    my (@others, @dnssec);
+            foreach ( @$type_values ) {
+                if ( $_ =~ /^(?:DS)$/ ) {
+                    push @dnssec, $_;
+                }
+                else {
+                    push @others, $_;
+                };
+            };
+            push @others, sprintf $q->optgroup(
+                -name=>'DNSSEC', -values => [ @dnssec ], -labels => \%reverse );
+            $type_values = \@others;
+        };
         $type_labels = \%reverse;
     }
     else {
