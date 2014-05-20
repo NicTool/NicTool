@@ -34,18 +34,25 @@ sub build_nsupdate {
 
     my @results = get_log($self,$dir);
 
+    # open the nsupdate log file
     open FILE, "+>", "$dir/nsupdate.log" or die $!;
+    # print the server details for nsupdate
+    #print FILE $self->zr_soa($self, get_zone_record($self,$results[0]->{object_id}[0]);
 
-	foreach my $result (@results) {
-    		my @zone_records = get_zone_record($self, $result->{object_id});
-		print "zone record is ".Dumper(@zone_records);
+	foreach my $record (@results) {
+    		my @zone_records = get_zone_record($self, $record->{object_id});
+		my $r = $zone_records[0];
+		my $mode = "add";
 
 		# check if its a delete action
-		if ($result->{description} =~ m/deleted record/) {
-		
-		}	
-		#print Dumper($result);
-	}
+		if ($record->{description} =~ m/deleted\srecord/) {
+			$mode = "delete";	
+		}
+
+          	my $method = 'zr_' . lc $r->{type};
+            	$r->{location}  ||= '';
+            	print FILE $self->$method($r, $mode);
+        }
 
     close FILE or die $!;
 }
@@ -54,7 +61,7 @@ sub get_log {
     my ($self, $dir) = @_;
 
     my $dbix_w = $self->{nte}->{dbix_w};
-    my $time = time-1800;
+    my $time = time-300;
 
     my $sql = "select * from nt_user_global_log where timestamp > $time";
 
@@ -104,82 +111,104 @@ sub get_changed_zones {
 };
 
 sub zr_a {
-    my ($self, $r) = @_;
-    return "update add ".$r->{name}.".".$self->{nte}->{zone_name}." $r->{ttl} A $r->{address}\n";
+    my ($self, $r, $mode) = @_;
+    $mode = "add" unless defined($mode);
+    $r->{zone} = $self->{nte}->{zone_name} unless defined($r->{zone});
+
+    return "update $mode ".$r->{name}.".".$r->{zone}." $r->{ttl} A $r->{address}\n";
 }
 
 sub zr_cname {
-    my ($self, $r) = @_;
-    return "update add $r->{name} $r->{ttl} CNAME $r->{address}\n";
+    my ($self, $r, $mode) = @_;
+    $mode = "add" unless defined($mode);
+    $r->{zone} = $self->{nte}->{zone_name} unless defined($r->{zone});
+
+    return "update $mode ".$r->{name}.".".$r->{zone}." $r->{ttl} CNAME $r->{address}\n";
 }
 
 sub zr_mx {
-    my ($self, $r) = @_;
-    return "update add $r->{name} $r->{ttl} MX $r->{weight} $r->{address}\n";
+    my ($self, $r, $mode) = @_;
+    $mode = "add" unless defined($mode);
+    $r->{zone} = $self->{nte}->{zone_name} unless defined($r->{zone});
+
+    return "update $mode ".$r->{name}.".".$r->{zone}." $r->{ttl} MX $r->{weight} $r->{address}\n";
 }
 
 sub zr_txt {
-    my ($self, $r) = @_;
+    my ($self, $r, $mode) = @_;
+    $mode = "add" unless defined($mode);
+    $r->{zone} = $self->{nte}->{zone_name} unless defined($r->{zone});
 
 # BIND will croak if the length of the text record is longer than 255
     if ( length $r->{address} > 255 ) {
         $r->{address} = join( "\" \"", unpack("(a255)*", $r->{address} ) );
     };
 # name  ttl  class   rr     text
-    return "update add $r->{name} $r->{ttl} TXT	\"$r->{address}\"\n";
+    return "update $mode ".$r->{name}.".".$r->{zone}." $r->{ttl} TXT \"$r->{address}\"\n";
 }
 
 sub zr_ns {
-    my ($self, $r) = @_;
+    my ($self, $r, $mode) = @_;
+    $mode = "add" unless defined($mode);
+    $r->{zone} = $self->{nte}->{zone_name} unless defined($r->{zone});
 
     my $name = $self->qualify( $r->{name} );
     $name .= '.' if '.' ne substr($name, -1, 1);
 
-    return "update add $name $r->{ttl} NS $r->{address}\n";
+    return "update $mode $name $r->{ttl} NS $r->{address}\n";
 }
 
 sub zr_ptr {
-    my ($self, $r) = @_;
-    return "update add ".$r->{name}.".".$self->{nte}->{zone_name}." $r->{ttl} PTR $r->{address}\n";
+    my ($self, $r, $mode) = @_;
+    $mode = "add" unless defined($mode);
+    $r->{zone} = $self->{nte}->{zone_name} unless defined($r->{zone});
+
+    return "update $mode ".$r->{name}.".".$r->{zone}." $r->{ttl} PTR $r->{address}\n";
 }
 
 sub zr_soa {
     my ($self, $z) = @_;
-
     #no real "soa" for an nsupdate - so lets set the server we want to update to instead
     return "server $z->{nsname}\n";
 }
 
 sub zr_spf {
-    my ($self, $r) = @_;
+    my ($self, $r, $mode) = @_;
+    $mode = "add" unless defined($mode);
+    $r->{zone} = $self->{nte}->{zone_name} unless defined($r->{zone});
 
 # SPF record support was added in BIND v9.4.0
 
 # name  ttl  class  type  type-specific-data
-    return "update add $r->{name} $r->{ttl} SPF	\"$r->{address}\"\n";
+    return "update $mode ".$r->{name}.".".$r->{zone}." $r->{ttl} SPF \"$r->{address}\"\n";
 }
 
 sub zr_srv {
-    my ($self, $r) = @_;
+    my ($self, $r, $mode) = @_;
+    $mode = "add" unless defined($mode);
+    $r->{zone} = $self->{nte}->{zone_name} unless defined($r->{zone});
 
     my $priority = $self->{nte}->is_ip_port( $r->{priority} );
     my $weight   = $self->{nte}->is_ip_port( $r->{weight} );
     my $port     = $self->{nte}->is_ip_port( $r->{other} );
 
 # srvce.prot.name  ttl  class   rr  pri  weight port target
-    return "update add $r->{name} $r->{ttl} SRV	$priority $weight $port	$r->{address}\n";
+    return "update $mode $r->{name} $r->{ttl} SRV $priority $weight $port $r->{address}\n";
 }
 
 sub zr_aaaa {
-    my ($self, $r) = @_;
+    my ($self, $r, $mode) = @_;
+    $mode = "add" unless defined($mode);
+    $r->{zone} = $self->{nte}->{zone_name} unless defined($r->{zone});
 
 # name  ttl  class  type  type-specific-data
-    return "update add ".$r->{name}.".".$self->{nte}->{zone_name}." $r->{ttl} AAAA $r->{address}\n";
+    return "update $mode ".$r->{name}.".".$r->{zone}." $r->{ttl} AAAA $r->{address}\n";
 }
 
 sub zr_loc {
-    my ($self, $r) = @_;
-    return "update add $r->{name} $r->{ttl} LOC	$r->{address}\n";
+    my ($self, $r, $mode) = @_;
+    $mode = "add" unless defined($mode);
+    return "update $mode $r->{name} $r->{ttl} LOC $r->{address}\n";
 }
 
 sub zr_naptr {
