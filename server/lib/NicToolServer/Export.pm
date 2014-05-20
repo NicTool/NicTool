@@ -12,7 +12,7 @@ use Params::Validate qw/ :all /;
 use lib 'lib';
 
 # this class and its subclasses support nt_export.pl
-# subclasses (tinydns, BIND, BIND-nsupdate, PowerDNS, MaraDNS) have server specific logic
+# subclasses (tinydns, BIND, BIND-ns, PowerDNS, MaraDNS) have server specific logic
 
 sub new {
     my $class = shift;
@@ -110,7 +110,7 @@ sub set_no_change {
 
     my $last_ts = 'never';
     my $last_copy;
-    if ( $self->{export_format} =~ /tinydns|bind|bind-ns/i ) {
+    if ( $self->{export_format} =~ /tinydns|bind|bind\-ns/i ) {
         $last_copy = $self->get_last_ns_export(success=>1,copied=>1);
     }
     else {

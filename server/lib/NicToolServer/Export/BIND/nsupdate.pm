@@ -11,10 +11,13 @@ use Cwd;
 use IO::File;
 use File::Copy;
 use Params::Validate qw/ :all /;
+use Data::Dumper;
 
 sub postflight {
     my $self = shift;
     my $dir = shift || $self->{nte}->get_export_dir or return;
+
+    build_nsupdate($self, $dir);
 
     #$self->update_named_include( $dir ) or return;
 	if ( $self->{nte}->incremental ) {
@@ -23,18 +26,58 @@ sub postflight {
 		$self->export_all($dir) or return;
 	}
 	
-    return 1 if ! $self->{nte}{postflight_extra};
-
-    $self->write_makefile() or return;
-    $self->compile() or return;
-    $self->restart() or return;
-
     return 1;
+}
+
+sub build_nsupdate {
+    my ($self, $dir) = @_;
+
+    my @results = get_log($self,$dir);
+
+    open FILE, "+>", "$dir/nsupdate.log" or die $!;
+
+	foreach my $result (@results) {
+    		my @zone_records = get_zone_record($self, $result->{object_id});
+		print "zone record is ".Dumper(@zone_records);
+
+		# check if its a delete action
+		if ($result->{description} =~ m/deleted record/) {
+		
+		}	
+		#print Dumper($result);
+	}
+
+    close FILE or die $!;
+}
+
+sub get_log {
+    my ($self, $dir) = @_;
+
+    my $dbix_w = $self->{nte}->{dbix_w};
+    my $time = time-1800;
+
+    my $sql = "select * from nt_user_global_log where timestamp > $time";
+
+    return $dbix_w->query($sql)->hashes;
+}
+
+sub get_zone_record {
+    my ($self, $id) = @_;
+    my $dbix_w = $self->{nte}->{dbix_w};
+    my $time = time-1800;
+
+    my $sql = "select r.name, r.ttl, r.description, t.name AS type, r.address, r.weight,
+    r.priority, r.other, r.location, z.zone
+    from nt_zone_record r
+    LEFT JOIN resource_record_type t ON t.id=r.type_id
+    LEFT JOIN nt_zone z ON r.nt_zone_id=z.nt_zone_id
+    where r.nt_zone_record_id = $id";
+
+    return $dbix_w->query($sql)->hashes;
 }
 
 sub export_all {
     my ($self, $dir) = @_;
-	
 }
 
 sub export_incremental {
@@ -60,160 +103,19 @@ sub get_changed_zones {
     return \%has_changes;
 };
 
-sub get_template {
-    my ($self, $export_dir, $zone) = @_;
-
-    return if ! $zone;
-    my $tmpl_dir = "$export_dir/templates";
-    return if ! -d $tmpl_dir;
-
-    my $tmpl;
-    foreach my $f ( $zone, 'default' ) {
-        next if ! -f "$tmpl_dir/$f";
-        $tmpl = "$tmpl_dir/$f";
-        last;
-    };
-    return if ! $tmpl;
-
-    open my $FH, '<', $tmpl or do {
-        warn "unable to open $tmpl\n";
-        return;
-    };
-    my @lines = <$FH>;
-    close $FH;
-
-    foreach ( @lines ) { $_ =~ s/ZONE/$zone/g; };
-    return join('', @lines); # stringify the array
-}
-
-sub compile {
-    my $self = shift;
-
-    $self->{nte}->set_status("compile");
-    my $before = time;
-    system ('make compile') == 0 or do {
-        $self->{nte}->set_status("last: FAILED compile: $?");
-        $self->{nte}->elog("unable to compile: $?");
-        return;
-    };
-    my $elapsed = time - $before;
-    my $message = "compiled";
-    $message .= " ($elapsed secs)" if $elapsed > 5;
-    $self->{nte}->elog($message);
-    return 1;
-};
-
-sub restart {
-    my $self = shift;
-
-    return 1 if ! defined $self->{nte}{ns_ref}{address};
-
-    my $before = time;
-    $self->{nte}->set_status("remote restart");
-    system ('make restart') == 0 or do {
-        $self->{nte}->set_status("last: FAILED restart: $?");
-        $self->{nte}->elog("unable to restart: $?");
-        return;
-    };
-    my $elapsed = time - $before;
-    my $message = "restarted";
-    $message .= " ($elapsed secs)" if $elapsed > 5;
-    $self->{nte}->elog($message);
-    return 1;
-};
-
-
-sub write_makefile {
-    my $self = shift;
-
-    my $exportdir = $self->{nte}->get_export_dir or do {
-        warn "no export dir!";
-        return;
-    };
-    return 1 if -e "$exportdir/Makefile";   # already exists
-
-    my $address = $self->{nte}{ns_ref}{address} || '127.0.0.1';
-    my $datadir = $self->{nte}{ns_ref}{datadir} || getcwd . '/data-all';
-    $datadir =~ s/\/$//;  # strip off any trailing /
-    open my $M, '>', "$exportdir/Makefile" or do {
-        warn "unable to open ./Makefile: $!\n";
-        return;
-    };
-    print $M <<MAKE
-# After a successful export, 3 make targets are run: compile, remote, restart
-# Each target can do anything you'd like. Examples are shown for several BIND
-# compatible NS daemons. Remove comments (#) to activate the ones you wish.
-
-################################
-#########  BIND 9  #############
-################################
-# note that all 3 phases do nothing by default. It is expected that you are
-# using BINDs zone transfers. With these options, can also use rsync instead.
-
-compile: $exportdir/named.conf.nictool
-\ttest 1
-
-remote: $exportdir/named.conf.nictool
-\t#rsync -az --delete $exportdir/ bind\@$address:$datadir/
-\ttest 1
-
-restart: $exportdir/named.conf.nictool
-\t#ssh bind\@$address rndc reload
-\ttest 1
-
-################################
-#########    NSD   #############
-################################
-# Note: you will need to configure zonesdir in nsd.conf to point to this
-# export directory. Make sure the export directory reflected below is correct
-# then uncomment each of the targets.
-
-#compile: $exportdir/named.conf.nictool
-#\tnsdc rebuild
-#
-#remote: /var/db/nsd/nsd.db
-#\trsync -az --delete /var/db/nsd/nsd.db nsd\@$address:/var/db/nsd/
-#
-#restart: nsd.db
-#\tssh nsd\@$address nsdc reload
-
-################################
-#########  PowerDNS  ###########
-################################
-
-#compile: $exportdir/named.conf.nictool
-#\ttest 1
-#
-#remote: $exportdir/named.conf.nictool
-#\trsync -az --delete $exportdir/ powerdns\@$address:$datadir/
-#
-#restart: $exportdir/named.conf.nictool
-#\tssh powerdns\@$address pdns_control cycle
-MAKE
-;
-    close $M;
-    return 1;
-};
-
 sub zr_a {
     my ($self, $r) = @_;
-
-# name  ttl  class  type  type-specific-data
-    return "update add $r->{name}	$r->{ttl}	IN  A	$r->{address}\n";
+    return "update add ".$r->{name}.".".$self->{nte}->{zone_name}." $r->{ttl} A $r->{address}\n";
 }
 
 sub zr_cname {
     my ($self, $r) = @_;
-
-# name  ttl  class   rr     canonical name
-    return "update add $r->{name}	$r->{ttl}	IN  CNAME	$r->{address}\n";
+    return "update add $r->{name} $r->{ttl} CNAME $r->{address}\n";
 }
 
 sub zr_mx {
     my ($self, $r) = @_;
-
-#name           ttl  class   rr  pref name
-    return "$r->{name}	$r->{ttl}	IN  MX	$r->{weight}	$r->{address}\n";
+    return "update add $r->{name} $r->{ttl} MX $r->{weight} $r->{address}\n";
 }
 
 sub zr_txt {
@@ -224,7 +126,7 @@ sub zr_txt {
         $r->{address} = join( "\" \"", unpack("(a255)*", $r->{address} ) );
     };
 # name  ttl  class   rr     text
-    return "$r->{name}	$r->{ttl}	IN  TXT	\"$r->{address}\"\n";
+    return "update add $r->{name} $r->{ttl} TXT	\"$r->{address}\"\n";
 }
 
 sub zr_ns {
@@ -233,15 +135,12 @@ sub zr_ns {
     my $name = $self->qualify( $r->{name} );
     $name .= '.' if '.' ne substr($name, -1, 1);
 
-# name  ttl  class  type  type-specific-data
-    return "$name	$r->{ttl}	IN	NS	$r->{address}\n";
+    return "update add $name $r->{ttl} NS $r->{address}\n";
 }
 
 sub zr_ptr {
     my ($self, $r) = @_;
-
-# name  ttl  class  type  type-specific-data
-    return "$r->{name}	$r->{ttl}	IN  PTR	$r->{address}\n";
+    return "update add ".$r->{name}.".".$self->{nte}->{zone_name}." $r->{ttl} PTR $r->{address}\n";
 }
 
 sub zr_soa {
@@ -257,7 +156,7 @@ sub zr_spf {
 # SPF record support was added in BIND v9.4.0
 
 # name  ttl  class  type  type-specific-data
-    return "$r->{name}	$r->{ttl}	IN  SPF	\"$r->{address}\"\n";
+    return "update add $r->{name} $r->{ttl} SPF	\"$r->{address}\"\n";
 }
 
 sub zr_srv {
@@ -268,19 +167,19 @@ sub zr_srv {
     my $port     = $self->{nte}->is_ip_port( $r->{other} );
 
 # srvce.prot.name  ttl  class   rr  pri  weight port target
-    return "$r->{name}	$r->{ttl}	IN  SRV	$priority	$weight	$port	$r->{address}\n";
+    return "update add $r->{name} $r->{ttl} SRV	$priority $weight $port	$r->{address}\n";
 }
 
 sub zr_aaaa {
     my ($self, $r) = @_;
 
 # name  ttl  class  type  type-specific-data
-    return "$r->{name}	$r->{ttl}	IN  AAAA	$r->{address}\n";
+    return "update add ".$r->{name}.".".$self->{nte}->{zone_name}." $r->{ttl} AAAA $r->{address}\n";
 }
 
 sub zr_loc {
     my ($self, $r) = @_;
-    return "$r->{name}	$r->{ttl}	IN  LOC	$r->{address}\n";
+    return "update add $r->{name} $r->{ttl} LOC	$r->{address}\n";
 }
 
 sub zr_naptr {
