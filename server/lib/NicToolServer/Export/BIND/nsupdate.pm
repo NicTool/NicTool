@@ -49,7 +49,52 @@ sub build_nsupdate {
 			$mode = "delete";	
 		}
 
-          	my $method = 'zr_' . lc $r->{type};
+		# check if its a modify on name or address
+		# TODO - confirm nsupdate removal with full details doesnt remove any round robin entries with the same name but a different IP
+		if ($record->{description} =~ m/changed\sname\sfrom\s\'((\w|\.|\:|\-)*)\'\s/) {
+			# Found a changed DNS name - pull delete name from desc
+			my $old_name = $1;
+			# Deref the $r hash and copy it, then create a new reference for use here
+			my %old_hash = %{$r};
+			my $old = \%old_hash;
+
+			# Overwrite the original name in the hashref with the replacement older name to delete
+			$old->{name} = $old_name;
+	
+			# check if the IP has changed as well
+			# If it hasnt, just use the address from given details in record that is already there
+			if ($record->{description} =~ m/changed\saddress\sfrom\s\'((\w|\:|\.|\-)*)\'\s/) {
+				#Found a changed address as well, pull old address to delete from desc
+				$old->{address} = $1;
+			}
+			$mode = "delete";
+          		my $method = 'zr_' . lc $old->{type};
+            		$old->{location}  ||= '';
+            		print FILE $self->$method($old, $mode);
+
+			$mode = "add";
+		} elsif ($record->{description} =~ m/changed\saddress\sfrom\s\'((\w|\:|\.|\-)*)\'\s/) {
+			# Just found an IP change - need to remove the old IP entry
+			my $old_ip = $1;
+			# Deref the $r hash and copy it, then create a new reference for use here
+			my %old_hash = %{$r};
+			my $old = \%old_hash;
+
+			$old->{address} = $old_ip;
+			
+			$mode = "delete";
+          		my $method = 'zr_' . lc $old->{type};
+            		$old->{location}  ||= '';
+            		print FILE $self->$method($old, $mode);
+			
+			$mode = "add";
+		} elsif ($record->{description} =~ m/changed\stimestamp/) {
+			# on just a timestamp change - dont bother generating any entries
+			next;
+		}
+          
+		#Now that we are done (potentially) cleaning up old changes, lets move onto the main change	
+		my $method = 'zr_' . lc $r->{type};
             	$r->{location}  ||= '';
             	print FILE $self->$method($r, $mode);
         }
@@ -63,7 +108,7 @@ sub get_log {
     my $dbix_w = $self->{nte}->{dbix_w};
     my $time = time-300;
 
-    my $sql = "select * from nt_user_global_log where timestamp > $time";
+    my $sql = "SELECT * FROM nictool.nt_user_global_log WHERE timestamp > (SELECT UNIX_TIMESTAMP(date_start) FROM nt_nameserver_export_log WHERE success=1 AND nt_nameserver_id=4 ORDER BY date_start DESC LIMIT 1) AND object IN ('zone','zone_record')";
 
     return $dbix_w->query($sql)->hashes;
 }
@@ -73,7 +118,7 @@ sub get_zone_record {
     my $dbix_w = $self->{nte}->{dbix_w};
     my $time = time-1800;
 
-    my $sql = "select r.name, r.ttl, r.description, t.name AS type, r.address, r.weight,
+    my $sql = "SELECT r.name, r.ttl, r.description, t.name AS type, r.address, r.weight,
     r.priority, r.other, r.location, z.zone
     from nt_zone_record r
     LEFT JOIN resource_record_type t ON t.id=r.type_id
