@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# VERSION 1.9
+# VERSION 1.10
 
 use strict;
 use warnings;
@@ -10,11 +10,12 @@ use English qw( -no_match_vars );
 my $apps = [
     { app => 'expat'         , info => { port => 'expat2',         dport=>'expat2' }, },
     { app => 'gettext'       , info => {}, },
-    { app => 'gmake'         , info => { yum => 'make', apt => 'make' }, },
+    { app => 'gmake'         , info => { yum  => 'make', apt => 'make' }, },
     { app => 'mysql-server'  , info => { port => 'mysql55-server', dport=>'mysql5',
                                          yum  => 'mysql-server',   apt => 'mysql-server' }, },
     { app => 'apache22'      , info => { dport=>'', yum => 'httpd', apt=>'apache2' }, },
-    { app => 'mod_perl2'     , info => { dport=>'', yum => 'mod_perl', apt=>'libapache2-mod-perl2' }, },
+    { app => 'mod_perl2'     , info => { port => 'ap22-mod_perl2', dport=>'',
+                                         yum  => 'mod_perl', apt=>'libapache2-mod-perl2' }, },
     { app => 'rsync'         , info => { }, },
 ];
 
@@ -114,13 +115,13 @@ sub get_perl_modules_from_ini {
 };
 
 sub install_app {
-    my ( $app, $info) = @_;
+    my ( $app, $info ) = @_;
 
     if ( lc($OSNAME) eq 'darwin' ) {
-        install_app_darwin($app, $info );
+        install_app_darwin( $app, $info );
     }
     elsif ( lc($OSNAME) eq 'freebsd' ) {
-        install_app_freebsd($app, $info );
+        install_app_freebsd( $app, $info );
     }
     elsif ( lc($OSNAME) eq 'linux' ) {
         install_app_linux( $app, $info );
@@ -144,18 +145,30 @@ sub install_app_darwin {
 }
 
 sub install_app_freebsd {
-    my ($app, $info ) = @_;
+    my ( $app, $info ) = @_;
+
+    if ( -x '/usr/sbin/pkg' ) {
+        if ( `/usr/sbin/pkg info -x $app` ) {  ## no critic (Backtick)
+            return print "$app is installed.\n";
+        }
+        print "installing $app";
+        return if install_app_freebsd_pkg($info->{port}, $app);
+    }
 
     print " from ports...";
 
-    if ( `/usr/sbin/pkg_info | /usr/bin/grep $app` ) { ## no critic (Backtick)
-        return print "$app is installed.\n";
-    };
-    if ( `/usr/sbin/pkg info -x $app` ) {  ## no critic (Backtick)
-        return print "$app is installed.\n";
+    if ( -x '/usr/sbin/pkg_info' ) {
+        if ( `/usr/sbin/pkg_info | /usr/bin/grep $app` ) { ## no critic (Backtick)
+            return print "$app is installed.\n";
+        };
     }
 
     print "installing $app";
+    return install_app_freebsd_port($app, $info);
+};
+
+sub install_app_freebsd_port {
+    my ( $app, $info ) = @_;
 
     my $name = $info->{port} || $app;
     my $category = $info->{category} || '*';
@@ -168,6 +181,20 @@ sub install_app_freebsd {
         };
     };
     return;
+};
+
+sub install_app_freebsd_pkg {
+    my ( $name, $app ) = @_;
+    my $pkg = '/usr/sbin/pkg';
+    system "$pkg install -y $name";
+    return 1 if `/usr/sbin/pkg info -x $name`;
+
+    return 0 if ($app eq $name);
+
+    system "$pkg install -y $app";
+    return 1 if `/usr/sbin/pkg info -x $app`;
+
+    return 0;
 };
 
 sub install_app_linux {
@@ -257,15 +284,16 @@ sub install_module_freebsd {
     my $portname = "p5-$name";
     $portname =~ s/::/-/g;
 
+    if ( -x '/usr/sbin/pkg' ) {
+        if ( `/usr/sbin/pkg info -x $portname` ) { ## no critic (Backtick)
+            return print "$module is installed.\n";
+        }
+    }
+
     print " from ports...$portname...";
 
     if ( -x '/usr/sbin/pkg_info' ) {
         if ( `/usr/sbin/pkg_info | /usr/bin/grep $portname` ) { ## no critic (Backtick)
-            return print "$module is installed.\n";
-        }
-    }
-    if ( -x '/usr/sbin/pkg' ) {
-        if ( `/usr/sbin/pkg info -x $portname` ) { ## no critic (Backtick)
             return print "$module is installed.\n";
         }
     }
