@@ -7,9 +7,8 @@ CREATE TABLE resource_record_type (
     reverse         tinyint(1) UNSIGNED NOT NULL DEFAULT 1,
     forward         tinyint(1) UNSIGNED NOT NULL DEFAULT 1,
     obsolete        tinyint(1) NOT NULL DEFAULT '0',
-
-PRIMARY KEY (`id`),
-UNIQUE `name` (`name`)
+    PRIMARY KEY (`id`),
+    UNIQUE `name` (`name`)
 ) DEFAULT CHARSET=utf8;
 
 INSERT INTO `resource_record_type` (`id`, `name`, `description`, `reverse`, `forward`, `obsolete`)

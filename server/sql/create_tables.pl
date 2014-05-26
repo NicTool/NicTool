@@ -20,72 +20,34 @@ use strict;
 use DBI;
 use English;
 use Digest::HMAC_SHA1 qw(hmac_sha1_hex);
-
+$|++;
 my $test_run = $ARGV[0] eq '-test';
 
-# machine dependant variables
-my $db_host    = 'localhost';
-my $db         = 'nictool';
-my $db_user    = 'nictool';
-my $db_pass    = 'lootcin205';
-my $db_root_pw = '';
-my $nt_root_pw = '';
-my $nt_root_email='';
+my ($dbh, $db_host) = get_dbh();
 
 print "
 #########################################################################
-               NicTool database connection settings  
-######################################################################### \n";
-$db_host = answer("database hostname", $db_host);
-
-system "stty -echo";
-$db_root_pw = answer("mysql root password");
-system "stty echo";
-print "\n";
-
-$db = answer("a name for the NicTool database", $db);
-die "Sorry\n" if $db =~/^mysql$/i;
-
-$db_user = answer("a username for NicTool's database user", $db_user);
-
-my ($response, $response2);
-while(!$db_pass){
-    system "stty -echo";
-    $response = answer("a new password for NicTool's database user ($db_user)");
-    system "stty echo";
-
-    system "stty -echo";
-    $response2 = answer("\nPlease verify password: ");
-    system "stty echo";
-    $db_pass = $response if $response and ($response eq $response2);
-    print "\nPasswords didn't match!\n" unless $db_pass;
-}
-
-print "
-#########################################################################
-                 NicTool admin user (root) settings  
+              NicTool DSN (database connection settings)
 #########################################################################
 ";
-while(!$nt_root_pw){
-    system "stty -echo";
-    $response = answer("a new root password for NicTool");
-    system "stty echo";
-    print "\n";
+my $db  = answer("the NicTool database name", 'nictool');
+die "Sorry\n" if $db =~/^mysql$/i;
 
-    system "stty -echo";
-    $response2 = answer("a verify password");
-    system "stty echo";
-    $nt_root_pw = $response if $response and ($response eq $response2);
-    print "\nPasswords didn't match!\n" unless $nt_root_pw;
-}
-$nt_root_pw = hmac_sha1_hex( $nt_root_pw, 'root' );
-print "\n";
+my $db_user = answer("the NicTool database user", 'nictool');
+my $db_pass = get_password("the DB user $db_user");
 
+print "\n
+#########################################################################
+        NicTool admin user (http://root\@$db_host/)
+#########################################################################
+";
+my $nt_root_email;
 while(!$nt_root_email){
-    $nt_root_email = answer("an email address for the root user of NicTool", $nt_root_email);
+    $nt_root_email = answer("the NicTool 'root' users email address", $nt_root_email);
 }
+my $nt_root_pw = hmac_sha1_hex(get_password("the NicTool user 'root'"), 'root' );
 
-print qq{
+print qq{\n
 Beginning table creation.
 If any of the information you entered is incorrect, press Control-C now!
 -------------------------
@@ -95,65 +57,77 @@ db  : $db
 user: $db_user
    *** the DSN info must match the settings in nictoolserver.conf! ***
 
-NICTOOL LOGIN: http://localhost/index.cgi
+NICTOOL LOGIN: https://$db_host/index.cgi
 user :  root
-pass :  *******
+pass :  ************
 email:  $nt_root_email
 -------------------------
 Otherwise, hit return to continue...
 };
 my $read = <STDIN>;
 
-my $dbh;
-if(!$test_run){
-$dbh = DBI->connect("dbi:mysql:host=$db_host", "root", $db_root_pw);
+exit if $test_run;
 
-# Create database and initial priveleges
+# Create database and initial privileges
 $dbh->do("DROP DATABASE IF EXISTS $db");
 $dbh->do("CREATE DATABASE $db");
 $dbh->do("GRANT ALL PRIVILEGES ON $db.* TO $db_user\@$db_host IDENTIFIED BY '$db_pass'");
+$dbh->do("USE $db");
+
+opendir(DIR, '.') || warn "unable to open dir: $!\n";
+
+foreach my $file (sort readdir(DIR)) {
+    next if /^\./;
+    next if -d "./$file";
+    next if $file !~ /\.sql$/;
+    open (my $fh, '<', $file) or die "failed to open $file for read: $!";
+    print "\nopened $file\n";
+    my $q_string = join(' ', grep {/^[^#]/} grep {/[\S]/} <$fh>);
+    foreach my $q (split(';', $q_string)) { # split string into queries
+        next if $q !~ /[\S]/;               # skip blank entries
+        print "$q;";                        # show the query
+        $dbh->do( $q ) or die $DBI::errstr; # run it!
+    };
+    print "\n";
+}
+close DIR;
+
+$dbh->do("
+INSERT INTO $db.nt_user(nt_group_id, first_name, last_name, username, password, email)
+VALUES (1, 'Root', 'User', 'root', '$nt_root_pw', '$nt_root_email')");
+$dbh->do("
+INSERT INTO $db.nt_user_log(nt_group_id, nt_user_id, action, timestamp,
+  modified_user_id, first_name, last_name, username, password, email)
+VALUES (1,1,'added', UNIX_TIMESTAMP(), 0, 'Root', 'User', 'root', '$nt_root_pw', '$nt_root_email')");
+$dbh->do("
+INSERT INTO $db.nt_user_global_log(nt_user_id, timestamp, action, object,
+  object_id, log_entry_id, title, description)
+VALUES (1,UNIX_TIMESTAMP(),'added', 'user', 1, 1, 'root', 'user creation')"
+);
 
 $dbh->disconnect;
+print "\n";
+
+sub get_dbh {
+    print "
+#########################################################################
+             Administrator DSN (database connection settings)
+#########################################################################\n";
+    my $db_host = answer("database hostname", 'localhost');
+
+    system "stty -echo";
+    my $db_root_pw = answer("mysql root password");
+    system "stty echo";
+    print "\n";
+
+    return if $test_run;
+    my $dbh = DBI->connect("dbi:mysql:host=$db_host", "root", $db_root_pw, {
+            ChopBlanks       => 1,
+        })
+        or die $DBI::errstr;
+
+    return ($dbh, $db_host);
 }
-
-opendir(DIR, "./") || warn "unable to open dir: $!\n";
-
-my $sql;
-my $res;
-foreach( sort readdir(DIR) ) {
-    next if /^\./;
-    next if -d "./$_";
-    next unless /\.sql$/;
-    print "importing contents of $_ .. "; 
-    if(!$test_run){
-        $res = system("mysql -u $db_user -p$db_pass -h $db_host $db < $_"); 
-        print "done.\n" unless $res ne 0;
-        print "FAILED($res)\n" if $res ne 0;
-    }else{
-        print "TEST\n";
-    }
-}
-close(DIR);
-
-print "importing contents of temp.sql .. ";
-my $temp =<<EO_TEMP;
-INSERT INTO nt_user(nt_group_id, first_name, last_name, username, password, email) values (1, 'Root', 'User', 'root', '$nt_root_pw', '$nt_root_email');
-INSERT INTO nt_user_log(nt_group_id, nt_user_id, action, timestamp, modified_user_id, first_name, last_name, username, password, email) values (1,1,'added', UNIX_TIMESTAMP(), 0, 'Root', 'User', 'root', '$nt_root_pw', '$nt_root_email');
-INSERT INTO nt_user_global_log(nt_user_id, timestamp, action, object, object_id, log_entry_id, title, description) values (1,UNIX_TIMESTAMP(),'added', 'user', 1, 1, 'root', 'user creation');
-EO_TEMP
-open(TEMP,">temp.sql") || die "Unable to create file temp.sql: $!\n";
-print TEMP $temp;
-close(TEMP);
-if(!$test_run){
-    $res = system("mysql -u $db_user -p$db_pass -h $db_host $db < temp.sql");
-    print "done.\n" unless $res ne 0;
-    print "FAILED($res)\n" if $res ne 0;
-}else{
-    print "TEST\n";
-}
-unlink("temp.sql");
-
-$dbh->disconnect if !$test_run;
 
 sub answer {
 
@@ -199,3 +173,22 @@ sub answer {
     return "";
 }
 
+sub get_password {
+    my ($question) = @_;
+
+    my ($answer, $response, $response2);
+    while(!$answer){
+        system "stty -echo";
+        $response = answer("a new password for $question");
+        system "stty echo";
+
+        system "stty -echo";
+        $response2 = answer("\nPlease verify password: ");
+        system "stty echo";
+        $answer = $response if $response and ($response eq $response2);
+        if (!$answer) {
+            print "\nPasswords didn't match!\n";
+        };
+    }
+    return $answer;
+}

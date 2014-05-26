@@ -18,7 +18,7 @@
 
 DROP TABLE IF EXISTS nt_zone;
 CREATE TABLE nt_zone(
-    nt_zone_id          INT UNSIGNED AUTO_INCREMENT NOT NULL PRIMARY KEY,
+    nt_zone_id          INT UNSIGNED AUTO_INCREMENT NOT NULL,
     nt_group_id         INT UNSIGNED NOT NULL,
     zone                VARCHAR(255) NOT NULL,
     mailaddr            VARCHAR(127),
@@ -31,15 +31,12 @@ CREATE TABLE nt_zone(
     ttl                 INT UNSIGNED,
     location            VARCHAR(2) DEFAULT NULL,
     last_modified       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP,
-    deleted             TINYINT(1) UNSIGNED DEFAULT 0 NOT NULL
-) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-CREATE INDEX nt_zone_idx1 on nt_zone(nt_group_id);
-CREATE INDEX nt_zone_idx2 on nt_zone(deleted);
-CREATE INDEX nt_zone_idx3 on nt_zone(zone); 
-
-# show index from nt_zone
-# speedup: myisamchk --sort-index --sort-records=14 nt_zone
-# where 14 = the zone index or whatever order by happens most often
+    deleted             TINYINT(1) UNSIGNED DEFAULT 0 NOT NULL,
+    PRIMARY KEY (`nt_zone_id`),
+    KEY `nt_zone_idx1` (`nt_group_id`),
+    KEY `nt_zone_idx2` (`deleted`),
+    KEY `nt_zone_idx3` (`zone`)
+) DEFAULT CHARSET=utf8 COLLATE=utf8_bin ROW_FORMAT=COMPRESSED;
 
 
 DROP TABLE IF EXISTS nt_zone_log;
@@ -68,7 +65,7 @@ CREATE TABLE nt_zone_log(
     /* CONSTRAINT `nt_zone_log_ibfk_3` FOREIGN KEY (`nt_user_id`) REFERENCES `nt_user` (`nt_user_id`) ON DELETE CASCADE ON UPDATE CASCADE,
     ** CONSTRAINT `nt_zone_log_ibfk_1` FOREIGN KEY (`nt_zone_id`) REFERENCES `nt_zone` (`nt_zone_id`) ON DELETE CASCADE ON UPDATE CASCADE,
     ** CONSTRAINT `nt_zone_log_ibfk_2` FOREIGN KEY (`nt_group_id`) REFERENCES `nt_group` (`nt_group_id`) ON DELETE CASCADE ON UPDATE CASCADE */
-) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+) DEFAULT CHARSET=utf8 COLLATE=utf8_bin ROW_FORMAT=COMPRESSED;
 
 
 DROP TABLE IF EXISTS nt_zone_record;
@@ -92,7 +89,7 @@ CREATE TABLE nt_zone_record(
     KEY `nt_zone_record_idx3` (`nt_zone_id`),
     KEY `nt_zone_record_idx4` (`deleted`)
     /* CONSTRAINT `nt_zone_record_ibfk_1` FOREIGN KEY (`nt_zone_id`) REFERENCES `nt_zone` (`nt_zone_id`) ON DELETE CASCADE ON UPDATE CASCADE */
-) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+) DEFAULT CHARSET=utf8 COLLATE=utf8_bin ROW_FORMAT=COMPRESSED;
 
 
 DROP TABLE IF EXISTS nt_zone_record_log;
@@ -120,11 +117,10 @@ CREATE TABLE nt_zone_record_log(
     /* CONSTRAINT `nt_zone_record_log_ibfk_3` FOREIGN KEY (`nt_zone_record_id`) REFERENCES `nt_zone_record` (`nt_zone_record_id`) ON DELETE CASCADE ON UPDATE CASCADE,
     ** CONSTRAINT `nt_zone_record_log_ibfk_1` FOREIGN KEY (`nt_zone_id`) REFERENCES `nt_zone` (`nt_zone_id`) ON DELETE CASCADE ON UPDATE CASCADE,
     ** CONSTRAINT `nt_zone_record_log_ibfk_2` FOREIGN KEY (`nt_user_id`) REFERENCES `nt_user` (`nt_user_id`) ON DELETE CASCADE ON UPDATE CASCADE */
-) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+) DEFAULT CHARSET=utf8 COLLATE=utf8_bin ROW_FORMAT=COMPRESSED;
 
 CREATE TABLE nt_zone_nameserver (
     nt_zone_id           int(10) unsigned NOT NULL,
     nt_nameserver_id     smallint(5) unsigned NOT NULL,
     UNIQUE KEY `zone_ns_id` (`nt_zone_id`,`nt_nameserver_id`)
 ) DEFAULT CHARSET=utf8;
-

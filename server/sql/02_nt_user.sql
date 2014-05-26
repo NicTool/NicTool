@@ -18,7 +18,7 @@
 
 DROP TABLE IF EXISTS nt_user;
 CREATE TABLE nt_user(
-    nt_user_id          INT UNSIGNED AUTO_INCREMENT NOT NULL PRIMARY KEY,
+    nt_user_id          INT UNSIGNED AUTO_INCREMENT NOT NULL,
     nt_group_id         INT UNSIGNED NOT NULL,
     first_name          VARCHAR(30),
     last_name           VARCHAR(40),
@@ -26,14 +26,16 @@ CREATE TABLE nt_user(
     password            VARCHAR(128) NOT NULL,
     email               VARCHAR(100) NOT NULL,
     is_admin            TINYINT(1) UNSIGNED DEFAULT NULL,
-    deleted             TINYINT(1) UNSIGNED DEFAULT 0 NOT NULL
+    deleted             TINYINT(1) UNSIGNED DEFAULT 0 NOT NULL,
+    PRIMARY KEY (`nt_user_id`),
+    KEY `nt_user_idx1` (`username`,`password`),
+    KEY `nt_user_idx2` (`deleted`)
 ) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-CREATE INDEX nt_user_idx1 on nt_user(username, password);
-CREATE INDEX nt_user_idx2 on nt_user(deleted);
+
 
 DROP TABLE IF EXISTS nt_user_log; 
 CREATE TABLE nt_user_log(
-    nt_user_log_id      INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    nt_user_log_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     nt_group_id        INT UNSIGNED NOT NULL,
     nt_user_id         INT UNSIGNED NOT NULL,
     action             ENUM('added','modified','deleted','moved') NOT NULL,
@@ -44,7 +46,7 @@ CREATE TABLE nt_user_log(
     username           VARCHAR(50),
     password           VARCHAR(128),
     email              VARCHAR(100)
-) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+) DEFAULT CHARSET=utf8 COLLATE=utf8_bin ROW_FORMAT=COMPRESSED;
 
 
 DROP TABLE IF EXISTS nt_user_session;
@@ -69,7 +71,7 @@ CREATE TABLE nt_user_session_log(
     PRIMARY KEY (`nt_user_session_log_id`),
     KEY `nt_user_id` (`nt_user_id`)
     /* CONSTRAINT `nt_user_session_log_ibfk_1` FOREIGN KEY (`nt_user_id`) REFERENCES `nt_user` (`nt_user_id`) ON DELETE CASCADE ON UPDATE CASCADE */
-) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+) DEFAULT CHARSET=utf8 COLLATE=utf8_bin ROW_FORMAT=COMPRESSED;
 
 DROP TABLE IF EXISTS nt_user_global_log;
 CREATE TABLE nt_user_global_log(
@@ -88,4 +90,4 @@ CREATE TABLE nt_user_global_log(
     PRIMARY KEY (`nt_user_global_log_id`),
     KEY `nt_user_global_log_idx1` (`nt_user_id`)
     /* CONSTRAINT `nt_user_global_log_ibfk_1` FOREIGN KEY (`nt_user_id`) REFERENCES `nt_user` (`nt_user_id`) ON DELETE CASCADE ON UPDATE CASCADE */
-) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+) DEFAULT CHARSET=utf8 COLLATE=utf8_bin ROW_FORMAT=COMPRESSED;

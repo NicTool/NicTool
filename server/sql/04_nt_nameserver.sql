@@ -23,9 +23,10 @@ CREATE TABLE nt_nameserver(
     /* CONSTRAINT `nt_nameserver_ibfk_1` FOREIGN KEY (`nt_group_id`) REFERENCES `nt_group` (`nt_group_id`) ON DELETE CASCADE ON UPDATE CASCADE */
 ) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
+
 DROP TABLE IF EXISTS nt_nameserver_log;
 CREATE TABLE nt_nameserver_log(
-    nt_nameserver_log_id    INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    nt_nameserver_log_id    INT UNSIGNED NOT NULL AUTO_INCREMENT,
     nt_group_id         INT UNSIGNED NOT NULL,
     nt_user_id          INT UNSIGNED NOT NULL,
     action              ENUM('added','modified','deleted','moved') NOT NULL,
@@ -39,10 +40,12 @@ CREATE TABLE nt_nameserver_log(
     datadir             VARCHAR(255),
     export_format       VARCHAR(12) DEFAULT '' NOT NULL,
     export_interval     SMALLINT UNSIGNED,
-    export_serials      tinyint(1) UNSIGNED NOT NULL DEFAULT '1'
-) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-CREATE INDEX nt_nameserver_log_idx1 on nt_nameserver_log(nt_nameserver_id);
-CREATE INDEX nt_nameserver_log_idx2 on nt_nameserver_log(timestamp);
+    export_serials      tinyint(1) UNSIGNED NOT NULL DEFAULT '1',
+    PRIMARY KEY (`nt_nameserver_log_id`),
+    KEY `nt_nameserver_log_idx1` (`nt_nameserver_id`),
+    KEY `nt_nameserver_log_idx2` (`timestamp`)
+) DEFAULT CHARSET=utf8 COLLATE=utf8_bin ROW_FORMAT=COMPRESSED;
+
 
 DROP TABLE IF EXISTS nt_nameserver_export_types;
 CREATE TABLE nt_nameserver_export_types (
@@ -71,24 +74,25 @@ INSERT INTO nt_nameserver_log(nt_group_id,nt_user_id, action, timestamp, nt_name
 
 DROP TABLE IF EXISTS nt_nameserver_qlog;
 CREATE TABLE nt_nameserver_qlog(
-    nt_nameserver_qlog_id   INT UNSIGNED AUTO_INCREMENT NOT NULL PRIMARY KEY,
+    nt_nameserver_qlog_id   INT UNSIGNED AUTO_INCREMENT NOT NULL,
     nt_nameserver_id        SMALLINT UNSIGNED NOT NULL,
     nt_zone_id              INT UNSIGNED NOT NULL,
     nt_zone_record_id       INT UNSIGNED,
     timestamp               INT UNSIGNED NOT NULL,
     ip                      VARCHAR(15),
-    port                    SMALLINT UNSIGNED, # remote port query came from
-    qid                     SMALLINT UNSIGNED, # query ID passed by remote side
-    flag                    CHAR(1), # - means did not provide an answer, + means provided answer (this should always be true)
+    port                    SMALLINT UNSIGNED,
+    qid                     SMALLINT UNSIGNED,
+    flag                    CHAR(1),
     qtype                   ENUM('a','ns','cname','soa','ptr','hinfo','mx','txt','rp','sig','key','aaaa','axfr','any','unknown'), 
-    query                   VARCHAR(255) NOT NULL, # what they asked for
+    query                   VARCHAR(255) NOT NULL,
     r_size                  SMALLINT UNSIGNED,
-    q_size                  SMALLINT UNSIGNED
-) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-CREATE INDEX nt_nameserver_qlog_idx1 on nt_nameserver_qlog(query); # for searching
-CREATE INDEX nt_nameserver_qlog_idx2 on nt_nameserver_qlog(nt_zone_id); # for search as well
-CREATE INDEX nt_nameserver_qlog_idx3 on nt_nameserver_qlog(nt_zone_record_id); # for searching ..
-CREATE INDEX nt_nameserver_qlog_idx4 on nt_nameserver_qlog(timestamp); 
+    q_size                  SMALLINT UNSIGNED,
+    PRIMARY KEY (`nt_nameserver_qlog_id`),
+    KEY `nt_nameserver_qlog_idx1` (`query`),
+    KEY `nt_nameserver_qlog_idx2` (`nt_zone_id`),
+    KEY `nt_nameserver_qlog_idx3` (`nt_zone_record_id`),
+    KEY `nt_nameserver_qlog_idx4` (`timestamp`)
+) DEFAULT CHARSET=utf8 COLLATE=utf8_bin ROW_FORMAT=COMPRESSED;
 
 DROP TABLE IF EXISTS nt_nameserver_qlogfile;
 CREATE TABLE nt_nameserver_qlogfile(
@@ -98,10 +102,10 @@ CREATE TABLE nt_nameserver_qlogfile(
     processed                   INT UNSIGNED,
     line_count                  INT UNSIGNED,
     insert_count                INT UNSIGNED,
-    took                        SMALLINT UNSIGNED
-) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-CREATE INDEX nt_nameserver_qlogfile_idx1 on nt_nameserver_qlogfile(filename); # for search from grab_logs.pl
-CREATE INDEX nt_nameserver_qlogfile_idx2 on nt_nameserver_qlogfile(nt_nameserver_id); # for searching
+    took                        SMALLINT UNSIGNED,
+    KEY `nt_nameserver_qlogfile_idx1` (`filename`),
+    KEY `nt_nameserver_qlogfile_idx2` (`nt_nameserver_id`)
+) DEFAULT CHARSET=utf8 COLLATE=utf8_bin ROW_FORMAT=COMPRESSED;
 
 DROP TABLE IF EXISTS nt_nameserver_export_log;
 CREATE TABLE nt_nameserver_export_log(
@@ -112,7 +116,6 @@ CREATE TABLE nt_nameserver_export_log(
     copied                          tinyint(1) UNSIGNED NOT NULL DEFAULT 0,
     message                         VARCHAR(256) NULL DEFAULT NULL,
     success                         tinyint(1) UNSIGNED NULL DEFAULT NULL,
-    partial                         tinyint(1) UNSIGNED NOT NULL DEFAULT 0
-) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-CREATE INDEX nt_nameserver_export_log_idx1 on nt_nameserver_export_log(nt_nameserver_id);
-
+    partial                         tinyint(1) UNSIGNED NOT NULL DEFAULT 0,
+    KEY `nt_nameserver_export_log_idx1` (`nt_nameserver_id`)
+) DEFAULT CHARSET=utf8 COLLATE=utf8_bin ROW_FORMAT=COMPRESSED;

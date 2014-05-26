@@ -17,7 +17,7 @@
 
 DROP TABLE IF EXISTS nt_perm;
 CREATE TABLE nt_perm(
-    nt_perm_id          INT UNSIGNED AUTO_INCREMENT NOT NULL PRIMARY KEY,
+    nt_perm_id          INT UNSIGNED AUTO_INCREMENT NOT NULL,
     nt_group_id         INT UNSIGNED DEFAULT NULL,
     nt_user_id          INT UNSIGNED DEFAULT NULL,
     inherit_perm        INT UNSIGNED DEFAULT NULL,
@@ -50,10 +50,12 @@ CREATE TABLE nt_perm(
 
     usable_ns           VARCHAR(50),
 
-    deleted             TINYINT(1) UNSIGNED DEFAULT 0 NOT NULL
+    deleted             TINYINT(1) UNSIGNED DEFAULT 0 NOT NULL,
+
+    PRIMARY KEY (`nt_perm_id`),
+    KEY `nt_perm_idx1` (`nt_group_id`,`nt_user_id`),
+    KEY `nt_perm_idx2` (`nt_user_id`)
 ) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-CREATE INDEX nt_perm_idx1 on nt_perm(nt_group_id,nt_user_id);
-CREATE INDEX nt_perm_idx2 on nt_perm(nt_user_id);
 
 INSERT into nt_perm VALUES(1,1,0,NULL,NULL,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,0);
 
@@ -65,7 +67,6 @@ CREATE TABLE nt_delegate(
     nt_object_type      ENUM('ZONE','ZONERECORD','NAMESERVER','USER','GROUP') NOT NULL ,
     delegated_by_id     INT UNSIGNED NOT NULL,
     delegated_by_name     VARCHAR(50),
-
 
     perm_write          TINYINT UNSIGNED DEFAULT 1 NOT NULL,
     perm_delete         TINYINT UNSIGNED DEFAULT 1 NOT NULL,
@@ -142,4 +143,3 @@ CREATE TABLE nt_delegate_log(
     #delegating groups: not implemented yet
     #group_perm_modify_name         TINYINT UNSIGNED DEFAULT 1 NOT NULL, 
 );
-
