@@ -1,8 +1,14 @@
 
-The latest version is available here:
+The latest version of INSTALL is available here:
 
    http://www.nictool.com/docs/server/install.shtml
 
 
-To upgrade, install the newest version of NicTool and then update your database with sql/upgrade.pl.
+Specific instructions for setting up exports are available here:
 
+   https://github.com/msimerson/NicTool/wiki
+
+
+UPGRADING
+
+Install the newest version of NicTool and then update your database with sql/upgrade.pl.
