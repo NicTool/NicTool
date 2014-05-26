@@ -799,18 +799,21 @@ sub edit_zone {
     my $sql = "UPDATE nt_zone SET " . join( ',',
         map( "$_=" . $dbh->quote( $data->{$_} ), @columns ),
     ) . " WHERE nt_zone_id = ?";
-    my $r = $self->exec_query( $sql, $data->{nt_zone_id} );
 
     $data->{nt_group_id} = $prev_data->{nt_group_id} if !$data->{nt_group_id};
 
-    return {
-        error_code => 600, error_msg  => $self->{dbh}->errstr,
-        }
-        if !$r;
+    my %error = ( 'error_code' => 200, 'error_msg' => 'OK' );
+
+    if ($self->exec_query( $sql, $data->{nt_zone_id} )) {
+        $error{nt_zone_id} = $data->{nt_zone_id};
+    }
+    else {
+        return { error_code => 600, error_msg => $self->{dbh}->errstr }
+    }
 
     $self->log_zone( $data, $log_action, $prev_data, $default_serial );
 
-    return { 'error_code' => 200, 'error_msg' => 'OK' };
+    return \%error;
 }
 
 sub edit_zone_nameservers {

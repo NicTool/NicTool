@@ -123,8 +123,10 @@ sub edit_zone_record {
         $error{nt_zone_record_id} = $data->{nt_zone_record_id};
     }
     else {
-        $error{error_code} = 600;
-        $error{error_msg}  = $self->{dbh}->errstr;
+        return {
+            error_code => 600,
+            error_msg  => $self->{dbh}->errstr,
+        }
     }
 
     $self->log_zone_record( $data, $log_action, $prev_data, $z );

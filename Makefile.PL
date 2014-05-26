@@ -36,6 +36,9 @@ server/NicToolServer.tar.gz :
 client/NicToolClient.tar.gz :
 	cd client; dzil clean; dzil build
 
+web : NicTool.tar.gz
+	scp NicTool.tar.gz www.nictool.com:/home/nictool.com/html/download/NicTool.tar.gz
+	scp NicTool.tar.gz www.nictool.com:/home/nictool.com/html/download/NicTool-$(VERSION).tar.gz
 MAKE_FRAG
 ;
 }
