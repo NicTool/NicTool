@@ -1,4 +1,8 @@
 
+2.23    2014.05.26
+
+   * fix for user.cgi undefined variable (Ayden Beeson)
+
 2.22    2014.02.07
 
   * fix: when editing RRs with extra fields, input wasn't populated
