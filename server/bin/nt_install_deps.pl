@@ -11,7 +11,7 @@ my $apps = [
     { app => 'expat'         , info => { port => 'expat2',         dport=>'expat2' }, },
     { app => 'gettext'       , info => {}, },
     { app => 'gmake'         , info => { yum  => 'make', apt => 'make' }, },
-    { app => 'mysql-server'  , info => { port => 'mysql55-server', dport=>'mysql5',
+    { app => 'mysql-server'  , info => { port => 'mysql56-server', dport=>'mysql5',
                                          yum  => 'mysql-server',   apt => 'mysql-server' }, },
     { app => 'apache22'      , info => { dport=>'', yum => 'httpd', apt=>'apache2' }, },
     { app => 'mod_perl2'     , info => { port => 'ap22-mod_perl2', dport=>'',
@@ -151,8 +151,7 @@ sub install_app_freebsd {
         if ( `/usr/sbin/pkg info -x $app` ) {  ## no critic (Backtick)
             return print "$app is installed.\n";
         }
-        print "installing $app";
-        return if install_app_freebsd_pkg($info->{port}, $app);
+        return if install_app_freebsd_pkg($info, $app);
     }
 
     print " from ports...";
@@ -184,8 +183,15 @@ sub install_app_freebsd_port {
 };
 
 sub install_app_freebsd_pkg {
-    my ( $name, $app ) = @_;
+    my ( $info, $app ) = @_;
     my $pkg = '/usr/sbin/pkg';
+    if (! -x $pkg) {
+        warn "$pkg not installed\n";
+        return;
+    };
+
+    my $name = $info->{port} || $app;
+    print "installing $name\n";
     system "$pkg install -y $name";
     return 1 if `/usr/sbin/pkg info -x $name`;
 
@@ -281,15 +287,21 @@ sub install_module_freebsd {
     my ($module, $info, $version) = @_;
 
     my $name = $info->{port} || $module;
-    my $portname = "p5-$name";
+    my $portname = substr($name, 0, 3) eq 'p5-' ? $name : "p5-$name";
     $portname =~ s/::/-/g;
 
     if ( -x '/usr/sbin/pkg' ) {
         if ( `/usr/sbin/pkg info -x $portname` ) { ## no critic (Backtick)
             return print "$module is installed.\n";
         }
+        return 1 if install_module_freebsd_pkg($portname);
     }
 
+    return install_module_freebsd_port($portname, $info, $module);
+}
+
+sub install_module_freebsd_port {
+    my ($portname, $info, $module) = @_;
     print " from ports...$portname...";
 
     if ( -x '/usr/sbin/pkg_info' ) {
@@ -313,6 +325,20 @@ sub install_module_freebsd {
         and warn "'make install clean' failed for port $module\n"; ## no critic (Carp)
     return;
 }
+
+sub install_module_freebsd_pkg {
+    my ( $module ) = @_;
+    my $pkg = '/usr/sbin/pkg';
+    if (! -x $pkg) {
+        warn "pkg not installed!\n";
+        return 0;
+    }
+
+    print "installing $module\n";
+    system "$pkg install -y $module";
+    return 1 if `/usr/sbin/pkg info -x $module`;
+    return 0;
+};
 
 sub install_module_linux {
     my ($module, $info, $version) = @_;
@@ -409,7 +435,7 @@ sub name_overrides {
 # couple rules. When that doesn't work, add entries here for FreeBSD (port),
 # MacPorts ($dport), yum, and apt.
     my @modules = (
-        { module=>'LWP::UserAgent', info => { cat=>'www', port=>'libwww', dport=>'p5-libwww-perl', yum=>'perl-libwww-perl' }, },
+        { module=>'LWP::UserAgent', info => { cat=>'www', port=>'p5-libwww', dport=>'p5-libwww-perl', yum=>'perl-libwww-perl' }, },
         { module=>'Mail::Send'    , info => { port => 'Mail::Tools', }  },
     );
     my ($match) = grep { $_->{module} eq $mod } @modules;

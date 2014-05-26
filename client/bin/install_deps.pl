@@ -8,7 +8,7 @@ use CPAN;
 use English qw( -no_match_vars );
 
 my $apps = [
-    { app => 'apache22'      , info => { port => 'apache22',       dport=>'',     yum => 'httpd' } },
+    { app => 'apache22'      , info => { port => 'apache22', dport => '', yum => 'httpd', apt=>'apache2' }, },
 ];
 
 $EUID == 0 or die "You will have better luck if you run me as root.\n"; ## no critic (Carp)
@@ -137,7 +137,14 @@ sub install_app_darwin {
 }
 
 sub install_app_freebsd {
-    my ($app, $info ) = @_;
+    my ( $app, $info ) = @_;
+
+    if ( -x '/usr/sbin/pkg' ) {
+        if ( `/usr/sbin/pkg info -x $app` ) {  ## no critic (Backtick)
+            return print "$app is installed.\n";
+        }
+        return if install_app_freebsd_pkg($info, $app);
+    }
 
     print " from ports...";
 
@@ -146,13 +153,13 @@ sub install_app_freebsd {
             return print "$app is installed.\n";
         };
     }
-    if ( -x '/usr/sbin/pkg') {
-        if ( `/usr/sbin/pkg info -x $app` ) {  ## no critic (Backtick)
-            return print "$app is installed.\n";
-        }
-    }
 
     print "installing $app";
+    return install_app_freebsd_port($app, $info);
+};
+
+sub install_app_freebsd_port {
+    my ( $app, $info ) = @_;
 
     my $name = $info->{port} || $app;
     my $category = $info->{category} || '*';
@@ -165,6 +172,27 @@ sub install_app_freebsd {
         };
     };
     return;
+};
+
+sub install_app_freebsd_pkg {
+    my ( $info, $app ) = @_;
+    my $pkg = '/usr/sbin/pkg';
+    if (! -x $pkg) {
+        warn "$pkg not installed\n";
+        return;
+    };
+
+    my $name = $info->{port} || $app;
+    print "installing $name\n";
+    system "$pkg install -y $name";
+    return 1 if `/usr/sbin/pkg info -x $name`;
+
+    return 0 if ($app eq $name);
+
+    system "$pkg install -y $app";
+    return 1 if `/usr/sbin/pkg info -x $app`;
+
+    return 0;
 };
 
 sub install_app_linux {
@@ -251,18 +279,25 @@ sub install_module_freebsd {
     my ($module, $info, $version) = @_;
 
     my $name = $info->{port} || $module;
-    my $portname = "p5-$name";
+    my $portname = substr($name, 0, 3) eq 'p5-' ? $name : "p5-$name";
     $portname =~ s/::/-/g;
 
+    if ( -x '/usr/sbin/pkg' ) {
+        if ( `/usr/sbin/pkg info -x $portname` ) { ## no critic (Backtick)
+            return print "$module is installed.\n";
+        }
+        return 1 if install_module_freebsd_pkg($portname);
+    }
+
+    return install_module_freebsd_port($portname, $info, $module);
+}
+
+sub install_module_freebsd_port {
+    my ($portname, $info, $module) = @_;
     print " from ports...$portname...";
 
     if ( -x '/usr/sbin/pkg_info' ) {
         if ( `/usr/sbin/pkg_info | /usr/bin/grep $portname` ) { ## no critic (Backtick)
-            return print "$module is installed.\n";
-        }
-    }
-    if ( -x '/usr/sbin/pkg' ) {
-        if ( `/usr/sbin/pkg info -x $portname` ) { ## no critic (Backtick)
             return print "$module is installed.\n";
         }
     }
@@ -282,6 +317,20 @@ sub install_module_freebsd {
         and warn "'make install clean' failed for port $module\n"; ## no critic (Carp)
     return;
 }
+
+sub install_module_freebsd_pkg {
+    my ( $module ) = @_;
+    my $pkg = '/usr/sbin/pkg';
+    if (! -x $pkg) {
+        warn "pkg not installed!\n";
+        return 0;
+    }
+
+    print "installing $module\n";
+    system "$pkg install -y $module";
+    return 1 if `/usr/sbin/pkg info -x $module`;
+    return 0;
+};
 
 sub install_module_linux {
     my ($module, $info, $version) = @_;
@@ -378,7 +427,7 @@ sub name_overrides {
 # couple rules. When that doesn't work, add entries here for FreeBSD (port),
 # MacPorts ($dport), yum, and apt.
     my @modules = (
-        { module=>'LWP::UserAgent', info => { cat=>'www', port=>'libwww', dport=>'p5-libwww-perl', yum=>'perl-libwww-perl' }, },
+        { module=>'LWP::UserAgent', info => { cat=>'www', port=>'p5-libwww', dport=>'p5-libwww-perl', yum=>'perl-libwww-perl' }, },
         { module=>'Mail::Send'    , info => { port => 'Mail::Tools', }  },
     );
     my ($match) = grep { $_->{module} eq $mod } @modules;
