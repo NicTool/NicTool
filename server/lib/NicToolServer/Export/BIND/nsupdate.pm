@@ -154,16 +154,6 @@ sub get_zone_record {
     return $dbix_w->query($sql)->hashes;
 }
 
-sub export_all {
-    my ($self, $dir) = @_;
-}
-
-sub export_incremental {
-    my ($self, $dir) = @_;
-
-}
-	
-
 #---------- OLD methods below for reference -----------#
 
 sub get_changed_zones {
