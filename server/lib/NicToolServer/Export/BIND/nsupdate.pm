@@ -377,17 +377,18 @@ __END__
 
 =head1 NAME
 
-NicToolServer::Export::BIND
+NicToolServer::Export::BIND::nsupdate
 
 =head1 SYNOPSIS
 
-Export DNS information from NicTool as BIND zone files. These exports are also suitable for use with any BIND compatible authoritative name servers like PowerDNS, NSD, and Knot DNS.
+Export DNS information from NicTool as BIND zone updates. These exports are suitable for any running DNS server that accepts nsupdate inserted entries.
+The exports are done as both a full kickstart for each zone file, as well as a delta since the last run (nsupdate.log) which can be inserted each run to ensure zones are updated with the latest changes
 
-=head1 named.conf.local
+=head1 nsupdate.log
 
-This class will export a named.conf.nictool file with all the NicTool zones assigned to that NicTool BIND nameserver. It is expected that this file will be included into a named.conf file via an include entry like this:
+This class will export a nsupdate.log file with only the changes that have occured since the last run. This file should be injected into the named server using nsupdate and is currently set up to not use a key (use IP restrictions to secure your dynamic updates)
 
- include "/etc/namedb/master/named.conf.nictool";
+A key secured method will be added at a later date.
 
 
 =head1 Templates
