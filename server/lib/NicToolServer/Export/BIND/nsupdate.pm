@@ -33,16 +33,23 @@ sub build_nsupdate {
     my ($self, $dir) = @_;
 
     my @results = get_log($self,$dir);
+    my $ns = "";
 
     # open the nsupdate log file
     open FILE, "+>", "$dir/nsupdate.log" or die $!;
-    # print the server details for nsupdate
-    #print FILE $self->zr_soa($self, get_zone_record($self,$results[0]->{object_id}[0]);
+
+    # MOVED SOA print for nsupdate to each record to cater for varying DNS servers for each zone
+    #if ($results[0]) {
+    #	# print the server details for nsupdate
+    #	my @zone_records = get_zone_record($self,$results[0]->{object_id});
+    #	print FILE $self->zr_soa($self, $zone_records[0]);
+    #}
 
 	foreach my $record (@results) {
     		my @zone_records = get_zone_record($self, $record->{object_id});
 		my $r = $zone_records[0];
 		my $mode = "add";
+		
 
 		# check if its a delete action
 		if ($record->{description} =~ m/deleted\srecord/) {
@@ -67,10 +74,16 @@ sub build_nsupdate {
 				#Found a changed address as well, pull old address to delete from desc
 				$old->{address} = $1;
 			}
+
+			# If the current name server doesnt match last time, set a new server in the nsupdate file
+			if ($ns !~ m/$self->{nte}->{ns_ref}->{name}/i) {
+    				print FILE $self->zr_soa($self, $old);
+			}
 			$mode = "delete";
           		my $method = 'zr_' . lc $old->{type};
             		$old->{location}  ||= '';
             		print FILE $self->$method($old, $mode);
+			print FILE "send\n";
 
 			$mode = "add";
 		} elsif ($record->{description} =~ m/changed\saddress\sfrom\s\'((\w|\:|\.|\-)*)\'\s/) {
@@ -82,10 +95,16 @@ sub build_nsupdate {
 
 			$old->{address} = $old_ip;
 			
+			# If the current name server doesnt match last time, set a new server in the nsupdate file
+			if ($ns !~ m/$self->{nte}->{ns_ref}->{name}/i) {
+    				print FILE $self->zr_soa($self, $old);
+			}
+
 			$mode = "delete";
           		my $method = 'zr_' . lc $old->{type};
             		$old->{location}  ||= '';
             		print FILE $self->$method($old, $mode);
+			print FILE "send\n";
 			
 			$mode = "add";
 		} elsif ($record->{description} =~ m/changed\stimestamp/) {
@@ -93,10 +112,18 @@ sub build_nsupdate {
 			next;
 		}
           
-		#Now that we are done (potentially) cleaning up old changes, lets move onto the main change	
+		# Now that we are done (potentially) cleaning up old changes, lets move onto the main change	
+		# If the current name server doesnt match last time, set a new server in the nsupdate file
+		if ($ns !~ m/$self->{nte}->{ns_ref}->{name}/i) {
+    			print FILE $self->zr_soa($self, $r);
+		}
 		my $method = 'zr_' . lc $r->{type};
             	$r->{location}  ||= '';
             	print FILE $self->$method($r, $mode);
+		print FILE "send\n";
+	
+		# load the current nameserver into ns for checking next loop
+		$ns = $self->{nte}->{ns_ref}->{name};
         }
 
     close FILE or die $!;
@@ -214,6 +241,7 @@ sub zr_ptr {
 sub zr_soa {
     my ($self, $z) = @_;
     #no real "soa" for an nsupdate - so lets set the server we want to update to instead
+    $z->{nsname} = $self->{nte}->{ns_ref}->{name} unless defined($z->{nsname});
     return "server $z->{nsname}\n";
 }
 
