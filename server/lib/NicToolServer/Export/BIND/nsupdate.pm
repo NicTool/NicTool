@@ -285,7 +285,8 @@ sub zr_loc {
 }
 
 sub zr_naptr {
-    my ($self, $r) = @_;
+    my ($self, $r, $mode) = @_;
+    $mode = "add" unless defined($mode);
 
 # http://www.ietf.org/rfc/rfc2915.txt
 # https://www.ietf.org/rfc/rfc3403.txt
@@ -299,25 +300,29 @@ sub zr_naptr {
     $regexp =~ s/\\/\\\\/g;  # escape any \ characters
 
 # Domain TTL Class Type Order Preference Flags Service Regexp Replacement
-    return qq[$r->{name} $r->{ttl}   IN  NAPTR   $order  $pref   "$flags"  "$service"    "$regexp" $replace\n];
+    return qq[update $mode $r->{name} $r->{ttl} NAPTR $order $pref "$flags" "$service" "$regexp" $replace\n];
 }
 
 sub zr_dname {
-    my ($self, $r) = @_;
+    my ($self, $r, $mode) = @_;
+    $mode = "add" unless defined($mode);
 
 # name  ttl  class   rr     target
-    return "$r->{name}	$r->{ttl}	IN  DNAME	$r->{address}\n";
+    return "update $mode $r->{name} $r->{ttl} DNAME $r->{address}\n";
 }
 
 sub zr_sshfp {
-    my ($self, $r) = @_;
+    my ($self, $r, $mode) = @_;
+    $mode = "add" unless defined($mode);
+
     my $algo   = $r->{weight};     #  1=RSA,   2=DSS,     3=ECDSA
     my $type   = $r->{priority};   #  1=SHA-1, 2=SHA-256
-    return "$r->{name} $r->{ttl}     IN  SSHFP   $algo $type $r->{address}\n";
+    return "update $mode $r->{name} $r->{ttl} SSHFP $algo $type $r->{address}\n";
 }
 
 sub zr_ipseckey {
-    my ($self, $r) = @_;
+    my ($self, $r, $mode) = @_;
+    $mode = "add" unless defined($mode);
 
     my $precedence = $r->{weight};
     my $gw_type    = $r->{priority};
@@ -325,49 +330,56 @@ sub zr_ipseckey {
     my $gateway    = $r->{address};
     my $public_key = $r->{description};
 
-    return "$r->{name}	$r->{ttl}	IN  IPSECKEY	( $precedence $gw_type $algorithm $gateway $public_key )\n";
+    return "update $mode $r->{name} $r->{ttl} IPSECKEY ( $precedence $gw_type $algorithm $gateway $public_key )\n";
 };
 
 sub zr_dnskey {
-    my ($self, $r) = @_;
+    my ($self, $r, $mode) = @_;
+    $mode = "add" unless defined($mode);
 
     my $flags    = $r->{weight};
     my $protocol = $r->{priority};  # always 3, RFC 4034
     my $algorithm = $r->{other};
     # 1=RSA/MD5, 2=Diffie-Hellman, 3=DSA/SHA-1, 4=Elliptic Curve, 5=RSA/SHA-1
 
-    return "$r->{name}	$r->{ttl}	IN  DNSKEY	$flags $protocol $algorithm $r->{address}\n";
+    return "update $mode $r->{name} $r->{ttl} DNSKEY $flags $protocol $algorithm $r->{address}\n";
 }
 
 sub zr_ds {
-    my ($self, $r) = @_;
+    my ($self, $r, $mode) = @_;
+    $mode = "add" unless defined($mode);
 
     my $key_tag     = $r->{weight};
     my $algorithm   = $r->{priority}; # same as DNSKEY algo -^
     my $digest_type = $r->{other};    # 1=SHA-1 (RFC 4034), 2=SHA-256 (RFC 4509)
 
-    return "$r->{name}	$r->{ttl}	IN  DS	$key_tag $algorithm $digest_type $r->{address}\n";
+    return "update $mode $r->{name} $r->{ttl} DS $key_tag $algorithm $digest_type $r->{address}\n";
 }
 
 sub zr_rrsig {
-    my ($self, $r) = @_;
-    return "$r->{name}	$r->{ttl}	IN  RRSIG $r->{address}\n";
+    my ($self, $r, $mode) = @_;
+    $mode = "add" unless defined($mode);
+
+    return "update $mode $r->{name} $r->{ttl} RRSIG $r->{address}\n";
 }
 
 sub zr_nsec {
-    my ($self, $r) = @_;
+    my ($self, $r, $mode) = @_;
+    $mode = "add" unless defined($mode);
     $r->{description} =~ s/[\(\)]//g;
-    return "$r->{name}	$r->{ttl}	IN  NSEC $r->{address} ( $r->{description} )\n";
+    return "update $mode $r->{name} $r->{ttl} NSEC $r->{address} ( $r->{description} )\n";
 }
 
 sub zr_nsec3 {
-    my ($self, $r) = @_;
-    return "$r->{name}	$r->{ttl}	IN  NSEC3 $r->{address}\n";
+    my ($self, $r, $mode) = @_;
+    $mode = "add" unless defined($mode);
+    return "update $mode $r->{name} $r->{ttl} NSEC3 $r->{address}\n";
 }
 
 sub zr_nsec3param {
-    my ($self, $r) = @_;
-    return "$r->{name}	$r->{ttl}	IN  NSEC3PARAM $r->{address}\n";
+    my ($self, $r, $mode) = @_;
+    $mode = "add" unless defined($mode);
+    return "update $mode $r->{name} $r->{ttl} NSEC3PARAM $r->{address}\n";
 }
 
 
