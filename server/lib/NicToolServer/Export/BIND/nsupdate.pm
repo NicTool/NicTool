@@ -11,7 +11,6 @@ use Cwd;
 use IO::File;
 use File::Copy;
 use Params::Validate qw/ :all /;
-use Data::Dumper;
 
 sub postflight {
     my $self = shift;
