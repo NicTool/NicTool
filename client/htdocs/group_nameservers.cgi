@@ -503,6 +503,7 @@ sub display_edit_nameserver_fields {
     # TODO: get this from SQL.
     my %export_formats = (
         'bind'    => "BIND (ISC's Berkeley Internet Named Daemon)",
+        'bind-ns' => "BIND nsupdate (DDNS)",
         'tinydns' => 'tinydns (part of DJBDNS)',
         'powerdns'=> 'PowerDNS',
         'maradns' => 'MaraDNS',
