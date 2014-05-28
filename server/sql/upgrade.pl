@@ -14,14 +14,15 @@ Getopt::Long::GetOptions(
     'dsn=s'     => \my $dsn,
     'user=s'    => \my $db_user,
     'pass=s'    => \my $db_pass,
+    'host=s'    => \my $db_host,
     ) or die "error parsing command line options";
 
 if ( ! defined $dsn || ! defined $db_user || ! defined $db_pass ) {
     get_db_creds_from_nictoolserver_conf();
 }
 
-$dsn     = ask( "database DSN", default  =>
-        'DBI:mysql:database=nictool;host=localhost;port=3306') if ! $dsn;
+$db_host = ask( "database host", default => 'localhost') if ! $db_host;
+$dsn     = ask( "database DSN", default  => "DBI:mysql:database=nictool;host=$db_host;port=3306") if ! $dsn;
 $db_user = ask( "database user", default => 'root' ) if ! $db_user;
 $db_pass = ask( "database pass", password => 1 ) if ! $db_pass;
 
@@ -30,6 +31,7 @@ prompt_last_chance();
 my $dbh  = DBIx::Simple->connect( $dsn, $db_user, $db_pass )
             or die DBIx::Simple->error;
 
+# NOTE: when making schema changes, update db_version in 12_nt_options.sql
 my @versions = qw/ 2.00 2.05 2.08 2.09 2.10 2.11 2.14 2.15 2.16 2.18 /;
 
 foreach my $version ( @versions ) {
