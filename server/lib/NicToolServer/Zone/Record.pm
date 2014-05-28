@@ -25,6 +25,7 @@ sub new_zone_record {
     my @values = $data->{nt_zone_id};
     foreach my $c ( qw/name ttl description type address weight priority other/ ) {
         next if ! defined $data->{$c};
+        next if '' eq $data->{$c};
         if ( $c eq 'type' ) {
             $col_string .= ", type_id";
             $data->{type_id} = $self->get_record_type( { type => $data->{type} } );
@@ -190,13 +191,13 @@ sub log_zone_record {
         ttl description type_id address weight priority other location / )
     {
         next if ! defined $data->{$c};
+        next if '' eq $data->{$c};
         $col_string .= ", $c";
         push @values, $data->{$c};
     };
 
     my $insertid = $self->exec_query(
         "INSERT INTO nt_zone_record_log($col_string) VALUES(??)", \@values);
-
 
     $data->{object}       = 'zone_record';
     $data->{log_entry_id} = $insertid;

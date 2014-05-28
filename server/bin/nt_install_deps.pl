@@ -11,7 +11,7 @@ my $apps = [
     { app => 'expat'         , info => { port => 'expat2',         dport=>'expat2' }, },
     { app => 'gettext'       , info => {}, },
     { app => 'gmake'         , info => { yum  => 'make', apt => 'make' }, },
-    { app => 'mysql-server'  , info => { port => 'mysql56-server', dport=>'mysql5',
+    { app => 'mysql-server'  , info => { port => 'mysql55-server', dport=>'mysql5',
                                          yum  => 'mysql-server',   apt => 'mysql-server' }, },
     { app => 'apache22'      , info => { dport=>'', yum => 'httpd', apt=>'apache2' }, },
     { app => 'mod_perl2'     , info => { port => 'ap22-mod_perl2', dport=>'',
@@ -193,12 +193,12 @@ sub install_app_freebsd_pkg {
     my $name = $info->{port} || $app;
     print "installing $name\n";
     system "$pkg install -y $name";
-    return 1 if `/usr/sbin/pkg info -x $name`;
+    return 1 if `$pkg info -x $name`;
 
     return 0 if ($app eq $name);
 
     system "$pkg install -y $app";
-    return 1 if `/usr/sbin/pkg info -x $app`;
+    return 1 if `$pkg info -x $app`;
 
     return 0;
 };
@@ -336,7 +336,7 @@ sub install_module_freebsd_pkg {
 
     print "installing $module\n";
     system "$pkg install -y $module";
-    return 1 if `/usr/sbin/pkg info -x $module`;
+    return 1 if `$pkg info -x $module`;
     return 0;
 };
 
