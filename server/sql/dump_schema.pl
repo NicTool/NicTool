@@ -5,12 +5,14 @@ use warnings;
 use DBI;
 
 # machine dependant variables
-my $db_dsn  = "DBI:mysql:database=nictool;host=localhost";
+my $db_host = 'localhost';
+my $db      = 'nictool';
+my $db_dsn  = "DBI:mysql:database=$db;host=$db_host";
 my $db_user = 'nictool';
 my $db_pass = 'lootcin205';
 my $root_pw = '';
 
-my $dbh = DBI->connect( $dsn, 'root', $root_pw);
+my $dbh = DBI->connect( $db_dsn, 'root', $root_pw);
 
 my @tables = map { $_ =~ s/.*\.//; $_ } $dbh->tables();
 foreach my $table (@tables) {
