@@ -74,23 +74,19 @@ $dbh->do("CREATE DATABASE $db");
 $dbh->do("GRANT ALL PRIVILEGES ON $db.* TO $db_user\@$db_host IDENTIFIED BY '$db_pass'");
 $dbh->do("USE $db");
 
-opendir(DIR, '.') || warn "unable to open dir: $!\n";
-
-foreach my $file (sort readdir(DIR)) {
-    next if /^\./;
-    next if -d "./$file";
-    next if $file !~ /\.sql$/;
-    open (my $fh, '<', $file) or die "failed to open $file for read: $!";
-    print "\nopened $file\n";
+my @sql_files = get_sql_files();
+foreach my $sql (@sql_files) {
+    open (my $fh, '<', $sql) or die "failed to open $sql for read: $!";
+    print "\nopened $sql\n";
     my $q_string = join(' ', grep {/^[^#]/} grep {/[\S]/} <$fh>);
     foreach my $q (split(';', $q_string)) { # split string into queries
         next if $q !~ /[\S]/;               # skip blank entries
         print "$q;";                        # show the query
         $dbh->do( $q ) or die $DBI::errstr; # run it!
     };
+    close $fh;
     print "\n";
 }
-close DIR;
 
 $dbh->do("
 INSERT INTO $db.nt_user(nt_group_id, first_name, last_name, username, password, email)
@@ -122,7 +118,7 @@ sub get_dbh {
 
     return if $test_run;
     my $dbh = DBI->connect("dbi:mysql:host=$db_host", "root", $db_root_pw, {
-            ChopBlanks       => 1,
+            ChopBlanks => 1,
         })
         or die $DBI::errstr;
 
@@ -192,3 +188,18 @@ sub get_password {
     }
     return $answer;
 }
+sub get_sql_files {
+    my @r;
+    opendir(DIR, '.') || die "unable to open dir: $!\n";
+    foreach my $file (sort readdir(DIR)) {
+        next if /^\./;
+        next if -d "./$file";
+        next if $file !~ /\.sql$/;
+        push @r, $file;
+    };
+    close DIR;
+    if (scalar @r < 8) {
+        die "didn't find *.sql files. Are you running this in the sql dir?\n";
+    };
+    return @r;
+};
