@@ -73,11 +73,10 @@ sub send_soap_request {
         #don't die on fault, just return result.
         on_fault => sub { my ( $soap, $res ) = @_; return $res; }
     );
-    warn "URI: " . $soap->uri . ", proxy: " . $url . '/soap' . "\n"
-        if $NicToolServerAPI::debug_soap_setup;
-    warn "Calling soap function \"$func\" with params:\n"
-        . Dumper( \%vars ) . "\n"
-        if $NicToolServerAPI::debug_soap_request;
+    if ($NicToolServerAPI::debug_soap_setup) {
+        warn "URI: " . $soap->uri . ", proxy: " . $url . '/soap' . "\n";
+        warn "Calling soap function \"$func\" with params:\n" . Dumper( \%vars ) . "\n";
+    };
 
     #make soap call and evaluate response.
     my $som = $soap->call( $func => \%vars );
