@@ -12,7 +12,8 @@ use Params::Validate qw/ :all /;
 use lib 'lib';
 
 # this class and its subclasses support nt_export.pl
-# subclasses (tinydns, BIND, BIND-ns, PowerDNS, MaraDNS) have server specific logic
+# subclasses have server specific logic
+#   tinydns, BIND, BIND-nsupdate, PowerDNS, MaraDNS, DynECT
 
 sub new {
     my $class = shift;
@@ -34,7 +35,7 @@ sub new {
         export_class => undef,
         export_dir => undef,
         export_data_dir => undef,
-        export_format => 'tinydns',
+        export_format => 'djbdns',
         export_required => 1,
         export_serials => undef,       # export serials for this nsid?
         log_id         => undef,       # current log ID
@@ -110,7 +111,7 @@ sub set_no_change {
 
     my $last_ts = 'never';
     my $last_copy;
-    if ( $self->{export_format} =~ /tinydns|bind|bind\-ns/i ) {
+    if ( $self->{export_format} =~ /tinydns|djbdns|bind|bind\-ns/i ) {
         $last_copy = $self->get_last_ns_export(success=>1,copied=>1);
     }
     else {
@@ -573,7 +574,9 @@ sub get_active_nameservers {
 
         # tinydns can autogenerate serial numbers based on data file
         # timestamp. Export serials for everyone else.
-        $r->{export_serials}++ if $r->{export_format} ne 'tinydns';
+        if ($r->{export_format} !~ /^(tinydns|djbdns)$/) {
+            $r->{export_serials}++;
+        };
     }
 
     if ( $self->{ns_id} ) {
@@ -602,7 +605,7 @@ sub load_export_class {
         require NicToolServer::Export::BIND::nsupdate;
         $self->{export_class} = NicToolServer::Export::BIND::nsupdate->new( $self );
     }
-    elsif ( $self->{export_format} eq 'tinydns' ) {
+    elsif ( $self->{export_format} =~ /^(djbdns|tinydns)$/ ) {
         require NicToolServer::Export::tinydns;
         $self->{export_class} = NicToolServer::Export::tinydns->new( $self );
     }
@@ -613,6 +616,10 @@ sub load_export_class {
     elsif ( $self->{export_format} eq 'maradns' ) {
         require NicToolServer::Export::MaraDNS;
         $self->{export_class} = NicToolServer::Export::Maradns->new( $self );
+    }
+    elsif ( $self->{export_format} eq 'dynect' ) {
+        require NicToolServer::Export::DynECT;
+        $self->{export_class} = NicToolServer::Export::DynECT->new( $self );
     }
     else {
         die "unknown export format: $self->{export_format}\n";

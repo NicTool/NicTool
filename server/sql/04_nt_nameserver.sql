@@ -47,15 +47,23 @@ CREATE TABLE nt_nameserver_log(
 ) DEFAULT CHARSET=utf8 COLLATE=utf8_bin ROW_FORMAT=COMPRESSED;
 
 
-DROP TABLE IF EXISTS nt_nameserver_export_types;
-CREATE TABLE nt_nameserver_export_types (
-   id tinyint(3) unsigned NOT NULL AUTO_INCREMENT,
-   type varchar(12) NOT NULL DEFAULT '',
-   PRIMARY KEY (`id`)
+DROP TABLE IF EXISTS nt_nameserver_export_type;
+CREATE TABLE `nt_nameserver_export_type` (
+    `id`     int(11) unsigned NOT NULL AUTO_INCREMENT,
+    `name`   varchar(16) NOT NULL DEFAULT '',
+    `descr`  varchar(56) NOT NULL DEFAULT '',
+    `url`    varchar(128) DEFAULT NULL,
+    PRIMARY KEY (`id`)
 ) DEFAULT CHARSET=utf8;
 
-INSERT INTO `nt_nameserver_export_types` (`id`, `type`)
-VALUES (1,'tinydns'), (2,'bind'), (3,'maradns'), (4,'powerdns');
+INSERT INTO `nt_nameserver_export_type` (`id`, `name`, `descr`, `url`)
+VALUES (1,'djbdns','tinydns & axfrdns','cr.yp.to/djbdns.html'),
+       (2,'bind','BIND (zone files)', 'www.isc.org/downloads/bind/'),
+       (3,'maradns','MaraDNS', 'maradns.samiam.org'),
+       (4,'powerdns','PowerDNS','www.powerdns.com'),
+       (5,'bind-nsupdate','BIND (nsupdate protocol)','');
+       (6,'NSD','Name Server Daemon','www.nlnetlabs.nl/projects/nsd/');
+       (7,'dynect','DynECT Standard DNS','dyn.com/managed-dns/');
 
 INSERT INTO nt_nameserver(nt_group_id, name, ttl, description, address, 
   export_format, logdir, datadir, export_interval) values (1,'ns1.example.com.',86400,'ns east',

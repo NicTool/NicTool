@@ -23,12 +23,17 @@ sub get_usable_nameservers {
 
     my $groups_string = join(',', @groups);
     my $usable_string = join(',', @usable);
-    my $sql = 
-"SELECT * FROM nt_nameserver
-  WHERE deleted=0 
-    AND (nt_group_id IN ($groups_string)";
+    my $sql =
+"
+SELECT ns.nt_nameserver_id, ns.nt_group_id, ns.name, ns.description, ns.address, ns.remote_login,
+    et.name AS export_format,
+    logdir, datadir, export_interval, export_serials, export_status
+ FROM nt_nameserver ns
+  LEFT JOIN nt_nameserver_export_type et ON ns.export_type_id=et.id
+  WHERE ns.deleted=0
+    AND (ns.nt_group_id IN ($groups_string)";
 
-    $sql .= " OR nt_nameserver_id IN ($usable_string)" if @usable; 
+    $sql .= " OR ns.nt_nameserver_id IN ($usable_string)" if @usable;
     $sql .= ")";
 
     #warn $sql;
@@ -96,10 +101,10 @@ sub get_group_nameservers {
     my $r_data = { 'error_code' => 200, 'error_msg' => 'OK', list => [] };
 
     my $sql
-        = "SELECT COUNT(*) AS count FROM nt_nameserver "
-        . "INNER JOIN nt_group ON nt_nameserver.nt_group_id = nt_group.nt_group_id "
-        . "WHERE nt_nameserver.deleted=0 "
-        . "AND nt_nameserver.nt_group_id IN("
+        = "SELECT COUNT(*) AS count FROM nt_nameserver ns "
+        . "INNER JOIN nt_group g ON ns.nt_group_id = g.nt_group_id "
+        . "WHERE ns.deleted=0 "
+        . "AND ns.nt_group_id IN("
         . join( ',', @group_list ) . ")"
         . ( @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
     my $c = $self->exec_query($sql);
@@ -115,16 +120,17 @@ sub get_group_nameservers {
         $sortby = $self->format_sort_conditions( $data, \%field_map, "" );
     }
     else {
-        $sortby = $self->format_sort_conditions( $data, \%field_map,
-            "nt_nameserver.name" );
+        $sortby = $self->format_sort_conditions( $data, \%field_map, "ns.name" );
     }
 
-    $sql = "SELECT nt_nameserver.*, 
+    $sql = "SELECT ns.*,
+        et.name AS export_format,
         g.name AS group_name,
-        nt_nameserver.export_status AS status
-    FROM nt_nameserver 
-        INNER JOIN nt_group g ON nt_nameserver.nt_group_id = g.nt_group_id
-    WHERE nt_nameserver.deleted=0
+        ns.export_status AS status
+    FROM nt_nameserver ns
+        LEFT JOIN nt_nameserver_export_type et ON ns.export_type_id=et.id
+        INNER JOIN nt_group g ON ns.nt_group_id = g.nt_group_id
+    WHERE ns.deleted=0
     AND g.nt_group_id IN(" . join( ',', @group_list ) . ") ";
     $sql .= 'AND (' . join( ' ', @$conditions ) . ') ' if @$conditions;
     $sql .= "ORDER BY " . join( ', ', @$sortby ) . " " if (@$sortby);
@@ -155,8 +161,10 @@ sub get_nameserver_list {
 
 # my %groups = map { $_, 1 } ($data->{user}{nt_group_id}, @{ $self->get_subgroup_ids($data->{user}{nt_group_id}) });
 
-    my $sql
-        = "SELECT * FROM nt_nameserver WHERE deleted=0 AND nt_nameserver_id IN(??) ORDER BY name";
+    my $sql = "SELECT ns.*, et.name AS export_format
+  FROM nt_nameserver ns
+  LEFT JOIN nt_nameserver_export_type et ON ns.export_type_id=et.id
+WHERE deleted=0 AND ns.nt_nameserver_id IN(??) ORDER BY ns.name";
 
     my @ns_list = split( ',', $data->{nameserver_list} );
     my $nameservers = $self->exec_query( $sql, [@ns_list] )
@@ -167,7 +175,7 @@ sub get_nameserver_list {
         };
 
     foreach my $ns (@$nameservers) {
-        push( @{ $rv{list} }, $ns );
+        push @{ $rv{list} }, $ns;
     }
 
     return \%rv;
@@ -187,8 +195,8 @@ sub move_nameservers {
         = $self->NicToolServer::Group::find_group( $data->{nt_group_id} );
 
     my $sql
-        = "SELECT nt_nameserver.*, nt_group.name as old_group_name FROM nt_nameserver, nt_group "
-        . "WHERE nt_nameserver.nt_group_id = nt_group.nt_group_id AND nt_nameserver_id IN(??)";
+        = "SELECT ns.*, g.name AS old_group_name FROM nt_nameserver ns, nt_group g "
+        . "WHERE ns.nt_group_id = g.nt_group_id AND nt_nameserver_id IN(??)";
 
     my @ns_list = split( ',', $data->{nameserver_list} );
     my $nameservers = $self->exec_query( $sql, [@ns_list] )
@@ -200,8 +208,7 @@ sub move_nameservers {
     foreach my $row (@$nameservers) {
         next unless $groups{ $row->{nt_group_id} };
 
-        $sql
-            = "UPDATE nt_nameserver SET nt_group_id = ? WHERE nt_nameserver_id = ?";
+        $sql = "UPDATE nt_nameserver SET nt_group_id=? WHERE nt_nameserver_id=?";
         $self->exec_query( $sql,
             [ $data->{nt_group_id}, $row->{nt_nameserver_id} ] )
             or next;
@@ -219,7 +226,7 @@ sub move_nameservers {
 sub get_nameserver {
     my ( $self, $data ) = @_;
 
-    my $sql = "SELECT * FROM nt_nameserver WHERE nt_nameserver_id = ?";
+    my $sql = "SELECT * FROM nt_nameserver WHERE nt_nameserver_id=?";
     my $nameservers = $self->exec_query( $sql, $data->{nt_nameserver_id} )
         or return {
         error_code => 600,
@@ -232,6 +239,34 @@ sub get_nameserver {
         error_msg  => 'OK',
     };
 }
+
+sub get_nameserver_export_types {
+    my ( $self, $data ) = @_;
+    my $lookup = $data->{type};
+
+    if ( ! $self->{export_types} ) {
+        my $sql = "SELECT id,name,descr,url FROM nt_nameserver_export_type";
+        my $types = $self->exec_query($sql);
+        foreach my $t ( @$types ) {
+            $self->{export_types}{$t->{id}} = $t;   # index by id
+            $self->{export_types}{$t->{name}} = $t; # index by name
+        }
+        $self->{export_types}{'ALL'} = $types;
+    };
+
+    if ( $lookup =~ /^\d+$/ ) {   # all numeric
+        return $self->{export_types}{$lookup}{name}; # return type name
+    }
+    if ( $lookup eq 'ALL' ) {
+        return {
+            types      => $self->{export_types}{'ALL'},
+            error_code => 200,
+            error_msg  => 'OK',
+        };
+    };
+
+    return $self->{export_types}{$lookup}{id};  # got a name, return ID
+};
 
 sub new_nameserver {
     my ( $self, $data ) = @_;
@@ -274,7 +309,7 @@ sub edit_nameserver {
     my $sql
         = "UPDATE nt_nameserver SET "
         . join( ',', map( "$_ = " . $dbh->quote( $data->{$_} ), @columns ) )
-        . " WHERE nt_nameserver_id = ?";
+        . " WHERE nt_nameserver_id=?";
 
     $self->exec_query( $sql, $data->{nt_nameserver_id} )
         or return {
@@ -313,7 +348,7 @@ sub delete_nameserver {
     my $ns_data = $self->find_nameserver( $data->{nt_nameserver_id} );
     $ns_data->{user} = $data->{user};
 
-    $sql = "UPDATE nt_nameserver SET deleted=1 WHERE nt_nameserver_id = ?";
+    $sql = "UPDATE nt_nameserver SET deleted=1 WHERE nt_nameserver_id=?";
     $self->exec_query( $sql, $data->{nt_nameserver_id} )
         or return $self->error_response( 600, $dbh->errstr );
 
@@ -374,7 +409,7 @@ sub log_nameserver {
 
 sub find_nameserver {
     my ( $self, $nt_nameserver_id ) = @_;
-    my $sql = "SELECT * FROM nt_nameserver WHERE nt_nameserver_id = ?";
+    my $sql = "SELECT * FROM nt_nameserver WHERE nt_nameserver_id=?";
     my $nameservers = $self->exec_query( $sql, $nt_nameserver_id )
         or return {};
     return $nameservers->[0];

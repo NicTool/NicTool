@@ -860,7 +860,7 @@ sub test_modify {
         name          => 'ns.somewhere.com.',
         description   => 'blah blah blah',
         address       => '1.2.3.4',
-        export_format => 'tinydns',
+        export_format => 'djbdns',
     );
     $res = $tuser->new_nameserver(%ns);
 
@@ -1232,7 +1232,7 @@ sub test_delete {
         name          => 'ns.somewhere.com.',
         description   => 'blah blah blah',
         address       => '1.2.3.4',
-        export_format => 'tinydns',
+        export_format => 'djbdns',
     );
     $res = $tuser->new_nameserver(%ns);
 

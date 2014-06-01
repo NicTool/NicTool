@@ -32,7 +32,7 @@ my $dbh  = DBIx::Simple->connect( $dsn, $db_user, $db_pass )
             or die DBIx::Simple->error;
 
 # NOTE: when making schema changes, update db_version in 12_nt_options.sql
-my @versions = qw/ 2.00 2.05 2.08 2.09 2.10 2.11 2.14 2.15 2.16 2.18 /;
+my @versions = qw/ 2.00 2.05 2.08 2.09 2.10 2.11 2.14 2.15 2.16 2.18 2.24 /;
 
 foreach my $version ( @versions ) {
 # first, run a DB test query
@@ -97,16 +97,61 @@ EO_SOME_DAY
 ;
 };
 
+sub _sql_test_2_24 {
+    my $r = _get_db_version();
+    return 1 if ! defined $r;   # query failed
+    return 0 if $r eq '2.18';   # do it!
+    return 1;                   # don't update
+};
+
+sub _sql_2_24 {
+    <<EO_SQL_2_24
+DROP TABLE IF EXISTS nt_nameserver_export_types;
+DROP TABLE IF EXISTS nt_nameserver_export_type;
+CREATE TABLE `nt_nameserver_export_type` (
+    `id`     int UNSIGNED NOT NULL AUTO_INCREMENT,
+    `name`   varchar(16) NOT NULL DEFAULT '',
+    `descr`  varchar(56) NOT NULL DEFAULT '',
+    `url`    varchar(128) DEFAULT NULL,
+    PRIMARY KEY (`id`)
+) DEFAULT CHARSET=utf8;
+
+INSERT INTO `nt_nameserver_export_type` (`id`, `name`, `descr`, `url`)
+VALUES (1,'djbdns',    'tinydns & axfrdns',  'cr.yp.to/djbdns.html'),
+       (2,'bind',      'BIND (zone files)',  'www.isc.org/downloads/bind/'),
+       (3,'maradns',   'MaraDNS',            'maradns.samiam.org'),
+       (4,'powerdns',  'PowerDNS',           'www.powerdns.com'),
+       (5,'bind-nsupdate','BIND (nsupdate protocol)','www.isc.org/downloads/bind/');
+       (6,'NSD',       'Name Server Daemon', 'www.nlnetlabs.nl/projects/nsd/');
+       (7,'dynect',    'DynECT Standard DNS','dyn.com/managed-dns/');
+
+ALTER TABLE nt_nameserver ADD column export_type_id INT UNSIGNED NOT NULL AFTER remote_login;
+UPDATE nt_nameserver SET export_type_id=1 WHERE export_format IN ('tinydns','djb','djbdns');
+UPDATE nt_nameserver SET export_type_id=2 WHERE export_format='bind';
+UPDATE nt_nameserver SET export_type_id=3 WHERE export_format='maradns';
+UPDATE nt_nameserver SET export_type_id=4 WHERE export_format='powerdns';
+ALTER TABLE nt_nameserver DROP column export_format;
+
+UPDATE nt_options SET option_value='2.24' WHERE option_name='db_version';
+EO_SQL_2_24
+};
+
+
 sub _sql_test_2_18 {
     my $r = _get_db_version();
     return 1 if ! defined $r;   # query failed
+
+    if ($dbh->query("SHOW COLUMNS FROM `resource_record_type` LIKE 'obsolte'")->list) {
+        $dbh->query("UPDATE nt_options SET option_value='2.18' WHERE option_name='db_version'");
+        return 1;               # already updated
+    };
+
     return 0 if $r eq '2.16';   # do it!
     return 1;                   # don't update
 };
 
 sub _sql_2_18 {
     <<EO_SQL_2_18
-
 ALTER TABLE resource_record_type ADD column obsolete TINYINT(1) NOT NULL DEFAULT '0' AFTER forward;
 REPLACE INTO `resource_record_type`
  (`id`, `name`, `description`, `reverse`, `forward`, `obsolete`)
@@ -131,12 +176,18 @@ EO_SQL_2_18
 sub _sql_test_2_16 {
     my $r = _get_db_version();
     return 1 if ! defined $r;   # query failed
+
+    if ($dbh->query("SHOW COLUMNS FROM `nt_perm` LIKE 'usable_ns'")->list) {
+        $dbh->query("UPDATE nt_options SET option_value='2.16' WHERE option_name='db_version'");
+        return 1;               # already updated
+    };
+
     return 0 if $r eq '2.15';   # do it!
     return 1;                   # don't update
 };
 
 sub _sql_2_16 {
-    <<EO_SQL_2_16
+    return <<EO_SQL_2_16
 ALTER TABLE nt_perm ADD column usable_ns VARCHAR(50) AFTER self_write;
 UPDATE nt_perm SET usable_ns=(CONCAT_WS(',', usable_ns0,usable_ns1,usable_ns2,usable_ns3,usable_ns4,usable_ns5,usable_ns6,usable_ns7,usable_ns8,usable_ns9));
 ALTER TABLE nt_perm DROP column usable_ns0;

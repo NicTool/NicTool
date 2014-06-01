@@ -106,7 +106,7 @@ sub doit {
     $res = $group1->new_nameserver(
         name          => 'ns2.somewhere.com.',
         address       => '1.2.3.5',
-        export_format => 'tinydns',
+        export_format => 'djbdns',
         ttl           => 86401
     );
     die "couldn't make test nameserver"
