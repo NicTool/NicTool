@@ -100,6 +100,13 @@ EO_SOME_DAY
 sub _sql_test_2_24 {
     my $r = _get_db_version();
     return 1 if ! defined $r;   # query failed
+
+    my $exists = $dbh->query("SHOW COLUMNS FROM `nt_nameserver` LIKE 'export_type_id'")->hashes;
+    if (scalar $exists && $exists->[0] && $exists->[0]{field}) {
+        $dbh->query("UPDATE nt_options SET option_value='2.24' WHERE option_name='db_version'");
+        return 1;               # already updated
+    };
+
     return 0 if $r eq '2.18';   # do it!
     return 1;                   # don't update
 };
@@ -121,8 +128,8 @@ VALUES (1,'djbdns',    'tinydns & axfrdns',  'cr.yp.to/djbdns.html'),
        (2,'bind',      'BIND (zone files)',  'www.isc.org/downloads/bind/'),
        (3,'maradns',   'MaraDNS',            'maradns.samiam.org'),
        (4,'powerdns',  'PowerDNS',           'www.powerdns.com'),
-       (5,'bind-nsupdate','BIND (nsupdate protocol)','www.isc.org/downloads/bind/');
-       (6,'NSD',       'Name Server Daemon', 'www.nlnetlabs.nl/projects/nsd/');
+       (5,'bind-nsupdate','BIND (nsupdate protocol)','www.isc.org/downloads/bind/'),
+       (6,'NSD',       'Name Server Daemon', 'www.nlnetlabs.nl/projects/nsd/'),
        (7,'dynect',    'DynECT Standard DNS','dyn.com/managed-dns/');
 
 ALTER TABLE nt_nameserver ADD column export_type_id INT UNSIGNED NOT NULL AFTER remote_login;
@@ -141,7 +148,8 @@ sub _sql_test_2_18 {
     my $r = _get_db_version();
     return 1 if ! defined $r;   # query failed
 
-    if ($dbh->query("SHOW COLUMNS FROM `resource_record_type` LIKE 'obsolte'")->list) {
+    my $exists = $dbh->query("SHOW COLUMNS FROM `resource_record_type` LIKE 'obsolete'")->hashes;
+    if (scalar $exists && $exists->[0] && $exists->[0]{field}) {
         $dbh->query("UPDATE nt_options SET option_value='2.18' WHERE option_name='db_version'");
         return 1;               # already updated
     };
@@ -177,7 +185,8 @@ sub _sql_test_2_16 {
     my $r = _get_db_version();
     return 1 if ! defined $r;   # query failed
 
-    if ($dbh->query("SHOW COLUMNS FROM `nt_perm` LIKE 'usable_ns'")->list) {
+    my $exists = $dbh->query("SHOW COLUMNS FROM `nt_perm` LIKE 'usable_ns'")->hashes;
+    if (scalar $exists && $exists->[0] && $exists->[0]{field}) {
         $dbh->query("UPDATE nt_options SET option_value='2.16' WHERE option_name='db_version'");
         return 1;               # already updated
     };
