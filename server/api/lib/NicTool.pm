@@ -192,6 +192,7 @@ sub _api {
         edit_zone_record              => {},
         delete_zone_record            => {},
         get_nameserver                => {},
+        get_nameserver_export_types   => {},
         new_nameserver                => {},
         edit_nameserver               => {},
         delete_nameserver             => {},

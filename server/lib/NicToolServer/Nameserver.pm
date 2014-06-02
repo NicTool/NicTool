@@ -226,7 +226,10 @@ sub move_nameservers {
 sub get_nameserver {
     my ( $self, $data ) = @_;
 
-    my $sql = "SELECT * FROM nt_nameserver WHERE nt_nameserver_id=?";
+    my $sql = "SELECT ns.*, et.name AS export_type
+    FROM nt_nameserver ns
+        LEFT JOIN nt_nameserver_export_type et ON ns.export_type_id=et.id
+        WHERE nt_nameserver_id=?";
     my $nameservers = $self->exec_query( $sql, $data->{nt_nameserver_id} )
         or return {
         error_code => 600,
@@ -272,7 +275,7 @@ sub new_nameserver {
     my ( $self, $data ) = @_;
 
     my @columns = qw/ nt_group_id nt_nameserver_id name ttl description
-        address export_format logdir datadir export_interval /;
+        address export_type_id logdir datadir export_interval /;
 
     my $sql = "INSERT INTO nt_nameserver("
         . join( ',', @columns )
@@ -301,7 +304,7 @@ sub edit_nameserver {
     my $dbh = $self->{dbh};
     my @columns = grep { exists $data->{$_} }
         qw/ nt_group_id nt_nameserver_id name ttl description address
-            export_format logdir datadir export_interval export_serials /;
+            export_type_id logdir datadir export_interval export_serials /;
 
     my $prev_data = $self->find_nameserver( $data->{nt_nameserver_id} );
     $data->{export_serials} = $data->{export_serials} ? 1 : 0;

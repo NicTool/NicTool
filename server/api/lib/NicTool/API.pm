@@ -457,6 +457,14 @@ sub api_commands {
             'result-list'       => 1,
             'result-list-param' => 'nameservers',
         },
+        'get_nameserver_export_types' => {
+            'class'      => 'Nameserver',
+            'method'     => 'get_nameserver_export_types',
+            'parameters' => { 'type' => { required => 1 }, },
+            'result-type'       => 'Nameserver',
+            'result-list'       => 1,
+            'result-list-param' => 'types',
+        },
         'new_nameserver' => {
             'class'      => 'Nameserver::Sanity',
             'method'     => 'new_nameserver',

@@ -40,16 +40,15 @@ sub new_nameserver {
                 "Nameserver name must be a valid host."
             );
         }
-        elsif ( $address =~ /^[\-]/ ) {   # can't start with a dash or a dot..
+        elsif ( $address =~ /^[\-]/ ) {   # can't start with a dash or a dot.
             $self->error( 'name',
                 "Parts of a nameserver name cannot start with a dash."
             );
         }
     }
 
-    # check that export_format is valid
-    if ( $data->{export_format} !~ /^(djbdns|tinydns|bind|maradns|powerdns)$/ ) {
-        $self->error( 'export_format', 'Invalid output format.' );
+    if (!$self->_valid_export_format($data->{export_format})) {
+        $self->error( 'export_format', 'Invalid export format.' );
     }
 
     # check that the IP address is valid
@@ -120,8 +119,13 @@ sub edit_nameserver {
 
     # check that export_format is valid
     if ( exists $data->{export_format} ) {
-        if ( $data->{export_format} !~ /^(djbdns|tinydns|bind|maradns|powerdns)$/ ) {
-            $self->error( 'export_format', 'Invalid output format.' );
+        my $ef_ref = $self->_valid_export_format($data->{export_format});
+        if ($ef_ref) {
+            $data->{export_type_id} = $ef_ref->{id};
+            delete $data->{export_format};
+        }
+        else {
+            $self->error( 'export_format', 'Invalid export format.' );
         }
     }
 
@@ -166,6 +170,17 @@ sub get_group_nameservers {
     return $self->throw_sanity_error if $self->{errors};
     return $self->SUPER::get_group_nameservers($data);
 }
+
+sub _valid_export_format {
+    my ($self, $type) = @_;
+    # check that export_format is valid
+
+    if (!$self->{export_types}) {
+        $self->{export_types} = $self->get_nameserver_export_types( { type=> 'ALL' } )->{types};
+    };
+    my @r = grep { $_->{name} eq $type } @{$self->{export_types}};
+    return $r[0];
+};
 
 1;
 

@@ -422,10 +422,10 @@ sub display_list_delete {
 sub display_edit_nameserver {
     my ( $nt_obj, $user, $q, $message, $edit ) = @_;
 
-    my $nameserver;
     my @fields = qw/ name address export_format logdir datadir
                      ttl export_interval export_serials description / ;
 
+    my $nameserver;
     if ( $q->param('nt_nameserver_id') && !$q->param('Save') ) {
         # get current settings
         $nameserver = $nt_obj->get_nameserver(
@@ -472,8 +472,9 @@ sub display_edit_nameserver {
  <tr class=dark_bg><td colspan=2 class="bold">$title</td></tr>];
 
     foreach my $f ( @fields ) {
-        next if ( $f eq 'export_serials' 
-                && $nameserver->{export_format} eq 'bind' );
+        if ( $f eq 'export_serials' && $nameserver->{export_format} ne 'djbdns' ) {
+            next;
+        };
         print qq[
  <tr class=light_grey_bg>
   <td class=right>$labels{$f}{label}:</td>
@@ -500,14 +501,9 @@ sub display_edit_nameserver_fields {
 
     my $ttl = $q->param('ttl') || $NicToolClient::default_nameserver_ttl;
 
-    # TODO: get this from SQL.
-    my %export_formats = (
-        'bind'    => "BIND (ISC's Berkeley Internet Named Daemon)",
-        'bind-ns' => "BIND nsupdate (DDNS)",
-        'tinydns' => 'tinydns (part of DJBDNS)',
-        'powerdns'=> 'PowerDNS',
-        'maradns' => 'MaraDNS',
-    );
+    my $export_formats = $nt_obj->ns_export_types();
+    my %export_formats = map { $_->{name} => "$_->{name} ($_->{descr})" } @$export_formats;
+
     my $export_format_values = [ sort keys %export_formats ];
     my $export_format_labels  = \%export_formats;
     my $export_format_default = $q->param('export_format');
@@ -552,9 +548,12 @@ sub display_edit_nameserver_fields {
             value => $modifyperm
                     ? $q->popup_menu(
                         -name    => 'export_format',
+                        -id      => 'export_format',
                         -values  => $export_format_values,
-                        -default => $export_format_default,
-                        -labels  => $export_format_labels
+                        -labels  => $export_format_labels,
+                        -default => $nameserver->{export_type} || $export_format_default,
+                        -onChange => "changeNSExportType(value);",
+                        -required  => 'required',
                         )
                     : $export_format_labels->{ $nameserver->{'export_format'} },
         },

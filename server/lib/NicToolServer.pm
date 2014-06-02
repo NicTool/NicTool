@@ -8,7 +8,7 @@ use RPC::XML;
 use Data::Dumper;
 use Net::IP;
 
-$NicToolServer::VERSION = '2.23';
+$NicToolServer::VERSION = '2.24';
 
 $NicToolServer::MIN_PROTOCOL_VERSION = '1.0';
 $NicToolServer::MAX_PROTOCOL_VERSION = '1.0';
@@ -479,7 +479,7 @@ sub api_commands {
         'get_record_type' => {
             'class'      => 'Zone::Record',
             'method'     => 'get_record_type',
-            'parameters' => { 
+            'parameters' => {
                     'type' => { required => 1 },
                 },
         },
@@ -506,6 +506,13 @@ sub api_commands {
                 'nt_group_id' =>
                     { 'access' => 'read', required => 0, type => 'GROUP' },
             },
+        },
+        'get_nameserver_export_types' => {
+            'class'      => 'Nameserver',
+            'method'     => 'get_nameserver_export_types',
+            'parameters' => {
+                    'type' => { required => 1 },
+                },
         },
         'new_nameserver' => {
             'class'      => 'Nameserver::Sanity',
@@ -1329,7 +1336,7 @@ sub valid_integer {
 
 sub valid_16bit_int {
     my ( $self, $type, $value ) = @_;
-    
+
     my $rc = 1;
 
     if ( $value eq '' ) {
@@ -1408,7 +1415,7 @@ sub valid_ttl {
         $self->error( 'ttl', "Invalid TTL -- must be numeric" );
         return;
     };
-    
+
     return 1 if ( $ttl >= 0 && $ttl <= 2147483647 );
 # Clarifications to the DNS specification: http://tools.ietf.org/html/rfc2181
 # valid TTL is unsigned number from 0 to 2147483647
@@ -1702,7 +1709,7 @@ sub diff_changes {
         next if ! exists $data->{$f};
         next if $data->{$f} eq $prev_data->{$f};
 
-        if ( $f eq 'description' || $f eq 'password' ) {    
+        if ( $f eq 'description' || $f eq 'password' ) {
             # description field is long & not critical
             push @changes, "changed $f";
         }

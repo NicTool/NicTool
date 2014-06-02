@@ -5,7 +5,7 @@ use strict;
 use vars qw/ $AUTOLOAD /;
 use NicToolServerAPI();
 
-$NicToolClient::VERSION = '2.23';
+$NicToolClient::VERSION = '2.24';
 $NicToolClient::NTURL   = 'http://www.nictool.com/';
 $NicToolClient::LICENSE = 'http://www.affero.org/oagpl.html';
 $NicToolClient::SRCURL  = 'http://www.nictool.com/download/NicTool.tar.gz';
@@ -31,8 +31,18 @@ sub help_link {
 
 sub rr_types {
     my $self = shift;
+    return $self->{rr_types} if $self->{rr_types};
     my $r = $self->get_record_type(type=>'ALL');
-    return $r->{types};
+    $self->{rr_types} = $r->{types};
+    return $self->{rr_types};
+}
+
+sub ns_export_types {
+    my $self = shift;
+    return $self->{nse_types} if $self->{nse_types};
+    my $r = $self->get_nameserver_export_types(type=>'ALL');
+    $self->{nse_types} = $r->{types};
+    return $self->{nse_types};
 }
 
 sub obj_to_cgi_map {

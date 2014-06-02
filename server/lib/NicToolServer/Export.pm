@@ -565,8 +565,11 @@ sub get_active_nameservers {
     my $self = shift;
     return $self->{active_ns} if defined $self->{active_ns};
 
-    my $sql = "SELECT * FROM nt_nameserver WHERE deleted=0
-        ORDER BY nt_nameserver_id";
+    my $sql = "SELECT ns.*, et.name AS export_format
+FROM nt_nameserver ns
+LEFT JOIN nt_nameserver_export_type et ON ns.export_type_id=et.id
+  WHERE ns.deleted=0
+  ORDER BY ns.nt_nameserver_id";
     $self->{active_ns} = $self->exec_query($sql);    # populated
 
     foreach my $r ( @{ $self->{active_ns} } ) {

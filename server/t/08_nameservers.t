@@ -284,7 +284,7 @@ sub doit {
             export_format => $_
         );
         noerrok( $res, 300, "export_format $_" );
-        ok( $res->get('error_msg')  => qr/Invalid output format/ );
+        ok( $res->get('error_msg')  => qr/Invalid export format/ );
         ok( $res->get('error_desc') => qr/Sanity error/ );
         if ( !$res->is_error ) {
             $res = $user->delete_nameserver(
@@ -664,7 +664,7 @@ sub doit {
         #invalid export_format
         $res = $ns1->edit_nameserver( export_format => $_ );
         noerrok( $res, 300, "export_format $_" );
-        ok( $res->get('error_msg')  => qr/Invalid output format/ );
+        ok( $res->get('error_msg')  => qr/Invalid export format/ );
         ok( $res->get('error_desc') => qr/Sanity error/ );
     }
 

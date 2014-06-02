@@ -9,6 +9,10 @@ function changeNewZoneName() {
   mailAddr.val('hostmaster.'+zoneName.val() + '.');
 };
 
+function changeNSExportType(eType) {
+    if (!eType) return false;
+}
+
 function changeRRType(rrType) {
     if (!rrType) return false;
 
