@@ -19,7 +19,7 @@ sub postflight {
 
     build_nsupdate( $self, $dir );
 
-    # Uncomment out the following to automatically load the nsupdate
+    # Uncomment out the following to automatically
     # Export to the DNS server via nsupdate
     #`nsupdate < $dir/nsupdate.log`;
 
