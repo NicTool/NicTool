@@ -23,7 +23,7 @@ sub postflight {
 
     # Uncomment out the following to automatically load the nsupdate
     # Export to the DNS server via nsupdate
-    $nsupdate = `nsupdate < $dir/nsupdate.log 2<&1`;
+    #$nsupdate = `nsupdate < $dir/nsupdate.log 2<&1`;
 
     if ( $nsupdate =~ m/REFUSED/ )
     {
