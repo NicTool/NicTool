@@ -19,6 +19,10 @@ sub postflight {
 
     build_nsupdate( $self, $dir );
 
+    # Uncomment out the following to automatically load the nsupdate
+    # Export to the DNS server via nsupdate
+    #`nsupdate < $dir/nsupdate.log`;
+
     return 1;
 }
 
@@ -129,9 +133,10 @@ sub get_log {
     my ( $self, $dir ) = @_;
 
     my $dbix_w = $self->{nte}->{dbix_w};
+    my $ns_id = $self->{nte}->{ns_ref}->{nt_nameserver_id};
     my $time   = time - 300;
 
-    my $sql = "SELECT * FROM nictool.nt_user_global_log WHERE timestamp > (SELECT UNIX_TIMESTAMP(date_start) FROM nt_nameserver_export_log WHERE success=1 AND nt_nameserver_id=4 ORDER BY date_start DESC LIMIT 1) AND object IN ('zone','zone_record')";
+    my $sql = "SELECT * FROM nictool.nt_user_global_log WHERE timestamp > (SELECT UNIX_TIMESTAMP(date_start) FROM nt_nameserver_export_log WHERE success=1 AND nt_nameserver_id=$ns_id ORDER BY date_start DESC LIMIT 1) AND object IN ('zone','zone_record')";
 
     return $dbix_w->query($sql)->hashes;
 }
