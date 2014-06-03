@@ -17,8 +17,27 @@ sub postflight {
     my $self = shift;
     my $dir = shift || $self->{nte}->get_export_dir or return;
 
+    my $nsupdate = "";
+
     build_nsupdate( $self, $dir );
 
+    # Uncomment out the following to automatically load the nsupdate
+    # Export to the DNS server via nsupdate
+    #$nsupdate = `nsupdate < $dir/nsupdate.log 2<&1`;
+
+    if ( $nsupdate =~ m/REFUSED/ )
+    {
+        $self->{nte}->set_status("last: FAILED, reason: REFUSED");
+        $self->{nte}->elog("nsupdate FAILED, reason: REFUSED", success=>0);
+        exit 0;
+    } 
+    elsif ( $nsupdate =~ m/NOTZONE/ || $nsupdate =~ m/enclosing\szone/ ) 
+    {
+        $self->{nte}->set_status("last: FAILED, reason: NOTZONE");
+        $self->{nte}->elog("nsupdate FAILED, reason: NOTZONE", success=>0);
+        exit 0;
+    } 
+    
     return 1;
 }
 
@@ -129,9 +148,10 @@ sub get_log {
     my ( $self, $dir ) = @_;
 
     my $dbix_w = $self->{nte}->{dbix_w};
+    my $ns_id = $self->{nte}->{ns_ref}->{nt_nameserver_id};
     my $time   = time - 300;
 
-    my $sql = "SELECT * FROM nictool.nt_user_global_log WHERE timestamp > (SELECT UNIX_TIMESTAMP(date_start) FROM nt_nameserver_export_log WHERE success=1 AND nt_nameserver_id=4 ORDER BY date_start DESC LIMIT 1) AND object IN ('zone','zone_record')";
+    my $sql = "SELECT * FROM nictool.nt_user_global_log WHERE timestamp > (SELECT UNIX_TIMESTAMP(date_start) FROM nt_nameserver_export_log WHERE success=1 AND nt_nameserver_id=$ns_id ORDER BY date_start DESC LIMIT 1) AND object IN ('zone','zone_record')";
 
     return $dbix_w->query($sql)->hashes;
 }
