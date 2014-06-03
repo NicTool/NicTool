@@ -29,13 +29,13 @@ sub postflight {
     {
         $self->{nte}->set_status("last: FAILED, reason: REFUSED");
         $self->{nte}->elog("nsupdate FAILED, reason: REFUSED", success=>0);
-	exit 0;
+        exit 0;
     } 
     elsif ( $nsupdate =~ m/NOTZONE/ || $nsupdate =~ m/enclosing\szone/ ) 
     {
         $self->{nte}->set_status("last: FAILED, reason: NOTZONE");
         $self->{nte}->elog("nsupdate FAILED, reason: NOTZONE", success=>0);
-	exit 0;
+        exit 0;
     } 
     
     return 1;
