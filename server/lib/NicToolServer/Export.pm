@@ -831,3 +831,65 @@ sub incremental {
 };
 
 1;
+
+__END__
+
+=head1 NAME
+
+NicToolServer::Export
+
+=head1 SYNOPSIS
+
+export DNS data to authoritative DNS servers
+
+=head1 OVERVIEW
+
+When the nt_export.pl script runs, it calls the NicToolServer::Export->export method, which begins the export process:
+
+export
+
+=over 4
+
+preflight
+
+get_active_namservers
+
+=over 4
+
+load_export_class
+
+=back
+
+export_db
+
+=over 4
+
+get_ns_zones
+
+=back
+
+postflight
+
+=back
+
+=head1 Export Classes
+
+In general, each export class is expected to provide the following methods:
+
+=over 4
+
+=item postflight
+
+The postflight method will handle any processing that needs to be called after the export has completed. For tinydns, it compiles data.cdb and rsync copies it to the remotes. For BIND, it rsyncs out the zone files and issues a rdnc reload.
+
+=item zr_*
+
+One method needs to exist for each RR type (zr_a, zr_mx, zr_cname, etc.) used in the resource_record_type table. 
+
+=item export_db
+
+The export_db method inherited from Base.pm is suitable for BIND style exports (exporting each zone to a file). If that doesn't work, write your own export_db method. See tinydns.pm and DynECT.pm for examples.
+
+=back
+
+=cut
