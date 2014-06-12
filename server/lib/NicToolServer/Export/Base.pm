@@ -50,6 +50,22 @@ sub get_records {
 sub export_db {
     my ($self) = @_;
 
+# First clean up any deleted zone files.
+    my $dir = $self->{nte}->get_export_dir or die "missing export dir!\n";
+    foreach my $z ( @{ $self->{nte}->get_ns_zones( deleted => 1) } ) {
+        my $zone = $z->{zone};
+        my $file = "$dir/$zone";
+        next if ! -f $file;  # already deleted
+        if ( unlink $file ) {
+            $self->{nte}->elog("deleted $zone");
+        }
+        else {
+            $self->{nte}->elog("error deleting $file: $!");
+        };
+        $self->{nte}{zones_deleted}{$zone} = 1;
+    };
+
+# Then export the zone files
     # for incremental, get_ns_zones returns only changed zones.
     foreach my $z ( @{ $self->{nte}->get_ns_zones() } ) {
         push @{$self->{zone_list}}, $z->{zone};
@@ -68,19 +84,7 @@ sub export_db {
         }
         $fh->close;
     }
-    my $dir = $self->{nte}->get_export_dir or die "missing export dir!\n";
-    foreach my $z ( @{ $self->{nte}->get_ns_zones( deleted => 1) } ) {
-        my $zone = $z->{zone};
-        my $file = "$dir/$zone";
-        next if ! -f $file;  # already deleted
-        if ( unlink $file ) {
-            $self->{nte}->elog("deleted $zone");
-        }
-        else {
-            $self->{nte}->elog("error deleting $file: $!");
-        };
-        $self->{nte}{zones_deleted}{$zone} = 1;
-    };
+
     return 1;
 }
 
