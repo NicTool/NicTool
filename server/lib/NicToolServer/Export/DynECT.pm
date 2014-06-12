@@ -28,7 +28,10 @@ sub get_ns_zones {
        (SELECT GROUP_CONCAT(nt_nameserver_id) FROM nt_zone_nameserver n
         WHERE n.nt_zone_id=z.nt_zone_id) AS nsids
            FROM nt_zone z
-        WHERE z.deleted=0";
+        WHERE z.deleted=0
+        ORDER BY RAND()
+        LIMIT 1
+        ";
 
     my $r = $self->{nte}->exec_query( $sql ) or return [];
     $self->{nte}->elog( "retrieved " . scalar @$r . " zones" );
@@ -63,8 +66,9 @@ sub export_db {
         my $dynr = $self->get_api_response('POST', "ZoneFile/$zone/", {
                 file => $zone_str,
                 });
-        print Dumper($dynr);
-# TODO: poll the job until the import is completed
+
+        $self->poll_until_finished($dynr);
+        next;
 
 # manually add NS records
         foreach my $nsid ( split(',', $z->{nsids} ) ) {
@@ -83,6 +87,9 @@ sub export_db {
 
     foreach my $z ( @{ $self->{nte}->get_ns_zones( deleted => 1) } ) {
         my $zone = $z->{zone};
+        if (!$self->get_zone($zone)) {
+            next;
+        };
         if ($self->delete_zone($zone)) {
             $self->{nte}->elog("deleted $zone");
             $self->{nte}{zones_deleted}{$zone} = 1;
@@ -93,6 +100,38 @@ sub export_db {
     };
     return 1;
 }
+
+sub poll_until_finished {
+    my ($self, $dyn_job) = @_;
+
+#print Dumper($dyn_job->content);
+    my $job = $json->decode($dyn_job->content);
+    my $job_id = $job->{job_id};
+print "job ID: $job_id\n";
+die "no job ID\n" if ! $job_id;
+
+    my $r = { status => 'incompleted' };
+    while ('success' ne $r->{status} ) {
+
+        my $req = HTTP::Request->new('GET' => "${dyn_rest_url}Job/$job_id/");
+        $req->content_type('application/json');
+        $req->header( 'Auth-Token' => $self->{token} );
+
+        my $res = $ua->request($req);
+        print Dumper ($json->decode($res->content));
+        sleep 1;
+        next;
+
+        if ($res->is_success) {
+            my $api_r = $json->decode($res->content);
+            print Dumper($api_r);
+            $r->{status} = 'success';
+            last;
+        }
+        print Dumper($res);
+        sleep 1;
+    }
+};
 
 sub add_zone_record {
     my ($self, $type, $zone, $fqdn, $req) = @_;
@@ -106,7 +145,7 @@ sub add_zone_record {
         if ('success' eq $api_r->{status}) {
             my $record_id = $api_r->{data}{record_id};
             print "$fqdn added as record ID $record_id\n";
-            return 1;
+            return $api_r;
         }
         print Dumper($res);
         return 0;
