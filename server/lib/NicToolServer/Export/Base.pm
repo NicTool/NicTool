@@ -57,7 +57,7 @@ sub export_db {
         my $file = "$dir/$zone";
         next if ! -f $file;  # already deleted
         if ( unlink $file ) {
-            $self->{nte}->elog("deleted $zone");
+            #$self->{nte}->elog("deleted $zone");
         }
         else {
             $self->{nte}->elog("error deleting $file: $!");
