@@ -61,8 +61,8 @@ VALUES (1,'djbdns','tinydns & axfrdns','cr.yp.to/djbdns.html'),
        (2,'bind','BIND (zone files)', 'www.isc.org/downloads/bind/'),
        (3,'maradns','MaraDNS', 'maradns.samiam.org'),
        (4,'powerdns','PowerDNS','www.powerdns.com'),
-       (5,'bind-nsupdate','BIND (nsupdate protocol)','');
-       (6,'NSD','Name Server Daemon','www.nlnetlabs.nl/projects/nsd/');
+       (5,'bind-nsupdate','BIND (nsupdate protocol)',''),
+       (6,'NSD','Name Server Daemon','www.nlnetlabs.nl/projects/nsd/'),
        (7,'dynect','DynECT Standard DNS','dyn.com/managed-dns/');
 
 INSERT INTO nt_nameserver(nt_group_id, name, ttl, description, address, 
