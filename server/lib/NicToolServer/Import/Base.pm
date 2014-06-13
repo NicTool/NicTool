@@ -34,18 +34,25 @@ sub get_zone {
 };
 
 sub get_zone_id {
-    my ($self, $fqdn) = @_;
+    my ($self, $fqdn, $zone) = @_;
+    my ($host, $zone_id);
 
     chop $fqdn if '.' eq substr $fqdn, -1, 1;
     $fqdn = lc $fqdn;
 
+    if ($zone) {
+        $zone_id = $self->nt_get_zone_id( zone => $zone );
+        $host = substr($fqdn, 0, ((length $zone) * -1) -1);
+        return ($zone_id, $host);
+    };
+
     # try going right:  host.example.com,  most specific first
-    my $zone_id = $self->nt_get_zone_id( zone => $fqdn );
+    $zone_id = $self->nt_get_zone_id( zone => $fqdn );
     if ( $zone_id ) {
         return ($zone_id, "$fqdn.");
     };
 
-    my ($host, $zone) = $self->get_zone( lc $fqdn);
+    ($host, $zone) = $self->get_zone( lc $fqdn);
     if ( ! $zone ) {
         die "unable to work out zone from $fqdn\n";
     };

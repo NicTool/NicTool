@@ -18,7 +18,16 @@ use Net::DNS::Zone::Parser;
 
 sub get_import_file {
     my $self = shift;
-    my $filename = shift || '/etc/namedb/named.conf';
+    my $filename = shift;
+    if (!$filename && -f '/etc/namedb/named.conf' ) {
+        $filename = '/etc/namedb/named.conf';
+    }
+    if (!$filename && -f '/etc/bind/named.conf' ) {
+        $filename = '/etc/bind/named.conf';
+    }
+    if (!$filename && -f 'named.conf' ) {
+        $filename = 'named.conf';
+    }
 
     return $self->{FH} if defined $self->{FH};
 
@@ -56,23 +65,23 @@ sub import_zone {
     my $RRs=$parser->get_array();
     foreach my $rr ( @$RRs ) {
         my $method = 'zr_' . lc $rr->type;
-        $self->$method( $rr );
+        $self->$method( $rr, $zone );
 #        Time::HiRes::sleep 0.1;
     };
 };
 
 sub zr_soa {
-    my ($self, $rr) = @_;
+    my ($self, $rr, $zone) = @_;
 
-    my $zid = $self->nt_get_zone_id( zone => $rr->name );
+    my $zid = $self->nt_get_zone_id( zone => $zone );
     if ( $zid ) {
         print "zid: $zid\n";
         return $zid;
     };
 
     $self->nt_create_zone(
-            zone        => $rr->name,
-            description => '',
+            zone        => $zone,
+            description => 'imported',
             contact     => $rr->rname . '.',
             ttl         => $rr->ttl,
             refresh     => $rr->refresh,
@@ -83,18 +92,18 @@ sub zr_soa {
 };
 
 sub zr_ns {
-    my ($self, $rr) = @_;
+    my ($self, $rr, $zone) = @_;
 
     # automatically generated in NicTool
     return;
 };
 
 sub zr_a {
-    my $self = shift;
-    my $rr = shift or die;
+    my ($self, $rr, $zone) = @_;
+    $rr or die;
 
     print "A : " . $rr->name . "\t" . $rr->address . "\n";
-    my ($zone_id, $host) = $self->get_zone_id( $rr->name );
+    my ($zone_id, $host) = $self->get_zone_id( $rr->name, $zone );
 
     $self->nt_create_record(
         zone_id => $zone_id,
@@ -106,11 +115,11 @@ sub zr_a {
 };
 
 sub zr_mx {
-    my $self = shift;
-    my $rr = shift or die;
+    my ($self, $rr, $zone) = @_;
+    $rr or die;
 
     print "MX : " . $rr->name . "\t" . $rr->exchange . "\n";
-    my ($zone_id, $host) = $self->get_zone_id( $rr->name );
+    my ($zone_id, $host) = $self->get_zone_id( $rr->name, $zone );
 
     $self->nt_create_record(
         zone_id => $zone_id,
@@ -123,11 +132,11 @@ sub zr_mx {
 }
 
 sub zr_txt {
-    my $self = shift;
-    my $rr = shift or die;
+    my ($self, $rr, $zone) = @_;
+    $rr or die;
 
     print "TXT : " . $rr->name . "\t" . $rr->txtdata . "\n";
-    my ($zone_id, $host) = $self->get_zone_id( $rr->name );
+    my ($zone_id, $host) = $self->get_zone_id( $rr->name, $zone );
 
     $self->nt_create_record(
         zone_id => $zone_id,
@@ -139,11 +148,11 @@ sub zr_txt {
 }
 
 sub zr_cname {
-    my $self = shift;
-    my $rr = shift or die;
+    my ($self, $rr, $zone) = @_;
+    $rr or die;
 
     print "CNAME : ".$rr->name."\t".$rr->cname."\n";
-    my ($zone_id, $host) = $self->get_zone_id( $rr->name );
+    my ($zone_id, $host) = $self->get_zone_id( $rr->name, $zone );
 
     $self->nt_create_record(
         zone_id => $zone_id,
@@ -155,11 +164,11 @@ sub zr_cname {
 }
 
 sub zr_spf {
-    my $self = shift;
-    my $rr = shift or die;
+    my ($self, $rr, $zone) = @_;
+    $rr or die;
 
     print "SPF : " . $rr->name . "\t" . $rr->txtdata . "\n";
-    my ($zone_id, $host) = $self->get_zone_id( $rr->name );
+    my ($zone_id, $host) = $self->get_zone_id( $rr->name, $zone );
 
     $self->nt_create_record(
         zone_id => $zone_id,
@@ -171,11 +180,11 @@ sub zr_spf {
 }
 
 sub zr_aaaa {
-    my $self = shift;
-    my $rr = shift or die;
+    my ($self, $rr, $zone) = @_;
+    $rr or die;
 
     print "AAAA : " . $rr->name . "\t" . $rr->address . "\n";
-    my ($zone_id, $host) = $self->get_zone_id( $rr->name );
+    my ($zone_id, $host) = $self->get_zone_id( $rr->name, $zone );
 
     $self->nt_create_record(
         zone_id => $zone_id,
@@ -187,11 +196,11 @@ sub zr_aaaa {
 };
 
 sub zr_srv {
-    my $self = shift;
-    my $rr = shift or die;
+    my ($self, $rr, $zone) = @_;
+    $rr or die;
 
     print "SRV : " . $rr->name . "\t" . $rr->target . "\n";
-    my ($zone_id, $host) = $self->get_zone_id( $rr->name );
+    my ($zone_id, $host) = $self->get_zone_id( $rr->name, $zone );
 
     $self->nt_create_record(
         zone_id => $zone_id,
@@ -206,11 +215,11 @@ sub zr_srv {
 }
 
 sub zr_loc {
-    my $self = shift;
-    my $rr = shift or die;
+    my ($self, $rr, $zone) = @_;
+    $rr or die;
 
     print "LOC : " . $rr->name . "\n";
-    my ($zone_id, $host) = $self->get_zone_id( $rr->name );
+    my ($zone_id, $host) = $self->get_zone_id( $rr->name, $zone );
 
     $self->nt_create_record(
         zone_id => $zone_id,
@@ -222,11 +231,11 @@ sub zr_loc {
 }
 
 sub zr_dname {
-    my $self = shift;
-    my $rr = shift or die;
+    my ($self, $rr, $zone) = @_;
+    $rr or die;
 
     print "DNAME : ".$rr->name."\t".$rr->target."\n";
-    my ($zone_id, $host) = $self->get_zone_id( $rr->name );
+    my ($zone_id, $host) = $self->get_zone_id( $rr->name, $zone );
 
     $self->nt_create_record(
         zone_id => $zone_id,
@@ -238,11 +247,11 @@ sub zr_dname {
 }
 
 sub zr_sshfp { 
-    my $self = shift;
-    my $rr = shift or die;
+    my ($self, $rr, $zone) = @_;
+    $rr or die;
 
     print "SSHFP : " . $rr->name . "\t" . $rr->fp . "\n";
-    my ($zone_id, $host) = $self->get_zone_id( $rr->name );
+    my ($zone_id, $host) = $self->get_zone_id( $rr->name, $zone );
 
     $self->nt_create_record(
         zone_id => $zone_id,
@@ -256,11 +265,11 @@ sub zr_sshfp {
 };
 
 sub zr_naptr { 
-    my $self = shift;
-    my $rr = shift or die;
+    my ($self, $rr, $zone) = @_;
+    $rr or die;
 
     print "NAPTR : " . $rr->name . "\t" . $rr->service . "\n";
-    my ($zone_id, $host) = $self->get_zone_id( $rr->name );
+    my ($zone_id, $host) = $self->get_zone_id( $rr->name, $zone );
 
     $self->nt_create_record(
         zone_id => $zone_id,
@@ -275,11 +284,11 @@ sub zr_naptr {
 };
 
 sub zr_ptr {
-    my $self = shift;
-    my $rr = shift or die;
+    my ($self, $rr, $zone) = @_;
+    $rr or die;
 
     print "PTR : " . $rr->name . "\t" . $rr->ptrdname . "\n";
-    my ($zone_id, $host) = $self->get_zone_id( $rr->name );
+    my ($zone_id, $host) = $self->get_zone_id( $rr->name, $zone );
 
     $self->nt_create_record(
         zone_id => $zone_id,
@@ -291,11 +300,11 @@ sub zr_ptr {
 };
 
 sub zr_ipseckey { 
-    my $self = shift;
-    my $rr = shift or die;
+    my ($self, $rr, $zone) = @_;
+    $rr or die;
 
     print "IPSECKEY : " . $rr->name . "\t" . $rr->gateway . "\n";
-    my ($zone_id, $host) = $self->get_zone_id( $rr->name );
+    my ($zone_id, $host) = $self->get_zone_id( $rr->name, $zone );
 
     $self->nt_create_record(
         zone_id => $zone_id,
