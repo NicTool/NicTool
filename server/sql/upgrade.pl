@@ -139,6 +139,9 @@ UPDATE nt_nameserver SET export_type_id=3 WHERE export_format='maradns';
 UPDATE nt_nameserver SET export_type_id=4 WHERE export_format='powerdns';
 ALTER TABLE nt_nameserver DROP column export_format;
 
+ALTER TABLE `nt_nameserver` ADD `address6` VARCHAR(127)  NULL  DEFAULT NULL  AFTER `address`;
+ALTER TABLE `nt_nameserver_log` ADD `address6` VARCHAR(127)  NULL  DEFAULT NULL  AFTER `address`;
+
 UPDATE nt_options SET option_value='2.24' WHERE option_name='db_version';
 EO_SQL_2_24
 };

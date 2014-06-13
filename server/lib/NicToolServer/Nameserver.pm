@@ -69,10 +69,15 @@ sub get_group_nameservers {
             quicksearch => 0,
             field       => 'nt_nameserver.address'
         },
+        address6 => {
+            timefield   => 0,
+            quicksearch => 0,
+            field       => 'nt_nameserver.address6'
+        },
         export_format => {
             timefield   => 0,
             quicksearch => 0,
-            field       => 'nt_nameserver.export_format'
+            field       => 'nt_nameserver_export_type.name'
         },
         status => {
             timefield   => 0,
@@ -100,9 +105,10 @@ sub get_group_nameservers {
 
     my $r_data = { 'error_code' => 200, 'error_msg' => 'OK', list => [] };
 
-    my $sql
-        = "SELECT COUNT(*) AS count FROM nt_nameserver ns "
+    my $sql = "SELECT COUNT(*) AS count "
+        . "FROM nt_nameserver ns "
         . "INNER JOIN nt_group g ON ns.nt_group_id = g.nt_group_id "
+        . "LEFT JOIN nt_nameserver_export_type et ON ns.export_type_id=et.id "
         . "WHERE ns.deleted=0 "
         . "AND ns.nt_group_id IN("
         . join( ',', @group_list ) . ")"
