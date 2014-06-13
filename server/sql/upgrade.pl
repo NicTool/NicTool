@@ -113,6 +113,12 @@ sub _sql_test_2_24 {
 
 sub _sql_2_24 {
     <<EO_SQL_2_24
+ALTER TABLE `nt_nameserver` ADD column address6 VARCHAR(127)  NULL  DEFAULT NULL  AFTER address;
+ALTER TABLE `nt_nameserver` ADD column remote_login VARCHAR(127) DEFAULT NULL AFTER address6;
+ALTER TABLE `nt_nameserver` ADD column export_type_id INT UNSIGNED NOT NULL AFTER remote_login;
+ALTER TABLE `nt_nameserver_log` ADD column `address6` VARCHAR(127) NULL DEFAULT NULL AFTER address;
+ALTER TABLE `nt_nameserver_log` ADD column `address6` VARCHAR(127) NULL DEFAULT NULL AFTER address6;
+
 DROP TABLE IF EXISTS nt_nameserver_export_types;
 DROP TABLE IF EXISTS nt_nameserver_export_type;
 CREATE TABLE `nt_nameserver_export_type` (
@@ -132,15 +138,11 @@ VALUES (1,'djbdns',    'tinydns & axfrdns',  'cr.yp.to/djbdns.html'),
        (6,'NSD',       'Name Server Daemon', 'www.nlnetlabs.nl/projects/nsd/'),
        (7,'dynect',    'DynECT Standard DNS','dyn.com/managed-dns/');
 
-ALTER TABLE nt_nameserver ADD column export_type_id INT UNSIGNED NOT NULL AFTER remote_login;
 UPDATE nt_nameserver SET export_type_id=1 WHERE export_format IN ('tinydns','djb','djbdns');
 UPDATE nt_nameserver SET export_type_id=2 WHERE export_format='bind';
 UPDATE nt_nameserver SET export_type_id=3 WHERE export_format='maradns';
 UPDATE nt_nameserver SET export_type_id=4 WHERE export_format='powerdns';
 ALTER TABLE nt_nameserver DROP column export_format;
-
-ALTER TABLE `nt_nameserver` ADD `address6` VARCHAR(127)  NULL  DEFAULT NULL  AFTER `address`;
-ALTER TABLE `nt_nameserver_log` ADD `address6` VARCHAR(127)  NULL  DEFAULT NULL  AFTER `address`;
 
 UPDATE nt_options SET option_value='2.24' WHERE option_name='db_version';
 EO_SQL_2_24
