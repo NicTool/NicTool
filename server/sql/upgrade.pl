@@ -115,9 +115,9 @@ sub _sql_2_24 {
     <<EO_SQL_2_24
 ALTER TABLE `nt_nameserver` ADD column address6 VARCHAR(127)  NULL  DEFAULT NULL  AFTER address;
 ALTER TABLE `nt_nameserver` ADD column remote_login VARCHAR(127) DEFAULT NULL AFTER address6;
-ALTER TABLE `nt_nameserver` ADD column export_type_id INT UNSIGNED NOT NULL AFTER remote_login;
+ALTER TABLE `nt_nameserver` ADD column export_type_id INT UNSIGNED DEFAULT '1' AFTER remote_login;
 ALTER TABLE `nt_nameserver_log` ADD column `address6` VARCHAR(127) NULL DEFAULT NULL AFTER address;
-ALTER TABLE `nt_nameserver_log` ADD column `address6` VARCHAR(127) NULL DEFAULT NULL AFTER address6;
+ALTER TABLE `nt_nameserver_log` ADD column export_type_id INT UNSIGNED NULL AFTER address6;
 
 DROP TABLE IF EXISTS nt_nameserver_export_types;
 DROP TABLE IF EXISTS nt_nameserver_export_type;

@@ -227,22 +227,6 @@ restart: $exportdir/named.conf.nictool
 \ttest 1
 
 ################################
-#########    NSD   #############
-################################
-# Note: you will need to configure zonesdir in nsd.conf to point to this
-# export directory. Make sure the export directory reflected below is correct
-# then uncomment each of the targets.
-
-#compile: $exportdir/named.conf.nictool
-#\tnsdc rebuild
-#
-#remote: /var/db/nsd/nsd.db
-#\trsync -az --delete /var/db/nsd/nsd.db nsd\@$address:/var/db/nsd/
-#
-#restart: nsd.db
-#\tssh nsd\@$address nsdc reload
-
-################################
 #########  PowerDNS  ###########
 ################################
 

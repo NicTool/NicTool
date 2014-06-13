@@ -604,7 +604,11 @@ sub load_export_class {
         require NicToolServer::Export::BIND;
         $self->{export_class} = NicToolServer::Export::BIND->new( $self );
     }
-    elsif ( $self->{export_format} eq 'bind-ns' ) {
+    elsif ( $self->{export_format} eq 'NSD' ) {
+        require NicToolServer::Export::NSD;
+        $self->{export_class} = NicToolServer::Export::NSD->new( $self );
+    }
+    elsif ( $self->{export_format} eq 'bind-nsupdate' ) {
         require NicToolServer::Export::BIND::nsupdate;
         $self->{export_class} = NicToolServer::Export::BIND::nsupdate->new( $self );
     }
