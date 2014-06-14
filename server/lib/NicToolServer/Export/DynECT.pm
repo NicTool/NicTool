@@ -44,6 +44,7 @@ sub export_db {
 
         $self->add_zonefile($zone, $zone_str) or next;
         $self->add_ns_records($z);           # manually add NS records
+        sleep 1;
         $self->publish_zone($zone);
     }
 
@@ -172,10 +173,11 @@ sub publish_zone {
 
     my $res = $self->get_api_response('PUT', "Zone/$zone/", {publish => 1});
     if (!$res->is_success) {
-        print Dumper($res);
+        warn "publish attempt failed, retrying.\n";
         sleep 2;
         $res = $self->get_api_response('PUT', "Zone/$zone/", {publish => 1});
         if (!$res->is_success) {
+            print Dumper($res);
             return 0;
         }
     };
