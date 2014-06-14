@@ -658,7 +658,7 @@ sub preflight {
     };
     $self->elog("export required") if $self->export_required;
 
-    $self->get_export_dir or return;   # determine export directory
+#   $self->get_export_dir or return;   # determine export directory
     $self->write_runfile();            # provide a default 'run' file
 
     return 1;
@@ -693,7 +693,7 @@ sub update_status {
 sub write_runfile {
     my $self = shift;
 
-    chdir $self->{dir_orig};
+    chdir $self->{dir_orig} or die "couldn't cc $self->{dir_orig}";
     return if -f 'run';
     my $su = 'setuidgid $EXPORT_USER';
     my $suffix = '';

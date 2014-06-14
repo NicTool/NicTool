@@ -50,10 +50,12 @@ sub get_records {
 sub export_db {
     my ($self) = @_;
 
+    my $dir = $self->{nte}->get_export_dir or die "missing export dir!\n";
+
     # for incremental, get_ns_zones returns only changed zones.
     foreach my $z ( @{ $self->{nte}->get_ns_zones() } ) {
         push @{$self->{zone_list}}, $z->{zone};
-        my $fh = $self->get_export_file( $z->{zone} );
+        my $fh = $self->get_export_file( $z->{zone}, $dir );
         $self->{nte}{zone_name} = $z->{zone};
 
         # these records don't exist in DB, generate them here
@@ -69,7 +71,6 @@ sub export_db {
         $fh->close;
     }
 
-    my $dir = $self->{nte}->get_export_dir or die "missing export dir!\n";
     foreach my $z ( @{ $self->{nte}->get_ns_zones( deleted => 1) } ) {
         my $zone = $z->{zone};
         if ( grep { $_ eq $zone } @{$self->{zone_list}} ) {

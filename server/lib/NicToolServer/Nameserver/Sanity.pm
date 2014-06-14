@@ -8,8 +8,7 @@ use strict;
 sub new_nameserver {
     my ( $self, $data ) = @_;
 
-    $self->push_sanity_error( 'nt_group_id',
-        'Cannot add nameserver to a deleted group!' )
+    $self->push_sanity_error( 'nt_group_id', 'Cannot add nameserver to a deleted group!' )
         if $self->check_object_deleted( 'group', $data->{nt_group_id} );
 
     defined $data->{ttl} or $data->{ttl} = 86400; # if unset, set default.
@@ -47,8 +46,8 @@ sub new_nameserver {
         }
     }
 
-    if (!$self->_valid_export_format($data->{export_format})) {
-        $self->error( 'export_format', 'Invalid export format.' );
+    if (!$self->_valid_export_type($data->{export_type_id})) {
+        $self->error( 'export_type_id', 'Invalid export format.' );
     }
 
     # check that the IP address is valid
@@ -74,10 +73,8 @@ sub new_nameserver {
 sub edit_nameserver {
     my ( $self, $data ) = @_;
 
-    $self->push_sanity_error( 'nt_nameserver_id',
-        'Cannot edit deleted nameserver!' )
-        if $self->check_object_deleted( 'nameserver',
-        $data->{nt_nameserver_id} );
+    $self->push_sanity_error( 'nt_nameserver_id', 'Cannot edit deleted nameserver!' )
+        if $self->check_object_deleted( 'nameserver', $data->{nt_nameserver_id} );
 
     my $dataobj = $self->get_nameserver($data);
     return $dataobj if $self->is_error_response($dataobj);
@@ -117,15 +114,11 @@ sub edit_nameserver {
         }
     }
 
-    # check that export_format is valid
-    if ( exists $data->{export_format} ) {
-        my $ef_ref = $self->_valid_export_format($data->{export_format});
-        if ($ef_ref) {
-            $data->{export_type_id} = $ef_ref->{id};
-            delete $data->{export_format};
-        }
-        else {
-            $self->error( 'export_format', 'Invalid export format.' );
+    # check that export_type_id is valid
+    if ( exists $data->{export_type_id} ) {
+        my $ef_ref = $self->_valid_export_type($data->{export_type_id});
+        if (!$ef_ref) {
+            $self->error( 'export_type_id', 'Invalid export format.' );
         }
     }
 
@@ -166,19 +159,19 @@ sub get_group_nameservers {
     my ( $self, $data ) = @_;
 
     $self->search_params_sanity_check( $data,
-        qw(name description address export_format status group_name) );
+        qw(name description address address6 remote_login export_type_id status group_name) );
     return $self->throw_sanity_error if $self->{errors};
     return $self->SUPER::get_group_nameservers($data);
 }
 
-sub _valid_export_format {
+sub _valid_export_type {
     my ($self, $type) = @_;
-    # check that export_format is valid
+    # check that export_type_id is valid
 
     if (!$self->{export_types}) {
         $self->{export_types} = $self->get_nameserver_export_types( { type=> 'ALL' } )->{types};
     };
-    my @r = grep { $_->{name} eq $type } @{$self->{export_types}};
+    my @r = grep { $_->{id} == $type } @{$self->{export_types}};
     return $r[0];
 };
 

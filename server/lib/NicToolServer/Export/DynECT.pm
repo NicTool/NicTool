@@ -21,31 +21,11 @@ my $ua = LWP::UserAgent->new;
 
 my $json = JSON->new;
 
-sub get_ns_zones {
-    my $self = shift;
-# TODO: delete this sub. Used only for testing.
-    my $sql = "SELECT z.nt_zone_id, z.zone, z.mailaddr, z.serial, z.refresh,
-       z.retry, z.expire, z.minimum, z.ttl, z.location, z.last_modified,
-       (SELECT GROUP_CONCAT(nt_nameserver_id) FROM nt_zone_nameserver n
-        WHERE n.nt_zone_id=z.nt_zone_id) AS nsids
-           FROM nt_zone z
-        WHERE z.deleted=0
-        ORDER BY RAND()
-        LIMIT 3
-        ";
-
-    my $r = $self->{nte}->exec_query( $sql ) or return [];
-    $self->{nte}->elog( "retrieved " . scalar @$r . " zones" );
-    return $r;
-}
-
 sub export_db {
     my ($self) = @_;
 
     # for incremental, get_ns_zones returns only changed zones.
-# TODO: switch back to normal get_ns_zones
-   #foreach my $z ( @{ $self->{nte}->get_ns_zones() } ) {
-    foreach my $z ( @{ $self->get_ns_zones() } ) {
+    foreach my $z ( @{ $self->{nte}->get_ns_zones() } ) {
         my $zone = $z->{zone};
         push @{$self->{zone_list}}, $zone;
         $self->{nte}{zone_name} = $zone;
@@ -53,7 +33,7 @@ sub export_db {
         #$self->add_zone($zone);  # upload does this
 
         my $zone_str = $self->{nte}->zr_soa( $z );
-        # Dyn API overrides NS records in zone files, manually add them later.
+        # Dyn API overrides NS records in zone files, manually add later.
         #$zone_str .= $self->{nte}->zr_ns(  $z );
 
         foreach my $r ( @{ $self->get_records( $z->{nt_zone_id} ) } ) {
@@ -62,25 +42,8 @@ sub export_db {
             $zone_str .= $self->$method($r);  # inherited from Export::BIND
         }
 
-        my $dynr = $self->get_api_response('POST', "ZoneFile/$zone/", { file => $zone_str });
-        if (!$dynr) {
-            warn "Dyn export for $zone failed\n";
-            next;
-        }
-
-# manually add NS records
-        foreach my $nsid ( split(',', $z->{nsids} ) ) {
-            my $ns_ref = $self->{nte}{active_ns_ids}{$nsid};
-            my $r = $self->add_zone_record( 'NS', $zone, $z->{zone}, {
-                        rdata => { nsdname => $self->qualify($ns_ref->{name}, $zone) },
-                        ttl   => $ns_ref->{ttl}
-                    });
-
-            if (!$r) {
-                warn "Failed to add NS $z->{zone}\n";
-            }
-        }
-
+        $self->add_zonefile($zone, $zone_str) or next;
+        $self->add_ns_records($z);           # manually add NS records
         $self->publish_zone($zone);
     }
 
@@ -90,8 +53,7 @@ sub export_db {
             warn "$zone was recreated, skipping delete\n";
             next;
         };
-        if (!$self->get_zone($zone)) {
-# zone not published on Dyn
+        if (!$self->get_zone($zone)) {       # zone not published on Dyn
             next;
         };
         if ($self->delete_zone($zone)) {
@@ -107,6 +69,48 @@ sub export_db {
     return 1;
 }
 
+sub add_zonefile {
+    my ($self, $zone, $zone_str) = @_;
+
+    my $res = $self->get_api_response('POST', "ZoneFile/$zone/", { file => $zone_str });
+    if (!$res) {
+        warn "Dyn export for $zone failed\n";
+        return 0;
+    }
+    if (!$res->is_success) {
+        print Dumper($res->content);
+        return 0;
+    };
+
+    my $api_r = $json->decode($res->content);
+    if ('success' ne $api_r->{status}) {
+        print Dumper($api_r->{msgs});
+        return 0;
+    }
+
+    print "zone $zone uploaded\n";
+    return 1;
+};
+
+sub add_ns_records {
+    my ($self, $z) = @_;
+
+    foreach my $nsid ( split(',', $z->{nsids} ) ) {
+        my $ns_ref = $self->{nte}{active_ns_ids}{$nsid};
+        my $r = $self->add_zone_record( 'NS',
+                $z->{zone},
+                $z->{zone},
+                {
+                    rdata => { nsdname => $self->qualify($ns_ref->{name}, $z->{zone}) },
+                    ttl   => $ns_ref->{ttl}
+                });
+
+        if (!$r) {
+            warn "Failed to add NS $z->{zone}\n";
+        }
+    }
+};
+
 sub add_zone_record {
     my ($self, $type, $zone, $fqdn, $req) = @_;
 
@@ -121,7 +125,7 @@ sub add_zone_record {
 
     my $api_r = $json->decode($res->content);
     if ('success' ne $api_r->{status}) {
-        print Dumper($res);
+        print Dumper($api_r->{msgs});
         return 0;
     }
 
@@ -155,6 +159,7 @@ sub get_zone_record {
     }
 
     if ('success' ne $r->{status}) {
+        print Dumper($r->{msgs});
         return 0;
     }
 
@@ -168,12 +173,16 @@ sub publish_zone {
     my $res = $self->get_api_response('PUT', "Zone/$zone/", {publish => 1});
     if (!$res->is_success) {
         print Dumper($res);
-        return 0;
+        sleep 2;
+        $res = $self->get_api_response('PUT', "Zone/$zone/", {publish => 1});
+        if (!$res->is_success) {
+            return 0;
+        }
     };
 
     my $api_r = $json->decode($res->content);
     if ('success' ne $api_r->{status}) {
-        print Dumper($res->content);
+        print Dumper($api_r->{msgs});
         return 0;
     }
 
@@ -196,7 +205,7 @@ sub add_zone {
 
     my $api_r = $json->decode($res->content);
     if ('success' ne $api_r->{status}) {
-        print Dumper($res->content);
+        print Dumper($api_r->{msgs});
         return 0;
     }
 
@@ -219,6 +228,7 @@ sub get_zone {
 
     my $api_r = $json->decode($res->content);
     if ('success' ne $api_r->{status}) {
+        print Dumper($api_r->{msgs});
         return 0;
     }
 
@@ -241,7 +251,7 @@ sub delete_zone {
 
     my $api_r = $json->decode($res->content);
     if ('success' ne $api_r->{status}) {
-        print Dumper($res);
+        print Dumper($api_r->{msgs});
         return 0;
     }
 
@@ -307,10 +317,6 @@ sub get_api_response {
     }
 
     return $ua->request($req);
-};
-
-sub get_export_dir {
-    return 1;  # not used
 };
 
 sub api_zr_soa {

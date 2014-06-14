@@ -26,7 +26,7 @@ sub get_usable_nameservers {
     my $sql =
 "
 SELECT ns.nt_nameserver_id, ns.nt_group_id, ns.name, ns.description, ns.address, ns.remote_login,
-    et.name AS export_format,
+    et.name AS export_format, ns.export_type_id,
     logdir, datadir, export_interval, export_serials, export_status
  FROM nt_nameserver ns
   LEFT JOIN nt_nameserver_export_type et ON ns.export_type_id=et.id
@@ -78,6 +78,11 @@ sub get_group_nameservers {
             timefield   => 0,
             quicksearch => 0,
             field       => 'nt_nameserver_export_type.name'
+        },
+        export_type_id => {
+            timefield   => 0,
+            quicksearch => 0,
+            field       => 'nt_nameserver.export_type_id'
         },
         status => {
             timefield   => 0,
@@ -280,8 +285,8 @@ sub get_nameserver_export_types {
 sub new_nameserver {
     my ( $self, $data ) = @_;
 
-    my @columns = qw/ nt_group_id nt_nameserver_id name ttl description
-        address export_type_id logdir datadir export_interval /;
+    my @columns = qw/ nt_group_id nt_nameserver_id name ttl description logdir
+        remote_login address address6 export_type_id datadir export_interval /;
 
     my $sql = "INSERT INTO nt_nameserver("
         . join( ',', @columns )
@@ -309,7 +314,7 @@ sub edit_nameserver {
 
     my $dbh = $self->{dbh};
     my @columns = grep { exists $data->{$_} }
-        qw/ nt_group_id nt_nameserver_id name ttl description address
+        qw/ nt_group_id nt_nameserver_id name ttl description address address6 remote_login
             export_type_id logdir datadir export_interval export_serials /;
 
     my $prev_data = $self->find_nameserver( $data->{nt_nameserver_id} );
@@ -371,7 +376,7 @@ sub log_nameserver {
 
     my $dbh     = $self->{dbh};
     my @columns = qw/ nt_group_id nt_user_id action timestamp nt_nameserver_id
-        name ttl description address export_format logdir datadir export_interval /;
+        name ttl description address export_type_id logdir datadir export_interval /;
 
     my $user = $data->{user};
     $data->{nt_group_id} ||= $user->{nt_group_id};
