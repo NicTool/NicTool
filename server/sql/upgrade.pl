@@ -136,7 +136,8 @@ VALUES (1,'djbdns',    'tinydns & axfrdns',  'cr.yp.to/djbdns.html'),
        (4,'powerdns',  'PowerDNS',           'www.powerdns.com'),
        (5,'bind-nsupdate','BIND (nsupdate protocol)','www.isc.org/downloads/bind/'),
        (6,'NSD',       'Name Server Daemon', 'www.nlnetlabs.nl/projects/nsd/'),
-       (7,'dynect',    'DynECT Standard DNS','dyn.com/managed-dns/');
+       (7,'dynect',    'DynECT Standard DNS','dyn.com/managed-dns/'),
+       (8,'knot',      'Knot DNS',           'www.knot-dns.cz');
 
 UPDATE nt_nameserver SET export_type_id=1 WHERE export_format IN ('tinydns','djb','djbdns');
 UPDATE nt_nameserver SET export_type_id=2 WHERE export_format='bind';

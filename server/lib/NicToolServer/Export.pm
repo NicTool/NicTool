@@ -600,21 +600,21 @@ LEFT JOIN nt_nameserver_export_type et ON ns.export_type_id=et.id
 sub load_export_class {
     my $self = shift;
 
-    if ( $self->{export_format} eq 'bind' ) {
+    if ( $self->{export_format} =~ /^(djbdns|tinydns)$/ ) {
+        require NicToolServer::Export::tinydns;
+        $self->{export_class} = NicToolServer::Export::tinydns->new( $self );
+    }
+    elsif ( $self->{export_format} eq 'bind' ) {
         require NicToolServer::Export::BIND;
         $self->{export_class} = NicToolServer::Export::BIND->new( $self );
-    }
-    elsif ( $self->{export_format} eq 'NSD' ) {
-        require NicToolServer::Export::NSD;
-        $self->{export_class} = NicToolServer::Export::NSD->new( $self );
     }
     elsif ( $self->{export_format} eq 'bind-nsupdate' ) {
         require NicToolServer::Export::BIND::nsupdate;
         $self->{export_class} = NicToolServer::Export::BIND::nsupdate->new( $self );
     }
-    elsif ( $self->{export_format} =~ /^(djbdns|tinydns)$/ ) {
-        require NicToolServer::Export::tinydns;
-        $self->{export_class} = NicToolServer::Export::tinydns->new( $self );
+    elsif ( $self->{export_format} eq 'NSD' ) {
+        require NicToolServer::Export::NSD;
+        $self->{export_class} = NicToolServer::Export::NSD->new( $self );
     }
     elsif ( $self->{export_format} eq 'powerdns' ) {
         require NicToolServer::Export::PowerDNS;
@@ -627,6 +627,10 @@ sub load_export_class {
     elsif ( $self->{export_format} eq 'dynect' ) {
         require NicToolServer::Export::DynECT;
         $self->{export_class} = NicToolServer::Export::DynECT->new( $self );
+    }
+    elsif ( $self->{export_format} eq 'knot' ) {
+        require NicToolServer::Export::Knot;
+        $self->{export_class} = NicToolServer::Export::Knot->new( $self );
     }
     else {
         die "unknown export format: $self->{export_format}\n";

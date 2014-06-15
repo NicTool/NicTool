@@ -66,7 +66,8 @@ VALUES (1,'djbdns','tinydns & axfrdns','cr.yp.to/djbdns.html'),
        (4,'powerdns','PowerDNS','www.powerdns.com'),
        (5,'bind-nsupdate','BIND (nsupdate protocol)',''),
        (6,'NSD','Name Server Daemon','www.nlnetlabs.nl/projects/nsd/'),
-       (7,'dynect','DynECT Standard DNS','dyn.com/managed-dns/');
+       (7,'dynect','DynECT Standard DNS','dyn.com/managed-dns/'),
+       (8,'knot','Knot DNS','www.knot-dns.cz');
 
 INSERT INTO nt_nameserver(nt_group_id, name, ttl, description, address, 
   export_type_id, logdir, datadir, export_interval) values (1,'ns1.example.com.',86400,'ns east',

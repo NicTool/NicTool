@@ -1,5 +1,5 @@
-package NicToolServer::Export::NSD;
-# ABSTRACT: exporting DNS data to NSD
+package NicToolServer::Export::Knot;
+# ABSTRACT: exporting DNS data to Knot DNS
 
 use strict;
 use warnings;
@@ -32,21 +32,21 @@ sub write_makefile {
 # After a successful export, 3 make targets are run: compile, remote, restart
 # Each target can do anything you'd like.
 
-################################
-#########    NSD   #############
-################################
-# Note: you will need to configure zonesdir in nsd.conf to point to this
-# export directory. Make sure the export directory reflected below is correct
+##################################
+#########  Knot DNS  #############
+##################################
+# Note: add instructions here...
+# Make sure the export directory reflected below is correct
 # then uncomment each of the targets.
 
 compile: $exportdir/named.conf.nictool
-\tnsdc rebuild
+\ttest 1
 
-remote: /var/db/nsd/nsd.db
-\trsync -az --delete /var/db/nsd/nsd.db nsd\@$address:/var/db/nsd/
+remote: $exportdir/named.conf.nictool
+\trsync -az --delete $exportdir/ nsd\@$address:$exportdir/
 
-restart: nsd.db
-\tssh nsd\@$address nsdc reload
+restart: $exportdir/named.conf.nictool
+\tssh knot\@$address knotc reload
 MAKE
 ;
     close $M;
@@ -59,11 +59,11 @@ __END__
 
 =head1 NAME
 
-NicToolServer::Export::NSD
+NicToolServer::Export::Knot
 
 =head1 SYNOPSIS
 
-Export DNS information from NicTool as BIND zone files for the NSD name server.
+Export DNS information from NicTool as BIND zone files for the Knot DNS server.
 
 =head1 named.conf.local
 
