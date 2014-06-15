@@ -86,7 +86,7 @@ sub add_ns_records {
     my $zone = $z->{zone};
     foreach my $nsid ( split(',', $z->{nsids} ) ) {
         my $ns_ref = $self->{nte}{active_ns_ids}{$nsid};
-        my $form = { ttl   => $ns_ref->{ttl}
+        my $form = { ttl   => $ns_ref->{ttl},
                      rdata => { nsdname => $self->qualify($ns_ref->{name}, $zone) },
                    };
         $self->api_add("NSRecord/$zone/$zone", $form);
@@ -112,28 +112,28 @@ sub get_zone_record {
     if ($id) { $uri .= "$id/"; }
     my $res = $self->get_api_response('GET', $uri) or return 0;
     if ($res->code == '404') {
-        print "GET host $fqdn doesn't exist\n";
+        $self->{nte}->elog("GET host $fqdn doesn't exist");
         return 0;
     }
 
     if (!$res->is_success) {
-        print "failed: " . Dumper($res);
+        $self->{nte}->elog("failed: " . Dumper($res));
         return 0;
     }
 
     my $r = $json->decode($res->content);
     if ('failure' eq $r->{status}) {
         if ($r->{msgs}[0]->{INFO} eq 'node: Not in zone') {
-            print "failure: " . Dumper($r->{msgs});
+            $self->{nte}->elog( "failure: " . Dumper($r->{msgs}));
         }
     }
 
     if ('success' ne $r->{status}) {
-        print Dumper($r->{msgs});
+        $self->{nte}->elog( Dumper($r->{msgs}));
         return 0;
     }
 
-    print "$fqdn exists\n";
+    $self->{nte}->elog("GET $uri");
     return $r;
 }
 
@@ -170,42 +170,28 @@ sub publish_zone {
         sleep 2;
         $res = $self->get_api_response('PUT', "Zone/$zone/", {publish => 1});
         if (!$res->is_success) {
-            print Dumper($res);
+            $self->{nte}->elog( Dumper($res));
             return 0;
         }
     };
 
     my $api_r = $json->decode($res->content);
     if ('success' ne $api_r->{status}) {
-        print Dumper($api_r->{msgs});
+        $self->{nte}->elog( Dumper($api_r->{msgs}));
         return 0;
     }
 
-    print "published $zone\n";
+    $self->{nte}->elog("published $zone");
     return 1;
 };
 
 sub add_zone {
     my ($self, $zone) = @_;
 
-    my $res = $self->get_api_response('POST', "Zone/$zone",
-            {rname => 'hostmaster@'.$zone, ttl => 3600, 'serial_style' => 'day'});
-
-    if (!$res->is_success) {
-        print Dumper($res);
-        return 0;
-    };
-
 # '{"status": "success", "data": {"zone_type": "Primary", "serial_style": "day", "serial": 0, "zone": "tnpi.net"}, "job_id": 917064873, "msgs": [{"INFO": "create: New zone tnpi.net created.  Publish it to put it on our server.", "SOURCE": "BLL", "ERR_CD": null, "LVL": "INFO"}, {"INFO": "setup: If you plan to provide your own secondary DNS for the zone, allow notify requests from these IP addresses on your nameserver: 204.13.249.66, 208.78.68.66, 2600:2001:0:1::66, 2600:2003:0:1::66", "SOURCE": "BLL", "ERR_CD": null, "LVL": "INFO"}]}';
 
-    my $api_r = $json->decode($res->content);
-    if ('success' ne $api_r->{status}) {
-        print Dumper($api_r->{msgs});
-        return 0;
-    }
-
-    print "$zone added\n";
-    return 1;
+    my $form = {rname => 'hostmaster@'.$zone, ttl => 3600, 'serial_style' => 'day'};
+    return $self->api_add("Zone/$zone", $form);
 };
 
 sub api_get {
@@ -213,21 +199,21 @@ sub api_get {
 
     my $res = $self->get_api_response('GET', $path);
     if ($res->code == '404') {
-        print "GET $path doesn't exist\n";
+        $self->{nte}->elog("GET $path doesn't exist");
         return 0;
     }
     if (!$res->is_success) {
-        print Dumper($res->content);
+        $self->{nte}->elog( Dumper($res->content));
         return 0;
     }
 
     my $api_r = $json->decode($res->content);
     if ('success' ne $api_r->{status}) {
-        print Dumper($api_r->{msgs});
+        $self->{nte}->elog( Dumper($api_r->{msgs}));
         return 0;
     }
 
-    print "GET $path\n";
+    $self->{nte}->elog("GET $path");
     return $api_r->{data};
 }
 
@@ -236,22 +222,22 @@ sub api_add {
 
     my $res = $self->get_api_response('POST', $path, $req);
     if (!$res) {
-        print "FAIL: POST $path, $req\n";
+        $self->{nte}->elog("FAIL: POST $path, $req");
         return 0;
     };
 
     if (!$res->is_success) {
-        print Dumper($res->content);
+        $self->{nte}->elog( Dumper($res->content));
         return 0;
     };
 
     my $api_r = $json->decode($res->content);
     if ('success' ne $api_r->{status}) {
-        print Dumper($api_r->{msgs});
+        $self->{nte}->elog(Dumper($api_r->{msgs}));
         return 0;
     }
 
-    print "POST $path\n";
+    $self->{nte}->elog("POST $path");
     return $api_r;
 }
 
@@ -260,21 +246,21 @@ sub api_delete {
 
     my $res = $self->get_api_response('DELETE', $path);
     if ($res->code == '404') {
-        print "DELETE $path doesn't exist\n";
+        $self->{nte}->elog("DELETE $path doesn't exist");
         return 1;
     }
     if (!$res->is_success) {
-        print Dumper($res->content);
+        $self->{nte}->elog(Dumper($res->content));
         return 0;
     }
 
     my $api_r = $json->decode($res->content);
     if ('success' ne $api_r->{status}) {
-        print Dumper($api_r->{msgs});
+        $self->{nte}->elog(Dumper($api_r->{msgs}));
         return 0;
     }
 
-    print "DELETE $path\n";
+    $self->{nte}->elog("DELETE $path");
     return 1;
 }
 
@@ -283,16 +269,16 @@ sub remove_dyn_ns {
 
     my $api_r = $self->get_zone_record('NS', $zone, $zone);
     if (!$api_r) {
-        print "no results";
+        $self->{nte}->elog("no results");
         return;
     }
 
     foreach my $ns_uri ( @{ $api_r->{data}} ) {
 # '/REST/NSRecord/simerson.net/simerson.net/112014785'
         my $id = (split(/\//, $ns_uri))[-1];
-#       print "id: $id\n";
+#       $self->{nte}->elog("id: $id");
         my $api_r2 = $self->get_zone_record('NS', $zone, $zone, $id);
-        print Dumper($api_r2);
+        $self->{nte}->elog( Dumper($api_r2));
 # check $api_r2, if zone ends with dynect.net, remove it
        #$self->api_delete("NSRecord/$zone/$zone/$id/");
     }
@@ -322,7 +308,7 @@ sub new_session {
 # {"status": "success", "data": {"token": "k4sLb+YE5B7LLmACEb9oR1jPPPzFyQCCxmp23t06fUVtcHTV4d+HfaCsSIIguCWajwrw6tx3EQ+WGKXbcyhCJcX0g2hZjGjXJUZCHP5Rm6G80ABqR20ekk3XFT0qBL98zAqoZG0NLyuQrN1VQdVtLcVPL8iSBIW9", "version": "3.5.7"}, "job_id": 916926679, "msgs": [{"INFO": "login: Login successful", "SOURCE": "BLL", "ERR_CD": null, "LVL": "INFO"}]}';
 
     $self->{token} = $json->decode($res->content)->{data}{token};
-#   print "token: $self->{token}\n";
+#   $self->{nte}->elog("token: $self->{token}");
     return $self->{token};
 }
 
@@ -343,8 +329,8 @@ sub get_api_response {
     if ('/' ne substr($api_url, -1, 1)) { $api_url .= '/'; }
 
     if ($debug) {
-        print "API: $method $api_url: ";
-        if ($form_args) { print Dumper($form_args); };
+        $self->{nte}->elog("API: $method $api_url: ");
+        if ($form_args) { $self->{nte}->elog(Dumper($form_args)); };
     };
 
     my $req = HTTP::Request->new($method => $api_url);
