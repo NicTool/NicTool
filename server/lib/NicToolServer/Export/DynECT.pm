@@ -72,7 +72,9 @@ sub export_db {
 
 sub add_zonefile {
     my ($self, $zone, $zone_str) = @_;
-
+# https://help.dynect.net/upload-zone-file-api/
+# TODO: check size of zone_str, and if larger than 1MB, split into multiple
+# requests.
     my $res = $self->get_api_response('POST', "ZoneFile/$zone/", { file => $zone_str });
     if (!$res) {
         warn "Dyn export for $zone failed\n";
