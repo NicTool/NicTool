@@ -1,5 +1,18 @@
 Revision history for NicToolServer
 
+2.24    2014.06.14
+
+    * added Exports::DynECT for Managed DNS service
+    * added Exports::BIND::nsupdate (thanks abeeson!)
+    * SQL: added nt_nameserver_export_type
+    * SQL: added nt_nameserver.address6 (IPv6 address)
+    * SQL: added nt_nameserver.remote_login
+    * BIND exports, don't delete zone file if zone deleted and re-added
+    * more reliable imports of ip6.arpa zones
+    * more reliable sql/upgrade.pl
+    * more user-friendly sql/create_tables.pl
+    * API: return nt_zone_id in edit_zone results
+
 2.23    2014.05.26
 
     * SQL changes for enhanced compatibility with MySQL InnoDB

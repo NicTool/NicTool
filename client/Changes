@@ -1,4 +1,8 @@
 
+2.24    2014.06.14
+
+   * updates for new nameserver settings
+
 2.23    2014.05.26
 
    * fix for user.cgi undefined variable (Ayden Beeson)
