@@ -31,10 +31,9 @@ sub export_db {
         if ($self->api_get("Zone/$zone/")) {
             $self->api_delete("Zone/$zone/");
         }
-        #$self->add_zone($zone);  # upload does this
 
         my $zone_str = $self->{nte}->zr_soa( $z );
-        # Dyn API overrides NS records in zone files, manually add later.
+        # Dyn API strips the NS records, manually add later.
         #$zone_str .= $self->{nte}->zr_ns(  $z );
 
         foreach my $r ( @{ $self->get_records( $z->{nt_zone_id} ) } ) {
@@ -46,14 +45,14 @@ sub export_db {
         $self->add_zonefile($zone, $zone_str) or next;
         $self->add_ns_records($z);           # manually add NS records
        #$self->remove_dyn_ns($zone);
-        sleep 1;
-        $self->publish_zone($zone);
+        sleep 1;                     # wait a second, because
+        $self->publish_zone($zone);  # immediate tries frequently fail
     }
 
     foreach my $z ( @{ $self->{nte}->get_ns_zones( deleted => 1) } ) {
         my $zone = $z->{zone};
         if ( grep { $_ eq $zone } @{$self->{zone_list}} ) {
-            warn "$zone was recreated, skipping delete\n";
+            $self->{nte}->elog("$zone recreated, skipping delete");
             next;
         };
         if (!$self->api_get("Zone/$zone/")) {   # zone not published on Dyn
@@ -166,7 +165,7 @@ sub publish_zone {
 
     my $res = $self->get_api_response('PUT', "Zone/$zone/", {publish => 1});
     if (!$res->is_success) {
-        warn "publish attempt failed, retrying.\n";
+        $self->{nte}->elog("publish failed, retry");
         sleep 2;
         $res = $self->get_api_response('PUT', "Zone/$zone/", {publish => 1});
         if (!$res->is_success) {
@@ -305,7 +304,7 @@ sub new_session {
         return 0;
     }
 
-# {"status": "success", "data": {"token": "k4sLb+YE5B7LLmACEb9oR1jPPPzFyQCCxmp23t06fUVtcHTV4d+HfaCsSIIguCWajwrw6tx3EQ+WGKXbcyhCJcX0g2hZjGjXJUZCHP5Rm6G80ABqR20ekk3XFT0qBL98zAqoZG0NLyuQrN1VQdVtLcVPL8iSBIW9", "version": "3.5.7"}, "job_id": 916926679, "msgs": [{"INFO": "login: Login successful", "SOURCE": "BLL", "ERR_CD": null, "LVL": "INFO"}]}';
+# {"status": "success", "data": {"token": "k4sLb+YE5B.....", "version": "3.5.7"}, "job_id": 916926679, "msgs": [{"INFO": "login: Login successful", "SOURCE": "BLL", "ERR_CD": null, "LVL": "INFO"}]}';
 
     $self->{token} = $json->decode($res->content)->{data}{token};
 #   $self->{nte}->elog("token: $self->{token}");
@@ -343,23 +342,6 @@ sub get_api_response {
 
     return $ua->request($req);
 };
-
-sub api_zr_soa {
-    my ($self, $z) = @_;
-
-    # if missing, set a default mailaddr
-    $z->{mailaddr} ||= 'hostmaster.' . $z->{zone} . '.';
-    if ( '.' ne substr( $z->{mailaddr}, -1, 1) ) {                # not FQDN
-        $z->{mailaddr} = $self->{nte}->qualify( $z->{mailaddr} ); # append domain
-        $z->{mailaddr} .= '.';     # append trailing dot
-    };
-
-#my $api_r = $self->get_zone_record('SOA', $z->{zone}, $z->{name} || 'hostmaster');
-#warn Dumper($api_r);
-}
-
-sub api_zr_ns {
-}
 
 sub postflight { return 1; }
 
