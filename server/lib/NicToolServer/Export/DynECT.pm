@@ -7,7 +7,6 @@ use warnings;
 use lib 'lib';
 use parent 'NicToolServer::Export::BIND';
 
-use Carp;
 use Data::Dumper;
 use JSON;
 use LWP::UserAgent;
@@ -29,7 +28,9 @@ sub export_db {
         my $zone = $z->{zone};
         push @{$self->{zone_list}}, $zone;
         $self->{nte}{zone_name} = $zone;
-        if ($self->get_zone($zone)) { $self->delete_zone($zone); }
+        if ($self->api_get("Zone/$zone/")) {
+            $self->api_delete("Zone/$zone/");
+        }
         #$self->add_zone($zone);  # upload does this
 
         my $zone_str = $self->{nte}->zr_soa( $z );
@@ -44,6 +45,7 @@ sub export_db {
 
         $self->add_zonefile($zone, $zone_str) or next;
         $self->add_ns_records($z);           # manually add NS records
+       #$self->remove_dyn_ns($zone);
         sleep 1;
         $self->publish_zone($zone);
     }
@@ -54,10 +56,10 @@ sub export_db {
             warn "$zone was recreated, skipping delete\n";
             next;
         };
-        if (!$self->get_zone($zone)) {       # zone not published on Dyn
+        if (!$self->api_get("Zone/$zone/")) {   # zone not published on Dyn
             next;
         };
-        if ($self->delete_zone($zone)) {
+        if ($self->api_delete("Zone/$zone/")) {
             $self->{nte}->elog("deleted $zone");
             $self->{nte}{zones_deleted}{$zone} = 1;
         }
@@ -75,42 +77,19 @@ sub add_zonefile {
 # https://help.dynect.net/upload-zone-file-api/
 # TODO: check size of zone_str, and if larger than 1MB, split into multiple
 # requests.
-    my $res = $self->get_api_response('POST', "ZoneFile/$zone/", { file => $zone_str });
-    if (!$res) {
-        warn "Dyn export for $zone failed\n";
-        return 0;
-    }
-    if (!$res->is_success) {
-        print Dumper($res->content);
-        return 0;
-    };
-
-    my $api_r = $json->decode($res->content);
-    if ('success' ne $api_r->{status}) {
-        print Dumper($api_r->{msgs});
-        return 0;
-    }
-
-    print "zone $zone uploaded\n";
-    return 1;
+    return $self->api_add("ZoneFile/$zone/", { file => $zone_str });
 };
 
 sub add_ns_records {
     my ($self, $z) = @_;
 
+    my $zone = $z->{zone};
     foreach my $nsid ( split(',', $z->{nsids} ) ) {
         my $ns_ref = $self->{nte}{active_ns_ids}{$nsid};
-        my $r = $self->add_zone_record( 'NS',
-                $z->{zone},
-                $z->{zone},
-                {
-                    rdata => { nsdname => $self->qualify($ns_ref->{name}, $z->{zone}) },
-                    ttl   => $ns_ref->{ttl}
-                });
-
-        if (!$r) {
-            warn "Failed to add NS $z->{zone}\n";
-        }
+        my $form = { ttl   => $ns_ref->{ttl}
+                     rdata => { nsdname => $self->qualify($ns_ref->{name}, $zone) },
+                   };
+        $self->api_add("NSRecord/$zone/$zone", $form);
     }
 };
 
@@ -120,27 +99,13 @@ sub add_zone_record {
     # https://api.dynect.net/REST/ARecord/<zone>/<FQDN>/
     $type = uc($type) . 'Record';
 
-    my $res = $self->get_api_response('POST', "$type/$zone/$fqdn", $req);
-    if (!$res->is_success) {
-        print Dumper($res->content);
-        return 0;
-    };
-
-    my $api_r = $json->decode($res->content);
-    if ('success' ne $api_r->{status}) {
-        print Dumper($api_r->{msgs});
-        return 0;
-    }
-
-    my $record_id = $api_r->{data}{record_id};
-    print "$fqdn added as record ID $record_id\n";
-    return $api_r;
+    return $self->api_add("$type/$zone/$fqdn", $req);
 };
 
 sub get_zone_record {
     my ($self, $type, $zone, $fqdn, $id) = @_;
 
-    #  /[A|NS|MX|...]Record/<zone>/<FQDN>/
+    #  /[A|NS|MX|...]Record/<zone>/<FQDN>/[id]/
     $type = uc($type) . 'Record';
     $zone or die "missing zone ($type, $fqdn)\n";
     my $uri = "$type/$zone/$fqdn/";
@@ -170,6 +135,30 @@ sub get_zone_record {
 
     print "$fqdn exists\n";
     return $r;
+}
+
+sub get_node_list {
+    my ($self, $zone) = @_;
+
+# returns a list like this:
+#   'simerson.net',
+#   '_dmarc.simerson.net',
+#   'mar2013._domainkey.simerson.net',
+#   .....
+
+    return $self->api_get("NodeList/$zone/");
+}
+
+sub get_all_records {
+    my ($self, $zone) = @_;
+
+# returns a list like this:
+#   '/REST/CNAMERecord/simerson.net/www.simerson.net/112104837',
+#   '/REST/LOCRecord/simerson.net/loc.home.simerson.net/112104878',
+#   '/REST/SOARecord/simerson.net/simerson.net/112104833',
+#   '/REST/MXRecord/simerson.net/simerson.net/112104836',
+
+    return $self->api_get("AllRecord/$zone/");
 }
 
 sub publish_zone {
@@ -219,12 +208,12 @@ sub add_zone {
     return 1;
 };
 
-sub get_zone {
-    my ($self, $zone) = @_;
+sub api_get {
+    my ($self, $path) = @_;
 
-    my $res = $self->get_api_response('GET', "Zone/$zone/");
+    my $res = $self->get_api_response('GET', $path);
     if ($res->code == '404') {
-        print "GET zone $zone doesn't exist\n";
+        print "GET $path doesn't exist\n";
         return 0;
     }
     if (!$res->is_success) {
@@ -238,16 +227,40 @@ sub get_zone {
         return 0;
     }
 
-    print "$zone exists\n";
-    return 1;
+    print "GET $path\n";
+    return $api_r->{data};
 }
 
-sub delete_zone {
-    my ($self, $zone) = @_;
+sub api_add {
+    my ($self, $path, $req) = @_;
 
-    my $res = $self->get_api_response('DELETE', "Zone/$zone/");
+    my $res = $self->get_api_response('POST', $path, $req);
+    if (!$res) {
+        print "FAIL: POST $path, $req\n";
+        return 0;
+    };
+
+    if (!$res->is_success) {
+        print Dumper($res->content);
+        return 0;
+    };
+
+    my $api_r = $json->decode($res->content);
+    if ('success' ne $api_r->{status}) {
+        print Dumper($api_r->{msgs});
+        return 0;
+    }
+
+    print "POST $path\n";
+    return $api_r;
+}
+
+sub api_delete {
+    my ($self, $path) = @_;
+
+    my $res = $self->get_api_response('DELETE', $path);
     if ($res->code == '404') {
-        print "DELETE zone $zone doesn't exist\n";
+        print "DELETE $path doesn't exist\n";
         return 1;
     }
     if (!$res->is_success) {
@@ -261,32 +274,29 @@ sub delete_zone {
         return 0;
     }
 
-    print "$zone deleted\n";
+    print "DELETE $path\n";
     return 1;
 }
 
-sub delete_ns {
-    my ($self, $zone, $id) = @_;
+sub remove_dyn_ns {
+    my ($self, $zone) = @_;
 
-    my $res = $self->get_api_response('DELETE', "NSRecord/$zone/$zone/$id/");
-    if ($res->code == '404') {
-        print "DELETE zone $zone doesn't exist\n";
-        return 1;
-    }
-    if (!$res->is_success) {
-        print Dumper($res->content);
-        return 0;
+    my $api_r = $self->get_zone_record('NS', $zone, $zone);
+    if (!$api_r) {
+        print "no results";
+        return;
     }
 
-    my $api_r = $json->decode($res->content);
-    if ('success' ne $api_r->{status}) {
-        print Dumper($api_r->{msgs});
-        return 0;
+    foreach my $ns_uri ( @{ $api_r->{data}} ) {
+# '/REST/NSRecord/simerson.net/simerson.net/112014785'
+        my $id = (split(/\//, $ns_uri))[-1];
+#       print "id: $id\n";
+        my $api_r2 = $self->get_zone_record('NS', $zone, $zone, $id);
+        print Dumper($api_r2);
+# check $api_r2, if zone ends with dynect.net, remove it
+       #$self->api_delete("NSRecord/$zone/$zone/$id/");
     }
-
-    print "$zone deleted\n";
-    return 1;
-}
+};
 
 sub new_session {
     my ($self) = @_;
@@ -324,7 +334,7 @@ sub end_session {
 };
 
 sub get_api_response {
-    my ($self, $method, $rest_loc, $form_args) = @_; 
+    my ($self, $method, $rest_loc, $form_args) = @_;
 
     if (!$self->{token}) { $self->new_session(); };
     if (!$self->{token}) { return; };
@@ -365,10 +375,7 @@ sub api_zr_soa {
 sub api_zr_ns {
 }
 
-sub postflight {
-    my $self = shift;
-    return 1;
-}
+sub postflight { return 1; }
 
 1;
 
@@ -380,6 +387,10 @@ NicToolServer::Export::DynECT
 
 =head1 SYNOPSIS
 
-Export authoritative DNS data from NicTool to DynECT Managed DNS service.
+Export authoritative DNS data to DynECT Managed DNS service.
+
+=head1 SEE ALSO
+
+https://github.com/msimerson/NicTool/wiki/Export-to-DynECT-Managed-DNS
 
 =cut
