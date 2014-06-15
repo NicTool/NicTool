@@ -136,12 +136,14 @@ sub add_zone_record {
 };
 
 sub get_zone_record {
-    my ($self, $type, $zone, $fqdn) = @_;
+    my ($self, $type, $zone, $fqdn, $id) = @_;
 
     #  /[A|NS|MX|...]Record/<zone>/<FQDN>/
     $type = uc($type) . 'Record';
     $zone or die "missing zone ($type, $fqdn)\n";
-    my $res = $self->get_api_response('GET', "$type/$zone/$fqdn/");
+    my $uri = "$type/$zone/$fqdn/";
+    if ($id) { $uri .= "$id/"; }
+    my $res = $self->get_api_response('GET', $uri) or return 0;
     if ($res->code == '404') {
         print "GET host $fqdn doesn't exist\n";
         return 0;
@@ -242,6 +244,29 @@ sub delete_zone {
     my ($self, $zone) = @_;
 
     my $res = $self->get_api_response('DELETE', "Zone/$zone/");
+    if ($res->code == '404') {
+        print "DELETE zone $zone doesn't exist\n";
+        return 1;
+    }
+    if (!$res->is_success) {
+        print Dumper($res->content);
+        return 0;
+    }
+
+    my $api_r = $json->decode($res->content);
+    if ('success' ne $api_r->{status}) {
+        print Dumper($api_r->{msgs});
+        return 0;
+    }
+
+    print "$zone deleted\n";
+    return 1;
+}
+
+sub delete_ns {
+    my ($self, $zone, $id) = @_;
+
+    my $res = $self->get_api_response('DELETE', "NSRecord/$zone/$zone/$id/");
     if ($res->code == '404') {
         print "DELETE zone $zone doesn't exist\n";
         return 1;
