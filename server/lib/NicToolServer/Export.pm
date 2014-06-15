@@ -208,7 +208,8 @@ sub export {
     my $self = shift;
 
     $self->preflight or return;
-    $self->get_active_nameservers;
+    $self->get_active_nameservers();
+    $self->load_export_class();
 
     if ( $self->{force} ) {
         $self->elog("forced");
@@ -271,6 +272,7 @@ sub get_export_dir {
     return $self->{export_dir} if $self->{export_dir};
 
     $self->get_active_nameservers();  # populate $self->{ns_ref}
+    $self->load_export_class();
 
     my $dir;
 
@@ -591,8 +593,6 @@ LEFT JOIN nt_nameserver_export_type et ON ns.export_type_id=et.id
                     $self->{active_ns}[0];
         $self->{export_format} = $first->{export_format} if $first->{export_format};
     };
-
-    $self->load_export_class();
 
     return $self->{active_ns};
 }

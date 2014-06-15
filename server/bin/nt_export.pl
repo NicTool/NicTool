@@ -36,10 +36,10 @@ if ( ! defined $dsn || ! defined $db_user || ! defined $db_pass ) {
     get_db_creds_from_nictoolserver_conf();
 }
 
-$dsn     = ask( "database DSN", default  =>
-        'DBI:mysql:database=nictool;host=localhost;port=3306') if ! $dsn;
-$db_user = ask( "database user", default => 'root' ) if ! $db_user;
-$db_pass = ask( "database pass", password => 1 ) if ! $db_pass;
+$dsn     ||= ask( "database DSN",
+             default => 'DBI:mysql:database=nictool;host=localhost;port=3306');
+$db_user ||= ask( "database user", default => 'root' );
+$db_pass ||= ask( "database pass", password => 1 );
 
 my $export = NicToolServer::Export->new( 
     ns_id => $nsid || 0,
@@ -138,7 +138,9 @@ sub graceful_exit {
 sub usage {
     print <<EOHELP
 
-  $0 -nsid <N> [-daemon] [-force] [-verbose]
+  $0 -help
+
+  $0 -nsid <N> [-daemon] [-force] [-verbose] [-incremental]
 
 If nt_export is unable to locate/access nictoolserver.conf, you can supply
 the database connection properties manually:
@@ -147,7 +149,7 @@ the database connection properties manually:
    -user  root
    -pass  mySecretPassWord
 
-Run the script without any -nsid argument to see a list of NSIDs available.
+Run the script without any -nsid argument to see a list of name servers.
 
 EOHELP
 ;
