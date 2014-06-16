@@ -1,33 +1,31 @@
 
-NicTool is a free DNS management suite that takes the headaches out of managing DNS data. NicTool works great for managing one zone or millions of them. It works well with one nameserver or dozens of them.
+NicTool is a free DNS management suite that takes the headaches out of managing DNS data. NicTool works great for managing one zone or millions of zones. NicTool works well with one nameserver or dozens of nameservers.
 
-NicTool is not a DNS server. NicTool exports sanitized and validated DNS data to authoritative DNS servers such as tinydns, BIND, PowerDNS, NSD, and MaraDNS.
+NicTool is a DNS manager, not a DNS server. NicTool can import DNS data from BIND or tinydns files. NicTool exports sanitized and validated DNS data to authoritative DNS servers including tinydns, BIND, PowerDNS, NSD, Knot, and MaraDNS. NicTool also exports to DynECT Managed DNS.
 
-NicTool is Open Source, you can fork it on GitHub: https://github.com/msimerson/NicTool
+NicTool is Open Source. Contributions are welcome. Fork NicTool on GitHub: https://github.com/msimerson/NicTool
 
 NicTool includes:
 
-  an attractive web interface for users, admins, and clients
-  validation of all DNS data before acceptance
-  fine grained permissions for users and groups
-  delegatation of zones and zone records to users and/or groups.
-  logging of all DNS changes (who did what & when)
-  RDBMS data storage
-  a mature API for automation and integration
+    a web interface for users, admins, and clients
+    validation of DNS data before acceptance
+    fine grained permissions for users and groups
+    delegatation of zones and zone records to users and/or groups.
+    logging of all DNS changes (who did what & when)
+    RDBMS data storage
+    a mature API for automation and integration
 
-NicToolServer is the server component of NicTool. It connects to the database where the DNS information resides. All changes to DNS data (zones, records, nameservers) and managers (users and groups) is validated by NicToolServer before insertion.
+NicTool Server is the server component of NicTool. It exposes the DNS data via a SOAP web service. The format of requests is defined in the reference API at http://www.nictool.com/docs/api/. The NicTool API and NicTool Client connect to NicTool Server. Changes to DNS data (zones, records, nameservers) and managers (users and groups) are validated before insertion.
 
-NicToolServer functions as a web service. It provides a SOAP or RPC-XML server for applications. The format of requests is defined in the reference API at http://www.nictool.com/docs/api/. The API and NicToolClient both connect to NicToolServer via this web service.
+NicTool Client is a CGI application. It is what you see in the browser. It provides a web interface for managing DNS data. NicTool Client has customizable HTML templates and a CSS style sheet. It is slowly becoming a modern JS web app.
 
-NicToolClient is a CGI application. It is what you see in the browser. It provides a web interface for managing DNS data. NicToolClient has customizable HTML templates and a CSS style sheet.
-
-The NicTool API is a mature and full featured API for connecting to NicToolServer and managing DNS data. There are many scripts written against this API and it is stable.
+The NicTool API is a mature API for connecting to NicTool Server and managing DNS data. There are many scripts written against this API.
 
 Usage Examples: 
 
     ColocateUSA.net (2012-): Custom scripts for web services (billing, orders, CP) to set & reset rDNS, and CLI scripts to update forward and rDNS for IPv4 and IPv6 addresses.
 
-    Spry/VPSlink (2007-2010): We wrote Control Panels that allowed clients to manage virtual machines. We provided a custom DNS manager so our clients could manage their domains and the rDNS for their IPs, supported by the NicTool API.
+    Spry/VPSlink (2007-2010): Integration with a custom control so VM clients could manage their domains and rDNS.
 
     Layered Tech (2005-2007): DNS management was limited to internal staff and was updated as needed. Which meant, lots of old poorly maintained data. I wrote a number of scripts for common tasks like "reset the rDNS for these IPs" or "delegate this block of IPs to these NS".
 
