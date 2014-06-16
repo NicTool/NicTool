@@ -361,4 +361,8 @@ Export authoritative DNS data to DynECT Managed DNS service.
 
 https://github.com/msimerson/NicTool/wiki/Export-to-DynECT-Managed-DNS
 
+=head1 ACKNOWLEDGEMENTS
+
+DynECT support funded by MivaMerchant and graciously donated to the NicTool project
+
 =cut

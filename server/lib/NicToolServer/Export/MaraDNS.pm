@@ -52,5 +52,11 @@ sub zr_loc {
 
 __END__
 
+=head1 AUTHOR
+
+Matthias Bethke
+
+=head1 SEE ALSO
+
 MaraDNS RR formats defined here:
 http://www.maradns.org/tutorial/man.csv2.html

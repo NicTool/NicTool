@@ -875,5 +875,9 @@ __END__
 
 https://github.com/msimerson/NicTool/wiki/Export-to-tinydns
 
+=head1 AUTHOR
+
+Matt Simerson
+
 =cut
 

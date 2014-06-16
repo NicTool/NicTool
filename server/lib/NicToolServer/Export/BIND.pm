@@ -480,4 +480,10 @@ Templates are configured by creating a 'templates' directory in the BIND export 
 
 Any instances of the keyword ZONE in a template are replaced by the zone name.
 
+=head1 AUTHOR
+
+Matt Simerson
+
+Paul Hamby
+
 =cut
