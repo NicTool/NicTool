@@ -1084,6 +1084,19 @@ sub zone_exists {
     return ref $href ? $href : 0;
 }
 
+sub valid_mailaddr {
+    my $self = shift;
+    my ( $field, $mailaddr ) = @_;
+
+    my $has_error++;
+    if ( $mailaddr =~ /@/ ) {
+        $self->error($field, "The mailaddr format replaces the @ with a . (dot).");
+        $has_error++;
+    };
+
+    return $has_error == 0 ? 1 : 0;
+};
+
 sub valid_label {
     my $self = shift;
     my ( $field, $name, $type ) = @_;
