@@ -31,6 +31,7 @@ sub write_makefile {
     print $M <<MAKE
 # After a successful export, 3 make targets are run: compile, remote, restart
 # Each target can do anything you'd like.
+# See https://www.gnu.org/software/make/manual/make.html
 
 ################################
 #########    NSD   #############
@@ -39,14 +40,17 @@ sub write_makefile {
 # export directory. Make sure the export directory reflected below is correct
 # then uncomment each of the targets.
 
+# NSD v3 uses nsdc, v4 uses nsd-control
 compile: $exportdir/named.conf.nictool
-\tnsdc rebuild
+\tnsd-control rebuild
+\t#nsdc rebuild
 
 remote: /var/db/nsd/nsd.db
 \trsync -az --delete /var/db/nsd/nsd.db nsd\@$address:/var/db/nsd/
 
 restart: nsd.db
-\tssh nsd\@$address nsdc reload
+\tssh nsd\@$address nsd-control reload
+\t#ssh nsd\@$address nsdc reload
 MAKE
 ;
     close $M;

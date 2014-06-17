@@ -14,8 +14,7 @@ sub postflight {
     # write out a mararc include
     my $dir = shift || $self->{nte}->get_export_dir or return;
     my $fh = $self->get_export_file( 'mararc_databases.inc', $dir );
-    $fh->print(qq[ csv2["$_."] = "$_"\n ])
-        foreach(@{$self->{zone_list}});
+    $fh->print(qq[ csv2["$_."] = "$_"\n ]) foreach($self->{nte}->zones_exported);
     $fh->close;
     return 1;
 }
