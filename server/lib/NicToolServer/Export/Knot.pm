@@ -36,11 +36,9 @@ sub update_knot_include {
 # full export, write a new include  file
     my $datadir = $self->{nte}->get_export_data_dir || $dir;
     my $fh = $self->get_export_file( 'knot.conf.nictool', $dir );
-    print $fh 'zones {';
-    foreach my $zone ( $self->{nte}->zones_exported ) {
-        print $fh qq[$zone {\n\tfile "$datadir/$zone";\n  }\n];
+    foreach my $zone ( $self->{nte}->zones_exported() ) {
+        print $fh qq[$zone { file "$datadir/$zone"; }\n];
     };
-    print $fh '}';
     close $fh;
     return 1;
 };
@@ -69,17 +67,16 @@ sub write_makefile {
 ##################################
 #########  Knot DNS  #############
 ##################################
-# Note: add instructions here...
 # Make sure the export directory reflected below is correct
 # then uncomment each of the targets.
 
-compile: $exportdir/named.conf.nictool
+compile: $exportdir/knot.conf.nictool
 \ttest 1
 
-remote: $exportdir/named.conf.nictool
-\trsync -az --delete $exportdir/ nsd\@$address:$exportdir/
+remote: $exportdir/knot.conf.nictool
+\trsync -az --delete $exportdir/ knot\@$address:$datadir/
 
-restart: $exportdir/named.conf.nictool
+restart: $exportdir/knot.conf.nictool
 \tssh knot\@$address knotc reload
 MAKE
 ;
@@ -99,10 +96,13 @@ NicToolServer::Export::Knot
 
 Export DNS information from NicTool as BIND zone files for the Knot DNS server.
 
-=head1 named.conf.local
+=head1 knot.conf.local
 
-This class will export a named.conf.nictool file with all the NicTool zones assigned to that NicTool nameserver. It is expected that this file will be included into a named.conf file via an include entry like this:
+This class will export a knot.conf.nictool file with all the NicTool zones assigned to that NicTool nameserver. It is expected that this file will be included into a knot.conf file via an include entry like this:
 
- include "/etc/namedb/master/named.conf.nictool";
+zone {
+  include "/var/db/knot/named.conf.nictool";
+  ...
+}
 
 =cut
