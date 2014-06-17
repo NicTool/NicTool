@@ -12,6 +12,39 @@ use IO::File;
 use File::Copy;
 use Params::Validate qw/ :all /;
 
+sub postflight {
+    my $self = shift;
+    my $dir = shift || $self->{nte}->get_export_dir or return;
+
+    $self->update_knot_include( $dir ) or return;
+
+    return 1 if ! $self->{nte}{postflight_extra};
+
+    $self->write_makefile() or return;
+    $self->compile() or return;
+    $self->rsync()   or return;
+    $self->restart() or return;
+
+    return 1;
+}
+
+sub update_knot_include {
+    my ($self, $dir) = @_;
+#   if ( $self->{nte}->incremental ) {
+#       return $self->update_knot_include_incremental( $dir );
+#   };
+# full export, write a new include  file
+    my $datadir = $self->{nte}->get_export_data_dir || $dir;
+    my $fh = $self->get_export_file( 'knot.conf.nictool', $dir );
+    print $fh 'zones {';
+    foreach my $zone ( $self->{nte}->zones_exported ) {
+        print $fh qq[$zone {\n\tfile "$datadir/$zone";\n  }\n];
+    };
+    print $fh '}';
+    close $fh;
+    return 1;
+};
+
 sub write_makefile {
     my $self = shift;
 
@@ -31,6 +64,7 @@ sub write_makefile {
     print $M <<MAKE
 # After a successful export, 3 make targets are run: compile, remote, restart
 # Each target can do anything you'd like.
+# See https://www.gnu.org/software/make/manual/make.html
 
 ##################################
 #########  Knot DNS  #############
