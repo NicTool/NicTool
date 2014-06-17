@@ -98,8 +98,7 @@ sub elog {
 }
 
 sub set_copied {
-    my $self   = shift;
-    my $copied = shift;
+    my ($self, $copied) = @_;
     $self->exec_query(
         "UPDATE nt_nameserver_export_log SET copied=? WHERE nt_nameserver_id=?
             AND nt_nameserver_export_log_id=?",
@@ -110,19 +109,23 @@ sub set_copied {
 sub set_no_change {
     my $self = shift;
 
-    my $last_ts = 'never';
-    my $last_copy;
-    if ( $self->{export_format} =~ /tinydns|djbdns|bind|bind\-ns/i ) {
-        $last_copy = $self->get_last_ns_export(success=>1,copied=>1);
+    my $last_copy = $self->get_last_ns_export(success=>1,copied=>1);
+
+    my $last_cp_ts = 'never';
+    if ( $last_copy && ref $last_copy && $last_copy->{date_end} ) {
+        $last_cp_ts = substr( $last_copy->{date_end}, 5, 11 );
+    }
+
+    my $last_ts;
+    my $last_export = $self->get_last_ns_export();
+    if ($last_export) {
+        $last_ts = substr($last_export->{date_start}, 5, 11);
     }
     else {
-        $self->get_last_ns_export(success=>1);
+        $last_ts = substr( localtime( time ), 4, 12 );
     }
-    if ( $last_copy->{date_end} ) {
-        $last_ts = substr( $last_copy->{date_end}, 5, 11 );
-    };
-    my $now_ts = substr( localtime( time ), 4, 15 );
-    $self->set_status("no changes:$now_ts last:$last_ts");
+
+    $self->set_status("last run:$last_ts<br>last cp :$last_cp_ts");
     $self->elog("exiting\n",success=>1);
     return 1;
 };

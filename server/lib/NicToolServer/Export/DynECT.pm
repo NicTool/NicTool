@@ -67,6 +67,7 @@ sub export_db {
         }
     };
 
+    $self->{nte}->set_copied(1);
     $self->end_session();
     return 1;
 }
