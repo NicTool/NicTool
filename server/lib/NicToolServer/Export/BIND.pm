@@ -136,8 +136,9 @@ sub compile {
     my $self = shift;
 
     $self->{nte}->set_status("compile");
+    my $exportdir = $self->{nte}->get_export_dir;
     my $before = time;
-    system ('make compile') == 0 or do {
+    system ("make -C $exportdir compile") == 0 or do {
         $self->{nte}->set_status("last: FAILED compile: $?");
         $self->{nte}->elog("unable to compile: $?");
         return;
@@ -153,10 +154,11 @@ sub restart {
     my $self = shift;
 
     return 1 if ! defined $self->{nte}{ns_ref}{address};
+    my $exportdir = $self->{nte}->get_export_dir;
 
     my $before = time;
     $self->{nte}->set_status("remote restart");
-    system ('make restart') == 0 or do {
+    system ("make -C $exportdir compile") == 0 or do {
         $self->{nte}->set_status("last: FAILED restart: $?");
         $self->{nte}->elog("unable to restart: $?");
         return;
@@ -172,10 +174,11 @@ sub rsync {
     my $self = shift;
 
     return 1 if ! defined $self->{nte}{ns_ref}{address};  # no rsync
+    my $exportdir = $self->{nte}->get_export_dir;
 
     $self->{nte}->set_status("remote rsync");
     my $before = time;
-    system ('make remote') == 0 or do {
+    system ("make -C $exportdir remote") == 0 or do {
         $self->{nte}->set_status("last: FAILED rsync: $?");
         $self->{nte}->elog("unable to rsync: $?");
         return;
@@ -255,9 +258,13 @@ sub zr_mx {
 sub zr_txt {
     my ($self, $r) = @_;
 
-# BIND will croak if the length of the text record is longer than 255
+# fixup for quotes around DKIM in the DB (Luser error)
+    $r->{address} =~ s/^"//g;   # strip off any leading quotes
+    $r->{address} =~ s/"$//g;   # strip off any trailing quotes
+
+    # BIND croaks when any string in the TXT RR address is longer than 255
     if ( length $r->{address} > 255 ) {
-        $r->{address} = join( "\" \"", unpack("(a255)*", $r->{address} ) );
+        $r->{address} = join( '" "', unpack("(a255)*", $r->{address} ) );
     };
 # name  ttl  class   rr     text
     return "$r->{name}	$r->{ttl}	IN  TXT	\"$r->{address}\"\n";

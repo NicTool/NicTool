@@ -839,13 +839,15 @@ sub incremental {
     return $val;
 };
 
+sub in_export_list {
+    my ($self, $zone) = @_;
+    return $self->{export_list}{$zone} ? 1 : 0;
+};
+
 sub zones_exported {
     my ($self, $zone) = @_;
     if (!$zone) {
         return keys %{$self->{export_list}};  # getter
-    };
-    if ($self->{export_list}{$zone}) {        # checker
-        return 1;
     };
     $self->{export_list}{$zone} = 1;          # setter
     return 0;

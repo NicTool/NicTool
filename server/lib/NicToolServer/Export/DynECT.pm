@@ -51,7 +51,7 @@ sub export_db {
 
     foreach my $z ( @{ $self->{nte}->get_ns_zones( deleted => 1) } ) {
         my $zone = $z->{zone};
-        if ($self->{nte}->zones_exported($zone)) {
+        if ($self->{nte}->in_export_list($zone)) {
             $self->{nte}->elog("$zone recreated, skipping delete");
             next;
         };
