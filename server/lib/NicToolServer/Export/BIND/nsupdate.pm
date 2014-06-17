@@ -175,7 +175,7 @@ sub get_changed_zones {
     my ( $self, $dir ) = @_;
     my $datadir = $self->{nte}->get_export_data_dir || $dir;
     my %has_changes;
-    foreach my $zone ( @{ $self->{zone_list} } ) {
+    foreach my $zone ( $self->{nte}->zones_exported ) {
         my $tmpl = $self->get_template( $dir, $zone );
         if ($tmpl) {
             $has_changes{$zone} = $tmpl;

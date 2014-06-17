@@ -45,6 +45,7 @@ sub new {
         dir_orig   => Cwd::getcwd,
         postflight_extra => $p{pfextra},
         incremental=> undef,
+        export_list=> {},
         },
         $class;
 }
@@ -622,7 +623,7 @@ sub load_export_class {
     }
     elsif ( $self->{export_format} eq 'maradns' ) {
         require NicToolServer::Export::MaraDNS;
-        $self->{export_class} = NicToolServer::Export::Maradns->new( $self );
+        $self->{export_class} = NicToolServer::Export::MaraDNS->new( $self );
     }
     elsif ( $self->{export_format} eq 'dynect' ) {
         require NicToolServer::Export::DynECT;
@@ -832,10 +833,22 @@ sub export_required {
 };
 
 sub incremental {
-    my ($self, $val ) = @_;
+    my ($self, $val) = @_;
     return $self->{incremental} if ! defined $val;
     $self->{incremental} = $val;
     return $val;
+};
+
+sub zones_exported {
+    my ($self, $zone) = @_;
+    if (!$zone) {
+        return keys %{$self->{export_list}};  # getter
+    };
+    if ($self->{export_list}{$zone}) {        # checker
+        return 1;
+    };
+    $self->{export_list}{$zone} = 1;          # setter
+    return 0;
 };
 
 1;

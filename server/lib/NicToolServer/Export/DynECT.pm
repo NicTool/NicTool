@@ -26,7 +26,7 @@ sub export_db {
     # for incremental, get_ns_zones returns only changed zones.
     foreach my $z ( @{ $self->{nte}->get_ns_zones() } ) {
         my $zone = $z->{zone};
-        push @{$self->{zone_list}}, $zone;
+        $self->{nte}->zones_exported($zone);
         $self->{nte}{zone_name} = $zone;
         if ($self->api_get("Zone/$zone/")) {
             $self->api_delete("Zone/$zone/");
@@ -51,7 +51,7 @@ sub export_db {
 
     foreach my $z ( @{ $self->{nte}->get_ns_zones( deleted => 1) } ) {
         my $zone = $z->{zone};
-        if ( grep { $_ eq $zone } @{$self->{zone_list}} ) {
+        if ($self->{nte}->zones_exported($zone)) {
             $self->{nte}->elog("$zone recreated, skipping delete");
             next;
         };

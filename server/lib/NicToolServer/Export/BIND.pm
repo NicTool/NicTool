@@ -36,7 +36,7 @@ sub update_named_include {
 # full export, write a new include  file
     my $datadir = $self->{nte}->get_export_data_dir || $dir;
     my $fh = $self->get_export_file( 'named.conf.nictool', $dir );
-    foreach my $zone ( @{$self->{zone_list}} ) {
+    foreach my $zone ( $self->{nte}->zones_exported ) {
         my $tmpl = $self->get_template($dir, $zone);
         if ( $tmpl ) {
             print $fh $tmpl;
@@ -95,7 +95,7 @@ sub get_changed_zones {
     my ($self, $dir) = @_;
     my $datadir = $self->{nte}->get_export_data_dir || $dir;
     my %has_changes;
-    foreach my $zone ( @{$self->{zone_list}} ) {
+    foreach my $zone ( $self->{nte}->zones_exported ) {
         my $tmpl = $self->get_template($dir, $zone);
         if ( $tmpl ) {
             $has_changes{$zone} = $tmpl;
@@ -206,8 +206,8 @@ sub write_makefile {
     };
     print $M <<MAKE
 # After a successful export, 3 make targets are run: compile, remote, restart
-# Each target can do anything you'd like. Examples are shown for several BIND
-# compatible NS daemons. Remove comments (#) to activate the ones you wish.
+# Each target can do anything you'd like.
+# See https://www.gnu.org/software/make/manual/make.html
 
 ################################
 #########  BIND 9  #############
@@ -225,19 +225,6 @@ remote: $exportdir/named.conf.nictool
 restart: $exportdir/named.conf.nictool
 \t#ssh bind\@$address rndc reload
 \ttest 1
-
-################################
-#########  PowerDNS  ###########
-################################
-
-#compile: $exportdir/named.conf.nictool
-#\ttest 1
-#
-#remote: $exportdir/named.conf.nictool
-#\trsync -az --delete $exportdir/ powerdns\@$address:$datadir/
-#
-#restart: $exportdir/named.conf.nictool
-#\tssh powerdns\@$address pdns_control cycle
 MAKE
 ;
     close $M;

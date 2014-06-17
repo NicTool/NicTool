@@ -12,12 +12,10 @@ sub new {
 
     my $self = bless {
         nte => shift,
-        zone_list => [],
     },
     $class;
 
-    warn "oops, a NicToolServer::Export object wasn't provided!"
-        if ! $self->{nte};
+    warn "NicToolServer::Export object not provided!" if ! $self->{nte};
     return $self;
 }
 
@@ -54,9 +52,10 @@ sub export_db {
 
     # for incremental, get_ns_zones returns only changed zones.
     foreach my $z ( @{ $self->{nte}->get_ns_zones() } ) {
-        push @{$self->{zone_list}}, $z->{zone};
-        my $fh = $self->get_export_file( $z->{zone}, $dir );
-        $self->{nte}{zone_name} = $z->{zone};
+        my $zone = $z->{zone};
+        $self->{nte}->zones_exported($zone);
+        my $fh = $self->get_export_file( $zone, $dir );
+        $self->{nte}{zone_name} = $zone;
 
         # these records don't exist in DB, generate them here
         $fh->print($self->{nte}->zr_soa( $z ));
@@ -73,9 +72,7 @@ sub export_db {
 
     foreach my $z ( @{ $self->{nte}->get_ns_zones( deleted => 1) } ) {
         my $zone = $z->{zone};
-        if ( grep { $_ eq $zone } @{$self->{zone_list}} ) {
-# TODO: traversing the list here might be slow. Profile this vs mapping
-# zone_list into a hash.
+        if ($self->{nte}->zones_exported($zone)) {
             warn "$zone was also created, skipping delete\n";
             next;
         };
@@ -108,6 +105,7 @@ sub qualify {
 
     return "$record.$zone"       # append zone name
 }
+
 
 1;
 
