@@ -35,7 +35,9 @@ $type ||= get_type(); load_type($type);
 my $nt = $nti->nt_connect($nt_host, $nt_port, $nt_user, $nt_pass);
 
 $group_id ||= $nt->result->{store}{nt_group_id} || die "unable to get group ID\n";
+warn Dumper($nt->result->{store}) if $verbose;
 $nameservers ||= join(',', grep { $_ > 0 } split /,/, $nt->result->{store}{usable_ns} );
+warn "nameservers: $nameservers\n" if $verbose;
 $nti->group_id( $group_id );
 $nti->nameservers( [ split /,/, $nameservers ] );
 
