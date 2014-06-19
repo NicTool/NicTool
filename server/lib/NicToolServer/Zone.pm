@@ -1085,8 +1085,7 @@ sub zone_exists {
 }
 
 sub valid_mailaddr {
-    my $self = shift;
-    my ( $field, $mailaddr ) = @_;
+    my ( $self, $field, $mailaddr ) = @_;
 
     my $has_error++;
     if ( $mailaddr =~ /@/ ) {
@@ -1098,8 +1097,7 @@ sub valid_mailaddr {
 };
 
 sub valid_label {
-    my $self = shift;
-    my ( $field, $name, $type ) = @_;
+    my ( $self, $field, $name ) = @_;
 
     $self->error($field, "missing label") if ! defined $name;
 

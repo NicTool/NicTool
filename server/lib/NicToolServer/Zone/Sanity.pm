@@ -71,8 +71,8 @@ sub new_zone {
         }
     }
 
-    $self->valid_mailaddr( $data->{mailaddr} );
-    $self->valid_label( $data->{mailaddr} );
+    $self->valid_mailaddr( 'mailaddr', $data->{mailaddr} );
+    $self->valid_label( 'mailaddr', $data->{mailaddr} );
 
     # check the zone's TTL
     $data->{ttl} ||= 86400;
@@ -99,8 +99,8 @@ sub edit_zone {
         'Cannot edit zone in a deleted group!' )
         if $self->check_object_deleted( 'group', $dataobj->{nt_group_id} );
 
-    $self->valid_mailaddr( $data->{mailaddr} );
-    $self->valid_label( $data->{mailaddr} );
+    $self->valid_mailaddr( 'mailaddr', $data->{mailaddr} );
+    $self->valid_label( 'mailaddr', $data->{mailaddr} );
 
     # check the zone's TTL
     $self->valid_ttl( $data->{ttl} ) if defined $data->{ttl};
