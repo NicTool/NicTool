@@ -34,6 +34,7 @@ sub zr_ptr      { return _zr_generic(@_, 'PTR')   }
 sub zr_spf      { return _zr_generic(@_, 'SPF')   }
 sub zr_mx       { return _zr_generic(@_, 'MX',  'weight') }
 sub zr_srv      { return _zr_generic(@_, 'SRV', 'priority', 'weight') } # TODO "priority" def'd?
+sub zr_naptr    { return '' }
 
 sub zr_soa {
     my ($self, $z) = @_;
