@@ -1,3 +1,4 @@
 
-Contents of this file moved to [GitHub
-Issues](https://github.com/msimerson/NicTool/issues/)
+See the [Issue Tracker on
+ GitHub](https://github.com/msimerson/NicTool/issues)
+
