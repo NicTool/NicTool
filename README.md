@@ -38,6 +38,10 @@ NicTool is a open source DNS management suite that takes the headaches out of ma
 See
 [TESTIMONIALS.md](https://github.com/msimerson/NicTool/blob/master/TESTIMONIALS.md)
 
+### Authors
+
+See [AUTHORS.md](https://github.com/msimerson/NicTool/blob/master/AUTHORS.md)
+
 ### Support
 
 * [Commercial Support](http://www.tnpi.net/cart/index.php/categories/nictool)
