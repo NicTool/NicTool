@@ -18,4 +18,9 @@ List yourself here! Fork [NicTool](https://github.com/msimerson/NicTool), edit [
     * We use NicTool as the backend to our DNS infrastructure. NicTool's API allows us to:
         * easily integrate NicTool into our customer portal
         * allow customers to easily add/remove/edit zones, records, and rDNS data
-* [Lightrealm/HostPro/Interland/Web.com](http://web.com) (2000-unknown): In 1999, Lightrealm's DNS was managed on Sun servers running BIND 4. DNS team members used a shared login for access and editing of the zone and named.conf files. We had 120,000 zones and reloading BIND took about 12 hours, so it was done once a day. If someone made an error, it might take 10 hours before BIND encountered it and croaked, sometimes extending the time-to-publish of DNS data to days. With the pending merger of Lightrealm, Vservers, and HostPro, our zone count was going to almost triple. We needed a better solution and found NicTool. We deployed a system that elegantly managed 400,000 zones, millions of zone records, and published changes in under a minute. NicTool remained in use at Web.com for many years thereafter.
+* [Lightrealm/HostPro/Interland/Web.com](http://web.com) (2000-unknown):
+    * Manage 400,000 zones and millions of zone records
+    * Consolidated 3 DNS clusters with about 120,000 zones each onto one system
+    * Reduce publish times from up to 24 hours to less than one minute
+    * Prevent data entry errors
+    * Get rid of BIND 4, which was a security disaster.
