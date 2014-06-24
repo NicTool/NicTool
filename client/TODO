@@ -1,16 +1,4 @@
 
-* add a "lost password" recovery feature
+Contents of this file moved to GitHub Issues
 
-* expose nt_zone_record.timestamp for editing
-
-* Searching in Zones. E.g. for names by type to do a mass update of the ttl.
-  (Jörg Site)
-
-============  DONE ===============
-
-* NicTool admins don't need the old password to reset (2012.12.11)
-
-* expose nt_nameserver.export_serials for editing
-
-* restore nameserver export status (2011.11.18)
-
+    https://github.com/msimerson/NicTool/issues/
