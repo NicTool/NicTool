@@ -23,5 +23,6 @@ docs/zonesfuncs.htm
 Makefile.PL
 MANIFEST			This list of files
 MANIFEST.SKIP
-README
+README.md
+TESTIMONIALS.md
 META.yml
