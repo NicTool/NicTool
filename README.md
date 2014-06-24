@@ -33,7 +33,7 @@ NicTool is a open source DNS management suite that takes the headaches out of ma
 * NicTool API - The NicTool API is what connects to the NicTool Server. The format of requests is defined in the reference API at http://www.nictool.com/docs/api/
 * NicTool Client - A CGI application thatt provides a web interface for managing DNS data. NicTool Client has customizable HTML templates and a CSS style sheet. It is slowly becoming a modern JS web app
 
-### Testimonials
+### Testimonials and NicTool Users
 
 See
 [TESTIMONIALS.md](https://github.com/msimerson/NicTool/blob/master/TESTIMONIALS.md)
@@ -44,4 +44,4 @@ See
 * [Forums](http://www.tnpi.net/support/forums/index.php/board,10.0.html)
 * [Mailing Lists](https://mail.theartfarm.com/list-archives/?1)
 * [Email](mailto:support@nictool.com) - Requests not accompanied by payments are handled on a "best effort" basis.
-* [WIKI](https://github.com/msimerson/NicTool/wiki)
+* [Wiki](https://github.com/msimerson/NicTool/wiki)
