@@ -29,19 +29,18 @@ Getopt::Long::GetOptions(
 ) or die "error parsing command line options";
 
 if($help) {
-     print "Usage: $0 [OPTIONS]...\n\n";
-     print "This utility can be used to import your existing DNS data into the NicTool system\n\n";
-     print "Optional:\n";
+     print "usage: $0 [-OPTIONS]...\n\n";
+     print "Import DNS data into NicTool\n\n";
+     print "Options:\n";
      print "  --host           Hostname or IP address of NicTool Server\n";
-     print "  --port           NicTool server port (defaults to 8082)\n";
-     print "  --user           Username to use when authenticating with NicTool server\n";
-     print "  --pass           Password to use when authenticating with NicTool server\n";
+     print "  --port           NicTool server port (default: 8082)\n";
+     print "  --user           NicTool username\n";
+     print "  --pass           NicTool password\n";
      print "  --type           Import type (tinydns or bind)\n";
      print "  --file           File to import data from (data for tinydns, named.conf for bind)\n";
-     print "  --nameservers    Comma seperated list of nameserver id's to assign imported data too\n";
-     print "  --group_id       Group id to import zones into\n";
-     print "  --verbose        Make import verbose\n";
-     print "  --help           Display help, what your already seeing\n\n";
+     print "  --nameservers    Comma separated list of nameserver id's\n";
+     print "  --group_id       NicTool group id zones are placed into\n";
+     print "  --verbose        Show extra messages verbose\n\n";
      print "Submit bugs to https://github.com/msimerson/NicTool or support\@nictool.com\n";
      exit 0;
 }
