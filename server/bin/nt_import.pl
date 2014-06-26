@@ -25,10 +25,30 @@ Getopt::Long::GetOptions(
     'pass=s'    => \my $nt_pass,
     'type=s'    => \my $type,
     'verbose'   => \my $verbose,
+    'help'      => \my $help,
 ) or die "error parsing command line options";
 
-$nt_user ||= ask( "nicool user" ) if ! $nt_user;
-$nt_pass ||= ask( "nictool pass", password => 1 ) if ! $nt_pass;
+if($help) {
+     print "Usage: $0 [OPTIONS]...\n\n";
+     print "This utility can be used to import your existing DNS data into the NicTool system\n\n";
+     print "Optional:\n";
+     print "  --host           Hostname or IP address of NicTool Server\n";
+     print "  --port           NicTool server port (defaults to 8082)\n";
+     print "  --user           Username to use when authenticating with NicTool server\n";
+     print "  --pass           Password to use when authenticating with NicTool server\n";
+     print "  --type           Import type (tinydns or bind)\n";
+     print "  --file           File to import data from (data for tinydns, named.conf for bind)\n";
+     print "  --nameservers    Comma seperated list of nameserver id's to assign imported data too\n";
+     print "  --group_id       Group id to import zones into\n";
+     print "  --verbose        Make import verbose\n";
+     print "  --help           Display help, what your already seeing\n\n";
+     print "Submit bugs to https://github.com/msimerson/NicTool or support\@nictool.com\n";
+     exit 0;
+}
+
+$filename ||=ask( "Location of file you would like to import data from") if ! $filename;
+$nt_user ||= ask( "NicTool user you would like to import data as" ) if ! $nt_user;
+$nt_pass ||= ask( "NicTool user password", password => 1 ) if ! $nt_pass;
 
 my $nti;
 $type ||= get_type(); load_type($type);
@@ -41,9 +61,10 @@ warn "nameservers: $nameservers\n" if $verbose;
 $nti->group_id( $group_id );
 $nti->nameservers( [ split /,/, $nameservers ] );
 
-my $fn = $nti->get_import_file( $filename ) 
-    or die "unable to find import file. Specify with -file option";
-print "file: $filename\n";
+my $fn = $nti->get_import_file( $filename )
+    or die "$filename does not exist or is not accessible";
+
+print "\nStarting import using: $filename\n";
 
 $nti->import_records();
 
