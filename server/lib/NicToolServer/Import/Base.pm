@@ -42,6 +42,7 @@ sub get_zone_id {
 
     if ($zone) {
         $zone_id = $self->nt_get_zone_id( zone => $zone );
+        return ($zone_id, $fqdn) if $fqdn eq $zone;
         $host = substr($fqdn, 0, ((length $zone) * -1) -1);
         return ($zone_id, $host);
     };
@@ -106,7 +107,7 @@ sub nt_create_zone {
 
     my $group_id = $p{group_id} || $self->group_id
         or die "group ID not set!\n";
-    my $nameservers = $p{nameservers} || $self->nameservers 
+    my $nameservers = $p{nameservers} || $self->nameservers
         or die "nameservers unset!\n";
     $nameservers = join( ',', @{$nameservers} );
 
@@ -341,7 +342,8 @@ sub record_exists {
         address => $record->{address},
     );
     if ( scalar $recs ) {
-        print "record exists\n"; # . Dumper($recs);
+        print "record exists\n";
+        #print Dumper($recs);
         return 1;
     };
     return 0;
