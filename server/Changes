@@ -1,5 +1,27 @@
 Revision history for NicToolServer
 
+2.26    2014.06.26
+
+    * fix an import from BIND bug where apex records were not imported
+    * add --help opt to nt_import (thanks ShaunR)
+
+2.25    2014.06.19
+
+    * Zone::Sanity, added missing 'type' (Issue #39)
+    * MaraDNS: when exporting, ignore NAPTR records
+    * nt_import: add more debugging
+    * add .dist extension to lib/nictool[client|server].conf (PR #38 ShaunR)
+    * remove nictool version information from the public eye. (PR #37 ShaunR)
+    * in export status, make labels more clear
+    * Export::Knot: improved docs and integration
+    * Export::BIND: use make -C instead of chdir
+    * validate mailaddr in zone SOA
+    * powerdns: default export class for BIND backend
+    * NSD: Makefile update for nsd-control (NSD 4)
+    * added Export::zones_exported function
+    * better acknowledge NicTool authors contributions
+    * sql: s/export_format/export_type_id/ in sample ns
+
 2.24    2014.06.14
 
     * added Exports::DynECT for Managed DNS service
