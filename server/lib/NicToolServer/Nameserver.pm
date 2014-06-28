@@ -241,16 +241,22 @@ sub get_nameserver {
     FROM nt_nameserver ns
         LEFT JOIN nt_nameserver_export_type et ON ns.export_type_id=et.id
         WHERE nt_nameserver_id=?";
+
     my $nameservers = $self->exec_query( $sql, $data->{nt_nameserver_id} )
         or return {
-        error_code => 600,
-        error_msg  => $self->{dbh}->errstr,
+            error_code => 600,
+            error_msg  => $self->{dbh}->errstr,
         };
 
     return {
         %{ $nameservers->[0] },
         error_code => 200,
         error_msg  => 'OK',
+    } if $nameservers->[0];
+
+    return {
+        error_code => 601,
+        error_msg  => 'No nameserver with that ID found',
     };
 }
 
