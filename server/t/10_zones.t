@@ -36,7 +36,7 @@ use NicToolTest;
 use NicTool;
 use Test;
 
-BEGIN { plan tests => 325 }
+BEGIN { plan tests => 313 }
 
 $user = new NicTool(
     cache_users  => 0,

@@ -38,7 +38,7 @@ use NicToolTest;
 use NicTool;
 use Test;
 
-BEGIN { plan tests => 6024 }
+BEGIN { plan tests => 5589 }
 
 $user = new NicTool(
     cache_users  => 0,
@@ -383,7 +383,7 @@ sub doit {
     }
 
 #invalid IP address for A records
-    for ( qw/ 1.x.2.3 .1.2.3 0.0.0.0 1234.1.2.3 256.2.3.4  1.-.2.3 1.2.3 1.2 
+    for ( qw/ 1.x.2.3 .1.2.3 0.0.0.0 1234.1.2.3 256.2.3.4  1.-.2.3 1.2.3 1.2
               1 1.2.3. -1.2.3.4/, '1. .3.4', '1.2,3.4', '1.,.3.4' ) {
 
         $res = $zone1->new_zone_record(
@@ -854,7 +854,7 @@ my @success_tests = (
                 ($type eq 'SRV' ? (priority => 1) : ()),
                 ($type eq 'SRV' ? (other => 1) : ()),
             );
-            noerrok( $res, 300, "type $type address $_" );
+            noerrok( $res, 300, "type $type address $address" );
             ok( $res->get('error_msg') => qr/must point to a FQDN/, "edit_zone_record, $type, $address" );
             ok( $res->get('error_desc') => qr/Sanity error/, "edit_zone_record, $type, $address" );
 
@@ -878,18 +878,18 @@ my @success_tests = (
 
 #invalid address for type
     for my $type ( qw/ MX NS SRV / ) {
-        for ( qw/ 1.2.3.4 5.1.2.8 5.1.2 a.b.c / ) {
+        for my $address ( qw/ 1.2.3.4 5.1.2.8 5.1.2 a.b.c / ) {
 
             $res = $zr1->edit_zone_record(
                 name    => "something",
-                address => $_,
+                address => $address,
                 type    => $type,
                 ttl     => 86403,
                 (($type eq 'MX' || $type eq 'SRV') ? (weight => 1) : ()),
                 ($type eq 'SRV' ? (priority => 1) : ()),
                 ($type eq 'SRV' ? (other => 1) : ()),
             );
-            noerrok( $res, 300, "type $type address $_" );
+            noerrok( $res, 300, "type $type address $address" );
             ok( $res->get('error_msg')  => qr/must point to a FQDN/ );
             ok( $res->get('error_desc') => qr/Sanity error/ );
 
@@ -903,24 +903,24 @@ my @success_tests = (
             noerrok($res);
 
             #invalid address for preset type
-            $res = $zr1->edit_zone_record( address => $_ );
-            noerrok( $res, 300, "type $type address $_" );
+            $res = $zr1->edit_zone_record( address => $address );
+            noerrok( $res, 300, "type $type address $address" );
             ok( $res->get('error_msg')  => qr/must point to a FQDN/ );
             ok( $res->get('error_desc') => qr/Sanity error/ );
         }
     }
 
 #invalid IP address for A records
-    for ( qw/ 1.x.2.3 .1.2.3 0.0.0.0 1234.1.2.3 256.2.3.4  1.-.2.3 1.2.3 1.2 
+    for my $address ( qw/ 1.x.2.3 .1.2.3 0.0.0.0 1234.1.2.3 256.2.3.4  1.-.2.3 1.2.3 1.2
             1 1.2.3. -1.2.3.4/, '1. .3.4', '1.2,3.4', '1.,.3.4' ) {
 
         $res = $zr1->edit_zone_record(
             name    => "something",
-            address => $_,
+            address => $address,
             type    => 'A',
             ttl     => 86403,
         );
-        noerrok( $res, 300, "address $_" );
+        noerrok( $res, 300, "address $address" );
         ok( $res->get('error_msg') =>
                 qr/Address for A records must be a valid IP address/ );
         ok( $res->get('error_desc') => qr/Sanity error/ );
@@ -944,7 +944,7 @@ my @success_tests = (
     $res = $zr1->edit_zone_record( type => 'A', address => '1.2.3.4');
     noerrok($res);
 
-    for ( qw(1.x.2.3 .1.2.3 0.0.0.0 1234.1.2.3 256.2.3.4  1.-.2.3 1.2.3 1.2 
+    for ( qw(1.x.2.3 .1.2.3 0.0.0.0 1234.1.2.3 256.2.3.4  1.-.2.3 1.2.3 1.2
              1 1.2.3. -1.2.3.4), '1. .3.4', '1.2,3.4', '1.,.3.4' ) {
 
         $res = $zr1->edit_zone_record( address => $_ );

@@ -35,7 +35,7 @@ use NicToolTest;
 use NicTool;
 use Test;
 
-BEGIN { plan tests => 896 }
+BEGIN { plan tests => 779 }
 
 #no group permissions
 %permsnone = (

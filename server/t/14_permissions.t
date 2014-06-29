@@ -33,7 +33,7 @@ use NicToolTest;
 use NicTool;
 use Test;
 
-BEGIN { plan tests => 4656 }
+BEGIN { plan tests => 4593 }
 
 &start;
 eval {&test_perms};
