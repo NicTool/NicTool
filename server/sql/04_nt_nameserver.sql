@@ -9,7 +9,7 @@ CREATE TABLE nt_nameserver(
     ttl                 INT UNSIGNED,
     description         VARCHAR(255),
     address             VARCHAR(127) NOT NULL,
-    address6            VARCHAR(127) NOT NULL,
+    address6            VARCHAR(127) DEFAULT NULL,
     remote_login        VARCHAR(127) DEFAULT NULL,
     export_type_id      INT UNSIGNED DEFAULT '1',
     logdir              VARCHAR(255),
@@ -60,12 +60,12 @@ CREATE TABLE `nt_nameserver_export_type` (
 ) DEFAULT CHARSET=utf8;
 
 INSERT INTO `nt_nameserver_export_type` (`id`, `name`, `descr`, `url`)
-VALUES (1,'djbdns','tinydns & axfrdns','cr.yp.to/djbdns.html'),
+VALUES (1,'djbdns','djbdns (tinydns & axfrdns)','cr.yp.to/djbdns.html'),
        (2,'bind','BIND (zone files)', 'www.isc.org/downloads/bind/'),
        (3,'maradns','MaraDNS', 'maradns.samiam.org'),
        (4,'powerdns','PowerDNS','www.powerdns.com'),
        (5,'bind-nsupdate','BIND (nsupdate protocol)',''),
-       (6,'NSD','Name Server Daemon','www.nlnetlabs.nl/projects/nsd/'),
+       (6,'NSD','Name Server Daemon (NSD)','www.nlnetlabs.nl/projects/nsd/'),
        (7,'dynect','DynECT Standard DNS','dyn.com/managed-dns/'),
        (8,'knot','Knot DNS','www.knot-dns.cz');
 

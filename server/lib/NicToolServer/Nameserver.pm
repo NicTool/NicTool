@@ -2,8 +2,7 @@ package NicToolServer::Nameserver;
 # ABSTRACT: manage NicTool nameservers
 
 use strict;
-
-@NicToolServer::Nameserver::ISA = qw(NicToolServer);
+use parent 'NicToolServer';
 
 sub get_usable_nameservers {
     my ( $self, $data ) = @_;
@@ -237,7 +236,7 @@ sub move_nameservers {
 sub get_nameserver {
     my ( $self, $data ) = @_;
 
-    my $sql = "SELECT ns.*, et.name AS export_type
+    my $sql = "SELECT ns.*, et.name AS export_format
     FROM nt_nameserver ns
         LEFT JOIN nt_nameserver_export_type et ON ns.export_type_id=et.id
         WHERE nt_nameserver_id=?";

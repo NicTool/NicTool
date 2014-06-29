@@ -10,18 +10,27 @@ function changeNewZoneName() {
 };
 
 function changeNSExportType(eType) {
+    if (!eType) { eType = $('select#export_format option:selected').val(); }
     if (!eType) return false;
+
+    $('tr#export_serials').hide();
+    $('input#remote_login').attr('placeholder', '');
+
+    $('tr#datadir').show();
+    $('input#datadir').attr('placeholder', '');
+
+    selectedNSType(eType);
 }
 
 function changeRRType(rrType) {
     if (!rrType) return false;
 
-		var rrOptions = [ 'weight', 'priority', 'other' ];
-		for ( var i=0; i < rrOptions.length; i++ ) {
-				$('input#' +rrOptions[i]).val('');
-		}
+    var rrOptions = [ 'weight', 'priority', 'other' ];
+    for ( var i=0; i < rrOptions.length; i++ ) {
+        $('input#' +rrOptions[i]).val('');
+    }
 
-		selectedRRType(rrType);
+    selectedRRType(rrType);
 }
 
 function selectedRRType(rrType) {
@@ -49,6 +58,60 @@ function selectedRRType(rrType) {
       case 'NSEC3PARAM': setFormRRTypeNSEC3PARAM(); break;
       case 'RRSIG':      setFormRRTypeRRSIG();      break;
     }
+}
+
+function selectedNSType(nsType) {
+    if (!nsType) return false;
+    switch (nsType) {
+      case 'bind':           setFormNSTypeBIND();  break;
+      case 'bind-nsupdate':  setFormNSTypeNSUPD(); break;
+      case 'NSD':            setFormNSTypeNSD();   break;
+      case 'knot':           setFormNSTypeKnot();  break;
+      case 'maradns':        setFormNSTypeMara();  break;
+      case 'djbdns':         setFormNSTypeDJB();   break;
+      case 'dynect':         setFormNSTypeDyn();   break;
+      case 'powerdns':       setFormNSTypePower(); break;
+    }
+}
+
+function setFormNSTypeBIND () {
+    setSpanURL('export_format', 'http://www.isc.org/downloads/bind/', 'BIND');
+    $('input#datadir').attr('placeholder', '/etc/namedb/nictool');
+    $('input#remote_login').attr('placeholder', 'bind');
+}
+function setFormNSTypeNSUPD () {
+    setSpanURL('export_format', 'http://www.isc.org/downloads/bind/', 'BIND nsupdate');
+    $('input#datadir').attr('placeholder', '/etc/namedb/nictool');
+    $('input#remote_login').attr('placeholder', 'bind');
+}
+function setFormNSTypeNSD () {
+    setSpanURL('export_format', 'http://www.nlnetlabs.nl/projects/nsd/', 'NSD');
+    $('input#remote_login').attr('placeholder', 'nsd');
+}
+function setFormNSTypeKnot () {
+    setSpanURL('export_format', 'http://www.knot-dns.cz/', 'Knot DNS');
+    $('input#datadir').attr('placeholder', '/var/db/knot');
+    $('input#remote_login').attr('placeholder', 'knot');
+}
+function setFormNSTypeMara () {
+    setSpanURL('export_format', 'http://maradns.samiam.org/', 'MaraDNS');
+    $('input#remote_login').attr('placeholder', 'maradns');
+}
+function setFormNSTypeDJB () {
+    setSpanURL('export_format', 'http://cr.yp.to/djbdns.html', 'DJBDNS');
+    $('tr#export_serials').show();
+    $('input#datadir').attr('placeholder', '/var/service/tinydns-ns1');
+    $('input#remote_login').attr('placeholder', 'tinydns');
+}
+function setFormNSTypeDyn () {
+    setSpanURL('export_format', 'http://dyn.com/managed-dns/', 'DynECT');
+    $('tr#datadir').hide();
+    $('input#remote_login').attr('placeholder', 'Customer:Username:Password');
+}
+function setFormNSTypePower () {
+    setSpanURL('export_format', 'http://www.powerdns.com/', 'PowerDNS');
+    $('input#datadir').attr('placeholder', '/etc/namedb/nictool');
+    $('input#remote_login').attr('placeholder', 'powerdns');
 }
 
 function resetZoneRecordFormFields() {
@@ -253,7 +316,7 @@ function setFormRRTypeRRSIG() {
   setRfcHelp(['4034']);
 
 /*
- We don't have enough fields in the RR table to enter the 9 pieces of data separately. Instead, just require them to be in the canonical presentation format, and pack it all into the Address field.
+There aren't enough fields in the RR table to enter the 9 pieces of data separately. Require them to be in the canonical presentation format, packed in the Address field.
 
 host.example.com. 86400 IN RRSIG A 5 3 86400 20030322173103 (
                                   20030220173103 2642 example.com.
@@ -323,6 +386,10 @@ function setRfcHelp(rfcList) {
         ' <a target="_blank" href="https://tools.ietf.org/html/rfc'+rfcList[i]+'">RFC '+rfcList[i]+'</a>'
     );
   };
+}
+
+function setSpanURL(spanID, URL, descr) {
+  $('span#'+spanID).html(' <a target="_blank" href="'+URL+'">'+descr+'</a>' );
 }
 
 //access types

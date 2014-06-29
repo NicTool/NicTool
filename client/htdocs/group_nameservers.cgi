@@ -77,7 +77,7 @@ sub do_new {
     };
 
     my @fields = qw/ nt_group_id name ttl description address address6 logdir
-                datadir remote_login export_type_id export_interval export_serials /;
+                datadir remote_login export_format export_interval export_serials /;
     my %data;
     foreach my $x (@fields) {
         $data{$x} = $q->param($x);
@@ -114,9 +114,9 @@ sub do_edit {
     };
 
     # user clicked the 'Save' button
-    my @fields = qw/ nt_group_id nt_nameserver_id name ttl description 
+    my @fields = qw/ nt_group_id nt_nameserver_id name ttl description
                      address address6 logdir datadir remote_login
-                     export_type_id export_serials export_interval /;
+                     export_format export_serials export_interval /;
 
     my %data;
     foreach my $x (@fields) {
@@ -205,7 +205,7 @@ sub display_list {
         my $bgcolor = $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg';
         print qq[
  <tr class="$bgcolor">];
- 
+
         display_list_move_checkbox( $q, $user, $user_group, $obj );
         display_list_subgroups( $width, $obj, $map ) if $include_subgroups;
         display_list_name( $obj, $width );
@@ -422,8 +422,9 @@ sub display_edit_nameserver {
     my ( $nt_obj, $user, $q, $message, $edit ) = @_;
 
 # logdir
-    my @fields = qw/ name address address6 export_type_id datadir remote_login
-                     ttl export_interval export_serials description /;
+    my @fields = qw/ name address address6 ttl export_format
+                     export_serials remote_login export_interval
+                     datadir description /;
 
     my $nameserver;
     if ( $q->param('nt_nameserver_id') && !$q->param('Save') ) {
@@ -472,13 +473,10 @@ sub display_edit_nameserver {
  <tr class=dark_bg><td colspan=2 class="bold">$title</td></tr>];
 
     foreach my $f ( @fields ) {
-        if ( $f eq 'export_serials' && $nameserver->{export_type_id} != 1 ) {
-            next;
-        };
         print qq[
- <tr class=light_grey_bg>
+ <tr id="$f" class=light_grey_bg>
   <td class=right>$labels{$f}{label}:</td>
-  <td class="width70">$labels{$f}{value}</td>
+  <td class="width70">$labels{$f}{value}<span id="$f"></span></td>
  </tr>];
     };
 
@@ -488,9 +486,10 @@ sub display_edit_nameserver {
   <td colspan=2 class=center>],
         $q->submit( $edit eq 'edit' ? 'Save' : 'Create' ),
         $q->submit('Cancel'), "</td>
- </tr>";
+ </tr>
+<script>\$(document).ready(function(){ changeNSExportType(); });</script>";
     }
- 
+
     print qq[
 </table>];
     print $q->end_form if $modifyperm;
@@ -502,7 +501,7 @@ sub display_edit_nameserver_fields {
     my $ttl = $q->param('ttl') || $NicToolClient::default_nameserver_ttl;
 
     my $export_formats = $nt_obj->ns_export_types();
-    my %export_formats = map { $_->{id} => "$_->{name} ($_->{descr})" } @$export_formats;
+    my %export_formats = map { $_->{name} => "$_->{descr}" } @$export_formats;
 
     my $export_format_values = [ sort keys %export_formats ];
     my $export_format_labels  = \%export_formats;
@@ -518,6 +517,7 @@ sub display_edit_nameserver_fields {
             label => 'TTL',
             value => $modifyperm
                     ? $q->textfield(
+                        -id        => 'ttl',
                         -name      => 'ttl',
                         -size      => 10,
                         -maxlength => 10,
@@ -529,6 +529,7 @@ sub display_edit_nameserver_fields {
             label => 'Description',
             value => $modifyperm
                     ? $q->textarea(
+                        -id        => 'description',
                         -name      => 'description',
                         -cols      => 50,
                         -rows      => 4,
@@ -539,39 +540,45 @@ sub display_edit_nameserver_fields {
         address         => {
             label => 'IPv4 Address',
             value => $modifyperm
-                    ? $q->textfield( -name => 'address', -size => 20, -maxlength => 15)
+                    ? $q->textfield( -id => 'address', -name => 'address', -size => 20, -maxlength => 15)
                     : $nameserver->{'address'},
         },
         address6        => {
             label => 'IPv6 Address',
             value => $modifyperm
-                    ? $q->textfield( -name => 'address6', -size => 45, -maxlength => 39)
+                    ? $q->textfield( -id => 'address6', -name => 'address6', -size => 45, -maxlength => 39)
                     : $nameserver->{'address6'},
         },
         remote_login => {
             label => 'Remote Login',
             value => $modifyperm
-                    ? $q->textfield( -name => 'remote_login', -size => 45, -maxlength => 64)
+                    ? $q->textfield(
+                        -id   => 'remote_login',
+                        -name => 'remote_login',
+                        -size => 45,
+                        -maxlength => 64,
+                        )
                     : '********************',
         },
-        export_type_id => {
+        export_format => {
             label => 'Export Format',
             value => $modifyperm
                     ? $q->popup_menu(
-                        -name    => 'export_type_id',
-                        -id      => 'export_type_id',
+                        -id      => 'export_format',
+                        -name    => 'export_format',
                         -values  => $export_format_values,
                         -labels  => $export_format_labels,
-                        -default => $nameserver->{export_type_id} || $q->param('export_type_id'),
+                        -default => $nameserver->{export_format} || $q->param('export_format'),
                         -onChange => "changeNSExportType(value);",
                         -required  => 'required',
                         )
-                    : $export_format_labels->{ $nameserver->{export_type_id} },
+                    : $export_format_labels->{ $nameserver->{export_format} },
         },
         export_serials   => {
             label => $nt_obj->help_link('export_serials') . ' Export Serials',
             value => $modifyperm
                     ? $q->checkbox(
+                        -id      => 'export_serials',
                         -name    => 'export_serials',
                         -checked => $nameserver->{export_serials},
                         -value   => 1,
@@ -583,6 +590,7 @@ sub display_edit_nameserver_fields {
             label => 'Logfile Directory',
             value => $modifyperm
                     ? $q->textfield(
+                        -id        => 'logdir',
                         -name      => 'logdir',
                         -size      => 60,
                         -maxlength => 255
@@ -593,6 +601,7 @@ sub display_edit_nameserver_fields {
             label => 'Data Directory',
             value => $modifyperm
                     ? $q->textfield(
+                        -id        => 'datadir',
                         -name      => 'datadir',
                         -size      => 45,
                         -maxlength => 255
@@ -603,6 +612,7 @@ sub display_edit_nameserver_fields {
             label => 'Export Interval (seconds)',
             value => $modifyperm
                     ? $q->textfield(
+                        -id        => 'export_interval',
                         -name      => 'export_interval',
                         -size      => 10,
                         -maxlength => 10,

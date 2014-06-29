@@ -523,7 +523,7 @@ sub api_commands {
                     { 'access' => 'read', required => 1, type => 'GROUP' },
                 'address'       => { required => 1 },
                 'name'          => { required => 1 },
-                'export_type_id'=> { required => 1 },
+                'export_format' => { required => 1 },
             },
         },
         'edit_nameserver' => {
@@ -1400,7 +1400,7 @@ sub valid_ip_address {
         $_ = 0 + $_;   # convert strings to integers
     }
 
-    return join( ".", @x );
+    return join( '.', @x );
 }
 
 sub valid_ttl {
@@ -1728,12 +1728,11 @@ sub diff_changes {
 
 sub throw_sanity_error {
     my $self = shift;
-
-    my $return = $self->error_response( 300,
+    my $res = $self->error_response( 300,
         join( " AND ", @{ $self->{error_messages} } ) );
-    $return->{sanity_err} = $self->{errors};
-    $return->{sanity_msg} = $self->{error_messages};
-    return $return;
+    $res->{sanity_err} = $self->{errors};
+    $res->{sanity_msg} = $self->{error_messages};
+    return $res;
 }
 
 sub format_search_conditions {
@@ -1919,7 +1918,7 @@ sub search_params_sanity_check {
         foreach my $int ( 1 .. 5 ) {
             next unless exists $data->{ $int . "_field" };
             foreach (qw(option value)) {
-                $self->push_sanity_error(
+                $self->error(
                     $int . "_$_",
                     "Parameter $int"
                         . "_$_ must be included with $int"
@@ -1927,7 +1926,7 @@ sub search_params_sanity_check {
                 ) unless exists $data->{ $int . "_$_" };
             }
 
-            $self->push_sanity_error(
+            $self->error(
                 $int . "_field",
                 "Parameter $int"
                     . "_field is an invalid field : '"
@@ -1935,7 +1934,7 @@ sub search_params_sanity_check {
                     . "'. Use one of "
                     . join( ", ", map {"'$_'"} keys %f )
             ) unless exists $f{ $data->{ $int . "_field" } };
-            $self->push_sanity_error(
+            $self->error(
                 $int . "_option",
                 "Parameter $int"
                     . "_option is invalid: '"
@@ -1945,7 +1944,7 @@ sub search_params_sanity_check {
             ) unless exists $o{ lc( $data->{ $int . "_option" } ) };
 
             next unless $int > 1;
-            $self->push_sanity_error(
+            $self->error(
                 $int . "_inclusive",
                 "Parameter $int"
                     . "_inclusive is invalid: '"
@@ -1956,7 +1955,7 @@ sub search_params_sanity_check {
         }
     }
     elsif ( $data->{quick_search} ) {
-        $self->push_sanity_error( "search_value",
+        $self->error( "search_value",
             "Must include parameter 'search_value' with 'quick_search'." )
             unless exists $data->{search_value};
     }
@@ -1965,7 +1964,7 @@ sub search_params_sanity_check {
     if ( $data->{Sort} ) {
         foreach my $int ( 1 .. 3 ) {
             next unless exists $data->{ $int . "_sortfield" };
-            $self->push_sanity_error(
+            $self->error(
                 $int . "_sortfield",
                 "Sort parameter $int"
                     . "_sortfield is invalid: '"
@@ -1979,17 +1978,11 @@ sub search_params_sanity_check {
     #paging stuff
     #just make sure start,page,limit, are valid ints (or blank)
     foreach my $sort ( grep { $data->{$_} } qw(start page limit) ) {
-        $self->push_sanity_error( $sort,
+        $self->error( $sort,
             "Paging field '$sort' must be an integer." )
             unless $data->{$sort} =~ /^\d+$/;
     }
 
-}
-
-sub push_sanity_error {
-    my ( $self, $param, $message ) = @_;
-    $self->{errors}->{$param} = 1;
-    push( @{ $self->{error_messages} }, $message );
 }
 
 1;

@@ -113,7 +113,7 @@ sub _sql_test_2_24 {
 
 sub _sql_2_24 {
     <<EO_SQL_2_24
-ALTER TABLE `nt_nameserver` ADD column address6 VARCHAR(127)  NULL  DEFAULT NULL  AFTER address;
+ALTER TABLE `nt_nameserver` ADD column address6 VARCHAR(127)  NULL DEFAULT NULL AFTER address;
 ALTER TABLE `nt_nameserver` ADD column remote_login VARCHAR(127) DEFAULT NULL AFTER address6;
 ALTER TABLE `nt_nameserver` ADD column export_type_id INT UNSIGNED DEFAULT '1' AFTER remote_login;
 ALTER TABLE `nt_nameserver_log` ADD column `address6` VARCHAR(127) NULL DEFAULT NULL AFTER address;
@@ -130,12 +130,12 @@ CREATE TABLE `nt_nameserver_export_type` (
 ) DEFAULT CHARSET=utf8;
 
 INSERT INTO `nt_nameserver_export_type` (`id`, `name`, `descr`, `url`)
-VALUES (1,'djbdns',    'tinydns & axfrdns',  'cr.yp.to/djbdns.html'),
+VALUES (1,'djbdns',    'djbdns (tinydns & axfrdns)',  'cr.yp.to/djbdns.html'),
        (2,'bind',      'BIND (zone files)',  'www.isc.org/downloads/bind/'),
        (3,'maradns',   'MaraDNS',            'maradns.samiam.org'),
        (4,'powerdns',  'PowerDNS',           'www.powerdns.com'),
        (5,'bind-nsupdate','BIND (nsupdate protocol)','www.isc.org/downloads/bind/'),
-       (6,'NSD',       'Name Server Daemon', 'www.nlnetlabs.nl/projects/nsd/'),
+       (6,'NSD',       'NSD (Name Server Daemon)', 'www.nlnetlabs.nl/projects/nsd/'),
        (7,'dynect',    'DynECT Standard DNS','dyn.com/managed-dns/'),
        (8,'knot',      'Knot DNS',           'www.knot-dns.cz');
 

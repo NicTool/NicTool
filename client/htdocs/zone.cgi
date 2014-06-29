@@ -553,11 +553,6 @@ sub display_zone_records {
 
         $r_record->{name} = "@ ($zone->{'zone'})" if $r_record->{name} eq "@";
 
-        # hide all them zeroes so numbers with values stand out
-        foreach my $f ( qw/ weight priority other / ) {
-            $r_record->{$f} = '' if $r_record->{$f} == 0;
-        };
-
         # shorten the max width of the address field (workaround for
         # display formatting problem with DomainKey entries.
         if ( length $r_record->{address} > 45 ) {

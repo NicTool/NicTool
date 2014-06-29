@@ -27,7 +27,7 @@
 
 =cut
 
-#use strict;
+use strict;
 use warnings;
 
 use lib '.';
@@ -37,7 +37,14 @@ use NicToolTest;
 use NicTool;
 use Test;
 
-BEGIN { plan tests => 544 }
+use DBI;
+use NicToolServer::Nameserver::Sanity;
+
+my ($res, $user, $gid1, $gid2, $group1, $group2, $nsid1, $nsid2, $ns1, $ns2, @u);
+my (%name, %address, %ttl, %export_format);
+BEGIN { plan tests => 576 }
+
+non_object_tests();
 
 $user = new NicTool(
     cache_users  => 0,
@@ -55,14 +62,72 @@ die "Couldn't log in" unless noerrok( $user->result );
 die "Couldn't log in" unless ok( $user->nt_user_session );
 
 #try to do the tests
-eval {&doit};
+eval { object_tests(); };
 warn $@ if $@;
 
 #delete objects even if other tests bail
-eval {&del};
+eval { cleanup(); };
 warn $@ if $@;
 
-sub doit {
+sub non_object_tests {
+
+    my $dbh = DBI->connect( Config('dsn'), Config('db_user'), Config('db_pass') )
+        or die "unable to connect to database: " . $DBI::errstr . "\n";
+
+    my $sanity = NicToolServer::Nameserver::Sanity->new(undef, undef, $dbh);
+
+
+    # _valid_nsname
+    foreach my $bad ( qw/ -bad_ns bad.-domain / ) {
+        $res = $sanity->_valid_nsname( $bad );
+        ok( $res, 0 );
+    };
+    foreach my $good ( qw/ good-ns.tld a.b.c / ) {
+        $res = $sanity->_valid_nsname( $good );
+        ok( $res );
+    };
+
+
+    # _valid_fqdn
+    $res = $sanity->_valid_fqdn( 'host' );
+    ok( $res, 0 );
+    $res = $sanity->_valid_fqdn( 'host.tld.' );
+    ok( $res );
+
+
+    # _valid_chars
+    foreach my $bad ( qw/ bad_ns über / ) {
+        $res = $sanity->_valid_chars( $bad );
+        ok( $res, 0 );
+    };
+    foreach my $good ( qw/ host name valid-ns wooki.tld / ) {
+        $res = $sanity->_valid_chars( $good );
+        ok( $res );
+    };
+
+
+    # _valid_export_type, export_format
+    foreach my $bad ( qw/ cryptic fuzzy yitizg / ) {
+        $res = $sanity->_valid_export_type({ export_format => $bad });
+        ok( $res, 0 );
+    };
+    foreach my $good ( qw/ bind djbdns knot NSD maradns powerdns dynect / ) {
+        $res = $sanity->_valid_export_type({ export_format => $good });
+        ok( $res );
+    };
+
+    # _valid_export_type, export_type_id
+    foreach my $good_id ( 1 .. 8 ) {
+        $res = $sanity->_valid_export_type({ export_type_id => $good_id });
+        ok( $res );
+    }
+    foreach my $bad_id ( -1, 1000 ) {
+        $res = $sanity->_valid_export_type({ export_type_id => $bad_id });
+        ok( $res, 0 );
+    }
+};
+
+sub object_tests {
 
     ####################
     # setup            #
@@ -93,7 +158,7 @@ sub doit {
             and ok( $group2->id, $gid2 );
 
 ####################
-    # new_nameserver   #
+# new_nameserver   #
 ####################
 
     ####################
@@ -281,7 +346,7 @@ sub doit {
         $res = $group1->new_nameserver(
             name          => 'ns.somewhere.com.',
             address       => '1.2.3.4',
-            export_format => $_
+            export_format => $_,
         );
         noerrok( $res, 300, "export_format $_" );
         ok( $res->get('error_msg')  => qr/Invalid export format/ );
@@ -659,7 +724,7 @@ sub doit {
         ok( $res->get('error_desc') => qr/Sanity error/,       "address $_" );
     }
 
-    for (qw(bin djbs DJB BIND NT)) {
+    for ( qw/ bin djbs DJB BIND NT / ) {
 
         #invalid export_format
         $res = $ns1->edit_nameserver( export_format => $_ );
@@ -754,7 +819,7 @@ sub doit {
 
 }
 
-sub del {
+sub cleanup {
 
     ####################
     # delete test nameservers
