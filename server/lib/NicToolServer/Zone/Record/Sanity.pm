@@ -8,10 +8,18 @@ use Net::IP;
 
 sub new_zone_record {
     my ( $self, $data ) = @_;
-    my $error = $self->new_or_edit_basic_verify($data);
-    return $error if $error;
 
-    # do any new_zone_record specific checks here
+    $self->new_or_edit_basic_verify($data);
+
+    # these are only checked for *validity* above (not required for edit).
+    # Here we make sure they're defined.
+    if ($data->{type} eq 'MX' || $data->{type} eq 'SRV') {
+        if (!defined $data->{weight}) { $self->error('weight', 'weight is required'); }
+    };
+    if ($data->{type} eq 'SRV') {
+        if (!defined $data->{priority}) { $self->error('priority', 'priority is required'); }
+        if (!defined $data->{other}) { $self->error('other', 'port is required'); }
+    };
 
     return $self->throw_sanity_error if $self->{errors};
     return $self->SUPER::new_zone_record($data);
@@ -25,17 +33,16 @@ sub edit_zone_record {
     foreach (qw(type address)) {
         $data->{$_} = $zr->{$_} unless exists $data->{$_};
     }
-    my $error = $self->new_or_edit_basic_verify($data);
-    return $error if $error;
+
+    $self->new_or_edit_basic_verify($data);
 
     # do any edit_zone_record specific checks here
-    $self->push_sanity_error( 'nt_zone_record_id',
-        "Cannot edit deleted record!" )
-        if $self->check_object_deleted( 'zonerecord',
-                $data->{nt_zone_record_id} )
-            and $data->{deleted} ne '0';
-    return $self->throw_sanity_error if $self->{errors};
+    if ($self->check_object_deleted( 'zonerecord', $data->{nt_zone_record_id} )
+        && $data->{deleted} ne '0') {
+        $self->error( 'nt_zone_record_id', "Cannot edit deleted record!" );
+    };
 
+    return $self->throw_sanity_error if $self->{errors};
     return $self->SUPER::edit_zone_record($data);
 }
 
@@ -46,8 +53,7 @@ sub new_or_edit_basic_verify {
         $self->error( 'nt_zone_id', 'invalid zone_id' );
 
     if ( $self->check_object_deleted( 'zone', $data->{nt_zone_id} ) ) {
-        $self->push_sanity_error( 'nt_zone_id',
-            "Cannot create/edit records in a deleted zone." );
+        $self->error( 'nt_zone_id', "Cannot create/edit records in a deleted zone." );
     }
 
     my $zone_text = $z->{zone};
@@ -65,18 +71,16 @@ sub new_or_edit_basic_verify {
     $self->_valid_cname($data, $zone_text)   if $data->{type} eq 'CNAME';
     $self->_valid_a($data, $zone_text)       if $data->{type} eq 'A';
     $self->_valid_aaaa($data, $zone_text)    if $data->{type} eq 'AAAA';
-    $self->_valid_srv($data, $zone_text )    if $data->{type} eq 'SRV';
     $self->_valid_ns( $data, $zone_text )    if $data->{type} eq 'NS';
-    $self->_valid_mx( $data, $zone_text )    if $data->{type} eq 'MX';
     $self->_valid_ptr($data, $zone_text )    if $data->{type} eq 'PTR';
+    $self->_valid_srv($data, $zone_text )    if $data->{type} eq 'SRV';
+    $self->_valid_mx( $data, $zone_text )    if $data->{type} eq 'MX';
 
     $self->_name_collision($data, $z);
 
     # check the record's TTL
     $data->{ttl} = 86400 if ( !$data->{ttl} && !$data->{nt_zone_record_id} );
     $self->valid_ttl( $data->{ttl} ) if defined $data->{ttl};
-
-    return $self->throw_sanity_error if $self->{errors};
 }
 
 sub record_exists {
@@ -356,7 +360,9 @@ sub _valid_mx {
 
 # WEIGHT
     # weight must be 16 bit integer
-    $self->valid_16bit_int( 'weight', $data->{weight} );
+    if (defined $data->{weight}) {
+        $self->valid_16bit_int( 'weight', $data->{weight} );
+    }
 
 # ADDRESS
     # MX records must not point to a CNAME
@@ -466,18 +472,18 @@ sub _valid_srv {
     );
 
     foreach my $check ( keys %values_to_check ) {
-        if ( !$self->valid_16bit_int( $check, $data->{$check} ) ) {
-            $self->error( $check,
-                "$values_to_check{$check} is required to be a 16bit integer, see RFC 2782"
-            );
-        }
+        next if ! defined $data->{$check};
+        next if $self->valid_16bit_int( $check, $data->{$check} );
+        $self->error( $check,
+            "$values_to_check{$check} is required to be a 16bit integer, see RFC 2782"
+        );
     }
 
 # ADDRESS
     # SRV records must not point to a CNAME
     if ($self->record_exists( $data->{address}, 'CNAME',
             $data->{nt_zone_id}, $data->{nt_zone_record_id} ) ) {
-        $self->error( 'address', "CNAME records must not point to a CNAME: RFC 2782" );
+        $self->error( 'address', "SRV records must not point to a CNAME: RFC 2782" );
     };
 
     $self->_is_fully_qualified( $data, $zone_text );

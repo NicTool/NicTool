@@ -1130,61 +1130,6 @@ sub valid_label {
     return $has_error == 0 ? 1 : 0;
 };
 
-sub valid_hostname {
-    my $self = shift;
-    my ( $field, $name, $type ) = @_;
-
-    $self->error($field, "missing hostname") if ! defined $name;
-
-    # don't repeat the valid_label tests
-
-    my $has_error = my $depth = 0;
-
-    my $label_explain = "(the bits of a name between the dots)";
-    foreach my $label ( split(/\./, $name) ) {
-
-        $depth++;
-
-        # domain labels can be any binary characters: RFC 2181
-        # but hosts and mail server names have restrictions
-
-        # exceptions to the first/last character rules
-        next if $field eq 'name' && $depth == 1 && $label eq '*';   # wildcards
-        next if $field eq 'zone' && $name =~ /(in-addr|ip6).arpa$/; # reverse
-
-        my $warn_prefix = "when used for host names, domain labels $label_explain ";
-
-        if ( $label =~ /^[\d]+$/ ) {
-            $self->error( $field, "$warn_prefix must not be all numbers: RFC 1912");
-            $has_error++;
-        };
-
-        # RFC 6376 adds a special format for DKIM (thanks Christian Adler)
-        next if $type eq 'TXT' && $field eq 'name' && $label eq '_domainkey';
-
-        # Labels used for host names always begin with a letter: RFC 1035
-        # Labels used for host names must end and begin only with a letter or digit: RFC 1123,1912
-        my $first_char = substr($label, 0,1);
-        if ( $field eq 'name' && $type eq 'SRV' && $first_char eq '_' ) {
-            # except for SRV
-        }
-        elsif ( $type eq 'CNAME' && $first_char eq '_' ) {
-            # CNAME can delegate DMARC records, and perhaps others
-        }
-        elsif ( $first_char =~ /[^a-zA-Z0-9]/ ) {
-            $self->error( $field, "$warn_prefix must begin with a letter or digit: RFC 1912");
-            $has_error++;
-        };
-
-        if ( substr($label, -1,1) !~ /[a-zA-Z0-9]/ ) {
-            $self->error( $field, "$warn_prefix must end with a letter or digit: RFC 1035");
-            $has_error++;
-        };
-    };
-
-    return $has_error == 0 ? 1 : 0;
-};
-
 ### serial number routines
 sub bump_serial {
     my ( $self, $nt_zone_id, $current_serial ) = @_;

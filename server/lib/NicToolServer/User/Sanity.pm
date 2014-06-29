@@ -11,8 +11,7 @@ use Digest::HMAC_SHA1 qw(hmac_sha1_hex);
 sub new_user {
     my ( $self, $data ) = @_;
 
-    $self->push_sanity_error( 'nt_group_id',
-        'Cannot add user to a deleted group!' )
+    $self->error( 'nt_group_id', 'Cannot add user to a deleted group!' )
         if $self->check_object_deleted( 'group', $data->{nt_group_id} );
 
     $self->_valid_username($data);
@@ -26,14 +25,13 @@ sub new_user {
 sub edit_user {
     my ( $self, $data ) = @_;
 
-    $self->push_sanity_error( 'nt_user_id', 'Cannot edit deleted user!' )
+    $self->error( 'nt_user_id', 'Cannot edit deleted user!' )
         if $self->check_object_deleted( 'user', $data->{nt_user_id} );
 
     my $dataobj = $self->get_user($data);
     return $dataobj if $self->is_error_response($dataobj);
 
-    $self->push_sanity_error( 'nt_user_id',
-        'Cannot edit user in a deleted group!' )
+    $self->error( 'nt_user_id', 'Cannot edit user in a deleted group!' )
         if $self->check_object_deleted( 'group', $dataobj->{nt_group_id} );
 
     $self->_valid_email($data)    if exists $data->{email};
@@ -65,8 +63,7 @@ sub move_users {
     foreach ( split( /,/, $data->{user_list} ) ) {
         $me = 1 if $_ eq $self->{user}{nt_user_id};
     }
-    $self->push_sanity_error( 'user_list',
-        'Cannot move yourself to another group!' )
+    $self->error( 'user_list', 'Cannot move yourself to another group!' )
         if $me;
 
     return $self->throw_sanity_error if $self->{errors};
@@ -75,7 +72,7 @@ sub move_users {
 
 sub get_user_list {
     my ( $self, $data ) = @_;
-    $self->push_sanity_error( 'user_list', 'user_list cannot be empty' )
+    $self->error( 'user_list', 'user_list cannot be empty' )
         if $data->{user_list} eq '';
 
     return $self->throw_sanity_error if $self->{errors};

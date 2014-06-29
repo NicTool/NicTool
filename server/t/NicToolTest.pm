@@ -17,12 +17,10 @@ sub nowarn  { $warn = 0 }
 sub yeswarn { $warn = 1 }
 
 sub noerrok {
-    my $obj  = shift;
-    my $code = shift;
-    my $msg  = shift;
+    my ($obj, $code, $msg) = @_;
     $msg  ||= '';
     $code ||= 200;
-    my ( $ec, $em, $ed );
+    my $ec = my $em = my $ed = '';
     if ( ref $obj and $obj->can('error_code') ) {
         $ec = $obj->error_code;
         $em = $obj->error_msg;
@@ -48,10 +46,9 @@ sub noerrok {
         $ec = $em = $ed = '?';
     }
 
-    #stop undef concat warns
-    $ec = '' unless $ec;
-    $em = '' unless $em;
-    $ed = '' unless $ed;
+    $em ||= '';
+    $ec ||= '';
+    $ed ||= '';
     $msg .= "($ec :$em :$ed)";
     return ok( $ec => $code, $msg . " " . join( ":", caller ) );
 }
@@ -123,7 +120,7 @@ sub import {
         eval " use lib '$settings->{'lib'}' ";
     }
 
-    eval " use NicTool ";
+    eval "use NicTool";
     die "Couldn't 'use NicTool'. $@
 Please install the NicTool client library or edit 'test.cfg' to specify its location."
         if $@;

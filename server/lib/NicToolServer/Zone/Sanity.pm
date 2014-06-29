@@ -10,8 +10,7 @@ sub new_zone {
 
     my $user = $data->{user};
 
-    $self->push_sanity_error( 'nt_group_id',
-        'Cannot add zone to a deleted group!' )
+    $self->error( 'nt_group_id', 'Cannot add zone to a deleted group!' )
         if $self->check_object_deleted( 'group', $data->{nt_group_id} );
 
     if ( $data->{zone} =~ /([^\/a-zA-Z0-9\-\._])/ ) {
@@ -71,8 +70,13 @@ sub new_zone {
         }
     }
 
-    $self->valid_mailaddr( 'mailaddr', $data->{mailaddr} );
-    $self->valid_label( 'mailaddr', $data->{mailaddr} );
+    if (!$data->{mailaddr}) {
+        $data->{mailaddr} = 'hostmaster.' . $data->{zone};
+    }
+    else {
+        $self->valid_mailaddr( 'mailaddr', $data->{mailaddr} );
+        $self->valid_label( 'mailaddr', $data->{mailaddr} );
+    }
 
     # check the zone's TTL
     $data->{ttl} ||= 86400;
@@ -88,14 +92,14 @@ sub edit_zone {
 
     my $user = $data->{user};
 
-    $self->push_sanity_error( 'nt_zone_id', 'Cannot edit deleted zone!' )
+    $self->error( 'nt_zone_id', 'Cannot edit deleted zone!' )
         if $self->check_object_deleted( 'zone', $data->{nt_zone_id} )
             and $data->{deleted} ne '0';
 
     my $dataobj = $self->get_zone($data);
     return $dataobj if $self->is_error_response($dataobj);
 
-    $self->push_sanity_error( 'nt_zone_id',
+    $self->error( 'nt_zone_id',
         'Cannot edit zone in a deleted group!' )
         if $self->check_object_deleted( 'group', $dataobj->{nt_group_id} );
 
@@ -121,16 +125,14 @@ sub edit_zone {
 sub move_zones {
     my ( $self, $data ) = @_;
 
-    $self->push_sanity_error( 'nt_group_id',
-        'Cannot move zones to a deleted group!' )
+    $self->error( 'nt_group_id', 'Cannot move zones to a deleted group!' )
         if $self->check_object_deleted( 'group', $data->{nt_group_id} );
 
     if (my @deld = grep { $self->check_object_deleted( 'zone', $_ ) }
         split( /,/, $data->{zone_list} )
         )
     {
-        $self->push_sanity_error( 'nt_zone_id',
-            'Cannot move deleted zones: ' . join( ",", @deld ) );
+        $self->error( 'nt_zone_id', 'Cannot move deleted zones: ' . join( ",", @deld ) );
     }
 
     return $self->throw_sanity_error if $self->{errors};

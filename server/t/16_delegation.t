@@ -1459,7 +1459,7 @@ sub test_zones {
         cache_users  => 0,
         cache_groups => 0,
         server_host  => Config('server_host'),
-        server_port  => Config('server_port')
+        server_port  => Config('server_port'),
     );
     die "Couldn't create NicTool Object" unless ok( ref $tuser2, 'NicTool' );
 
@@ -1475,8 +1475,8 @@ sub test_zones {
     $res = $tuser2->get_zone( nt_zone_id => $zid1 );
     noerrok( $res, 404 );
     ok( $res->error_msg,
-        qr/No Access Allowed to that object \(ZONE : $zid1\)/ );
-    ok( $res->error_desc, qr/Access Permission denied/ );
+        qr/No Access Allowed to that object \(ZONE : $zid1\)/, "get_zone, $zid1" );
+    ok( $res->error_desc, qr/Access Permission denied/, "get_zone, $zid1" );
 
     $res  = $tuser2->get_group_zones;
     $saw1 = 0;

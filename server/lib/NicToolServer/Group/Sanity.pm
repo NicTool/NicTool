@@ -8,7 +8,7 @@ use strict;
 sub new_group {
     my ( $self, $data ) = @_;
 
-    $self->push_sanity_error( 'nt_group_id',
+    $self->error( 'nt_group_id',
         'Cannot add group to a deleted group!' )
         if $self->check_object_deleted( 'group', $data->{nt_group_id} );
 
@@ -44,12 +44,12 @@ sub edit_group {
     my $dataobj = $self->get_group($data);
     return $dataobj if $self->is_error_response($dataobj);
 
-    $self->push_sanity_error( 'nt_group_id',
+    $self->error( 'nt_group_id',
         'Cannot edit group in a deleted group!' )
         if $self->check_object_deleted( 'group',
         $dataobj->{parent_group_id} );
 
-    $self->push_sanity_error( 'nt_group_id', 'Cannot edit a deleted group!' )
+    $self->error( 'nt_group_id', 'Cannot edit a deleted group!' )
         if $self->check_object_deleted( 'group', $data->{nt_group_id} );
 
     if ( exists $data->{name}

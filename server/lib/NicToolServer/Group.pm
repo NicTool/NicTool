@@ -144,7 +144,8 @@ sub edit_group {
 
     #merge the usable nameservers settings
     $sql = "SELECT * from nt_perm WHERE nt_group_id = ?";
-    my $gperms = $self->exec_query( $sql, $data->{nt_group_id} ) or return $self->error_response( 505, $dbh->errstr );
+    my $gperms = $self->exec_query( $sql, $data->{nt_group_id} )
+        or return $self->error_response( 505, $dbh->errstr );
        $gperms = $gperms->[0];
     %$prev_data = ( %$prev_data, map { $_ => $gperms->{$_} } @perms );
 
@@ -154,14 +155,14 @@ sub edit_group {
         my %groupns = map { $_ => 1 } split(/,/, $gperms->{usable_ns} );
 
         foreach my $n ( keys %groupns ) {
-            if ( $userns{$n} || $self->get_access_permission( 'NAMESERVER', $n, 'read' ) ) {
+            delete $groupns{$n} if !$usable{$n};
 
-          #if the user has access to the nameserver
-          #delete it or set it to true according to presence in the data array
-                delete $groupns{$n} unless $usable{$n};
-                $groupns{$n} = 1 if $usable{$n};
-                delete $usable{$n};
-            }
+            next if !$userns{$n};   # no access
+            next if !$self->get_access_permission( 'NAMESERVER', $n, 'read' );
+
+            #delete it or set it to true according to presence in the data array
+            $groupns{$n} = 1 if $usable{$n};
+            delete $usable{$n};
         }
 
         #add the nameservers that weren't present before
@@ -175,7 +176,7 @@ sub edit_group {
             push @newns, $_ if exists $groupns{$_};
             delete $groupns{$_};
         }
-        $data->{usable_ns} = join(',', @newns);
+        $data->{usable_ns} = scalar @newns ? join(',', @newns) : '';
     }
     else {
         return $self->error_response( 507,
@@ -192,7 +193,7 @@ sub edit_group {
         $action = 'modified';
     }
 
-    if ( $data->{usable_ns} ) {
+    if (defined $data->{usable_ns}) {
         $sql = "UPDATE nt_perm SET usable_ns=? WHERE nt_group_id=?";
         $self->exec_query( $sql, [$data->{usable_ns}, $data->{nt_group_id}] )
             or return $self->error_response( 505, $dbh->errstr );

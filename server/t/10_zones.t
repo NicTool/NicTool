@@ -245,7 +245,7 @@ sub doit {
             unless noerrok($res);
     }
 
-    for ( qw{~ ` ! @ $ % ^ & * ( ) _ + = \ | ' " ; : < > / ?},
+    for ( qw{~ ` ! @ $ % ^ & * ( ) + = \ | ' " ; : < > / ?},
         ',', '#', "\n", ' ', qw({ }) )
     {
 
@@ -257,8 +257,8 @@ sub doit {
             nameservers => "$nsid1,$nsid2",
             description => "test delete me",
         );
-        noerrok( $res, 300, "zone thisis${_}atest" );
-        ok( $res->get('error_msg')  => qr/invalid character in zone/ );
+        noerrok( $res, 300, "zone thisis${_}atest.com" );
+        ok( $res->get('error_msg')  => qr/invalid character in zone/, "new_zone, thisis${_}atest.com" );
         ok( $res->get('error_desc') => qr/Sanity error/ );
         if ( !$res->is_error ) {
             $res
@@ -268,40 +268,19 @@ sub doit {
         }
     }
 
-    for (qw(hoop troop-group a0f30-d30)) {
-
-        #not domain name
-        $res = $group1->new_zone(
-            zone        => $_,
-            serial      => 0,
-            ttl         => 86400,
-            nameservers => "$nsid1,$nsid2",
-            description => "test delete me",
-        );
-        noerrok( $res, 300, "zone $_" );
-        ok( $res->get('error_msg')  => qr/Zone must be a valid domain name/ );
-        ok( $res->get('error_desc') => qr/Sanity error/ );
-        if ( !$res->is_error ) {
-            $res
-                = $user->delete_zones( zone_list => $res->get('nt_zone_id') );
-            die "Couldn't delete zone mistake " . $res->get('nt_zone_id')
-                unless noerrok($res);
-        }
-    }
-
-    for (qw(-42 -1 2147483648 grover)) {
+    foreach my $ttl (qw(-42 -1 2147483648 grover)) {
 
         #invalid ttl
         $res = $group1->new_zone(
             zone        => "something.com",
             serial      => 0,
-            ttl         => $_,
+            ttl         => $ttl,
             nameservers => "$nsid1,$nsid2",
             description => "test delete me",
         );
-        noerrok( $res, 300, "ttl $_" );
-        ok( $res->get('error_msg')  => qr/Invalid TTL/ );
-        ok( $res->get('error_desc') => qr/Sanity error/ );
+        noerrok( $res, 300, "ttl $ttl" );
+        ok( $res->get('error_msg')  => qr/Invalid TTL/, "invalid TTL: $ttl" );
+        ok( $res->get('error_desc') => qr/Sanity error/, "invalid TTL: $ttl" );
         if ( !$res->is_error ) {
             $res
                 = $user->delete_zones( zone_list => $res->get('nt_zone_id') );

@@ -62,7 +62,7 @@ sub start {
 
     $user->login(
         username => Config('username'),
-        password => Config('password')
+        password => Config('password'),
     );
     die "Couldn't log in" unless noerrok( $user->result );
     die "Couldn't log in" unless ok( $user->nt_user_session );
@@ -103,7 +103,7 @@ sub start {
 
     $tuser->login(
         username => 'testuser1@test_delete_me1',
-        password => 'testpass'
+        password => 'testpass',
     );
     ok( $tuser->result );
 
@@ -1311,8 +1311,8 @@ sub test_bounds {
         last_name                 => 'me',
         username                  => 'deleteme',
         email                     => 'blah@blog.ug',
-        password                  => 'testing',
-        password2                 => 'testing',
+        password                  => 'testing123',
+        password2                 => 'testing123',
         inherit_group_permissions => 0,
 
     );
@@ -1429,7 +1429,6 @@ sub test_bounds {
             $res = $tuser->new_user( %user, %trueperms, $perm => 1 );
             noerrok($res);
             $uid = $res->get('nt_user_id');
-
         }
         else {
 
@@ -1499,18 +1498,14 @@ sub test_usable_nameservers {
     $group1->refresh;
     noerrok( $user->result );
 
-    foreach ( map( "usable_ns$_", 0 .. 9 ) ) {
-        ok( $group1->get($_), 0, "no usable nameservers" );
-    }
+    ok( $group1->get('usable_ns'), '', "no usable nameservers" );
 
     #check user
 
     $tuser->user->refresh;
     noerrok( $tuser->result );
 
-    foreach ( map( "usable_ns$_", 0 .. 9 ) ) {
-        ok( $tuser->get($_), 0, "no usable nameservers" );
-    }
+    ok( $tuser->get('usable_ns'), '', "no usable nameservers" );
 
     #set usable_nameservers for group
     $res = $group1->edit_group( usable_nameservers => [ 1, 2 ] );
@@ -1519,22 +1514,14 @@ sub test_usable_nameservers {
     $group1->refresh;
     noerrok( $user->result );
 
-    ok( $group1->get("usable_ns0"), 1, "modified usable nameservers" );
-    ok( $group1->get("usable_ns1"), 2, "modified usable nameservers" );
-    foreach ( map( "usable_ns$_", 2 .. 9 ) ) {
-        ok( $group1->get($_), 0, "no usable nameservers" );
-    }
+    ok( $group1->get('usable_ns'), '1,2', "modified usable nameservers" );
 
     #check user
 
     $tuser->user->refresh;
     noerrok( $tuser->result );
 
-    ok( $tuser->get("usable_ns0"), 1, "modified usable nameservers" );
-    ok( $tuser->get("usable_ns1"), 2, "modified usable nameservers" );
-    foreach ( map( "usable_ns$_", 2 .. 9 ) ) {
-        ok( $tuser->get($_), 0, "no usable nameservers" );
-    }
+    ok( $group1->get('usable_ns'), '1,2', "modified usable nameservers" );
 
     #attempt to modify for user
 
@@ -1550,11 +1537,7 @@ sub test_usable_nameservers {
     $tuser->user->refresh;
     noerrok( $tuser->result );
 
-    ok( $tuser->get("usable_ns0"), 1, "modified usable nameservers" );
-    ok( $tuser->get("usable_ns1"), 2, "modified usable nameservers" );
-    foreach ( map( "usable_ns$_", 2 .. 9 ) ) {
-        ok( $tuser->get($_), 0, "no usable nameservers" );
-    }
+    ok( $tuser->get('usable_ns'), '1,2', "modified usable nameservers" );
 
     #modify group settings again
     #empty usable nameservers
@@ -1564,19 +1547,14 @@ sub test_usable_nameservers {
     $group1->refresh;
     noerrok( $user->result );
 
-    foreach ( map( "usable_ns$_", 0 .. 9 ) ) {
-        ok( $group1->get($_), 0, "no usable nameservers" );
-    }
+    ok( $group1->get('usable_ns'), '', "no usable nameservers" );
 
     #check user
 
     $tuser->user->refresh;
     noerrok( $tuser->result );
 
-    foreach ( map( "usable_ns$_", 0 .. 9 ) ) {
-        ok( $tuser->get($_), 0, "no usable nameservers" );
-    }
-
+    ok( $tuser->get('usable_ns'), '', "no usable nameservers" );
 }
 
 sub del {

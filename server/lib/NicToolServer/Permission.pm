@@ -191,17 +191,14 @@ sub delegate_objects {
     #XXX someday move these sanity checks to Permission/Sanity.pm
 
     if ( $data->{nt_group_id} eq $data->{user}{nt_group_id} ) {
-        $self->push_sanity_error( 'nt_group_id',
-            'Cannot delegate to your own group.' );
+        $self->error( 'nt_group_id', 'Cannot delegate to your own group.' );
     }
 
-    $self->push_sanity_error( 'nt_group_id',
-        'Cannot delegate to a deleted group!' )
+    $self->error( 'nt_group_id', 'Cannot delegate to a deleted group!' )
         if $self->check_object_deleted( 'group', $data->{nt_group_id} );
 
     foreach my $id ( split( /,/, $data->{nt_object_id_list} ) ) {
-        $self->push_sanity_error( 'nt_object_id_list',
-            'Cannot delegate deleted objects!' )
+        $self->error( 'nt_object_id_list', 'Cannot delegate deleted objects!' )
             if $self->check_object_deleted( lc( $data->{nt_object_type} ),
                     $id );
     }
@@ -580,12 +577,10 @@ sub edit_object_delegation {
     my $dbh = $self->{dbh};
 
     ##sanity checks
-    $self->push_sanity_error( 'nt_group_id',
-        'Cannot edit delegation to a deleted group!' )
+    $self->error( 'nt_group_id', 'Cannot edit delegation to a deleted group!' )
         if $self->check_object_deleted( 'group', $data->{nt_group_id} );
 
-    $self->push_sanity_error( 'nt_object_id',
-        'Cannot edit delegation of a deleted object!' )
+    $self->error( 'nt_object_id', 'Cannot edit delegation of a deleted object!')
         if $self->check_object_deleted( lc( $data->{nt_object_type} ),
         $data->{nt_object_id} );
     ##end sanity checks
