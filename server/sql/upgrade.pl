@@ -113,6 +113,9 @@ sub _sql_test_2_27 {
 
 sub _sql_2_27 {
     <<EO_SQL_2_27
+ALTER TABLE nt_user ADD COLUMN pass_salt VARCHAR(16) AFTER password;
+ALTER TABLE nt_user_log ADD COLUMN pass_salt VARCHAR(16) AFTER password;
+
 INSERT INTO nt_options
 VALUES (2,'session_timeout','45'),
        (3,'default_group','NicTool');

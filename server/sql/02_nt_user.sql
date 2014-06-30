@@ -24,6 +24,7 @@ CREATE TABLE nt_user(
     last_name           VARCHAR(40),
     username            VARCHAR(50) NOT NULL,
     password            VARCHAR(128) NOT NULL,
+    pass_salt           VARCHAR(16),
     email               VARCHAR(100) NOT NULL,
     is_admin            TINYINT(1) UNSIGNED DEFAULT NULL,
     deleted             TINYINT(1) UNSIGNED DEFAULT 0 NOT NULL,
@@ -45,6 +46,7 @@ CREATE TABLE nt_user_log(
     last_name          VARCHAR(40),
     username           VARCHAR(50),
     password           VARCHAR(128),
+    pass_salt          VARCHAR(16),
     email              VARCHAR(100)
 ) DEFAULT CHARSET=utf8 COLLATE=utf8_bin ROW_FORMAT=COMPRESSED;
 

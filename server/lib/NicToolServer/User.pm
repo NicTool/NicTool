@@ -2,13 +2,14 @@ package NicToolServer::User;
 # ABSTRACT: NicTool user management
 
 use strict;
-use Digest::HMAC_SHA1 qw(hmac_sha1_hex);
+use Crypt::Mac::HMAC;
+use Crypt::KeyDerivation;
 
 @NicToolServer::User::ISA = 'NicToolServer';
 
 sub perm_fields_select {
     qq/
-    nt_perm.group_write, 
+    nt_perm.group_write,
     nt_perm.group_create,
     nt_perm.group_delete,
 
@@ -21,7 +22,7 @@ sub perm_fields_select {
     nt_perm.zonerecord_create,
     nt_perm.zonerecord_delegate,
     nt_perm.zonerecord_delete,
-    
+
     nt_perm.user_write,
     nt_perm.user_create,
     nt_perm.user_delete,
@@ -47,60 +48,40 @@ sub perm_fields {
 sub get_user {
     my ( $self, $data ) = @_;
 
-    my $sql = "SELECT * FROM nt_user WHERE nt_user_id = ?";
-    my $users = $self->exec_query( $sql, $data->{nt_user_id} )
-        or return {
-        error_code => 600,
-        error_msg  => $self->{dbh}->errstr,
-        };
+    my $err;
+    ($err, my $user) = $self->select_user($data->{nt_user_id});
+    return $err if $err;
 
-    my %rv = (
-        error_code => 200,
-        error_msg  => 'OK',
-        %{ $users->[0] },
-    );
+    my %rv = ( error_code => 200, error_msg  => 'OK', %$user );
 
     $rv{password} = '' if exists $rv{password};
 
-    $sql = "SELECT " . $self->perm_fields_select
-        . " FROM nt_perm WHERE deleted=0"
-        . " AND nt_user_id = ?";
-    my $perms = $self->exec_query( $sql, $data->{nt_user_id} )
-        or return $self->error_response( 505, $self->{dbh}->errstr );
+    ($err, my $user_perm) = $self->_select_user_perm($data->{nt_user_id});
+    return $err if $err;
 
-    my $perm = $perms->[0];
+    ($err, my $group_perm) = $self->_select_group_perm($data->{nt_user_id});
+    return $err if $err;
 
-    $sql = "SELECT " . $self->perm_fields_select
-        . " FROM nt_perm"
-        . " INNER JOIN nt_user ON nt_perm.nt_group_id = nt_user.nt_group_id "
-        . " WHERE ( nt_perm.deleted=0 "
-        . " AND nt_user.deleted=0 "
-        . " AND nt_user.nt_user_id = ?)";
-    $perms = $self->exec_query( $sql, $data->{nt_user_id} )
-        or return $self->error_response( 505, $self->{dbh}->errstr );
-    my $groupperm = $perms->[0];
-
-    if ( !$perm ) {
-        $perm = $groupperm;
-        $perm->{inherit_group_permissions} = 1;
+    if ( !$user_perm ) {
+        $user_perm = $group_perm;
+        $user_perm->{inherit_group_permissions} = 1;
     }
     else {
-        $perm->{inherit_group_permissions} = 0;
+        $user_perm->{inherit_group_permissions} = 0;
 
         #usable_ns settings are always inherited from the group
-        $perm->{usable_ns} = $groupperm->{usable_ns};
+        $user_perm->{usable_ns} = $group_perm->{usable_ns};
     }
-    if ( !$perm ) {
+    if ( !$user_perm ) {
         return $self->error_response( 507,
                   "Could not find permissions for user ("
                 . $data->{nt_user_id}
                 . ")" );
     }
-    $self->clean_perm_data($perm);
+    $self->clean_perm_data($user_perm);
 
-    #@rv{sort keys %$perm} = @{$perm}{sort keys %$perm};
-    foreach ( keys %$perm ) {
-        $rv{$_} = $$perm{$_};
+    foreach ( keys %$user_perm ) {
+        $rv{$_} = $$user_perm{$_};
     }
 
     return \%rv;
@@ -114,8 +95,7 @@ sub new_user {
 
     my @columns = qw/nt_group_id first_name last_name username email password/;
 
-    # RCC - use hmac to store the password using the username as a key
-    $data->{password} = hmac_sha1_hex( $data->{password}, lc($data->{username}) );
+    $data->{password} = $self->get_sha1_hash($data->{password}, $data->{username});
 
     my $sql
         = "INSERT INTO nt_user("
@@ -174,8 +154,7 @@ sub edit_user {
         && exists $data->{username} && $data->{username} ne '' ) {
         push @columns, 'password';
 
-        # RCC - use hmac to store the password using the username as a key
-        $data->{password} = hmac_sha1_hex( $data->{password}, lc($data->{username}) );
+        $data->{password} = $self->get_sha1_hash($data->{password}, $data->{username});
     }
 
     my ( $sql, $action );
@@ -375,9 +354,9 @@ sub get_group_users {
 
     my $r_data = { 'error_code' => 200, 'error_msg' => 'OK', list => [] };
 
-    my $sql = "SELECT COUNT(*) AS count FROM nt_user 
-    INNER JOIN nt_group ON nt_user.nt_group_id = nt_group.nt_group_id 
-    WHERE nt_user.deleted=0 
+    my $sql = "SELECT COUNT(*) AS count FROM nt_user
+    INNER JOIN nt_group ON nt_user.nt_group_id = nt_group.nt_group_id
+    WHERE nt_user.deleted=0
       AND nt_user.nt_group_id IN("
         . join( ',', @group_list ) . ")"
         . ( @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
@@ -391,7 +370,7 @@ sub get_group_users {
 
     return $r_data if $r_data->{total} == 0;
 
-    $sql = "SELECT nt_user.nt_user_id, 
+    $sql = "SELECT nt_user.nt_user_id,
                nt_user.username,
                nt_user.first_name,
         	   nt_user.last_name,
@@ -400,7 +379,7 @@ sub get_group_users {
         	   nt_group.name as group_name
         FROM nt_user
         INNER JOIN nt_group ON nt_user.nt_group_id = nt_group.nt_group_id
-        WHERE nt_user.deleted=0 
+        WHERE nt_user.deleted=0
         AND nt_group.nt_group_id IN("
         . join( ',', @group_list ) . ") ";
     $sql .= 'AND (' . join( ' ', @$conditions ) . ') ' if @$conditions;
@@ -437,8 +416,8 @@ sub move_users {
     my $new_group
         = $self->NicToolServer::Group::find_group( $data->{nt_group_id} );
 
-    my $sql = "SELECT nt_user.*, nt_group.name as old_group_name 
-        FROM nt_user, nt_group 
+    my $sql = "SELECT nt_user.*, nt_group.name as old_group_name
+        FROM nt_user, nt_group
         WHERE nt_user.nt_group_id = nt_group.nt_group_id AND nt_user_id IN("
         . $data->{user_list} . ")";
     my $users = $self->exec_query($sql)
@@ -537,8 +516,8 @@ sub get_user_global_log {
 
     my $dbh = $self->{dbh};
 
-    my $sql = "SELECT COUNT(*) AS count FROM nt_user_global_log, nt_user 
-    WHERE nt_user_global_log.nt_user_id = nt_user.nt_user_id 
+    my $sql = "SELECT COUNT(*) AS count FROM nt_user_global_log, nt_user
+    WHERE nt_user_global_log.nt_user_id = nt_user.nt_user_id
         AND nt_user.nt_user_id = "
         . $dbh->quote( $data->{nt_user_id} ) . " "
         . ( @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
@@ -552,7 +531,7 @@ sub get_user_global_log {
         return $r_data;
     }
 
-    $sql = "SELECT nt_user_global_log.* FROM nt_user_global_log, nt_user 
+    $sql = "SELECT nt_user_global_log.* FROM nt_user_global_log, nt_user
         WHERE nt_user_global_log.nt_user_id = nt_user.nt_user_id AND nt_user.nt_user_id = "
         . $dbh->quote( $data->{nt_user_id} ) . " ";
     $sql .= 'AND (' . join( ' ', @$conditions ) . ') ' if @$conditions;
@@ -629,11 +608,88 @@ sub log_user {
     $self->exec_query($sql);
 }
 
-sub find_user {
-    my ( $self, $nt_user_id ) = @_;
-    my $sql = "SELECT * FROM nt_user WHERE nt_user_id = ?";
-    my $users = $self->exec_query( $sql, $nt_user_id );
-    return $users->[0] || {};
+sub valid_password {
+    my ($self, $attempt, $db_pass, $user, $salt) = @_;
+
+    if ( $salt ) {
+        my $hashed = unpack("H*", Crypt::KeyDerivation::pbkdf2($attempt, $salt, 5000, 'SHA512'));
+        return 0 if $hashed ne $db_pass;       # hash mismatch, fail!
+        return 1;                              # success
+    };
+
+    # RCC - Handle HMAC SHA-1 passwords
+    if ( $db_pass =~ /[0-9a-f]{40}/ ) {        # DB has HMAC SHA-1 hash
+        # hash the attempt, salted with the lower-cased username
+        my $hashed = $self->get_sha1_hash($attempt, $user);
+        return 0 if $hashed ne $db_pass;       # fail if hash mismatch
+        return 1;                              # attempt successful
+    }
+
+    return 0 if $attempt ne $db_pass;          # plain password
+    return 1;
+};
+
+sub select_user {
+    my ( $self, $uid ) = @_;
+
+    my $users = $self->exec_query(
+        "SELECT * FROM nt_user WHERE nt_user_id = ?", $uid )
+        or return {
+        error_code => 600,
+        error_msg  => $self->{dbh}->errstr,
+        };
+
+    return (undef, $users->[0] || {});
+}
+
+sub _select_user_perm {
+    my ($self, $uid) = @_;
+
+    my $r = $self->exec_query(
+    "SELECT " . $self->perm_fields_select . " FROM nt_perm
+     WHERE deleted=0
+       AND nt_user_id = ?", $uid )
+        or return $self->error_response( 505, $self->{dbh}->errstr );
+    return (undef, $r->[0]);
+};
+
+sub _select_group_perm {
+    my ($self, $uid) = @_;
+
+    my $r = $self->exec_query(
+    "SELECT " . $self->perm_fields_select . " FROM nt_perm
+     INNER JOIN nt_user ON nt_perm.nt_group_id = nt_user.nt_group_id
+       WHERE ( nt_perm.deleted=0
+        AND nt_user.deleted=0
+        AND nt_user.nt_user_id = ?)", $uid )
+    or return $self->error_response( 505, $self->{dbh}->errstr );
+
+    return (undef, $r->[0]);
+};
+
+sub get_sha1_hash {
+    my ($self, $pass, $user) = @_;
+    return Crypt::Mac::HMAC::hmac_hex( 'SHA1', lc($user), $pass);
+    # RCC - use hmac to store the password using the username as a key
+    #use Digest::HMAC_SHA1;
+    #return Digest::HMAC_SHA1::hmac_sha1_hex( $pass, lc($user) );
+};
+
+sub get_pbkdf2_hash {
+    my ($self, $pass, $salt) = @_;
+    $self ||= $self->_get_salt(16);
+    return unpack("H*", Crypt::KeyDerivation::pbkdf2($pass, $salt, 5000, 'SHA512'));
+}
+
+sub _get_salt {
+    my $self = shift;
+    my $length = shift || 16;
+    my $chars = join('', map chr, 40..126); # ASCII 40-126
+    my $salt;
+    for ( 0..($length-1) ) {
+        $salt .= substr($chars, rand((length $chars) - 1),1);
+    };
+    return $salt;
 }
 
 1;

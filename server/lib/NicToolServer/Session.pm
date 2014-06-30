@@ -3,9 +3,8 @@ package NicToolServer::Session;
 
 use strict;
 use warnings;
-use Digest::HMAC_SHA1 'hmac_sha1_hex';
 
-@NicToolServer::Session::ISA = 'NicToolServer';
+@NicToolServer::Session::ISA = qw/NicToolServer NicToolServer::User/;
 
 sub debug_session_sql {0}
 
@@ -42,41 +41,24 @@ sub verify_login {
     return $self->auth_error('invalid group(s)')
         if !$self->populate_groups;    # sets $data->nt_group_id
 
-# nt_user_id|nt_group_id|first_name|last_name|username|password|email      |is_admin|deleted|groupname|
-#         1 |         1 | Root     | User    | root   |50aaa...|user@domain|    NULL|      0|NicTool  |
-    my $sql = "SELECT nt_user.*, nt_group.name AS groupname
-    FROM nt_user, nt_group
-    WHERE nt_user.nt_group_id = nt_group.nt_group_id
-      AND nt_user.deleted=0
-      AND nt_user.nt_group_id IN (" . join( ',', @{ $data->{groups} } ) . ")
-      AND nt_user.username = ?";
+    my ($err, $user) = $self->_get_user($data->{username}, $data->{groups});
+    return $err if $err;
 
-    my $users = $self->exec_query( $sql, $data->{username} )
-        or return $self->error_response( 505, $dbh->errstr );
+    my $pass_attempt = delete $data->{password};
 
-    return $self->auth_error('no such username') if scalar @$users == 0;
-    return $self->auth_error('invalid username') if scalar @$users  > 1;
-
-    my $attempted_pass = $data->{password};
-    delete $data->{password};
-
-    $data->{user} = $users->[0];
-
-    # RCC - Handle HMAC passwords
-    if ( $data->{user}{password} =~ /[0-9a-f]{40}/ ) {
-        $attempted_pass = hmac_sha1_hex( $attempted_pass, lc($data->{username}) );
-    }
+    $data->{user} = $user;
 
     return $self->auth_error('invalid password')
-        if $attempted_pass ne $data->{user}{password};
+        if (! $self->valid_password( $pass_attempt, $user->{password},
+              $data->{username}, $user->{pass_salt} ));
 
     $self->clean_user_data;
 
-    $data->{user}{nt_user_session} = $self->session_id;
+    $user->{nt_user_session} = $self->session_id;
 
-    my $uid = $data->{user}{nt_user_id};
+    my $uid = $user->{nt_user_id};
 
-    my ($err, $user_perm, $groupperm);
+    my ($user_perm, $groupperm);
     ($err, $user_perm) = $self->_get_user_perms($uid);
     return $err if $err;
     ($err, $groupperm) = $self->_get_group_perms($uid);
@@ -104,7 +86,7 @@ sub verify_login {
         $data->{user}{$_} = $user_perm->{$_};
     }
 
-    my $session = $data->{user}{nt_user_session};
+    my $session = $user->{nt_user_session};
     my $session_id = $self->exec_query(
         'INSERT INTO nt_user_session(nt_user_id, nt_user_session,
             last_access) VALUES (??)',
@@ -115,6 +97,36 @@ sub verify_login {
 
     return 0;
 }
+
+sub _get_user {
+    my ($self, $user, $groups) = @_;
+
+# nt_user_id|nt_group_id|first_name|last_name|username|password|email      |is_admin|deleted|groupname|
+#         1 |         1 | Root     | User    | root   |50aaa...|user@domain|    NULL|      0|NicTool  |
+    my $sql = "SELECT nt_user.*, nt_group.name AS groupname
+    FROM nt_user, nt_group
+    WHERE nt_user.nt_group_id = nt_group.nt_group_id
+      AND nt_user.deleted=0
+      AND nt_user.nt_group_id IN (" . join( ',', @$groups ) . ")
+      AND nt_user.username = ?";
+
+    my $users = $self->exec_query( $sql, $user )
+        or return $self->error_response( 505, $self->{dbh}->errstr );
+
+    return $self->auth_error('no such username') if scalar @$users == 0;
+    return $self->auth_error('invalid username') if scalar @$users  > 1;
+    return (undef, $users->[0]);
+};
+
+sub _get_user_perms {
+    my ($self, $nt_uid) = @_;
+
+    my $perms = $self->exec_query(
+        "SELECT * FROM nt_perm WHERE deleted=0 AND nt_user_id = ?",
+        $nt_uid
+    ) or return $self->error_response( 505, $self->{dbh}->errstr );
+    return (undef, $perms->[0]);
+};
 
 sub _get_group_perms {
     my ($self, $nt_uid) = @_;
@@ -128,16 +140,6 @@ sub _get_group_perms {
            )";
     my $perms = $self->exec_query( $sql, $nt_uid )
         or return $self->error_response( 505, $self->{dbh}->errstr );
-    return (undef, $perms->[0]);
-};
-
-sub _get_user_perms {
-    my ($self, $nt_uid) = @_;
-
-    my $perms = $self->exec_query(
-        "SELECT * FROM nt_perm WHERE deleted=0 AND nt_user_id = ?",
-        $nt_uid
-    ) or return $self->error_response( 505, $self->{dbh}->errstr );
     return (undef, $perms->[0]);
 };
 

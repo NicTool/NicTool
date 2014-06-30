@@ -2,8 +2,6 @@ package NicToolServer::User::Sanity;
 # ABSTRACT: sanity tests for nictool users
 
 use strict;
-use Data::Dumper;
-use Digest::HMAC_SHA1 qw(hmac_sha1_hex);
 
 @NicToolServer::User::Sanity::ISA = 'NicToolServer::User';
 
@@ -40,13 +38,15 @@ sub edit_user {
     if ( exists $data->{password} && $data->{password} ne '' ) {
 
         if ( ! $data->{user}{is_admin} ) {  # logged in user (not form user)
-            unless ( exists $data->{current_password}
-                && $self->_check_current_password($data) )
-            {
-                $self->error('current_password',
-                    "You must enter the correct current password to set a new one."
-                );
-                #$self->error('current_password', Data::Dumper::Dumper($data) );
+            if (! exists $data->{current_password} ) {
+                $self->error('current_password', "Current password is required.");
+            }
+            elsif ( $self->valid_password(
+                    $data->{current_password},
+                    $dataobj->{password},
+                    $dataobj->{username},
+                    $dataobj->{pass_salt})) {
+                $self->error('current_password', "Current password is incorrect.");
             }
         };
 
@@ -98,34 +98,15 @@ sub get_user_global_log {
 }
 
 ### private methods
-sub _check_current_password {
-    my ( $self, $data ) = @_;
-
-    my $sql   = "SELECT password,username FROM nt_user WHERE nt_user_id = ?";
-    my $users = $self->exec_query( $sql, $data->{nt_user_id} );
-    my $user  = $users->[0];
-
-    my ( $db_pass, $db_user ) = ( $user->{password}, $user->{username} );
-
-    # RCC - Handle HMAC passwords
-    if ( $db_pass =~ /[0-9a-f]{40}/ ) {    # it's a hash
-        $data->{current_password}
-            = hmac_sha1_hex( $data->{current_password}, lc($db_user) );
-    }
-
-    return $db_pass eq $data->{current_password} ? 1 : 0;
-}
-
 sub _username_exists {
     my ( $self, $data ) = @_;
 
     my ( $sql, $groups );
 
     if ( exists $data->{nt_user_id} ) {
-        $sql
-            = "SELECT name FROM nt_group INNER JOIN nt_user "
-            . "ON nt_user.nt_group_id=nt_group.nt_group_id "
-            . "WHERE nt_user.nt_user_id = ?";
+        $sql = "SELECT name FROM nt_group
+        INNER JOIN nt_user ON nt_user.nt_group_id=nt_group.nt_group_id
+          WHERE nt_user.nt_user_id = ?";
         $groups = $self->exec_query( $sql, $data->{nt_user_id} );
     }
     else {

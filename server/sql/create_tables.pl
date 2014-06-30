@@ -17,9 +17,9 @@
 #
 
 use strict;
+use Crypt::KeyDerivation;
 use DBI;
 use English;
-use Digest::HMAC_SHA1 qw(hmac_sha1_hex);
 $|++;
 my $test_run = $ARGV[0] eq '-test';
 
@@ -45,7 +45,9 @@ my $nt_root_email;
 while(!$nt_root_email){
     $nt_root_email = answer("the NicTool 'root' users email address", $nt_root_email);
 }
-my $nt_root_pw = hmac_sha1_hex(get_password("the NicTool user 'root'"), 'root' );
+my $clear_pass = get_password("the NicTool user 'root'");
+my $salt = _get_salt(16);
+my $pass_hash = unpack("H*", Crypt::KeyDerivation::pbkdf2($clear_pass, $salt, 5000, 'SHA512'));
 
 print qq{\n
 Beginning table creation.
@@ -59,7 +61,8 @@ user: $db_user
 
 NICTOOL LOGIN: https://$db_host/index.cgi
 user :  root
-pass :  ************
+salt :  $salt
+pass :  encrypted as: $pass_hash
 email:  $nt_root_email
 -------------------------
 Otherwise, hit return to continue...
@@ -89,12 +92,12 @@ foreach my $sql (@sql_files) {
 }
 
 $dbh->do("
-INSERT INTO $db.nt_user(nt_group_id, first_name, last_name, username, password, email)
-VALUES (1, 'Root', 'User', 'root', '$nt_root_pw', '$nt_root_email')");
+INSERT INTO $db.nt_user(nt_group_id, first_name, last_name, username, password, pass_salt, email)
+VALUES (1, 'Root', 'User', 'root', '$pass_hash', '$salt', '$nt_root_email')");
 $dbh->do("
 INSERT INTO $db.nt_user_log(nt_group_id, nt_user_id, action, timestamp,
   modified_user_id, first_name, last_name, username, password, email)
-VALUES (1,1,'added', UNIX_TIMESTAMP(), 0, 'Root', 'User', 'root', '$nt_root_pw', '$nt_root_email')");
+VALUES (1,1,'added', UNIX_TIMESTAMP(), 0, 'Root', 'User', 'root', '$pass_hash', '$nt_root_email')");
 $dbh->do("
 INSERT INTO $db.nt_user_global_log(nt_user_id, timestamp, action, object,
   object_id, log_entry_id, title, description)
@@ -187,7 +190,8 @@ sub get_password {
         };
     }
     return $answer;
-}
+};
+
 sub get_sql_files {
     my @r;
     opendir(DIR, '.') || die "unable to open dir: $!\n";
@@ -203,3 +207,14 @@ sub get_sql_files {
     };
     return @r;
 };
+
+sub _get_salt {
+    my $self = shift;
+    my $length = shift || 16;
+    my $chars = join('', map chr, 40..126); # ASCII 40-126
+    my $salt;
+    for ( 0..($length-1) ) {
+        $salt .= substr($chars, rand((length $chars) - 1),1);
+    };
+    return $salt;
+}
