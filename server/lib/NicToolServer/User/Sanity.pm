@@ -5,7 +5,7 @@ use strict;
 use Data::Dumper;
 use Digest::HMAC_SHA1 qw(hmac_sha1_hex);
 
-@NicToolServer::User::Sanity::ISA = qw(NicToolServer::User);
+@NicToolServer::User::Sanity::ISA = 'NicToolServer::User';
 
 ### public methods
 sub new_user {

@@ -3,7 +3,7 @@ package NicToolServer::Group;
 
 use strict;
 
-@NicToolServer::Group::ISA = qw(NicToolServer);
+@NicToolServer::Group::ISA = 'NicToolServer';
 
 sub perm_fields_select {
     qq(

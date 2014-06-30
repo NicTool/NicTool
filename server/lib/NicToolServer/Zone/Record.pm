@@ -3,7 +3,7 @@ package NicToolServer::Zone::Record;
 
 use strict;
 
-@NicToolServer::Zone::Record::ISA = qw(NicToolServer::Zone);
+@NicToolServer::Zone::Record::ISA = 'NicToolServer::Zone';
 
 sub new_zone_record {
     my ( $self, $data ) = @_;

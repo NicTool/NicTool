@@ -3,7 +3,7 @@ package NicToolServer::Client::SOAP;
 
 use strict;
 
-@NicToolServer::Client::SOAP::ISA = qw(NicToolServer::Client);
+@NicToolServer::Client::SOAP::ISA = 'NicToolServer::Client';
 
 sub new {
     my ( $class, $data ) = @_;

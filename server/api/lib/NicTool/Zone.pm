@@ -86,7 +86,7 @@ and the 'nt_group_id' parameter will be supplied automatically.
 =cut
 
 use NicTool::DBObject;
-our @ISA = qw(NicTool::DBObject);
+our @ISA = 'NicTool::DBObject';
 
 sub _id_name {'nt_zone_id'}
 

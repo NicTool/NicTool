@@ -3,7 +3,7 @@ package NicToolServer::Group::Sanity;
 
 use strict;
 
-@NicToolServer::Group::Sanity::ISA = qw(NicToolServer::Group);
+@NicToolServer::Group::Sanity::ISA = 'NicToolServer::Group';
 
 sub new_group {
     my ( $self, $data ) = @_;

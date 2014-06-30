@@ -3,7 +3,7 @@ package NicToolServer::Permission;
 
 use strict;
 
-@NicToolServer::Permission::ISA = qw(NicToolServer);
+@NicToolServer::Permission::ISA = 'NicToolServer';
 
 sub delegate_fields_perm {
     qw(

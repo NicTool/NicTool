@@ -23,7 +23,7 @@ package NicTool::Transport::SOAP;
 use SOAP::Lite;
 use Data::Dumper;
 
-our @ISA = qw(NicTool::Transport);
+our @ISA = 'NicTool::Transport';
 
 sub send_request {
     my $self = shift;

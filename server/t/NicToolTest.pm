@@ -5,7 +5,7 @@ use strict;
 use warnings;
 
 require Exporter;
-our @ISA    = qw(Exporter);
+our @ISA    = 'Exporter';
 our @EXPORT = qw(diffhtok noerrok errtext nowarn yeswarn);
 
 use Test;

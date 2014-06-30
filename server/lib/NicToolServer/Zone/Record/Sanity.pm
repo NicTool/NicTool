@@ -4,7 +4,7 @@ package NicToolServer::Zone::Record::Sanity;
 use strict;
 use Net::IP;
 
-@NicToolServer::Zone::Record::Sanity::ISA = qw(NicToolServer::Zone::Record);
+@NicToolServer::Zone::Record::Sanity::ISA = 'NicToolServer::Zone::Record';
 
 sub new_zone_record {
     my ( $self, $data ) = @_;

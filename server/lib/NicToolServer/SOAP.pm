@@ -5,7 +5,7 @@ use strict;
 use NicToolServer::Client::SOAP;
 use vars qw/ $AUTOLOAD /;
 
-@NicToolServer::SOAP::ISA = qw(NicToolServer);
+@NicToolServer::SOAP::ISA = 'NicToolServer';
 
 sub _dispatch {
     my ( $class, $action, $data ) = @_;

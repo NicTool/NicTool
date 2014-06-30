@@ -23,7 +23,7 @@ error and what the error code and message are.
 use strict;
 use NicTool::NTObject;
 
-our @ISA = qw(NicTool::NTObject);
+our @ISA = 'NicTool::NTObject';
 
 =head1 METHODS
 

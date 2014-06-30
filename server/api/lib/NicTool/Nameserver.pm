@@ -19,7 +19,7 @@
 
 package NicTool::Nameserver;
 use NicTool::DBObject;
-our @ISA = qw(NicTool::DBObject);
+our @ISA = 'NicTool::DBObject';
 
 sub _id_name {'nt_nameserver_id'}
 

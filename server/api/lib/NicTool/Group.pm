@@ -139,7 +139,7 @@ Returns a B<NicTool::List> containing B<NicTool::Record> objects.
 =cut
 
 use NicTool::DBObject;
-our @ISA = qw(NicTool::DBObject);
+our @ISA = 'NicTool::DBObject';
 
 sub _id_name {'nt_group_id'}
 

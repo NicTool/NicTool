@@ -109,7 +109,7 @@ use NicTool;
 use NicTool::Result;
 use Data::Dumper;
 
-our @ISA = qw(NicTool::Result);
+our @ISA = 'NicTool::Result';
 my $iterate = sub {
     my $self = shift;
     my $i    = $self->{iterator};

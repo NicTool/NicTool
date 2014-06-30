@@ -6,7 +6,7 @@ use APR::Table();
 use RPC::XML;
 use RPC::XML::Parser;
 
-@NicToolServer::Client::ISA = qw(NicToolServer);
+@NicToolServer::Client::ISA = 'NicToolServer';
 
 sub new {
     my $class = shift;

@@ -4,7 +4,7 @@ package NicToolServer::Response;
 use strict;
 use RPC::XML;
 
-@NicToolServer::Response::ISA = qw(NicToolServer);
+@NicToolServer::Response::ISA = 'NicToolServer';
 
 use mod_perl;
 use constant MP2 => $mod_perl::VERSION >= 1.99;

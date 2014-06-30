@@ -25,7 +25,7 @@ use RPC::XML;
 use RPC::XML::Parser;
 use LWP;
 
-our @ISA = qw(NicTool::Transport);
+our @ISA = 'NicTool::Transport';
 
 sub send_request {
     my $self = shift;
