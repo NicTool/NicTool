@@ -30,9 +30,9 @@ sub postflight {
 
 sub update_knot_include {
     my ($self, $dir) = @_;
-#   if ( $self->{nte}->incremental ) {
-#       return $self->update_knot_include_incremental( $dir );
-#   };
+    if ( $self->{nte}->incremental ) {
+        return $self->update_knot_include_incremental( $dir );
+    };
 # full export, write a new include  file
     my $datadir = $self->{nte}->get_export_data_dir || $dir;
     my $fh = $self->get_export_file( 'knot.conf.nictool', $dir );
@@ -40,6 +40,48 @@ sub update_knot_include {
         print $fh qq[$zone { file "$datadir/$zone"; }\n];
     };
     close $fh;
+    return 1;
+};
+
+sub update_knot_include_incremental {
+    my ($self, $dir) = @_;
+
+# check that the zone(s) modified since our last export are in the
+# include file, else append it.
+#
+# there's likely to be more lines in the include file than zones to append
+# build a lookup table of changed zones and pass through the file once
+    my $to_add = $self->get_changed_zones( $dir );
+    my $file   = "$dir/knot.conf.nictool";
+
+    my $in = IO::File->new($file, '<') or do {
+            warn "unable to read $file\n";
+            return;
+        };
+
+    my $out = IO::File->new("$file.tmp", '>') or do {
+            warn "unable to append $file.tmp\n";
+            return;
+        };
+
+# simerson.net { file "/var/db/knot/simerson.net"; }
+    while ( my $line = <$in> ) {
+        my ($zone) = split /\s/, $line;
+        if ( $to_add->{$zone} ) {
+            delete $to_add->{$zone};   # exists, remove from add list
+        };
+        if ( ! $self->{nte}{zones_deleted}{$zone} ) {
+            $out->print( $line );
+        };
+    };
+    $in->close;
+
+    foreach my $key ( keys %$to_add ) {
+        $out->print( $to_add->{$key} );
+    };
+    $out->close;
+    unlink $file;
+    File::Copy::move("$file.tmp", $file);
     return 1;
 };
 
