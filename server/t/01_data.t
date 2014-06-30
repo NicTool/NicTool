@@ -119,7 +119,7 @@ ok( $r == $year.$month.$day.'00', "bump_serial, 'new'");
 
 
 foreach my $opt ( qw/ db_version session_timeout default_group / ) {
-    ok( $nts->get_option($_), "get_option, $_");
+    ok( $nts->get_option($opt), "get_option, $opt");
 }
 
 #$r = $nts->is_subgroup(1,320);

@@ -2,6 +2,7 @@ Revision history for NicToolServer
 
 2.27    2014.07.
 
+    * changed password format from SHA-1 to PBKFD2
     * sql: added nt_user.pass_salt
     * NicToolServer::Session, refactoring and reduction of duplicated code
       and a fix for PR#47

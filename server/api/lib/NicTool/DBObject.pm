@@ -43,7 +43,7 @@ use strict;
 use NicTool::Result;
 use Carp;
 
-our @ISA = 'NicTool::Result;
+our @ISA = 'NicTool::Result';
 
 =item _api
 

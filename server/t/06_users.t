@@ -438,9 +438,8 @@ sub doit {
     #change password no old password
     $res = $user1->edit_user( password => 'another', password2 => 'another' );
     noerrok( $res, 300 );
-    ok( $res->get('error_msg') =>
-            qr/You must enter the correct current password/ );
-    ok( $res->get('error_desc') => qr/Sanity error/ );
+    ok( $res->get('error_msg') => qr/Current password/, "edit_user, no previous" );
+    ok( $res->get('error_desc') => qr/Sanity error/, "edit_user" );
 
     #change password bad old password
     $res = $user1->edit_user(
@@ -449,8 +448,7 @@ sub doit {
         password2        => 'another'
     );
     noerrok( $res, 300 );
-    ok( $res->get('error_msg') =>
-            qr/You must enter the correct current password/ );
+    ok( $res->get('error_msg') => qr/Current password/, "edit_user, wrong" );
     ok( $res->get('error_desc') => qr/Sanity error/ );
 
     #change password blank old password
@@ -460,8 +458,7 @@ sub doit {
         password2        => 'another'
     );
     noerrok( $res, 300 );
-    ok( $res->get('error_msg') =>
-            qr/You must enter the correct current password/ );
+    ok( $res->get('error_msg') => qr/Current password/ );
     ok( $res->get('error_desc') => qr/Sanity error/ );
 
     #change password too small
@@ -471,8 +468,7 @@ sub doit {
         password2        => 'ano'
     );
     noerrok( $res, 300 );
-    ok( $res->get('error_msg') =>
-            qr/Password too short, must be 8-30 characters long./ );
+    ok( $res->get('error_msg') => qr/too short/ );
     ok( $res->get('error_desc') => qr/Sanity error/ );
 
     #change password mismatched
@@ -482,7 +478,7 @@ sub doit {
         password2        => 'other'
     );
     noerrok( $res, 300 );
-    ok( $res->get('error_msg')  => qr/Passwords must match/ );
+    ok( $res->get('error_msg')  => qr/must match/ );
     ok( $res->get('error_desc') => qr/Sanity error/ );
 
     #username already taken
