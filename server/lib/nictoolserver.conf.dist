@@ -2,7 +2,6 @@
 
 use Apache::DBI();
 use Apache::SOAP;
-#use Apache2::SOAP;  # might be needed on systems where Apache::SOAP is stale
 use DBIx::Simple;
 use XML::Parser;
 use SOAP::Lite;
@@ -30,10 +29,6 @@ BEGIN {
     $NicToolServer::dsn = "DBI:mysql:database=nictool;host=localhost;port=3306";
     $NicToolServer::db_user     = 'nictool';
     $NicToolServer::db_pass     = 'lootcin205';
-
-    @NicToolServer::default_groups = qw(NicTool 0-9); # see NicToolServer::Session::verify
-
-    $NicToolServer::session_timeout = 60*45; # 45 minutes
 
     Apache::DBI->connect_on_init($NicToolServer::dsn, $NicToolServer::db_user, $NicToolServer::db_pass);
 }

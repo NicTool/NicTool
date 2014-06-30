@@ -4,7 +4,7 @@ package NicToolServer::User;
 use strict;
 use Digest::HMAC_SHA1 qw(hmac_sha1_hex);
 
-@NicToolServer::User::ISA = qw(NicToolServer);
+@NicToolServer::User::ISA = 'NicToolServer';
 
 sub perm_fields_select {
     qq/
@@ -76,7 +76,7 @@ sub get_user {
         . " WHERE ( nt_perm.deleted=0 "
         . " AND nt_user.deleted=0 "
         . " AND nt_user.nt_user_id = ?)";
-    my $perms = $self->exec_query( $sql, $data->{nt_user_id} )
+    $perms = $self->exec_query( $sql, $data->{nt_user_id} )
         or return $self->error_response( 505, $self->{dbh}->errstr );
     my $groupperm = $perms->[0];
 
@@ -96,10 +96,7 @@ sub get_user {
                 . $data->{nt_user_id}
                 . ")" );
     }
-    delete $perm->{nt_user_id};
-    delete $perm->{nt_group_id};
-    delete $perm->{nt_perm_id};
-    delete $perm->{nt_perm_name};
+    $self->clean_perm_data($perm);
 
     #@rv{sort keys %$perm} = @{$perm}{sort keys %$perm};
     foreach ( keys %$perm ) {

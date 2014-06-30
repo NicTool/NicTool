@@ -19,7 +19,7 @@ use lib '.';
 use lib 't';
 use lib 'lib';
 use NicToolTest;
-use Test::More tests => 36;
+use Test::More tests => 39;
 use Data::Dumper;
 
 
@@ -116,6 +116,11 @@ foreach my $k ( sort keys %serials ) {
 
 $r = $zone->bump_serial( 'new' );
 ok( $r == $year.$month.$day.'00', "bump_serial, 'new'");
+
+
+foreach my $opt ( qw/ db_version session_timeout default_group / ) {
+    ok( $nts->get_option($_), "get_option, $_");
+}
 
 #$r = $nts->is_subgroup(1,320);
 #ok( $r, "is_subgroup ($r)");

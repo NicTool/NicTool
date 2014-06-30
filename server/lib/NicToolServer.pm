@@ -8,7 +8,7 @@ use RPC::XML;
 use Data::Dumper;
 use Net::IP;
 
-$NicToolServer::VERSION = '2.26';
+$NicToolServer::VERSION = '2.27';
 
 $NicToolServer::MIN_PROTOCOL_VERSION = '1.0';
 $NicToolServer::MAX_PROTOCOL_VERSION = '1.0';
@@ -52,7 +52,7 @@ sub handler {
         if $self->debug_request and $error;
     return $response_obj->respond($error) if $error;
 
-    my $action = uc( $client_obj->data()->{action} );
+    my $action = uc $client_obj->data()->{action};
 
     return $response_obj->respond( $client_obj->data()->{user} )
         if (   $action eq 'LOGIN'
@@ -1291,23 +1291,16 @@ sub verify_obj_usage {
 }
 
 sub get_param_meta {
-
+    my ($self, $param, $key) = @_;
     #gets keyed data for a certain parameter of the function call
-    my $self  = shift;
-    my $param = shift;
-    my $key   = shift;
 
     #warn Data::Dumper::Dumper($self->{meta});
     return $self->{meta}{$param}{$key};
 }
 
 sub set_param_meta {
-
+    my ($self, $param, $key, $value) = @_;
     #Sets keyed info about a parameter for the function call
-    my $self  = shift;
-    my $param = shift;
-    my $key   = shift;
-    my $value = shift;
 
     #warn "setting param meta: param $param, key $key, value $value";
     #$self->{meta}={} unless exists $self->{meta};
@@ -1315,7 +1308,6 @@ sub set_param_meta {
     $self->{meta}{$param}{$key} = $value;
 
 #warn "final param meta: param $param, key $key, value ".Data::Dumper::Dumper($self->{meta});;
-
 }
 
 sub valid_id {
@@ -1357,26 +1349,6 @@ sub valid_16bit_int {
     }
 
     return $rc;
-}
-
-sub valid_reverse_lookup {
-    my ( $self, $hostname ) = @_;
-    if ( $hostname =~ /\.in-addr\.arpa\.?$/i ) {
-        $hostname =~ s/\.in-addr\.arpa\.?$//i;
-        my $x = 0;
-
-        #warn "checking addr: $hostname\n";
-        foreach ( split( /\./, $hostname ) ) {
-            ++$x;
-            return 0 unless /^\d{1,3}$/ and $_ >= 0 and $_ <= 255;
-            return 0 if $x > 4;
-        }
-        return 1;
-    }
-    else {
-        return 0;
-    }
-
 }
 
 sub valid_ip_address {
@@ -1519,9 +1491,9 @@ sub get_parentgroup_ids {
 sub is_subgroup {
     my ( $self, $nt_group_id, $gid ) = @_;
 
-    my $sql
-        = "SELECT COUNT(*) AS count FROM nt_group_subgroups WHERE nt_group_id = ?"
-        . " AND nt_subgroup_id = ?";
+    my $sql = "SELECT COUNT(*) AS count
+    FROM nt_group_subgroups WHERE nt_group_id = ?
+         AND nt_subgroup_id = ?";
     my $subgroups = $self->exec_query( $sql, [ $nt_group_id, $gid ] )
         or return 0;
     return $subgroups->[0]->{count} ? 1 : 0;
@@ -1539,6 +1511,17 @@ sub get_group_branches {
         $nextgroup = $ids->[0]->{parent_group_id};
     }
 }
+
+sub get_option {
+    my ($self, $option) = @_;
+
+    my $refs = $self->exec_query(
+        "SELECT option_value FROM nt_options WHERE option_name=?",
+        [$option],
+    );
+    return if ! scalar @$refs;
+    return $refs->[0]{option_value};
+};
 
 sub dbh {
 
@@ -1984,6 +1967,14 @@ sub search_params_sanity_check {
     }
 
 }
+
+sub clean_perm_data {
+    my ($self, $obj) = @_;
+
+    foreach ( qw/ nt_user_id nt_group_id nt_perm_id perm_name / ) {
+        delete $obj->{$_};
+    };
+};
 
 1;
 __END__

@@ -32,7 +32,7 @@ my $dbh  = DBIx::Simple->connect( $dsn, $db_user, $db_pass )
             or die DBIx::Simple->error;
 
 # NOTE: when making schema changes, update db_version in 12_nt_options.sql
-my @versions = qw/ 2.00 2.05 2.08 2.09 2.10 2.11 2.14 2.15 2.16 2.18 2.24 /;
+my @versions = qw/ 2.00 2.05 2.08 2.09 2.10 2.11 2.14 2.15 2.16 2.18 2.24 2.27 /;
 
 foreach my $version ( @versions ) {
 # first, run a DB test query
@@ -96,6 +96,30 @@ ALTER TABLE `nt_delegate` ADD FOREIGN KEY (`nt_group_id`) REFERENCES `nt_group` 
 EO_SOME_DAY
 ;
 };
+
+sub _sql_test_2_27 {
+    my $r = _get_db_version();
+    return 1 if ! defined $r;   # query failed
+
+    my $exists = $dbh->query("SELECT option_value FROM nt_options WHERE option_name='session_timeout'")->hashes;
+    if (scalar $exists && $exists->[0] && $exists->[0]{option_value}) {
+        $dbh->query("UPDATE nt_options SET option_value='2.27' WHERE option_name='db_version'");
+        return 1;               # already updated
+    };
+
+    return 0 if $r eq '2.24';   # do it!
+    return 1;                   # don't update
+};
+
+sub _sql_2_27 {
+    <<EO_SQL_2_27
+INSERT INTO nt_options
+VALUES (2,'session_timeout','45'),
+       (3,'default_group','NicTool');
+
+UPDATE nt_options SET option_value='2.27' WHERE option_name='db_version';
+EO_SQL_2_27
+}
 
 sub _sql_test_2_24 {
     my $r = _get_db_version();
