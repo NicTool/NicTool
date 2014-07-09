@@ -158,7 +158,7 @@ sub restart {
 
     my $before = time;
     $self->{nte}->set_status("remote restart");
-    system ("make -C $exportdir compile") == 0 or do {
+    system ("make -C $exportdir restart") == 0 or do {
         $self->{nte}->set_status("last: FAILED restart: $?");
         $self->{nte}->elog("unable to restart: $?");
         return;
