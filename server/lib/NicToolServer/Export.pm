@@ -824,7 +824,11 @@ sub qualify {
     $zone ||= $self->{zone_name} or return $record;
 
 # substr is measurably faster than a regexp
-    return $record if $zone eq substr($record,(-1*length($zone)),length($zone));
+    my $chars = length($zone);
+    if ( $zone eq substr( $record, (-1 * $chars), $chars ) ) {
+        return $record;    # name included zone name
+    };
+
     return "$record.$zone"                 # append missing zone name
 }
 

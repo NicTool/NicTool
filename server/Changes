@@ -1,5 +1,9 @@
 Revision history for NicToolServer
 
+2.28    2014.
+
+    * BIND exports, fully qualify name if name = zone
+
 2.27    2014.07.08
 
     * fix post-export "restart" target for BIND export

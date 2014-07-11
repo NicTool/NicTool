@@ -64,6 +64,7 @@ sub export_db {
         my $records = $self->get_records( $z->{nt_zone_id} );
         foreach my $r ( @$records ) {
             my $method = 'zr_' . lc $r->{type};
+            if ($r->{name} eq $zone) { $r->{name} .= '.'; } # append a .
             $r->{location}  ||= '';
             $fh->print($self->$method($r));
         }
@@ -91,10 +92,9 @@ sub export_db {
 }
 
 sub qualify {
-    my $self = shift;
-    my $record = shift;
+    my ($self, $record, $zone) = @_;
     return $record if '.' eq substr($record,-1,1);  # record is already FQDN
-    my $zone = shift || $self->{nte}{zone_name} or return $record;
+    $zone ||= $self->{nte}{zone_name} or return $record;
 
 # substr is measurably faster than the regexp
 #return $record if $record =~ /$zone$/;   # ends in zone, just no .
@@ -106,6 +106,4 @@ sub qualify {
     return "$record.$zone"       # append zone name
 }
 
-
 1;
-

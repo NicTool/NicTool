@@ -769,14 +769,15 @@ sub pack_type_bitmap {
 };
 
 sub qualify {
-    my $self = shift;
-    my $record = shift;
+    my ($self, $record, $zone) = @_;
     return $record if substr($record,-1,1) eq '.';  # record ends in .
-    my $zone = shift || $self->{nte}{zone_name} or return $record;
+    $zone ||= $self->{nte}{zone_name} or return $record;
 
-# substr is measurably faster than the regexp
-    #return $record if $record =~ /$zone$/;   # ends in zone, just no .
-    return $record if $zone eq substr($record,(-1*length($zone)),length($zone));
+# substr is measurably faster than a regexp
+    my $chars = length $zone;
+    if ($zone eq substr($record,(-1*$chars),$chars)) {
+        return $record;     # ends in $zone, no trailing .
+    };
 
     return "$record.$zone"       # append missing zone name
 }
