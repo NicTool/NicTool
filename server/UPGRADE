@@ -23,10 +23,12 @@ To upgrade NicTool to v2.10+, the following steps should be taken:
 
 5. start up web server & validate
 
-6. install new export dependencies
-    Time::TAI64
-    Params::Validate
-    DBIx::Simple
+6. install any new dependencies
+    cd /usr/local/nictool/server
+    ./bin/nt_install_deps.pl
+
+# Creating new exports is necessary when upgrading to NicTool 2.10. It is not
+# necessary on upgrades after 2.11.
 
 7. create new exports
     # cd /usr/local/nictool
