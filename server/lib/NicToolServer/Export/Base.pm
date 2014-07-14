@@ -71,6 +71,7 @@ sub export_db {
         $fh->close;
     }
 
+    # remote deleted zone files
     foreach my $z ( @{ $self->{nte}->get_ns_zones( deleted => 1) } ) {
         my $zone = $z->{zone};
         if ($self->{nte}->in_export_list($zone)) {
