@@ -477,6 +477,7 @@ UPDATE nt_nameserver SET output_format='tinydns' WHERE output_format='djb';
 ALTER TABLE nt_nameserver CHANGE `output_format` `export_format` enum('tinydns','bind') NOT NULL;
 
 /* nt_nameserver_log */
+DELETE FROM nt_nameserver_log WHERE ( output_format != 'tinydns' AND output_format != 'djb' AND output_format != 'nt' AND output_format != 'bind' ) OR output_format is null;
 ALTER TABLE nt_nameserver_log DROP column `service_type`;
 ALTER TABLE nt_nameserver_log ADD `export_serials` tinyint(1) UNSIGNED NOT NULL DEFAULT '1'  AFTER `export_interval`;
 ALTER TABLE nt_nameserver_log MODIFY output_format enum('djb','tinydns','bind','nt') NOT NULL;
@@ -489,9 +490,13 @@ ALTER TABLE nt_nameserver_export_log ADD `result_id` int NULL DEFAULT NULL  AFTE
 ALTER TABLE nt_nameserver_export_log ADD `message` varchar(256) NULL DEFAULT NULL  AFTER `result_id`;
 ALTER TABLE nt_nameserver_export_log ADD `success` tinyint(1) UNSIGNED NULL DEFAULT NULL  AFTER `message`;
 ALTER TABLE nt_nameserver_export_log ADD `partial` tinyint(1) UNSIGNED NOT NULL DEFAULT 0  AFTER `success`;
-ALTER TABLE nt_nameserver_export_log MODIFY date_start timestamp NULL DEFAULT NULL;
-ALTER TABLE nt_nameserver_export_log CHANGE `date_finish` `date_end` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP  on update CURRENT_TIMESTAMP;
-
+ALTER TABLE nt_nameserver_export_log ADD `date_start_new` timestamp NULL DEFAULT NULL AFTER date_start;
+UPDATE nt_nameserver_export_log SET date_start_new = FROM_UNIXTIME(date_start);
+ALTER TABLE nt_nameserver_export_log DROP COLUMN date_start;
+ALTER TABLE nt_nameserver_export_log CHANGE date_start_new date_start timestamp NULL DEFAULT NULL;
+ALTER TABLE nt_nameserver_export_log ADD `date_end` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP AFTER date_finish;
+UPDATE nt_nameserver_export_log SET date_end = FROM_UNIXTIME(date_finish);
+ALTER TABLE nt_nameserver_export_log DROP COLUMN date_finish;
 DROP TABLE IF EXISTS nt_nameserver_export_procstatus;
 
 /* Convert all character encodings to UTF8 bin. */
