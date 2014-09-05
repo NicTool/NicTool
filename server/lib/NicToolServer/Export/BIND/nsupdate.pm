@@ -39,8 +39,8 @@ sub postflight {
     } 
     elsif ( $nsupdate =~ m/Communication\swith.*failed/ || $nsupdate =~ m/timed\sout/ || $nsupdate =~ m/could\snot\stalk/ ) 
     {
-        $self->{nte}->set_status("last: FAILED, reason: NOTZONE");
-        $self->{nte}->elog("nsupdate FAILED, reason: NOTZONE", success=>0);
+        $self->{nte}->set_status("last: FAILED, reason: TIMEOUT");
+        $self->{nte}->elog("nsupdate FAILED, reason: TIMEOUT", success=>0);
         exit 0;
     } 
     
