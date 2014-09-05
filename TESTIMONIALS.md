@@ -24,3 +24,8 @@ List yourself here! Fork [NicTool](https://github.com/msimerson/NicTool), edit [
     * Reduce publish times from up to 24 hours to less than one minute
     * Prevent data entry errors
     * Get rid of BIND 4, which was a security disaster.
+* [Aristotle University of Thessaloniki, IT Center](http://www.www.it.auth.gr) (2014-current):
+    * CLI scripts to update forward and rDNS for IPv4 and IPv6 addresses
+    * CLI scripts to sync users between NicTool and LDAP and set permissions.
+    * No more rubbish in our DNS database!!!
+    * Harder for customer support to make errors!!!
