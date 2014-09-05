@@ -73,7 +73,7 @@ if( $ntuser->{error_code} ) {
 } else {
     print( "Logged in as " . $ntuser->{first_name} . " " . $ntuser->{last_name} . "\n" );
 }
-#Find "Readers" group
+#Find group
 my $ntgroup_id;
 my $resp;
 $resp = $nt->send_request(
@@ -97,13 +97,21 @@ if( @{$resp->{groups}} == 0 ) {
 	$ntgroup_id = $resp->{groups}->[0]->{nt_group_id};
 }
 #Parse LDAP results
-foreach my $entry ($result->entries) {
+next_user: foreach my $entry ($result->entries) {
 	my $fname = $entry->get_value("givenName");
 	my $lname = $entry->get_value("sn");
 	my $username = $entry->get_value("uid");
 	my $email = $entry->get_value("mail") || 'notgiven@example.org';
 
 	#Create users in NicTool
+	#First check if user exists in some other group
+	#Find Root group (usually same as root's group)
+	$resp = $nt->send_request(action => "get_group_users", nt_user_session => $ntuser->{nt_user_session}, nt_group_id => 					$ntgroup_id, include_subgroups => 1, limit => 255);
+	foreach my $nictool_user (@{$resp->{list}}) {
+		next if $username eq $nictool_user->{username};
+	}		
+
+	$ntgroup_id = $ntuser->{nt_group_id};
 	$resp = $nt->send_request(action => "new_user", nt_user_session => $ntuser->{nt_user_session}, first_name => "$fname",
 				last_name => "$lname", email => "$email", username => "$username",
 				nt_group_id => $ntgroup_id,password => "scekriitp4ss",
@@ -113,7 +121,7 @@ foreach my $entry ($result->entries) {
 	die $resp->{error_msg} if ( ($resp->{error_code} != 300) && (($resp->{error_code} != 300)));
 }
 #End user creation
-#Find Root group (usually same as root's group
+#Find Root group (usually same as root's group)
 $ntgroup_id = $ntuser->{nt_group_id};
 #Get list of nictool users
 $resp = $nt->send_request(action => "get_group_users", nt_user_session => $ntuser->{nt_user_session}, nt_group_id => $ntgroup_id, include_subgroups => 1, limit => 255);
