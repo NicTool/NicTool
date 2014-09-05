@@ -73,6 +73,7 @@ if( $ntuser->{error_code} ) {
 } else {
     print( "Logged in as " . $ntuser->{first_name} . " " . $ntuser->{last_name} . "\n" );
 }
+my $ntroot_group_id = $ntuser->{nt_group_id};
 #Find group
 my $ntgroup_id;
 my $resp;
@@ -104,14 +105,13 @@ next_user: foreach my $entry ($result->entries) {
 	my $email = $entry->get_value("mail") || 'notgiven@example.org';
 
 	#Create users in NicTool
-	#First check if user exists in some other group
-	#Find Root group (usually same as root's group)
-	$resp = $nt->send_request(action => "get_group_users", nt_user_session => $ntuser->{nt_user_session}, nt_group_id => 					$ntgroup_id, include_subgroups => 1, limit => 255);
+	#First check if username exists in some other group
+	$resp = $nt->send_request(action => "get_group_users", nt_user_session => $ntuser->{nt_user_session}, nt_group_id => 					$ntroot_group_id, include_subgroups => 1, limit => 255);
 	foreach my $nictool_user (@{$resp->{list}}) {
-		next if $username eq $nictool_user->{username};
-	}		
-
-	$ntgroup_id = $ntuser->{nt_group_id};
+		printf "Skipping $username\n" if $username eq $nictool_user->{username};
+		next next_user if $username eq $nictool_user->{username};
+	}
+	printf "Shouldnt be here\n";
 	$resp = $nt->send_request(action => "new_user", nt_user_session => $ntuser->{nt_user_session}, first_name => "$fname",
 				last_name => "$lname", email => "$email", username => "$username",
 				nt_group_id => $ntgroup_id,password => "scekriitp4ss",
@@ -121,10 +121,9 @@ next_user: foreach my $entry ($result->entries) {
 	die $resp->{error_msg} if ( ($resp->{error_code} != 300) && (($resp->{error_code} != 300)));
 }
 #End user creation
-#Find Root group (usually same as root's group)
-$ntgroup_id = $ntuser->{nt_group_id};
-#Get list of nictool users
-$resp = $nt->send_request(action => "get_group_users", nt_user_session => $ntuser->{nt_user_session}, nt_group_id => $ntgroup_id, include_subgroups => 1, limit => 255);
+#Find Root group (usually same as root's group
+#Get list of all nictool users
+$resp = $nt->send_request(action => "get_group_users", nt_user_session => $ntuser->{nt_user_session}, nt_group_id => $ntroot_group_id, include_subgroups => 1, limit => 255);
 foreach my $nictool_user (@{$resp->{list}}) {
     my $uname = $nictool_user->{username};
     #Check if user is LDAP user
