@@ -610,6 +610,37 @@ sub log_user {
 
 sub valid_password {
     my ($self, $attempt, $db_pass, $user, $salt) = @_;
+    # Try LDAP authentication first
+    #LDAP Settings, edit
+    my $server = ["",""];
+    my $port = 636;
+    my $basedn = "ou=People,o=example,c=org";
+    my $binddn = "uid=searcher";
+    my $bindpw = "searcherpass";
+    #Stop editing now
+    use Net::LDAP;
+    use Net::LDAPS;
+
+    my $search_ldap = Net::LDAPS->new($server, port=>$port);
+    $search_ldap->bind($binddn, password=>"$bindpw");
+    #Check if user is LDAP user
+    my $result = $search_ldap->search(base=>$basedn, filter=>"(&(uid=".$user."))", attrs=>['dn']);
+
+    if($result->count == 1){
+                #User is LDAP user
+                my $entry = $result->shift_entry;
+                my $userdn = $entry->dn;
+                $search_ldap->unbind;
+                #Do actual authentication attempt
+                my $auth_ldap = Net::LDAPS->new($server, port=>$port);
+                my $auth_res = $auth_ldap->bind($userdn, password=>"$attempt");
+                if($auth_res->code){
+                        #userdn failed to bind, authfail
+                        return 0;
+                }
+                $auth_ldap->unbind;
+                return 1;
+    }
 
     if ( $salt ) {
         my $hashed = unpack("H*", Crypt::KeyDerivation::pbkdf2($attempt, $salt, 5000, 'SHA512'));
