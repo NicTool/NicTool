@@ -140,6 +140,7 @@ sub display_list {
         name        => 'Name',
         description => 'Description',
         address     => 'IPv4 Address',
+        export_format=> 'Export Format',
         status     => 'Export Status',
         group_name => 'Group'
     );
@@ -422,9 +423,8 @@ sub display_edit_nameserver {
     my ( $nt_obj, $user, $q, $message, $edit ) = @_;
 
 # logdir
-    my @fields = qw/ name address address6 ttl export_format
-                     export_serials remote_login export_interval
-                     datadir description /;
+    my @fields = qw/ name address address6 export_format datadir remote_login
+                     ttl export_interval export_serials description / ;
 
     my $nameserver;
     if ( $q->param('nt_nameserver_id') && !$q->param('Save') ) {
@@ -474,9 +474,9 @@ sub display_edit_nameserver {
 
     foreach my $f ( @fields ) {
         print qq[
- <tr id="$f" class=light_grey_bg>
+ <tr id="${f}_row" class=light_grey_bg>
   <td class=right>$labels{$f}{label}:</td>
-  <td class="width70">$labels{$f}{value}<span id="$f"></span></td>
+  <td class="width70">$labels{$f}{value}<span id="${f}_url"></span></td>
  </tr>];
     };
 
@@ -487,7 +487,7 @@ sub display_edit_nameserver {
         $q->submit( $edit eq 'edit' ? 'Save' : 'Create' ),
         $q->submit('Cancel'), "</td>
  </tr>
-<script>\$(document).ready(function(){ changeNSExportType(); });</script>";
+ <script>\$(document).ready(function(){ changeNSExportType(); });</script>";
     }
 
     print qq[
@@ -501,7 +501,7 @@ sub display_edit_nameserver_fields {
     my $ttl = $q->param('ttl') || $NicToolClient::default_nameserver_ttl;
 
     my $export_formats = $nt_obj->ns_export_types();
-    my %export_formats = map { $_->{name} => "$_->{descr}" } @$export_formats;
+    my %export_formats = map { $_->{name} => "$_->{name} ($_->{descr})" } @$export_formats;
 
     my $export_format_values = [ sort keys %export_formats ];
     my $export_format_labels  = \%export_formats;

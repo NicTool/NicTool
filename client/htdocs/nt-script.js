@@ -13,10 +13,10 @@ function changeNSExportType(eType) {
     if (!eType) { eType = $('select#export_format option:selected').val(); }
     if (!eType) return false;
 
-    $('tr#export_serials').hide();
+    $('tr#export_serials_row').hide();
     $('input#remote_login').attr('placeholder', '');
 
-    $('tr#datadir').show();
+    $('tr#datadir_row').show();
     $('input#datadir').attr('placeholder', '');
 
     selectedNSType(eType);
@@ -62,6 +62,7 @@ function selectedRRType(rrType) {
 
 function selectedNSType(nsType) {
     if (!nsType) return false;
+    $('tr#export_serials_row').hide();
     switch (nsType) {
       case 'bind':           setFormNSTypeBIND();  break;
       case 'bind-nsupdate':  setFormNSTypeNSUPD(); break;
@@ -75,41 +76,41 @@ function selectedNSType(nsType) {
 }
 
 function setFormNSTypeBIND () {
-    setSpanURL('export_format', 'http://www.isc.org/downloads/bind/', 'BIND');
+    setSpanURL('export_format_url', 'http://www.isc.org/downloads/bind/', 'BIND');
     $('input#datadir').attr('placeholder', '/etc/namedb/nictool');
     $('input#remote_login').attr('placeholder', 'bind');
 }
 function setFormNSTypeNSUPD () {
-    setSpanURL('export_format', 'http://www.isc.org/downloads/bind/', 'BIND nsupdate');
+    setSpanURL('export_format_url', 'http://www.isc.org/downloads/bind/', 'BIND nsupdate');
     $('input#datadir').attr('placeholder', '/etc/namedb/nictool');
     $('input#remote_login').attr('placeholder', 'bind');
 }
 function setFormNSTypeNSD () {
-    setSpanURL('export_format', 'http://www.nlnetlabs.nl/projects/nsd/', 'NSD');
+    setSpanURL('export_format_url', 'http://www.nlnetlabs.nl/projects/nsd/', 'NSD');
     $('input#remote_login').attr('placeholder', 'nsd');
 }
 function setFormNSTypeKnot () {
-    setSpanURL('export_format', 'http://www.knot-dns.cz/', 'Knot DNS');
+    setSpanURL('export_format_url', 'http://www.knot-dns.cz/', 'Knot DNS');
     $('input#datadir').attr('placeholder', '/var/db/knot');
     $('input#remote_login').attr('placeholder', 'knot');
 }
 function setFormNSTypeMara () {
-    setSpanURL('export_format', 'http://maradns.samiam.org/', 'MaraDNS');
+    setSpanURL('export_format_url', 'http://maradns.samiam.org/', 'MaraDNS');
     $('input#remote_login').attr('placeholder', 'maradns');
 }
 function setFormNSTypeDJB () {
-    setSpanURL('export_format', 'http://cr.yp.to/djbdns.html', 'DJBDNS');
-    $('tr#export_serials').show();
+    setSpanURL('export_format_url', 'http://cr.yp.to/djbdns.html', 'DJBDNS');
+    $('tr#export_serials_row').show();
     $('input#datadir').attr('placeholder', '/var/service/tinydns-ns1');
     $('input#remote_login').attr('placeholder', 'tinydns');
 }
 function setFormNSTypeDyn () {
-    setSpanURL('export_format', 'http://dyn.com/managed-dns/', 'DynECT');
-    $('tr#datadir').hide();
+    setSpanURL('export_format_url', 'http://dyn.com/managed-dns/', 'DynECT');
+    $('tr#datadir_row').hide();
     $('input#remote_login').attr('placeholder', 'Customer:Username:Password');
 }
 function setFormNSTypePower () {
-    setSpanURL('export_format', 'http://www.powerdns.com/', 'PowerDNS');
+    setSpanURL('export_format_url', 'http://www.powerdns.com/', 'PowerDNS');
     $('input#datadir').attr('placeholder', '/etc/namedb/nictool');
     $('input#remote_login').attr('placeholder', 'powerdns');
 }
