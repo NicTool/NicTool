@@ -26,55 +26,20 @@ $Data::Dumper::Sortkeys=1;
 
 my $nsid = 0;
 my $export = NicToolServer::Export->new( ns_id=>$nsid );
-my @bad_ports = qw/ -100 -1 65536 1000000 a buzz /;
-push @bad_ports, ('', undef);
-my @good_ports = qw/ 0 1 53 995 65535 /;
-
-foreach ( @good_ports ) {
-    my $r = $export->is_ip_port($_);
-    ok(defined $r, "is_ip_port, valid, $_");
-};
-foreach ( @bad_ports ) {
-    if (defined $_) {
-        ok( ! $export->is_ip_port($_), "is_ip_port, invalid, $_");
-    }
-    else {
-        ok( ! $export->is_ip_port($_), "is_ip_port, undef");
-    }
-};
-
-$export->get_dbh(
-    dsn  => Config('dsn'),
-    user => Config('db_user'),
-    pass => Config('db_pass'),
-);
+isa_ok( $export, 'NicToolServer::Export');
 
 my $r;
-my $count = $export->get_modified_zones_count();
+my $types = _get_rr_types();
 
-isa_ok( $export, 'NicToolServer::Export');
-ok( defined $count, "found $count zones");
-
-my $types = $export->get_rr_types();
-ok( $types, 'get_rr_types' );
-#print Dumper($types);
-
-cmp_ok( $export->get_rr_id('A'), '==', 1, 'get_rr_id');
-cmp_ok( $export->get_rr_id('NS'), '==', 2, 'get_rr_id');
-
-cmp_ok( $export->get_rr_name(1), 'eq', 'A', 'get_rr_name');
-cmp_ok( $export->get_rr_name(2), 'eq', 'NS', 'get_rr_name');
-
-# this will get all zones, since we haven't given it a 'since' time
-$r = $export->get_modified_zones_count();
-ok( defined $r, "get_modified_zones_count, $r");
-
-done_testing() and exit;
+#done_testing();
+#exit;
 
 # TODO: specify NS type when loading, so we can run these NS specific tests
 $export->load_export_class();
 
 #print "r: $r\n";
+#_tests_that_require_db();
+_is_ip_port();
 _zr_nsec();
 _zr_rrsig();
 _aaaa_to_ptr();
@@ -85,10 +50,39 @@ _zr_ipseckey();
 
 done_testing() and exit;
 
-#$r = $export->get_last_ns_export();
-#ok( $r, "get_last_ns_export, $nsid");
-#warn Data::Dumper::Dumper($r);
-#exit;
+# Test::More doesn't like the output of these, and I'm not sure why
+# TODO: fix this Nov 18, 2011 - mps
+ok( $export->preflight, 'preflight');  # check if export can succeed
+
+ok( $export->export(), "export (nsid $nsid)");
+
+sub _tests_that_require_db {
+    $export->get_dbh(
+        dsn  => Config('dsn'),
+        user => Config('db_user'),
+        pass => Config('db_pass'),
+    );
+
+    my $count = $export->get_modified_zones_count();
+    ok( defined $count, "found $count zones");
+
+    my $types = $export->get_rr_types();
+    ok( $types, 'get_rr_types' );
+#print Dumper($types);
+
+    cmp_ok( $export->get_rr_id('A'), '==', 1, 'get_rr_id');
+    cmp_ok( $export->get_rr_id('NS'), '==', 2, 'get_rr_id');
+
+    cmp_ok( $export->get_rr_name(1), 'eq', 'A', 'get_rr_name');
+    cmp_ok( $export->get_rr_name(2), 'eq', 'NS', 'get_rr_name');
+
+# this will get all zones, since we haven't given it a 'since' time
+    $r = $export->get_modified_zones_count();
+    ok( defined $r, "get_modified_zones_count, $r");
+
+#   $r = $export->get_last_ns_export();
+#   ok( $r, "get_last_ns_export, $nsid");
+#   warn Data::Dumper::Dumper($r);
 
 #my $logid = $export->get_log_id( success=>1 );
 #$logid = $export->get_log_id( success=>1,partial=>1 );
@@ -107,11 +101,26 @@ ok( $r, "get_last_ns_export, nsid $nsid, success, partial");
 #warn Data::Dumper::Dumper($r);
 #exit;
 
-# Test::More doesn't like the output of these, and I'm not sure why
-# TODO: fix this Nov 18, 2011 - mps
-ok( $export->preflight, 'preflight');  # check if export can succeed
+};
 
-ok( $export->export(), "export (nsid $nsid)");
+sub _is_ip_port {
+    my @bad_ports = qw/ -100 -1 65536 1000000 a buzz /;
+    push @bad_ports, ('', undef);
+    my @good_ports = qw/ 0 1 53 995 65535 /;
+
+    foreach ( @good_ports ) {
+        my $r = $export->is_ip_port($_);
+        ok(defined $r, "is_ip_port, valid, $_");
+    };
+    foreach ( @bad_ports ) {
+        if (defined $_) {
+            ok( ! $export->is_ip_port($_), "is_ip_port, invalid, $_");
+        }
+        else {
+            ok( ! $export->is_ip_port($_), "is_ip_port, undef");
+        }
+    };
+};
 
 sub _zr_rrsig {
     $r = $export->{export_class}->zr_rrsig( {
@@ -225,3 +234,32 @@ sub _zr_nsec3param {
 
 };
 
+sub _get_rr_types {
+    return {
+        1 => 'A',
+        2 => 'NS',
+        5 => 'CNAME',
+        6 => 'SOA',
+        12 => 'PTR',
+        15 => 'MX',
+        16 => 'TXT',
+        24 => 'SIG',
+        25 => 'KEY',
+        28 => 'AAAA',
+        29 => 'LOC',
+        30 => 'NXT',
+        33 => 'SRV',
+        35 => 'NAPTR',
+        39 => 'DNAME',
+        43 => 'DS',
+        44 => 'SSHFP',
+        46 => 'RRSIG',
+        47 => 'NSEC',
+        48 => 'DNSKEY',
+        50 => 'NSEC3',
+        51 => 'NSEC3PARAM',
+        99 => 'SPF',
+        250 => 'TSIG',
+        252 => 'AXFR',
+    };
+};
