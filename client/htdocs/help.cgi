@@ -75,6 +75,11 @@ sub help_text {
             description => 'Timestamps on Resource Records',
             template => "help_timestamp.html",
         },
+        location => {
+            name => 'Location',
+            description => 'Locations on Resource Records',
+            template => "help_location.html",
+        },
     }
 }
 

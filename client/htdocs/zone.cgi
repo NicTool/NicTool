@@ -143,8 +143,8 @@ sub do_edit_zone {
         return;
     };
 
-    my @fields = qw/ nt_zone_id nt_group_id zone description
-                     mailaddr serial refresh retry expire ttl minimum /;
+    my @fields = qw/ nt_zone_id nt_group_id zone description mailaddr serial
+                     refresh retry expire ttl minimum /;
     my %data;
     foreach ( @fields ) {
         next if ! defined $q->param($_);
@@ -694,7 +694,7 @@ sub display_zone_records_edit {
         if ! $q->param('Save');
 
     my @fields = qw( nt_group_id nt_zone_id nt_zone_record_id name type
-            address weight priority other ttl description deleted );
+            address weight priority other ttl description deleted location timestamp);
     my %data;
     foreach my $x (@fields) {
         $data{$x} = $q->param($x);
@@ -906,10 +906,16 @@ sub display_edit_record {
   <td id=description_data class="fat">], _build_rr_description( $q, $zone_record, $modifyperm ), qq[
   </td>
  </tr>
- <tr class=hidden id=timestamp_row class="light_grey_bg">
+ <tr id=timestamp_row class="light_grey_bg">
   <td id=timestamp_label class="right"> Timestamp:</td>
   <td id=timestamp_data class="fat">], _build_rr_timestamp( $q, $zone_record, $modifyperm ),
   $nt_obj->help_link('timestamp'), qq[
+  </td>
+ </tr>
+ <tr id=location_row class="light_grey_bg">
+  <td id=location_label class="right"> Location:</td>
+  <td id=location_data class="fat">], _build_rr_location( $q, $zone_record, $modifyperm ),
+  $nt_obj->help_link('location'), qq[
   </td>
  </tr>
  <tr id=submit class="dark_grey_bg">
@@ -1177,9 +1183,22 @@ sub _build_rr_timestamp {
     return $q->textfield(
         -id        => 'timestamp',
         -name      => 'timestamp',
-        -size      => 20,
-        -maxlength => 16,
+        -size      => 24,
+        -maxlength => 19,
         -default   => $zone_record->{'timestamp'}
+    );
+};
+
+sub _build_rr_location {
+    my ( $q, $zone_record, $modifyperm) = @_;
+
+    return $zone_record->{'location'} if ! $modifyperm;
+    return $q->textfield(
+        -id        => 'location',
+        -name      => 'location',
+        -size      => 4,
+        -maxlength => 2,
+        -default   => $zone_record->{'location'}
     );
 };
 

@@ -23,7 +23,7 @@ sub new_zone_record {
     # build insert query
     my $col_string = 'nt_zone_id';
     my @values = $data->{nt_zone_id};
-    foreach my $c ( qw/name ttl description type address weight priority other/ ) {
+    foreach my $c ( qw/name ttl description type address weight priority other location timestamp /) {
         next if ! defined $data->{$c};
         next if '' eq $data->{$c};
         if ( $c eq 'type' ) {

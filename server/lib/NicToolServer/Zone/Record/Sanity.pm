@@ -77,10 +77,21 @@ sub new_or_edit_basic_verify {
     $self->_valid_mx( $data, $zone_text )    if $data->{type} eq 'MX';
 
     $self->_name_collision($data, $z);
+    $self->_valid_ttl($data, $zone_text);    # check the record's TTL
+};
 
-    # check the record's TTL
-    $data->{ttl} = 86400 if ( !$data->{ttl} && !$data->{nt_zone_record_id} );
-    $self->valid_ttl( $data->{ttl} ) if defined $data->{ttl};
+sub _valid_ttl {
+    my ($self, $data, $zone_text) = @_;
+
+    if ( !$data->{ttl} && !$data->{nt_zone_record_id} ) {
+        $data->{ttl} = 86400;
+        return;
+    };
+    if ( defined $data->{ttl} ) {
+        $self->valid_ttl( $data->{ttl} );
+    };
+
+# TODO: https://github.com/msimerson/NicTool/issues/7
 }
 
 sub record_exists {
