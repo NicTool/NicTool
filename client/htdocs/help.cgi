@@ -70,6 +70,11 @@ sub help_text {
             description => 'Why disable serial numbers exports?',
             template => "help_export_serials.html",
         },
+        timestamp => {
+            name => 'Timestamps',
+            description => 'Timestamps on Resource Records',
+            template => "help_timestamp.html",
+        },
     }
 }
 

@@ -901,9 +901,15 @@ sub display_edit_record {
   <td class="fat">], _build_rr_ttl( $q, $zone_record, $modifyperm), qq[
   </td>
  </tr>
- <tr id=description class="light_grey_bg">
+ <tr id=description_row class="light_grey_bg">
   <td id=description_label class="right"> Description:</td>
-  <td id=description class="fat">], _build_rr_description( $q, $zone_record, $modifyperm ), qq[
+  <td id=description_data class="fat">], _build_rr_description( $q, $zone_record, $modifyperm ), qq[
+  </td>
+ </tr>
+ <tr class=hidden id=timestamp_row class="light_grey_bg">
+  <td id=timestamp_label class="right"> Timestamp:</td>
+  <td id=timestamp_data class="fat">], _build_rr_timestamp( $q, $zone_record, $modifyperm ),
+  $nt_obj->help_link('timestamp'), qq[
   </td>
  </tr>
  <tr id=submit class="dark_grey_bg">
@@ -1161,6 +1167,19 @@ sub _build_rr_description {
         -size      => 60,
         -maxlength => 128,
         -default   => $zone_record->{'description'}
+    );
+};
+
+sub _build_rr_timestamp {
+    my ( $q, $zone_record, $modifyperm) = @_;
+
+    return $zone_record->{'timestamp'} if ! $modifyperm;
+    return $q->textfield(
+        -id        => 'timestamp',
+        -name      => 'timestamp',
+        -size      => 20,
+        -maxlength => 16,
+        -default   => $zone_record->{'timestamp'}
     );
 };
 
