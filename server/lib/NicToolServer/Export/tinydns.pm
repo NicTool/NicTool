@@ -75,6 +75,7 @@ sub append_makefile {
     my $export_dir = $self->{nte}{export_dir};
     my $address = $self->{nte}{ns_ref}{address} || '127.0.0.1';
     my $datadir = $self->{nte}{ns_ref}{datadir} || getcwd . '/data-all';
+    my $remote_login = $self->{nte}{ns_ref}{remote_login} || 'tinydns';
     $datadir =~ s/\/$//;  # strip off any trailing /
     open my $M, '>>', "$export_dir/Makefile";
     print $M <<MAKE
@@ -82,7 +83,7 @@ sub append_makefile {
 # as defined in the NicTool database. Adjust it if necessary. Add additional
 # rsync lines to copy to additional hosts.
 remote: data.cdb
-\trsync -az data.cdb tinydns\@$address:$datadir/data.cdb
+\trsync -az data.cdb $remote_login\@$address:$datadir/data.cdb
 MAKE
 ;
     close $M;
@@ -94,6 +95,7 @@ sub write_makefile {
     return 1 if -e "$export_dir/Makefile";     # already exists
     my $address = $self->{nte}{ns_ref}{address} || '127.0.0.1';
     my $datadir = $self->{nte}{ns_ref}{datadir} || getcwd . '/data-all';
+    my $remote_login = $self->{nte}{ns_ref}{remote_login} || 'tinydns';
     $datadir =~ s/\/$//;  # strip off any trailing /
     open my $M, '>', "$export_dir/Makefile";
     print $M <<MAKE
@@ -110,7 +112,7 @@ data.cdb: data
 # rsync lines to copy to additional hosts. See the FAQ for details:
 #    FAQ: https://github.com/msimerson/NicTool/wiki/FAQ
 remote: data.cdb
-\trsync -az data.cdb tinydns\@$address:$datadir/data.cdb
+\trsync -az data.cdb $remote_login\@$address:$datadir/data.cdb
 
 # If the DNS server is running locally and rsync is not necessary, tell the
 # export process the 'remote' make target succeeded. An example is provided.
