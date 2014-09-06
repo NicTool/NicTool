@@ -830,7 +830,7 @@ sub escapeNumber {
 }
 
 sub characterCount {
-    return sprintf '\%03lo', scalar split //, $_[-1];
+    return sprintf '\%03lo', length $_[-1];
 }
 
 # next 2 subs lifted from Net::DNS::RR::LOC
