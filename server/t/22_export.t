@@ -29,7 +29,12 @@ my $export = NicToolServer::Export->new( ns_id=>$nsid );
 isa_ok( $export, 'NicToolServer::Export');
 
 my $r;
+# the tinydns exports need RR type mappings
 my $types = _get_rr_types();
+while ((my $key, my $val) = each %$types ) {
+    $export->{rr_type_map}{ids}{ $key } = $val;
+    $export->{rr_type_map}{names}{ $val } = $key;
+};
 
 #done_testing();
 #exit;
