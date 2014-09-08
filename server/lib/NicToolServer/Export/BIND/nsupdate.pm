@@ -25,6 +25,17 @@ sub postflight {
     # Export to the DNS server via nsupdate
     #$nsupdate = `nsupdate < $dir/nsupdate.log 2<&1`;
 
+    # Uncomment this if you would like to do nsupdate with a keyfile
+    # Generate the keyfile with dnssec-keygen and insert the name and path
+    # of the keyfile below
+    # dnssec-keygen -a hmac-md5 -b 128 -n ENTITY *key name here*
+    # Ensure the key is also in your named.conf / included in named as needed
+    # and the allow is also configured correctly to allow based on the key
+    # Note: If you are loading the key into named from an included named formatted 
+    # keyfile, that same keyfile can also be used by nsupdate to do the insert.
+    #my $keyfile = "/etc/Knsupdate.+157+44682.key";
+    #$nsupdate = `nsupdate -k $keyfile < $dir/nsupdate.log 2<&1`;
+
     if ( $nsupdate =~ m/REFUSED/ )
     {
         $self->{nte}->set_status("last: FAILED, reason: REFUSED");
