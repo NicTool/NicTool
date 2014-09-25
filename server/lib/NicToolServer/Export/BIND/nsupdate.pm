@@ -25,7 +25,24 @@ sub postflight {
     # Export to the DNS server via nsupdate
     #$nsupdate = `nsupdate < $dir/nsupdate.log 2<&1`;
 
-    if ( $nsupdate =~ m/REFUSED/ )
+    # Uncomment this if you would like to do nsupdate with a keyfile
+    # For more info go to https://github.com/msimerson/NicTool/wiki/Export-to-BIND-nsupdate
+    #my $keyfile = "/etc/Knsupdate.+157+44682.key";
+    #$nsupdate = `nsupdate -k $keyfile < $dir/nsupdate.log 2<&1`;
+
+    if ( $nsupdate =~ m/BADKEY/ )
+    {
+        $self->{nte}->set_status("last: FAILED, reason: BADKEY");
+        $self->{nte}->elog("nsupdate FAILED, reason: BADKEY", success=>0);
+        exit 0;
+    }  
+    elsif ( $nsupdate =~ m/could\snot\sread\skey\*file\s\not\sfound/ )
+    {
+        $self->{nte}->set_status("last: FAILED, reason: Keyfile not found");
+        $self->{nte}->elog("nsupdate FAILED, reason: Keyfile not found", success=>0);
+        exit 0;
+    }  
+    elsif ( $nsupdate =~ m/REFUSED/ )
     {
         $self->{nte}->set_status("last: FAILED, reason: REFUSED");
         $self->{nte}->elog("nsupdate FAILED, reason: REFUSED", success=>0);
