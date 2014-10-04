@@ -4,7 +4,9 @@ package NicTool;
 use strict;
 use Carp;
 use SOAP::Lite;
-use Data::Dumper;
+#use Data::Dumper;
+
+use lib 'lib';
 use NicTool::API;
 use NicTool::Result;
 use NicTool::List;
@@ -13,7 +15,6 @@ use NicTool::Cache;
 our $AUTOLOAD;
 
 $NicTool::VERSION = '1.03';
-
 
 =head1 SYNOPSIS
 
@@ -192,6 +193,7 @@ sub _api {
         edit_zone_record              => {},
         delete_zone_record            => {},
         get_nameserver                => {},
+        get_usable_nameservers        => {},
         get_nameserver_export_types   => {},
         new_nameserver                => {},
         edit_nameserver               => {},
@@ -220,18 +222,19 @@ sub _should_cache {
 }
 
 sub _conf {
-    {   'server_host'              => "localhost",
-        'server_port'              => "8082",
-        'data_protocol'            => "soap",
-        'nt_user_session'               => undef,
-        'use_protocol_version'          => 0,
-        'nt_protocol_version'           => '1.0',
+    return {
+        'server_host'         => 'localhost',
+        'server_port'         => '8082',
+        'data_protocol'       => 'soap',
+        'nt_user_session'     => undef,
+        'use_protocol_version'=> 0,
+        'nt_protocol_version' => '1.0',
 
-        'cache_groups'      => 1,
-        'cache_users'       => 1,
-        'cache_zones'       => 0,
-        'cache_records'     => 0,
-        'cache_nameservers' => 1,
+        'cache_groups'        => 1,
+        'cache_users'         => 1,
+        'cache_zones'         => 0,
+        'cache_records'       => 0,
+        'cache_nameservers'   => 1,
 
         'debug_soap_setup'    => 0,
         'debug_soap_request'  => 0,
@@ -264,9 +267,8 @@ sub _send_request {
     my $self = shift;
     $self->{transport}
         = NicTool::Transport->get_transport_agent( $self->{data_protocol},
-        $self );
-    croak "No transport available! (data protocol is $self->{data_protocol} )"
-        unless $self->{transport};
+        $self ) or
+    croak "No transport available! (data protocol is $self->{data_protocol} )";
     return $self->{transport}->_send_request(@_);
 }
 
@@ -274,7 +276,7 @@ sub _object_for_type {
     my ( $self, $type, @rest ) = @_;
     my $package = "NicTool::" . ucfirst( lc($type) );
     my $obj;
-    eval "use $package; \$obj= $package->new(\$self,\@rest)";
+    eval "use $package; \$obj= $package->new(\$self,\@rest)"; ## no critic
     if ($@) {
         carp $@;
         return '';
@@ -453,9 +455,7 @@ sub _api_call {
     if ( $self->_api->{$method} ) {
         return 1;
     }
-    else {
-        return '';
-    }
+    return '';
 }
 
 =item FUNCTION(PARAM_LIST)
@@ -487,20 +487,17 @@ sub AUTOLOAD {
     $AUTOLOAD =~ s/.*:://;
 
     my $res = $self->{user} ? $self->{user}->$AUTOLOAD(@_) : undef;
-    unless ( defined $res ) {
-        if ( $self->_api_call($AUTOLOAD) ) {
-            return $self->_dispatch( $AUTOLOAD, @_ );
-        }
-        elsif ( $AUTOLOAD =~ /can_([^:]+)$/ ) {
-            return $self->{user}->get($1);
-        }
-        else {
-            croak "No such method '$AUTOLOAD'";
-        }
+    return $res if defined $res;
+
+    if ( $self->_api_call($AUTOLOAD) ) {
+        return $self->_dispatch( $AUTOLOAD, @_ );
     }
-    else {
-        return $res;
+
+    if ( $AUTOLOAD =~ /can_([^:]+)$/ ) {
+        return $self->{user}->get($1);
     }
+
+    croak "No such method '$AUTOLOAD'";
 }
 
 =head1 AUTHORS
