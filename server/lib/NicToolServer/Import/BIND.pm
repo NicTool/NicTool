@@ -17,8 +17,7 @@ use Time::HiRes;
 use Net::DNS::Zone::Parser;
 
 sub get_import_file {
-    my $self = shift;
-    my $filename = shift;
+    my ($self, $filename) = @_;
     if (!$filename && -f '/etc/namedb/named.conf' ) {
         $filename = '/etc/namedb/named.conf';
     }
@@ -32,14 +31,14 @@ sub get_import_file {
     return $self->{FH} if defined $self->{FH};
 
     open my $FH, '<', $filename
-        or die "failed to open '$filename'";
+        or die "failed to open '$filename': $!";
 
-    $self->{FH} = $FH;
-    return $FH;
+    return $self->{FH} = $FH;
 };
 
 sub import_records {
-    my $self = shift;
+    my ($self, $file) = @_;
+    $self->get_import_file( $file ) or return;
 
     my $p = NicToolServer::Import::BIND::Conf_Parser->new;
     foreach ( qw/ nt group_id nameservers / ) {

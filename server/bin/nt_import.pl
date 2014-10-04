@@ -60,12 +60,8 @@ warn "nameservers: $nameservers\n" if $verbose;
 $nti->group_id( $group_id );
 $nti->nameservers( [ split /,/, $nameservers ] );
 
-my $fn = $nti->get_import_file( $filename )
-    or die "$filename does not exist or is not accessible";
-
 print "\nStarting import using: $filename\n";
-
-$nti->import_records();
+$nti->import_records($filename);
 
 exit 0;
 

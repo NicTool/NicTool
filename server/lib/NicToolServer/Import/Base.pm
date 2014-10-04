@@ -105,8 +105,7 @@ sub nt_create_zone {
     print "creating zone $p{zone}\n";
     my $nt = $self->nt_connect();
 
-    my $group_id = $p{group_id} || $self->group_id
-        or die "group ID not set!\n";
+    my $group_id = $p{group_id} || $self->group_id or die "group ID unset!\n";
     my $nameservers = $p{nameservers} || $self->nameservers
         or die "nameservers unset!\n";
     $nameservers = join( ',', @{$nameservers} );
@@ -323,6 +322,8 @@ sub nt_connect {
     }
 
     $self->{nt} = $nt;
+    $self->{nameservers} = join(',', grep { $_ > 0 } split /,/, $nt->result->{store}{usable_ns});
+    $self->{group_id} = $nt->result->{store}{nt_group_id};
     return $nt;
 }
 
@@ -352,8 +353,6 @@ sub record_exists {
 sub nameservers {
     my ($self, $ns) = @_;
     return $self->{nameservers} if ! $ns;
-    foreach my $nsid ( @$ns ) {
-    };
     $self->{nameservers} = $ns;
     return $ns;
 };
