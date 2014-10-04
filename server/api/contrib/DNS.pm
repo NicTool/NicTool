@@ -1,9 +1,9 @@
-package XXX::DNS;
+package DNS;
 
 use strict;
 use warnings;
 
-our $VERSION = '0.75';
+our $VERSION = '0.76';
 
 use Data::Dumper;
 use English qw( -no_match_vars );
@@ -35,36 +35,30 @@ sub new {
 }
 
 sub nt_connect {
-
     my $self = shift;
-    my $proj = $self->{proj};
 
-    return $self->{nt} if $self->{nt};    # session is already cached
+    return $self->{nt} if $self->{nt};    # session already cached
 
     eval { require NicTool; };
 
     if ($EVAL_ERROR) {
-        die "Could not load NicTool.pm. Are the NicTool client libraries",
-            " installed? They can be found in NicToolServer/sys/client in ",
-            " the NicToolServer distribution. See http://nictool.com/";
+        die "Could not load NicTool.pm. Are the NicTool client libraries
+            installed? They can be found in NicToolServer/sys/client in
+            the NicToolServer distribution.";
     }
 
     if ( !$self->{proj}{config}{NicTool} ) {
         die "[NicTool] config section missing from proj.conf\n";
     }
 
+    my $cfg = $self->{proj}{config}{NicTool};
     my $nt = NicTool->new(
-        server_host => $self->{proj}{config}{NicTool}{host},
-        server_port => $self->{proj}{config}{NicTool}{port} || 8082,
-        protocol    => $self->{proj}{config}{NicTool}{protocol},
+        server_host => $cfg->{host},
+        server_port => $cfg->{port} || 8082,
+        protocol    => $cfg->{protocol},
     );
 
-    my $user = $self->{proj}{config}{NicTool}{user};
-    my $pass = $self->{proj}{config}{NicTool}{pass};
-
-    #    warn "logging into nictool with $user:$pass";
-
-    my $r = $nt->login( username => $user, password => $pass );
+    my $r = $nt->login( username => $cfg->{user}, password => $cfg->{pass} );
 
     if ( $nt->is_error($r) ) {
         die "error logging in to nictool: $r->{store}{error_msg}\n";
@@ -72,8 +66,7 @@ sub nt_connect {
 
     #warn Data::Dumper::Dumper( $nt ); # ->{user}{store} );
     #warn "\tlogin successful (session " . $nt->{nt_user_session} . ")";
-    $self->{nt} = $nt;
-    return $nt;
+    return $self->{nt} = $nt;
 }
 
 sub nt_create_record {
