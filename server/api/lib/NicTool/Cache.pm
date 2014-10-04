@@ -1,4 +1,5 @@
-#!/usr/bin/perl
+package NicTool::Cache;
+use strict;
 ###
 # a simple path based cache
 ###
@@ -19,8 +20,6 @@
 # Suite 225, San Francisco, CA 94107, USA
 #
 ###
-
-package NicTool::Cache;
 
 sub new { bless {}, $_[0] }
 

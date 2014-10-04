@@ -1,4 +1,5 @@
-#!/usr/bin/perl
+package NicTool::DBObject;
+use strict;
 ###
 # NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
 # NicTool v2.01 Copyright 2004 The Network People, Inc.
@@ -17,7 +18,6 @@
 #
 ###
 
-package NicTool::DBObject;
 
 =head1 NAME
 
@@ -39,9 +39,10 @@ name their ID number. Instances have an ID number.
 
 =cut
 
-use strict;
-use NicTool::Result;
 use Carp;
+
+use lib 'lib';
+use NicTool::Result;
 
 our @ISA = 'NicTool::Result';
 
@@ -159,13 +160,7 @@ sub refresh {
     my $self = shift;
     my $obj  = $self->_get_self;
     return $obj if $obj->is_error;
-
-    #$self->{store}=undef;
     $self->{store} = $obj->{store};
-
-    #foreach(keys %{$obj->{store}}){
-    #$self->set($_,$obj->get($_));
-    #}
     $obj = undef;
     return $self;
 }
@@ -208,14 +203,12 @@ sub AUTOLOAD {
     if ( $self->_api_call($NicTool::DBObject::AUTOLOAD) ) {
         return $self->_call( $NicTool::DBObject::AUTOLOAD, @_ );
     }
-    elsif ( $NicTool::DBObject::AUTOLOAD =~ /can_([^:]+)$/ ) {
+    if ( $NicTool::DBObject::AUTOLOAD =~ /can_([^:]+)$/ ) {
         return $self->get($1);
     }
-    else {
 
-        #warn "Can't call $NicTool::DBObject::AUTOLOAD : ".(caller);
-        return undef;
-    }
+    #warn "Can't call $NicTool::DBObject::AUTOLOAD : ".(caller);
+    return;
 }
 
 =pod

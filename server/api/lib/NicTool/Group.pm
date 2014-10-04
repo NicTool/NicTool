@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+package NicTool::Group;
 ###
 # NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
 # NicTool v2.01 Copyright 2004 The Network People, Inc.
@@ -17,7 +17,6 @@
 #
 ###
 
-package NicTool::Group;
 
 =head1 NAME
 
@@ -138,6 +137,8 @@ Returns a B<NicTool::List> containing B<NicTool::Record> objects.
 
 =cut
 
+use strict;
+use lib 'lib';
 use NicTool::DBObject;
 our @ISA = 'NicTool::DBObject';
 

@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+package NicTool::List;
 ###
 # NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
 # NicTool v2.01 Copyright 2004 The Network People, Inc.
@@ -17,7 +17,6 @@
 #
 ###
 
-package NicTool::List;
 
 =head1 NAME
 
@@ -105,9 +104,10 @@ directly as an array (I<list>) or an array reference (I<list_as_ref>).
 =cut
 
 use strict;
+
+use lib 'lib';
 use NicTool;
 use NicTool::Result;
-use Data::Dumper;
 
 our @ISA = 'NicTool::Result';
 my $iterate = sub {

@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+use strict;
 ###
 #
 # NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
@@ -679,10 +680,10 @@ sub result_list_param {
 sub parameters {
     my ( $p, $call, $param, $field ) = @_;
 
-    my $obj = api_commands->{$call}->{'parameters'};
-    return $obj unless $param;
+    my $obj = api_commands->{$call}->{parameters};
+    return $obj if !$param;
     $obj = $obj->{$param};
-    return $obj unless $field;
+    return $obj if !$field;
     return $obj->{$field};
 }
 
