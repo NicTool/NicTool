@@ -24,13 +24,12 @@ sub get_import_file {
     open my $FH, '<', $filename
         or die "failed to open '$filename'";
 
-    $self->{FH} = $FH;
-    return $FH;
+    return $self->{FH} = $FH;
 };
 
 sub import_records {
-    my $self = shift;
-    $self->get_import_file( 'data' ) or return;
+    my ($self, $file) = @_;
+    $self->get_import_file( $file || 'data' ) or return;
 
 # tinydns-data format: http://cr.yp.to/djbdns/tinydns-data.html
 
