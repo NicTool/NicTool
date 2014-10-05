@@ -35,10 +35,10 @@ sub import_records {
     while ( defined ( my $record = <$fh> ) ) {
         next if $record =~ /^#/;     # comment
         next if $record =~ /^\s+$/;  # blank line
-        next if $record =~ /^\-/;    #  IGNORE =>  - fqdn : ip : ttl:timestamp:lo
-        Time::HiRes::sleep 0.2;  # go slow enough we can read
+        next if $record =~ /^\-/;    # IGNORE: - fqdn : ip : ttl:timestamp:lo
+        Time::HiRes::sleep 0.1;      # go slow enough we can read
 
-        my $first = substr($record, 0, 1 );
+        my $first = substr($record, 0, 1);
         my $record = substr($record, 1 );
         chomp $record;
 
@@ -48,7 +48,8 @@ sub import_records {
         elsif ( $first eq '.' ) {       #  'SOA,NS,A' =>  . fqdn : ip : x:ttl:timestamp:lo
             $self->zr_soa($record);
             $self->zr_ns($record);
-            $self->zr_a($record);
+            my ( $fqdn, $ip, $ttl, $timestamp, $location ) = split(':', $record);
+            $self->zr_a($record) if $ip;
         }
         elsif ( $first eq '=' ) {       #  'A,PTR'    =>  = fqdn : ip : ttl:timestamp:lo
             $self->zr_a($record);
@@ -169,7 +170,11 @@ sub zr_ptr {
     print "PTR: $r\n";
     my ( $fqdn, $addr, $ttl, $timestamp, $location ) = split(':', $r);
 
-    my ($zone_id, $host) = $self->get_zone_id( $fqdn );
+    my $zone;
+    if ('ip6.arpa' eq substr($fqdn, -8, 8)) {
+        $zone = lc substr $fqdn, 32, 40;
+    }
+    my ($zone_id, $host) = $self->get_zone_id( $fqdn, $zone );
 
     $self->nt_create_record(
         zone_id => $zone_id,
