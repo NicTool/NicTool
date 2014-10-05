@@ -28,8 +28,6 @@ sub get_import_file {
         $filename = 'named.conf';
     }
 
-    return $self->{FH} if defined $self->{FH};
-
     open my $FH, '<', $filename
         or die "failed to open '$filename': $!";
 

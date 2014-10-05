@@ -324,7 +324,7 @@ sub zr_srv {
     # SRV - https://www.ietf.org/rfc/rfc2782.txt
     # format of SRV record derived from djbdnsRecordBuilder
 
-    my $rdata = escape_rdata( pack "nnn",
+    my $rdata = octal_escape( pack "nnn",
         $self->{nte}->is_ip_port( $r->{priority} ),   # Priority, 16 bit (n)
         $self->{nte}->is_ip_port( $r->{weight} ),     # Weight,   16 bit (n)
         $self->{nte}->is_ip_port( $r->{other} ),      # Port,     16 bit (n)
@@ -401,7 +401,7 @@ sub zr_loc {
         return '';
     };
 
-    my $rdata = escape_rdata( pack 'C4N3', 0,
+    my $rdata = octal_escape( pack 'C4N3', 0,
                          precsize_valton($size),
                          precsize_valton($horiz_pre),
                          precsize_valton($vert_pre),
@@ -471,7 +471,7 @@ sub zr_ipseckey {
     # http://www.faqs.org/rfcs/rfc4025.html
 # IN IPSECKEY ( precedence gateway-type algorithm gateway base64-public-key )
 
-    my $rdata = $self->escape_rdata( pack('CCC',
+    my $rdata = $self->octal_escape( pack('CCC',
         $r->{weight},         # Precedence     1 octet
         $r->{priority},       # Gateway Type   1 octet, see Gateway
         $r->{other},          # Algorithm Type 1 octet, 0=none, 1-DSA, 2=RSA
@@ -488,7 +488,7 @@ sub zr_ipseckey {
             warn "$r->{name} IPSECKEY gateway not an IPv4 address!\n";
             return;
         };
-        $rdata .= $self->escape_rdata( $ip_as_int );
+        $rdata .= $self->octal_escape( $ip_as_int );
     }
     elsif ( $gw_type == 2 ) {               # 2 - 128-bit, net order, IPv6
         my $ip_as_hex = new Net::IP ($gateway)->hexip or do {
@@ -503,7 +503,7 @@ sub zr_ipseckey {
 
     # Public Key     optional, base 64 encoded
     if ( $r->{description} ) {
-        $rdata .= $self->escape_rdata( decode_base64( $r->{description} ) );
+        $rdata .= $self->octal_escape( decode_base64( $r->{description} ) );
     };
 
     return $self->zr_generic( 45, $r, $rdata );
@@ -520,7 +520,7 @@ sub zr_dnskey {
         return '';
     };
 
-    my $rdata = escape_rdata( pack "nCCa*",
+    my $rdata = octal_escape( pack "nCCa*",
         $r->{weight},             # flags:     2 octets
         $r->{priority},           # protocol:  1 octet
         $r->{other},              # algorithm: 1 octet
@@ -546,7 +546,7 @@ sub zr_rrsig {
     $sig_exp = $self->datestamp_to_int( $sig_exp );
     $sig_inc = $self->datestamp_to_int( $sig_inc );
 
-    my $rdata = escape_rdata( pack("nCCNNNn",
+    my $rdata = octal_escape( pack("nCCNNNn",
         $type,                              # Type Covered   2 octet
         $algorithm,                         # Algorithm      1 octet
         $label_count,                       # Labels         1 octet
@@ -557,7 +557,7 @@ sub zr_rrsig {
     ) );
 
     $rdata .= $self->pack_domain_name( $signers_name ); # Signer's Name
-    $rdata .= escape_rdata( pack "a*", $signature );    # Signature
+    $rdata .= octal_escape( pack "a*", $signature );    # Signature
 
     return $self->zr_generic( 46, $r, $rdata );
 };
@@ -592,7 +592,7 @@ sub zr_nsec3 {
     my $rdata = $self->pack_nsec3_params( $hash_algo, $flags, $iters, $salt );
     $next_hash = $self->base32str_to_bin( $next_hash );
 
-    $rdata .= escape_rdata( pack 'Ca*',
+    $rdata .= octal_escape( pack 'Ca*',
         length( $next_hash),  # Hash Length      1 octet
         $next_hash            # Next Hashed Owner Name - unmodified binary hash value
     );
@@ -621,7 +621,7 @@ sub zr_ds {
     my $r = shift or die;
 
     # DS: http://www.ietf.org/rfc/rfc4034.txt
-    my $rdata = escape_rdata( pack("nCC",
+    my $rdata = octal_escape( pack("nCC",
         $r->{weight},             # Key Tag,     2 octets
         $r->{priority},           # Algorithm,   1 octet
         $r->{other},              # Digest Type, 1 octet (1=SHA-1, 2=SHA-256)
@@ -663,7 +663,7 @@ sub datestamp_to_int {
     );
 };
 
-sub escape_rdata {
+sub octal_escape {
     my $line = pop @_;
     my $out;
     foreach ( split //, $line ) {
@@ -695,10 +695,10 @@ sub pack_domain_name {
     my ($self, $name) = @_;
 
     # RFC 1035, 3.3 Standard RRs
-    # The standard wire format for DNS names. (1 octet length + string)
+    # The standard wire format for DNS names. (1 octet length + octets)
     my $r;
     foreach my $label ( split /\./, $self->qualify( $name ) ) {
-        $r .= escape_rdata( pack( 'CA*', length( $label ), $label ) );
+        $r .= octal_escape( pack( 'C a*', length( $label ), $label ) );
     };
     $r.= '\000';   # terminating with a zero length label
     return $r;
@@ -720,7 +720,7 @@ sub pack_nsec3_params {
     if   ( $salt eq '-' ) { $salt = ''; }
     else                  { $salt = pack 'H*', $salt };  # to binary
 
-    return escape_rdata( pack 'CCnCa*',
+    return octal_escape( pack 'CCnCa*',
         $hash_algo,           # Hash Algorithm   1 octet
         $flags,               # Flags            1 octet
         $iters,               # Iterations      16 bit ui,lf(n)
