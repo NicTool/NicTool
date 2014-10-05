@@ -19,8 +19,6 @@ sub get_import_file {
     my $self = shift;
     my $filename = shift || 'data';
 
-    return $self->{FH} if defined $self->{FH};
-
     open my $FH, '<', $filename
         or die "failed to open '$filename'";
 
@@ -37,7 +35,7 @@ sub import_records {
     while ( defined ( my $record = <$fh> ) ) {
         next if $record =~ /^#/;     # comment
         next if $record =~ /^\s+$/;  # blank line
-        next if $record =~ /^\-/;       #  IGNORE     =>  - fqdn : ip : ttl:timestamp:lo
+        next if $record =~ /^\-/;    #  IGNORE =>  - fqdn : ip : ttl:timestamp:lo
         Time::HiRes::sleep 0.2;  # go slow enough we can read
 
         my $first = substr($record, 0, 1 );
@@ -80,6 +78,7 @@ sub import_records {
     };
 
     print "done\n";
+    return 1;
 };
 
 sub zr_a {
@@ -96,7 +95,7 @@ sub zr_a {
         type    => 'A',
         name    => $host,
         address => $ip,
-        ttl     => $ttl,
+        defined $ttl ? ( ttl => $ttl ) : (),
     );
 }
 
@@ -114,7 +113,7 @@ sub zr_cname {
         type    => 'CNAME',
         name    => $host,
         address => $self->fully_qualify( $addr ),
-        ttl     => $ttl,
+        defined $ttl ? ( ttl => $ttl ) : (),
     );
 }
 
@@ -132,8 +131,8 @@ sub zr_mx {
         type    => 'MX',
         name    => $host,
         address => $self->fully_qualify( $addr ),
-        ttl     => $ttl,
         weight  => $distance,
+        defined $ttl ? ( ttl => $ttl ) : (),
     );
 }
 
@@ -150,8 +149,8 @@ sub zr_txt {
         zone_id => $zone_id,
         type    => 'TXT',
         name    => $host,
-        address => $addr,
-        ttl     => $ttl,
+        address => $self->unescape_octal($addr),
+        defined $ttl ? ( ttl => $ttl ) : (),
     );
 }
 
@@ -177,7 +176,7 @@ sub zr_ptr {
         type    => 'PTR',
         name    => $host,
         address => $self->fully_qualify( $addr ),
-        ttl     => $ttl,
+        defined $ttl ? ( ttl => $ttl ) : (),
     );
 }
 
@@ -199,9 +198,9 @@ sub zr_soa {
         zone        => $zone,
         description => '',
         defined $rname   ? ( contact => $rname )   : (),  # only include
-        defined $ttl     ? ( ttl     => $ttl )     : (),  # these values in
-        defined $refresh ? ( refresh => $refresh ) : (),  # the request when
-        defined $retry   ? ( retry   => $retry )   : (),  # they are defined
+        defined $ttl     ? ( ttl     => $ttl )     : (),  # these values
+        defined $refresh ? ( refresh => $refresh ) : (),  # when defined
+        defined $retry   ? ( retry   => $retry )   : (),
         defined $expire  ? ( expire  => $expire )  : (),
         defined $min     ? ( minimum => $min )     : (),
     );
@@ -214,12 +213,18 @@ sub zr_generic {
     my ( $fqdn, $n, $rdata, $ttl, $timestamp, $location ) = split(':', $r);
     return $self->zr_spf(  $r ) if $n == 99;
     return $self->zr_aaaa( $r ) if $n == 28;
-    die "oops, no generic support yet record type $n: $fqdn!\n";
+    return $self->zr_srv( $r )  if $n == 33;
+    if ($n == 16) {
+        $r =~ s/:16//;
+        return $self->zr_txt( $r );
+    };
+    die "oops, no generic support for record type $n in $fqdn\n";
 }
 
 sub zr_spf {
     my $self = shift;
     my $r = shift or die;
+
     print "SPF : $r\n";
     my ( $fqdn, $n, $rdata, $ttl, $timestamp, $location ) = split(':', $r);
 
@@ -239,9 +244,9 @@ sub zr_spf {
 sub zr_aaaa {
     my $self = shift;
     my $r = shift or die;
-    print "AAAA : $r\n";
-    my ( $fqdn, $n, $rdata, $ttl, $timestamp, $location ) = split(':', $r);
 
+    print "AAAA : $r\n";
+    my ($fqdn, $n, $rdata, $ttl, $timestamp, $location) = split(':', $r);
     my ($zone_id, $host) = $self->get_zone_id( $fqdn );
 
     $rdata = $self->unescape_packed_hex( $rdata );
@@ -251,8 +256,48 @@ sub zr_aaaa {
         type    => 'AAAA',
         name    => $host,
         address => $rdata,
-        ttl     => $ttl,
+        defined $ttl ? ( ttl => $ttl ) : (),
     );
+}
+
+sub zr_srv {
+    my $self = shift;
+    my $r = shift or die;
+
+    print "SRV : $r\n";
+    my ($fqdn, $n, $rdata, $ttl, $timestamp, $location) = split(':', $r);
+    my ($zone_id, $host) = $self->get_zone_id( $fqdn );
+
+    $rdata = unescape_octal($rdata);
+    my ($priority, $weight, $port) = unpack('n3', $rdata);
+    my $target = $self->unpack_domain( $rdata, 6 );
+
+    $self->nt_create_record(
+        zone_id  => $zone_id,
+        type     => 'SRV',
+        name     => $host,
+        address  => $self->fully_qualify( $target ),
+        weight   => $weight,
+        priority => $priority,
+        other    => $port,
+        defined $ttl ? ( ttl => $ttl ) : (),
+    );
+}
+
+sub unpack_domain {
+    my ($self, $string, $index) = @_;
+
+    $index ||= 0;
+    my @labels;
+    while ( $index < length $string ) {
+        my $header = unpack "\@$index C", $string;
+        return join('.', @labels) if !$header;
+        if ( $header <= 63 ) {
+            push @labels, substr $string, ++$index, $header;
+            $index += $header;
+        }
+    }
+    die "domain name unpack failed\n";
 }
 
 sub unescape_octal {
@@ -264,7 +309,7 @@ sub unescape_octal {
 
 sub unescape_packed_hex {
     my ($self, $str) = @_;
-    # convert escaped hex back to hex chars, like in a AAAA
+    # convert escaped hex back to hex chars, like in an AAAA
     $str =~ s/(\\)([0-9]{3})/sprintf('%02x',oct($2))/eg;
     return join(':', unpack("(a4)*", $str));
 };

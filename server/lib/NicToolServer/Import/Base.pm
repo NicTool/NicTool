@@ -165,7 +165,7 @@ sub nt_create_record {
         $request{$_} = $p{$_} if defined $p{$_};
     };
 
-    print "adding record \n";
+    #print "adding\n";
     my $nt = $self->nt_connect();
     my $r = $nt->new_zone_record(%request);  # submit to NicToolServer
 
@@ -292,8 +292,7 @@ sub nt_get_zone_records {
 }
 
 sub nt_connect {
-    my $self = shift;
-    my ($nt_host, $nt_port, $nt_user, $nt_pass) = @_;
+    my ($self, $nt_host, $nt_port, $nt_user, $nt_pass) = @_;
 
     return $self->{nt} if $self->{nt};
 
@@ -321,10 +320,9 @@ sub nt_connect {
         die "error logging in to nictool: $r->{store}{error_msg}\n";
     }
 
-    $self->{nt} = $nt;
     $self->{nameservers} = join(',', grep { $_ > 0 } split /,/, $nt->result->{store}{usable_ns});
     $self->{group_id} = $nt->result->{store}{nt_group_id};
-    return $nt;
+    return $self->{nt} = $nt;
 }
 
 sub fully_qualify {
