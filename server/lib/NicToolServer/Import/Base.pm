@@ -47,36 +47,19 @@ sub get_zone_id {
         return ($zone_id, $host);
     };
 
-    # try going right:  host.example.com,  most specific first
+    # try most specific first
     $zone_id = $self->nt_get_zone_id( zone => $fqdn );
     if ( $zone_id ) {
         return ($zone_id, "$fqdn.");
     };
 
-    ($host, $zone) = $self->get_zone( lc $fqdn);
-    if ( ! $zone ) {
-        die "unable to work out zone from $fqdn\n";
-    };
-
-    # try:  host .. example.com
-    $zone_id = $self->nt_get_zone_id( zone => $zone );
-    if ( $zone_id ) {
+    my @labels = split /\./, $fqdn;
+    for my $i (0 .. (scalar @labels - 3)) {
+        $zone = join('.', @labels[$i+1 .. scalar @labels-1]);
+        $zone_id = $self->nt_get_zone_id( zone => $zone ) or next;
+        $host = join('.', @labels[0 .. $i]);
         return ($zone_id, $host);
-    };
-
-    # try going left ( sub.dom .. example.com )
-    my ($host2, $zone2) = $self->get_zone($zone);
-    $zone_id = $self->nt_get_zone_id( zone => $zone2 );
-    if ( $zone_id ) {
-        return ($zone_id, "$host.$host2" );
-    };
-
-    # try more left ( sub.sub.dom .. example.com )
-    my ($host3, $zone3) = $self->get_zone($zone2);
-    $zone_id = $self->nt_get_zone_id( zone => $zone3 );
-    if ( $zone_id ) {
-        return ($zone_id, "$host.$host2.$host3" );
-    };
+    }
 
     die "could not find zone for $fqdn\n";
 };
