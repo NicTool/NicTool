@@ -100,13 +100,7 @@ EO_SOME_DAY
 sub _sql_test_2_28 {
     my $r = _get_db_version();
     return 1 if ! defined $r;   # query failed
-
-    my $exists = $dbh->query("SELECT option_value FROM nt_options WHERE option_name='session_timeout'")->hashes;
-    if (scalar $exists && $exists->[0] && $exists->[0]{option_value}) {
-        $dbh->query("UPDATE nt_options SET option_value='2.28' WHERE option_name='db_version'");
-        return 1;               # already updated
-    };
-
+    return 1 if $r eq '2.28';   # already up-to-date
     return 0 if $r eq '2.27';   # do it!
     return 1;                   # don't update
 };
@@ -125,7 +119,6 @@ sub _sql_test_2_27 {
 
     my $exists = $dbh->query("SELECT option_value FROM nt_options WHERE option_name='session_timeout'")->hashes;
     if (scalar $exists && $exists->[0] && $exists->[0]{option_value}) {
-        $dbh->query("UPDATE nt_options SET option_value='2.27' WHERE option_name='db_version'");
         return 1;               # already updated
     };
 
@@ -152,7 +145,6 @@ sub _sql_test_2_24 {
 
     my $exists = $dbh->query("SHOW COLUMNS FROM `nt_nameserver` LIKE 'export_type_id'")->hashes;
     if (scalar $exists && $exists->[0] && $exists->[0]{field}) {
-        $dbh->query("UPDATE nt_options SET option_value='2.24' WHERE option_name='db_version'");
         return 1;               # already updated
     };
 
@@ -198,14 +190,12 @@ UPDATE nt_options SET option_value='2.24' WHERE option_name='db_version';
 EO_SQL_2_24
 };
 
-
 sub _sql_test_2_18 {
     my $r = _get_db_version();
     return 1 if ! defined $r;   # query failed
 
     my $exists = $dbh->query("SHOW COLUMNS FROM `resource_record_type` LIKE 'obsolete'")->hashes;
     if (scalar $exists && $exists->[0] && $exists->[0]{field}) {
-        $dbh->query("UPDATE nt_options SET option_value='2.18' WHERE option_name='db_version'");
         return 1;               # already updated
     };
 
@@ -242,7 +232,6 @@ sub _sql_test_2_16 {
 
     my $exists = $dbh->query("SHOW COLUMNS FROM `nt_perm` LIKE 'usable_ns'")->hashes;
     if (scalar $exists && $exists->[0] && $exists->[0]{field}) {
-        $dbh->query("UPDATE nt_options SET option_value='2.16' WHERE option_name='db_version'");
         return 1;               # already updated
     };
 
