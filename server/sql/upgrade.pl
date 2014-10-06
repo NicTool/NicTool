@@ -32,13 +32,13 @@ my $dbh  = DBIx::Simple->connect( $dsn, $db_user, $db_pass )
             or die DBIx::Simple->error;
 
 # NOTE: when making schema changes, update db_version in 12_nt_options.sql
-my @versions = qw/ 2.00 2.05 2.08 2.09 2.10 2.11 2.14 2.15 2.16 2.18 2.24 2.27 /;
+my @versions = qw/ 2.00 2.05 2.08 2.09 2.10 2.11 2.14 2.15 2.16 2.18 2.24 2.27 2.28 /;
 
 foreach my $version ( @versions ) {
 # first, run a DB test query
     my $test_sub = '_sql_test_' . $version;  # assemble sub name
     $test_sub =~ s/\./_/g;                   # replace . with _
-    no strict 'refs';
+    no strict 'refs';  ## no critic
     my $is_applied = &$test_sub;
     use strict;
     if ( $is_applied ) {                     # run the test
@@ -50,7 +50,7 @@ foreach my $version ( @versions ) {
     print "applying v $version SQL updates\n";
     my $queries = '_sql_' . $version;
     $queries =~ s/\./_/g;                   # replace . with _
-    no strict 'refs';
+    no strict 'refs';  ## no critic
     my $q_string = &$queries;             # fetch the queries
     use strict;
     $q_string =~ s/[\s]{2,}/ /g;          # condense whitespace
@@ -96,6 +96,28 @@ ALTER TABLE `nt_delegate` ADD FOREIGN KEY (`nt_group_id`) REFERENCES `nt_group` 
 EO_SOME_DAY
 ;
 };
+
+sub _sql_test_2_28 {
+    my $r = _get_db_version();
+    return 1 if ! defined $r;   # query failed
+
+    my $exists = $dbh->query("SELECT option_value FROM nt_options WHERE option_name='session_timeout'")->hashes;
+    if (scalar $exists && $exists->[0] && $exists->[0]{option_value}) {
+        $dbh->query("UPDATE nt_options SET option_value='2.28' WHERE option_name='db_version'");
+        return 1;               # already updated
+    };
+
+    return 0 if $r eq '2.27';   # do it!
+    return 1;                   # don't update
+};
+
+sub _sql_2_28 {
+    <<EO_SQL_2_28
+ALTER TABLE nt_zone ADD COLUMN last_publish TIMESTAMP DEFAULT NULL AFTER last_modified;
+
+UPDATE nt_options SET option_value='2.28' WHERE option_name='db_version';
+EO_SQL_2_28
+}
 
 sub _sql_test_2_27 {
     my $r = _get_db_version();

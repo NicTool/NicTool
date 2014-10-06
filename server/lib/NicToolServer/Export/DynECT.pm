@@ -15,7 +15,7 @@ my $debug=0;
 my $dyn_rest_url = 'https://api.dynect.net/REST/';
 
 my $ua = LWP::UserAgent->new;
-   $ua->agent("NicTool/2.24");
+   $ua->agent("NicTool/2.28");
 #  $ua->ssl_opts(verify_hostname=>0);
 
 my $json = JSON->new;
@@ -24,7 +24,7 @@ sub export_db {
     my ($self) = @_;
 
     # for incremental, get_ns_zones returns only changed zones.
-    foreach my $z ( @{ $self->{nte}->get_ns_zones() } ) {
+    foreach my $z ( @{ $self->{nte}->get_ns_zones(publish_ts=>1) } ) {
         my $zone = $z->{zone};
         $self->{nte}->zones_exported($zone);
         $self->{nte}{zone_name} = $zone;
@@ -43,13 +43,13 @@ sub export_db {
         }
 
         $self->add_zonefile($zone, $zone_str) or next;
-        $self->add_ns_records($z);           # manually add NS records
+       #$self->add_ns_records($z);           # manually add NS records
        #$self->remove_dyn_ns($zone);
         sleep 1;                     # wait a second, because
         $self->publish_zone($zone);  # immediate tries frequently fail
     }
 
-    foreach my $z ( @{ $self->{nte}->get_ns_zones( deleted => 1) } ) {
+    foreach my $z (@{$self->{nte}->get_ns_zones(publish_ts=>1,deleted=>1)}) {
         my $zone = $z->{zone};
         if ($self->{nte}->in_export_list($zone)) {
             $self->{nte}->elog("$zone recreated, skipping delete");
@@ -170,17 +170,18 @@ sub publish_zone {
         sleep 2;
         $res = $self->get_api_response('PUT', "Zone/$zone/", {publish => 1});
         if (!$res->is_success) {
-            $self->{nte}->elog( Dumper($res));
+            $self->{nte}->elog(Dumper($res));
             return 0;
         }
     };
 
     my $api_r = $json->decode($res->content);
     if ('success' ne $api_r->{status}) {
-        $self->{nte}->elog( Dumper($api_r->{msgs}));
+        $self->{nte}->elog(Dumper($api_r->{msgs}));
         return 0;
     }
 
+    $self->{nte}->touch_publish_ts($zone);
     $self->{nte}->elog("published $zone");
     return 1;
 };

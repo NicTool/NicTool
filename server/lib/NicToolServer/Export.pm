@@ -147,6 +147,15 @@ sub set_status {
     );
 }
 
+sub touch_publish_ts {
+    my ($self, $zone) = @_;
+    die "missing zone to touch" if ! $zone;
+    $self->exec_query(
+        "UPDATE nt_zone SET last_publish=NOW() WHERE zone=? AND deleted=0",
+         [ $zone, $self->{ns_id} ]
+    );
+}
+
 sub cleanup_db {
     my $self = shift;
 
@@ -314,7 +323,7 @@ sub get_export_dir {
         };
     };
 
-    eval { mkpath( $dir, { mode => 0755 } ); };
+    eval { File::Path::mkpath( $dir, { mode => oct 755 } ); };
     if ( -d $dir ) {     # mkpath just created it
         $self->elog("created $dir");
         $self->{export_dir} = $dir;
@@ -397,15 +406,20 @@ sub get_ns_zones {
     my %p = validate( @_,
         { last_modified => { type => SCALAR, optional => 1 },
           query_result  => { type => BOOLEAN, optional => 1 },
-          deleted       => { type => BOOLEAN, optional => 1, default=>0 },
+          deleted       => { type => BOOLEAN, optional => 1, default => 0 },
+          publish_ts    => { type => BOOLEAN, optional => 1, default => 0 },
         },
     );
 
-    my $sql = "SELECT z.nt_zone_id, z.zone, z.mailaddr, z.serial, z.refresh,
-        z.retry, z.expire, z.minimum, z.ttl, z.location, z.last_modified,
- (SELECT GROUP_CONCAT(nt_nameserver_id) FROM nt_zone_nameserver n
-    WHERE n.nt_zone_id=z.nt_zone_id) AS nsids
-     FROM nt_zone z";
+    my $fields = 'z.nt_zone_id, z.zone, z.mailaddr, z.serial, z.refresh,
+        z.retry, z.expire, z.minimum, z.ttl, z.location, z.last_modified';
+
+    if ( $self->{ns_id} != 0 ) {
+        $fields .= ", (SELECT GROUP_CONCAT(nt_nameserver_id) FROM nt_zone_nameserver n
+        WHERE n.nt_zone_id=z.nt_zone_id) AS nsids";
+    }
+
+    my $sql = "SELECT $fields FROM nt_zone z";
 
     my @args = $p{deleted};
     if ( $self->{ns_id} == 0 ) {    # all zones, regardless of NS pref
@@ -418,7 +432,10 @@ sub get_ns_zones {
         push @args, $self->{ns_id};
     }
 
-    if ( $p{last_modified} ) {
+    if ( $p{publish_ts} ) {
+        $sql .= " AND z.last_modified > z.last_publish";
+    }
+    elsif ( $p{last_modified} ) {
         $sql .= " AND z.last_modified > ?";
         push @args, $p{last_modified};
     }
