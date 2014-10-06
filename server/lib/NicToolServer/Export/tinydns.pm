@@ -182,8 +182,13 @@ sub export_db {
         $self->{nte}{zone_name} = $r->{zone_name};
         $r->{location}  ||= '';
         $r->{timestamp} = $self->to_tai64($r->{timestamp});
+        my @args = $r;
         my $method = 'zr_' . lc $r->{type};
-        eval { print $fh $self->$method( $r ); };
+        if ('TYPE' eq substr(uc $r->{type}, 0, 4)) { # RFC 3597, Unknown type
+            $method = 'zr_generic';
+            @args = (substr($r->{type}, 4), $r, $self->octal_escape($r->{address}));
+        }
+        eval { print $fh $self->$method( @args ); };
         $self->{nte}->elog( $@ ) if $@;
     };
     $result->finish;
