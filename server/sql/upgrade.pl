@@ -488,7 +488,7 @@ UPDATE nt_nameserver SET output_format='tinydns' WHERE output_format='djb';
 ALTER TABLE nt_nameserver CHANGE `output_format` `export_format` enum('tinydns','bind') NOT NULL;
 
 /* nt_nameserver_log */
-DELETE FROM nt_nameserver_log WHERE ( output_format != 'tinydns' AND output_format != 'djb' AND output_format != 'nt' AND output_format != 'bind' ) OR output_format is null;
+DELETE FROM nt_nameserver_log WHERE output_format NOT IN ('tinydns','djb','nt','bind') OR output_format IS NULL;
 ALTER TABLE nt_nameserver_log DROP column `service_type`;
 ALTER TABLE nt_nameserver_log ADD `export_serials` tinyint(1) UNSIGNED NOT NULL DEFAULT '1'  AFTER `export_interval`;
 ALTER TABLE nt_nameserver_log MODIFY output_format enum('djb','tinydns','bind','nt') NOT NULL;
