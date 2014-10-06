@@ -132,7 +132,7 @@ sub zr_mx {
         type    => 'MX',
         name    => $host,
         address => $self->fully_qualify( $addr ),
-        weight  => $distance,
+        weight  => $distance || 0,
         defined $ttl ? ( ttl => $ttl ) : (),
     );
 }
