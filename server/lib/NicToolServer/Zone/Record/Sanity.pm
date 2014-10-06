@@ -288,7 +288,7 @@ sub _valid_cname {
     };
 
     foreach my $a ( qw/ A AAAA MX / ) {
-        @args[1] = $a;
+        $args[1] = $a;
 
         if ( $self->record_exists( @args ) ) {
             $self->error( 'name', "record $data->{name} already exists within zone as an Address ($a) record: RFC 1034 & 2181");
@@ -551,10 +551,10 @@ sub _valid_naptr {
 sub get_invalid_chars {
     my ( $self, $type, $field, $zone_text ) = @_;
 
-    # valid domain label characters are defined in RFC 1035. Valid hostnames
-    # are defined in RFC 952 and RFC 1123
-    # (allow hostnames to start with a digit). The strict match
-    # is the fall-through (last) return. The exceptions precede it. These
+    # RFC  952 defined valid hostnames
+    # RFC 1035 limited domain label chars to letters, digits, and hyphen
+    # RFC 1123 allowed hostnames to start with a digit
+    # RFC 2181 'any binary string can be used as the label'
     # regexp strings match all characters except those in their definition.
 
     # allow : char for AAAA
@@ -562,22 +562,16 @@ sub get_invalid_chars {
     return '[^a-fA-F0-9:]' if $type eq 'AAAA' && $field eq 'address';
     return '[^0-9\.]'      if $type eq 'A'    && $field eq 'address';
 
-    # allow _ char for SRV, NS (delegated SRV), SPF, & TXT (DKIM, DMARC)
-    # DKIM: delegated _domainkey in RFC 5016, 5.3
-    # CNAME: delegated _dmarc (and perhaps other uses)
-    return '[^a-zA-Z0-9\-\._]' if $type =~ /^(?:SRV|TXT|SPF|NS|CNAME)$/;
-
     # DNS & BIND, 4.5: Names that are not host names can consist of any
-    # printable ASCII character. I feel like this is providing enough rope
-    # for users to hang themselves. The code is here, but disabled.
-#   if ( $field eq 'name' ) {
-#       return '[^ -~]' if $type !~ /^(?:A|AAAA|MX|LOC|SPF|SSHFP)$/;
-#   };
+    # printable ASCII character.
+    if ( $field eq 'name' ) {
+        return '[^ -~]' if $type !~ /^(?:A|AAAA|MX|LOC|SPF|SSHFP)$/;
+    };
 
     # allow / in reverse zones, for both name & address: RFC 2317
-    return '[^a-zA-Z0-9\-\.\/]' if $zone_text =~ /(in-addr|ip6)\.arpa[\.]{0,1}$/i;
+    return '[^a-zA-Z0-9\-\.\/_]' if $zone_text =~ /(in-addr|ip6)\.arpa[\.]{0,1}$/i;
 
-    return '[^a-zA-Z0-9\-\.]';  # RFC 1035: a-z, 0-9, and hyphen
+    return '[^a-zA-Z0-9\-\._]';
 };
 
 sub valid_reverse_label {
