@@ -152,7 +152,7 @@ sub touch_publish_ts {
     die "missing zone to touch" if ! $zone;
     $self->exec_query(
         "UPDATE nt_zone SET last_publish=NOW() WHERE zone=? AND deleted=0",
-         [ $zone, $self->{ns_id} ]
+         [ $zone ]
     );
 }
 
