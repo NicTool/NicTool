@@ -1,7 +1,22 @@
 Revision history for NicToolServer
 
-2.28    2014.
+2.28    2014.10.08
 
+    * NicTool API: added get_usable_nameservers method
+    * Import/tinydns
+        * import SRV records (from Generic type)
+        * when importing ip6.arpa, provide a 64-bit zone hint
+        * define MX=0 if not defined (tinydns default)
+    * Import/Base: when searching for parent zone, recurse all the way
+    * Zone/Record
+        * permit any ascii printable chars in name
+        * permit underscore (_) chars in host names
+    * Exports/Dyn: export success is defined per-domain (vs per-NS)
+    * Export/BIND/nsupdate:
+        * add DDNS key (abeeson)
+        * added timeout detection (abeeson)
+    * Export/tinydns: pass remote login to export (ShaunR)
+    * improve SQL updates from v2.10 (ShaunR)
     * BIND exports, fully qualify name if name = zone
 
 2.27    2014.07.08

@@ -1,4 +1,9 @@
 
+2.28    2014.10.08
+
+   * expose Location field when editing RRs
+   * expose RR timestamps in web UI (Issue #43)
+
 2.24    2014.06.14
 
    * updates for new nameserver settings
