@@ -107,7 +107,7 @@ sub _sql_test_2_28 {
 
 sub _sql_2_28 {
     <<EO_SQL_2_28
-ALTER TABLE nt_zone ADD COLUMN last_publish TIMESTAMP DEFAULT NULL AFTER last_modified;
+ALTER TABLE nt_zone ADD COLUMN last_publish TIMESTAMP DEFAULT 0 AFTER last_modified;
 
 UPDATE nt_options SET option_value='2.28' WHERE option_name='db_version';
 EO_SQL_2_28
