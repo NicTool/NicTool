@@ -212,10 +212,10 @@ sub zr_soa {
 }
 
 sub zr_generic {
-    my $self = shift;
-    my $r = shift or die;
+    my ($self, $r) = @_;
+    $r or die;
     print "Generic : $r\n";
-    my ( $fqdn, $n, $rdata, $ttl, $timestamp, $location ) = split(':', $r);
+    my ( $fqdn, $n, $rdata, $ttl, $timestamp, $location ) = split ':', $r;
     return $self->zr_spf(  $r ) if $n == 99;
     return $self->zr_aaaa( $r ) if $n == 28;
     return $self->zr_srv( $r )  if $n == 33;
@@ -266,14 +266,14 @@ sub zr_aaaa {
 }
 
 sub zr_srv {
-    my $self = shift;
-    my $r = shift or die;
+    my ($self, $r) = @_;
+    $r or die "missing record";
 
     print "SRV : $r\n";
-    my ($fqdn, $n, $rdata, $ttl, $timestamp, $location) = split(':', $r);
+    my ($fqdn, $n, $rdata, $ttl, $timestamp, $location) = split ':', $r;
     my ($zone_id, $host) = $self->get_zone_id( $fqdn );
 
-    $rdata = unescape_octal($rdata);
+    $rdata = $self->unescape_octal($rdata);
     my ($priority, $weight, $port) = unpack('n3', $rdata);
     my $target = $self->unpack_domain( $rdata, 6 );
 
@@ -307,13 +307,15 @@ sub unpack_domain {
 
 sub unescape_octal {
     my ($self, $str) = @_;
-    # convert escapes back to ascii
+    $str or die "missing string";
+    # convert octal escapes to ascii
     $str =~ s/(\\)([0-9]{3})/chr(oct($2))/eg;
     return $str;
 };
 
 sub unescape_packed_hex {
     my ($self, $str) = @_;
+    $str or die "missing string";
     # convert escaped hex back to hex chars, like in an AAAA
     $str =~ s/(\\)([0-9]{3})/sprintf('%02x',oct($2))/eg;
     return join(':', unpack("(a4)*", $str));
