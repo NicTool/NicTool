@@ -169,12 +169,7 @@ sub zr_ptr {
 
     print "PTR: $r\n";
     my ( $fqdn, $addr, $ttl, $timestamp, $location ) = split(':', $r);
-
-    my $zone;
-    if ('ip6.arpa' eq substr($fqdn, -8, 8)) {
-        $zone = lc substr $fqdn, 32, 40;
-    }
-    my ($zone_id, $host) = $self->get_zone_id( $fqdn, $zone );
+    my ($zone_id, $host) = $self->get_zone_id( $fqdn );
 
     $self->nt_create_record(
         zone_id => $zone_id,
