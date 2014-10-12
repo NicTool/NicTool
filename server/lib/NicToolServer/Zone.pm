@@ -57,7 +57,7 @@ sub pack_nameservers {
     return [] if scalar @nsids == 0;
 
     my $sql
-        = "SELECT nt_nameserver.*,nt_zone.nt_zone_id FROM nt_nameserver,nt_zone 
+        = "SELECT nt_nameserver.*,nt_zone.nt_zone_id FROM nt_nameserver,nt_zone
         WHERE nt_nameserver.nt_nameserver_id IN ("
         . join( ',', @nsids )
         . ") AND nt_zone.nt_zone_id = ?";
@@ -158,8 +158,8 @@ sub get_zone_record_log {
 
     my $dbh = $self->{dbh};
 
-    my $sql = "SELECT COUNT(*) AS count FROM 
-        nt_zone_record_log, nt_zone_record, nt_user 
+    my $sql = "SELECT COUNT(*) AS count FROM
+        nt_zone_record_log, nt_zone_record, nt_user
         WHERE nt_zone_record_log.nt_zone_record_id = nt_zone_record.nt_zone_record_id "
 
 #       . "AND nt_zone_record_log.nt_log_action_id = nt_log_action.nt_log_action_id "
@@ -175,13 +175,13 @@ sub get_zone_record_log {
 
     return $r_data if $r_data->{total} == 0;
 
-    $sql = "SELECT nt_zone_record_log.*, nt_zone_record_log.action as action, 
+    $sql = "SELECT nt_zone_record_log.*, nt_zone_record_log.action as action,
         CONCAT(nt_user.first_name, \" \", nt_user.last_name, \" (\", nt_user.username, \")\") as user
         FROM nt_zone_record_log, nt_zone_record, nt_user
           WHERE nt_zone_record_log.nt_zone_record_id = nt_zone_record.nt_zone_record_id "
 
 #          AND nt_zone_record_log.nt_log_action_id = nt_log_action.nt_log_action_id "
-        . "AND nt_zone_record_log.nt_user_id = nt_user.nt_user_id 
+        . "AND nt_zone_record_log.nt_user_id = nt_user.nt_user_id
            AND nt_zone_record_log.nt_zone_id = "
         . $dbh->quote( $data->{nt_zone_id} )
         . ( @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
@@ -263,8 +263,8 @@ sub get_group_zones_log {
 
     return $r_data if $r_data->{total} == 0;
 
-    $sql = "SELECT nt_zone_log.*, 
-        CONCAT(nt_user.first_name, \" \", nt_user.last_name, \" (\", nt_user.username, \")\") as user, nt_zone.nt_group_id, nt_group.name as group_name 
+    $sql = "SELECT nt_zone_log.*,
+        CONCAT(nt_user.first_name, \" \", nt_user.last_name, \" (\", nt_user.username, \")\") as user, nt_zone.nt_group_id, nt_group.name as group_name
         FROM nt_zone_log, nt_zone, nt_user, nt_group
           WHERE nt_zone_log.nt_zone_id = nt_zone.nt_zone_id
            AND nt_zone_log.nt_user_id = nt_user.nt_user_id
@@ -421,7 +421,8 @@ sub get_group_zones {
                nt_zone.description,
                nt_zone.deleted,
         	   nt_group.name as group_name,
-        	   nt_group.nt_group_id
+               nt_group.nt_group_id,
+               UNIX_TIMESTAMP(nt_zone.last_modified) AS last_modified
         FROM nt_zone
           INNER JOIN nt_group ON nt_zone.nt_group_id=nt_group.nt_group_id
         WHERE nt_zone.deleted='"
@@ -721,7 +722,7 @@ sub new_zone {
 
     my %error = ( 'error_code' => 200, 'error_msg' => 'OK' );
 
-    my @columns = qw/ mailaddr description refresh retry expire minimum 
+    my @columns = qw/ mailaddr description refresh retry expire minimum
                       ttl serial nt_group_id zone/;
 
     my $prev_data;
@@ -771,8 +772,8 @@ sub edit_zone {
     if ( exists $data->{deleted} && $data->{deleted} != '0' ) {
         delete $data->{deleted};
     }
-    my @columns = grep { exists $data->{$_} } 
-            qw/ nt_group_id mailaddr description refresh 
+    my @columns = grep { exists $data->{$_} }
+            qw/ nt_group_id mailaddr description refresh
                 retry expire minimum ttl serial deleted /;
 
     return $self->error_response(200)
@@ -862,7 +863,7 @@ sub log_zone {
     my @columns = qw/ nt_group_id nt_zone_id nt_user_id action timestamp zone
                          mailaddr description refresh retry expire ttl /;
 
-    # only log serial if it wasn't set 
+    # only log serial if it wasn't set
     if ( $default_serial ) { delete $data->{serial}; }
     else                   { push @columns, 'serial'; }
 
@@ -966,9 +967,9 @@ sub move_zones {
     my $new_group
         = $self->NicToolServer::Group::find_group( $data->{nt_group_id} );
 
-    my $sql = "SELECT nt_zone.*, nt_group.name as old_group_name 
-        FROM nt_zone, nt_group 
-       WHERE nt_zone.nt_group_id = nt_group.nt_group_id 
+    my $sql = "SELECT nt_zone.*, nt_group.name as old_group_name
+        FROM nt_zone, nt_group
+       WHERE nt_zone.nt_group_id = nt_group.nt_group_id
          AND nt_zone_id IN(" . $data->{zone_list} . ")";
 
     my $zrecs = $self->exec_query($sql)
@@ -1005,7 +1006,7 @@ sub get_zone_list {
 
 #my %groups = map { $_, 1 } ($data->{user}{nt_group_id}, @{ $self->get_subgroup_ids($data->{user}{nt_group_id}) });
 
-    my $sql = "SELECT * FROM nt_zone WHERE deleted=0 
+    my $sql = "SELECT * FROM nt_zone WHERE deleted=0
         AND nt_zone_id IN(" . $data->{zone_list} . ") ORDER BY zone";
 
     my $ntzones = $self->exec_query($sql)
@@ -1053,7 +1054,7 @@ sub get_zone_list {
 sub find_zone {
     my ( $self, $nt_zone_id ) = @_;
 
-    my $zones = $self->exec_query( 
+    my $zones = $self->exec_query(
         "SELECT * FROM nt_zone WHERE nt_zone_id = ?", $nt_zone_id );
     return $zones->[0] || {};
 }
@@ -1075,7 +1076,7 @@ sub set_zone_nameservers {
 sub zone_exists {
     my ( $self, $zone, $zid ) = @_;
 
-    my $sql = "SELECT nt_zone_id,nt_group_id FROM nt_zone WHERE deleted=0 
+    my $sql = "SELECT nt_zone_id,nt_group_id FROM nt_zone WHERE deleted=0
         AND nt_zone_id != ? AND zone = ?";
 
     my $zones = $self->exec_query( $sql, [ $zid, $zone ] );
@@ -1119,7 +1120,7 @@ sub valid_label {
         if ( length $label > 63 ) {
             $self->error($field, "Max length of a $field label $label_explain is 63 octets (characters): RFC 2181");
             $has_error++;
-        }; 
+        };
 
         if ( length $label < 1 ) {
             $self->error($field, "Minimum length of a $field label $label_explain is 1 octet (character): RFC 2181");
@@ -1137,7 +1138,7 @@ sub bump_serial {
     return ($self->serial_date_str .'00') if $nt_zone_id eq 'new';
 
     if ( ! defined $current_serial || $current_serial eq '' ) {
-        my $serials = $self->exec_query( 
+        my $serials = $self->exec_query(
             "SELECT serial FROM nt_zone WHERE nt_zone_id=?", $nt_zone_id );
         $current_serial = $serials->[0]{serial};
     };
