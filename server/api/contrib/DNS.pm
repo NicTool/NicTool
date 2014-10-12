@@ -273,9 +273,7 @@ sub nt_get_reverses {
 }
 
 sub nt_get_zones {
-
     my $self = shift;
-
     my %p = validate(
         @_,
         {   'zone'  => { type => SCALAR },
@@ -284,10 +282,7 @@ sub nt_get_zones {
         }
     );
 
-    #warn "getting zone $p{zone}";
-
     my $nt = $self->nt_connect();
-
     my $r = $nt->get_group_zones(
         nt_group_id       => $nt->{user}{store}{nt_group_id},
         include_subgroups => 1,
