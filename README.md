@@ -14,18 +14,18 @@ NicTool is a open source DNS management suite that takes the headaches out of ma
 
 ### Supported formats for exporting DNS data to servers
 
-* djbdns / ndjbdns (tinydns)
-* BIND
-* PowerDNS
-* DynECT
-* Knot DNS
-* NSD
-* MaraDNS
+* [djbdns / ndjbdns (tinydns)](https://github.com/msimerson/NicTool/wiki/Export-to-tinydns)
+* [BIND](https://github.com/msimerson/NicTool/wiki/Export-to-BIND)
+* [PowerDNS](https://github.com/msimerson/NicTool/wiki/Export-to-PowerDNS)
+* [DynECT](https://github.com/msimerson/NicTool/wiki/Export-to-DynECT-Managed-DNS)
+* [Knot DNS](https://github.com/msimerson/NicTool/wiki/Install-Knot)
+* [NSD](https://github.com/msimerson/NicTool/wiki/Install-NSD)
+* [MaraDNS](https://github.com/msimerson/NicTool/wiki/Install-MaraDNS)
 
-### Supported formats for importing existing DNS data
+### Supported formats for [importing](https://github.com/msimerson/NicTool/wiki/Imports) existing DNS data
 
-* BIND
-* djbdns / ndjbdns (tinydns)
+* [BIND](https://github.com/msimerson/NicTool/wiki/Import-from-BIND)
+* [djbdns / ndjbdns (tinydns)](https://github.com/msimerson/NicTool/wiki/Import-from-tinydns)
 
 ### Components
 
