@@ -668,7 +668,7 @@ sub display_zone_records_new {
         if ! $q->param('Create');
 
     my @fields = qw/ nt_group_id nt_zone_id name type address
-                     weight priority other ttl description /;
+                     weight priority other ttl location description /;
 
     my %data = map { $_ => $q->param($_) } @fields;
 
