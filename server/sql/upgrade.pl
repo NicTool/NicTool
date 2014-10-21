@@ -32,7 +32,8 @@ my $dbh  = DBIx::Simple->connect( $dsn, $db_user, $db_pass )
             or die DBIx::Simple->error;
 
 # NOTE: when making schema changes, update db_version in 12_nt_options.sql
-my @versions = qw/ 2.00 2.05 2.08 2.09 2.10 2.11 2.14 2.15 2.16 2.18 2.24 2.27 2.28 /;
+my @versions = qw/ 2.00 2.05 2.08 2.09 2.10 2.11 2.14 2.15 2.16 2.18 2.24
+                   2.27 2.28 2.29 /;
 
 foreach my $version ( @versions ) {
 # first, run a DB test query
@@ -96,6 +97,22 @@ ALTER TABLE `nt_delegate` ADD FOREIGN KEY (`nt_group_id`) REFERENCES `nt_group` 
 EO_SOME_DAY
 ;
 };
+
+sub _sql_test_2_29 {
+    my $r = _get_db_version();
+    return 1 if ! defined $r;   # query failed
+    return 1 if $r eq '2.29';   # already up-to-date
+    return 0 if $r eq '2.28';   # do it!
+    return 1;                   # don't update
+};
+
+sub _sql_2_29 {
+    <<EO_SQL_2_29
+ALTER TABLE nt_zone_record_log ADD COLUMN location VARCHAR(2) DEFAULT NULL AFTER other;
+
+UPDATE nt_options SET option_value='2.29' WHERE option_name='db_version';
+EO_SQL_2_29
+}
 
 sub _sql_test_2_28 {
     my $r = _get_db_version();

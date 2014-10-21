@@ -55,6 +55,7 @@ CREATE TABLE nt_zone_record_log(
     weight              SMALLINT UNSIGNED,
     priority            SMALLINT UNSIGNED,
     other               VARCHAR(255),
+    location            VARCHAR(2) DEFAULT NULL,
     PRIMARY KEY (`nt_zone_record_log_id`),
     KEY `nt_zone_record_log_idx1` (`timestamp`),
     KEY `nt_zone_record_log_idx2` (`nt_zone_record_id`),
