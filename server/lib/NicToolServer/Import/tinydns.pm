@@ -54,7 +54,7 @@ sub import_records {
         elsif ( $first eq '=' ) {       #  'A,PTR'    =>  = fqdn : ip : ttl:timestamp:lo
             $self->zr_a($record);
             my ($fqdn, $addr, $ttl, $ts, $loc) = split(':', $record);
-            $self->zr_ptr(join(':', $self->ip_to_ptr($addr), $fqdn, $ttl, $ts, $loc));
+            $self->zr_ptr(join(':', $self->ip_to_ptr($addr), $fqdn, $ttl || '', $ts || '', $loc || ''));
         }
         elsif ( $first eq '&' ) {       #  NS         =>  & fqdn : ip : x:ttl:timestamp:lo
             $self->zr_ns($record);
