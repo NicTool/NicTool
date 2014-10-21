@@ -8,7 +8,7 @@ use RPC::XML;
 use Data::Dumper;
 use Net::IP;
 
-$NicToolServer::VERSION = '2.28';
+$NicToolServer::VERSION = '2.29';
 
 $NicToolServer::MIN_PROTOCOL_VERSION = '1.0';
 $NicToolServer::MAX_PROTOCOL_VERSION = '1.0';

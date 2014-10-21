@@ -1,4 +1,8 @@
 
+2.29    2014.1
+
+   * zone.cgi: added location field in display_zone_records_new()
+
 2.28    2014.10.08
 
    * expose Location field when editing RRs

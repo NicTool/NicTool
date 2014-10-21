@@ -1,5 +1,16 @@
 Revision history for NicToolServer
 
+2.29    2014.1
+
+    * Import/tinydns
+        * combined A/PTR record (=) wasn't importing PTR correctly
+        * fixed SRV record import bug
+        * removed ip6 PTR hint
+    * sql
+        * added location column to nt_zone_record_log
+    * api
+        * get_group_zones now returns last_modified
+
 2.28    2014.10.08
 
     * NicTool API: added get_usable_nameservers method
@@ -199,7 +210,7 @@ Revision history for NicToolServer
     * require (nearly) all domain labels to start with a letter
     * Added get_record_type to the API (see NicToolClient changes for why)
     * SQL: replaced nt_zone_record.type with nt_zone_record.type_id, which
-      references resource_record_type.id. While this does make some queries 
+      references resource_record_type.id. While this does make some queries
       slightly more complex, it greatly simplifies adding new RR types.
     * SQL: foreign key constraints are defined but not enabled by default.
       The test suite passes with them enabled. You must be using the InnoDB
@@ -215,16 +226,16 @@ Revision history for NicToolServer
     * consolidated duplicated definitions of _error into NicToolServer::error
     * added RFC 2181 domain name length restrictions
     * added IPv6 address expansion (from djbdnsRecordBuilder)
-    * SQL: moved nt_nameserver_export_procstatus.status to 
+    * SQL: moved nt_nameserver_export_procstatus.status to
         nt_nameserver.export_status and dropped nt_nameserver_export_procstatus
     * SPF record support (in addition to TXT SPF records)
-    * beefed up bin/nt_install_deps.pl. 
-    * SQL: added sql/upgrade.pl It logs into a NicTool database, determines 
+    * beefed up bin/nt_install_deps.pl.
+    * SQL: added sql/upgrade.pl It logs into a NicTool database, determines
        which updates are required, and runs them.
     * SQL: added resource_record_types table. IDs are the IETF record type
       number and the name is the IETF record type. Using a related table moves
-      the data out of the database schema (ENUM(blah,blah)) and into rows, 
-      where it belongs. It also means adding new record types won't require 
+      the data out of the database schema (ENUM(blah,blah)) and into rows,
+      where it belongs. It also means adding new record types won't require
       altering db tables.
     * if nt_export.pl was not provided a nsid, shows a list of active NSs
       before asking for a selection.
@@ -249,7 +260,7 @@ Revision history for NicToolServer
         it would likely use stunnel or ssh -L instead.
     * ripped out SSL certificate management (great idea, but unused)
     * SQL: Fixed the data model for zone nameservers. Replaced the abhorrent
-      nt_zone.ns0..ns9 columns with the table nt_zone_nameservers. 
+      nt_zone.ns0..ns9 columns with the table nt_zone_nameservers.
       * there's no limit on how many nameservers a zone can publish to
       * queries are much simpler
       * deleted unpack_nameservers (no longer necessary)
@@ -277,16 +288,16 @@ Revision history for NicToolServer
 
 2.08    2010.03
 
-    * added support for encrypted passwords in nt_user table 
+    * added support for encrypted passwords in nt_user table
         see http://www.tnpi.net/support/forums/index.php/topic,902.0.html
       NOTICE: this version requires updating the database:
          $ mysql -u nictool -p nictool < sql/upgrade/update_v2_08.sql
-    * Added file existence test before comparing for differences in 
-      nt_export_djb.pl 
+    * Added file existence test before comparing for differences in
+      nt_export_djb.pl
     * Updated the IPv6 implementation to choose between AAAA records with and
-      without auto created PTR records. Lines prefixed with a 6 will have 
-      both an AAAA and a PTR record created. Those prefixed with a 3 will only 
-      have an AAAA record created. 
+      without auto created PTR records. Lines prefixed with a 6 will have
+      both an AAAA and a PTR record created. Those prefixed with a 3 will only
+      have an AAAA record created.
     * Fixed a bug in Zone/Record/Sanity that allowed : character to be allowed
       when it shouldn't have been. This was causing tests to fail.
     * Restrictions on passwords were imposed but the test weren't updated. Fixed.
@@ -332,11 +343,11 @@ NOTICE: this version requires updating your SQL tables! Something like this shou
     * db_mysql.h
           o ZONE_QUERY_FORMAT shortened from 716 to 509 characters
           o added ZR_PRIORITY
-          o added ZR_OTHER 
+          o added ZR_OTHER
     * nameserver/install.pl, rewrote, prompts for all required values with
-      reasonable defaults. Setting up a nameserver export process is now much easier. 
-    * NicToolServer::Zone::get_zone_records: patch from slink, see forum thread 
-    * nt_export_djb.pl - provides better error messages if your ns export isn't set up right 
+      reasonable defaults. Setting up a nameserver export process is now much easier.
+    * NicToolServer::Zone::get_zone_records: patch from slink, see forum thread
+    * nt_export_djb.pl - provides better error messages if your ns export isn't set up right
     * bin/install_deps.sh - tries to install perl modules NicTool requires
 
 
@@ -362,7 +373,7 @@ NOTICE: this version requires updating your SQL tables! Something like this shou
     - sys/djb - make clean now cleans up nameserver/sample/nt_export_djb*
     - consistent password among the variety of config files, now you can grep for it and change it everywhere at once.
     - Added support for TXT records, now you can set up SPF records for email
- 
+
 2.00    2002.02
     -Protocol version is now specified via the "nt_protocol_version" parameter.  This is an optional parameter.  If specified NicToolServer will require that the version string is allowed
     -Protocol version changed to 1.0.  Only this version is supported in NicToolServer version 2.00.
@@ -377,7 +388,7 @@ NOTICE: this version requires updating your SQL tables! Something like this shou
         of permissions.  (Affected API functions : delegate_zones,delegate_zone_records,edit_zone_delegation,edit_zone_record_delegation,delete_zone_delegation,delete_zone_record_delegation, get_delegated_zones,get_delegated_zone_records,get_zone_delegates,get_zone_record_delegates).
 
     -Usable Nameservers
-        Each Group now contains a list of Nameserver objects which are in effect delegated to the Group.  Zones within the Group (and subgroups of the Group) can be published to any of these Nameservers. 
+        Each Group now contains a list of Nameserver objects which are in effect delegated to the Group.  Zones within the Group (and subgroups of the Group) can be published to any of these Nameservers.
     -API changes:
         get_user - 'nt_user_id' now only parameter
         save_user - DEPRECATED (see new_user and edit_user)
@@ -401,13 +412,13 @@ NOTICE: this version requires updating your SQL tables! Something like this shou
         save_zone_record - DEPRECATED (use new_zone_record and edit_zone_record)
         new_zone_record - 'nt_zone_id','name','ttl','address' are required
         edit_zone_record - only 'nt_zone_record_id' is required
-        
+
 
         save_nameserver - DEPRECATED (use new_nameserver and edit_nameserver)
         new_nameserver - 'nt_nameserver_id','address','name','service_type','export_format' are required
         edit_nameserver - only 'nt_zone_record_id' is required
-        
-        get_group_zones - parameter "search_deleted" = '1' means only look for 
+
+        get_group_zones - parameter "search_deleted" = '1' means only look for
             deleted zones with the specified properties
     -API additions
         error responses may contain 'error_desc' in addition to 'error_code' and 'error_msg', with a short description of the error.
