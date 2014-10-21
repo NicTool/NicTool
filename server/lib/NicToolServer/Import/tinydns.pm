@@ -53,7 +53,8 @@ sub import_records {
         }
         elsif ( $first eq '=' ) {       #  'A,PTR'    =>  = fqdn : ip : ttl:timestamp:lo
             $self->zr_a($record);
-            $self->zr_ptr($record);
+            my ($fqdn, $addr, $ttl, $ts, $loc) = split(':', $record);
+            $self->zr_ptr(join(':', $self->ip_to_ptr($addr), $fqdn, $ttl, $ts, $loc));
         }
         elsif ( $first eq '&' ) {       #  NS         =>  & fqdn : ip : x:ttl:timestamp:lo
             $self->zr_ns($record);
@@ -282,6 +283,12 @@ sub zr_srv {
         other    => $port,
         defined $ttl ? ( ttl => $ttl ) : (),
     );
+}
+
+sub ip_to_ptr {
+    my ($self, $ip) = @_;
+    return '' if ! $ip;
+    return join '.', reverse(split /\./, $ip), 'in-addr.arpa.';
 }
 
 sub unpack_domain {
