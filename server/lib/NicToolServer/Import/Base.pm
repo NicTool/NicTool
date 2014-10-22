@@ -132,6 +132,8 @@ sub nt_create_record {
             'other'       => { type => SCALAR, optional => 1, },
             'priority'    => { type => SCALAR, optional => 1, },
             'description' => { type => SCALAR, optional => 1, },
+            'location'    => { type => SCALAR, optional => 1, },
+            'timestamp'   => { type => SCALAR, optional => 1, },
         }
     );
 
@@ -144,8 +146,9 @@ sub nt_create_record {
 
     $self->record_exists( \%request ) and return;
 
-    foreach ( qw/ ttl weight priority other description / ) {
-        $request{$_} = $p{$_} if defined $p{$_};
+    foreach ( qw/ ttl weight priority other description location timestamp / ) {
+        next if ! defined $p{$_};
+        $request{$_} = $p{$_};
     };
 
     #print "adding\n";

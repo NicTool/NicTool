@@ -97,7 +97,9 @@ sub zr_a {
         type    => 'A',
         name    => $host,
         address => $ip,
-        defined $ttl ? ( ttl => $ttl ) : (),
+        defined $ttl       ? ( ttl       => $ttl       ) : (),
+        defined $timestamp ? ( timestamp => $timestamp ) : (),
+        defined $location  ? ( location  => $location  ) : (),
     );
 }
 
@@ -115,7 +117,9 @@ sub zr_cname {
         type    => 'CNAME',
         name    => $host,
         address => $self->fully_qualify( $addr ),
-        defined $ttl ? ( ttl => $ttl ) : (),
+        defined $ttl       ? ( ttl       => $ttl       ) : (),
+        defined $timestamp ? ( timestamp => $timestamp ) : (),
+        defined $location  ? ( location  => $location  ) : (),
     );
 }
 
@@ -134,7 +138,9 @@ sub zr_mx {
         name    => $host,
         address => $self->fully_qualify( $addr ),
         weight  => $distance || 0,
-        defined $ttl ? ( ttl => $ttl ) : (),
+        defined $ttl       ? ( ttl       => $ttl       ) : (),
+        defined $timestamp ? ( timestamp => $timestamp ) : (),
+        defined $location  ? ( location  => $location  ) : (),
     );
 }
 
@@ -152,7 +158,9 @@ sub zr_txt {
         type    => 'TXT',
         name    => $host,
         address => $self->unescape_octal($addr),
-        defined $ttl ? ( ttl => $ttl ) : (),
+        defined $ttl       ? ( ttl       => $ttl       ) : (),
+        defined $timestamp ? ( timestamp => $timestamp ) : (),
+        defined $location  ? ( location  => $location  ) : (),
     );
 }
 
@@ -177,7 +185,9 @@ sub zr_ptr {
         type    => 'PTR',
         name    => $host,
         address => $self->fully_qualify( $addr ),
-        defined $ttl ? ( ttl => $ttl ) : (),
+        defined $ttl       ? ( ttl       => $ttl       ) : (),
+        defined $timestamp ? ( timestamp => $timestamp ) : (),
+        defined $location  ? ( location  => $location  ) : (),
     );
 }
 
@@ -204,6 +214,8 @@ sub zr_soa {
         defined $retry   ? ( retry   => $retry )   : (),
         defined $expire  ? ( expire  => $expire )  : (),
         defined $min     ? ( minimum => $min )     : (),
+        defined $timestamp ? ( timestamp => $timestamp ) : (),
+        defined $location  ? ( location  => $location  ) : (),
     );
 }
 
@@ -238,7 +250,9 @@ sub zr_spf {
         type    => 'SPF',
         name    => $host,
         address => $rdata,
-        defined $ttl ? ( ttl => $ttl ) : (),
+        defined $ttl       ? ( ttl       => $ttl       ) : (),
+        defined $timestamp ? ( timestamp => $timestamp ) : (),
+        defined $location  ? ( location  => $location  ) : (),
     );
 }
 
@@ -257,7 +271,9 @@ sub zr_aaaa {
         type    => 'AAAA',
         name    => $host,
         address => $rdata,
-        defined $ttl ? ( ttl => $ttl ) : (),
+        defined $ttl       ? ( ttl       => $ttl       ) : (),
+        defined $timestamp ? ( timestamp => $timestamp ) : (),
+        defined $location  ? ( location  => $location  ) : (),
     );
 }
 
@@ -281,7 +297,9 @@ sub zr_srv {
         weight   => $weight,
         priority => $priority,
         other    => $port,
-        defined $ttl ? ( ttl => $ttl ) : (),
+        defined $ttl       ? ( ttl       => $ttl       ) : (),
+        defined $timestamp ? ( timestamp => $timestamp ) : (),
+        defined $location  ? ( location  => $location  ) : (),
     );
 }
 
