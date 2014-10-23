@@ -269,10 +269,10 @@ sub zr_ns {
     $mode = "add" unless defined($mode);
     $r->{zone} = $self->{nte}->{zone_name} unless defined( $r->{zone} );
 
-    my $name = $self->qualify( $r->{name} );
+    my $name = $r->{name};
     $name .= '.' if '.' ne substr( $name, -1, 1 );
 
-    return "update $mode $name $r->{ttl} NS $r->{address}\n";
+    return "update $mode $name"."$r->{zone} $r->{ttl} NS $r->{address}\n";
 }
 
 sub zr_ptr {
