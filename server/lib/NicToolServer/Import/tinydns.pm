@@ -54,6 +54,9 @@ sub import_records {
         elsif ( $first eq '=' ) {       #  'A,PTR'    =>  = fqdn : ip : ttl:timestamp:lo
             $self->zr_a($record);
             my ($fqdn, $addr, $ttl, $ts, $loc) = split(':', $record);
+            if ('*.' eq substr $fqdn, 0, 2) {  # a wildcard A record is not a valid PTR name
+                $fqdn = substr $fqdn, 2;       # strip *. prefix
+            }
             $self->zr_ptr(join(':', $self->ip_to_ptr($addr), $fqdn, $ttl || '', $ts || '', $loc || ''));
         }
         elsif ( $first eq '&' ) {       #  NS         =>  & fqdn : ip : x:ttl:timestamp:lo
@@ -178,7 +181,18 @@ sub zr_ptr {
 
     print "PTR: $r\n";
     my ( $fqdn, $addr, $ttl, $timestamp, $location ) = split(':', $r);
-    my ($zone_id, $host) = $self->get_zone_id( $fqdn );
+    my ($zone_id, $host);
+    eval { ($zone_id, $host) = $self->get_zone_id( $fqdn ) };
+
+    if (!$zone_id) {
+        my @bits = split /\./, $fqdn;
+        shift @bits;
+        $self->nt_create_zone(
+            zone        => join('.', @bits),
+            description => '',
+        );
+        ($zone_id, $host) = $self->get_zone_id( $fqdn );
+    }
 
     $self->nt_create_record(
         zone_id => $zone_id,
