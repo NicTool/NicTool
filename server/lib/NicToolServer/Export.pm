@@ -404,7 +404,7 @@ sub get_ns_id {
 sub get_ns_zones {
     my $self = shift;
     my %p = validate( @_,
-        { last_modified => { type => SCALAR, optional => 1 },
+        { last_modified => { type => SCALAR,  optional => 1 },
           query_result  => { type => BOOLEAN, optional => 1 },
           deleted       => { type => BOOLEAN, optional => 1, default => 0 },
           publish_ts    => { type => BOOLEAN, optional => 1, default => 0 },
@@ -420,6 +420,8 @@ sub get_ns_zones {
     }
 
     my $sql = "SELECT $fields FROM nt_zone z";
+    my @descrs;
+    push @descrs, 'deleted' if $p{deleted};
 
     my @args = $p{deleted};
     if ( $self->{ns_id} == 0 ) {    # all zones, regardless of NS pref
@@ -441,6 +443,7 @@ sub get_ns_zones {
     }
     else {
         if ( $self->incremental && $self->export_required > 1 ) {
+            push @descrs, 'incremental';
             $sql .= " AND z.last_modified > ?";
             push @args, $self->export_required;
         };
@@ -448,7 +451,9 @@ sub get_ns_zones {
 
     return ($sql,@args) if $p{query_result};
     my $r = $self->exec_query( $sql, \@args ) or return [];
-    $self->elog( "retrieved " . scalar @$r . " zones" );
+    my $descr_human = ' ';
+    if (scalar @descrs) { $descr_human = join ', ', @descrs; }
+    $self->elog( "retrieved " . scalar @$r . "$descr_human zones" );
     return $r;
 }
 
