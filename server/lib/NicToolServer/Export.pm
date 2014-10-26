@@ -452,8 +452,8 @@ sub get_ns_zones {
     return ($sql,@args) if $p{query_result};
     my $r = $self->exec_query( $sql, \@args ) or return [];
     my $descr_human = ' ';
-    if (scalar @descrs) { $descr_human = join ', ', @descrs; }
-    $self->elog( "retrieved " . scalar @$r . "$descr_human zones" );
+    if (scalar @descrs) { $descr_human .= join(', ', @descrs) . ' '; }
+    $self->elog( "retrieved " . scalar @$r . "${descr_human}zones" );
     return $r;
 }
 
