@@ -5,7 +5,8 @@ Revision history for NicToolServer
     * Import/tinydns
         * combined A/PTR record (=) wasn't importing PTR correctly
         * fixed SRV record import bug
-        * removed ip6 PTR hint
+        * removed ip6 PTR zone hint
+        * import location & timestamp fields (when defined)
     * sql
         * added location column to nt_zone_record_log
     * api

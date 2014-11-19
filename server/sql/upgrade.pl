@@ -612,7 +612,8 @@ EO_SQL_2_08
 };
 
 sub _sql_test_2_05 {
-    my $r = $dbh->query( 'SELECT priority FROM nt_zone_record LIMIT 1' )->list;
+    my $r;
+    eval { $r = $dbh->query( 'SELECT priority FROM nt_zone_record LIMIT 1' )->list; };
     return 1 if $dbh->error eq 'DBI error: ';  # the query succeeded
     return;
 };
