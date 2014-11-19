@@ -1372,7 +1372,7 @@ sub valid_ip_address {
         $_ = 0 + $_;   # convert strings to integers
     }
 
-    return join( '.', @x );
+    return join '.', @x;
 }
 
 sub valid_ttl {
