@@ -40,7 +40,7 @@ sub display {
 
     my ($newzone, $nicemessage) = _display_new( $nt_obj, $q, $user );
 
-    print $q->header;
+    print $q->header (-charset=>"utf-8");
     $nt_obj->parse_template($NicToolClient::start_html_template);
     $nt_obj->parse_template(
         $NicToolClient::body_frame_start_template,

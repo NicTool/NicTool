@@ -35,7 +35,7 @@ sub main {
         if ( $q->param('redirect') ) {
             $message = $nt_obj->redirect_from_log($q);
         }
-        print $q->header;
+        print $q->header (-charset=>"utf-8");
         display( $nt_obj, $q, $user, $message );
     }
 }

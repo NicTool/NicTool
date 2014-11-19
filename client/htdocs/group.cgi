@@ -32,7 +32,7 @@ sub main {
 
     return if ! $user || ! ref $user;
 
-    print $q->header;
+    print $q->header (-charset=>"utf-8");
     display( $nt_obj, $q, $user );
 }
 
