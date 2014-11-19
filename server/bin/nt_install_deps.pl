@@ -95,7 +95,10 @@ sub get_perl_modules_from_ini {
     my $in = 0;
     my @modules;
     while ( my $line = <$fh> ) {
-        if ( '[Prereqs]' eq substr($line,0,9) ) {
+        # install all prepreqs
+        if ( '[Prereqs' eq substr($line,0,8) ) {
+            # except for ones needed only by devs
+            next if $line =~ /(?:BuildRequires|TestRequires)/i;
             $in++;
             next;
         };
@@ -151,6 +154,7 @@ sub install_app_freebsd {
         if ( `/usr/sbin/pkg info -x $app` ) {  ## no critic (Backtick)
             return print "$app is installed.\n";
         }
+        print "installing $app";
         return if install_app_freebsd_pkg($info, $app);
     }
 
@@ -184,22 +188,16 @@ sub install_app_freebsd_port {
 
 sub install_app_freebsd_pkg {
     my ( $info, $app ) = @_;
-    my $pkg = '/usr/sbin/pkg';
-    if (! -x $pkg) {
-        warn "$pkg not installed\n";
-        return;
-    };
-
+    my $pkg = get_freebsd_pkgng() or return;
     my $name = $info->{port} || $app;
     print "installing $name\n";
     system "$pkg install -y $name";
-    return 1 if `$pkg info -x $name`;
+    return 1 if is_freebsd_port_installed($name);
 
     return 0 if ($app eq $name);
 
     system "$pkg install -y $app";
-    return 1 if `$pkg info -x $app`;
-
+    return 1 if is_freebsd_port_installed($app);
     return 0;
 };
 
@@ -290,13 +288,10 @@ sub install_module_freebsd {
     my $portname = substr($name, 0, 3) eq 'p5-' ? $name : "p5-$name";
     $portname =~ s/::/-/g;
 
-    if ( -x '/usr/sbin/pkg' ) {
-        if ( `/usr/sbin/pkg info -x $portname` ) { ## no critic (Backtick)
-            return print "$module is installed.\n";
-        }
-        return 1 if install_module_freebsd_pkg($portname);
-    }
-
+    if (is_freebsd_port_installed($portname)) {
+        return print "$module is installed.\n";
+    };
+    return 1 if install_module_freebsd_pkg($portname);
     return install_module_freebsd_port($portname, $info, $module);
 }
 
@@ -304,10 +299,8 @@ sub install_module_freebsd_port {
     my ($portname, $info, $module) = @_;
     print " from ports...$portname...";
 
-    if ( -x '/usr/sbin/pkg_info' ) {
-        if ( `/usr/sbin/pkg_info | /usr/bin/grep $portname` ) { ## no critic (Backtick)
-            return print "$module is installed.\n";
-        }
+    if (is_freebsd_port_installed($module, $portname)) {
+        return print "$module is installed.\n";
     }
 
     print "installing $module ...";
@@ -328,16 +321,46 @@ sub install_module_freebsd_port {
 
 sub install_module_freebsd_pkg {
     my ( $module ) = @_;
-    my $pkg = '/usr/sbin/pkg';
+    my $pkg = get_freebsd_pkgng() or return 0;
+    print "installing $module\n";
+    system "$pkg install -y $module";
+    return is_freebsd_port_installed($module);
+};
+
+sub is_freebsd_port_installed {
+    my ( $module, $portname ) = @_;
+
+    my $pkg = get_freebsd_pkgng();
+    if ($pkg) {
+        return 1 if `$pkg info -x $module`;  ## no critic (Backtick)
+    }
+
+    my $pkg_info = get_freebsd_pkgng();
+    if ($pkg_info) {
+        $portname ||= $module;
+        if ( `$pkg_info | /usr/bin/grep $portname` ) { ## no critic (Backtick)
+            return print "$module is installed.\n";
+        }
+    }
+
+    return 0;
+};
+
+sub get_freebsd_pkg_info {
+    if ( -x '/usr/sbin/pkg_info' ) {
+        return '/usr/sbin/pkg_info';
+    };
+    return;
+};
+
+sub get_freebsd_pkgng {
+    my $pkg = '/usr/local/sbin/pkg';  # port version is likely newest
+    if (! -x $pkg) { $pkg = '/usr/sbin/pkg'; };  # fall back
     if (! -x $pkg) {
         warn "pkg not installed!\n";
         return 0;
     }
-
-    print "installing $module\n";
-    system "$pkg install -y $module";
-    return 1 if `$pkg info -x $module`;
-    return 0;
+    return $pkg;
 };
 
 sub install_module_linux {
@@ -437,6 +460,8 @@ sub name_overrides {
     my @modules = (
         { module=>'LWP::UserAgent', info => { cat=>'www', port=>'p5-libwww', dport=>'p5-libwww-perl', yum=>'perl-libwww-perl' }, },
         { module=>'Mail::Send'    , info => { port => 'Mail::Tools', }  },
+        { module=>'Date::Parse'   , info => { port => 'TimeDate',    }  },
+        { module=>'LWP'           , info => { port => 'p5-libwww',   }  },
     );
     my ($match) = grep { $_->{module} eq $mod } @modules;
     return $match if $match;
