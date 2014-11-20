@@ -183,7 +183,7 @@ sub nt_get_zone_id {
         Search            => 1,
         '1_field'         => 'zone',
         '1_option'        => 'equals',
-        '1_value'         => $p{zone},
+        '1_value'         => lc $p{zone},
     );
 
     #warn Data::Dumper::Dumper($r);
