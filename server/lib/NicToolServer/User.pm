@@ -608,8 +608,52 @@ sub log_user {
     $self->exec_query($sql);
 }
 
+sub valid_ldap_password {
+    my ($self, $attempt, $user) = @_;
+
+    #LDAP Settings, edit
+    my $server = ["",""];
+    my $port = 636;
+    my $basedn = "ou=People,o=example,c=org";
+    my $binddn = "uid=searcher";
+    my $bindpw = "searcherpass";
+    #Stop editing now
+
+    my $search_ldap = Net::LDAP->new($server, port=>$port);
+    $search_ldap->bind($binddn, password=>"$bindpw");
+    #Find userdn in LDAP
+    my $result = $search_ldap->search(base=>$basedn, filter=>"(&(uid=".$user."))", attrs=>['dn']);
+    $search_ldap->unbind;
+    if($result->count == 1){
+                #Found LDAP user
+                my $entry = $result->shift_entry;
+                my $userdn = $entry->dn;
+                #Do actual authentication attempt
+                my $auth_ldap = Net::LDAP->new($server, port=>$port);
+                my $auth_res = $auth_ldap->bind($userdn, password=>"$attempt");
+                $auth_ldap->unbind;
+                if($auth_res->code){
+                        #userdn failed to bind, authfail
+                        return 0;
+                }
+                return 1;
+    }
+
+}
+
 sub valid_password {
     my ($self, $attempt, $db_pass, $user, $salt) = @_;
+    
+    #vtsingaras
+    warn "test";
+    eval {
+        require "Net::LDAP.pm";
+        Net::LDAP->import;
+        1;
+    } or do {
+        warn "Failed to import Net::LDAP, try \"cpan Net::LDAP\"";
+        warn "Falling back to DB authentication";
+    };
 
     if ( $salt ) {
         my $hashed = unpack("H*", Crypt::KeyDerivation::pbkdf2($attempt, $salt, 5000, 'SHA512'));
