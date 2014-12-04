@@ -93,10 +93,10 @@ sub new_user {
     my $dbh = $self->{dbh};
     my %error = ( 'error_code' => 200, 'error_msg' => 'OK' );
 
-    my @columns = qw/nt_group_id first_name last_name username email password salt/;
+    my @columns = qw/nt_group_id first_name last_name username email password pass_salt/;
 
-    $data->{salt} = $self->_get_salt();
-    $data->{password} = $self->get_pbkdf2_hash($data->{password}, $data->{salt});
+    $data->{pass_salt} = $self->_get_salt();
+    $data->{password} = $self->get_pbkdf2_hash($data->{password}, $data->{pass_salt});
 
     my $sql
         = "INSERT INTO nt_user("
@@ -152,9 +152,9 @@ sub edit_user {
 
     # only update the password when defined
     if (exists $data->{password} && $data->{password} ne '') {
-        push @columns, 'password', 'salt';
-        $data->{salt} = $self->_get_salt();
-        $data->{password} = $self->get_pbkdf2_hash($data->{password}, $data->{salt});
+        push @columns, 'password', 'pass_salt';
+        $data->{pass_salt} = $self->_get_salt();
+        $data->{password} = $self->get_pbkdf2_hash($data->{password}, $data->{pass_salt});
     }
 
     my ( $sql, $action );
@@ -612,7 +612,7 @@ sub valid_password {
     my ($self, $attempt, $db_pass, $user, $salt) = @_;
 
     if ( $salt ) {
-        my $hashed = unpack("H*", Crypt::KeyDerivation::pbkdf2($attempt, $salt, 5000, 'SHA512'));
+        my $hashed = unpack("H*", Crypt::KeyDerivation::pbkdf2($attempt, $salt, 5000, 'SHA512', 64));
         return 0 if $hashed ne $db_pass;       # hash mismatch, fail!
         return 1;                              # success
     };
@@ -678,7 +678,7 @@ sub get_sha1_hash {
 sub get_pbkdf2_hash {
     my ($self, $pass, $salt) = @_;
     $salt ||= $self->_get_salt();
-    return unpack("H*", Crypt::KeyDerivation::pbkdf2($pass, $salt, 5000, 'SHA512'));
+    return unpack("H*", Crypt::KeyDerivation::pbkdf2($pass, $salt, 5000, 'SHA512', 64));
 }
 
 sub _get_salt {
