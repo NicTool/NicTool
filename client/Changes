@@ -1,5 +1,10 @@
 
-2.29    2014.1
+2.30    2014.12.04
+
+   * users.cgi: max pass length 15 -> 30 chars
+   * set the HTTP header content-type to utf8 (Vegard Vesterheim)
+
+2.29    2014.11.18
 
    * zone.cgi: added location field in display_zone_records_new()
 

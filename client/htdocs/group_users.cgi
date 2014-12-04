@@ -144,8 +144,8 @@ sub display_edit_user {
         $firstname = $q->textfield( -name => 'first_name', -size => 20, -maxlength => 30);
         $lastname  = $q->textfield( -name => 'last_name', -size => 30, -maxlength => 40);
         $email     = $q->textfield( -name => 'email', -size => 40, -maxlength => 100 );
-        $password  = $q->password_field( -name => 'password', -size => 15, -maxlength => 15);
-        $password2 = $q->password_field( -name => 'password2', -size => 15, -maxlength => 15);
+        $password  = $q->password_field( -name => 'password', -size => 15, -maxlength => 30);
+        $password2 = $q->password_field( -name => 'password2', -size => 15, -maxlength => 30);
     };
 
     my $tr = '<tr class=light_grey_bg><td class=right>';

@@ -455,13 +455,13 @@ sub display_edit {
 <tr class=light_grey_bg>
 <td class="right nowrap">New Password:</td>
 <td class="fat">],
-            $q->password_field( -name => 'password', -maxlength => 15, -override  => 1),
+            $q->password_field( -name => 'password', -size=>15, -maxlength => 30, -override  => 1),
             qq[</td>
 </tr>
 <tr class=light_grey_bg>
 <td class="right nowrap">Confirm New Password:</td>
 <td class="fat">],
-            $q->password_field( -name => 'password2', -maxlength => 15, -override  => 1),
+            $q->password_field( -name => 'password2', -size=>15, -maxlength => 30, -override  => 1),
             qq[</td>
         </tr>];
     }
