@@ -350,12 +350,12 @@ sub _sql_test_2_11 {
 
 sub _sql_2_11 {
 
-    my @tables = qw/ nt_delegate  nt_delegate_log    nt_perm                  nt_options 
-        nt_group            nt_group_log             nt_group_subgroups  
+    my @tables = qw/ nt_delegate  nt_delegate_log    nt_perm                  nt_options
+        nt_group            nt_group_log             nt_group_subgroups
         nt_nameserver       nt_nameserver_log        nt_nameserver_export_log nt_nameserver_qlog nt_nameserver_qlogfile
-        nt_user             nt_user_global_log       nt_user_log              
+        nt_user             nt_user_global_log       nt_user_log
         nt_user_session     nt_user_session_log
-        nt_zone             nt_zone_log              nt_zone_nameserver       
+        nt_zone             nt_zone_log              nt_zone_nameserver
         nt_zone_record      nt_zone_record_log       resource_record_type     /;
 
     my $encode_utf8 = encode_utf8( @tables );
@@ -446,7 +446,7 @@ ALTER TABLE nt_zone_record_log MODIFY type enum('A','AAAA','MX','PTR','NS','TXT'
 
 
 /* this will throw an error upon subsequent attempts. To avoid destroying
-** data (like dropping that table after the ns0..9 fields are dropped) if 
+** data (like dropping that table after the ns0..9 fields are dropped) if
 ** this sql portion is run twice, we start with the create. */
 CREATE TABLE nt_zone_nameserver (
     nt_zone_id           int(10) unsigned NOT NULL,
@@ -553,7 +553,7 @@ EO_SQL_2_10
 };
 
 sub _sql_test_2_09 {
-# the nt_options table was added in 2.09. 
+# the nt_options table was added in 2.09.
     my $r;
     eval { $r = $dbh->query( 'SELECT option_id FROM nt_options LIMIT 1' ); };
     return 0 if ! defined $r;   # query failed, set is_applied=0
@@ -575,7 +575,7 @@ INSERT INTO `nt_options` VALUES (1,'db_version','2.09');
 
 DROP TABLE IF EXISTS nt_group_summary;
 DROP TABLE IF EXISTS nt_group_current_summary;
-DROP TABLE IF EXISTS nt_nameserver_general_summary; 
+DROP TABLE IF EXISTS nt_nameserver_general_summary;
 DROP TABLE IF EXISTS nt_nameserver_summary;
 DROP TABLE IF EXISTS nt_nameserver_current_summary;
 DROP TABLE IF EXISTS nt_user_general_summary;
@@ -605,11 +605,11 @@ EO_SQL_2_09
 sub _sql_test_2_08 {
 # was varchar 15. These queries will succeed after the initial failure
     $dbh->query( "SET sql_mode='STRICT_ALL_TABLES'" );
-    my $r = $dbh->query( "REPLACE INTO nt_user SET 
+    my $r = $dbh->query( "REPLACE INTO nt_user SET
             nt_group_id=1, email='deleteme\@test.com',
-            first_name = 'first', last_name = 'last', 
-            username   = 'test',  password  = '123456789012345678', 
-            deleted='1'" 
+            first_name = 'first', last_name = 'last',
+            username   = 'test',  password  = '123456789012345678',
+            deleted='1'"
         );
     my $id = $dbh->last_insert_id( undef, undef, 'nt_user', undef );
     $dbh->query( "SET sql_mode=''" );
@@ -676,7 +676,7 @@ CREATE TABLE nt_perm(
     zonerecord_create       TINYINT UNSIGNED NOT NULL DEFAULT 0,
     zonerecord_delegate     TINYINT UNSIGNED NOT NULL DEFAULT 0,
     zonerecord_delete       TINYINT UNSIGNED NOT NULL DEFAULT 0,
-    
+
     user_write              TINYINT UNSIGNED NOT NULL DEFAULT 0,
     user_create             TINYINT UNSIGNED NOT NULL DEFAULT 0,
     user_delete             TINYINT UNSIGNED NOT NULL DEFAULT 0,
@@ -745,7 +745,7 @@ CREATE INDEX nt_delegate_idx1 on nt_delegate(nt_group_id,nt_object_id,nt_object_
 CREATE INDEX nt_delegate_idx2 on nt_delegate(nt_object_id,nt_object_type);
 
 
-DROP TABLE IF EXISTS nt_delegate_log; 
+DROP TABLE IF EXISTS nt_delegate_log;
 CREATE TABLE nt_delegate_log(
     nt_delegate_log_id              INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     nt_user_id                      INT UNSIGNED NOT NULL,
@@ -783,23 +783,23 @@ CREATE TABLE nt_delegate_log(
 );
 
 
-ALTER TABLE nt_user_global_log 
+ALTER TABLE nt_user_global_log
     MODIFY action ENUM('added','deleted','modified','moved','recovered','delegated','modified delegation','removed delegation') NOT NULL;
-ALTER TABLE nt_user_global_log 
-    ADD target 
-	    ENUM('zone','group','user','nameserver','zone_record') 
-	AFTER object_id;
-ALTER TABLE nt_user_global_log 
-    ADD target_id 
-    	INT UNSIGNED 
-	AFTER target;
-ALTER TABLE nt_user_global_log 
-    ADD target_name 
-    	VARCHAR(255) 
-	AFTER target_id;
+ALTER TABLE nt_user_global_log
+    ADD target
+        ENUM('zone','group','user','nameserver','zone_record')
+    AFTER object_id;
+ALTER TABLE nt_user_global_log
+    ADD target_id
+        INT UNSIGNED
+    AFTER target;
+ALTER TABLE nt_user_global_log
+    ADD target_name
+        VARCHAR(255)
+    AFTER target_id;
 
 INSERT INTO nt_perm (nt_group_id,group_write, group_create, group_delete, zone_write, zone_create, zone_delegate, zone_delete, zonerecord_write, zonerecord_create, zonerecord_delegate, zonerecord_delete, user_write, user_create, user_delete, nameserver_write, nameserver_create, nameserver_delete, self_write)
-	SELECT nt_group_id, 1 as group_write, 1 as group_create, 1 as group_delete, 1 as zone_write, 1 as zone_create, 1 as zone_delegate, 1 as zone_delete, 1 as zonerecord_write, 1 as zonerecord_create, 1 as zonerecord_delegate, 1 as zonerecord_delete, 1 as user_write, 1 as user_create, 1 as user_delete, 1 as nameserver_write, 1 as nameserver_create, 1 as nameserver_delete, 1 as self_write FROM nt_group;
+    SELECT nt_group_id, 1 as group_write, 1 as group_create, 1 as group_delete, 1 as zone_write, 1 as zone_create, 1 as zone_delegate, 1 as zone_delete, 1 as zonerecord_write, 1 as zonerecord_create, 1 as zonerecord_delegate, 1 as zonerecord_delete, 1 as user_write, 1 as user_create, 1 as user_delete, 1 as nameserver_write, 1 as nameserver_create, 1 as nameserver_delete, 1 as self_write FROM nt_group;
 EO_SQL_2_00
 ;
 };
