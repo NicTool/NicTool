@@ -93,9 +93,10 @@ sub new_user {
     my $dbh = $self->{dbh};
     my %error = ( 'error_code' => 200, 'error_msg' => 'OK' );
 
-    my @columns = qw/nt_group_id first_name last_name username email password/;
+    my @columns = qw/nt_group_id first_name last_name username email password salt/;
 
-    $data->{password} = $self->get_sha1_hash($data->{password}, $data->{username});
+    $data->{salt} = $self->_get_salt();
+    $data->{password} = $self->get_pbkdf2_hash($data->{password}, $data->{salt});
 
     my $sql
         = "INSERT INTO nt_user("
@@ -149,12 +150,11 @@ sub edit_user {
     my @columns = grep { exists $data->{$_} }
         qw/ nt_group_id first_name last_name username email /;
 
-    # only update the password and username fields are not NULL
-    if (   exists $data->{password} && $data->{password} ne ''
-        && exists $data->{username} && $data->{username} ne '' ) {
-        push @columns, 'password';
-
-        $data->{password} = $self->get_sha1_hash($data->{password}, $data->{username});
+    # only update the password when defined
+    if (exists $data->{password} && $data->{password} ne '') {
+        push @columns, 'password', 'salt';
+        $data->{salt} = $self->_get_salt();
+        $data->{password} = $self->get_pbkdf2_hash($data->{password}, $data->{salt});
     }
 
     my ( $sql, $action );
@@ -669,7 +669,7 @@ sub _select_group_perm {
 
 sub get_sha1_hash {
     my ($self, $pass, $user) = @_;
-    return Crypt::Mac::HMAC::hmac_hex( 'SHA1', lc($user), $pass);
+    return Crypt::Mac::HMAC::hmac_hex( 'SHA1', lc $user, $pass);
     # RCC - use hmac to store the password using the username as a key
     #use Digest::HMAC_SHA1;
     #return Digest::HMAC_SHA1::hmac_sha1_hex( $pass, lc($user) );
@@ -677,7 +677,7 @@ sub get_sha1_hash {
 
 sub get_pbkdf2_hash {
     my ($self, $pass, $salt) = @_;
-    $self ||= $self->_get_salt(16);
+    $salt ||= $self->_get_salt();
     return unpack("H*", Crypt::KeyDerivation::pbkdf2($pass, $salt, 5000, 'SHA512'));
 }
 
@@ -700,4 +700,3 @@ __END__
 
 
 =cut
-
