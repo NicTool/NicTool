@@ -1,5 +1,12 @@
 Revision history for NicToolServer
 
+2.30    2014.12.04
+
+    * passwords: new/edit users use PBKDF2 passwords
+    * expand nt_user.password from 128 -> 255 chars
+    * Import: when searching for zones, lc the zone name
+    * set the HTTP header content-type to utf8 (Vegard Vesterheim)
+
 2.29    2014.11.18
 
     * Export: add count type description after zone count
