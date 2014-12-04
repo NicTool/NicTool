@@ -612,7 +612,7 @@ sub valid_password {
     my ($self, $attempt, $db_pass, $user, $salt) = @_;
 
     if ( $salt ) {
-        my $hashed = unpack("H*", Crypt::KeyDerivation::pbkdf2($attempt, $salt, 5000, 'SHA512', 64));
+        my $hashed = $self->get_pbkdf2_hash($attempt, $salt);
         return 0 if $hashed ne $db_pass;       # hash mismatch, fail!
         return 1;                              # success
     };
@@ -678,7 +678,7 @@ sub get_sha1_hash {
 sub get_pbkdf2_hash {
     my ($self, $pass, $salt) = @_;
     $salt ||= $self->_get_salt();
-    return unpack("H*", Crypt::KeyDerivation::pbkdf2($pass, $salt, 5000, 'SHA512', 64));
+    return unpack("H*", Crypt::KeyDerivation::pbkdf2($pass, $salt, 5000, 'SHA512'));
 }
 
 sub _get_salt {
