@@ -11,11 +11,6 @@ my $apps = [
     { app => 'expat'         , info => { port => 'expat2',         dport=>'expat2' }, },
     { app => 'gettext'       , info => {}, },
     { app => 'gmake'         , info => { yum  => 'make', apt => 'make' }, },
-    { app => 'mysql-server'  , info => { port => 'mysql55-server', dport=>'mysql5',
-                                         yum  => 'mysql-server',   apt => 'mysql-server' }, },
-    { app => 'apache24'      , info => { dport=>'', yum => 'httpd', apt=>'apache2' }, },
-    { app => 'mod_perl2'     , info => { port => 'ap24-mod_perl2', dport=>'',
-                                         yum  => 'mod_perl', apt=>'libapache2-mod-perl2' }, },
     { app => 'rsync'         , info => { }, },
 ];
 
