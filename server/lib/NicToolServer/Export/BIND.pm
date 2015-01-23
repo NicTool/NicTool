@@ -450,29 +450,8 @@ This class will export a named.conf.nictool file with all the NicTool zones assi
 
 =head1 Templates
 
-Paul Hamby contributed a patch to add support for zone templates. By default, a line such as this is added for each zone:
+See the L<https://github.com/msimerson/NicTool/wiki/Export-to-BIND|Export to BIND> page.
 
- zone "example.com"  IN { type master; file "/etc/namedb/master/example.com"; };
-
-Templates provide a way to customize the additions that NicTool makes to named.conf.
-
-Templates are configured by creating a 'templates' directory in the BIND export directory (as defined within the NicTool nameserver config). Populate the templates directory with a 'default' template, and/or templates that match specific zone names you wish to customize.
-
-=head2 Example template
-
- zone "ZONE" {
-    type master;
-    file "/etc/namedb/master/ZONE";
-    notify yes;
-    also-notify {
-        10.1.1.1;
-    };
-    allow-transfer {
-        10.1.1.1;
-    };
- };
-
-Any instances of the keyword ZONE in a template are replaced by the zone name.
 
 =head1 AUTHOR
 
