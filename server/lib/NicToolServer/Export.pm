@@ -276,7 +276,9 @@ sub get_dbh {
 
 sub get_export_data_dir {
     my $self = shift;
-    return $self->{ns_ref}{datadir};
+    my $dir = $self->{ns_ref}{datadir} or return;
+    if ((substr $dir, -1, 1) eq '/') { chop $dir; }
+    return $dir;
 };
 
 sub get_export_dir {

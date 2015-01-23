@@ -52,6 +52,7 @@ _datestamp_to_int();
 _zr_nsec3();
 _zr_nsec3param();
 _zr_ipseckey();
+_get_export_data_dir();
 
 done_testing() and exit;
 
@@ -268,3 +269,18 @@ sub _get_rr_types {
         252 => 'AXFR',
     };
 };
+
+sub _get_export_data_dir {
+
+    $export->{ns_ref}{datadir} = undef;
+    $r = $export->get_export_data_dir();
+    ok(!$r, 'get_export_data_dir, undef');
+
+    $export->{ns_ref}{datadir} = '/etc/named';
+    $r = $export->get_export_data_dir();
+    ok($r eq '/etc/named', "get_export_data_dir, $r");
+
+    $export->{ns_ref}{datadir} = '/etc/named/';
+    $r = $export->get_export_data_dir();
+    ok($r eq '/etc/named', "get_export_data_dir, w/trailing slash, $r");
+}
