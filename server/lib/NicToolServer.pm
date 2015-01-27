@@ -328,7 +328,8 @@ sub api_commands {
                     access   => 'read',
                     required => 0,
                     type     => 'NAMESERVER',
-                    list     => 1
+                    list     => 1,
+                    empty    => 1
                 },
                 'nt_group_id' =>
                     { 'access' => 'read', required => 1, type => 'GROUP' },
