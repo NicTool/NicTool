@@ -64,25 +64,29 @@ sub new_or_edit_basic_verify {
         $data->{name} = $1; # strip domain. record names are NOT stored absolute
     }
 
+    my $name_collisions = $self->name_collisions( $data );
+
     $self->_valid_rr_type($data);
     $self->_valid_name_chars( $data, $zone_text );  # check for invalid chars
     $self->_valid_name( $data, $zone_text );        # validate name pattern
-    $self->_duplicate_record( $data );
 
-    $self->_valid_cname($data, $zone_text)   if $data->{type} eq 'CNAME';
-    $self->_valid_a($data, $zone_text)       if $data->{type} eq 'A';
-    $self->_valid_aaaa($data, $zone_text)    if $data->{type} eq 'AAAA';
+    my @args = ( $data, $zone_text, $name_collisions);
+    $self->_duplicate_record( @args );
+
+    $self->_valid_cname( @args ) if $data->{type} eq 'CNAME';
+    $self->_valid_a    ( @args ) if $data->{type} eq 'A';
+    $self->_valid_aaaa ( @args ) if $data->{type} eq 'AAAA';
     $self->_valid_ns( $data, $zone_text )    if $data->{type} eq 'NS';
     $self->_valid_ptr($data, $zone_text )    if $data->{type} eq 'PTR';
     $self->_valid_srv($data, $zone_text )    if $data->{type} eq 'SRV';
-    $self->_valid_mx( $data, $zone_text )    if $data->{type} eq 'MX';
+    $self->_valid_mx  ( @args ) if $data->{type} eq 'MX';
 
     $self->_name_collision($data, $z);
-    $self->_valid_ttl($data, $zone_text);    # check the record's TTL
+    $self->_valid_ttl( @args );
 };
 
 sub _valid_ttl {
-    my ($self, $data, $zone_text) = @_;
+    my ($self, $data, $zone_text, $collisions) = @_;
 
     if ( !$data->{ttl} && !$data->{nt_zone_record_id} ) {
         $data->{ttl} = 86400;
@@ -92,21 +96,39 @@ sub _valid_ttl {
         $self->valid_ttl( $data->{ttl} );
     };
 
-# TODO: https://github.com/msimerson/NicTool/issues/7
+    my @same_type = grep { $_->{type} eq $data->{type} } @$collisions;
+    if (scalar @same_type && grep { $_->{ttl} != $data->{ttl} } @same_type) {
+        $self->error('ttl', "RRs with identical Name and Type must have identical TTL: RFC 2181");
+    }
 }
 
 sub _duplicate_record {
-    my ( $self, $data ) = @_;
+    my ( $self, $data, $zone_text, $collisions ) = @_;
 
-    if ($self->record_exists(
-        $data->{name},
-        $data->{type},
-        $data->{nt_zone_id},
-        $data->{nt_zone_record_id},
-        $data->{address},
-    )) {
+    my @matches = grep { $_->{type} eq $data->{type} }
+                  grep { $_->{address} eq $data->{address} }
+                  @$collisions;
+
+    if (scalar @matches) {
         $self->error( 'name', "Duplicate Resource Records are not allowed: RFC 2181");
     }
+}
+
+sub name_collisions {
+    my ( $self, $data ) = @_;
+
+    my $sql = "SELECT r.*, t.name AS type
+    FROM nt_zone_record r
+    LEFT JOIN resource_record_type t ON r.type_id=t.id
+      WHERE r.deleted=0
+        AND r.nt_zone_id = ?
+        AND r.name=?";
+
+    if ($data->{nt_zone_record_id}) {
+        $sql .= " AND r.nt_zone_record_id <> " . $data->{nt_zone_record_id};
+    }
+
+    return $self->exec_query( $sql, [ $data->{nt_zone_id}, $data->{name} ] );
 }
 
 sub record_exists {
@@ -303,22 +325,16 @@ sub _valid_rr_type {
 }
 
 sub _valid_cname {
-    my ( $self, $data, $zone_text ) = @_;
+    my ( $self, $data, $zone_text, $collisions ) = @_;
 
 # NAME
-    my @args = ( $data->{name}, 'CNAME',
-        $data->{nt_zone_id}, $data->{nt_zone_record_id} );
-
-    if ($self->record_exists( @args ) ) {
+    if (grep { $_->{type} eq 'CNAME' } @$collisions) {
         $self->error( 'name', "multiple CNAME records with the same name are NOT allowed. (use plain old round robin)" );
     };
 
-    foreach my $a ( qw/ A AAAA MX / ) {
-        $args[1] = $a;
-
-        if ( $self->record_exists( @args ) ) {
-            $self->error( 'name', "record $data->{name} already exists within zone as an Address ($a) record: RFC 1034 & 2181");
-        };
+    my ($crash) = grep { $_->{type} =~ /^(A|AAAA|MX)$/ } @$collisions;
+    if ($crash) {
+        $self->error( 'name', "record $data->{name} already exists within zone as an Address ($crash->{type}) record: RFC 1034 & 2181");
     };
 
 # ADDRESS
@@ -327,14 +343,11 @@ sub _valid_cname {
 }
 
 sub _valid_a {
-    my ( $self, $data, $zone_text ) = @_;
-
-# validation plan: name, address
+    my ( $self, $data, $zone_text, $collisions ) = @_;
 
 # NAME
-    if ( $self->record_exists(
-        $data->{name}, 'CNAME', $data->{nt_zone_id}, $data->{nt_zone_record_id} ) ) {
-            $self->error( 'name', "record $data->{name} already exists within zone as an Alias (CNAME) record." );
+    if (grep { $_->{type} eq 'CNAME' } @$collisions) {
+        $self->error( 'name', "record $data->{name} already exists within zone as an Alias (CNAME) record." );
     };
 
 # ADDRESS
@@ -352,16 +365,13 @@ sub _valid_a {
 }
 
 sub _valid_aaaa {
-    my ( $self, $data, $zone_text ) = @_;
+    my ( $self, $data, $zone_text, $collisions ) = @_;
 
 # NAME
-    $self->error( 'name',
-        "record $data->{name} already exists within zone as an Alias (CNAME) record."
-        ) if ( $self->record_exists(
-                $data->{name}, 'CNAME',
-                $data->{nt_zone_id}, $data->{nt_zone_record_id}
-                )
-            );
+    if (grep { $_->{type} eq 'CNAME' } @$collisions) {
+        $self->error( 'name',
+            "record $data->{name} already exists within zone as an Alias (CNAME) record.");
+    }
 
 # ADDRESS
     $data->{address} =~ s/ //g;     # strip out any spaces
@@ -384,14 +394,11 @@ sub _valid_aaaa {
 }
 
 sub _valid_mx {
-    my ( $self, $data, $zone_text ) = @_;
-
-# validation plan: name, weight, address
+    my ( $self, $data, $zone_text, $collisions ) = @_;
 
 # NAME
     # MX records cannot share a name with a CNAME
-    if ($self->record_exists( $data->{name}, 'CNAME',
-            $data->{nt_zone_id}, $data->{nt_zone_record_id} ) ) {
+    if (grep { $_->{type} eq 'CNAME' } @$collisions) {
         $self->error( 'name', "MX records must not exist as a CNAME: RFCs 1034, 2181" );
     };
 
@@ -437,8 +444,6 @@ sub _valid_mx {
 
 sub _valid_ns {
     my ( $self, $data, $zone_text ) = @_;
-
-# validation plan: name, address
 
 # NAME
     # _valid_name will check the name label for validity
@@ -530,6 +535,7 @@ sub _valid_srv {
 
 sub _valid_ptr {
     my ( $self, $data, $zone_text) = @_;
+
     $self->_valid_address( $data, $zone_text );
     $self->_valid_address_chars( $data, $zone_text );
 };
