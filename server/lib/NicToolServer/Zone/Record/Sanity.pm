@@ -67,6 +67,7 @@ sub new_or_edit_basic_verify {
     $self->_valid_rr_type($data);
     $self->_valid_name_chars( $data, $zone_text );  # check for invalid chars
     $self->_valid_name( $data, $zone_text );        # validate name pattern
+    $self->_duplicate_record( $data );
 
     $self->_valid_cname($data, $zone_text)   if $data->{type} eq 'CNAME';
     $self->_valid_a($data, $zone_text)       if $data->{type} eq 'A';
@@ -94,8 +95,24 @@ sub _valid_ttl {
 # TODO: https://github.com/msimerson/NicTool/issues/7
 }
 
+sub _duplicate_record {
+    my ( $self, $data ) = @_;
+
+    if ($self->record_exists(
+        $data->{name},
+        $data->{type},
+        $data->{nt_zone_id},
+        $data->{nt_zone_record_id},
+        $data->{address},
+    )) {
+        $self->error( 'name', "Duplicate Resource Records are not allowed: RFC 2181");
+    }
+}
+
 sub record_exists {
-    my ( $self, $record, $record_type, $zone_id, $rid ) = @_;
+    my ( $self, $rr_name, $rr_type, $zone_id, $rr_id, $data ) = @_;
+
+    my @params = ( $rr_type, $zone_id, $rr_name );
 
     my $sql = "SELECT r.*, t.name AS type
     FROM nt_zone_record r
@@ -105,8 +122,14 @@ sub record_exists {
         AND r.nt_zone_id = ?
         AND r.name = ?";
 
-    $sql .= " AND r.nt_zone_record_id <> $rid" if $rid;
-    my $zrs = $self->exec_query( $sql, [ $record_type, $zone_id, $record ] );
+    if ($rr_id) {
+        $sql .= " AND r.nt_zone_record_id <> $rr_id";
+    }
+    if ($data) {
+        $sql .= " AND r.address = ?";
+        push @params, $data;
+    }
+    my $zrs = $self->exec_query( $sql, \@params );
 
     return ref( $zrs->[0] ) ? 1 : 0;
 }
