@@ -1575,8 +1575,8 @@ sub exec_query {
     my $dbix = DBIx::Simple->connect( $self->{dbh} )
         or die DBIx::Simple->error;
 
-    if ( $query =~ /^INSERT INTO/ ) {
-        my ($table) = $query =~ /INSERT INTO (\w+)[\s\(]/;
+    if ( $query =~ /^(REPLACE|INSERT) INTO/ ) {
+        my ($table) = $query =~ /(?:REPLACE|INSERT) INTO (\w+)[\s\(]/;
         eval { $dbix->query( $query, @params ); };
         if ( $@ or $dbix->error ne 'DBI error: ' ) {
             warn $err . $dbix->error; # if $self->debug_sql;

@@ -209,7 +209,10 @@ sub _valid_name {
     return if ! defined $data->{name};  # edit may not include 'name'
 
     if ( $data->{name} =~ /\.$/ ) {               # ends with .
-        if ( $data->{name} !~ /$zone_text\.$/ ) { # ends with zone.com.
+        if ( $data->{name} eq "$zone_text." ) {
+            # no problem
+        }
+        elsif ( $data->{name} !~ /$zone_text\.$/ ) { # ends with zone.com.
             $self->error('name', "absolute host names are NOT allowed. Remove the dot and the host will automatically live within the current zone.");
         }
     }
@@ -416,15 +419,6 @@ sub _valid_ns {
 
 # NAME
     # _valid_name will check the name label for validity
-
-    # catch redundant NS records. Creating or editing NS Records with 'name'
-    # set to 'zone' is disallowed (these records are created automatically
-    # at export time). -gws
-    if ( $data->{name} eq "$zone_text." ) {
-        $self->error( 'name',
-            "The NS Records for '$zone_text.' will automatically be created when the Zone is published to a Nameserver."
-        );
-    }
 
 # ADDRESS
     # NS records must not point to a CNAME

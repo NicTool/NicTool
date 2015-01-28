@@ -90,9 +90,18 @@ sub zr_soa {
 
 sub zr_ns {
     my ($self, $rr, $zone) = @_;
+    $rr or die;
 
-    # automatically generated in NicTool
-    return;
+    print 'NS : ' . $rr->name . "\t" . $rr->address . "\n";
+    my ($zone_id, $host) = $self->get_zone_id( $rr->name, $zone );
+
+    $self->nt_create_record(
+        zone_id => $zone_id,
+        type    => 'NS',
+        name    => $host,
+        address => $rr->address,
+        ttl     => $rr->ttl,
+    );
 };
 
 sub zr_a {

@@ -334,13 +334,6 @@ sub record_exists {
     return 0;
 };
 
-sub nameservers {
-    my ($self, $ns) = @_;
-    return $self->{nameservers} if ! $ns;
-    $self->{nameservers} = $ns;
-    return $ns;
-};
-
 sub group_id {
     my ($self, $gid) = @_;
     return $self->{group_id} if ! $gid;

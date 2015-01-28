@@ -20,7 +20,6 @@ Getopt::Long::GetOptions(
     'host=s'    => \my $nt_host,
     'port=s'    => \my $nt_port,
     'file=s'    => \my $filename,
-    'nameservers=s'=>\my $nameservers,
     'user=s'    => \my $nt_user,
     'pass=s'    => \my $nt_pass,
     'type=s'    => \my $type,
@@ -38,10 +37,9 @@ if($help) {
      print "  --pass           NicTool password\n";
      print "  --type           Import type (tinydns or bind)\n";
      print "  --file           File to import data from (data for tinydns, named.conf for bind)\n";
-     print "  --nameservers    Comma separated list of nameserver id's\n";
      print "  --group_id       NicTool group id zones are placed into\n";
      print "  --verbose        Show extra messages verbose\n\n";
-     print "Submit bugs to https://github.com/msimerson/NicTool or support\@nictool.com\n";
+     print "Report issues at https://github.com/msimerson/NicTool/issues\n";
      exit 0;
 }
 
@@ -55,10 +53,7 @@ my $nt = $nti->nt_connect($nt_host, $nt_port, $nt_user, $nt_pass);
 
 $group_id ||= $nt->result->{store}{nt_group_id} || die "unable to get group ID\n";
 warn Dumper($nt->result->{store}) if $verbose;
-$nameservers ||= join(',', grep { $_ > 0 } split /,/, $nt->result->{store}{usable_ns} );
-warn "nameservers: $nameservers\n" if $verbose;
 $nti->group_id( $group_id );
-$nti->nameservers( [ split /,/, $nameservers ] );
 
 print "\nStarting import using: $filename\n";
 $nti->import_records($filename);

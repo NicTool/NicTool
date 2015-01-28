@@ -3,7 +3,9 @@ package NicToolServer::Zone::Record;
 
 use strict;
 
-@NicToolServer::Zone::Record::ISA = 'NicToolServer::Zone';
+use parent 'NicToolServer::Zone';
+use parent 'NicToolServer::Nameserver';
+use parent 'NicToolServer';
 
 sub new_zone_record {
     my ( $self, $data ) = @_;
@@ -13,6 +15,10 @@ sub new_zone_record {
         return $self->error_response( 404,
             "Not allowed to add records to the delegated zone." )
             unless $del->{zone_perm_add_records};
+    }
+
+    if ( $data->{type} eq 'NS' && "$z->{zone}." eq $data->{name} ) {
+        return $self->_add_zone_nameserver($z, $data);
     }
 
     # bump the zone's serial number
@@ -53,6 +59,36 @@ sub new_zone_record {
         error_code => 200,
         error_msg => 'OK',
         nt_zone_record_id => $insertid,
+    };
+}
+
+sub _add_zone_nameserver {
+    my ($self, $zone, $data) = @_;
+
+    # get NS by looking up $data->{address}
+    my $ns_name = lc $data->{address};
+    if ('.' ne substr($ns_name, -1, 1)) {
+        $ns_name = $ns_name . '.';
+    }
+
+    my $nslist = $self->get_usable_nameservers( $data )->{nameservers};
+    my ($ns) = grep { $_->{name} =~ /^$ns_name$/i } @$nslist;
+    if (!$ns) {
+        return $self->error_response( 404, "Nameserver not defined in NicTool." );
+    }
+
+    my $ns_id = $ns->{nt_nameserver_id};
+    if (!$self->get_access_permission( 'NAMESERVER', $ns_id, 'read' ) ) {
+        return $self->error_response( 404, "Not allowed to add records to that Nameserver." );
+    }
+
+    # save the NS record
+    $self->add_zone_nameserver($zone->{nt_zone_id}, $ns_id);
+
+    return {
+        error_code => 200,
+        error_msg => 'OK',
+        ns_id => $ns_id,
     };
 }
 

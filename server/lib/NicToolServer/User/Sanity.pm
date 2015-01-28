@@ -3,7 +3,7 @@ package NicToolServer::User::Sanity;
 
 use strict;
 
-@NicToolServer::User::Sanity::ISA = 'NicToolServer::User';
+use parent 'NicToolServer::User';
 
 ### public methods
 sub new_user {

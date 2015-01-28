@@ -3,7 +3,7 @@ package NicToolServer::Zone;
 
 use strict;
 
-@NicToolServer::Zone::ISA = 'NicToolServer';
+use parent 'NicToolServer';
 
 sub get_zone {
     my ( $self, $data ) = @_;
@@ -1059,17 +1059,23 @@ sub find_zone {
     return $zones->[0] || {};
 }
 
+sub add_zone_nameserver {
+    my ( $self, $zone_id, $nsid ) = @_;
+
+    $self->exec_query(
+        "REPLACE INTO nt_zone_nameserver SET nt_zone_id=?, nt_nameserver_id=?",
+        [ $zone_id, $nsid ],
+    );
+}
+
 sub set_zone_nameservers {
     my ( $self, $zone_id, $nsids ) = @_;
 
     $self->exec_query( "DELETE FROM nt_zone_nameserver WHERE nt_zone_id=?",
         $zone_id );
 
-    foreach my $ns (@$nsids) {
-        $self->exec_query(
-            "INSERT INTO nt_zone_nameserver SET nt_zone_id=?, nt_nameserver_id=?",
-            [ $zone_id, $ns ],
-        );
+    foreach my $nsid (@$nsids) {
+        $self->add_zone_nameserver($zone_id, $nsid);
     }
 }
 

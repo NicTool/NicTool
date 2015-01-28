@@ -171,8 +171,20 @@ sub zr_ns {
     my $self = shift;
     my $r = shift or die;
 
-    print "NS : $r\n";  # created automatically in NicTool
-    #my ( $fqdn, $ip, $host, $ttl, $timestamp, $location ) = split(':', $r);
+    print "NS : $r\n";
+    my ( $fqdn, $ip, $addr, $ttl, $timestamp, $location ) = split(':', $r);
+
+    my ($zone_id, $host) = $self->get_zone_id( $fqdn );
+
+    $self->nt_create_record(
+        zone_id => $zone_id,
+        type    => 'NS',
+        name    => $host,
+        address => $self->fully_qualify( $addr ),
+        defined $ttl       ? ( ttl       => $ttl       ) : (),
+        defined $timestamp ? ( timestamp => $timestamp ) : (),
+        defined $location  ? ( location  => $location  ) : (),
+    );
 }
 
 sub zr_ptr {
