@@ -92,14 +92,17 @@ sub zr_ns {
     my ($self, $rr, $zone) = @_;
     $rr or die;
 
-    print 'NS : ' . $rr->name . "\t" . $rr->address . "\n";
+    my $address = lc $rr->nsdname;
+    $address .= '.' if substr($address, -1, 1) ne '.';
+    print 'NS : ' . $rr->name . "\t$address\n";
+
     my ($zone_id, $host) = $self->get_zone_id( $rr->name, $zone );
 
     $self->nt_create_record(
         zone_id => $zone_id,
         type    => 'NS',
         name    => $host,
-        address => $rr->address,
+        address => $address,
         ttl     => $rr->ttl,
     );
 };
