@@ -42,7 +42,7 @@ sub get_zone_id {
 
     if ($zone) {
         $zone_id = $self->nt_get_zone_id( zone => $zone );
-        return ($zone_id, $fqdn) if $fqdn eq $zone;
+        return ($zone_id, "$fqdn.") if $fqdn eq $zone;
         $host = substr($fqdn, 0, ((length $zone) * -1) -1);
         return ($zone_id, $host);
     };
@@ -88,10 +88,11 @@ sub nt_create_zone {
     print "creating zone $p{zone}\n";
     my $nt = $self->nt_connect();
 
+    $p{contact} =~ s/@/./g;  # clean up common format error in mailaddr string
+
     my $group_id = $p{group_id} || $self->group_id or die "group ID unset!\n";
-    my $nameservers = $p{nameservers} || $self->nameservers
-        or die "nameservers unset!\n";
-    $nameservers = join( ',', @{$nameservers} );
+    my $nameservers = $p{nameservers};
+    if ($nameservers) { $nameservers = join( ',', @{$nameservers} ); }
 
     my $r = $nt->new_zone(
         nt_zone_id  => undef,
@@ -100,7 +101,7 @@ sub nt_create_zone {
         ttl         => $p{ttl},
         serial      => undef,
         description => $p{description},
-        nameservers => $nameservers,
+        ($nameservers ? ( nameservers => $nameservers ) : ()),
         mailaddr    => $p{contact} || 'hostmaster.' . $p{zone},
         refresh     => $p{refresh},
         retry       => $p{retry},

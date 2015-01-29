@@ -26,7 +26,7 @@ sub new_zone {
     }
     else {
         if ( $data->{zone} =~ /\// ) {
-            $self->error( 'zone', 
+            $self->error( 'zone',
                 "invalid character in zone '/'. Only allowed in reverse-lookup zones"
             );
         }
@@ -54,18 +54,16 @@ sub new_zone {
             if ( my $zref = $self->zone_exists( $orig_zone, 0 ) ) {
 
 #use new permission-system to check for 'read' access to the zone...XXX 'read' access correct?
-                my @error = $self->check_permission( 'nt_zone_id',
-                    $zref->{nt_zone_id}, 'read', 'ZONE' );
+                my @error = $self->check_permission( 'nt_zone_id', $zref->{nt_zone_id}, 'read', 'ZONE' );
                 if ( defined $error[0] ) {
-                    $self->error( 'zone', "Sub-domain creation not allowed: Access to zone $orig_zone denied: $error[1]"
-                    );
+                    $self->error( 'zone', "Sub-domain creation not allowed: Access to zone $orig_zone denied: $error[1]");
                 }
                 if ($self->record_exists_within_zone( $zref->{nt_zone_id}, $z )) {
                     $self->error( 'zone', "A record within $orig_zone named $z already exists. Delete or rename the record and then you can add $z as a sub-domain.\n"
                     );
                 }
 
-                # TODO - warn user that they're creating a sub-domain..
+                # TODO - warn user that they're creating a sub-domain.
             }
         }
     }
@@ -192,9 +190,11 @@ sub record_exists_within_zone {
     my $base_name = $name;
     $base_name =~ s/\..*$//;
     $name .= '.' if $name !~ /\.$/;
-    my $sql = "SELECT nt_zone_record_id,nt_zone_id FROM nt_zone_record 
+    my $sql = "SELECT nt_zone_record_id, nt_zone_id FROM nt_zone_record
       WHERE deleted=0
-        AND nt_zone_id = ? AND ( name = ? OR name = ? )";
+        AND nt_zone_id = ?
+        AND ( name = ? OR name = ? )
+        AND type_id NOT IN (2)";  # ignore NS records, they're delegations
     my $zrs = $self->exec_query( $sql, [ $zid, $name, $base_name ] );
     return ref $zrs->[0] ? 1 : 0;
 }
@@ -204,7 +204,7 @@ sub record_exists_within_zone {
 __END__
 
 =head1 SYNOPSIS
-  
+
 
 =cut
 
