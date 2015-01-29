@@ -1,4 +1,8 @@
 
+2.31    2015.01.28
+
+   * update user forms for 30 char password length
+
 2.30    2014.12.04
 
    * users.cgi: max pass length 15 -> 30 chars

@@ -1,5 +1,15 @@
 Revision history for NicToolServer
 
+2.31    2015.01.28
+
+    * require TTL on identical label+type to be identical (#7)
+    * fetch name collisions once, saving trips to DB during validation
+    * prevent duplicate RRs (#8)
+    * NS records where the name != zone were skipped during import
+    * permit zones to be created w/o NS
+    * exports: remove trailing / in export dir path
+    * remove mysql and apache from server/install_deps
+
 2.30    2014.12.04
 
     * passwords: new/edit users use PBKDF2 passwords
