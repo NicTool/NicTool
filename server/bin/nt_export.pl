@@ -14,12 +14,45 @@ use Params::Validate qw/:all/;
 
 use NicToolServer::Export;
 
+BEGIN{
+    # This bit of code executes before the main script. Hence we are
+    # able to seed the @INC path with the directory where the "real"
+    # script resides.
+
+    my $LIB_DIR;
+
+    # is the executable called using $PATH? (i.e. does not start with / )
+    if ($0 !~ m%^/%) {
+        (my $prog = $0) =~ s%^.*/([^/]+)$%$1%;
+        my @PATH=split (':', $ENV{'PATH'});
+        push @PATH, '.', undef;
+        foreach my $dir (@PATH) {
+            if (-f "$dir/$prog") { # found it!
+                $dir =~ s/\./`pwd`/eo;
+                chomp $dir;
+                $::PROG_LOCATION = -l $prog ? readlink ($prog) : $prog;
+                last;
+            }
+        }
+    } else {
+        # Check to see if $0 is a symbolic link or not.
+        $::PROG_LOCATION = -l $0 ? readlink ($0) : $0;
+    }
+
+    # Set $LIB_DIR to point to the lib/NicToolServer dir in my parent dir
+    ($LIB_DIR = $::PROG_LOCATION) =~ s%/[^/]+$%../lib/NicToolServer%;
+    unshift @INC, $LIB_DIR;
+    # above probably eliminates the need of all the uses of the lib module
+}
+
+
 $|++;  # output autoflush (so log msgs aren't buffered)
 
 # process command line options
 Getopt::Long::GetOptions(
     'daemon'    => \my $daemon,
     'dsn=s'     => \my $dsn,
+    'conf=s'    => \my $conf,
     'help'      => \my $usage,
     'incremental'=>\my $incremental,
     'force'     => \my $force,
@@ -33,7 +66,7 @@ Getopt::Long::GetOptions(
 usage() and exit if $usage;
 
 if ( ! defined $dsn || ! defined $db_user || ! defined $db_pass ) {
-    get_db_creds_from_nictoolserver_conf();
+    get_db_creds_from_nictoolserver_conf($conf);
 }
 
 $dsn     ||= ask( "database DSN",
@@ -105,13 +138,28 @@ PROMPT:
 
 sub get_db_creds_from_nictoolserver_conf {
 
-    my $file = "lib/nictoolserver.conf";
-    $file = "../server/lib/nictoolserver.conf" if ! -f $file;
-    $file = "../lib/nictoolserver.conf" if ! -f $file;
-    $file = "../nictoolserver.conf" if ! -f $file;
-    $file = "nictoolserver.conf" if ! -f $file;
-    return if ! -f $file;
+    my $file = shift || '';
+    my $prog_dir; ($prog_dir = $::PROG_LOCATION) =~ s%^(.*)/[^/]+$%$1%;
 
+    if (! -r $file) {
+        # try a number of locations to try to find the config file
+        $file = undef;
+        my @dirs_to_try = ("$prog_dir/../lib", 'lib', '../server/lib',
+                           '../lib', '..', '.');
+        foreach my $dir (@dirs_to_try) {
+            if (-r "$dir/nictoolserver.conf") {
+                $file = "$dir/nictoolserver.conf";
+                last;
+            }
+        }
+
+        # clean up the path
+        $file =~ s%/[^/]+/../%/%g;
+
+        # Unable to locate the config file
+        return if !defined($file);
+    }
+    
     print "nsid $nsid " if $nsid;
     print "reading DB settings from $file\n";
     my $contents = `cat $file`;
@@ -140,7 +188,7 @@ sub usage {
 
   $0 -help
 
-  $0 -nsid <N> [-daemon] [-force] [-verbose] [-incremental]
+  $0 -nsid <N> [-daemon] [-force] [-verbose] [-incremental] [--conf FILE]
 
 If nt_export is unable to locate/access nictoolserver.conf, you can supply
 the database connection properties manually:
