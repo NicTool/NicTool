@@ -93,10 +93,12 @@ local $SIG{USR1} = \&graceful_exit;
 local $SIG{SEGV} = \&graceful_exit;
 local $SIG{ALRM} = \&graceful_exit;
 
+my $result;
 if ( $daemon ) { $export->daemon(); }
-else           { $export->export(); };
+else           { $result = $export->export(); };
 
-exit 0;
+exit $result;
+
 
 sub get_nsid {
     my $nslist = $export->get_active_nameservers();

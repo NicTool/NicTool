@@ -127,7 +127,7 @@ sub set_no_change {
 
     $self->set_status("last run:$last_ts<br>last cp :$last_cp_ts");
     $self->elog("exiting\n",success=>1);
-    return 1;
+    return 0;
 };
 
 sub set_partial {
@@ -217,6 +217,8 @@ sub exec_query {
     return $r;
 }
 
+# export() now returns state of an export. If no export occured, then
+# it will return 0. Otherwise it return 1 when an export does occur.
 sub export {
     my $self = shift;
 
@@ -238,7 +240,7 @@ sub export {
     if ( (time - $before) > 5 ) { $elapsed = ' ('. (time - $before) . ' secs)' };
     $self->elog('exported'.$elapsed);
 
-    $self->postflight or return;
+    $self->postflight;
     return 1;
 }
 
