@@ -10,6 +10,7 @@ use lib '../server/lib';
 #use Data::Dumper;
 use Getopt::Long;
 use Params::Validate qw/:all/;
+use Sys::Hostname;
 #$Data::Dumper::Sortkeys=1;
 
 use NicToolServer::Export;
@@ -100,6 +101,15 @@ exit 0;
 
 sub get_nsid {
     my $nslist = $export->get_active_nameservers();
+    
+    # determine if the current hostname is a listed nameserver
+    my $me = &hostname;
+    foreach my $nsentry (@$nslist) {
+        if ($nsentry->{name} =~ /^$me\./) {
+            return $nsentry->{nt_nameserver_id};
+        }
+    }
+    
     printf( "\n%5s   %25s   %9s\n", 'nsid', 'name', 'format' );
     my $format = "%5.0f   %25s   %9s\n";
     foreach my $ns (sort @$nslist) {
