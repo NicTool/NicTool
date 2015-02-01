@@ -75,12 +75,6 @@ $dsn     ||= ask( "database DSN",
 $db_user ||= ask( "database user", default => 'root' );
 $db_pass ||= ask( "database pass", password => 1 );
 
-# If nsid has not be specified, try to locate the nsid for this server,
-# or display a table of nsid to use to generate the zone files.
-if ( !defined $nsid ) {
-    $nsid = get_nsid();
-}
-
 my $export = NicToolServer::Export->new( 
     ns_id => $nsid || 0,
     force => $force || 0,
@@ -90,6 +84,14 @@ my $export = NicToolServer::Export->new(
 $export->incremental( $incremental || 0);
 $export->get_dbh( dsn => $dsn, user => $db_user, pass => $db_pass,) 
     or die "database connection failed";
+
+# If nsid has not be specified, try to locate the nsid for this server,
+# or display a table of nsid to use to generate the zone files.
+if ( !defined $nsid ) {
+    $nsid = get_nsid($export);
+    $export->{ns_id} = $nsid;
+    $export->set_active_nameserver($nsid);
+}
 
 local $SIG{HUP}  = \&graceful_exit;
 local $SIG{TERM} = \&graceful_exit;
@@ -104,6 +106,7 @@ else           { $export->export(); };
 exit 0;
 
 sub get_nsid {
+    my $export = shift || die "get_nsid() requires a NicToolServer::Export object";
     my $nslist = $export->get_active_nameservers();
     
     # determine if the current hostname is a listed nameserver
