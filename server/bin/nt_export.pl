@@ -75,6 +75,12 @@ $dsn     ||= ask( "database DSN",
 $db_user ||= ask( "database user", default => 'root' );
 $db_pass ||= ask( "database pass", password => 1 );
 
+# If nsid has not be specified, try to locate the nsid for this server,
+# or display a table of nsid to use to generate the zone files.
+if ( !defined $nsid ) {
+    $nsid = get_nsid();
+}
+
 my $export = NicToolServer::Export->new( 
     ns_id => $nsid || 0,
     force => $force || 0,
@@ -84,8 +90,6 @@ my $export = NicToolServer::Export->new(
 $export->incremental( $incremental || 0);
 $export->get_dbh( dsn => $dsn, user => $db_user, pass => $db_pass,) 
     or die "database connection failed";
-
-defined $nsid || get_nsid();
 
 local $SIG{HUP}  = \&graceful_exit;
 local $SIG{TERM} = \&graceful_exit;
