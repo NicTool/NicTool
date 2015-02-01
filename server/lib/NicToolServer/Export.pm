@@ -127,7 +127,6 @@ sub set_no_change {
 
     $self->set_status("last run:$last_ts<br>last cp :$last_cp_ts");
     $self->elog("exiting\n",success=>1);
-    return 0;
 };
 
 sub set_partial {
@@ -222,7 +221,7 @@ sub exec_query {
 sub export {
     my $self = shift;
 
-    $self->preflight or return;
+    $self->preflight or return 0;   # signal no export occurred
     $self->get_active_nameservers();
     $self->load_export_class();
 
@@ -230,18 +229,21 @@ sub export {
         $self->elog("forced");
     }
     elsif ( ! $self->export_required ) {
-        return $self->set_no_change();
+        $self->set_no_change();
+        return 0;                   # signal no export occurred
     };
 
     my $before = time;
     $self->set_status("exporting from DB");
-    $self->{export_class}->export_db() or return 0;
-    my $elapsed = '';
-    if ( (time - $before) > 5 ) { $elapsed = ' ('. (time - $before) . ' secs)' };
-    $self->elog('exported'.$elapsed);
+    if ($self->{export_class}->export_db()) {
+        my $elapsed = '';
+        if ( (time - $before) > 5 ) { $elapsed = ' ('. (time - $before) . ' secs)' };
+        $self->elog('exported'.$elapsed);
 
-    $self->postflight;
-    return 1;
+        $self->postflight;
+        return 1;                   # signal export did occur
+    }
+    return 0;                       # signal no export occurred
 }
 
 sub get_dbh {
