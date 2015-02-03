@@ -613,8 +613,7 @@ LEFT JOIN nt_nameserver_export_type et ON ns.export_type_id=et.id
     }
 
     if ( $self->{ns_id} ) {
-        $self->{ns_ref} = $self->{active_ns_ids}{$self->{ns_id}};
-        $self->{export_format} = $self->{ns_ref}{export_format};
+        $self->set_active_nameserver($self->{ns_id});
     }
     else {
         my $first = $self->{active_ns_ids}{ $self->{active_ns}[0] } ||
@@ -623,6 +622,14 @@ LEFT JOIN nt_nameserver_export_type et ON ns.export_type_id=et.id
     };
 
     return $self->{active_ns};
+}
+
+sub set_active_nameserver {
+    my $self = shift;
+    my $nsid = shift;
+    
+    $self->{ns_ref} = $self->{active_ns_ids}{$nsid};
+    $self->{export_format} = $self->{ns_ref}{export_format};  
 }
 
 sub load_export_class {

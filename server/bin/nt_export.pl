@@ -10,6 +10,7 @@ use lib '../server/lib';
 #use Data::Dumper;
 use Getopt::Long;
 use Params::Validate qw/:all/;
+use Sys::Hostname;
 #$Data::Dumper::Sortkeys=1;
 
 use NicToolServer::Export;
@@ -84,7 +85,12 @@ $export->incremental( $incremental || 0);
 $export->get_dbh( dsn => $dsn, user => $db_user, pass => $db_pass,) 
     or die "database connection failed";
 
-defined $nsid || get_nsid();
+# If nsid has not been specified, try to locate the nsid for this server,
+# or display a table of nsid to use to generate the zone files.
+if ( !defined $nsid ) {
+    $nsid = $export->{ns_id} = get_nsid($export);
+    $export->set_active_nameserver($nsid);
+}
 
 local $SIG{HUP}  = \&graceful_exit;
 local $SIG{TERM} = \&graceful_exit;
@@ -99,7 +105,17 @@ else           { $export->export(); };
 exit 0;
 
 sub get_nsid {
+    my $export = shift || die "get_nsid() requires a NicToolServer::Export object";
     my $nslist = $export->get_active_nameservers();
+    
+    # determine if the current hostname is a listed nameserver
+    my $me = &hostname;
+    foreach my $nsentry (@$nslist) {
+        if ($nsentry->{name} =~ /^$me\./) {
+            return $nsentry->{nt_nameserver_id};
+        }
+    }
+    
     printf( "\n%5s   %25s   %9s\n", 'nsid', 'name', 'format' );
     my $format = "%5.0f   %25s   %9s\n";
     foreach my $ns (sort @$nslist) {
