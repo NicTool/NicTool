@@ -85,11 +85,10 @@ $export->incremental( $incremental || 0);
 $export->get_dbh( dsn => $dsn, user => $db_user, pass => $db_pass,) 
     or die "database connection failed";
 
-# If nsid has not be specified, try to locate the nsid for this server,
+# If nsid has not been specified, try to locate the nsid for this server,
 # or display a table of nsid to use to generate the zone files.
 if ( !defined $nsid ) {
-    $nsid = get_nsid($export);
-    $export->{ns_id} = $nsid;
+    $nsid = $export->{ns_id} = get_nsid($export);
     $export->set_active_nameserver($nsid);
 }
 
