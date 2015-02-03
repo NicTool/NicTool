@@ -52,7 +52,7 @@ sub new {
 
 sub daemon {
     my $self = shift;
-    $self->export();
+    my $result = $self->export();
     my $end = time;
     my $waitleft = 60;
     if ( defined $self->{ns_ref}{export_interval} ) {
@@ -65,6 +65,7 @@ sub daemon {
         sleep 1;
         $waitleft--;
     };
+    return $result;
 };
 
 sub elog {
@@ -127,7 +128,6 @@ sub set_no_change {
 
     $self->set_status("last run:$last_ts<br>last cp :$last_cp_ts");
     $self->elog("exiting\n",success=>1);
-    return 1;
 };
 
 sub set_partial {
@@ -217,10 +217,12 @@ sub exec_query {
     return $r;
 }
 
+# export() now returns state of an export. If no export occured, then
+# it will return 0. Otherwise it return 1 when an export does occur.
 sub export {
     my $self = shift;
 
-    $self->preflight or return;
+    $self->preflight or return 0;   # signal no export occurred
     $self->get_active_nameservers();
     $self->load_export_class();
 
@@ -228,18 +230,21 @@ sub export {
         $self->elog("forced");
     }
     elsif ( ! $self->export_required ) {
-        return $self->set_no_change();
+        $self->set_no_change();
+        return 0;                   # signal no export occurred
     };
 
     my $before = time;
     $self->set_status("exporting from DB");
-    $self->{export_class}->export_db() or return;
-    my $elapsed = '';
-    if ( (time - $before) > 5 ) { $elapsed = ' ('. (time - $before) . ' secs)' };
-    $self->elog('exported'.$elapsed);
+    if ($self->{export_class}->export_db()) {
+        my $elapsed = '';
+        if ( (time - $before) > 5 ) { $elapsed = ' ('. (time - $before) . ' secs)' };
+        $self->elog('exported'.$elapsed);
 
-    $self->postflight or return;
-    return 1;
+        $self->postflight;
+        return 1;                   # signal export did occur
+    }
+    return 0;                       # signal no export occurred
 }
 
 sub get_dbh {
