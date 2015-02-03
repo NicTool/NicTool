@@ -52,7 +52,7 @@ sub new {
 
 sub daemon {
     my $self = shift;
-    $self->export();
+    my $result = $self->export();
     my $end = time;
     my $waitleft = 60;
     if ( defined $self->{ns_ref}{export_interval} ) {
@@ -65,6 +65,7 @@ sub daemon {
         sleep 1;
         $waitleft--;
     };
+    return $result;
 };
 
 sub elog {

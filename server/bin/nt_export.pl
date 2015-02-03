@@ -61,7 +61,10 @@ Getopt::Long::GetOptions(
     'pass=s'    => \my $db_pass,
     'pfextra'   => \my $postflight_extra,
     'verbose'   => \my $verbose,
-) or die "error parsing command line options";
+) or do {
+    print STDERR "error parsing command line options";
+    exit 2;
+};
 
 usage() and exit if $usage;
 
@@ -81,8 +84,10 @@ my $export = NicToolServer::Export->new(
     debug => $verbose || 0,
     );
 $export->incremental( $incremental || 0);
-$export->get_dbh( dsn => $dsn, user => $db_user, pass => $db_pass,) 
-    or die "database connection failed";
+$export->get_dbh( dsn => $dsn, user => $db_user, pass => $db_pass,) or do {
+    print STDERR "database connection failed";
+    exit 2;
+};
 
 defined $nsid || get_nsid();
 
@@ -94,7 +99,7 @@ local $SIG{SEGV} = \&graceful_exit;
 local $SIG{ALRM} = \&graceful_exit;
 
 my $result;
-if ( $daemon ) { $export->daemon(); }
+if ( $daemon ) { $result = $export->daemon(); }
 else           { $result = $export->export(); };
 
 exit $result;
@@ -107,9 +112,10 @@ sub get_nsid {
     foreach my $ns (sort @$nslist) {
         printf $format, $ns->{nt_nameserver_id}, $ns->{name}, $ns->{export_format};
     };
-    die "\nERROR: missing nsid. Try this:
+    print STDERR "\nERROR: missing nsid. Try this:
     
     $0 -nsid N\n";
+    exit 2;
 };
 
 sub ask {
@@ -192,14 +198,22 @@ sub usage {
 
   $0 -nsid <N> [-daemon] [-force] [-verbose] [-incremental] [--conf FILE]
 
-If nt_export is unable to locate/access nictoolserver.conf, you can supply
-the database connection properties manually:
+If nt_export is unable to automatically locate/access nictoolserver.conf,
+you can specify --conf with the path to the file. In addition, you may 
+specify the database connection properties manually:
 
    -dsn   DBI:mysql:database=nictool;host=localhost;port=3306
    -user  root
    -pass  mySecretPassWord
 
 Run the script without any -nsid argument to see a list of name servers.
+If nt_export is being executed on a registered name server, the nsid
+parameter will be automatically detected and the export will commence. 
+
+When nt_export is executed, it will indicate if the export occurred with
+the exit status. An exit status of 1 is returned when the export did 
+occur and an exit status of 0 when the export did not occur (or no updates).
+If nt_export detects an error, then an exit status of 2 is returned. 
 
 EOHELP
 ;
