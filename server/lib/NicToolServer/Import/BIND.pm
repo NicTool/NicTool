@@ -39,7 +39,7 @@ sub import_records {
     $self->get_import_file( $file ) or return;
 
     my $p = NicToolServer::Import::BIND::Conf_Parser->new;
-    foreach ( qw/ nt group_id nameservers / ) {
+    foreach ( qw/ nt group_id / ) {
         $p->{$_} = $self->{$_};
     };
     #print "loaded parser\n";
