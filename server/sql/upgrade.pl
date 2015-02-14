@@ -98,6 +98,23 @@ EO_SOME_DAY
 ;
 };
 
+
+sub _sql_test_2_32 {
+    my $r = _get_db_version() or return 1;  # query failed
+    return 0 if $r eq '2.30';   # update!
+    return 1;                   # don't update
+}
+
+sub _sql_2_32 {
+    <<EO_SQL_2_32
+DROP TABLE IF EXISTS nt_nameserver_qlog;
+DROP TABLE IF EXISTS nt_nameserver_qlogfile;
+
+UPDATE nt_options SET option_value='2.32' WHERE option_name='db_version';
+EO_SQL_2_32
+;
+}
+
 sub _sql_test_2_30 {
     my $r = _get_db_version() or return 1;  # query failed
     return 0 if $r eq '2.29';   # update!

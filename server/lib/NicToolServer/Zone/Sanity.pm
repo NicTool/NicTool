@@ -175,15 +175,6 @@ sub get_zone_records {
     return $self->SUPER::get_zone_records($data);
 }
 
-sub get_group_zone_query_log {
-    my ( $self, $data ) = @_;
-
-    $self->search_params_sanity_check( $data,
-        qw/ timestamp nameserver zone query qtype flag ip port / );
-    return $self->throw_sanity_error if $self->{errors};
-    return $self->SUPER::get_group_zone_query_log($data);
-}
-
 sub record_exists_within_zone {
     my ( $self, $zid, $name ) = @_;
 

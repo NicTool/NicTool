@@ -83,42 +83,6 @@ INSERT INTO nt_nameserver_log(nt_group_id,nt_user_id, action, timestamp, nt_name
 INSERT INTO nt_nameserver_log(nt_group_id,nt_user_id, action, timestamp, nt_nameserver_id) VALUES (1,1,'added',UNIX_TIMESTAMP(), 2);
 INSERT INTO nt_nameserver_log(nt_group_id,nt_user_id, action, timestamp, nt_nameserver_id) VALUES (1,1,'added',UNIX_TIMESTAMP(), 3);
 
-
-DROP TABLE IF EXISTS nt_nameserver_qlog;
-CREATE TABLE nt_nameserver_qlog(
-    nt_nameserver_qlog_id   INT UNSIGNED AUTO_INCREMENT NOT NULL,
-    nt_nameserver_id        SMALLINT UNSIGNED NOT NULL,
-    nt_zone_id              INT UNSIGNED NOT NULL,
-    nt_zone_record_id       INT UNSIGNED,
-    timestamp               INT UNSIGNED NOT NULL,
-    ip                      VARCHAR(15),
-    port                    SMALLINT UNSIGNED,
-    qid                     SMALLINT UNSIGNED,
-    flag                    CHAR(1),
-    qtype                   ENUM('a','ns','cname','soa','ptr','hinfo','mx','txt','rp','sig','key','aaaa','axfr','any','unknown'), 
-    query                   VARCHAR(255) NOT NULL,
-    r_size                  SMALLINT UNSIGNED,
-    q_size                  SMALLINT UNSIGNED,
-    PRIMARY KEY (`nt_nameserver_qlog_id`),
-    KEY `nt_nameserver_qlog_idx1` (`query`),
-    KEY `nt_nameserver_qlog_idx2` (`nt_zone_id`),
-    KEY `nt_nameserver_qlog_idx3` (`nt_zone_record_id`),
-    KEY `nt_nameserver_qlog_idx4` (`timestamp`)
-) DEFAULT CHARSET=utf8 COLLATE=utf8_bin ROW_FORMAT=COMPRESSED;
-
-DROP TABLE IF EXISTS nt_nameserver_qlogfile;
-CREATE TABLE nt_nameserver_qlogfile(
-    nt_nameserver_qlogfile_id      INT UNSIGNED AUTO_INCREMENT NOT NULL PRIMARY KEY,
-    nt_nameserver_id               INT UNSIGNED NOT NULL,
-    filename                    VARCHAR(30) NOT NULL,
-    processed                   INT UNSIGNED,
-    line_count                  INT UNSIGNED,
-    insert_count                INT UNSIGNED,
-    took                        SMALLINT UNSIGNED,
-    KEY `nt_nameserver_qlogfile_idx1` (`filename`),
-    KEY `nt_nameserver_qlogfile_idx2` (`nt_nameserver_id`)
-) DEFAULT CHARSET=utf8 COLLATE=utf8_bin ROW_FORMAT=COMPRESSED;
-
 DROP TABLE IF EXISTS nt_nameserver_export_log;
 CREATE TABLE nt_nameserver_export_log(
     nt_nameserver_export_log_id     INT UNSIGNED AUTO_INCREMENT NOT NULL PRIMARY KEY,

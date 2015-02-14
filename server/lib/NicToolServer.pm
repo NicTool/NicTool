@@ -311,14 +311,6 @@ sub api_commands {
                     { 'access' => 'read', required => 1, type => 'GROUP' },
             },
         },
-        'get_group_zone_query_log' => {
-            'class'      => 'Zone::Sanity',
-            'method'     => 'get_group_zone_query_log',
-            'parameters' => {
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
-            },
-        },
         'new_zone' => {
             'class'      => 'Zone::Sanity',
             'method'     => 'new_zone',

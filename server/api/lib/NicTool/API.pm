@@ -255,15 +255,6 @@ sub api_commands {
             },
             'result-type' => 'Log'
         },
-        'get_group_zone_query_log' => {
-            'class'      => 'Zone',
-            'method'     => 'get_group_zone_query_log',
-            'parameters' => {
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
-            },
-            'result-type' => 'Log',
-        },
         'new_zone' => {
             'class'      => 'Zone::Sanity',
             'method'     => 'new_zone',
