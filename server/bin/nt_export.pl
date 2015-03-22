@@ -185,8 +185,10 @@ sub get_db_creds_from_nictoolserver_conf {
         return if !defined($file);
     }
     
-    print "nsid $nsid " if $nsid;
-    print "reading DB settings from $file\n" if $verbose;
+    if ($verbose) {
+        print "nsid $nsid " if $nsid;
+        print "reading DB settings from $file\n";
+    }
     my $contents = `cat $file`;
 
     if ( ! $dsn ) {
