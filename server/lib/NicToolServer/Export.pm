@@ -8,6 +8,7 @@ use Cwd;
 use DBIx::Simple;
 use File::Path;
 use Params::Validate qw/ :all /;
+use Scalar::Util qw( openhandle );
 
 use lib 'lib';
 
@@ -59,9 +60,13 @@ sub daemon {
         $waitleft = $self->{ns_ref}{export_interval} - ( $end - $self->{time_start} );
     };
     my $nsid = $self->{ns_id};
-    print "nsid $nsid sleeping $waitleft seconds\n" if $waitleft > 0;
+    if ($waitleft > 0 && $self->is_interactive) {
+        print "nsid $nsid sleeping $waitleft seconds\n";
+    };
     while ( $waitleft > 0 ) {
-        print "nsid $nsid sleeping $waitleft seconds\n" if $waitleft % 100 == 0;
+        if ($waitleft % 100 == 0 && $self->is_interactive) {
+            print "nsid $nsid sleeping $waitleft seconds\n";
+        };
         sleep 1;
         $waitleft--;
     };
@@ -895,6 +900,35 @@ sub zones_exported {
     $self->{export_list}{$zone} = 1;          # setter
     return 0;
 };
+
+sub is_interactive {
+
+    ## no critic
+    # lifted from IO::Interactive
+    my $self = shift;
+    my ($out_handle) = ( @_, select );    # Default to default output handle
+
+    # Not interactive if output is not to terminal...
+    return if not -t $out_handle;
+
+    # If *ARGV is opened, we're interactive if...
+    if ( openhandle * ARGV ) {
+
+        # ...it's currently opened to the magic '-' file
+        return -t *STDIN if defined $ARGV && $ARGV eq '-';
+
+        # ...it's at end-of-file and the next file is the magic '-' file
+        return @ARGV > 0 && $ARGV[0] eq '-' && -t *STDIN if eof *ARGV;
+
+        # ...it's directly attached to the terminal
+        return -t *ARGV;
+    };
+
+    # If *ARGV isn't opened, it will be interactive if *STDIN is attached
+    # to a terminal and either there are no files specified on the command line
+    # or if there are files and the first is the magic '-' file
+    return -t *STDIN && ( @ARGV == 0 || $ARGV[0] eq '-' );
+}
 
 1;
 

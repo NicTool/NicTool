@@ -15,8 +15,8 @@ use Sys::Hostname;
 
 use NicToolServer::Export;
 
-BEGIN{
-    # This bit of code executes before the main script. Hence we are
+BEGIN {
+    # This executes before the main script. Hence we are
     # able to seed the @INC path with the directory where the "real"
     # script resides.
 
@@ -35,7 +35,8 @@ BEGIN{
                 last;
             }
         }
-    } else {
+    }
+    else {
         # Check to see if $0 is a symbolic link or not.
         $::PROG_LOCATION = -l $0 ? readlink ($0) : $0;
     }
@@ -116,7 +117,7 @@ sub get_nsid {
     my $nslist = $export->get_active_nameservers();
     
     # determine if the current hostname is a listed nameserver
-    my $me = &hostname;
+    my $me = hostname();
     foreach my $nsentry (@$nslist) {
         if ($nsentry->{name} =~ /^$me\./) {
             return $nsentry->{nt_nameserver_id};
@@ -185,7 +186,7 @@ sub get_db_creds_from_nictoolserver_conf {
     }
     
     print "nsid $nsid " if $nsid;
-    print "reading DB settings from $file\n";
+    print "reading DB settings from $file\n" if $verbose;
     my $contents = `cat $file`;
 
     if ( ! $dsn ) {
