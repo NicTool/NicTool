@@ -777,7 +777,7 @@ EXPORT_USER=$user
 ######################################################
 # For use with init, upstart, daemontools, or comparable.
 ######################################################
-#exec $su ./nt_export.pl $nsid -daemon -pfextra | logger $suffix
+#exec $su ./nt_export.pl $nsid -daemon -pfextra | logger -t nt_export $suffix
 #
 # for daemontools, symlink this directory into the service directory.
 # If svscan is running, the export will run almost immediately.
@@ -786,7 +786,7 @@ EXPORT_USER=$user
 ######################################################
 # For use with periodic triggers like cron and at
 ######################################################
-#exec /usr/bin/perl ./nt_export.pl $nsid -pfextra | logger
+#exec /usr/bin/perl ./nt_export.pl $nsid -pfextra | logger -t nt_export
 #
 # this entry is suitable for addition to /etc/crontab
 # */3\t*\t*\t*\t*\t$user $self->{dir_orig}/run
