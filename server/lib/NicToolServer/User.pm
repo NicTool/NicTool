@@ -619,13 +619,12 @@ sub valid_password {
         load('Net::LDAP::Util', 'ldap_error_text');
 
         my @servers = split(',', $self->get_option('ldap_servers'));
-        die Dumper(@servers);
         my $starttls_required = $self->get_option('ldap_starttls');
         my $bindDN = $self->get_option('ldap_binddn');
         my $bindDN_password = $self->get_option('ldap_bindpw');
         my $baseDN = $self->get_option('ldap_basedn');
-        my $filter = $self->get_option('ldap_filter') || '(&(uid=%uid))';
-        my $user_mapping = $self->get_option('ldap_user_mapping') || 'uid';
+        my $filter = $self->get_option('ldap_filter');
+        my $user_mapping = $self->get_option('ldap_user_mapping');
         my $group_mapping = $self->get_option('ldap_group_mapping');
 
         my $ldap = Net::LDAP->new(@servers, version => 3) or die 'LDAP: Error in Net::LDAP.';
