@@ -50,7 +50,7 @@ sub verify_login {
 
     return $self->auth_error('invalid password')
         if (! $self->valid_password( $pass_attempt, $user->{password},
-              $data->{username}, $user->{pass_salt} ));
+              $data->{username}, $data->{groupname}, $user->{pass_salt}, $user->{ldap_user} ));
 
     $self->clean_user_data;
 

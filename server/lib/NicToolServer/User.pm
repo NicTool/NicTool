@@ -4,6 +4,7 @@ package NicToolServer::User;
 use strict;
 use Crypt::Mac::HMAC;
 use Crypt::KeyDerivation;
+use Module::Load;
 
 @NicToolServer::User::ISA = 'NicToolServer';
 
@@ -609,7 +610,82 @@ sub log_user {
 }
 
 sub valid_password {
-    my ($self, $attempt, $db_pass, $user, $salt) = @_;
+    my ($self, $attempt, $db_pass, $user, $group, $salt, $ldap_user) = @_;
+
+    return 0 unless $attempt;
+
+    if ( $ldap_user == 1 ) {
+        autoload('Net::LDAP');
+        load('Net::LDAP::Util', 'ldap_error_text');
+
+        my @servers = split(',', $self->get_option('ldap_servers'));
+        die Dumper(@servers);
+        my $starttls_required = $self->get_option('ldap_starttls');
+        my $bindDN = $self->get_option('ldap_binddn');
+        my $bindDN_password = $self->get_option('ldap_bindpw');
+        my $baseDN = $self->get_option('ldap_basedn');
+        my $filter = $self->get_option('ldap_filter') || '(&(uid=%uid))';
+        my $user_mapping = $self->get_option('ldap_user_mapping') || 'uid';
+        my $group_mapping = $self->get_option('ldap_group_mapping');
+
+        my $ldap = Net::LDAP->new(@servers, version => 3) or die 'LDAP: Error in Net::LDAP.';
+
+        #initiate starttls if set
+        if ( $starttls_required ) {
+            my $starttls_reply = $ldap->start_tls();
+            if ( $starttls_reply->is_error ) {
+                die $starttls_reply->error;
+            }
+        }
+
+        #select Manager DN pattern if we have a bindDN, else attempt direct bind
+        if ( $bindDN ) {
+            my $ldap_result = $ldap->bind( $bindDN, password => $bindDN_password );
+            die('LDAP: ' . ldap_error_text($ldap_result)) if $ldap_result->code;
+            #filter users
+            $ldap_result = $ldap->search( base => $baseDN,
+                                          scope => 'sub',
+                                          filter => $filter,
+            );
+            die('LDAP: ' . ldap_error_text($ldap_result)) if $ldap_result->code;
+
+            #check if user exists in filtered LDAP results and get his DN
+            my $user_exists = 0;
+            my $userDN;
+            foreach my $entry ($ldap_result->entries) {
+                if ( $entry->get_value($user_mapping) eq $user ) {
+                    next if ( $group_mapping && ( $entry->get_value($group_mapping) ne $group ));
+                    $user_exists = 1;
+                    $userDN = $entry->dn();
+                    last;
+                }
+            }
+            #if we can't find the user return failure
+            return 0 unless $user_exists;
+
+            #reconnect to ldap
+            $ldap->unbind();
+            $ldap = Net::LDAP->new(@servers, version => 3);
+
+            #initiate starttls if set
+            if ( $starttls_required ) {
+                my $starttls_reply = $ldap->start_tls();
+                if ( $starttls_reply->is_error ) {
+                    die $starttls_reply->error;
+                }
+            }
+
+            #attempt to authenticate
+            $ldap_result = $ldap->bind( $userDN, password => $attempt );
+            return 1 if ( $ldap_result->code == 0 );
+        } else {
+            #attempt to bind directly as the user using the baseDN for base and $user_mapping as relative
+            my $ldap_result = $ldap->bind("$user_mapping=$user,$baseDN", password => $attempt);
+            return 1 if ( $ldap_result->code == 0 );
+        }
+
+        return 0;
+    }
 
     if ( $salt ) {
         my $hashed = $self->get_pbkdf2_hash($attempt, $salt);
