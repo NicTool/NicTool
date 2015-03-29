@@ -1,5 +1,15 @@
 Revision history for NicToolServer
 
+2.32    2015.
+
+    * suppress debug output when not interactive (no tty)
+    * logger uses nt_export for process name
+    * goodbye query_log
+    * remove the rest of 'nameservers' from ::Import::BIND::Conf_Parser
+    * Import::BIND: use $rr->nsdname, not $rr->address
+    * Auto-locate nsid if nt_export.pl is being run on a registered nameserver
+    * nt_export.pl: added --conf and searching for config file (Gerard Hickey)
+
 2.31    2015.01.28
 
     * require TTL on identical label+type to be identical (#7)

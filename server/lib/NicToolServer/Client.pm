@@ -1,5 +1,5 @@
 package NicToolServer::Client;
-# ABSTRACT: an RPC::XML implementation for NicToolServer 
+# ABSTRACT: an RPC::XML implementation
 
 use strict;
 use APR::Table();
@@ -23,8 +23,7 @@ sub new {
         $r->read( $content, $conlen ) if $conlen gt 0;
     }
 
-    #$self->{data} = {};
-    $self->{data} = decode_data( $content, $r->headers_in->{'Content-Type'} );
+    $self->{data} = decode_data( $content, $contype );
     $self->{protocol_version} = $self->{data}{nt_protocol_version};
 
     bless $self, $class;
@@ -32,12 +31,10 @@ sub new {
 
 sub decode_data {
     my ( $data, $type ) = @_;
-    if ( $type =~ /^text\/xml$/ ) {
+    if ( $type eq 'text/xml' ) {
         return decode_xml_rpc_data($data);
     }
-    else {
-        return NicToolServer::error_response( 501, $type );
-    }
+    return NicToolServer::error_response( 501, $type );
 }
 
 sub decode_xml_rpc_data {
@@ -45,7 +42,7 @@ sub decode_xml_rpc_data {
     my $P   = new RPC::XML::Parser;
     my $req = $P->parse(shift);
 
-    if ( ref($req) ) {
+    if ( ref $req ) {
 
         # TODO if you want multiple arguments, map $req->args and return array
         my $href = $req->args->[0]->value;

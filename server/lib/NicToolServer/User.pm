@@ -177,8 +177,8 @@ sub edit_user {
         }
     }
 
-#XXX may want to let this happen ?
-#prevent user from modifying their own permissions (since all they could do is remove perms)
+    #XXX may want to let this happen ?
+    #prevent user from modifying their own permissions (since all they could do is remove perms)
     if ( $data->{nt_user_id} eq $self->{user}{nt_user_id} ) {
         delete @$data{ $self->perm_fields, 'usable_nameservers' };
     }
@@ -197,7 +197,8 @@ sub edit_user {
         #the user has some explicit permissions
         if ( $data->{inherit_group_permissions} ) {
 
-#make sure moving from explicit perms to inherited perms doesn't restrict a permission that the executing user doesn't have the right to modify
+            # make sure moving from explicit perms to inherited perms doesn't
+            # restrict a permission that the executing user doesn't have the right to modify
             $sql
                 = "SELECT nt_perm.*,nt_user.nt_group_id as group_id"
                 . " FROM nt_perm"
@@ -213,7 +214,8 @@ sub edit_user {
                     ) if !$group->{$k} && $prev_data->{$k};
                 }
 
-#things are good, we will now delete the user perms and perms will then be inherited automatically.
+                #things are good, we will now delete the user perms and perms will then be
+                # inherited automatically.
                 $sql = "DELETE FROM nt_perm WHERE nt_user_id = " . $data->{nt_user_id};
             }
             else {

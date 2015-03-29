@@ -8,7 +8,7 @@ use RPC::XML;
 use Data::Dumper;
 use Net::IP;
 
-$NicToolServer::VERSION = '2.31';
+$NicToolServer::VERSION = '2.32';
 
 $NicToolServer::MIN_PROTOCOL_VERSION = '1.0';
 $NicToolServer::MAX_PROTOCOL_VERSION = '1.0';
@@ -42,8 +42,7 @@ sub handler {
     my $self = NicToolServer->new( $r, $client_obj, $dbh, {} );
     my $response_obj = NicToolServer::Response->new( $r, $client_obj );
 
-# process session verification, login or logouts by just responding with the user hash
-
+    # process session verification, login or logouts by just responding with the user hash
     my $error
         = NicToolServer::Session->new( $r, $client_obj, $dbh )->verify();
     warn "request: " . Data::Dumper::Dumper( $client_obj->data )
@@ -96,7 +95,7 @@ sub handler {
 
 sub ver_check {
     my $self = shift;
-#check the protocol version if included
+    #check the protocol version if included
     my $pv   = $self->{client}->protocol_version;
     return undef unless $pv;
     return $self->error_response( 510,
@@ -860,7 +859,7 @@ sub get_user_permissions {
 
 sub get_access_permission {
 
-# return 1 if user has $access permissions on the object $id of type $type, else 0
+    # return 1 if user has $access permissions on the object $id of type $type, else 0
     my ( $self, $type, $id, $access ) = @_;
     warn "##############################\nget_access_permission ("
         . join( ",", caller )
@@ -943,7 +942,7 @@ sub check_permission {
         }
     }
 
-# allow "publish" access to usable nameservers (when modifying/creating a zone)
+    # allow "publish" access to usable nameservers (when modifying/creating a zone)
     if ( $type eq 'NAMESERVER' and $access eq 'read' ) {
         my %usable_ns = map { $_ => 1 } split /,/, $permissions->{usable_ns};
         if ( $usable_ns{$id} ) {
@@ -1080,10 +1079,10 @@ sub get_delegate_access {
         my $r = $self->exec_query( $sql, [ $group_id, $id, $type ] );
         my $auth_data = $r->[0];
 
-#warn "Auth data: ".Data::Dumper::Dumper($auth_data) if $self->debug_permissions;
+    #warn "Auth data: ".Data::Dumper::Dumper($auth_data) if $self->debug_permissions;
         if ( !$auth_data && $type eq 'ZONE' ) {
 
-#see if any records in the zone are delegated, if so then read access is allowed
+    #see if any records in the zone are delegated, if so then read access is allowed
             $sql
                 = "SELECT count(*) AS count,nt_group.name AS group_name FROM nt_delegate "
                 . " INNER JOIN nt_zone_record on nt_zone_record.nt_zone_record_id = nt_delegate.nt_object_id AND nt_delegate.nt_object_type='ZONERECORD'"
@@ -1659,7 +1658,7 @@ sub diff_changes {
 
     my %perms =
 
-#map {$a=$_;local $_=$a; s/_/ /g;s/names/n s/g;s/zoner/z r/g;s/deleg/d g/g;s/(\S)\S+/$1/g;s/\s//g; ($a=>$_)} qw(user_create user_can_delegate user_delete user_write group_create group_delegate group_delete group_write zone_create zone_delegate zone_delete zone_write zonerecord_create zonerecord_delegate zonerecord_delete zonerecord_write nameserver_create nameserver_delegate nameserver_delete nameserver_write self_write);
+    #map {$a=$_;local $_=$a; s/_/ /g;s/names/n s/g;s/zoner/z r/g;s/deleg/d g/g;s/(\S)\S+/$1/g;s/\s//g; ($a=>$_)} qw(user_create user_can_delegate user_delete user_write group_create group_delegate group_delete group_write zone_create zone_delegate zone_delete zone_write zonerecord_create zonerecord_delegate zonerecord_delete zonerecord_write nameserver_create nameserver_delegate nameserver_delete nameserver_write self_write);
         (
         'zonerecord_create'   => 'ZRC',
         'group_write'         => 'GW',
