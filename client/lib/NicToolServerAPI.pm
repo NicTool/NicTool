@@ -81,7 +81,8 @@ sub send_soap_request {
     #make soap call and evaluate response.
     my $som = $soap->call( $func => \%vars );
 
-#result should be SOAP::SOM object if success or fault, or scalar for transport error
+    #result should be SOAP::SOM object if success or fault,
+    # or scalar for transport error
     if ( !ref $som ) {
 
         #scalar means transport error
@@ -138,7 +139,7 @@ sub send_xml_rpc_request {
     $req->content_type('text/xml');
     $req->content($command);
 
-#$req->header("NicTool-protocol_version" => "$NicToolServerAPI::protocol_version");
+    #$req->header("NicTool-protocol_version" => "$NicToolServerAPI::protocol_version");
 
     #send request, evaluate response
     my $response = $ua->request($req);
@@ -170,8 +171,8 @@ sub send_xml_rpc_request {
 sub parse_xml {
     my ( $self, $string ) = @_;
 
-# try to parse the xml -- handle xml-rpc faults as well as parsing errors
-#
+    # try to parse the xml -- handle xml-rpc faults as well as parsing errors
+    #
     my $resp = RPC::XML::Parser->new()->parse($string);
 
     # $resp will be ref if a real response, otherwise scalar error string
