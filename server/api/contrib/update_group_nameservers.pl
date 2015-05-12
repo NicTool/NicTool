@@ -14,7 +14,7 @@ use NicTool;
 
 my $user = new NicTool(
     data_protocol => 'soap',
-    server_host   => 'localhost',       # you may need to edit these
+    server_host   => '127.0.0.1',       # you may need to edit these
     server_port   => '8082',
 );
 $user->login( 

@@ -75,7 +75,7 @@ if ( ! defined $dsn || ! defined $db_user || ! defined $db_pass ) {
 }
 
 $dsn     ||= ask( "database DSN",
-             default => 'DBI:mysql:database=nictool;host=localhost;port=3306');
+             default => 'DBI:mysql:database=nictool;host=127.0.0.1;port=3306');
 $db_user ||= ask( "database user", default => 'root' );
 $db_pass ||= ask( "database pass", password => 1 );
 
@@ -221,7 +221,7 @@ If nt_export is unable to automatically locate/access nictoolserver.conf,
 you can specify --conf with the path to the file. In addition, you may 
 specify the database connection properties manually:
 
-   -dsn   DBI:mysql:database=nictool;host=localhost;port=3306
+   -dsn   DBI:mysql:database=nictool;host=127.0.0.1;port=3306
    -user  root
    -pass  mySecretPassWord
 

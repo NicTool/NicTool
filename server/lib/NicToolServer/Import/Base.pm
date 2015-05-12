@@ -296,7 +296,7 @@ sub nt_connect {
     }
 
     my $nt = NicTool->new(
-            server_host => $nt_host || 'localhost',
+            server_host => $nt_host || '127.0.0.1',
             server_port => $nt_port || 8082,
 #protocol    => 'xml_rpc',  # or soap
             );

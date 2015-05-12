@@ -26,7 +26,7 @@ use NicToolServer::Nameserver;
 use NicToolServer::Nameserver::Sanity;
 
 BEGIN {
-    $NicToolServer::dsn = "DBI:mysql:database=nictool;host=localhost;port=3306";
+    $NicToolServer::dsn = "DBI:mysql:database=nictool;host=127.0.0.1;port=3306";
     $NicToolServer::db_user     = 'nictool';
     $NicToolServer::db_pass     = 'lootcin205';
 

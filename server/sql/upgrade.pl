@@ -21,7 +21,7 @@ if ( ! defined $dsn || ! defined $db_user || ! defined $db_pass ) {
     get_db_creds_from_nictoolserver_conf();
 }
 
-$db_host = ask( "database host", default => 'localhost') if ! $db_host;
+$db_host = ask( "database host", default => '127.0.0.1') if ! $db_host;
 $dsn     = ask( "database DSN", default  => "DBI:mysql:database=nictool;host=$db_host;port=3306") if ! $dsn;
 $db_user = ask( "database user", default => 'root' ) if ! $db_user;
 $db_pass = ask( "database pass", password => 1 ) if ! $db_pass;
