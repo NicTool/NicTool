@@ -64,7 +64,7 @@ BEGIN {
     $NicToolClient::default_nameserver_ttl  = '86400';
 
     #NicToolServer connection settings
-    $NicToolServerAPI::server_host         = "localhost";
+    $NicToolServerAPI::server_host         = "127.0.0.1";
     $NicToolServerAPI::server_port         = "8082";
     $NicToolServerAPI::data_protocol       = "soap";   # 'soap' or 'xml_rpc'
     $NicToolServerAPI::debug_soap_setup    = 0;        # debug soap calls

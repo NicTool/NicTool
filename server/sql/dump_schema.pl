@@ -5,7 +5,7 @@ use warnings;
 use DBI;
 
 # machine dependant variables
-my $db_host = 'localhost';
+my $db_host = '127.0.0.1';
 my $db      = 'nictool';
 my $db_dsn  = "DBI:mysql:database=$db;host=$db_host";
 my $db_user = 'nictool';

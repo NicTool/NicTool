@@ -27,7 +27,7 @@ use vars qw( $ntconf $nt $ntuser $resp $gid );
 # *** it will ask for them at runtime.
 $ntconf = { ntuser  =>  '',
             ntpass  =>  '',
-            nthost  =>  'localhost',
+            nthost  =>  '127.0.0.1',
             ntport  =>  8082,
         };
 

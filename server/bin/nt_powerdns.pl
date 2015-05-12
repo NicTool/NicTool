@@ -35,7 +35,7 @@ unless ( $line eq "HELO\t1" ) {
 }
 print "OK\tNicTool Backend firing up\n";    # print our banner
 
-my $dsn = "DBI:mysql:database=nictool;host=localhost";
+my $dsn = "DBI:mysql:database=nictool;host=127.0.0.1";
 my $dbh = DBI->connect( $dsn, 'nictool', 'lootcin205' )
     or die "LOG\tUnable to connect to database: $!\nFAIL\n";
 

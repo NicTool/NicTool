@@ -223,7 +223,7 @@ sub _should_cache {
 
 sub _conf {
     return {
-        'server_host'         => 'localhost',
+        'server_host'         => '127.0.0.1',
         'server_port'         => '8082',
         'data_protocol'       => 'soap',
         'nt_user_session'     => undef,

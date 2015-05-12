@@ -112,7 +112,7 @@ sub get_dbh {
 #########################################################################
              Administrator DSN (database connection settings)
 #########################################################################\n";
-    my $db_host = answer("database hostname", 'localhost');
+    my $db_host = answer("database hostname", '127.0.0.1');
 
     system "stty -echo";
     my $db_root_pw = answer("mysql root password");
