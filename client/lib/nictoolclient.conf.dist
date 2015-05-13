@@ -66,6 +66,7 @@ BEGIN {
     #NicToolServer connection settings
     $NicToolServerAPI::server_host         = "localhost";
     $NicToolServerAPI::server_port         = "8082";
+    $NicToolServerAPI::transfer_protocol   = 'http',
     $NicToolServerAPI::data_protocol       = "soap";   # 'soap' or 'xml_rpc'
     $NicToolServerAPI::debug_soap_setup    = 0;        # debug soap calls
     $NicToolServerAPI::debug_soap_request  = 0;
