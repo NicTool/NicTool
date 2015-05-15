@@ -42,7 +42,9 @@ sub send_request {
         proxy => $url,
 
         #URI is typically org name followed by module path
-        uri => "http://" . $self->_nt->{server_host} . "/NicToolServer/SOAP",
+        uri => sprintf( '%s://%s/NicToolServer/SOAP',
+                        $self->_nt->{transfer_protocol},
+                        $self->_nt->{server_host} ),
 
         #don't die on fault, just return result.
         on_fault => sub { my ( $soap, $res ) = @_; return $res; }

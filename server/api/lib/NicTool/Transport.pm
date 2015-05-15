@@ -65,10 +65,10 @@ sub _send_request {
         return { 'error_code' => 'XXX', 'error_msg' => $msg };
     }
 
-    my $url
-        = 'http://'
-        . $self->_nt->{server_host} . ':'
-        . $self->_nt->{server_port};
+    my $url = sprintf( '%s://%s:%d',
+                       $self->_nt->{transfer_protocol},
+                       $self->_nt->{server_host},
+                       $self->_nt->{server_port} );
 
     #my $func = 'send_'.$self->_nt->{data_protocol}.'_request';
     if ( $self->can('send_request') ) {
