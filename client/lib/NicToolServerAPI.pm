@@ -12,8 +12,16 @@ use Data::Dumper;
 
 $NicToolServerAPI::VERSION          = '2.11';
 $NicToolServerAPI::protocol_version = "1.0";
+$NicToolServerAPI::default_transfer_protocol = 'http';
 
-sub new { bless {}, $_[0] }
+sub new {
+    my $class = shift;
+
+    $NicToolServerAPI::transfer_protocol = $NicToolServerAPI::default_transfer_protocol
+        unless( $NicToolServerAPI::transfer_protocol );
+
+    bless {}, $class;
+}
 
 sub check_setup {
     my $self = shift;
