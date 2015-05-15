@@ -12,8 +12,16 @@ use Data::Dumper;
 
 $NicToolServerAPI::VERSION          = '2.11';
 $NicToolServerAPI::protocol_version = "1.0";
+$NicToolServerAPI::default_transfer_protocol = 'http';
 
-sub new { bless {}, $_[0] }
+sub new {
+    my $class = shift;
+
+    $NicToolServerAPI::transfer_protocol = $NicToolServerAPI::default_transfer_protocol
+        unless( $NicToolServerAPI::transfer_protocol );
+
+    bless {}, $class;
+}
 
 sub check_setup {
     my $self = shift;
@@ -35,9 +43,10 @@ sub check_setup {
 
 sub send_request {
     my $self = shift;
-    my $url = 'http://'
-		. $NicToolServerAPI::server_host . ':'
-		. $NicToolServerAPI::server_port;
+    my $url = sprintf( '%s://%s:%d',
+                       $NicToolServerAPI::transfer_protocol,
+                       $NicToolServerAPI::server_host,
+                       $NicToolServerAPI::server_port );
     my $func = 'send_' . $NicToolServerAPI::data_protocol . '_request';
     if ( ! $self->can($func) ) {
         return {
@@ -68,7 +77,9 @@ sub send_soap_request {
         proxy => $url . '/soap',
 
         #URI is typically org name followed by module path
-        uri => "http://$NicToolServerAPI::server_host/NicToolServer/SOAP",
+        uri => sprintf( '%s://%s/NicToolServer/SOAP',
+                        $NicToolServerAPI::transfer_protocol,
+                        $NicToolServerAPI::server_host ),
 
         #don't die on fault, just return result.
         on_fault => sub { my ( $soap, $res ) = @_; return $res; }

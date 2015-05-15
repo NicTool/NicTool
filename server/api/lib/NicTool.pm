@@ -87,6 +87,11 @@ The hostname of the NicToolServer
 
 The port for the server
 
+=item transfer_protocol
+
+The transfer protocol to use. May be 'http' or 'https'.
+(Default 'http')
+
 =item data_protocol
 
 The data transport protocol to use.  This may be 'soap' or 'xml_rpc'.
@@ -225,6 +230,7 @@ sub _conf {
     return {
         'server_host'         => '127.0.0.1',
         'server_port'         => '8082',
+        'transfer_protocol'   => 'http',
         'data_protocol'       => 'soap',
         'nt_user_session'     => undef,
         'use_protocol_version'=> 0,
