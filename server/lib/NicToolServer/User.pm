@@ -613,22 +613,27 @@ sub log_user {
 sub valid_password {
     my ($self, $attempt, $db_pass, $user, $salt) = @_;
 
+    # Check for PBKDF2 password
     if ( $salt ) {
         my $hashed = $self->get_pbkdf2_hash($attempt, $salt);
-        return 0 if $hashed ne $db_pass;       # hash mismatch, fail!
-        return 1;                              # success
+        return 1 if $hashed eq $db_pass;
     };
 
-    # RCC - Handle HMAC SHA-1 passwords
+    # Check for HMAC SHA-1 password
     if ( $db_pass =~ /[0-9a-f]{40}/ ) {        # DB has HMAC SHA-1 hash
-        # hash the attempt, salted with the lower-cased username
         my $hashed = $self->get_sha1_hash($attempt, $user);
-        return 0 if $hashed ne $db_pass;       # fail if hash mismatch
-        return 1;                              # attempt successful
+        return 1 if $hashed eq $db_pass;
     }
 
-    return 0 if $attempt ne $db_pass;          # plain password
-    return 1;
+    # Check for Plain password
+    return 1 if ( ! $salt && $attempt eq $db_pass );   # plain password
+
+    # If LDAP is defined - check for LDAP based user
+    if ( $NicToolServer::ldap_servers ) {
+        return 1 if ( $self->verify_ldap_user( $user, $attempt ));
+    }
+
+    return 0;   # No match
 };
 
 sub select_user {
@@ -693,6 +698,118 @@ sub _get_salt {
     };
     return $salt;
 }
+
+sub verify_ldap_user {
+    my ( $self, $user, $attempt ) = @_;
+
+    return 0 unless $attempt;
+
+    eval "require Net::LDAP" or do {
+        warn 'LDAP: could not load Net::LDAP module. Skipping LDAP authentication step';
+        return 0;
+    };
+
+    my $user_dn = '';
+    my @servers = split(',', $NicToolServer::ldap_servers );
+    my $base_dn = $NicToolServer::ldap_basedn || '';
+    my $starttls_required = $NicToolServer::ldap_starttls || 0;
+    my $user_mapping = $NicToolServer::ldap_user_mapping || 'uid';
+
+    # If filter is set, search for user, else attempt direct bind
+    if ( $NicToolServer::ldap_filter ) {
+
+        # search for user
+        $user_dn = $self->locate_ldap_user( $user );
+        return 0 if ( $user_dn eq '' );  # Locating user failed. Return failed attempt
+
+    } else {
+
+        # try to bind directly as the user using the base_dn for base and $user_mapping as relative
+        $user_dn = sprintf( '%s=%s,%s', $user_mapping, $user, $base_dn );
+    }
+
+    # Check $attempt
+    my $ldap = Net::LDAP->new(@servers, version => 3);
+    unless ( $ldap ) {
+        warn 'LDAP: Error in Net::LDAP.' if $self->debug_auth;
+        return 0;
+    }
+
+    # Initiate starttls if set
+    if ( $starttls_required ) {
+        my $starttls_reply = $ldap->start_tls();
+        if ( $starttls_reply->is_error && $self->debug_auth ) {
+            warn "LDAP: server does not accept starttls: " . $starttls_reply->error;
+        }
+    }
+
+    # Attempt to authenticate user
+    my $ldap_result = $ldap->bind( $user_dn, password => $attempt );
+    $ldap->unbind();
+
+    return 1 if ( $ldap_result->code == 0 );
+    return 0;
+};
+
+sub locate_ldap_user {
+    my ( $self, $user ) = @_;
+
+    my $user_dn = '';
+    my @servers = split(',', $NicToolServer::ldap_servers );
+    my $bind_dn = $NicToolServer::ldap_binddn;
+    my $bind_dn_password = $NicToolServer::ldap_bindpw || '';
+    my $base_dn = $NicToolServer::ldap_basedn || '';
+    my $filter = $NicToolServer::ldap_filter || '';
+    my $starttls_required = $NicToolServer::ldap_starttls || 0;
+    my $user_mapping = $NicToolServer::ldap_user_mapping || 'uid';
+    return '' unless ( @servers );
+
+    my $ldap = Net::LDAP->new(@servers, version => 3);
+    unless ( $ldap ) {
+        warn 'LDAP: Error in Net::LDAP.' if $self->debug_auth;
+        return '';
+    }
+
+    # Initiate starttls if set
+    if ( $starttls_required ) {
+        my $starttls_reply = $ldap->start_tls();
+        if ( $starttls_reply->is_error && $self->debug_auth ) {
+            warn "LDAP: server does not accept starttls: " . $starttls_reply->error;
+        }
+    }
+
+    my $ldap_result;
+    if ( $bind_dn ) {
+        $ldap_result = $ldap->bind( $bind_dn, password => $bind_dn_password );
+    } else {
+        $ldap_result = $ldap->bind; # Anonymous bind
+    }
+    if ( $ldap_result->code ) {
+        warn 'LDAP: cannot bind: ' . $ldap_result->error if $self->debug_auth;
+        return '';
+    }
+
+    # Search for user
+    my $ldap_result = $ldap->search( base => $base_dn,
+                                     scope => 'sub',
+                                     attrs => [ $user_mapping ],
+                                     filter => $filter );
+    if ( $ldap_result->code ) {
+        warn 'LDAP: search failed: ' . $ldap_result->error if $self->debug_auth;
+        return '';
+    }
+
+    # Check if user exists in filtered LDAP results and get his DN
+    foreach my $entry ($ldap_result->entries) {
+        if ( $entry->get_value($user_mapping) eq $user ) {
+            $user_dn = $entry->dn();
+            last;
+        }
+    }
+
+    $ldap->unbind();
+    return $user_dn;
+};
 
 1;
 
