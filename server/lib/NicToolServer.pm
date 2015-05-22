@@ -25,6 +25,7 @@ sub new {
 }
 
 sub debug             {0}
+sub debug_auth        {0}
 sub debug_session_sql {0}
 sub debug_sql         {0}
 sub debug_permissions {0}
