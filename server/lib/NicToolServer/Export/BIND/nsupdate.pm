@@ -221,13 +221,11 @@ sub zr_a {
             . $r->{name}
             . " $r->{ttl} A $r->{address}\n";
     }
-    else {
-        return
-              "update $mode "
-            . $r->{name} . "."
-            . $r->{zone}
-            . " $r->{ttl} A $r->{address}\n";
-    }
+    return
+          "update $mode "
+        . $r->{name} . "."
+        . $r->{zone}
+        . " $r->{ttl} A $r->{address}\n";
 }
 
 sub zr_cname {
@@ -241,13 +239,11 @@ sub zr_cname {
             . $r->{name}
             . " $r->{ttl} CNAME $r->{address}\n";
     }
-    else {
-        return
-              "update $mode "
-            . $r->{name} . "."
-            . $r->{zone}
-            . " $r->{ttl} CNAME $r->{address}\n";
-    }
+    return
+          "update $mode "
+        . $r->{name} . "."
+        . $r->{zone}
+        . " $r->{ttl} CNAME $r->{address}\n";
 }
 
 sub zr_mx {
