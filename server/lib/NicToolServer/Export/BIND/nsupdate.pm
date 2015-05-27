@@ -215,11 +215,19 @@ sub zr_a {
     $mode = "add" unless defined($mode);
     $r->{zone} = $self->{nte}->{zone_name} unless defined( $r->{zone} );
 
-    return
-          "update $mode "
-        . $r->{name} . "."
-        . $r->{zone}
-        . " $r->{ttl} A $r->{address}\n";
+    if ($r->{name} =~ m/\.$/) {
+        return
+              "update $mode "
+            . $r->{name}
+            . " $r->{ttl} A $r->{address}\n";
+    }
+    else {
+        return
+              "update $mode "
+            . $r->{name} . "."
+            . $r->{zone}
+            . " $r->{ttl} A $r->{address}\n";
+    }
 }
 
 sub zr_cname {
@@ -227,11 +235,19 @@ sub zr_cname {
     $mode = "add" unless defined($mode);
     $r->{zone} = $self->{nte}->{zone_name} unless defined( $r->{zone} );
 
-    return
-          "update $mode "
-        . $r->{name} . "."
-        . $r->{zone}
-        . " $r->{ttl} CNAME $r->{address}\n";
+    if ($r->{name} =~ m/\.$/) {
+        return
+              "update $mode "
+            . $r->{name}
+            . " $r->{ttl} CNAME $r->{address}\n";
+    }
+    else {
+        return
+              "update $mode "
+            . $r->{name} . "."
+            . $r->{zone}
+            . " $r->{ttl} CNAME $r->{address}\n";
+    }
 }
 
 sub zr_mx {
