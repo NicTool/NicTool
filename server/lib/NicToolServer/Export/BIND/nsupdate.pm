@@ -215,16 +215,10 @@ sub zr_a {
     $mode = "add" unless defined($mode);
     $r->{zone} = $self->{nte}->{zone_name} unless defined( $r->{zone} );
 
-    if ($r->{name} =~ m/\.$/) {
-        return
-              "update $mode "
-            . $r->{name}
-            . " $r->{ttl} A $r->{address}\n";
-    }
     return
           "update $mode "
         . $r->{name} . "."
-        . $r->{zone}
+        . (substr($r->{name}, -1, 1) eq '.' ? '' : '.' . $r->{zone})
         . " $r->{ttl} A $r->{address}\n";
 }
 
@@ -233,16 +227,10 @@ sub zr_cname {
     $mode = "add" unless defined($mode);
     $r->{zone} = $self->{nte}->{zone_name} unless defined( $r->{zone} );
 
-    if ($r->{name} =~ m/\.$/) {
-        return
-              "update $mode "
-            . $r->{name}
-            . " $r->{ttl} CNAME $r->{address}\n";
-    }
     return
           "update $mode "
         . $r->{name} . "."
-        . $r->{zone}
+        . (substr($r->{name}, -1, 1) eq '.' ? '' : '.' . $r->{zone})
         . " $r->{ttl} CNAME $r->{address}\n";
 }
 
@@ -254,7 +242,7 @@ sub zr_mx {
     return
           "update $mode "
         . $r->{name} . "."
-        . $r->{zone}
+        . (substr($r->{name}, -1, 1) eq '.' ? '' : '.' . $r->{zone})
         . " $r->{ttl} MX $r->{weight} $r->{address}\n";
 }
 
@@ -272,7 +260,7 @@ sub zr_txt {
     return
           "update $mode "
         . $r->{name} . "."
-        . $r->{zone}
+        . (substr($r->{name}, -1, 1) eq '.' ? '' : '.' . $r->{zone})
         . " $r->{ttl} TXT \"$r->{address}\"\n";
 }
 
@@ -319,7 +307,7 @@ sub zr_spf {
     return
           "update $mode "
         . $r->{name} . "."
-        . $r->{zone}
+        . (substr($r->{name}, -1, 1) eq '.' ? '' : '.' . $r->{zone})
         . " $r->{ttl} SPF \"$r->{address}\"\n";
 }
 
@@ -346,7 +334,7 @@ sub zr_aaaa {
     return
           "update $mode "
         . $r->{name} . "."
-        . $r->{zone}
+        . (substr($r->{name}, -1, 1) eq '.' ? '' : '.' . $r->{zone})
         . " $r->{ttl} AAAA $r->{address}\n";
 }
 
