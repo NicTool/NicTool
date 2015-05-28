@@ -215,16 +215,10 @@ sub zr_a {
     $mode = "add" unless defined($mode);
     $r->{zone} = $self->{nte}->{zone_name} unless defined( $r->{zone} );
 
-    if ($r->{name} =~ m/\.$/) {
-        return
-              "update $mode "
-            . $r->{name}
-            . " $r->{ttl} A $r->{address}\n";
-    }
     return
           "update $mode "
         . $r->{name} . "."
-        . $r->{zone}
+        . (substr($r->{name}, -1, 1) eq '.' ? '' : '.' . $r->{zone})
         . " $r->{ttl} A $r->{address}\n";
 }
 
@@ -233,16 +227,10 @@ sub zr_cname {
     $mode = "add" unless defined($mode);
     $r->{zone} = $self->{nte}->{zone_name} unless defined( $r->{zone} );
 
-    if ($r->{name} =~ m/\.$/) {
-        return
-              "update $mode "
-            . $r->{name}
-            . " $r->{ttl} CNAME $r->{address}\n";
-    }
     return
           "update $mode "
         . $r->{name} . "."
-        . $r->{zone}
+        . (substr($r->{name}, -1, 1) eq '.' ? '' : '.' . $r->{zone})
         . " $r->{ttl} CNAME $r->{address}\n";
 }
 
@@ -251,16 +239,10 @@ sub zr_mx {
     $mode = "add" unless defined($mode);
     $r->{zone} = $self->{nte}->{zone_name} unless defined( $r->{zone} );
 
-    if ($r->{name} =~ m/\.$/) {
-        return
-              "update $mode "
-            . $r->{name}
-            . " $r->{ttl} MX $r->{weight} $r->{address}\n";
-    }
     return
           "update $mode "
         . $r->{name} . "."
-        . $r->{zone}
+        . (substr($r->{name}, -1, 1) eq '.' ? '' : '.' . $r->{zone})
         . " $r->{ttl} MX $r->{weight} $r->{address}\n";
 }
 
@@ -275,16 +257,10 @@ sub zr_txt {
     }
 
     # name  ttl  class   rr     text
-    if ($r->{name} =~ m/\.$/) {
-        return
-              "update $mode "
-            . $r->{name}
-            . " $r->{ttl} TXT \"$r->{address}\"\n";
-    }
     return
           "update $mode "
         . $r->{name} . "."
-        . $r->{zone}
+        . (substr($r->{name}, -1, 1) eq '.' ? '' : '.' . $r->{zone})
         . " $r->{ttl} TXT \"$r->{address}\"\n";
 }
 
@@ -328,16 +304,10 @@ sub zr_spf {
     # SPF record support was added in BIND v9.4.0
 
     # name  ttl  class  type  type-specific-data
-    if ($r->{name} =~ m/\.$/) {
-        return
-              "update $mode "
-            . $r->{name}
-            . " $r->{ttl} SPF \"$r->{address}\"\n";
-    }
     return
           "update $mode "
         . $r->{name} . "."
-        . $r->{zone}
+        . (substr($r->{name}, -1, 1) eq '.' ? '' : '.' . $r->{zone})
         . " $r->{ttl} SPF \"$r->{address}\"\n";
 }
 
@@ -361,16 +331,10 @@ sub zr_aaaa {
     $r->{zone} = $self->{nte}->{zone_name} unless defined( $r->{zone} );
 
     # name  ttl  class  type  type-specific-data
-    if ($r->{name} =~ m/\.$/) {
-        return
-              "update $mode "
-            . $r->{name}
-            . " $r->{ttl} AAAA $r->{address}\n";
-    }
     return
           "update $mode "
         . $r->{name} . "."
-        . $r->{zone}
+        . (substr($r->{name}, -1, 1) eq '.' ? '' : '.' . $r->{zone})
         . " $r->{ttl} AAAA $r->{address}\n";
 }
 
