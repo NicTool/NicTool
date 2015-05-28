@@ -251,6 +251,12 @@ sub zr_mx {
     $mode = "add" unless defined($mode);
     $r->{zone} = $self->{nte}->{zone_name} unless defined( $r->{zone} );
 
+    if ($r->{name} =~ m/\.$/) {
+        return
+              "update $mode "
+            . $r->{name}
+            . " $r->{ttl} MX $r->{weight} $r->{address}\n";
+    }
     return
           "update $mode "
         . $r->{name} . "."
@@ -269,6 +275,12 @@ sub zr_txt {
     }
 
     # name  ttl  class   rr     text
+    if ($r->{name} =~ m/\.$/) {
+        return
+              "update $mode "
+            . $r->{name}
+            . " $r->{ttl} TXT \"$r->{address}\"\n";
+    }
     return
           "update $mode "
         . $r->{name} . "."
@@ -316,6 +328,12 @@ sub zr_spf {
     # SPF record support was added in BIND v9.4.0
 
     # name  ttl  class  type  type-specific-data
+    if ($r->{name} =~ m/\.$/) {
+        return
+              "update $mode "
+            . $r->{name}
+            . " $r->{ttl} SPF \"$r->{address}\"\n";
+    }
     return
           "update $mode "
         . $r->{name} . "."
@@ -343,6 +361,12 @@ sub zr_aaaa {
     $r->{zone} = $self->{nte}->{zone_name} unless defined( $r->{zone} );
 
     # name  ttl  class  type  type-specific-data
+    if ($r->{name} =~ m/\.$/) {
+        return
+              "update $mode "
+            . $r->{name}
+            . " $r->{ttl} AAAA $r->{address}\n";
+    }
     return
           "update $mode "
         . $r->{name} . "."
