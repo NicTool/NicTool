@@ -217,7 +217,7 @@ sub zr_a {
 
     return
           "update $mode "
-        . $r->{name} . "."
+        . $r->{name}
         . (substr($r->{name}, -1, 1) eq '.' ? '' : '.' . $r->{zone})
         . " $r->{ttl} A $r->{address}\n";
 }
@@ -229,7 +229,7 @@ sub zr_cname {
 
     return
           "update $mode "
-        . $r->{name} . "."
+        . $r->{name}
         . (substr($r->{name}, -1, 1) eq '.' ? '' : '.' . $r->{zone})
         . " $r->{ttl} CNAME $r->{address}\n";
 }
@@ -241,7 +241,7 @@ sub zr_mx {
 
     return
           "update $mode "
-        . $r->{name} . "."
+        . $r->{name}
         . (substr($r->{name}, -1, 1) eq '.' ? '' : '.' . $r->{zone})
         . " $r->{ttl} MX $r->{weight} $r->{address}\n";
 }
@@ -259,7 +259,7 @@ sub zr_txt {
     # name  ttl  class   rr     text
     return
           "update $mode "
-        . $r->{name} . "."
+        . $r->{name}
         . (substr($r->{name}, -1, 1) eq '.' ? '' : '.' . $r->{zone})
         . " $r->{ttl} TXT \"$r->{address}\"\n";
 }
@@ -306,7 +306,7 @@ sub zr_spf {
     # name  ttl  class  type  type-specific-data
     return
           "update $mode "
-        . $r->{name} . "."
+        . $r->{name}
         . (substr($r->{name}, -1, 1) eq '.' ? '' : '.' . $r->{zone})
         . " $r->{ttl} SPF \"$r->{address}\"\n";
 }
@@ -333,7 +333,7 @@ sub zr_aaaa {
     # name  ttl  class  type  type-specific-data
     return
           "update $mode "
-        . $r->{name} . "."
+        . $r->{name}
         . (substr($r->{name}, -1, 1) eq '.' ? '' : '.' . $r->{zone})
         . " $r->{ttl} AAAA $r->{address}\n";
 }
