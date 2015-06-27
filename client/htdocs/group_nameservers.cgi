@@ -568,7 +568,7 @@ sub display_edit_nameserver_fields {
                         -name    => 'export_format',
                         -values  => $export_format_values,
                         -labels  => $export_format_labels,
-                        -default => $nameserver->{export_format} || $q->param('export_format'),
+                        -default => $nameserver->{export_format} || $q->param('export_format') || 'bind',
                         -onChange => "changeNSExportType(value);",
                         -required  => 'required',
                         )
