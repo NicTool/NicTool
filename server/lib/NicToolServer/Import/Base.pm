@@ -141,7 +141,7 @@ sub nt_create_record {
     my %request = (
         nt_zone_id => $p{zone_id},
         name       => lc $p{name},
-        address    => lc $p{address},
+        address    => ($p{type} eq 'NAPTR' ? $p{address} : lc $p{address}),
         type       => $p{type},
     );
 
