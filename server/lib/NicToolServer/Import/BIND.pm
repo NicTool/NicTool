@@ -255,7 +255,7 @@ sub zr_dname {
     );
 }
 
-sub zr_sshfp { 
+sub zr_sshfp {
     my ($self, $rr, $zone) = @_;
     $rr or die;
 
@@ -273,7 +273,7 @@ sub zr_sshfp {
     );
 };
 
-sub zr_naptr { 
+sub zr_naptr {
     my ($self, $rr, $zone) = @_;
     $rr or die;
 
@@ -288,7 +288,7 @@ sub zr_naptr {
         weight  => $rr->order,
         priority=> $rr->preference,
         ttl     => $rr->ttl,
-        description=>$rr->replacement,
+        description=> $self->fully_qualify( $rr->replacement ),
     );
 };
 
@@ -308,7 +308,7 @@ sub zr_ptr {
     );
 };
 
-sub zr_ipseckey { 
+sub zr_ipseckey {
     my ($self, $rr, $zone) = @_;
     $rr or die;
 
