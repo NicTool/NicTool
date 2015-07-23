@@ -142,7 +142,7 @@ sub display {
             . qq[.gif" class="tee" alt=""></td>];
     }
 
-    print qq[<td><img src=$NicToolClient::image_dir/user.gif></td>
+    print qq[<td><img src="$NicToolClient::image_dir/user.gif"></td>
 <td class="nowrap"><b>$duser->{'username'}</b></td>
 <td class="right fat">], join( ' | ', @options ), qq[</td>
 </tr></table>
@@ -198,7 +198,7 @@ sub display_properties {
        <tr>
         <td><b>Properties</b></td>];
     my $modname = 'View Details';
-	   $modname = "Edit" if $modifyperm;
+    $modname = "Edit" if $modifyperm;
     my $gid = $q->param('nt_group_id');
     my $uid = $duser->{'nt_user_id'};
 
@@ -290,21 +290,22 @@ sub display_global_log {
  <tr class=dark_grey_bg><td>
    <table class="no_pad fat">
     <tr><td class="bold">Global Application Log</td></tr>
-	</table></td></tr>
+   </table>
+  </td></tr>
 </table>];
 
     $nt_obj->display_search_rows( $q, $rv, \%params, $cgi, \@req_fields );
 
     if (!@$list) {
         print "<center>No log data available</center>";
-				return;
-		};
+        return;
+    };
 
-		print qq[<table class="fat"> <tr class=dark_grey_bg>];
-		foreach (@columns) {
-				if ( $sort_fields{$_} ) {
-						my $direc = uc( $sort_fields{$_}->{'mod'} ) eq 'ASCENDING' ? 'up' : 'down';
-						print qq[
+    print qq[<table class="fat"> <tr class=dark_grey_bg>];
+    foreach (@columns) {
+        if ( $sort_fields{$_} ) {
+            my $direc = uc( $sort_fields{$_}->{'mod'} ) eq 'ASCENDING' ? 'up' : 'down';
+            print qq[
  <td class="dark_bg center"><table class="no_pad">
   <tr>
    <td>$labels{$_}</td>
@@ -313,50 +314,49 @@ sub display_global_log {
   </tr>
  </table>
 </td>];
-				}
-				else {
-						print "<td class=center>$labels{$_}</td>";
-				}
-		}
-		print "</tr>";
+        }
+        else {
+            print "<td class=center>$labels{$_}</td>";
+        }
+    }
+    print "</tr>";
 
-		my $map = $nt_obj->obj_to_cgi_map();
+    my $map = $nt_obj->obj_to_cgi_map();
 
-		my $x = 0;
-		my $range;
-		foreach my $row (@$list) {
+    my $x = 0;
+    my $range;
+    foreach my $row (@$list) {
 
-				my $bgcolor = ( $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' );
-				print qq[<tr class="bgcolor">];
-				foreach (@columns) {
-						my $state_string = @state_fields ? join( '&amp;', @state_fields ) : 'not_empty=1';
-						if ( $_ eq 'timestamp' ) {
-								print '<td>', scalar localtime( $row->{$_} ), '</td>';
-						}
-						elsif ( $_ eq 'object' ) {
-								my $txt = $row->{'object'};
-								$txt = join( ' ', map( ucfirst, split( /_/, $txt ) ) );
-								print qq[<td>$txt</td>];
-						}
-						elsif ( $_ eq 'title' ) {
-								my $obj = $q->escape( $row->{'object'} );
-								my $obj_id = $q->escape( $row->{'object_id'} );
-								my $url = "user.cgi?$state_string&amp;redirect=1&amp;nt_group_id=$duser->{'nt_group_id'}&amp;nt_user_id=$duser->{'nt_user_id'}&amp;object=$obj&amp;obj_id=$obj_id";
-								my $img = "$NicToolClient::image_dir/$map->{ $row->{'object'} }->{'image'}";
-
-								print qq[
+        my $bgcolor = ( $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' );
+        print qq[<tr class="bgcolor">];
+        foreach (@columns) {
+            my $state_string = @state_fields ? join( '&amp;', @state_fields ) : 'not_empty=1';
+            if ( $_ eq 'timestamp' ) {
+                print '<td>', scalar localtime( $row->{$_} ), '</td>';
+            }
+            elsif ( $_ eq 'object' ) {
+                my $txt = $row->{'object'};
+                $txt = join( ' ', map( ucfirst, split( /_/, $txt ) ) );
+                print qq[<td>$txt</td>];
+            }
+            elsif ( $_ eq 'title' ) {
+                my $obj = $q->escape( $row->{'object'} );
+                my $obj_id = $q->escape( $row->{'object_id'} );
+                my $url = "user.cgi?$state_string&amp;redirect=1&amp;nt_group_id=$duser->{'nt_group_id'}&amp;nt_user_id=$duser->{'nt_user_id'}&amp;object=$obj&amp;obj_id=$obj_id";
+                my $img = "$NicToolClient::image_dir/$map->{ $row->{'object'} }->{'image'}";
+                print qq[
 <td>
  <table class="no_pad"><tr>
-		<td><a href="$url"><img src="$img" alt="image"></a></td>
-	  <td><a href="$url">$row->{'title'}</a></td>
-   </tr></table></td>];
-						}
-						elsif ( $_ eq 'target' && $row->{'target_id'} ) {
-								my $target    = $q->escape( $row->{'target'} );
-								my $target_id = $q->escape( $row->{'target_id'} );
-								my $url = "user.cgi?$state_string&amp;redirect=1&amp;nt_group_id=$duser->{'nt_group_id'}&amp;nt_user_id=$duser->{'nt_user_id'}&amp;object=$target&amp;obj_id=$target_id";
-								my $img = "$NicToolClient::image_dir/$map->{ $row->{'target'} }->{'image'}";
-								print qq[
+    <td><a href="$url"><img src="$img" alt="image"></a></td>
+    <td><a href="$url">$row->{'title'}</a></td>
+ </tr></table></td>];
+            }
+            elsif ( $_ eq 'target' && $row->{'target_id'} ) {
+                my $target    = $q->escape( $row->{'target'} );
+                my $target_id = $q->escape( $row->{'target_id'} );
+                my $url = "user.cgi?$state_string&amp;redirect=1&amp;nt_group_id=$duser->{'nt_group_id'}&amp;nt_user_id=$duser->{'nt_user_id'}&amp;object=$target&amp;obj_id=$target_id";
+                my $img = "$NicToolClient::image_dir/$map->{ $row->{'target'} }->{'image'}";
+                print qq[
 <td>
  <table class="no_pad">
   <tr>
@@ -365,15 +365,15 @@ sub display_global_log {
   </tr>
  </table>
 </td>];
-						}
-						else {
-								print "<td>", ( $row->{$_} ? $row->{$_} : '&nbsp;' ), "</td>";
-						}
-				}
-				print "</tr>";
-		}
+            }
+            else {
+                print "<td>", ( $row->{$_} ? $row->{$_} : '&nbsp;' ), "</td>";
+            }
+        }
+        print "</tr>";
+    }
 
-		print "</table>";
+    print "</table>";
 }
 
 sub display_edit {
@@ -543,7 +543,7 @@ sub display_edit {
             print qq{
 <td class=light_grey_bg colspan=2>
  <table class="center" style="padding:6; border-spacing:1;">
-						};
+};
 
             my $x = 1;
             my $color;
@@ -557,8 +557,8 @@ sub display_edit {
    <td class=$color></td>];
                         next;
                     }
-										my $pc = $group->{ $type . "_" . $perm } ? 'checked' : 'unchecked';
-										my $permc = $labels{$type}{$perm} || ucfirst $perm;
+                    my $pc = $group->{ $type . "_" . $perm } ? 'checked' : 'unchecked';
+                    my $permc = $labels{$type}{$perm} || ucfirst $perm;
                     print qq[
     <td class="$color left middle">
      <img src="$NicToolClient::image_dir/perm-$pc.gif">$permc </td>];
