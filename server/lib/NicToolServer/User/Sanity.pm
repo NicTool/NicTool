@@ -14,7 +14,8 @@ sub new_user {
 
     $self->_valid_username($data);
     $self->_valid_email($data);
-    $self->_valid_password($data);
+    $self->_valid_password($data)
+        unless $self->{user}->{ldap_only};
 
     return $self->throw_sanity_error if $self->{errors};
     $self->SUPER::new_user($data);

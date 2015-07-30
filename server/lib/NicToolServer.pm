@@ -109,6 +109,49 @@ sub ver_check {
 
 sub api_commands {
     my $self = shift;
+
+    my %new_user;
+
+    if ($NicToolServer::ldap_only) {
+
+        %new_user = (
+
+            'new_user' => {
+                'class'      => 'User::Sanity',
+                'method'     => 'new_user',
+                'creation'   => 'USER',
+                'parameters' => {
+                    'nt_group_id' =>
+                         { 'access' => 'read', required => 1, type => 'GROUP' },
+                    'username'  => { required => 1 },
+                    'email'     => { required => 1 },
+                },
+            },
+
+        );
+
+    }
+    else {
+        %new_user = (
+
+            'new_user' => {
+                'class'      => 'User::Sanity',
+                'method'     => 'new_user',
+                'creation'   => 'USER',
+                'parameters' => {
+                    'nt_group_id' =>
+                         { 'access' => 'read', required => 1, type => 'GROUP' },
+                    'username'  => { required => 1 },
+                    'email'     => { required => 1 },
+                    'password'  => { required => 1 },
+                    'password2' => { required => 1 },
+                },
+            },
+
+        );
+
+    }
+
     return {
 
         # user API
@@ -118,19 +161,6 @@ sub api_commands {
             'parameters' => {
                 'nt_user_id' =>
                     { access => 'read', required => 1, type => 'USER' },
-            },
-        },
-        'new_user' => {
-            'class'      => 'User::Sanity',
-            'method'     => 'new_user',
-            'creation'   => 'USER',
-            'parameters' => {
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
-                'username'  => { required => 1 },
-                'email'     => { required => 1 },
-                'password'  => { required => 1 },
-                'password2' => { required => 1 },
             },
         },
         'edit_user' => {
@@ -148,6 +178,7 @@ sub api_commands {
                 },
             },
         },
+        %new_user,
         'delete_users' => {
             'class'      => 'User',
             'method'     => 'delete_users',
