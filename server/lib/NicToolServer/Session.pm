@@ -201,6 +201,8 @@ sub verify_session {
 
     $self->clean_user_data;
 
+    $data->{user}{ldap_only} = $NicToolServer::ldap_only || 0;
+
     return 0;
 }
 
