@@ -23,8 +23,8 @@ require 'nictoolclient.conf';
 main();
 
 sub main {
-    my $q      = new CGI();
-    my $nt_obj = new NicToolClient($q);
+    my $q      = CGI->new();
+    my $nt_obj = NicToolClient->new($q);
 
     return if $nt_obj->check_setup ne 'OK';
 
@@ -127,7 +127,7 @@ sub display {
         push @options, qq[<a href="javascript:void window.open('move_users.cgi?obj_list=$duser->{'nt_user_id'}', 'move_win', 'width=640,height=480,scrollbars,resizable=yes')">Move</a>] if $group->{'has_children'};
     }
     else {
-        push @options, "<span class=disabled>Move</span>" if $group->{'has_children'};
+        push @options, '<span class="disabled">Move</span>' if $group->{'has_children'};
     }
 
     print qq[<table class="fat">
@@ -142,7 +142,7 @@ sub display {
             . qq[.gif" class="tee" alt=""></td>];
     }
 
-    print qq[<td><img src=$NicToolClient::image_dir/user.gif></td>
+    print qq[<td><img src="$NicToolClient::image_dir/user.gif"></td>
 <td class="nowrap"><b>$duser->{'username'}</b></td>
 <td class="right fat">], join( ' | ', @options ), qq[</td>
 </tr></table>
@@ -192,13 +192,13 @@ sub display_properties {
     }
 
     print qq[<table class="fat">
-    <tr class=dark_grey_bg>
+    <tr class="dark_grey_bg">
      <td>
       <table class="no_pad fat">
        <tr>
         <td><b>Properties</b></td>];
     my $modname = 'View Details';
-	   $modname = "Edit" if $modifyperm;
+    $modname = "Edit" if $modifyperm;
     my $gid = $q->param('nt_group_id');
     my $uid = $duser->{'nt_user_id'};
 
@@ -216,20 +216,20 @@ qq[&amp;nt_group_id=$gid&amp;nt_user_id=$uid&amp;edit=1">$modname</a></td>
  <tr>
   <td class="width50">
    <table class="fat">
-    <tr class=light_grey_bg>
+    <tr class="light_grey_bg">
      <td class="nowrap">Username: </td> <td class="fat">$duser->{'username'}</td>
     </tr>
-    <tr class=light_grey_bg>
+    <tr class="light_grey_bg">
      <td class="nowrap">Email: </td> <td class="fat">$duser->{'email'}</td>
     </tr>
    </table>
   </td>
   <td class="width50">
    <table class="fat">
-    <tr class=light_grey_bg>
+    <tr class="light_grey_bg">
      <td class="nowrap">First Name: </td> <td class="fat">$duser->{'first_name'}</td>
     </tr>
-    <tr class=light_grey_bg>
+    <tr class="light_grey_bg">
      <td class="nowrap">Last Name: </td> <td class="fat">$duser->{'last_name'}</td>
     </tr>
    </table>
@@ -287,24 +287,25 @@ sub display_global_log {
 
     $nt_obj->display_nice_error($message) if $message;
     print qq[
- <tr class=dark_grey_bg><td>
+ <tr class="dark_grey_bg"><td>
    <table class="no_pad fat">
     <tr><td class="bold">Global Application Log</td></tr>
-	</table></td></tr>
+   </table>
+  </td></tr>
 </table>];
 
     $nt_obj->display_search_rows( $q, $rv, \%params, $cgi, \@req_fields );
 
     if (!@$list) {
         print "<center>No log data available</center>";
-				return;
-		};
+        return;
+    };
 
-		print qq[<table class="fat"> <tr class=dark_grey_bg>];
-		foreach (@columns) {
-				if ( $sort_fields{$_} ) {
-						my $direc = uc( $sort_fields{$_}->{'mod'} ) eq 'ASCENDING' ? 'up' : 'down';
-						print qq[
+    print qq[<table class="fat"> <tr class=dark_grey_bg>];
+    foreach (@columns) {
+        if ( $sort_fields{$_} ) {
+            my $direc = uc( $sort_fields{$_}->{'mod'} ) eq 'ASCENDING' ? 'up' : 'down';
+            print qq[
  <td class="dark_bg center"><table class="no_pad">
   <tr>
    <td>$labels{$_}</td>
@@ -313,50 +314,49 @@ sub display_global_log {
   </tr>
  </table>
 </td>];
-				}
-				else {
-						print "<td class=center>$labels{$_}</td>";
-				}
-		}
-		print "</tr>";
+        }
+        else {
+            print qq[<td class="center">$labels{$_}</td>];
+        }
+    }
+    print "</tr>";
 
-		my $map = $nt_obj->obj_to_cgi_map();
+    my $map = $nt_obj->obj_to_cgi_map();
 
-		my $x = 0;
-		my $range;
-		foreach my $row (@$list) {
+    my $x = 0;
+    my $range;
+    foreach my $row (@$list) {
 
-				my $bgcolor = ( $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' );
-				print qq[<tr class="bgcolor">];
-				foreach (@columns) {
-						my $state_string = @state_fields ? join( '&amp;', @state_fields ) : 'not_empty=1';
-						if ( $_ eq 'timestamp' ) {
-								print '<td>', scalar localtime( $row->{$_} ), '</td>';
-						}
-						elsif ( $_ eq 'object' ) {
-								my $txt = $row->{'object'};
-								$txt = join( ' ', map( ucfirst, split( /_/, $txt ) ) );
-								print qq[<td>$txt</td>];
-						}
-						elsif ( $_ eq 'title' ) {
-								my $obj = $q->escape( $row->{'object'} );
-								my $obj_id = $q->escape( $row->{'object_id'} );
-								my $url = "user.cgi?$state_string&amp;redirect=1&amp;nt_group_id=$duser->{'nt_group_id'}&amp;nt_user_id=$duser->{'nt_user_id'}&amp;object=$obj&amp;obj_id=$obj_id";
-								my $img = "$NicToolClient::image_dir/$map->{ $row->{'object'} }->{'image'}";
-
-								print qq[
+        my $bgcolor = ( $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' );
+        print qq[<tr class="bgcolor">];
+        foreach (@columns) {
+            my $state_string = @state_fields ? join( '&amp;', @state_fields ) : 'not_empty=1';
+            if ( $_ eq 'timestamp' ) {
+                print '<td>', scalar localtime( $row->{$_} ), '</td>';
+            }
+            elsif ( $_ eq 'object' ) {
+                my $txt = $row->{'object'};
+                $txt = join( ' ', map( ucfirst, split( /_/, $txt ) ) );
+                print qq[<td>$txt</td>];
+            }
+            elsif ( $_ eq 'title' ) {
+                my $obj = $q->escape( $row->{'object'} );
+                my $obj_id = $q->escape( $row->{'object_id'} );
+                my $url = "user.cgi?$state_string&amp;redirect=1&amp;nt_group_id=$duser->{'nt_group_id'}&amp;nt_user_id=$duser->{'nt_user_id'}&amp;object=$obj&amp;obj_id=$obj_id";
+                my $img = "$NicToolClient::image_dir/$map->{ $row->{'object'} }->{'image'}";
+                print qq[
 <td>
  <table class="no_pad"><tr>
-		<td><a href="$url"><img src="$img" alt="image"></a></td>
-	  <td><a href="$url">$row->{'title'}</a></td>
-   </tr></table></td>];
-						}
-						elsif ( $_ eq 'target' && $row->{'target_id'} ) {
-								my $target    = $q->escape( $row->{'target'} );
-								my $target_id = $q->escape( $row->{'target_id'} );
-								my $url = "user.cgi?$state_string&amp;redirect=1&amp;nt_group_id=$duser->{'nt_group_id'}&amp;nt_user_id=$duser->{'nt_user_id'}&amp;object=$target&amp;obj_id=$target_id";
-								my $img = "$NicToolClient::image_dir/$map->{ $row->{'target'} }->{'image'}";
-								print qq[
+    <td><a href="$url"><img src="$img" alt="image"></a></td>
+    <td><a href="$url">$row->{'title'}</a></td>
+ </tr></table></td>];
+            }
+            elsif ( $_ eq 'target' && $row->{'target_id'} ) {
+                my $target    = $q->escape( $row->{'target'} );
+                my $target_id = $q->escape( $row->{'target_id'} );
+                my $url = "user.cgi?$state_string&amp;redirect=1&amp;nt_group_id=$duser->{'nt_group_id'}&amp;nt_user_id=$duser->{'nt_user_id'}&amp;object=$target&amp;obj_id=$target_id";
+                my $img = "$NicToolClient::image_dir/$map->{ $row->{'target'} }->{'image'}";
+                print qq[
 <td>
  <table class="no_pad">
   <tr>
@@ -365,15 +365,15 @@ sub display_global_log {
   </tr>
  </table>
 </td>];
-						}
-						else {
-								print "<td>", ( $row->{$_} ? $row->{$_} : '&nbsp;' ), "</td>";
-						}
-				}
-				print "</tr>";
-		}
+            }
+            else {
+                print "<td>", ( $row->{$_} ? $row->{$_} : '&nbsp;' ), "</td>";
+            }
+        }
+        print "</tr>";
+    }
 
-		print "</table>";
+    print "</table>";
 }
 
 sub display_edit {
@@ -414,26 +414,26 @@ sub display_edit {
 
     print qq[<a name='ZONE'></a>
 <table class="fat">
- <tr class=dark_bg><td colspan=2><b>$modname</b></td></tr>
- <tr class=light_grey_bg>
+ <tr class="dark_bg"><td colspan=2><b>$modname</b></td></tr>
+ <tr class="light_grey_bg">
   <td class="right nowrap">Username:</td>
   <td class="fat">],
         ( $modifyperm ? $q->textfield( -name  => 'username', -value => $duser->{'username'}, -size  => 30) : $duser->{'username'} ),
         qq[</td>
 </tr>
-<tr class=light_grey_bg>
+<tr class="light_grey_bg">
 <td class="nowrap right">First Name:</td>
 <td class="fat">],
         ( $modifyperm ? $q->textfield( -name  => 'first_name', -value => $duser->{'first_name'}, -size  => 30) : $duser->{'first_name'} ),
         qq[</td>
 </tr>
-<tr class=light_grey_bg>
+<tr class="light_grey_bg">
 <td class="right nowrap">Last Name:</td>
 <td class="fat">],
         ( $modifyperm ? $q->textfield( -name => 'last_name', -value => $duser->{'last_name'}, -size  => 40) : $duser->{'last_name'} ),
         qq[</td>
 </tr>
-<tr class=light_grey_bg>
+<tr class="light_grey_bg">
 <td class="right nowrap">Email:</td>
 <td class="fat">],
         ( $modifyperm ? $q->textfield( -name  => 'email', -value => $duser->{'email'}, -size  => 60) : $duser->{'email'} ),
@@ -442,8 +442,8 @@ sub display_edit {
 
     if ($modifyperm) {
         if ( ! $user->{is_admin} ) {    # note that is_admin is global
-        print qq[<tr class=dark_grey_bg><td colspan=2>Change Password</td></tr>
-<tr class=light_grey_bg>
+        print qq[<tr class="dark_grey_bg"><td colspan="2">Change Password</td></tr>
+<tr class="light_grey_bg">
 <td class="right nowrap">Current Password:</td>
 <td class="fat">],
             $q->password_field( -name => 'current_password', -override => 1 ),
@@ -451,14 +451,14 @@ sub display_edit {
 </tr>];
         };
 
-        print qq[<tr class=light_grey_bg><td colspan=2>&nbsp;</td></tr>
-<tr class=light_grey_bg>
+        print qq[<tr class="light_grey_bg"><td colspan="2">&nbsp;</td></tr>
+<tr class="light_grey_bg">
 <td class="right nowrap">New Password:</td>
 <td class="fat">],
             $q->password_field( -name => 'password', -size=>15, -maxlength => 30, -override  => 1),
             qq[</td>
 </tr>
-<tr class=light_grey_bg>
+<tr class="light_grey_bg">
 <td class="right nowrap">Confirm New Password:</td>
 <td class="fat">],
             $q->password_field( -name => 'password2', -size=>15, -maxlength => 30, -override  => 1),
@@ -500,10 +500,10 @@ sub display_edit {
             }
 
             #warn "user is ".Data::Dumper::Dumper($duser);
-            print "<tr class=dark_grey_bg><td colspan=2>"
+            print qq[<tr class="dark_grey_bg"><td colspan="2">]
                 . (
                 $permmodify
-                ? "<input type=radio value='1' name='group_defaults' "
+                ? qq[<input type="radio" value="1" name="group_defaults" ]
                     . ( $duser->{'inherit_group_permissions'} ? 'CHECKED' : '')
                     . ">"
                 : ''
@@ -517,13 +517,13 @@ sub display_edit {
 
             if ($showusablens) {
                 print qq(
-                    <tr class=light_grey_bg>
+                    <tr class="light_grey_bg">
                         <td class="light_grey_bg top"> Usable Nameservers: </td>
                         <td class="light_grey_bg top"> Permissions: </td>
                     </tr>
 
                 );
-                print qq( <tr class=light_grey_bg> <td class="light_grey_bg top">);
+                print qq( <tr class="light_grey_bg"> <td class="light_grey_bg top">);
                 my %order = map { $_->{'nt_nameserver_id'} => $_ }
                     @{ $ns_tree->{'list'} };
                 foreach ( sort keys %order ) {
@@ -537,13 +537,13 @@ sub display_edit {
                 print qq[</td>];
             }
             else {
-                print qq[<tr class="light_grey_bg" colspan=2>];
+                print qq[<tr class="light_grey_bg" colspan="2">];
             }
 
             print qq{
-<td class=light_grey_bg colspan=2>
+<td class="light_grey_bg" colspan="2">
  <table class="center" style="padding:6; border-spacing:1;">
-						};
+};
 
             my $x = 1;
             my $color;
@@ -557,8 +557,8 @@ sub display_edit {
    <td class=$color></td>];
                         next;
                     }
-										my $pc = $group->{ $type . "_" . $perm } ? 'checked' : 'unchecked';
-										my $permc = $labels{$type}{$perm} || ucfirst $perm;
+                    my $pc = $group->{ $type . "_" . $perm } ? 'checked' : 'unchecked';
+                    my $permc = $labels{$type}{$perm} || ucfirst $perm;
                     print qq[
     <td class="$color left middle">
      <img src="$NicToolClient::image_dir/perm-$pc.gif">$permc </td>];
@@ -584,12 +584,12 @@ sub display_edit {
                     ;    #(nt_group_id=>$user->{'nt_group_id'});
             }
 
-            print "<tr class=dark_grey_bg><td colspan=2>"
+            print '<tr class="dark_grey_bg"><td colspan="2">'
 
                 #.($modifyperm && !$editself
                 . (
                 $permmodify
-                ? "<input type=radio value='0' name='group_defaults'"
+                ? '<input type="radio" value="0" name="group_defaults" '
                     . (
                     $duser->{'inherit_group_permissions'} ? '' : 'CHECKED'
                     )
@@ -604,14 +604,14 @@ sub display_edit {
 
             if ($showusablens) {
                 print qq(
-                     <tr class=light_grey_bg>
+                     <tr class="light_grey_bg">
                         <td class="light_grey_bg top"> Usable Nameservers: </td>
                         <td class="light_grey_bg top"> Permissions: </td>
                     </tr>
                                   );
 
                 print qq(
-                     <tr class=light_grey_bg>
+                     <tr class="light_grey_bg">
                       <td class="light_grey_bg top">
                                   );
                 my %order = map { $_->{'nt_nameserver_id'} => $_ }
@@ -635,11 +635,11 @@ sub display_edit {
                 print qq( </td>);
             }
             else {
-                print qq(<tr class=light_grey_bg colspan=2>);
+                print qq(<tr class="light_grey_bg" colspan="2">);
             }
 
             print qq[
-<td colspan=2 class=light_grey_bg>
+<td colspan="2" class="light_grey_bg">
  <table class="center" style="padding:6; border-spacing:1;"> ];
             my $x = 1;
             my $color;
@@ -667,7 +667,7 @@ sub display_edit {
                 }
                 else {
                     $color = ( $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' );
-                    print qq{ <tr> <td class=right><b>}
+                    print qq{ <tr> <td class="right"><b>}
                         . ( ucfirst($type) ) . qq{:</b></td>
                                     };
                     foreach my $perm ( @{ $perms{$type} } ) {
@@ -732,7 +732,7 @@ sub display_edit {
         }
     }
     if ($modifyperm) {
-        print qq[<tr class=dark_grey_bg><td colspan=2 class=center>],
+        print qq[<tr class="dark_grey_bg"><td colspan="2" class="center">],
             $q->submit( $edit eq 'edit' ? 'Save' : 'Create' ),
             $q->submit('Cancel'), "</td></tr>";
     }
