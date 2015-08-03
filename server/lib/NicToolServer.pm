@@ -110,11 +110,11 @@ sub ver_check {
 sub api_commands {
     my $self = shift;
 
-    my %newuser;
+    my %new_user;
 
     if ($NicToolServer::ldap_only) {
 
-        %newuser = (
+        %new_user = (
 
             'new_user' => {
                 'class'      => 'User::Sanity',
@@ -132,7 +132,7 @@ sub api_commands {
 
     }
     else {
-        %newuser = (
+        %new_user = (
 
             'new_user' => {
                 'class'      => 'User::Sanity',
