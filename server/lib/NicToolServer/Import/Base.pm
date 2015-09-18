@@ -19,6 +19,7 @@ sub new {
             nt_pass     => undef,
             group_id    => undef,
             nameservers => undef,
+            nt_https    => 0,
         }, $class;
     return $self;
 };
@@ -279,7 +280,7 @@ sub nt_get_zone_records {
 }
 
 sub nt_connect {
-    my ($self, $nt_host, $nt_port, $nt_user, $nt_pass) = @_;
+    my ($self, $nt_host, $nt_port, $nt_user, $nt_pass, $nt_https) = @_;
 
     return $self->{nt} if $self->{nt};
 
@@ -298,6 +299,7 @@ sub nt_connect {
     my $nt = NicTool->new(
             server_host => $nt_host || '127.0.0.1',
             server_port => $nt_port || 8082,
+            transfer_protocol => $nt_https ? 'https' : 'http',
 #protocol    => 'xml_rpc',  # or soap
             );
 
