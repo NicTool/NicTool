@@ -22,6 +22,7 @@ Getopt::Long::GetOptions(
     'file=s'    => \my $filename,
     'user=s'    => \my $nt_user,
     'pass=s'    => \my $nt_pass,
+    'use-https' => \my $nt_https,
     'type=s'    => \my $type,
     'verbose'   => \my $verbose,
     'help'      => \my $help,
@@ -38,6 +39,7 @@ if($help) {
      print "  --type           Import type (tinydns or bind)\n";
      print "  --file           File to import data from (data for tinydns, named.conf for bind)\n";
      print "  --group_id       NicTool group id zones are placed into\n";
+     print "  --use-https      Use https towards NicTool Server\n";
      print "  --verbose        Show extra messages verbose\n\n";
      print "Report issues at https://github.com/msimerson/NicTool/issues\n";
      exit 0;
@@ -49,7 +51,7 @@ $nt_pass ||= ask( "NicTool user password", password => 1 ) if ! $nt_pass;
 
 my $nti;
 $type ||= get_type(); load_type($type);
-my $nt = $nti->nt_connect($nt_host, $nt_port, $nt_user, $nt_pass);
+my $nt = $nti->nt_connect($nt_host, $nt_port, $nt_user, $nt_pass, $nt_https);
 
 $group_id ||= $nt->result->{store}{nt_group_id} || die "unable to get group ID\n";
 warn Dumper($nt->result->{store}) if $verbose;
