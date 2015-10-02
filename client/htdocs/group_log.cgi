@@ -47,7 +47,8 @@ sub display {
     $nt_obj->parse_template(
         $NicToolClient::body_frame_start_template,
         username  => $user->{'username'},
-        groupname => $user->{'groupname'}
+        groupname => $user->{'groupname'},
+        userid    => $user->{'nt_user_id'}        
     );
 
     my $level = $nt_obj->display_group_tree(
