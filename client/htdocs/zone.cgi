@@ -814,7 +814,7 @@ sub display_edit_record {
         && $user->{'zonerecord_write'}
         && $zone_record->{'delegate_write'};
 
-    my $default_record_type = $zone_record->{type};
+    my $default_record_type = $zone_record->{type} || $q->param('type');
     $default_record_type = 'PTR' if $zone->{zone} =~ /(in-addr|ip6)\.arpa/;
 
     my $rr_type_popup = _build_rr_type( $nt_obj, $q, $zone, $zone_record, $default_record_type, $modifyperm );
@@ -862,41 +862,41 @@ sub display_edit_record {
 
     print qq[
 <table class="fat">
- <tr id=name class="light_grey_bg">
+ <tr id=name_row class="light_grey_bg">
   <td class="right"> Name:</td>
   <td class="fat">], _build_rr_name( $q, $zone_record, $zone, $modifyperm ), qq[
   </td>
  </tr>
- <tr id=type class="light_grey_bg">
+ <tr id=type_row class="light_grey_bg">
   <td id=type_label class=right> Type:</td>
-  <td id=type class="fixedwidth fat"> $rr_type_popup </td>
+  <td id=type_data class="fixedwidth fat"> $rr_type_popup </td>
  </tr>
- <tr id=address class="light_grey_bg">
+ <tr id=address_row class="light_grey_bg">
   <td id=address_label class="right">Address:</td>
-  <td id=address class="fat">],
+  <td id=address_data class="fat">],
     _build_rr_address( $q, $zone_record, $modifyperm ), $nt_obj->help_link('rraddress'),
     qq[
   </td>
  </tr>
- <tr id=weight class="light_grey_bg">
+ <tr id=weight_row class="light_grey_bg">
   <td id=weight_label class="right"> Weight:</td>
-  <td id=weight class="fat">],
+  <td id=weight_data class="fat">],
     _build_rr_weight( $q, $zone_record, $modifyperm ), qq[
   </td>
  </tr>
- <tr id="priority" class="light_grey_bg">
+ <tr id="priority_row" class="light_grey_bg">
   <td id=priority_label class="right"> Priority:</td>
-  <td id=priority class="fat">],
+  <td id=priority_data class="fat">],
     _build_rr_priority( $q, $zone_record, $modifyperm ), qq[
   </td>
  </tr>
- <tr id="other" class="light_grey_bg">
+ <tr id="other_row" class="light_grey_bg">
   <td id=other_label class="right">Other:</td>
-  <td id=other class="fat">],
+  <td id=other_data class="fat">],
     _build_rr_other( $q, $zone_record, $modifyperm ), qq[
   </td>
  </tr>
- <tr id=ttl class="light_grey_bg">
+ <tr id=ttl_row class="light_grey_bg">
   <td class="right"> TTL:</td>
   <td class="fat">], _build_rr_ttl( $q, $zone_record, $modifyperm), qq[
   </td>
@@ -1012,7 +1012,7 @@ sub _build_rr_type {
             grep( $_->{reverse} == 1, @$rr_types);
 
         $type_values = [ sort keys %reverse ];
-	if ( grep { /(?:DS)/} @$type_values) {
+        if ( grep { /(?:DS)/} @$type_values) {
    	    my (@others, @dnssec);
             foreach ( @$type_values ) {
                 if ( $_ =~ /^(?:DS)$/ ) {
@@ -1064,7 +1064,7 @@ sub _build_rr_type {
             -values  => $type_values,
             -labels  => $type_labels,
             -default => $zone_record->{'type'} || $default_record_type,
-            -onChange => "changeRRType(value);",
+            -onChange => "changeRRType(this.value);",
             -required  => 'required',
         ) );
     $q->autoEscape(1);
