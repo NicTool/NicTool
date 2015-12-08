@@ -76,10 +76,10 @@ sub new_or_edit_basic_verify {
     $self->_valid_cname( @args ) if $data->{type} eq 'CNAME';
     $self->_valid_a    ( @args ) if $data->{type} eq 'A';
     $self->_valid_aaaa ( @args ) if $data->{type} eq 'AAAA';
-    $self->_valid_ns( $data, $zone_text )    if $data->{type} eq 'NS';
-    $self->_valid_ptr($data, $zone_text )    if $data->{type} eq 'PTR';
-    $self->_valid_srv($data, $zone_text )    if $data->{type} eq 'SRV';
-    $self->_valid_mx  ( @args ) if $data->{type} eq 'MX';
+    $self->_valid_ns   ( @args ) if $data->{type} eq 'NS';
+    $self->_valid_ptr  ( @args ) if $data->{type} eq 'PTR';
+    $self->_valid_srv  ( @args ) if $data->{type} eq 'SRV';
+    $self->_valid_mx   ( @args ) if $data->{type} eq 'MX';
 
     $self->_name_collision($data, $z);
     $self->_valid_ttl( @args );
@@ -332,9 +332,9 @@ sub _valid_cname {
         $self->error( 'name', "multiple CNAME records with the same name are NOT allowed. (use plain old round robin)" );
     };
 
-    my ($crash) = grep { $_->{type} =~ /^(A|AAAA|MX)$/ } @$collisions;
+    my ($crash) = grep { $_->{type} !~ /^(SIG|NXT|KEY|RRSIG|NSEC)$/ } @$collisions;
     if ($crash) {
-        $self->error( 'name', "record $data->{name} already exists within zone as an Address ($crash->{type}) record: RFC 1034 & 2181");
+        $self->error( 'name', "record $data->{name} already exists within zone as an ($crash->{type}) record: RFC 1034, 2181, & 4035");
     };
 
 # ADDRESS
