@@ -814,7 +814,7 @@ sub display_edit_record {
         && $user->{'zonerecord_write'}
         && $zone_record->{'delegate_write'};
 
-    my $default_record_type = $zone_record->{type};
+    my $default_record_type = $zone_record->{type} || $q->param('type');
     $default_record_type = 'PTR' if $zone->{zone} =~ /(in-addr|ip6)\.arpa/;
 
     my $rr_type_popup = _build_rr_type( $nt_obj, $q, $zone, $zone_record, $default_record_type, $modifyperm );
