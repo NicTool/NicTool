@@ -790,6 +790,9 @@ sub locate_ldap_user {
     }
 
     # Search for user
+    # Update filter to be more specific, in order to avoid returning too many users.
+    $filter = "(&(" . $user_mapping . "=" . $user . ")". $filter . ")";
+    # warn "LDAP: updated filter " . $filter . "\n";
     my $ldap_result = $ldap->search( base => $base_dn,
                                      scope => 'sub',
                                      attrs => [ $user_mapping ],
