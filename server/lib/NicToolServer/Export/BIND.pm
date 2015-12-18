@@ -202,6 +202,7 @@ sub write_makefile {
 
     my $address = $self->{nte}{ns_ref}{address} || '127.0.0.1';
     my $datadir = $self->{nte}{ns_ref}{datadir} || getcwd . '/data-all';
+    my $remote_login = $self->{nte}{ns_ref}{remote_login} || 'bind';
     $datadir =~ s/\/$//;  # strip off any trailing /
     open my $M, '>', "$exportdir/Makefile" or do {
         warn "unable to open ./Makefile: $!\n";
@@ -222,11 +223,11 @@ compile: $exportdir/named.conf.nictool
 \ttest 1
 
 remote: $exportdir/named.conf.nictool
-\t#rsync -az --delete $exportdir/ bind\@$address:$datadir/
+\t#rsync -az --delete $exportdir/ $remote_login\@$address:$datadir/
 \ttest 1
 
 restart: $exportdir/named.conf.nictool
-\t#ssh bind\@$address rndc reload
+\t#ssh $remote_login\@$address rndc reload
 \ttest 1
 MAKE
 ;
