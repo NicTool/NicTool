@@ -32,6 +32,7 @@ sub write_makefile {
     my $address = $self->{nte}{ns_ref}{address} || '127.0.0.1';
     my $datadir = $self->{nte}{ns_ref}{datadir} || getcwd . '/data-all';
     $datadir =~ s/\/$//;  # strip off any trailing /
+    my $remote_login = $self->{nte}{ns_ref}{remote_login} || 'powerdns';
     open my $M, '>', "$exportdir/Makefile" or do {
         warn "unable to open ./Makefile: $!\n";
         return;
@@ -49,10 +50,10 @@ compile: $exportdir/named.conf.nictool
 \ttest 1
 
 remote: $exportdir/named.conf.nictool
-\trsync -az --delete $exportdir/ powerdns\@$address:$datadir/
+\trsync -az --delete $exportdir/ $remote_login\@$address:$datadir/
 
 restart: $exportdir/named.conf.nictool
-\tssh powerdns\@$address pdns_control cycle
+\tssh $remote_login\@$address pdns_control cycle
 MAKE
 ;
     close $M;
