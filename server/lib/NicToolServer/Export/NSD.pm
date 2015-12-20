@@ -41,6 +41,7 @@ sub write_makefile {
 
     my $address = $self->{nte}{ns_ref}{address} || '127.0.0.1';
     my $datadir = $self->{nte}{ns_ref}{datadir} || getcwd . '/data-all';
+    my $remote_login = $self->{nte}{ns_ref}{remote_login} || 'nsd';
     $datadir =~ s/\/$//;  # strip off any trailing /
     open my $M, '>', "$exportdir/Makefile" or do {
         warn "unable to open ./Makefile: $!\n";
@@ -63,16 +64,16 @@ compile: $exportdir/nsd.nictool.conf
 \tnsd-control rebuild
 
 remote: /var/db/nsd/nsd.db
-\trsync -az --delete /var/db/nsd/nsd.db nsd\@$address:/var/db/nsd/
+\trsync -az --delete /var/db/nsd/nsd.db $remote_login\@$address:/var/db/nsd/
 
 restart: nsd.db
-\tssh nsd\@$address nsd-control reload
+\tssh $remote_login\@$address nsd-control reload
 
 # NSD v3
 #compile: $exportdir/named.conf.nictool
 #\t nsdc rebuild
 #restart: nsd.db
-#\tssh nsd\@$address nsdc reload
+#\tssh $remote_login\@$address nsdc reload
 EO_MAKE
 ;
     close $M;
