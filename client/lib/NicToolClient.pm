@@ -184,9 +184,9 @@ sub parse_template {
     $self->fill_template_vars($vars)
         ;    # TODO - cache # unless ($self->{'fill_vars'});
 
-    open( FILE, "<$template" ) || die "unable to find template: $template\n";
+    open my $FILE, '<', $template or die "unable to find template: $template\n";
 
-    while (<FILE>) {
+    while (<$FILE>) {
         s/{{(.+?)}}/$vars->{$1}/g;
         s/{{ONLOAD_JS}}/$temp{'ONLOAD_JS'}/g;
         print;
@@ -221,7 +221,7 @@ sub display_group_menu {
 
         $menu{$gid} = qq[<a href="group.cgi?nt_group_id=$gid">$group->{name}</a>];
     };
-    
+
     print qq[<ul id=group_menu>\n];
     foreach my $item ( sort keys %menu ) {
         print qq[<li>$menu{$item}</li>\n];
@@ -481,10 +481,10 @@ sub display_zone_options {
     print qq[
  <ul class="menu_r">];
     my $c = 0;
-    foreach ( @options ) { 
+    foreach ( @options ) {
         if ( $c == 0 ) { print qq[\n  <li class=first>]; }
         else           { print qq[\n  <li>]; };
-        print qq[$_</li>]; 
+        print qq[$_</li>];
         $c++;
     };
     print qq[
@@ -493,13 +493,13 @@ sub display_zone_options {
 }
 
 sub paging_fields {
-    [   qw(quick_search search_value Search 
-            1_field 1_option 1_value 1_inclusive 
+    [   qw(quick_search search_value Search
+            1_field 1_option 1_value 1_inclusive
             2_field 2_option 2_value 2_inclusive
-            3_field 3_option 3_value 3_inclusive 
-            4_field 4_option 4_value 4_inclusive 
+            3_field 3_option 3_value 3_inclusive
+            4_field 4_option 4_value 4_inclusive
             5_field 5_option 5_value 5_inclusive
-            change_sortorder 1_sortfield 1_sortmod 2_sortfield 2_sortmod 
+            change_sortorder 1_sortfield 1_sortmod 2_sortfield 2_sortmod
             3_sortfield 3_sortmod start limit page edit_search
             edit_sortorder include_subgroups)
     ];
@@ -624,7 +624,7 @@ sub display_search_rows {
         -label   => 'exact match',
         -checked => $NicToolClient::exact_match_checked
         ),
-    $q->endform,
+    $q->end_form,
     qq[
  </td>
  <td class="right">
@@ -692,7 +692,7 @@ sub display_search_rows {
 
     my $browse_all = '<li class=first>';
     if ( $params->{'search_query'} ne 'ALL' ) {
-        my $state_map = join( '&amp;', 
+        my $state_map = join( '&amp;',
             map( "$_=" . $q->escape( $q->param($_) ), @$state_fields ) );
         $state_map .= "&amp;$morestr" if $morestr;
         $browse_all .= qq[<a href="$cgi_name?$state_map">Browse All</a></li>
@@ -886,7 +886,7 @@ sub display_advanced_search {
 <div id="advancedSearchSubmit" class="dark_grey_bg center">
    <input type="submit" name="Search" value="Search" />
 </div>],
-    $q->endform, 
+    $q->end_form,
     qq[
 <div id="advancedSearchCancel" class="dark_grey_bg center">],
     $q->startform( -action => $cgi_name, -method => 'POST' );
@@ -898,7 +898,7 @@ sub display_advanced_search {
     }
 
     print $q->submit('Cancel'),
-          $q->endform(), qq[
+          $q->end_form(), qq[
 </div>],
 }
 
@@ -928,7 +928,7 @@ sub display_group_list {
         nt_group_id    => $q->param('nt_group_id'),
         start_group_id => $user->{'nt_group_id'}
     );
-    
+
     if ( $user->{'nt_group_id'} == $q->param('nt_group_id') ) {
         $params{'include_parent'} = 1;
     };
@@ -1397,12 +1397,12 @@ sub refresh_nav {
 sub AUTOLOAD {
     my $self = shift;
 
-    my $type = ref($self);
+    my $type = ref $self;
     my $name = $AUTOLOAD;
 
-    unless ( ref($self) ) {
+    if ( ! ref $self ) {
         warn "$type" . "::AUTOLOAD $self is not an object -- (params: @_)\n";
-        return undef;
+        return;
     }
 
     return if $name =~ /::DESTROY$/;
