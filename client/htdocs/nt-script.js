@@ -1,22 +1,22 @@
 // <script language="JavaScript" type="text/javascript">
 
-"use strict";
+'use strict';
 
 function changeNewZoneName() {
   var zoneName = $('input#zone');
   var mailAddr = $('input#mailaddr');
   if (mailAddr.val() === 'hostmaster.'+zoneName.val()+'.') return;
   mailAddr.val('hostmaster.'+zoneName.val() + '.');
-};
+}
 
 function changeNSExportType(eType) {
     if (!eType) { eType = $('select#export_format option:selected').val(); }
     if (!eType) return false;
 
-    $('tr#export_serials_row').hide();
+    $('#export_serials_row').hide();
     $('input#remote_login').attr('placeholder', '');
 
-    $('tr#datadir_row').show();
+    $('#datadir_row').show();
     $('input#datadir').attr('placeholder', '');
 
     selectedNSType(eType);
@@ -62,7 +62,7 @@ function selectedRRType(rrType) {
 
 function selectedNSType(nsType) {
     if (!nsType) return false;
-    $('tr#export_serials_row').hide();
+    $('#export_serials_row').hide();
     switch (nsType) {
       case 'bind':           setFormNSTypeBIND();  break;
       case 'bind-nsupdate':  setFormNSTypeNSUPD(); break;
@@ -100,13 +100,13 @@ function setFormNSTypeMara () {
 }
 function setFormNSTypeDJB () {
     setSpanURL('export_format_url', 'http://cr.yp.to/djbdns.html', 'DJBDNS');
-    $('tr#export_serials_row').show();
+    $('#export_serials_row').show();
     $('input#datadir').attr('placeholder', '/var/service/tinydns-ns1');
     $('input#remote_login').attr('placeholder', 'tinydns');
 }
 function setFormNSTypeDyn () {
     setSpanURL('export_format_url', 'http://dyn.com/managed-dns/', 'DynECT');
-    $('tr#datadir_row').hide();
+    $('#datadir_row').hide();
     $('input#remote_login').attr('placeholder', 'Customer:Username:Password');
 }
 function setFormNSTypePower () {
@@ -119,22 +119,22 @@ function resetZoneRecordFormFields() {
 
   var rrOptions = [ 'weight', 'priority', 'other' ];
   for ( var i=0; i < rrOptions.length; i++ ) {
-    $('tr#' + rrOptions[i] ).hide();         // hide conditional rows
+    $('#' + rrOptions[i] + '_row' ).hide();   // hide conditional rows
     $('select#'+rrOptions[i]).hide().empty(); // hide and empty option lists
-  };
+  }
 
   var rrAll = $.merge(rrOptions, ['name','address','description']);
-  for ( var i=0; i < rrAll.length; i++ ) {
-    $('td#' + rrAll[i] +'_label').text(ucfirst(rrOptions[i]));
-    $('input#'+rrAll[i])
+  for ( var j=0; j < rrAll.length; j++ ) {
+    $('td#' + rrAll[j] +'_label').text(ucfirst(rrOptions[j]));
+    $('input#'+rrAll[j])
       .attr('placeholder', '')
       .attr('readonly', false);
-  };
+  }
 
   $('td#description_label').text('Description');
   $('input#address').attr('size', 50);
   $('span#rfc_help').html('');
-};
+}
 
 function setFormRRTypeA() {
   setRfcHelp(['1035']);
@@ -156,7 +156,7 @@ function setFormRRTypeNS() {
 
 function setFormRRTypeMX() {
   setRfcHelp(['1035']);
-  $('tr#weight').show();
+  $('#weight_row').show();
   $('input#name').attr('placeholder','@');
   $('input#address').attr('placeholder','mail.example.com.');
   $('input#weight').attr('placeholder', '10');
@@ -180,12 +180,12 @@ function setFormRRTypeSRV() {
   $('input#name').attr('placeholder','_dns._udp');
   $('input#address').attr('placeholder','ns1.example.com.');
 
-  $('tr#weight').show();
+  $('#weight_row').show();
   $('input#weight').attr('placeholder','10');
 
-  $('tr#priority').show();
+  $('#priority_row').show();
 
-  $('tr#other').show();
+  $('#other_row').show();
   $('td#other_label').text('Port');
   $('input#other').attr('placeholder','53');
 }
@@ -198,11 +198,11 @@ function setFormRRTypeSPF() {
 
 function setFormRRTypeNAPTR() {
   setRfcHelp(['3403']);
-  $('tr#weight').show();
+  $('#weight_row').show();
   $('td#weight_label').text('Order');
   $('input#weight').attr('placeholder','100');
 
-  $('tr#priority').show();
+  $('#priority_row').show();
   $('td#priority_label').text('Preference');
   $('input#priority').attr('placeholder','10');
 
@@ -229,14 +229,14 @@ function setFormRRTypeSSHFP() {
   $('td#address_label').text('Fingerprint');
   $('input#address').attr('placeholder','hint: ssh-keygen -r');
 
-  $('tr#weight').show();
+  $('#weight_row').show();
   $('td#weight_label').text('Algorithm');
   $('input#weight').attr('placeholder','3');
   var algoTypes = { '1' : 'RSA', '2' : 'DSA', '3' : 'ECDSA' };
   addValuesToSelect(algoTypes, 'weight');
   $('select#weight').show();
 
-  $('tr#priority').show();   // Priority field stores the Fingerprint Type
+  $('#priority_row').show();   // Priority field stores the Fingerprint Type
   $('td#priority_label').text('Type');
   $('input#priority').attr('placeholder','2');
   addValuesToSelect( { '1' : 'SHA-1', '2' : 'SHA-256', }, 'priority');
@@ -251,14 +251,14 @@ function setFormRRTypeDNSKEY() {
   // Flags: this would be a great place to do an AJAX validation call to the
   // server, and use Net::DNS::SEC to validate this field, and then apply
   // suitable constraints.
-  $('tr#weight').show();
+  $('#weight_row').show();
   $('td#weight_label').text('Flag');
 
-  $('tr#priority').show();
+  $('#priority_row').show();
   $('td#priority_label').text('Protocol');
   $('input#priority').val('3').attr('readonly', true);
 
-  $('tr#other').show();
+  $('#other_row').show();
   $('td#other_label').text('Algorithm');
   var o = $('input#other');
   if ( o.val() == '' ) o.val('5');
@@ -272,16 +272,16 @@ function setFormRRTypeDS() {
 
   $('td#address_label').text('Digest');
 
-  $('tr#weight').show();
+  $('#weight_row').show();
   $('td#weight_label').text('Key Tag');
 
-  $('tr#priority').show();
+  $('#priority_row').show();
   $('td#priority_label').text('Algorithm');
   var p = $('input#priority');
   if ( ! p.val() ) p.val('8');
   addValuesToSelect( getDnssecAlgorithms(), 'priority');
 
-  $('tr#other').show();
+  $('#other_row').show();
   $('td#other_label').text('Digest Type');
   var o = $('input#other');
   if ( ! o.val() ) o.val('2');
@@ -317,7 +317,9 @@ function setFormRRTypeRRSIG() {
   setRfcHelp(['4034']);
 
 /*
-There aren't enough fields in the RR table to enter the 9 pieces of data separately. Require them to be in the canonical presentation format, packed in the Address field.
+There aren't enough fields in the RR table to enter the 9 pieces of data
+separately. Require them to be in the canonical presentation format, packed
+in the Address field.
 
 host.example.com. 86400 IN RRSIG A 5 3 86400 20030322173103 (
                                   20030220173103 2642 example.com.
@@ -335,10 +337,10 @@ function setFormRRTypeIPSECKEY() {
   $('td#address_label').text('Gateway');
   $('td#description_label').text( 'Public Key' );
 
-  $('tr#weight').show();
+  $('#weight_row').show();
   $('td#weight_label').text('Precedence');
 
-  $('tr#priority').show();
+  $('#priority_row').show();
   $('td#priority_label').text('Gateway Type');
   var gwTypes = {
     '0' : 'none',          '1' : 'IPv4 address',
@@ -346,12 +348,12 @@ function setFormRRTypeIPSECKEY() {
   };
   addValuesToSelect( gwTypes, 'priority' );
 
-  $('tr#other').show();
+  $('#other_row').show();
   $('td#other_label').text('Algorithm Type');
   $('input#other').attr('placeholder','2');
   var algoTypes = { '0' : 'none', '1' : 'DSA', '2' : 'RSA', };
   addValuesToSelect( algoTypes, 'other' );
-};
+}
 
 function addValuesToSelect(array,selectName) {
   var selObj = $('select#'+selectName).show();
@@ -374,7 +376,7 @@ function getDnssecAlgorithms() {
     '13': 'ECDSA Curve P-256 with SHA-256',
     '14': 'ECDSA Curve P-384 with SHA-384',
   };
-};
+}
 
 function ucfirst(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
