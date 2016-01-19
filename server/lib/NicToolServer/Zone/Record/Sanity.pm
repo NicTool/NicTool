@@ -161,23 +161,25 @@ sub _name_collision {
 
     my $zone_text = $z->{zone};
 
-# check to make sure a sub-domain in zones doesn't clobber a record that user is trying to add/edit..
-
     return if $data->{name} =~ /$zone_text\.$/;
-# we're here, so name is something like blah, or blah.blah
 
-# if zone is zone.com., it's the origin, which should have already been checked
-# for subdomain collisions. If it isn't, check ...
-# split input in case it's like blah.blah.blah.zone.com and blah.blah.zone.com exists as a domain.
-    my @nparts = split( /\./, $data->{name} );
+    # permit glue & DNSSEC records for this zone to exist in parent zones
+    return if $data->{type} =~ /^(NS|DS)$/;
+
+    # name is something like blah, or blah.blah
+    # if zone is zone.com., it's the origin, which should have been checked
+    # for subdomain collisions. If it's not the origin:
+    # split input in case it's like blah.blah.blah.zone.com and
+    #   blah.blah.zone.com exists as a domain.
+    my @nparts = split /\./, $data->{name};
     my @tocheck;
     my $basestr = $zone_text;
-    while ( my $x = pop(@nparts) ) {
-        $basestr = $x . "." . $basestr;
-        push( @tocheck, $basestr );
+    while ( my $x = pop @nparts ) {
+        $basestr = $x . '.' . $basestr;
+        push @tocheck, $basestr;
     }
-    @tocheck = reverse(@tocheck);
-    while ( my $name = pop(@tocheck) ) {
+    @tocheck = reverse @tocheck;
+    while ( my $name = pop @tocheck ) {
 
         #warn "checking if exists $name";
         if ( $self->zone_exists( $name, 0 ) ) {
@@ -187,7 +189,6 @@ sub _name_collision {
             last;
         }
     }
-# TODO - make the above not so nasty
 }
 
 sub _expand_shortcuts {

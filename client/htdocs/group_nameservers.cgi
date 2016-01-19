@@ -187,7 +187,7 @@ sub display_list {
     $nt_obj->display_search_rows( $q, $rv, \%params, $cgi, ['nt_group_id'], $include_subgroups );
 
     if (! @$list ) {
-        print $q->endform;
+        print $q->end_form;
         return;
     };
 
@@ -224,7 +224,7 @@ sub display_list {
     print qq[
  </tbody>
 </table>\n],
-    $q->endform;
+    $q->end_form;
 }
 
 sub display_list_actions {

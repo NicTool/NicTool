@@ -1,5 +1,11 @@
 Revision history for NicToolServer
 
+2.33    2015.12.07
+
+    * update NSD exports for version 4
+    * add HTTPS support to nt_import (#102)
+    * prevent CNAME collisions (#113)
+
 2.32    2015.07.26
 
     * clean up old successful exports 

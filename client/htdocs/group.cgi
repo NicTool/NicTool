@@ -166,7 +166,7 @@ sub display_zone_search {
             -override => 1
             );
     };
-    print $q->endform,
+    print $q->end_form,
     "</td>
     </tr>
    </table>
@@ -521,6 +521,6 @@ sub display_edit {
     print qq[
 </table>];
 
-    print $q->endform;
+    print $q->end_form;
 }
 

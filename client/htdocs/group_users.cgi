@@ -255,7 +255,7 @@ sub display_list {
         $include_subgroups );
 
     if ( ! @$list) {
-        print $q->endform;
+        print $q->end_form;
         return;
     };
 
@@ -387,7 +387,7 @@ sub display_list {
     print qq[
 </table>
 ],
-    $q->endform;
+    $q->end_form;
 }
 sub display_user_permissions {
     my ($nt_obj, $q, $group, $user) = @_;
