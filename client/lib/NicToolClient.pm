@@ -192,7 +192,7 @@ sub parse_template {
         print;
     }
 
-    close(FILE);
+    close $FILE;
 }
 
 sub fill_template_vars {
