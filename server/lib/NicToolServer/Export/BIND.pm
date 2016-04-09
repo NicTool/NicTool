@@ -33,7 +33,7 @@ sub update_named_include {
     if ( $self->{nte}->incremental ) {
         return $self->update_named_include_incremental( $dir );
     };
-# full export, write a new include  file
+    # full export, write a new include  file
     my $datadir = $self->{nte}->get_export_data_dir || $dir;
     my $fh = $self->get_export_file( 'named.conf.nictool', $dir );
     foreach my $zone ( $self->{nte}->zones_exported ) {
@@ -52,11 +52,11 @@ sub update_named_include {
 sub update_named_include_incremental {
     my ($self, $dir) = @_;
 
-# check that the zone that was modified since our last export is in the
-# include file, else append it.
-#
-# there's likely to be more lines in the include file than zones to append
-# build a lookup table of changed zones and pass through the file once
+    # check that the zone that was modified since our last export is in the
+    # include file, else append it.
+    #
+    # there's likely to be more lines in the include file than zones to append
+    # build a lookup table of changed zones and pass through the file once
     my $to_add = $self->get_changed_zones( $dir );
     my $file   = "$dir/named.conf.nictool";
 
@@ -70,7 +70,7 @@ sub update_named_include_incremental {
             return;
         };
 
-# zone "simerson.net"  IN { type master; file "/etc/namedb/nictool/simerson.net"; };
+    # zone "simerson.net"  IN { type master; file "/etc/namedb/nictool/simerson.net"; };
     while ( my $line = <$in> ) {
         my $zone = (split( /\"/, $line, 3))[1];
         if ( $to_add->{$zone} ) {
@@ -238,28 +238,28 @@ MAKE
 sub zr_a {
     my ($self, $r) = @_;
 
-# name  ttl  class  type  type-specific-data
+    # name  ttl  class  type  type-specific-data
     return "$r->{name}	$r->{ttl}	IN  A	$r->{address}\n";
 }
 
 sub zr_cname {
     my ($self, $r) = @_;
 
-# name  ttl  class   rr     canonical name
+    # name  ttl  class   rr     canonical name
     return "$r->{name}	$r->{ttl}	IN  CNAME	$r->{address}\n";
 }
 
 sub zr_mx {
     my ($self, $r) = @_;
 
-#name           ttl  class   rr  pref name
+    #name           ttl  class   rr  pref name
     return "$r->{name}	$r->{ttl}	IN  MX	$r->{weight}	$r->{address}\n";
 }
 
 sub zr_txt {
     my ($self, $r) = @_;
 
-# fixup for quotes around DKIM in the DB (Luser error)
+    # fixup for quotes around DKIM in the DB (Luser error)
     $r->{address} =~ s/^"//g;   # strip off any leading quotes
     $r->{address} =~ s/"$//g;   # strip off any trailing quotes
 
@@ -267,7 +267,7 @@ sub zr_txt {
     if ( length $r->{address} > 255 ) {
         $r->{address} = join( '" "', unpack("(a255)*", $r->{address} ) );
     };
-# name  ttl  class   rr     text
+    # name  ttl  class   rr     text
     return "$r->{name}	$r->{ttl}	IN  TXT	\"$r->{address}\"\n";
 }
 
@@ -277,14 +277,14 @@ sub zr_ns {
     my $name = $self->qualify( $r->{name} );
     $name .= '.' if '.' ne substr($name, -1, 1);
 
-# name  ttl  class  type  type-specific-data
+    # name  ttl  class  type  type-specific-data
     return "$name	$r->{ttl}	IN	NS	$r->{address}\n";
 }
 
 sub zr_ptr {
     my ($self, $r) = @_;
 
-# name  ttl  class  type  type-specific-data
+    # name  ttl  class  type  type-specific-data
     return "$r->{name}	$r->{ttl}	IN  PTR	$r->{address}\n";
 }
 
@@ -298,7 +298,7 @@ sub zr_soa {
         $z->{mailaddr} .= '.';     # append trailing dot
     };
 
-# name        ttl class rr    name-server email-addr  (sn ref ret ex min)
+    # name        ttl class rr    name-server email-addr  (sn ref ret ex min)
     return "
 \$TTL    $z->{ttl};
 \$ORIGIN $z->{zone}.
@@ -314,9 +314,9 @@ $z->{zone}.		IN	SOA	$z->{nsname}    $z->{mailaddr} (
 sub zr_spf {
     my ($self, $r) = @_;
 
-# SPF record support was added in BIND v9.4.0
+    # SPF record support was added in BIND v9.4.0
 
-# name  ttl  class  type  type-specific-data
+    # name  ttl  class  type  type-specific-data
     return "$r->{name}	$r->{ttl}	IN  SPF	\"$r->{address}\"\n";
 }
 
@@ -327,14 +327,14 @@ sub zr_srv {
     my $weight   = $self->{nte}->is_ip_port( $r->{weight} );
     my $port     = $self->{nte}->is_ip_port( $r->{other} );
 
-# srvce.prot.name  ttl  class   rr  pri  weight port target
+    # srvce.prot.name  ttl  class   rr  pri  weight port target
     return "$r->{name}	$r->{ttl}	IN  SRV	$priority	$weight	$port	$r->{address}\n";
 }
 
 sub zr_aaaa {
     my ($self, $r) = @_;
 
-# name  ttl  class  type  type-specific-data
+    # name  ttl  class  type  type-specific-data
     return "$r->{name}	$r->{ttl}	IN  AAAA	$r->{address}\n";
 }
 
@@ -346,8 +346,8 @@ sub zr_loc {
 sub zr_naptr {
     my ($self, $r) = @_;
 
-# http://www.ietf.org/rfc/rfc2915.txt
-# https://www.ietf.org/rfc/rfc3403.txt
+    # http://www.ietf.org/rfc/rfc2915.txt
+    # https://www.ietf.org/rfc/rfc3403.txt
 
     my $order = $self->{nte}->is_ip_port( $r->{weight}   );
     my $pref  = $self->{nte}->is_ip_port( $r->{priority} );
@@ -357,14 +357,14 @@ sub zr_naptr {
     my $replace = $r->{description};
     $regexp =~ s/\\/\\\\/g;  # escape any \ characters
 
-# Domain TTL Class Type Order Preference Flags Service Regexp Replacement
+    # Domain TTL Class Type Order Preference Flags Service Regexp Replacement
     return qq[$r->{name} $r->{ttl}   IN  NAPTR   $order  $pref   "$flags"  "$service"    "$regexp" $replace\n];
 }
 
 sub zr_dname {
     my ($self, $r) = @_;
 
-# name  ttl  class   rr     target
+    # name  ttl  class   rr     target
     return "$r->{name}	$r->{ttl}	IN  DNAME	$r->{address}\n";
 }
 
