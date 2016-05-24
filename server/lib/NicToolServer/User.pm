@@ -375,10 +375,10 @@ sub get_group_users {
     $sql = "SELECT nt_user.nt_user_id,
                nt_user.username,
                nt_user.first_name,
-        	   nt_user.last_name,
-        	   nt_user.email,
+               nt_user.last_name,
+               nt_user.email,
                nt_user.nt_group_id,
-        	   nt_group.name as group_name
+               nt_group.name as group_name
         FROM nt_user
         INNER JOIN nt_group ON nt_user.nt_group_id = nt_group.nt_group_id
         WHERE nt_user.deleted=0
@@ -790,6 +790,9 @@ sub locate_ldap_user {
     }
 
     # Search for user
+    # Update filter to be more specific, in order to avoid returning too many users.
+    $filter = "(&(" . $user_mapping . "=" . $user . ")". $filter . ")";
+    # warn "LDAP: updated filter " . $filter . "\n";
     my $ldap_result = $ldap->search( base => $base_dn,
                                      scope => 'sub',
                                      attrs => [ $user_mapping ],

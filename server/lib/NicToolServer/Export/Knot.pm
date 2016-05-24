@@ -97,6 +97,7 @@ sub write_makefile {
     my $address = $self->{nte}{ns_ref}{address} || '127.0.0.1';
     my $datadir = $self->{nte}{ns_ref}{datadir} || getcwd . '/data-all';
     $datadir =~ s/\/$//;  # strip off any trailing /
+    my $remote_login = $self->{nte}{ns_ref}{remote_login} || 'knot';
     open my $M, '>', "$exportdir/Makefile" or do {
         warn "unable to open ./Makefile: $!\n";
         return;
@@ -116,10 +117,10 @@ compile: $exportdir/knot.conf.nictool
 \ttest 1
 
 remote: $exportdir/knot.conf.nictool
-\trsync -az --delete $exportdir/ knot\@$address:$datadir/
+\trsync -az --delete $exportdir/ $remote_login\@$address:$datadir/
 
 restart: $exportdir/knot.conf.nictool
-\tssh knot\@$address knotc reload
+\tssh $remote_login\@$address knotc reload
 MAKE
 ;
     close $M;

@@ -76,10 +76,10 @@ sub new_or_edit_basic_verify {
     $self->_valid_cname( @args ) if $data->{type} eq 'CNAME';
     $self->_valid_a    ( @args ) if $data->{type} eq 'A';
     $self->_valid_aaaa ( @args ) if $data->{type} eq 'AAAA';
-    $self->_valid_ns( $data, $zone_text )    if $data->{type} eq 'NS';
-    $self->_valid_ptr($data, $zone_text )    if $data->{type} eq 'PTR';
-    $self->_valid_srv($data, $zone_text )    if $data->{type} eq 'SRV';
-    $self->_valid_mx  ( @args ) if $data->{type} eq 'MX';
+    $self->_valid_ns   ( @args ) if $data->{type} eq 'NS';
+    $self->_valid_ptr  ( @args ) if $data->{type} eq 'PTR';
+    $self->_valid_srv  ( @args ) if $data->{type} eq 'SRV';
+    $self->_valid_mx   ( @args ) if $data->{type} eq 'MX';
 
     $self->_name_collision($data, $z);
     $self->_valid_ttl( @args );
@@ -161,23 +161,25 @@ sub _name_collision {
 
     my $zone_text = $z->{zone};
 
-# check to make sure a sub-domain in zones doesn't clobber a record that user is trying to add/edit..
-
     return if $data->{name} =~ /$zone_text\.$/;
-# we're here, so name is something like blah, or blah.blah
 
-# if zone is zone.com., it's the origin, which should have already been checked
-# for subdomain collisions. If it isn't, check ...
-# split input in case it's like blah.blah.blah.zone.com and blah.blah.zone.com exists as a domain.
-    my @nparts = split( /\./, $data->{name} );
+    # permit glue & DNSSEC records for this zone to exist in parent zones
+    return if $data->{type} =~ /^(NS|DS)$/;
+
+    # name is something like blah, or blah.blah
+    # if zone is zone.com., it's the origin, which should have been checked
+    # for subdomain collisions. If it's not the origin:
+    # split input in case it's like blah.blah.blah.zone.com and
+    #   blah.blah.zone.com exists as a domain.
+    my @nparts = split /\./, $data->{name};
     my @tocheck;
     my $basestr = $zone_text;
-    while ( my $x = pop(@nparts) ) {
-        $basestr = $x . "." . $basestr;
-        push( @tocheck, $basestr );
+    while ( my $x = pop @nparts ) {
+        $basestr = $x . '.' . $basestr;
+        push @tocheck, $basestr;
     }
-    @tocheck = reverse(@tocheck);
-    while ( my $name = pop(@tocheck) ) {
+    @tocheck = reverse @tocheck;
+    while ( my $name = pop @tocheck ) {
 
         #warn "checking if exists $name";
         if ( $self->zone_exists( $name, 0 ) ) {
@@ -187,7 +189,6 @@ sub _name_collision {
             last;
         }
     }
-# TODO - make the above not so nasty
 }
 
 sub _expand_shortcuts {
@@ -332,9 +333,9 @@ sub _valid_cname {
         $self->error( 'name', "multiple CNAME records with the same name are NOT allowed. (use plain old round robin)" );
     };
 
-    my ($crash) = grep { $_->{type} =~ /^(A|AAAA|MX)$/ } @$collisions;
+    my ($crash) = grep { $_->{type} !~ /^(SIG|NXT|KEY|RRSIG|NSEC)$/ } @$collisions;
     if ($crash) {
-        $self->error( 'name', "record $data->{name} already exists within zone as an Address ($crash->{type}) record: RFC 1034 & 2181");
+        $self->error( 'name', "record $data->{name} already exists within zone as an ($crash->{type}) record: RFC 1034, 2181, & 4035");
     };
 
 # ADDRESS

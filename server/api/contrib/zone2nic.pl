@@ -15,7 +15,7 @@
 
 use strict;
 use Net::DNS;
-use Getopt::Std;
+use Getopt::Long;
 use NicToolServerAPI;
 use Term::ReadKey;
 use Data::Dumper;
@@ -29,6 +29,7 @@ $ntconf = { ntuser  =>  '',
             ntpass  =>  '',
             nthost  =>  '127.0.0.1',
             ntport  =>  8082,
+            nt_transfer_protocol => 'http'
         };
 
 # *** Stop editing now
@@ -36,7 +37,17 @@ $ntconf = { ntuser  =>  '',
 $servers = "";
 $| = 1;
 
-getopts( 'ahz:f:s:g:', \%$opts );
+my $result = GetOptions(
+    'a|all' => \$opts->{a}, 
+    'h|help' => \$opts->{h},
+    'z|zone=s' => \$opts->{z},
+    'f|file=s' => \$opts->{f},
+    's|source=s' => \$opts->{s},
+    'g|group=s' => \$opts->{g},
+    'port=i' => \$opts->{port},
+    'use-https' => \$opts->{secure},
+    'destination=s' => \$opts->{destination},
+    'user=s' => \$opts->{user});
 
 if( $opts->{h} or ! ( $opts->{z} or $opts->{f} )) {
     &usage;
@@ -44,6 +55,11 @@ if( $opts->{h} or ! ( $opts->{z} or $opts->{f} )) {
     print( "Only one of -z or -f is permitted.\n" );
     &usage;
 }
+
+$ntconf->{nthost} = $opts->{destination} if ( $opts->{destination});
+$ntconf->{ntport} = $opts->{port} if ( $opts->{port});
+$ntconf->{ntuser} = $opts->{user} if ( $opts->{user});
+$ntconf->{nt_transfer_protocol} = 'https' if ( $opts->{secure});
 
 # Get login information if not present
 &getUser if( $ntconf->{ntuser} eq "" );
@@ -58,8 +74,8 @@ unless( $ntconf->{nthost} and $ntconf->{ntport} ) {
 $nt = new NicToolServerAPI;
 $NicToolServerAPI::server_host = $ntconf->{nthost};
 $NicToolServerAPI::server_port = $ntconf->{ntport};
+$NicToolServerAPI::transfer_protocol = $ntconf->{nt_transfer_protocol};
 $NicToolServerAPI::data_protocol = "soap";
-$NicToolServerAPI::use_https_authentication = 0;
 
 # Get a NicTool user object
 $ntuser = $nt->send_request( 
@@ -261,7 +277,7 @@ foreach my $zone ( @zones ) {
             $name =~ s/\.?$zone\.?//;
             $name = '@' if( $name eq "" );
 
-            if( $rr->type eq "A" ) {
+            if( $rr->type eq "A" || $rr->type eq "AAAA" ) {
                 $resp = $nt->send_request(
                     action              => "new_zone_record",
                     nt_user_session     => $ntuser->{nt_user_session},
@@ -346,15 +362,18 @@ foreach my $zone ( @zones ) {
     }
 }
 
-
 sub usage {
     print( "Usage:  zone2nic { -z zone | -f file | -h } [ -s server ] [ -a ] [ -g group ]\n" );
-    print( "\t-z : Name of zone to import\n" );
-    print( "\t-h : Display this help\n" );
-    print( "\t-f : File with zones, one per line\n" );
-    print( "\t-s : Nameserver to query - pulls from zone if missing.\n" );
-    print( "\t-a : Bind to all NicTool nameservers\n" );
-    print( "\t-g : Group to insert zones into\n" );
+    print( "\t-z, --zone :\t\tName of zone to import\n" );
+    print( "\t-h, --help :\t\tDisplay this help\n" );
+    print( "\t-f, --file :\t\tFile with zones, one per line\n" );
+    print( "\t-s, --source :\t\tNameserver to query - pulls from zone if missing.\n" );
+    print( "\t-a, --all :\t\tBind to all NicTool nameservers\n" );
+    print( "\t-g, --group :\t\tGroup to insert zones into\n" );
+    print( "\t--destination :\tNictool server\n" );
+    print( "\t--port :\t\tNictool server port\n" );
+    print( "\t--user :\t\t\tNictool user\n" );
+    print( "\t--use-https :\tUse https towards Nictool server\n" );
     print( "\n" );
     exit 1;
 }

@@ -1,7 +1,24 @@
 Revision history for NicToolServer
 
-2.32    2015.
+2.33    2015.12.07
 
+    * update NSD exports for version 4
+    * add HTTPS support to nt_import (#102)
+    * prevent CNAME collisions (#113)
+
+2.32    2015.07.26
+
+    * clean up old successful exports 
+    * add a . to the end of NAPTR records (@djzort) #89
+    * server/contrib/zone2nic.pl:
+        * removed unneeded variable
+        * used Getopt::Long for long command-line options
+        * added support for more command-line options
+        * added support for AAAA records
+    * Export/BIND/nsupdate: FQDN checks for more types #83, #84, #85
+    * LDAP authentication added (@larso & @vtsingaras) #82
+    * Added https support for NicTool Client #81
+    * replace localhost with 127.0.0.1 (for hosts with IPv6 priority) #80
     * suppress debug output when not interactive (no tty)
     * logger uses nt_export for process name
     * goodbye query_log

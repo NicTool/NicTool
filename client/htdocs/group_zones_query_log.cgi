@@ -18,7 +18,7 @@
 
 use strict;
 
-require 'nictoolclient.conf';
+require nictoolclient.conf;
 
 main();
 
@@ -160,5 +160,5 @@ sub display {
         print "</tr>";
     }
     print "</table>";
-    print $q->endform;
+    print $q->end_form;
 }

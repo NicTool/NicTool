@@ -12,6 +12,24 @@ use IO::File;
 use File::Copy;
 use Params::Validate qw/ :all /;
 
+sub update_named_include {
+    my ($self, $dir) = @_;
+
+    # full export, write a new include file
+    my $datadir = $self->{nte}->get_export_data_dir || $dir;
+    my $fh = $self->get_export_file( 'nsd.nictool.conf', $dir );
+    foreach my $zone ( $self->{nte}->zones_exported ) {
+        print $fh <<EO_ZONE
+zone:
+    name: $zone
+    zonefile: $datadir/$zone
+
+EO_ZONE
+    };
+    close $fh;
+    return 1;
+};
+
 sub write_makefile {
     my $self = shift;
 
@@ -23,12 +41,13 @@ sub write_makefile {
 
     my $address = $self->{nte}{ns_ref}{address} || '127.0.0.1';
     my $datadir = $self->{nte}{ns_ref}{datadir} || getcwd . '/data-all';
+    my $remote_login = $self->{nte}{ns_ref}{remote_login} || 'nsd';
     $datadir =~ s/\/$//;  # strip off any trailing /
     open my $M, '>', "$exportdir/Makefile" or do {
         warn "unable to open ./Makefile: $!\n";
         return;
     };
-    print $M <<MAKE
+    print $M <<EO_MAKE
 # After a successful export, 3 make targets are run: compile, remote, restart
 # Each target can do anything you'd like.
 # See https://www.gnu.org/software/make/manual/make.html
@@ -40,18 +59,22 @@ sub write_makefile {
 # export directory. Make sure the export directory reflected below is correct
 # then uncomment each of the targets.
 
-# NSD v3 uses nsdc, v4 uses nsd-control
-compile: $exportdir/named.conf.nictool
+# NSD v4
+compile: $exportdir/nsd.nictool.conf
 \tnsd-control rebuild
-\t#nsdc rebuild
 
 remote: /var/db/nsd/nsd.db
-\trsync -az --delete /var/db/nsd/nsd.db nsd\@$address:/var/db/nsd/
+\trsync -az --delete /var/db/nsd/nsd.db $remote_login\@$address:/var/db/nsd/
 
 restart: nsd.db
-\tssh nsd\@$address nsd-control reload
-\t#ssh nsd\@$address nsdc reload
-MAKE
+\tssh $remote_login\@$address nsd-control reload
+
+# NSD v3
+#compile: $exportdir/named.conf.nictool
+#\t nsdc rebuild
+#restart: nsd.db
+#\tssh $remote_login\@$address nsdc reload
+EO_MAKE
 ;
     close $M;
     return 1;

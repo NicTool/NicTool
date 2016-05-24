@@ -187,7 +187,7 @@ sub display_list {
     $nt_obj->display_search_rows( $q, $rv, \%params, $cgi, ['nt_group_id'], $include_subgroups );
 
     if (! @$list ) {
-        print $q->endform;
+        print $q->end_form;
         return;
     };
 
@@ -224,7 +224,7 @@ sub display_list {
     print qq[
  </tbody>
 </table>\n],
-    $q->endform;
+    $q->end_form;
 }
 
 sub display_list_actions {
@@ -568,7 +568,7 @@ sub display_edit_nameserver_fields {
                         -name    => 'export_format',
                         -values  => $export_format_values,
                         -labels  => $export_format_labels,
-                        -default => $nameserver->{export_format} || $q->param('export_format'),
+                        -default => $nameserver->{export_format} || $q->param('export_format') || 'bind',
                         -onChange => "changeNSExportType(value);",
                         -required  => 'required',
                         )

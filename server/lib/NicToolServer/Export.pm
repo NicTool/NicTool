@@ -172,6 +172,21 @@ sub cleanup_db {
             AND nt_nameserver_id=?",
         [ $self->{ns_id} ]
     );
+
+    $self->exec_query(
+        "DELETE FROM nt_nameserver_export_log
+          WHERE copied=0
+            AND date_start < DATE_SUB(CURRENT_TIMESTAMP, INTERVAL 1 MONTH)
+            AND nt_nameserver_id=?",
+        [ $self->{ns_id} ]
+    );
+
+    $self->exec_query(
+        "DELETE FROM nt_nameserver_export_log
+          WHERE date_start < DATE_SUB(CURRENT_TIMESTAMP, INTERVAL 6 MONTH)
+            AND nt_nameserver_id=?",
+        [ $self->{ns_id} ]
+    );
 };
 
 sub exec_query {

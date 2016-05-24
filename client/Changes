@@ -1,29 +1,37 @@
 
+2.33    2015.12.07
+
+  * client fix for moving users between groups (#103)
+
+2.32    2015.07.26
+
+  * remove nt-script.js from frameset & login pages (@djzort)
+
 2.31    2015.01.28
 
-   * update user forms for 30 char password length
+  * update user forms for 30 char password length
 
 2.30    2014.12.04
 
-   * users.cgi: max pass length 15 -> 30 chars
-   * set the HTTP header content-type to utf8 (Vegard Vesterheim)
+  * users.cgi: max pass length 15 -> 30 chars
+  * set the HTTP header content-type to utf8 (Vegard Vesterheim)
 
 2.29    2014.11.18
 
-   * zone.cgi: added location field in display_zone_records_new()
+  * zone.cgi: added location field in display_zone_records_new()
 
 2.28    2014.10.08
 
-   * expose Location field when editing RRs
-   * expose RR timestamps in web UI (Issue #43)
+  * expose Location field when editing RRs
+  * expose RR timestamps in web UI (Issue #43)
 
 2.24    2014.06.14
 
-   * updates for new nameserver settings
+  * updates for new nameserver settings
 
 2.23    2014.05.26
 
-   * fix for user.cgi undefined variable (Ayden Beeson)
+  * fix for user.cgi undefined variable (Ayden Beeson)
 
 2.22    2014.02.07
 

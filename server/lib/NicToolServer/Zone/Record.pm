@@ -18,6 +18,7 @@ sub new_zone_record {
     }
 
     if ( $data->{type} eq 'NS' && "$z->{zone}." eq $data->{name} ) {
+        # TODO: this doesn't work for .arpa zones. :-(
         return $self->_add_zone_nameserver($z, $data);
     }
 

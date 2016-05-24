@@ -64,6 +64,7 @@ sub export_db {
         my $records = $self->get_records( $z->{nt_zone_id} );
         foreach my $r ( @$records ) {
             my $method = 'zr_' . lc $r->{type};
+            if ($r->{ttl} == 0) { $r->{ttl} = ''; }
             if ($r->{name} eq $zone) { $r->{name} .= '.'; } # append a .
             $r->{location}  ||= '';
             $fh->print($self->$method($r));
