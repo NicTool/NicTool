@@ -60,6 +60,12 @@ sub postflight {
         $self->{nte}->elog("nsupdate FAILED, reason: TIMEOUT", success=>0);
         exit 0;
     } 
+    elsif ( $nsupdate =~ m/NOTAUTH/ )
+    {
+        $self->{nte}->set_status("last: FAILED, reason: NOTAUTH");
+        $self->{nte}->elog("nsupdate FAILED, reason: NOTAUTH", success=>0);
+        exit 0;
+    }
     
     return 1;
 }
