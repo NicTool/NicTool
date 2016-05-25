@@ -328,7 +328,10 @@ sub zr_srv {
 
     # srvce.prot.name  ttl  class   rr  pri  weight port target
     return
-        "update $mode $r->{name} $r->{ttl} SRV $priority $weight $port $r->{address}\n";
+          "update $mode "
+        . $r->{name}
+        . (substr($r->{name}, -1, 1) eq '.' ? '' : '.' . $r->{zone})
+        . " $r->{ttl} SRV $priority $weight $port $r->{address}\n";
 }
 
 sub zr_aaaa {
