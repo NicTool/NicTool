@@ -248,7 +248,7 @@ sub _sql_test_2_18 {
         return 1;               # already updated
     };
 
-    return 0 if $r eq '2.16';   # do it!
+    return 0 if $r eq '2.17';   # do it!
     return 1;                   # don't update
 };
 
