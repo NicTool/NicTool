@@ -32,8 +32,8 @@ my $dbh  = DBIx::Simple->connect( $dsn, $db_user, $db_pass )
             or die DBIx::Simple->error;
 
 # NOTE: when making schema changes, update db_version in 12_nt_options.sql
-my @versions = qw/ 2.00 2.05 2.08 2.09 2.10 2.11 2.14 2.15 2.16 2.18 2.24
-                   2.27 2.28 2.29 2.30 /;
+my @versions = qw/ 2.00 2.05 2.08 2.09 2.10 2.11 2.14 2.15 2.16 2.17 2.18
+                   2.24 2.27 2.28 2.29 2.30 /;
 
 foreach my $version ( @versions ) {
 # first, run a DB test query
@@ -275,6 +275,26 @@ UPDATE nt_options SET option_value='2.18' WHERE option_name='db_version';
 EO_SQL_2_18
 };
 
+sub _sql_test_2_17 {
+    my $r = _get_db_version();
+    return 1 if ! defined $r;   # query failed
+
+    my $exists = $dbh->query("SHOW COLUMNS FROM `nt_user` LIKE 'is_admin'")->hashes;
+    if (scalar $exists && $exists->[0] && $exists->[0]{field}) {
+        return 1;               # already updated
+    };
+
+    return 0 if $r eq '2.16';   # do it!
+    return 1;                   # don't update
+};
+
+sub _sql_2_17 {
+
+    return <<EO_SQL_2_17
+ALTER TABLE nt_user ADD COLUMN is_admin TINYINT(1) UNSIGNED default '0' AFTER email;
+EO_SQL_2_17
+}
+
 sub _sql_test_2_16 {
     my $r = _get_db_version();
     return 1 if ! defined $r;   # query failed
@@ -305,9 +325,6 @@ ALTER TABLE nt_perm DROP column usable_ns9;
 ALTER TABLE nt_zone_record MODIFY address VARCHAR(512) NOT NULL;
 ALTER TABLE nt_zone_record_log MODIFY address VARCHAR(512) NOT NULL;
 UPDATE nt_options SET option_value='2.16' WHERE option_name='db_version';
-
-/* doesn't matter if this fails, b/c it was already present */
-ALTER TABLE nt_user ADD COLUMN is_admin TINYINT(1) UNSIGNED default '0' AFTER email;
 EO_SQL_2_16
 };
 
