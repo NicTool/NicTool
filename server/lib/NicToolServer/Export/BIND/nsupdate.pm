@@ -106,7 +106,8 @@ sub build_nsupdate {
 
             # check if the IP has changed as well
             # If it hasnt, just use the address from given details in record that is already there
-            if ( $record->{description} =~ m/changed\saddress\sfrom\s\'((\w|\:|\.|\-)*)\'\s/ )
+            # Make sure if its a TXT file to accept other characters we might not otherwise have allowed
+            if ( $record->{description} =~ m/changed\saddress\sfrom\s\'((\w|\:|\.|\-)*)\'\s/ || ($record->{description} =~ m/changed\saddress\sfrom\s\'(.*)\'\s/ && $r->{"type"} eq "TXT"))
             {
 
                 #Found a changed address as well, pull old address to delete from desc
@@ -125,19 +126,19 @@ sub build_nsupdate {
 
             $mode = "add";
         }
-        elsif ( $record->{description} =~ m/changed\saddress\sfrom\s\'((\w|\:|\.|\-)*)\'\s/ )
+        elsif ( $record->{description} =~ m/changed\saddress\sfrom\s\'((\w|\:|\.|\-)*)\'\s/ || ($record->{description} =~ m/changed\saddress\sfrom\s\'(.*)\'\s/ && $r->{"type"} eq "TXT"))
         {
 
             # Just found an IP change - need to remove the old IP entry
             my $old_ip = $1;
 
-     # Deref the $r hash and copy it, then create a new reference for use here
+            # Deref the $r hash and copy it, then create a new reference for use here
             my %old_hash = %{$r};
             my $old      = \%old_hash;
 
             $old->{address} = $old_ip;
 
-# If the current name server doesnt match last time, set a new server in the nsupdate file
+            # If the current name server doesnt match last time, set a new server in the nsupdate file
             if ( $ns !~ m/$self->{nte}->{ns_ref}->{name}/i ) {
                 print FILE $self->zr_soa( $self, $old );
             }
