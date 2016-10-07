@@ -683,12 +683,13 @@ sub edit_zone {
 
     $self->edit_zone_nameservers( $data, $prev_data );
 
-    if ( ! defined $data->{serial} ) {   # requests won't normally include it
+    # If request did not provide a new serial then we create one
+    if ( ! defined $data->{serial} ) {
         $data->{serial} = $prev_data->{serial};
+        $default_serial = 1 if ! $data->{serial};
+        $data->{serial} = $self->bump_serial( $data->{nt_zone_id}, $data->{serial} );
         push @columns, 'serial';
     };
-    $default_serial = 1 if ! $data->{serial};
-    $data->{serial} = $self->bump_serial( $data->{nt_zone_id}, $data->{serial} );
 
     my $dbh = $self->{dbh};
     my $sql = "UPDATE nt_zone SET " . join( ',',
