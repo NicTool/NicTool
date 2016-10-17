@@ -23,9 +23,7 @@ sub new_zone_record {
     }
 
     # bump the zone's serial number
-    my $new_serial = $self->bump_serial( $data->{nt_zone_id}, $z->{serial} );
-    $self->exec_query( "UPDATE nt_zone SET serial = ? WHERE nt_zone_id = ?",
-        [ $new_serial, $data->{nt_zone_id} ] );
+    $self->_bump_and_update_serial($data->{nt_zone_id}, $z->{serial});
 
     # build insert query
     my $col_string = 'nt_zone_id';
@@ -125,10 +123,7 @@ sub edit_zone_record {
     my $z = $self->find_zone( $data->{nt_zone_id} );
 
     # bump the zone's serial number
-    $self->exec_query( "UPDATE nt_zone SET serial = ? WHERE nt_zone_id = ?",
-        [ $self->bump_serial( $data->{nt_zone_id}, $z->{serial} ),
-          $data->{nt_zone_id}
-        ] );
+    $self->_bump_and_update_serial($data->{nt_zone_id}, $z->{serial});
 
     my $prev_data = $self->find_zone_record( $data->{nt_zone_record_id} );
     my $log_action = $prev_data->{deleted} ? 'recovered' : 'modified';
@@ -185,9 +180,7 @@ sub delete_zone_record {
     my $sql = "SELECT nt_zone_id FROM nt_zone_record WHERE nt_zone_record_id=?";
     my $zrs = $self->exec_query( $sql, $data->{nt_zone_record_id} );
 
-    my $new_serial = $self->bump_serial( $zrs->[0]{nt_zone_id} );
-    $sql = "UPDATE nt_zone SET serial = ? WHERE nt_zone_id = ?";
-    $self->exec_query( $sql, [ $new_serial, $zrs->[0]{nt_zone_id} ] );
+    $self->_bump_and_update_serial($zrs->[0]{nt_zone_id});
 
     my %error = ( 'error_code' => 200, 'error_msg' => 'OK' );
     $sql = "UPDATE nt_zone_record set deleted=1 WHERE nt_zone_record_id = ?";
@@ -300,7 +293,7 @@ sub get_zone_record {
     my $del = $self->get_param_meta( 'nt_zone_record_id', 'delegate' )
         or return \%rv;
 
-# this info comes from NicToolServer.pm when it checks for access perms to the objects
+    # this info comes from NicToolServer.pm when it checks for access perms to the objects
     my %mapping = (
         delegated_by_id   => 'delegated_by_id',
         delegated_by_name => 'delegated_by_name',
@@ -376,6 +369,12 @@ sub get_record_type {
 
     return $self->{record_types}{$lookup}{id};  # got a type, return ID
 };
+
+sub _bump_and_update_serial {
+    my ( $self, $nt_zone_id, $z_serial );
+    $self->exec_query( "UPDATE nt_zone SET serial = ? WHERE nt_zone_id = ?",
+        [ $self->bump_serial( $nt_zone_id, $z_serial ), $nt_zone_id ] );
+}
 
 1;
 

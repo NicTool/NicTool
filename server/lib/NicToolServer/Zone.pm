@@ -619,12 +619,8 @@ sub new_zone {
     my @columns = qw/ mailaddr description refresh retry expire minimum
                       ttl serial nt_group_id zone/;
 
-    my $prev_data;
-    my $default_serial = 0;
-
     if ( $data->{serial} eq '' ) {
         $data->{serial} = $self->bump_serial('new');
-        $default_serial = 1;
     }
 
     my $sql
@@ -642,7 +638,7 @@ sub new_zone {
 
     $error{nt_zone_id} = $data->{nt_zone_id} = $insertid;
 
-    $self->log_zone( $data, 'added', $prev_data, $default_serial );
+    $self->log_zone( $data, 'added' );
 
     foreach my $ns ( split /,/, $data->{nameservers} ) {
         $self->exec_query(
@@ -673,8 +669,6 @@ sub edit_zone {
     return $self->error_response(200)
         if ( ! @columns && ! exists $data->{nameservers} );
 
-    my $default_serial = 0;
-
     my $prev_data = $self->find_zone( $data->{nt_zone_id} );
     my $log_action = 'modified';
     if ( $prev_data->{deleted} ) {
@@ -687,7 +681,6 @@ sub edit_zone {
         $data->{serial} = $prev_data->{serial};
         push @columns, 'serial';
     };
-    $default_serial = 1 if ! $data->{serial};
     $data->{serial} = $self->bump_serial( $data->{nt_zone_id}, $data->{serial} );
 
     my $dbh = $self->{dbh};
@@ -695,7 +688,9 @@ sub edit_zone {
         map( "$_=" . $dbh->quote( $data->{$_} ), @columns ),
     ) . " WHERE nt_zone_id = ?";
 
-    $data->{nt_group_id} = $prev_data->{nt_group_id} if !$data->{nt_group_id};
+    if ( ! $data->{nt_group_id} ) {
+        $data->{nt_group_id} = $prev_data->{nt_group_id};
+    };
 
     my %error = ( 'error_code' => 200, 'error_msg' => 'OK' );
 
@@ -706,7 +701,7 @@ sub edit_zone {
         return { error_code => 600, error_msg => $self->{dbh}->errstr }
     }
 
-    $self->log_zone( $data, $log_action, $prev_data, $default_serial );
+    $self->log_zone( $data, $log_action, $prev_data );
 
     return \%error;
 }
@@ -752,24 +747,25 @@ sub edit_zone_nameservers {
 };
 
 sub log_zone {
-    my ( $self, $data, $action, $prev_data, $default_serial ) = @_;
+    my ( $self, $data, $action, $prev_data ) = @_;
 
     my @columns = qw/ nt_group_id nt_zone_id nt_user_id action timestamp zone
-                         mailaddr description refresh retry expire ttl /;
-
-    # only log serial if it wasn't set
-    if ( $default_serial ) { delete $data->{serial}; }
-    else                   { push @columns, 'serial'; }
+                         mailaddr description refresh retry expire ttl minimum
+                         serial /;
 
     my $user = $data->{user};
     $data->{nt_user_id} = $user->{nt_user_id};
     $data->{action}     = $action;
     $data->{timestamp}  = time();
-    $data->{zone}       = $prev_data->{zone} unless $data->{zone};
 
-    foreach ( keys %$prev_data ) {
-        next if $data->{$_};    # prefer new data
-        $data->{$_} = $prev_data->{$_};  # fall back to old
+    if ( $prev_data ) {
+        if ( ! $data->{zone} && $prev_data->{zone} ) {
+            $data->{zone} = $prev_data->{zone}
+        };
+        foreach ( keys %$prev_data ) {
+            next if $data->{$_};    # prefer new data
+            $data->{$_} = $prev_data->{$_};  # fall back to old
+        }
     }
 
     my $dbh = $self->{dbh};
@@ -786,7 +782,7 @@ sub log_zone {
 
     $data->{object}       = 'zone';
     $data->{log_entry_id} = $insertid;
-    $data->{title}        = $data->{zone} || $prev_data->{zone};
+    $data->{title}        = $data->{zone};
     $data->{object_id}    = $data->{nt_zone_id};
 
     if ( $action eq 'modified' ) {
