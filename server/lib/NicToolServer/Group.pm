@@ -7,7 +7,7 @@ use strict;
 
 sub perm_fields_select {
     qq(
-    nt_perm.group_write, 
+    nt_perm.group_write,
     nt_perm.group_create,
     nt_perm.group_delete,
 
@@ -20,7 +20,7 @@ sub perm_fields_select {
     nt_perm.zonerecord_create,
     nt_perm.zonerecord_delegate,
     nt_perm.zonerecord_delete,
-    
+
     nt_perm.user_write,
     nt_perm.user_create,
     nt_perm.user_delete,
@@ -40,7 +40,7 @@ sub new_group {
 
     my %error = ( 'error_code' => 200, 'error_msg' => 'OK' );
 
-    my $sql = "SELECT COUNT(*) AS count FROM nt_group 
+    my $sql = "SELECT COUNT(*) AS count FROM nt_group
         WHERE deleted=0 AND parent_group_id=? AND name=?";
 
     my $groups
@@ -136,7 +136,7 @@ sub edit_group {
         zone_create zone_delegate zone_delete zone_write
         zonerecord_create zonerecord_delegate zonerecord_delete zonerecord_write
         user_create user_delete user_write self_write
-        nameserver_create nameserver_delete nameserver_write 
+        nameserver_create nameserver_delete nameserver_write
     );
     my @permcols = grep { exists $data->{$_} && $data->{user}{$_} } @perms;
 
@@ -226,7 +226,7 @@ sub delete_group {
 
     my %error = ( 'error_code' => 200, 'error_msg' => 'OK' );
 
-    my $sql = "SELECT COUNT(*) AS count FROM nt_zone 
+    my $sql = "SELECT COUNT(*) AS count FROM nt_zone
         WHERE deleted=0 AND nt_group_id = ?";
     my $c = $self->exec_query( $sql, $data->{nt_group_id} );
 
@@ -236,7 +236,7 @@ sub delete_group {
         );
     }
 
-    $sql = "SELECT COUNT(*) AS count FROM nt_user 
+    $sql = "SELECT COUNT(*) AS count FROM nt_user
     WHERE deleted=0 AND nt_group_id = ?";
     $c = $self->exec_query( $sql, $data->{nt_group_id} );
     if ( $c->[0]->{count} > 0 ) {
@@ -362,7 +362,7 @@ sub get_group_subgroups {
 
     my $group_string = join(',', @group_list );
     my $cond_string = join(' ', @$conditions );
-    my $sql = "SELECT COUNT(*) AS count FROM nt_group 
+    my $sql = "SELECT COUNT(*) AS count FROM nt_group
   WHERE deleted=0 AND parent_group_id IN ($group_string)";
     $sql .= " AND ($cond_string)" if scalar @$conditions;
 
@@ -376,7 +376,7 @@ sub get_group_subgroups {
     return $r_data if $r_data->{total} == 0;
 
     my $sort_string = join( ', ', @$sortby);
-    $sql = "SELECT nt_group.* FROM nt_group 
+    $sql = "SELECT nt_group.* FROM nt_group
 WHERE deleted=0 AND parent_group_id IN ($group_string)";
     $sql .= " AND ($cond_string)" if scalar @$conditions;
     $sql .= " ORDER BY $sort_string" if (@$sortby);

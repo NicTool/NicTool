@@ -299,7 +299,7 @@ sub zr_soa {
 sub zr_generic {
     my ($self, $rrid, $r, $rdata) = @_;
 
-# 'You may use octal \nnn codes to include arbitrary bytes inside rdata'
+    # 'You may use octal \nnn codes to include arbitrary bytes inside rdata'
 
     return ':'                             # special char (none = generic)
         . $self->qualify( $r->{name} )     # fqdn

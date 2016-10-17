@@ -300,7 +300,7 @@ sub nt_connect {
             server_host => $nt_host || '127.0.0.1',
             server_port => $nt_port || 8082,
             transfer_protocol => $nt_https ? 'https' : 'http',
-#protocol    => 'xml_rpc',  # or soap
+            #protocol    => 'xml_rpc',  # or soap
             );
 
     my $r = $nt->login( username => $nt_user, password => $nt_pass );
