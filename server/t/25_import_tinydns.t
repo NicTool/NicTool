@@ -30,5 +30,19 @@ ok($tinydns, "new");
 my $r = $tinydns->ip_to_ptr('10.0.1.2');
 cmp_ok($r, 'eq', '2.1.0.10.in-addr.arpa.', "ip_to_ptr: $r");
 
+my $genericTests = [
+    {
+        raw => ':domain.com:16:\041abcd\072abcd\072abcd\072abcd\072abcd\072abcd\072123:',
+        foo => ':domain.com:abcd\072abcd\072abcd\072abcd\072abcd\072abcd\072123:',
+    },
+];
+
+foreach my $test ( @$genericTests ) {
+
+    my $before = $test->{'raw'};
+    # $before =~ s/:16:/:/;
+    $before =~ s/:16:\\[\d]{3,}/:/;
+    cmp_ok($before, 'eq', $test->{'foo'}, 'generic: ' . $test->{raw});
+}
 
 done_testing();

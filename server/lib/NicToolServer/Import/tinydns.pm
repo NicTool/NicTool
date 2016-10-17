@@ -29,7 +29,7 @@ sub import_records {
     my ($self, $file) = @_;
     $self->get_import_file( $file || 'data' ) or return;
 
-# tinydns-data format: http://cr.yp.to/djbdns/tinydns-data.html
+    # tinydns-data format: http://cr.yp.to/djbdns/tinydns-data.html
 
     my $fh = $self->{FH};
     while ( defined ( my $record = <$fh> ) ) {
@@ -254,7 +254,7 @@ sub zr_generic {
     return $self->zr_aaaa( $r ) if $n == 28;
     return $self->zr_srv( $r )  if $n == 33;
     if ($n == 16) {
-        $r =~ s/:16//;
+        $r =~ /:16:\\[\d]{3,}/:/;
         return $self->zr_txt( $r );
     };
     die "oops, no generic support for record type $n in $fqdn\n";

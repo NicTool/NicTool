@@ -44,6 +44,7 @@ function selectedRRType(rrType) {
       case 'NS':         setFormRRTypeNS();         break;
       case 'MX':         setFormRRTypeMX();         break;
       case 'CNAME':      setFormRRTypeCNAME();      break;
+      case 'TXT':        setFormRRTypeTXT();        break;
       case 'DNAME':      setFormRRTypeDNAME();      break;
       case 'SRV':        setFormRRTypeSRV();        break;
       case 'SPF':        setFormRRTypeSPF();        break;
@@ -190,6 +191,9 @@ function setFormRRTypeSRV() {
   $('input#other').attr('placeholder','53');
 }
 
+function setFormRRTypeTXT() {
+  setRfcHelp(['1035']);
+}
 function setFormRRTypeSPF() {
   setRfcHelp(['4408']);
   $('input#name').attr('placeholder','@');
