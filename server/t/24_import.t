@@ -22,6 +22,7 @@ use Data::Dumper;
 use NicToolTest;
 use Test::More;
 use_ok('NicToolServer::Import::Base');
+
 $Data::Dumper::Sortkeys=1;
 
 my $base = NicToolServer::Import::Base->new();
@@ -37,10 +38,5 @@ my $get_zone_tests = {
 foreach my $fqdn ( keys %$get_zone_tests ) {
     cmp_ok($base->get_zone($fqdn), 'eq', $get_zone_tests->{$fqdn}, "$fqdn");
 };
-
-#foreach my $fqdn ( keys %$get_zone_tests ) {
-#    my @r = $base->get_zone_id($fqdn, $get_zone_tests->{$fqdn});
-#    print Dumper(\@r);
-#};
 
 done_testing();
