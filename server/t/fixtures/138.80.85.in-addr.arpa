@@ -1,0 +1,26 @@
+
+$TTL 3600
+@ IN SOA ns1.cybercity.dk. zonec.cybercity.dk. (
+1441353524 ; Serial
+10800 ; Refresh
+3600 ; Retry
+604800 ; Expire
+3600) ; Minimum
+
+@ NS ns1.cybercity.dk.
+@ NS ns2.cybercity.dk.
+@ NS ns3.cybercity.dk.
+@ NS ns4.cybercity.dk.
+
+0 PTR 0x55508a00.adsl.cybercity.dk.
+1 PTR 0x55508a01.adsl.cybercity.dk.
+2 PTR 0x55508a02.adsl.cybercity.dk.
+3 PTR 0x55508a03.adsl.cybercity.dk.
+4 PTR 0x55508a04.adsl.cybercity.dk.
+5 PTR 0x55508a05.adsl.cybercity.dk.
+6 PTR 0x55508a06.adsl.cybercity.dk.
+7 PTR 0x55508a07.adsl.cybercity.dk.
+8 PTR 0x55508a08.adsl.cybercity.dk.
+9 PTR 0x55508a09.adsl.cybercity.dk.
+10 PTR 0x55508a0a.adsl.cybercity.dk.
+11 PTR 0x55508a0b.adsl.cybercity.dk.
