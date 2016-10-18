@@ -187,8 +187,8 @@ sub parse_template {
     open my $FILE, '<', $template or die "unable to find template: $template\n";
 
     while (<$FILE>) {
-        s/{{(.+?)}}/$vars->{$1}/g;
-        s/{{ONLOAD_JS}}/$temp{'ONLOAD_JS'}/g;
+        s/\{\{(.+?)\}\}/$vars->{$1}/g;
+        s/\{\{ONLOAD_JS\}\}/$temp{'ONLOAD_JS'}/g;
         print;
     }
 

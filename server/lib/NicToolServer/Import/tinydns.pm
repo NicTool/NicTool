@@ -254,7 +254,7 @@ sub zr_generic {
     return $self->zr_aaaa( $r ) if $n == 28;
     return $self->zr_srv( $r )  if $n == 33;
     if ($n == 16) {
-        $r =~ /:16:\\[\d]{3,}/:/;
+        $r =~ s/:16:\\[\d]{3,}/:/;
         return $self->zr_txt( $r );
     };
     die "oops, no generic support for record type $n in $fqdn\n";

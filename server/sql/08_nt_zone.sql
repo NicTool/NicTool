@@ -31,7 +31,7 @@ CREATE TABLE nt_zone(
     ttl                 INT UNSIGNED,
     location            VARCHAR(2) DEFAULT NULL,
     last_modified       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP,
-    last_publish        TIMESTAMP DEFAULT 0,
+    last_publish        TIMESTAMP DEFAULT NOW(),
     deleted             TINYINT(1) UNSIGNED DEFAULT 0 NOT NULL,
     PRIMARY KEY (`nt_zone_id`),
     KEY `nt_zone_idx1` (`nt_group_id`),

@@ -1,10 +1,8 @@
 
-#use strict;
-
-use Config qw/ myconfig /;
+use Config 'myconfig';
 use Data::Dumper;
-use English qw/ -no_match_vars /;
-use Test::More tests => 28;
+use English '-no_match_vars';
+use Test::More 'no_plan';
 
 use lib 'lib';
 
@@ -17,19 +15,20 @@ if ($OSNAME ne 'VMS' && $Config{_exe} ) {
      unless $this_perl =~ m/$Config{_exe}$/i;
 };
 
-my @modules = glob "lib/*.pm";
-push @modules, glob "lib/*/*.pm";
-push @modules, glob "lib/*/*/*.pm";
-foreach my $mod ( @modules ) {
-    chomp $mod;
-    next if $mod eq 'lib/NicToolServer/Response.pm'; # ony runs under mod_perl2
-    my $cmd = "$this_perl -c $mod";
-    my $r = `$cmd 2>&1`;
-    my $exit_code = sprintf ("%d", $CHILD_ERROR >> 8);
-    my $pretty_name = substr($mod, 4);
-    ok( $exit_code == 0, "syntax $pretty_name");
+my @moduleGlobs = ( 'lib/*.pm', 'lib/*/*.pm', 'lib/*/*/*.pm' );
+foreach my $glob ( @moduleGlobs ) {
+    foreach my $mod ( glob $glob ) {
+        chomp $mod;
+        next if $mod eq 'lib/NicToolServer/Client.pm'; # ony runs under mod_perl2
+        next if $mod eq 'lib/NicToolServer/Response.pm'; # ony runs under mod_perl2
+        my $cmd = "$this_perl -I lib -c $mod 2>/dev/null 1>/dev/null";
+        system $cmd;
+        my $exit_code = sprintf ("%d", $CHILD_ERROR >> 8);
+        ok( $exit_code == 0, "syntax $mod");
+    };
 };
 
-#my $r = `$this_perl -c lib/nictoolserver.conf 2>&1`;
+# only works when mod_perl is loadable
+#my $r = `$this_perl -I lib -c lib/nictoolserver.conf.dist 2>&1`;
 #my $exit_code = sprintf ("%d", $CHILD_ERROR >> 8);
 #ok( $exit_code == 0, "syntax nictoolserver.conf");

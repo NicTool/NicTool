@@ -12,9 +12,13 @@ my $apps = [
     { app => 'gettext'       , info => {}, },
     { app => 'gmake'         , info => { yum  => 'make', apt => 'make' }, },
     { app => 'rsync'         , info => { }, },
+    { app => 'cpanm'         , info => { }, },
 ];
 
-$EUID == 0 or die "You will have better luck if you run me as root.\n"; ## no critic (Carp)
+$EUID == 0 or do {
+    warn "You will have better luck if you run me as root.\n"; ## no critic (Carp)
+    sleep 2;
+};
 
 my @failed;
 foreach ( @$apps ) {
@@ -99,6 +103,7 @@ sub get_perl_modules_from_ini {
         };
         next if ! $in;
 #       print "line: $line\n";
+        next if '-' eq substr($line,0,1); # Dist::Zilla meta
         next if ';' eq substr($line,0,1); # comment
         last if '[' eq substr($line,0,1); # [...] starts a new section
         my ($mod,$ver) = split /\s*=\s*/, $line;
@@ -239,25 +244,8 @@ sub install_module_cpan {
 
     my ($module, $version) = @_;
 
-    print " from CPAN...";
-    sleep 1;
-
-    # this causes problems when CPAN is not configured.
-    #local $ENV{PERL_MM_USE_DEFAULT} = 1; # supress CPAN prompts
-
-    local $ENV{FTP_PASSIVE} = 1;          # for FTP behind NAT/firewalls
-
-    # some Linux distros break CPAN by auto/preconfiguring it with no URL mirrors.
-    # this works around that annoying little habit
-    $CPAN::Config = get_cpan_config(); ## no critic (PackageVars)
-
-    # a hack to grab the latest version on CPAN before its hits the mirrors
-    if ( $module eq 'Provision::Unix' && $version ) {
-        $module =~ s/\:\:/\-/g;
-        $module = "M/MS/MSIMERSON/$module-$version.tar.gz";
-    }
-    CPAN::Shell->install($module);  ## no critic (PackageVars)
-    return;
+    system "cpanm $module --notest";
+    eval "require $module" or print ''; ## no critic (Stringy)
 }
 
 sub install_module_darwin {
@@ -269,8 +257,7 @@ sub install_module_darwin {
         return;
     }
 
-    my $port = "p5-$module";
-    $port =~ s/::/-/g;
+    (my $port = "p5-$module") =~ s/::/-/g;
     system "$dport install $port"
         and warn "install failed for Darwin port $module"; ## no critic (Carp)
     return;
@@ -280,8 +267,7 @@ sub install_module_freebsd {
     my ($module, $info, $version) = @_;
 
     my $name = $info->{port} || $module;
-    my $portname = substr($name, 0, 3) eq 'p5-' ? $name : "p5-$name";
-    $portname =~ s/::/-/g;
+    (my $portname = substr($name, 0, 3) eq 'p5-' ? $name : "p5-$name") =~ s/::/-/g;
 
     if (is_freebsd_port_installed($portname)) {
         return print "$module is installed.\n";
@@ -379,8 +365,7 @@ sub install_module_linux_yum {
         $package = $info->{yum};
     }
     else {
-        $package = "perl-$module";
-        $package =~ s/::/-/g;
+        ($package = "perl-$module") =~ s/::/-/g;
     };
     system "/usr/bin/yum -y install $package";
     return;
@@ -390,11 +375,10 @@ sub install_module_linux_apt {
     my ($module, $info) = @_;
     my $package;
     if ( $info->{apt} ) {
-        $package = $info->{apt};
+        $package = "$info->{apt}";
     }
     else {
-        $package = 'lib' . $module . '-perl';
-        $package =~ s/::/-/g;
+        ($package = 'lib' . $module . '-perl') =~ s/::/-/g;
     };
     system "/usr/bin/apt-get -y install $package";
     return;
@@ -409,8 +393,7 @@ sub get_cpan_config {
     my $make = `which make`; chomp $make; ## no critic (Backtick)
     my $wget = `which wget`; chomp $wget; ## no critic (Backtick)
 
-    return
-{
+    return {
   'build_cache' => q[10],
   'build_dir' => qq[$ENV{HOME}/.cpan/build],
   'cache_metadata' => q[1],
@@ -442,8 +425,9 @@ sub get_cpan_config {
   'tar' => $tar,
   'term_is_latin' => q[1],
   'unzip' => $unzip,
-  'urllist' => [ 'http://www.perl.com/CPAN/', 'http://mirrors.kernel.org/pub/CPAN/', 'ftp://cpan.cs.utah.edu/pub/CPAN/', 'ftp://mirrors.kernel.org/pub/CPAN', 'ftp://osl.uoregon.edu/CPAN/', 'http://cpan.yahoo.com/', 'ftp://ftp.funet.fi/pub/languages/perl/CPAN/' ],
-  'wget' => $wget, };
+  'urllist' => [ 'https://cpan.metacpan.org/', 'http://www.perl.com/CPAN/', 'http://mirrors.kernel.org/pub/CPAN/', 'ftp://cpan.cs.utah.edu/pub/CPAN/', 'ftp://mirrors.kernel.org/pub/CPAN', 'ftp://osl.uoregon.edu/CPAN/', 'ftp://ftp.funet.fi/pub/languages/perl/CPAN/' ],
+  'wget' => $wget,
+  };
 }
 
 sub name_overrides {

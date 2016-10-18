@@ -79,7 +79,7 @@ sub new_group {
         . ") VALUES(??)";
 
     my @values = map( $data->{$_}, @permcols );
-    push @values, join(',', $data->{usable_nameservers} );
+    push @values, join(',', sort $data->{usable_nameservers} );
     my $permid = $self->exec_query( $sql, [ $insertid, @values ] );
     warn "$sql\n" if $self->debug_sql;
 
@@ -176,7 +176,7 @@ sub edit_group {
             push @newns, $_ if exists $groupns{$_};
             delete $groupns{$_};
         }
-        $data->{usable_ns} = scalar @newns ? join(',', @newns) : '';
+        $data->{usable_ns} = scalar @newns ? join(',', sort @newns) : '';
     }
     else {
         return $self->error_response( 507,
