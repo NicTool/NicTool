@@ -371,7 +371,7 @@ sub get_record_type {
 };
 
 sub _bump_and_update_serial {
-    my ( $self, $nt_zone_id, $z_serial );
+    my ( $self, $nt_zone_id, $z_serial ) = @_;
     $self->exec_query( "UPDATE nt_zone SET serial = ? WHERE nt_zone_id = ?",
         [ $self->bump_serial( $nt_zone_id, $z_serial ), $nt_zone_id ] );
 }
