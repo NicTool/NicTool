@@ -18,6 +18,7 @@ VALUES
     (5,'CNAME','Canonical Name',1,1,0),
     (6,'SOA','Start Of Authority',0,0,0),
     (12,'PTR','Pointer',1,0,0),
+    (13,'HINFO','Host Info',0,0,1),
     (15,'MX','Mail Exchanger',0,1,0),
     (16,'TXT','Text',1,1,0),
     (24,'SIG','Signature',0,0,0),
