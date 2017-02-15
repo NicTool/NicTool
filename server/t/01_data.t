@@ -20,6 +20,7 @@ use lib 't';
 use lib 'lib';
 use NicToolTest;
 use Test::More tests => 39;
+use Test::Output;
 use Data::Dumper;
 
 
@@ -51,27 +52,30 @@ my $r = $nts->exec_query( "SELECT email FROM nt_user WHERE deleted=0" );
 ok( scalar @$r, "select users: ".scalar @$r );
 #warn Data::Dumper::Dumper($r->[0]);
 
-$r = $nts->exec_query( "SELECT testfake FROM nt_user" );
-ok( ! $r, "invalid select" );
+# clean up after previous tests
+$nts->exec_query( "DELETE FROM nt_zone WHERE zone='testing.com'" );
 
-my $zid = $nts->exec_query( "INSERT INTO nt_zone SET zone='testing.com',deleted=1");
+stderr_like { $nts->exec_query( "SELECT testfake FROM nt_user" ) } qr/Unknown column/, 'invalid select';
+
+my $zid = $nts->exec_query( "INSERT INTO nt_zone SET zone='testing.com', nt_group_id=1, deleted=1");
 ok( $zid, "Insert zone ID $zid" );
 #warn Data::Dumper::Dumper($r);
 
 $r = $nts->exec_query( "UPDATE nt_zone SET description='delete me' WHERE nt_zone_id=?", $zid);
 ok( $r, "Update zone $zid description" );
 
-$r = $nts->exec_query( "UPDATE nt_zone SET fake='delete me' WHERE nt_zone_id=?", $zid);
-ok( ! $r, "Update zone error" );
+stderr_like { $nts->exec_query( "UPDATE nt_zone SET fake='delete me' WHERE nt_zone_id=?", $zid ) } qr/Unknown column/, 'invalid update';
 
 $r = $nts->exec_query( "DELETE FROM nt_zone WHERE nt_zone_id=?", $zid);
 ok( $r, "Delete zone $zid");
 
-$r = $nts->exec_query( "INSERT INTO nt_zone SET fake='testing.com',deleted=1");
-ok( ! $r, "Insert zone fail" );
+stderr_like { $nts->exec_query(
+  "INSERT INTO nt_zone SET fake='testing.com',deleted=1"
+) } qr/Unknown column/, 'insert zone fail';
 
-$r = $nts->exec_query( "DELETE FROM nt_fake WHERE nt_zone_id=?", $r );
-ok( ! $r, "Delete zone fail");
+stderr_like { $nts->exec_query(
+  "DELETE FROM nt_fake WHERE nt_zone_id=?", $r
+) } qr/doesn't exist/, 'Delete zone fail';
 
 # is_subgroup
 ok( ! $nts->is_subgroup(1,1), 'is_subgroup');
