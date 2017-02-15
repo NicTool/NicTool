@@ -316,14 +316,6 @@ sub is_freebsd_port_installed {
         return 1 if `$pkg info -x $module`;  ## no critic (Backtick)
     }
 
-    my $pkg_info = get_freebsd_pkgng();
-    if ($pkg_info) {
-        $portname ||= $module;
-        if ( `$pkg_info | /usr/bin/grep $portname` ) { ## no critic (Backtick)
-            return print "$module is installed.\n";
-        }
-    }
-
     return 0;
 };
 

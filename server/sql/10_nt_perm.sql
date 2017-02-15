@@ -2,12 +2,12 @@
 # NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
 # NicTool v2.01 Copyright 2004 The Network People, Inc.
 #
-# NicTool is free software; you can redistribute it and/or modify it under 
-# the terms of the Affero General Public License as published by Affero, 
+# NicTool is free software; you can redistribute it and/or modify it under
+# the terms of the Affero General Public License as published by Affero,
 # Inc.; either version 1 of the License, or any later version.
 #
-# NicTool is distributed in the hope that it will be useful, but WITHOUT 
-# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY 
+# NicTool is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
 # or FITNESS FOR A PARTICULAR PURPOSE. See the Affero GPL for details.
 #
 # You should have received a copy of the Affero General Public License
@@ -37,7 +37,7 @@ CREATE TABLE nt_perm(
     zonerecord_create       TINYINT UNSIGNED NOT NULL DEFAULT 0,
     zonerecord_delegate     TINYINT UNSIGNED NOT NULL DEFAULT 0,
     zonerecord_delete       TINYINT UNSIGNED NOT NULL DEFAULT 0,
-    
+
     user_write              TINYINT UNSIGNED NOT NULL DEFAULT 0,
     user_create             TINYINT UNSIGNED NOT NULL DEFAULT 0,
     user_delete             TINYINT UNSIGNED NOT NULL DEFAULT 0,
@@ -94,7 +94,7 @@ CREATE TABLE nt_delegate(
     zonerecord_perm_modify_weight   TINYINT UNSIGNED DEFAULT 1 NOT NULL,
     zonerecord_perm_modify_ttl      TINYINT UNSIGNED DEFAULT 1 NOT NULL,
     zonerecord_perm_modify_desc     TINYINT UNSIGNED DEFAULT 1 NOT NULL,
-    
+
     deleted             TINYINT(1) UNSIGNED DEFAULT 0 NOT NULL,
     KEY `nt_delegate_idx1` (`nt_group_id`,`nt_object_id`,`nt_object_type`),
     KEY `nt_delegate_idx2` (`nt_object_id`,`nt_object_type`)
@@ -102,7 +102,7 @@ CREATE TABLE nt_delegate(
 );
 
 
-DROP TABLE IF EXISTS nt_delegate_log; 
+DROP TABLE IF EXISTS nt_delegate_log;
 CREATE TABLE nt_delegate_log(
     nt_delegate_log_id              INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     nt_user_id                      INT UNSIGNED NOT NULL,
