@@ -889,7 +889,7 @@ sub display_advanced_search {
     $q->end_form,
     qq[
 <div id="advancedSearchCancel" class="dark_grey_bg center">],
-    $q->startform( -action => $cgi_name, -method => 'POST' );
+    $q->start_form( -action => $cgi_name, -method => 'POST' );
 
     foreach ( @{ $self->paging_fields }, @$state_fields ) {
         next if $_ eq 'edit_search';
