@@ -61,19 +61,14 @@ sub write_makefile {
 
 # NSD v4
 compile: $exportdir/nsd.nictool.conf
-\tnsd-control rebuild
+\t/bin/true
 
-remote: /var/db/nsd/nsd.db
-\trsync -az --delete /var/db/nsd/nsd.db $remote_login\@$address:/var/db/nsd/
+remote: $exportdir
+\trsync -az --delete $exportdir/ $remote_login\@$address:$datadir/
 
-restart: nsd.db
-\tssh $remote_login\@$address nsd-control reload
+restart: $exportdir
+\tssh $remote_login\@$address nsd-control reconfig && nsd-control reload
 
-# NSD v3
-#compile: $exportdir/named.conf.nictool
-#\t nsdc rebuild
-#restart: nsd.db
-#\tssh $remote_login\@$address nsdc reload
 EO_MAKE
 ;
     close $M;
