@@ -32,7 +32,6 @@ CREATE TABLE nt_zone_record(
     deleted             TINYINT(1) UNSIGNED DEFAULT 0 NOT NULL,
     PRIMARY KEY (`nt_zone_record_id`),
     KEY `nt_zone_record_idx1` (`name`),
-    KEY `nt_zone_record_idx2` (`address`),
     KEY `nt_zone_record_idx3` (`nt_zone_id`),
     KEY `nt_zone_record_idx4` (`deleted`)
     /* CONSTRAINT `nt_zone_record_ibfk_1` FOREIGN KEY (`nt_zone_id`) REFERENCES `nt_zone` (`nt_zone_id`) ON DELETE CASCADE ON UPDATE CASCADE */
