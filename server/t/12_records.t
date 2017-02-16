@@ -38,7 +38,7 @@ use NicToolTest;
 use NicTool;
 use Test;
 
-BEGIN { plan tests => 5589 }
+BEGIN { plan tests => 2748 }
 
 $user = new NicTool(
     cache_users  => 0,
@@ -266,25 +266,26 @@ sub doit {
     }
 
 #invalid name (bad chars)
-    for $type ( qw/A AAAA MX NS CNAME PTR SRV/ ) {
-        for my $char ( @invalid_ascii ) {
-
-            $res = $zone1->new_zone_record(
-                name    => "some${char}thing",
-                type    => $type,
-                ttl     => 86400,
-                address => $type eq 'A' ? '1.1.1.1' : 'a.b.c.d.',
-                ($type eq 'MX' ? (weight => 1) : ()),
-            );
-            noerrok( $res, 300, "type $type name some${char}thing" );
-            ok( $res->get('error_msg') => qr/invalid character/ );
-            ok( $res->get('error_desc') => qr/Sanity error/ );
-            if ( !$res->is_error ) {
-                $res = $user->delete_zone_record(
-                    nt_zone_record_id => $res->{'nt_zone_record_id'} );
-            }
-        }
-    }
+# for IDN support, any 8bit octet is valid for name char
+#   for $type ( qw/A AAAA MX NS CNAME PTR SRV/ ) {
+#       for my $char ( @invalid_ascii ) {
+#
+#           $res = $zone1->new_zone_record(
+#               name    => "some${char}thing",
+#               type    => $type,
+#               ttl     => 86400,
+#               address => $type eq 'A' ? '1.1.1.1' : 'a.b.c.d.',
+#               ($type eq 'MX' ? (weight => 1) : ()),
+#           );
+#           noerrok( $res, 300, "type $type name some${char}thing" );
+#           ok( $res->get('error_msg') => qr/invalid character/ );
+#           ok( $res->get('error_desc') => qr/Sanity error/ );
+#           if ( !$res->is_error ) {
+#               $res = $user->delete_zone_record(
+#                   nt_zone_record_id => $res->{'nt_zone_record_id'} );
+#           }
+#       }
+#   }
 
     #invalid name (fqdn)
     foreach my $name ( qw/ a.m. something.test. / ) {
@@ -402,22 +403,23 @@ sub doit {
         }
     }
 
-    #invalid to have NS record with same name as zone
-    $res = $zone1->new_zone_record(
-        name    => '@',
-        address => 'ns.somewhere.com.',
-        type    => 'NS',
-        ttl     => 86400,
-    );
-    noerrok( $res, 300, "redundant NS record test" );
-    ok( $res->get('error_msg') =>
-            qr/The NS Records for 'test\.com\.' will automatically be created when the Zone is published to a Nameserver/
-    );
-    ok( $res->get('error_desc') => qr/Sanity error/ );
-    if ( !$res->is_error ) {
-        $res = $user->delete_zone_record(
-            nt_zone_record_id => $res->{'nt_zone_record_id'} );
-    }
+#   #invalid to have NS record with same name as zone
+#      unless you want to delegate the zone...
+#    $res = $zone1->new_zone_record(
+#        name    => '@',
+#        address => 'ns.somewhere.com.',
+#        type    => 'NS',
+#        ttl     => 86400,
+#    );
+#    noerrok( $res, 300, "redundant NS record test" );
+#    ok( $res->get('error_msg') =>
+#            qr/The NS Records for 'test\.com\.' will automatically be created when the Zone is published to a Nameserver/
+#    );
+#    ok( $res->get('error_desc') => qr/Sanity error/ );
+#    if ( !$res->is_error ) {
+#        $res = $user->delete_zone_record(
+#            nt_zone_record_id => $res->{'nt_zone_record_id'} );
+#    }
 
 #invalid ttl
     for ( qw/ -1 -4 -299 2147483648 / ) {
@@ -521,9 +523,7 @@ my @success_tests = (
         type    => 'CNAME',
     );
     noerrok( $res, 300, 'CNAME conflict with A records' );
-    ok( $res->get('error_msg') =>
-            qr/record x already exists within zone as an Address \(A\) record/
-    );
+    ok( $res->get('error_msg') => qr/record x already exists within zone as/ );
     ok( $res->get('error_desc') => qr/Sanity error/ );
 
     if ( !$res->is_error ) {
@@ -784,7 +784,8 @@ my @success_tests = (
     }
 
 # invalid chars in name, address
-    for $type ( qw/ A MX NS CNAME PTR / ) {
+    #for $type ( qw/ A MX NS CNAME PTR / ) {
+    for $type ( qw/ MX / ) {
         for my $char ( @invalid_ascii ) {
 
             #invalid chars in name
@@ -955,17 +956,17 @@ my @success_tests = (
     }
 
     #invalid to have NS record with same name as zone...
-    $res = $zr1->edit_zone_record(
-        name    => '@',
-        address => 'ns.somewhere.com.',
-        type    => 'NS',
-        ttl     => 86400,
-    );
-    noerrok( $res, 300, "redundant NS record test" );
-    ok( $res->get('error_msg') =>
-            qr/The NS Records for 'test\.com\.' will automatically be created when the Zone is published to a Nameserver/
-    );
-    ok( $res->get('error_desc') => qr/Sanity error/ );
+#   $res = $zr1->edit_zone_record(
+#       name    => '@',
+#       address => 'ns.somewhere.com.',
+#       type    => 'NS',
+#       ttl     => 86400,
+#   );
+#   noerrok( $res, 300, "redundant NS record test" );
+#   ok( $res->get('error_msg') =>
+#           qr/The NS Records for 'test\.com\.' will automatically be created when the Zone is published to a Nameserver/
+#   );
+#   ok( $res->get('error_desc') => qr/Sanity error/ );
 
 #invalid ttl
     for ( qw/ -1 -4 -299 2147483648 -2 / ) {
@@ -1079,7 +1080,7 @@ my @success_tests = (
     );
     noerrok( $res, 300, 'CNAME conflict with A records' );
     ok( $res->get('error_msg') =>
-            qr/record x already exists within zone as an Address \(A\) record/
+            qr/record x already exists within zone as an/
     );
     ok( $res->get('error_desc') => qr/Sanity error/ );
 
