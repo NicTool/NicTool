@@ -140,7 +140,7 @@ sub edit_zone_record {
         $sql .= "," if $i > 0;
         if ( $c eq 'type' ) {
             $sql .= "type_id = ?";
-            push @values, $self->get_record_type( { type=>$data->{$c} } );
+            push @values, $self->get_record_type({ type=> $data->{$c} });
         }
         else {
             $sql .= "$c = ?";
@@ -209,11 +209,23 @@ sub log_zone_record {
     $data->{timestamp}  = time();
 
     # get zone_id if not provided.
+    my $db_data;
     if ( !$data->{nt_zone_id} ) {
-        my $db_data = $self->find_zone_record( $data->{nt_zone_record_id} );
+        $db_data = $self->find_zone_record( $data->{nt_zone_record_id} );
         $data->{nt_zone_id} = $db_data->{nt_zone_id};
     }
 
+    if ( !$data->{type_id} ) {
+        if ($data->{type}) {
+            $data->{type_id} = $self->get_record_type( { type => $data->{type} } );
+        }
+        else {
+            if (!$db_data) {
+                $db_data = $self->find_zone_record( $data->{nt_zone_record_id} );
+            }
+            $data->{type_id} = $db_data->{type_id};
+        }
+    }
 
     my $col_string = 'nt_zone_id';
     my @values = $data->{nt_zone_id};
@@ -222,6 +234,7 @@ sub log_zone_record {
     {
         next if ! defined $data->{$c};
         next if '' eq $data->{$c};
+
         $col_string .= ", $c";
         push @values, $data->{$c};
     };
