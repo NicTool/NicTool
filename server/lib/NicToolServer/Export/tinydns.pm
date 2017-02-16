@@ -810,9 +810,7 @@ sub base32str_to_bin {
 
     # The MB fallback method is encode_09AV, which will work if we uc the
     # string first.
-    return MIME::Base32::decode( uc $str );
-
-#TODO: patch MIME::Base32 to implement RFC 4648
+    return MIME::Base32::decode_base32hex( uc $str );
 };
 
 # next 3 subs based on http://www.anders.com/projects/sysadmin/djbdnsRecordBuilder/
