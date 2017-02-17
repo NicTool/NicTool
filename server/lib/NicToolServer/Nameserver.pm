@@ -35,6 +35,7 @@ SELECT ns.nt_nameserver_id, ns.nt_group_id, ns.name, ns.description, ns.address,
     if ($usable_string && scalar @usable) {
         $sql .= " OR ns.nt_nameserver_id IN ($usable_string)";
     };
+    $sql .= " ORDER BY ns.nt_nameserver_id";
     $sql .= ")";
 
     #warn $sql;
