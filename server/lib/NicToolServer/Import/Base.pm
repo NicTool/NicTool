@@ -139,10 +139,15 @@ sub nt_create_record {
         }
     );
 
+    my $rr_address = $p{address};
+    if ($p{type} !~ /NAPTR|A|TXT/) {
+        $rr_address = lc $p{address};
+    }
+
     my %request = (
         nt_zone_id => $p{zone_id},
         name       => lc $p{name},
-        address    => ($p{type} eq 'NAPTR' ? $p{address} : lc $p{address}),
+        address    => $rr_address,
         type       => $p{type},
     );
 

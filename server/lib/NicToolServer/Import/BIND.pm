@@ -329,7 +329,6 @@ sub zr_nsec { };
 sub zr_nsec3 { };
 sub zr_nsec3param { };
 sub zr_rrsig { };
-#    die Data::Dumper::Dumper($rr);
 
 1;
 
