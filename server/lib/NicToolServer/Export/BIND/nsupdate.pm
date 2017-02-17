@@ -462,19 +462,61 @@ sub zr_nsec3param {
 
 __END__
 
+=pod
+
+=encoding UTF-8
+
 =head1 NAME
 
-NicToolServer::Export::BIND::nsupdate
+NicToolServer::Export::BIND::nsupdate - exporting DNS data to authoritative DNS servers
+
+=head1 VERSION
+
+version 2.33
 
 =head1 SYNOPSIS
 
 Export DNS information from NicTool as BIND zone updates. These exports are suitable for any running DNS server that accepts nsupdate inserted entries.
 The exports are done as both a full kickstart for each zone file, as well as a delta since the last run (nsupdate.log) which can be inserted each run to ensure zones are updated with the latest changes
 
+=head1 NAME
+
+NicToolServer::Export::BIND::nsupdate
+
 =head1 nsupdate.log
 
 This class will export a nsupdate.log file with only the changes that have occured since the last run. This file should be injected into the named server using nsupdate and is currently set up to not use a key (use IP restrictions to secure your dynamic updates)
 
 A key secured method will be added at a later date.
+
+=head1 AUTHORS
+
+=over 4
+
+=item *
+
+Matt Simerson <msimerson@cpan.org>
+
+=item *
+
+Damon Edwards
+
+=item *
+
+Abe Shelton
+
+=item *
+
+Greg Schueler
+
+=back
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is Copyright (c) 2017 by The Network People, Inc. This software is Copyright (c) 2001 by Damon Edwards, Abe Shelton, Greg Schueler.
+
+This is free software, licensed under:
+
+  The GNU Affero General Public License, Version 3, November 2007
 
 =cut

@@ -27,6 +27,7 @@ $Data::Dumper::Sortkeys=1;
 my $bind = NicToolServer::Import::BIND->new();
 ok($bind, 'new');
 
-$bind->import_records('t/fixtures/named.conf');
+# TODO: create a test group, import test zones into that group, validate imports, then clean up
+#$bind->import_records('t/fixtures/named.conf');
 
 done_testing();

@@ -16,138 +16,7 @@ our $AUTOLOAD;
 
 $NicTool::VERSION = '1.03';
 
-=head1 SYNOPSIS
 
-    use NicTool;
-
-    my $nt = NicTool->new(server_host=>'some.com',server_port=>'8082');
-    $nt->login(username=>'me',password=>'guess');
-    my @zones = $nt->get_group_zones;
-
-=head1 DESCRIPTION
-
-NicTool is an object-oriented client-side framework interface to the 
-NicToolServer API.  Each of the different types of NicTool objects is 
-represented by an appropriately named class.  The classes know which 
-NicToolServer API functions it makes sense for them to call directly,
-and which parameters to automatically insert. 
-
-For example, a B<NicTool::Group> object will automatically insert its 
-own nt_group_id setting into a call to get_group_zones.  A 
-B<NicTool::User> object also has an nt_group_id field, and can do the 
-same thing.
-
-Another convenience is the ability to substitute any B<NicTool> object,
-such as a B<NicTool::Group>, where an object ID is expected. This also
-works within array references one level deep.
-E.G.
-   @zones=$group->get_group_zones->list;
-   $user->delete_zones(zone_list=>\@zones);
-
-   is functionally equivalent to
-
-   @zones=map{$_->id} $group->get_group_zones->list;
-   $user->delete_zones(zone_list=>\@zones);
-
-For API functions which may not have a clear link to any one type of
-object, the B<NicTool> class can call those directly, and you will have
-to specify all of the parameters.  
-
-B<NicTool::Group> and B<NicTool::User> objects also have shortcuts 
-defined for examining their permissions settings.  A method call like
-"can_something" will return the value of the "something" permission.
-E.G. 
-    $user->can_zone_create
-
-=head1 LIMITATIONS
-
-As of this version (1.00), Support there is not direct support for Logs.
-Function calls which return logs or log entries will return instances
-of B<NicTool::Result>.
-
-=cut
-
-=head1 METHODS
-
-=over
-
-=item new(CONFIG_PARAM_LIST)
-
-Constructor for the B<NicTool> class.  CONFIG_PARAM_LIST is a list of 
-keyed parameters.  The following keys may be used.  Those with Default
-values do not need to be specified.
-
-=over
-
-=item server_host
-
-The hostname of the NicToolServer
-
-=item server_port
-
-The port for the server
-
-=item transfer_protocol
-
-The transfer protocol to use. May be 'http' or 'https'.
-(Default 'http')
-
-=item data_protocol
-
-The data transport protocol to use.  This may be 'soap' or 'xml_rpc'.
-(Default 'soap')
-
-=item nt_user_session
-
-You may specify an session string with this parameter if you need to
-use an already existing (and valid) session with the server. 
-(Default '')
-
-=item use_protocol_version
-
-Flag telling whether the nt_protocol_version should be used in requests. If this is
-set to TRUE and the server doesn't support the protocol version used, each call
-will result in an error. If this is FALSE the protocol version will not be sent
-and the server shouldn't complain (though if the protocols are mismatched you may
-get funky behavior). (Default FALSE)
-
-=item nt_protocol_version
-
-The protocol version to send if use_protocol_version is TRUE. This client library
-only conforms to protocol version 1.0 at this time. (Default "1.0")
-
-=item cache_groups
-
-Flag telling whether calls to I<get_group> should cache the results.
-(Groups probably won't be changed behind your back.) (Default TRUE)
-
-=item cache_users
-
-Flag telling whether calls to I<get_user> should cache the results.
-(Users probably won't be changed behind your back.) (Default TRUE)
-
-=item cache_zones
-
-Flag telling whether calls to I<get_zone> should cache the results.
-(Default FALSE)
-
-=item cache_records
-
-Flag telling whether calls to I<get_zone_record> should cache the results.
-(Default FALSE)
-
-=item cache_nameservers
-Flag telling whether calls to I<get_nameserver> should cache the 
-results. (Nameservers probably won't be changed behind your back.)
-(Default TRUE)
-    
-=back
-
-All of these parameters are optional for the constructor.  Instead they
-may be given to the I<config> method after you have an instance of 
-B<NicTool>.
-
-=cut
 
 sub new {
     my $pkg  = shift;
@@ -253,13 +122,6 @@ sub _conf {
     };
 }
 
-=item config(CONFIG_PARAM_LIST)
-
-I<config> changes the setting of one of the configuration parameters.
-The keys for CONFIG_PARAM_LIST are the same as those listed for the
-I<new> method.
-
-=cut
 
 sub config {
     my $self = shift;
@@ -321,55 +183,30 @@ sub _cache_get {
     return $res;
 }
 
-=item nt_user_session
-
-Returns the session string for the current session
-
-=cut
 
 sub nt_user_session {
     my $self = shift;
     return $self->{nt_user_session};
 }
 
-=item nt_protocol_version
-
-Returns the protocol version
-
-=cut
 
 sub nt_protocol_version {
     my $self = shift;
     return $self->{nt_protocol_version};
 }
 
-=item use_protocol_version
-
-Returns whether the protocol version string is sent to the server
-
-=cut
 
 sub use_protocol_version {
     my $self = shift;
     return $self->{use_protocol_version};
 }
 
-=item user
-
-Returns the B<NicTool::User> object for the currently logged in user.
-
-=cut
 
 sub user {
     my $self = shift;
     return $self->{user};
 }
 
-=item result
-
-Returns the B<NicTool::Result> object for the last function call.
-
-=cut
 
 sub result {
     my $self = shift;
@@ -464,27 +301,6 @@ sub _api_call {
     return '';
 }
 
-=item FUNCTION(PARAM_LIST)
-
-Any function in the NicTool API can be called directly with an instance
-of B<NicTool>.  Since the B<NicTool> object caches the 
-B<NicTool::User> object
-of the logged in user, it lets that object first attempt to call 
-FUNCTION.  (see L<NicTool::User>).  If the B<NicTool::User> object does 
-not call the function, NicTool calls it directly to the server and 
-returns the result. The B<NicTool> object also caches the result, and 
-it can be retrieved with the I<result> method.
-
-=over
-
-=item return
-
-Returns the B<NicTool::Result> object (or subclass) representing the
-result of the function call.
-
-=back
-
-=cut
 
 sub AUTOLOAD {
     my ($self) = shift;
@@ -505,6 +321,198 @@ sub AUTOLOAD {
 
     croak "No such method '$AUTOLOAD'";
 }
+
+
+1;
+
+__END__
+
+=pod
+
+=encoding UTF-8
+
+=head1 NAME
+
+NicTool - A client framework for interaction with a NicToolServer via SOAP or XML-RPC.
+
+=head1 VERSION
+
+version 1.02
+
+=head1 SYNOPSIS
+
+    use NicTool;
+
+    my $nt = NicTool->new(server_host=>'some.com',server_port=>'8082');
+    $nt->login(username=>'me',password=>'guess');
+    my @zones = $nt->get_group_zones;
+
+=head1 DESCRIPTION
+
+NicTool is an object-oriented client-side framework interface to the 
+NicToolServer API.  Each of the different types of NicTool objects is 
+represented by an appropriately named class.  The classes know which 
+NicToolServer API functions it makes sense for them to call directly,
+and which parameters to automatically insert. 
+
+For example, a B<NicTool::Group> object will automatically insert its 
+own nt_group_id setting into a call to get_group_zones.  A 
+B<NicTool::User> object also has an nt_group_id field, and can do the 
+same thing.
+
+Another convenience is the ability to substitute any B<NicTool> object,
+such as a B<NicTool::Group>, where an object ID is expected. This also
+works within array references one level deep.
+E.G.
+   @zones=$group->get_group_zones->list;
+   $user->delete_zones(zone_list=>\@zones);
+
+   is functionally equivalent to
+
+   @zones=map{$_->id} $group->get_group_zones->list;
+   $user->delete_zones(zone_list=>\@zones);
+
+For API functions which may not have a clear link to any one type of
+object, the B<NicTool> class can call those directly, and you will have
+to specify all of the parameters.  
+
+B<NicTool::Group> and B<NicTool::User> objects also have shortcuts 
+defined for examining their permissions settings.  A method call like
+"can_something" will return the value of the "something" permission.
+E.G. 
+    $user->can_zone_create
+
+=head1 LIMITATIONS
+
+As of this version (1.00), Support there is not direct support for Logs.
+Function calls which return logs or log entries will return instances
+of B<NicTool::Result>.
+
+=head1 METHODS
+
+=over
+
+=item new(CONFIG_PARAM_LIST)
+
+Constructor for the B<NicTool> class.  CONFIG_PARAM_LIST is a list of 
+keyed parameters.  The following keys may be used.  Those with Default
+values do not need to be specified.
+
+=over
+
+=item server_host
+
+The hostname of the NicToolServer
+
+=item server_port
+
+The port for the server
+
+=item transfer_protocol
+
+The transfer protocol to use. May be 'http' or 'https'.
+(Default 'http')
+
+=item data_protocol
+
+The data transport protocol to use.  This may be 'soap' or 'xml_rpc'.
+(Default 'soap')
+
+=item nt_user_session
+
+You may specify an session string with this parameter if you need to
+use an already existing (and valid) session with the server. 
+(Default '')
+
+=item use_protocol_version
+
+Flag telling whether the nt_protocol_version should be used in requests. If this is
+set to TRUE and the server doesn't support the protocol version used, each call
+will result in an error. If this is FALSE the protocol version will not be sent
+and the server shouldn't complain (though if the protocols are mismatched you may
+get funky behavior). (Default FALSE)
+
+=item nt_protocol_version
+
+The protocol version to send if use_protocol_version is TRUE. This client library
+only conforms to protocol version 1.0 at this time. (Default "1.0")
+
+=item cache_groups
+
+Flag telling whether calls to I<get_group> should cache the results.
+(Groups probably won't be changed behind your back.) (Default TRUE)
+
+=item cache_users
+
+Flag telling whether calls to I<get_user> should cache the results.
+(Users probably won't be changed behind your back.) (Default TRUE)
+
+=item cache_zones
+
+Flag telling whether calls to I<get_zone> should cache the results.
+(Default FALSE)
+
+=item cache_records
+
+Flag telling whether calls to I<get_zone_record> should cache the results.
+(Default FALSE)
+
+=item cache_nameservers
+Flag telling whether calls to I<get_nameserver> should cache the 
+results. (Nameservers probably won't be changed behind your back.)
+(Default TRUE)
+
+=back
+
+All of these parameters are optional for the constructor.  Instead they
+may be given to the I<config> method after you have an instance of 
+B<NicTool>.
+
+=item config(CONFIG_PARAM_LIST)
+
+I<config> changes the setting of one of the configuration parameters.
+The keys for CONFIG_PARAM_LIST are the same as those listed for the
+I<new> method.
+
+=item nt_user_session
+
+Returns the session string for the current session
+
+=item nt_protocol_version
+
+Returns the protocol version
+
+=item use_protocol_version
+
+Returns whether the protocol version string is sent to the server
+
+=item user
+
+Returns the B<NicTool::User> object for the currently logged in user.
+
+=item result
+
+Returns the B<NicTool::Result> object for the last function call.
+
+=item FUNCTION(PARAM_LIST)
+
+Any function in the NicTool API can be called directly with an instance
+of B<NicTool>.  Since the B<NicTool> object caches the 
+B<NicTool::User> object
+of the logged in user, it lets that object first attempt to call 
+FUNCTION.  (see L<NicTool::User>).  If the B<NicTool::User> object does 
+not call the function, NicTool calls it directly to the server and 
+returns the result. The B<NicTool> object also caches the result, and 
+it can be retrieved with the I<result> method.
+
+=over
+
+=item return
+
+Returns the B<NicTool::Result> object (or subclass) representing the
+result of the function call.
+
+=back
 
 =head1 AUTHORS
 
@@ -535,7 +543,6 @@ This software is Copyright (c) 2011 by The Network People, Inc. This software is
 This is free software, licensed under:
 
   The GNU Affero General Public License, Version 3, November 2007
-
 
 =head1 SEE ALSO
 
@@ -583,7 +590,34 @@ L<Crypt::SSLeay>
 
 =back
 
+=head1 AUTHORS
+
+=over 4
+
+=item *
+
+Matt Simerson <msimerson@cpan.org>
+
+=item *
+
+Damon Edwards
+
+=item *
+
+Abe Shelton
+
+=item *
+
+Greg Schueler
+
+=back
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is Copyright (c) 2017 by The Network People, Inc. This software is Copyright (c) 2001 by Damon Edwards, Abe Shelton, Greg Schueler.
+
+This is free software, licensed under:
+
+  The GNU Affero General Public License, Version 3, November 2007
+
 =cut
-
-1;
-

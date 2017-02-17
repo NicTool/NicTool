@@ -351,13 +351,25 @@ sub postflight { return 1; }
 
 __END__
 
+=pod
+
+=encoding UTF-8
+
 =head1 NAME
 
-NicToolServer::Export::DynECT
+NicToolServer::Export::DynECT - export NicTool DNS data to DynECT managed DNS
+
+=head1 VERSION
+
+version 2.33
 
 =head1 SYNOPSIS
 
 Export authoritative DNS data to DynECT Managed DNS service.
+
+=head1 NAME
+
+NicToolServer::Export::DynECT
 
 =head1 SEE ALSO
 
@@ -366,5 +378,35 @@ https://github.com/msimerson/NicTool/wiki/Export-to-DynECT-Managed-DNS
 =head1 ACKNOWLEDGEMENTS
 
 DynECT support funded by MivaMerchant and graciously donated to the NicTool project
+
+=head1 AUTHORS
+
+=over 4
+
+=item *
+
+Matt Simerson <msimerson@cpan.org>
+
+=item *
+
+Damon Edwards
+
+=item *
+
+Abe Shelton
+
+=item *
+
+Greg Schueler
+
+=back
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is Copyright (c) 2017 by The Network People, Inc. This software is Copyright (c) 2001 by Damon Edwards, Abe Shelton, Greg Schueler.
+
+This is free software, licensed under:
+
+  The GNU Affero General Public License, Version 3, November 2007
 
 =cut

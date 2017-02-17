@@ -1,7 +1,7 @@
 language: perl
 perl:
-  - "5.22"
-  - "5.18"
+# - "5.22"
+# - "5.18"
   - "5.10"
 
 services:
@@ -18,62 +18,56 @@ addons:
     - libapache2-mod-perl2
     - libapache2-mod-perl2-dev
     - libdigest-hmac-perl
-    - libjson-perl
+    - libssl-dev
+    - bind9utils
     - librpc-xml-perl
+    - libxml-libxml-perl
+    - libapache-dbi-perl
+    - libxml-parser-perl
+    - libjson-perl
     - libsoap-lite-perl
     - libmodule-build-perl
     - libmime-base32-perl
     - libmime-base64-perl
     - libbind-confparser-perl
-    - libssl-dev
     - libcrypt-openssl-rsa-perl
     - libcrypt-openssl-dsa-perl
     - libyaml-perl
-    - bind9utils
     - libwww-perl
     - liburi-perl
     - libmime-tools-perl
     - libmailtools-perl
-    - libdist-zilla-perl
     - libfile-sharedir-perl
     - libperl-prereqscanner-perl
-    - libxml-libxml-perl
-    - libapache-dbi-perl
     - libdbix-simple-perl
-    - libxml-parser-perl
     - libdbi-perl
     - libnet-ip-perl
     - libnet-dns-perl
 
 before_install:
     - sudo .test/tls-setup.sh
-    - sudo apt-get install libextutils-makemaker-perl || echo "nope"
+
+      # globally/system installed perl modules, for Apache::mod_perl
     - curl -L https://cpanmin.us | sudo perl - --sudo App::cpanminus
-      # globally/system installed perl modules
-    - sudo cpanm --notest Dist::Zilla Dist::Zilla::App Dist::Zilla::Plugin::Git::Check Dist::Zilla::Plugin::Git::Commit Dist::Zilla::Plugin::Git::Tag Dist::Zilla::Plugin::Test::Perl::Critic Dist::Zilla::Plugin::PodWeaver Moose::Meta::Role
-    - sudo cpanm --notest CGI RPC::XML Time::TAI64 CryptX Crypt::Mac::HMAC Crypt::KeyDerivation DBD::mysql Test::HTML::Lint Apache::DBI Shell LWP::UserAgent Test::Output Test::Pod MIME::Base32
-    - sudo cpanm --notest --force Net::DNS || sudo cpanm --notest --force Net::DNS@1.0.6 || echo "double darn"
-#   - sudo cpanm --notest JSON SOAP::Lite XML::Parser Net::DNS Net::IP BIND::Conf_Parser DBIx::Simple DBI
+    - sudo cpanm --notest CGI RPC::XML CryptX Crypt::Mac::HMAC Crypt::KeyDerivation DBD::mysql Apache::DBI Shell
+
+      # locally installed modules, for tests
+    - cpanm --notest CGI RPC::XML Time::TAI64 CryptX Crypt::Mac::HMAC Crypt::KeyDerivation DBD::mysql Test::HTML::Lint Shell LWP::UserAgent Test::Output Test::Pod MIME::Base32
+    - cpanm --notest --force Net::DNS || sudo cpanm --notest --force Net::DNS@1.0.6 || echo "double darn"
+    - cpanm --notest JSON SOAP::Lite XML::Parser Net::DNS Net::IP BIND::Conf_Parser DBIx::Simple DBI
 
 install:
     - sudo cp .test/apache-nictool.conf /etc/apache2/sites-enabled/
     - sudo service apache2 restart || sudo cat /var/log/apache2/error.log
-    - sudo perl .test/create_tables.pl
-    - cd /home/travis/build/msimerson/NicTool/client
-    - sudo dzil authordeps --missing || echo "client authordeps"
-    - sudo dzil listdeps --missing || echo "dependencies"
-    - cd /home/travis/build/msimerson/NicTool/server
-    - sudo dzil authordeps --missing || echo "server authordeps"
-    - sudo dzil listdeps --missing || echo "dependencies"
+    - perl .test/create_tables.pl
 
 before_script:
 
 script:
-    - cd /home/travis/build/msimerson/NicTool/client
-    - sudo dzil test
-    - cd /home/travis/build/msimerson/NicTool/server
-    - sudo dzil test
-#   - dzil build
+    - cd /home/travis/build/msimerson/NicTool/client && perl Makefile.PL
+    - make -C /home/travis/build/msimerson/NicTool/client test
+    - cd /home/travis/build/msimerson/NicTool/server && perl Makefile.PL
+    - make -C /home/travis/build/msimerson/NicTool/server test
 
 after_success:
 after_failure:

@@ -877,6 +877,18 @@ sub precsize_valton {
 
 __END__
 
+=pod
+
+=encoding UTF-8
+
+=head1 NAME
+
+NicToolServer::Export::tinydns - export NicTool DNS data to tinydns (part of djbdns)
+
+=head1 VERSION
+
+version 2.33
+
 =head1 Instructions for Use
 
 https://github.com/msimerson/NicTool/wiki/Export-to-tinydns
@@ -885,5 +897,34 @@ https://github.com/msimerson/NicTool/wiki/Export-to-tinydns
 
 Matt Simerson
 
-=cut
+=head1 AUTHORS
 
+=over 4
+
+=item *
+
+Matt Simerson <msimerson@cpan.org>
+
+=item *
+
+Damon Edwards
+
+=item *
+
+Abe Shelton
+
+=item *
+
+Greg Schueler
+
+=back
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is Copyright (c) 2017 by The Network People, Inc. This software is Copyright (c) 2001 by Damon Edwards, Abe Shelton, Greg Schueler.
+
+This is free software, licensed under:
+
+  The GNU Affero General Public License, Version 3, November 2007
+
+=cut
