@@ -652,9 +652,9 @@ LEFT JOIN nt_nameserver_export_type et ON ns.export_type_id=et.id
 sub set_active_nameserver {
     my $self = shift;
     my $nsid = shift;
-    
+
     $self->{ns_ref} = $self->{active_ns_ids}{$nsid};
-    $self->{export_format} = $self->{ns_ref}{export_format};  
+    $self->{export_format} = $self->{ns_ref}{export_format};
 }
 
 sub load_export_class {
@@ -691,6 +691,10 @@ sub load_export_class {
     elsif ( $self->{export_format} eq 'knot' ) {
         require NicToolServer::Export::Knot;
         $self->{export_class} = NicToolServer::Export::Knot->new( $self );
+    }
+    elsif ( $self->{export_format} eq 'knot2' ) {
+        require NicToolServer::Export::Knot2;
+        $self->{export_class} = NicToolServer::Export::Knot2->new( $self );
     }
     else {
         die "unknown export format: $self->{export_format}\n";
@@ -999,7 +1003,7 @@ The postflight method will handle any processing that needs to be called after t
 
 =item zr_*
 
-One method needs to exist for each RR type (zr_a, zr_mx, zr_cname, etc.) used in the resource_record_type table. 
+One method needs to exist for each RR type (zr_a, zr_mx, zr_cname, etc.) used in the resource_record_type table.
 
 =item export_db
 

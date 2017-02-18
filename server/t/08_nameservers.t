@@ -111,13 +111,13 @@ sub non_object_tests {
         $res = $sanity->_valid_export_type({ export_format => $bad });
         ok( $res, 0 );
     };
-    foreach my $good ( qw/ bind djbdns knot NSD maradns powerdns dynect / ) {
+    foreach my $good ( qw/ bind djbdns knot knot2 NSD maradns powerdns dynect / ) {
         $res = $sanity->_valid_export_type({ export_format => $good });
         ok( $res );
     };
 
     # _valid_export_type, export_type_id
-    foreach my $good_id ( 1 .. 8 ) {
+    foreach my $good_id ( 1 .. 9 ) {
         $res = $sanity->_valid_export_type({ export_type_id => $good_id });
         ok( $res );
     }

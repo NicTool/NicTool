@@ -67,16 +67,17 @@ VALUES (1,'djbdns','djbdns (tinydns & axfrdns)','cr.yp.to/djbdns.html'),
        (5,'bind-nsupdate','BIND (nsupdate protocol)',''),
        (6,'NSD','Name Server Daemon (NSD)','www.nlnetlabs.nl/projects/nsd/'),
        (7,'dynect','DynECT Standard DNS','dyn.com/managed-dns/'),
-       (8,'knot','Knot DNS','www.knot-dns.cz');
+       (8,'knot','Knot DNS','www.knot-dns.cz'),
+       (8,'knot2','Knot v2.x DNS','www.knot-dns.cz');
 
-INSERT INTO nt_nameserver(nt_group_id, name, ttl, description, address, 
+INSERT INTO nt_nameserver(nt_group_id, name, ttl, description, address,
   export_type_id, logdir, datadir, export_interval) values (1,'ns1.example.com.',86400,'ns east',
   '198.93.97.188','1','/etc/tinydns-ns1/log/main/',
   '/etc/tinydns-ns1/root/',120);
 INSERT INTO nt_nameserver(nt_group_id, name, ttl, description, address,
   export_type_id, logdir, datadir, export_interval) values (1,'ns2.example.com.',86400,'ns west',
   '216.133.235.6','1','/etc/tinydns-ns2/log/main/','/etc/tinydns-ns2/root/',120);
-INSERT INTO nt_nameserver(nt_group_id, name, ttl, description, address, 
+INSERT INTO nt_nameserver(nt_group_id, name, ttl, description, address,
   export_type_id, logdir, datadir, export_interval) values (1,'ns3.example.com.',86400,'ns test',
   '127.0.0.1','2','/var/log', '/etc/namedb/master/',120);
 INSERT INTO nt_nameserver_log(nt_group_id,nt_user_id, action, timestamp, nt_nameserver_id) VALUES (1,1,'added',UNIX_TIMESTAMP(), 1);
