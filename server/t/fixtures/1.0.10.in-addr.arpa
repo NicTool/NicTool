@@ -1,13 +1,13 @@
 
 $ORIGIN 1.0.10.in-addr.arpa.
 $TTL 86400
-1.0.10.in-addr.arpa. IN SOA ns1.cadillac.net. hostmaster.simerson.net. ( 2015122405 16384 2048 1048576 2560 )
+1.0.10.in-addr.arpa. IN SOA ns1.example.com. hostmaster.example.com. ( 2015122405 16384 2048 1048576 2560 )
 
-1.0.10.in-addr.arpa. 14400 IN NS ns1.cadillac.net.
-1.0.10.in-addr.arpa.	14400	IN	NS	ns2.cadillac.net.
-1.0.10.in-addr.arpa.	14400	IN	NS	ns3.cadillac.net.
-1	3600	IN  PTR	gw.simerson.net.
-202	3600	IN  PTR	treekiller.simerson.net.
-252	3600	IN  PTR	storage.simerson.net.
-203	3600	IN  PTR	color.simerson.net.
+1.0.10.in-addr.arpa. 14400 IN NS ns1.example.com.
+1.0.10.in-addr.arpa.	14400	IN	NS	ns2.example.com.
+1.0.10.in-addr.arpa.	14400	IN	NS	ns3.example.com.
+1	3600	IN  PTR	gw.example.com.
+202	3600	IN  PTR	treekiller.example.com.
+252	3600	IN  PTR	storage.example.com.
+203	3600	IN  PTR	color.example.com.
 65	3600	IN  PTR	nictool.
