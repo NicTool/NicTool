@@ -259,7 +259,7 @@ sub zr_mx {
 sub zr_txt {
     my ($self, $r) = @_;
 
-    # fixup for quotes around DKIM in the DB (Luser error)
+    # fixup for quotes around DKIM in the DB (user error)
     $r->{address} =~ s/^"//g;   # strip off any leading quotes
     $r->{address} =~ s/"$//g;   # strip off any trailing quotes
 
@@ -267,6 +267,7 @@ sub zr_txt {
     if ( length $r->{address} > 255 ) {
         $r->{address} = join( '" "', unpack("(a255)*", $r->{address} ) );
     };
+
     # name  ttl  class   rr     text
     return "$r->{name}	$r->{ttl}	IN  TXT	\"$r->{address}\"\n";
 }
@@ -443,7 +444,7 @@ sub zr_uri {
     my $weight   = $self->{nte}->is_ip_port( $r->{weight} );
 
     # Owner Name     ttl  class   rr  pri  weight target
-    return "$r->{name}	$r->{ttl}	IN  URI	$priority	$weight	$r->{address}\n";
+    return "$r->{name}	$r->{ttl}	IN  URI	$priority	$weight	\"$r->{address}\"\n";
 }
 
 1;
