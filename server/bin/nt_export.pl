@@ -3,46 +3,38 @@
 use strict;
 use warnings;
 
-use lib '.';
-use lib 'lib';
-use lib '../lib';
-use lib '../server/lib';
-#use Data::Dumper;
 use Getopt::Long;
 use Params::Validate qw/:all/;
 use Sys::Hostname;
-#$Data::Dumper::Sortkeys=1;
 
 use NicToolServer::Export;
 
 BEGIN {
-    # This executes before the main script. Hence we are
-    # able to seed the @INC path with the directory where the "real"
-    # script resides.
+    # This executes before the main script. We seed the @INC
+    # path with the directory where the target resides.
 
     my $LIB_DIR;
 
-    # is the executable called using $PATH? (i.e. does not start with / )
-    if ($0 !~ m%^/%) {
+    # is the executable path qualified? (starts with / or . (as in ./ or ../))
+    if ( $0 =~ m|^[/\.]| ) {
+        # is $0 is a symbolic link?
+        $::PROG_LOCATION = -l $0 ? readlink $0 : $0;
+    }
+    else {
         (my $prog = $0) =~ s%^.*/([^/]+)$%$1%;
         my @PATH=split (':', $ENV{'PATH'});
-        push @PATH, '.', undef;
         foreach my $dir (@PATH) {
             if (-f "$dir/$prog") { # found it!
                 $dir =~ s/\./`pwd`/eo;
                 chomp $dir;
-                $::PROG_LOCATION = -l $prog ? readlink ($prog) : $prog;
+                $::PROG_LOCATION = -l $prog ? readlink $prog : $prog;
                 last;
             }
         }
     }
-    else {
-        # Check to see if $0 is a symbolic link or not.
-        $::PROG_LOCATION = -l $0 ? readlink ($0) : $0;
-    }
 
     # Set $LIB_DIR to point to the lib/NicToolServer dir in my parent dir
-    ($LIB_DIR = $::PROG_LOCATION) =~ s%/[^/]+$%../lib/NicToolServer%;
+    ($LIB_DIR = $::PROG_LOCATION) =~ s%/[^/]+$%/../lib/NicToolServer%;
     unshift @INC, $LIB_DIR;
     # above probably eliminates the need of all the uses of the lib module
 }
@@ -168,7 +160,6 @@ sub get_db_creds_from_nictoolserver_conf {
 
     if (! -r $file) {
         # try a number of locations to try to find the config file
-        $file = undef;
         my @dirs_to_try = ("$prog_dir/../lib", 'lib', '../server/lib',
                            '../lib', '..', '.');
         foreach my $dir (@dirs_to_try) {
@@ -182,7 +173,7 @@ sub get_db_creds_from_nictoolserver_conf {
         $file =~ s%/[^/]+/../%/%g;
 
         # Unable to locate the config file
-        return if !defined($file);
+        return if ! $file;
     }
     
     if ($verbose) {

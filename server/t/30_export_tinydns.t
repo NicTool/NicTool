@@ -15,7 +15,7 @@
 use strict;
 use warnings;
 
-use lib '.';
+# use lib '.';
 use lib 't';
 use lib 'lib';
 use Data::Dumper;

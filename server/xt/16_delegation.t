@@ -1082,7 +1082,7 @@ sub test_api_funcs {
     ok( $res->size, 0 );
 
     ####################
-    #get_delegated_zones
+    # get_delegated_zones
     ####################
 
     %perms = %dpermsfull;
@@ -1164,7 +1164,7 @@ sub test_api_funcs {
     noerrok($res);
 
     ####################
-    #get_delegated_zone_records
+    # get_delegated_zone_records
     ####################
 
     %perms = %dpermsfull;
@@ -1196,7 +1196,7 @@ sub test_api_funcs {
     ok( $res->size, 1 );
 
     #use Data::Dumper;
-    #print Dumper $res;
+    #warn Dumper $res;
     #print "sleeping for 30 seconds...\n";
     #sleep 40;
 

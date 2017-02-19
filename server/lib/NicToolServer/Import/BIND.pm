@@ -14,7 +14,7 @@ use File::Copy;
 use Params::Validate qw/ :all /;
 use Time::HiRes;
 
-use Net::DNS::Zone::Parser;
+use Net::DNS::ZoneFile;
 
 sub get_import_file {
     my ($self, $filename) = @_;
@@ -49,21 +49,15 @@ sub import_records {
 
 sub import_zone {
     my ($self, $zone, $file) = @_;
+
     print "zone: $zone \tfrom\t$file\n";
 
-    my $parser = Net::DNS::Zone::Parser->new;
-    $parser->read($file,
-        {   ORIGIN    => $zone,
-            CREATE_RR => 1,
-            STRIP_SEC => 1,
-        }
-    ) and die "unable to read/parse $file\n";
-
-    my $RRs=$parser->get_array();
-    foreach my $rr ( @$RRs ) {
+    my $zonefile = Net::DNS::ZoneFile->new($file, [$zone] );
+    foreach my $rr ($zonefile->read) {
         my $method = 'zr_' . lc $rr->type;
+        print "$method\n";
         $self->$method( $rr, $zone );
-#       Time::HiRes::sleep 0.1;
+        Time::HiRes::sleep 0.1;
     };
 };
 
@@ -335,7 +329,6 @@ sub zr_nsec { };
 sub zr_nsec3 { };
 sub zr_nsec3param { };
 sub zr_rrsig { };
-#    die Data::Dumper::Dumper($rr);
 
 1;
 
@@ -346,8 +339,54 @@ use vars qw(@ISA);
 @ISA = qw(NicToolServer::Import::BIND NicToolServer::Import::Base BIND::Conf_Parser);
 
 sub handle_zone {
-    my($self, $name, $class, $type, $options) = @_;
+    my ($self, $name, $class, $type, $options) = @_;
     $self->import_zone( $name, $options->{file} );
 };
 
 1;
+
+__END__
+
+=pod
+
+=encoding UTF-8
+
+=head1 NAME
+
+NicToolServer::Import::BIND - import BIND zone files into NicTool
+
+=head1 VERSION
+
+version 2.33
+
+=head1 AUTHORS
+
+=over 4
+
+=item *
+
+Matt Simerson <msimerson@cpan.org>
+
+=item *
+
+Damon Edwards
+
+=item *
+
+Abe Shelton
+
+=item *
+
+Greg Schueler
+
+=back
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is Copyright (c) 2017 by The Network People, Inc. This software is Copyright (c) 2001 by Damon Edwards, Abe Shelton, Greg Schueler.
+
+This is free software, licensed under:
+
+  The GNU Affero General Public License, Version 3, November 2007
+
+=cut

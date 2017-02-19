@@ -29,7 +29,7 @@ sub import_records {
     my ($self, $file) = @_;
     $self->get_import_file( $file || 'data' ) or return;
 
-# tinydns-data format: http://cr.yp.to/djbdns/tinydns-data.html
+    # tinydns-data format: http://cr.yp.to/djbdns/tinydns-data.html
 
     my $fh = $self->{FH};
     while ( defined ( my $record = <$fh> ) ) {
@@ -254,7 +254,7 @@ sub zr_generic {
     return $self->zr_aaaa( $r ) if $n == 28;
     return $self->zr_srv( $r )  if $n == 33;
     if ($n == 16) {
-        $r =~ s/:16//;
+        $r =~ s/:16:\\[\d]{3,}/:/;
         return $self->zr_txt( $r );
     };
     die "oops, no generic support for record type $n in $fqdn\n";
@@ -368,3 +368,49 @@ sub unescape_packed_hex {
 };
 
 1;
+
+__END__
+
+=pod
+
+=encoding UTF-8
+
+=head1 NAME
+
+NicToolServer::Import::tinydns - import tinydns data into NicTool
+
+=head1 VERSION
+
+version 2.33
+
+=head1 AUTHORS
+
+=over 4
+
+=item *
+
+Matt Simerson <msimerson@cpan.org>
+
+=item *
+
+Damon Edwards
+
+=item *
+
+Abe Shelton
+
+=item *
+
+Greg Schueler
+
+=back
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is Copyright (c) 2017 by The Network People, Inc. This software is Copyright (c) 2001 by Damon Edwards, Abe Shelton, Greg Schueler.
+
+This is free software, licensed under:
+
+  The GNU Affero General Public License, Version 3, November 2007
+
+=cut

@@ -6,11 +6,10 @@ use Data::Dumper;
 use English;
 use Test::More;
 
-eval "use Test::HTML::Lint";
-
+eval 'use Test::HTML::Lint';
 if ( $EVAL_ERROR ) {
-    warn Data::Dumper::Dumper( $EVAL_ERROR );
-    plan skip_all => 'Test::HTML::Lint not installed';
+    plan skip_all => 'Test::HTML::Lint not available';
+    exit
 }
 else {
     plan 'no_plan';
@@ -25,18 +24,7 @@ if ( ! -d $templates ) {
 
 if ( -d $templates ) {
     foreach my $file ( glob "$templates/*.html" ) {
-        html_ok( $file, "HTML valid: $file" );
+        html_fragment_ok( $file, "HTML valid: $file" );
     };
 };
 
-
-my $htdocs = "htdocs";
-if ( ! -d $htdocs ) {
-    $htdocs = "../htdocs";
-}
-
-if ( -d $htdocs ) {
-    foreach my $file ( glob "$htdocs/*.cgi" ) {
-        html_ok( $file, "HTML valid: $file" );
-    };
-};

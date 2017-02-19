@@ -22,6 +22,7 @@ use Data::Dumper;
 use NicToolTest;
 use NicToolServer::Export;
 use Test::More;
+use Test::Output;
 $Data::Dumper::Sortkeys=1;
 
 my $nsid = 0;
@@ -110,21 +111,18 @@ ok( $r, "get_last_ns_export, nsid $nsid, success, partial");
 };
 
 sub _is_ip_port {
-    my @bad_ports = qw/ -100 -1 65536 1000000 a buzz /;
-    push @bad_ports, ('', undef);
+    my @out_of_range = qw/ -100 -1 65536 1000000 /;
     my @good_ports = qw/ 0 1 53 995 65535 /;
 
     foreach ( @good_ports ) {
         my $r = $export->is_ip_port($_);
         ok(defined $r, "is_ip_port, valid, $_");
     };
-    foreach ( @bad_ports ) {
-        if (defined $_) {
-            ok( ! $export->is_ip_port($_), "is_ip_port, invalid, $_");
-        }
-        else {
-            ok( ! $export->is_ip_port($_), "is_ip_port, undef");
-        }
+    stderr_like { $export->is_ip_port('') } qr/empty/, "is_ip_port, empty";
+    stderr_like { $export->is_ip_port() } qr/not defined/, "is_ip_port, undefined";
+    stderr_like { $export->is_ip_port('a') } qr/non-numeric/, "is_ip_port, a";
+    foreach ( @out_of_range ) {
+	stderr_like { $export->is_ip_port($_) } qr/range/, "is_ip_port, out of range, $_";
     };
 };
 

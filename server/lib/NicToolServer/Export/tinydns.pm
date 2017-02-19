@@ -16,7 +16,7 @@ use Params::Validate qw/ :all /;
 use Time::Local;
 use Time::TAI64 qw/ unixtai64 /;
 
-# maybe TODO: append DB ids (but why?)
+# maybe: append DB ids (but why?)
 
 sub get_export_file {
     my $self = shift;
@@ -158,22 +158,22 @@ sub export_db {
 
     my $fh = $self->get_export_file() or return;
 
-# the while loop fetches a row at at time. Grabbing them all in one pass is
-# no faster. It takes 3 seconds to fetch 150,000 zones either way. The while
-# loop uses 150MB less RAM.
+    # the while loop fetches a row at at time. Grabbing them all in one pass is
+    # no faster. It takes 3 seconds to fetch 150,000 zones either way. The while
+    # loop uses 150MB less RAM.
     my @sql = $self->{nte}->get_ns_zones(query_result=>1);
     my $result = $self->{nte}{dbix_r}->query( @sql );
     $self->{nte}->elog( $result->rows . " zones" );
     while ( my $z = $result->hash ) {
 
         $self->{nte}{zone_name} = $z->{zone};
-# print SOA & NS records
+        # print SOA & NS records
         print $fh $self->{nte}->zr_soa( $z );
         print $fh $self->{nte}->zr_ns( $z );
     }
     $result->finish;
 
-# print all the rest
+    # print all the rest
     @sql = $self->{nte}->get_ns_records(query_result=>1);
     $result = $self->{nte}{dbix_r}->query( @sql )
         or die $self->{nte}{dbix_r}->error;
@@ -299,7 +299,7 @@ sub zr_soa {
 sub zr_generic {
     my ($self, $rrid, $r, $rdata) = @_;
 
-# 'You may use octal \nnn codes to include arbitrary bytes inside rdata'
+    # 'You may use octal \nnn codes to include arbitrary bytes inside rdata'
 
     return ':'                             # special char (none = generic)
         . $self->qualify( $r->{name} )     # fqdn
@@ -315,11 +315,24 @@ sub zr_spf {
     my $self = shift;
     my $r = shift or die;
 
-# assistance from djbdnsRecordBuilder
+    # assistance from djbdnsRecordBuilder
     my $rdata = $self->characterCount( $r->{address} )
               . $self->escape( $r->{address} );
 
     return $self->zr_generic( 99, $r, $rdata );
+}
+
+sub zr_uri {
+    my $self = shift;
+    my $r = shift or die;
+
+    my $rdata = octal_escape( pack "nn",
+        $self->{nte}->is_ip_port( $r->{priority} ),   # Priority, 16 bit (n)
+        $self->{nte}->is_ip_port( $r->{weight} ),     # Weight,   16 bit (n)
+    );
+
+    $rdata .= $r->{address}; # Target, URI
+    return $self->zr_generic( 256, $r, $rdata );
 }
 
 sub zr_srv {
@@ -810,9 +823,7 @@ sub base32str_to_bin {
 
     # The MB fallback method is encode_09AV, which will work if we uc the
     # string first.
-    return MIME::Base32::decode( uc $str );
-
-#TODO: patch MIME::Base32 to implement RFC 4648
+    return MIME::Base32::decode_base32hex( uc $str );
 };
 
 # next 3 subs based on http://www.anders.com/projects/sysadmin/djbdnsRecordBuilder/
@@ -879,6 +890,18 @@ sub precsize_valton {
 
 __END__
 
+=pod
+
+=encoding UTF-8
+
+=head1 NAME
+
+NicToolServer::Export::tinydns - export NicTool DNS data to tinydns (part of djbdns)
+
+=head1 VERSION
+
+version 2.33
+
 =head1 Instructions for Use
 
 https://github.com/msimerson/NicTool/wiki/Export-to-tinydns
@@ -887,5 +910,34 @@ https://github.com/msimerson/NicTool/wiki/Export-to-tinydns
 
 Matt Simerson
 
-=cut
+=head1 AUTHORS
 
+=over 4
+
+=item *
+
+Matt Simerson <msimerson@cpan.org>
+
+=item *
+
+Damon Edwards
+
+=item *
+
+Abe Shelton
+
+=item *
+
+Greg Schueler
+
+=back
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is Copyright (c) 2017 by The Network People, Inc. This software is Copyright (c) 2001 by Damon Edwards, Abe Shelton, Greg Schueler.
+
+This is free software, licensed under:
+
+  The GNU Affero General Public License, Version 3, November 2007
+
+=cut

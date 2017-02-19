@@ -262,7 +262,7 @@ sub display_list {
     $nt_obj->display_move_javascript( 'move_users.cgi', 'user' );
 
     if ( $user_group->{'has_children'} ) {
-        print $q->startform(
+        print $q->start_form(
                 -action => 'move_users.cgi',
                 -method => 'POST',
                 -name   => 'list_form',

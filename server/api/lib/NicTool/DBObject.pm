@@ -19,25 +19,6 @@ use strict;
 ###
 
 
-=head1 NAME
-
-NicTool::DBObject - Abstract class representing an object in the 
-NicTool system. Subclass of B<NicTool::Result>
-
-=head1 SUMMARY
-
-Subclasses of this class represent objects in the NicTool system 
-with knowledge 
-about what API functions pertain to them, and what parameters to
-include automatically in those function calls.  They also know of a 
-parameter to
-name their ID number. Instances have an ID number.
-
-=head1 METHODS
-
-=over
-
-=cut
 
 use Carp;
 
@@ -46,54 +27,26 @@ use NicTool::Result;
 
 our @ISA = 'NicTool::Result';
 
-=item _api
-
-This abstract method should be overridden by a subclass. It returns a 
-hashref containing information about API functions known to the 
-subclass.
-
-=cut
 
 sub _api {
     die "This method needs to be overridden in a subclass";
 }
 
-=item _id_name
-
-This abstract method should be overridden by a sublcass.  It returns 
-the name of the parameter containing the ID of this type of object.
-
-=cut
 
 sub _id_name {
     die "This method needs to be overridden in a subclass";
 }
 
-=item id
-
-Returns the ID of this object.
-
-=cut
 
 sub id {
     return $_[0]->get( $_[0]->_id_name );
 }
 
-=item result
-
-Returns the result of the last API function call.
-
-=cut
 
 sub result {
     return $_[0]->{nt}->result;
 }
 
-=item nt_user_session
-
-Returns the session string for the session.
-
-=cut
 
 sub nt_user_session {
     return $_[0]->{nt}->nt_user_session;
@@ -149,12 +102,6 @@ sub _call {
     return $obj;
 }
 
-=item refresh
-
-Causes the object to refresh its data from the server by calling  
-the appropriate API function.
-
-=cut
 
 sub refresh {
     my $self = shift;
@@ -165,11 +112,6 @@ sub refresh {
     return $self;
 }
 
-=item delete
-
-Calls appropriate function to delete the object from the NicTool Server.
-
-=cut
 
 sub delete {
     my $self = shift;
@@ -177,24 +119,12 @@ sub delete {
     return $res;
 }
 
-=item is_deleted
-
-Returns the value of the 'deleted' property.  (equivalent to calling 
-$obj->get('deleted');
-
-=cut
 
 sub is_deleted {
     my $self = shift;
     return $self->get('deleted');
 }
 
-=item FUNCTION(PARAMS)
-
-See specific subclasses of this class for which API functions can be
-called directly through this object.
-
-=cut
 
 sub AUTOLOAD {
     my ($self) = shift;
@@ -211,7 +141,82 @@ sub AUTOLOAD {
     return;
 }
 
+
+1;
+
+__END__
+
 =pod
+
+=encoding UTF-8
+
+=head1 NAME
+
+NicTool::DBObject
+
+=head1 VERSION
+
+version 1.02
+
+=head1 NAME
+
+NicTool::DBObject - Abstract class representing an object in the 
+NicTool system. Subclass of B<NicTool::Result>
+
+=head1 SUMMARY
+
+Subclasses of this class represent objects in the NicTool system 
+with knowledge 
+about what API functions pertain to them, and what parameters to
+include automatically in those function calls.  They also know of a 
+parameter to
+name their ID number. Instances have an ID number.
+
+=head1 METHODS
+
+=over
+
+=item _api
+
+This abstract method should be overridden by a subclass. It returns a 
+hashref containing information about API functions known to the 
+subclass.
+
+=item _id_name
+
+This abstract method should be overridden by a sublcass.  It returns 
+the name of the parameter containing the ID of this type of object.
+
+=item id
+
+Returns the ID of this object.
+
+=item result
+
+Returns the result of the last API function call.
+
+=item nt_user_session
+
+Returns the session string for the session.
+
+=item refresh
+
+Causes the object to refresh its data from the server by calling  
+the appropriate API function.
+
+=item delete
+
+Calls appropriate function to delete the object from the NicTool Server.
+
+=item is_deleted
+
+Returns the value of the 'deleted' property.  (equivalent to calling 
+$obj->get('deleted');
+
+=item FUNCTION(PARAMS)
+
+See specific subclasses of this class for which API functions can be
+called directly through this object.
 
 =back
 
@@ -251,6 +256,34 @@ L<NicTool::Nameserver>
 
 =back
 
-=cut
+=head1 AUTHORS
 
-1;
+=over 4
+
+=item *
+
+Matt Simerson <msimerson@cpan.org>
+
+=item *
+
+Damon Edwards
+
+=item *
+
+Abe Shelton
+
+=item *
+
+Greg Schueler
+
+=back
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is Copyright (c) 2017 by The Network People, Inc. This software is Copyright (c) 2001 by Damon Edwards, Abe Shelton, Greg Schueler.
+
+This is free software, licensed under:
+
+  The GNU Affero General Public License, Version 3, November 2007
+
+=cut

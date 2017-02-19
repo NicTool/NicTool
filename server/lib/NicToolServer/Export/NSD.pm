@@ -61,19 +61,14 @@ sub write_makefile {
 
 # NSD v4
 compile: $exportdir/nsd.nictool.conf
-\tnsd-control rebuild
+\t/bin/true
 
-remote: /var/db/nsd/nsd.db
-\trsync -az --delete /var/db/nsd/nsd.db $remote_login\@$address:/var/db/nsd/
+remote: $exportdir
+\trsync -az --delete $exportdir/ $remote_login\@$address:$datadir/
 
-restart: nsd.db
-\tssh $remote_login\@$address nsd-control reload
+restart: $exportdir
+\tssh $remote_login\@$address nsd-control reconfig && nsd-control reload
 
-# NSD v3
-#compile: $exportdir/named.conf.nictool
-#\t nsdc rebuild
-#restart: nsd.db
-#\tssh $remote_login\@$address nsdc reload
 EO_MAKE
 ;
     close $M;
@@ -84,18 +79,60 @@ EO_MAKE
 
 __END__
 
+=pod
+
+=encoding UTF-8
+
 =head1 NAME
 
-NicToolServer::Export::NSD
+NicToolServer::Export::NSD - exporting DNS data to NSD
+
+=head1 VERSION
+
+version 2.33
 
 =head1 SYNOPSIS
 
 Export DNS information from NicTool as BIND zone files for the NSD name server.
+
+=head1 NAME
+
+NicToolServer::Export::NSD
 
 =head1 named.conf.local
 
 This class will export a named.conf.nictool file with all the NicTool zones assigned to that NicTool nameserver. It is expected that this file will be included into a named.conf file via an include entry like this:
 
  include "/etc/namedb/master/named.conf.nictool";
+
+=head1 AUTHORS
+
+=over 4
+
+=item *
+
+Matt Simerson <msimerson@cpan.org>
+
+=item *
+
+Damon Edwards
+
+=item *
+
+Abe Shelton
+
+=item *
+
+Greg Schueler
+
+=back
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is Copyright (c) 2017 by The Network People, Inc. This software is Copyright (c) 2001 by Damon Edwards, Abe Shelton, Greg Schueler.
+
+This is free software, licensed under:
+
+  The GNU Affero General Public License, Version 3, November 2007
 
 =cut
