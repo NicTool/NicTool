@@ -429,6 +429,22 @@ sub zr_nsec3param {
     return "$r->{name}	$r->{ttl}	IN  NSEC3PARAM $r->{address}\n";
 }
 
+sub zr_hinfo {
+    my ($self, $r) = @_;
+
+    # Name     ttl  class   rr  address
+    return "$r->{name}	$r->{ttl}	IN  HINFO	$r->{address}\n";
+}
+
+sub zr_uri {
+    my ($self, $r) = @_;
+
+    my $priority = $self->{nte}->is_ip_port( $r->{priority} );
+    my $weight   = $self->{nte}->is_ip_port( $r->{weight} );
+
+    # Owner Name     ttl  class   rr  pri  weight target
+    return "$r->{name}	$r->{ttl}	IN  URI	$priority	$weight	$r->{address}\n";
+}
 
 1;
 
