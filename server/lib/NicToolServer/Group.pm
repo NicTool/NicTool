@@ -79,7 +79,7 @@ sub new_group {
         . ") VALUES(??)";
 
     my @values = map( $data->{$_}, @permcols );
-    push @values, join(',', $data->{usable_nameservers} );
+    push @values, join(',', sort $data->{usable_nameservers} );
     my $permid = $self->exec_query( $sql, [ $insertid, @values ] );
     warn "$sql\n" if $self->debug_sql;
 
@@ -176,7 +176,7 @@ sub edit_group {
             push @newns, $_ if exists $groupns{$_};
             delete $groupns{$_};
         }
-        $data->{usable_ns} = scalar @newns ? join(',', @newns) : '';
+        $data->{usable_ns} = scalar @newns ? join(',', sort @newns) : '';
     }
     else {
         return $self->error_response( 507,
@@ -598,7 +598,48 @@ sub find_group {
 
 __END__
 
+=pod
+
+=encoding UTF-8
+
+=head1 NAME
+
+NicToolServer::Group - nictool groups (aka, permission realms)
+
+=head1 VERSION
+
+version 2.33
+
 =head1 SYNOPSIS
 
-=cut
+=head1 AUTHORS
 
+=over 4
+
+=item *
+
+Matt Simerson <msimerson@cpan.org>
+
+=item *
+
+Damon Edwards
+
+=item *
+
+Abe Shelton
+
+=item *
+
+Greg Schueler
+
+=back
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is Copyright (c) 2017 by The Network People, Inc. This software is Copyright (c) 2001 by Damon Edwards, Abe Shelton, Greg Schueler.
+
+This is free software, licensed under:
+
+  The GNU Affero General Public License, Version 3, November 2007
+
+=cut

@@ -652,9 +652,9 @@ LEFT JOIN nt_nameserver_export_type et ON ns.export_type_id=et.id
 sub set_active_nameserver {
     my $self = shift;
     my $nsid = shift;
-    
+
     $self->{ns_ref} = $self->{active_ns_ids}{$nsid};
-    $self->{export_format} = $self->{ns_ref}{export_format};  
+    $self->{export_format} = $self->{ns_ref}{export_format};
 }
 
 sub load_export_class {
@@ -949,9 +949,17 @@ sub is_interactive {
 
 __END__
 
+=pod
+
+=encoding UTF-8
+
 =head1 NAME
 
-NicToolServer::Export
+NicToolServer::Export - export DNS data to authoritative DNS servers
+
+=head1 VERSION
+
+version 2.33
 
 =head1 SYNOPSIS
 
@@ -987,6 +995,10 @@ postflight
 
 =back
 
+=head1 NAME
+
+NicToolServer::Export
+
 =head1 Export Classes
 
 In general, each export class is expected to provide the following methods:
@@ -999,12 +1011,42 @@ The postflight method will handle any processing that needs to be called after t
 
 =item zr_*
 
-One method needs to exist for each RR type (zr_a, zr_mx, zr_cname, etc.) used in the resource_record_type table. 
+One method needs to exist for each RR type (zr_a, zr_mx, zr_cname, etc.) used in the resource_record_type table.
 
 =item export_db
 
 The export_db method inherited from Base.pm is suitable for BIND style exports (exporting each zone to a file). If that doesn't work, write your own export_db method. See tinydns.pm and DynECT.pm for examples.
 
 =back
+
+=head1 AUTHORS
+
+=over 4
+
+=item *
+
+Matt Simerson <msimerson@cpan.org>
+
+=item *
+
+Damon Edwards
+
+=item *
+
+Abe Shelton
+
+=item *
+
+Greg Schueler
+
+=back
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is Copyright (c) 2017 by The Network People, Inc. This software is Copyright (c) 2001 by Damon Edwards, Abe Shelton, Greg Schueler.
+
+This is free software, licensed under:
+
+  The GNU Affero General Public License, Version 3, November 2007
 
 =cut

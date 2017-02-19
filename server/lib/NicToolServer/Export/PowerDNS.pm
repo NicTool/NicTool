@@ -1,15 +1,6 @@
 package NicToolServer::Export::PowerDNS;
 # ABSTRACT: exporting DNS data to PowerDNS servers
 
-=pod
-
-A working PowerDNS pipe backend script is included in the NicToolServer
-distribution as bin/nt_powerdns.pl. It serves PowerDNS requests directly
-from the data in the NicTool tables.
-
-This module is used for PowerDNS with the zone files back end.
-
-=cut
 
 use strict;
 use warnings;
@@ -64,13 +55,31 @@ MAKE
 
 __END__
 
+=pod
+
+=encoding UTF-8
+
 =head1 NAME
 
-NicToolServer::Export::PowerDNS
+NicToolServer::Export::PowerDNS - exporting DNS data to PowerDNS servers
+
+=head1 VERSION
+
+version 2.33
 
 =head1 SYNOPSIS
 
 Export DNS information from to PowerDNS BIND file backend
+
+A working PowerDNS pipe backend script is included in the NicToolServer
+distribution as bin/nt_powerdns.pl. It serves PowerDNS requests directly
+from the data in the NicTool tables.
+
+This module is used for PowerDNS with the zone files back end.
+
+=head1 NAME
+
+NicToolServer::Export::PowerDNS
 
 =head1 named.conf.local
 
@@ -79,5 +88,35 @@ This class will export a named.conf.nictool file with all the zones assigned to 
 =head1 AUTHOR
 
 Matt Simerson
+
+=head1 AUTHORS
+
+=over 4
+
+=item *
+
+Matt Simerson <msimerson@cpan.org>
+
+=item *
+
+Damon Edwards
+
+=item *
+
+Abe Shelton
+
+=item *
+
+Greg Schueler
+
+=back
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is Copyright (c) 2017 by The Network People, Inc. This software is Copyright (c) 2001 by Damon Edwards, Abe Shelton, Greg Schueler.
+
+This is free software, licensed under:
+
+  The GNU Affero General Public License, Version 3, November 2007
 
 =cut

@@ -18,45 +18,6 @@
 
 package NicTool::User;
 
-=head1 NAME
-
-NicTool::User - Class representing a User in the NicTool system.
-
-=head1 SYNOPSIS
-
-    my $user = $nt->get_user;
-
-=head1 DESCRIPTION
-
-A B<NicTool::User> object represents a user in the NicTool system.
-Using an instance of B<NicTool::User> you can call a number of NicTool
-API functions without specifying the 'nt_user_id' parameter, and that
-parameter will be supplied by this object.
-
-The API functions which you can call are:
-
-=over
-
-=item edit_user
-
-Returns a B<NicTool::Result> object.
-
-=item get_user_global_log
-
-Returns a B<NicTool::Result> object.
-
-=item logout
-
-Returns a B<NicTool::Result> object.
-
-=back
-
-A User in the NicTool system also has an 'nt_group_id' parameter 
-which specifies the group the user belongs to.  Because of this, you
-can also call any of the API functions specified in L<NicTool::Group>
-and the 'nt_group_id' parameter will be supplied automatically.
-
-=cut
 
 use NicTool::DBObject;
 our @ISA = 'NicTool::DBObject';
@@ -103,6 +64,61 @@ sub _api {
     };
 }
 
+
+1;
+
+__END__
+
+=pod
+
+=encoding UTF-8
+
+=head1 NAME
+
+NicTool::User
+
+=head1 VERSION
+
+version 1.02
+
+=head1 SYNOPSIS
+
+    my $user = $nt->get_user;
+
+=head1 DESCRIPTION
+
+A B<NicTool::User> object represents a user in the NicTool system.
+Using an instance of B<NicTool::User> you can call a number of NicTool
+API functions without specifying the 'nt_user_id' parameter, and that
+parameter will be supplied by this object.
+
+The API functions which you can call are:
+
+=over
+
+=item edit_user
+
+Returns a B<NicTool::Result> object.
+
+=item get_user_global_log
+
+Returns a B<NicTool::Result> object.
+
+=item logout
+
+Returns a B<NicTool::Result> object.
+
+=back
+
+A User in the NicTool system also has an 'nt_group_id' parameter 
+which specifies the group the user belongs to.  Because of this, you
+can also call any of the API functions specified in L<NicTool::Group>
+and the 'nt_group_id' parameter will be supplied automatically.
+
+=head1 NAME
+
+NicTool::User - Class representing a User in the NicTool system.
+
 =head1 SEE ALSO
 
 =over
@@ -121,7 +137,34 @@ L<NicTool::Group>
 
 =back
 
+=head1 AUTHORS
+
+=over 4
+
+=item *
+
+Matt Simerson <msimerson@cpan.org>
+
+=item *
+
+Damon Edwards
+
+=item *
+
+Abe Shelton
+
+=item *
+
+Greg Schueler
+
+=back
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is Copyright (c) 2017 by The Network People, Inc. This software is Copyright (c) 2001 by Damon Edwards, Abe Shelton, Greg Schueler.
+
+This is free software, licensed under:
+
+  The GNU Affero General Public License, Version 3, November 2007
+
 =cut
-
-1;
-

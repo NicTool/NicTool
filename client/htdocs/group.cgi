@@ -147,7 +147,7 @@ sub display_zone_search {
 <table class="fat">
  <tr class=dark_grey_bg><td><table class="no_pad fat">
     <tr> ],
-    $q->startform( -action => 'group.cgi', -method => 'POST' ),
+    $q->start_form( -action => 'group.cgi', -method => 'POST' ),
     $q->hidden( -name => 'nt_group_id' ),
     qq[ <td> ],
     $q->textfield( -name => 'search_value', -size => 30, -override => 1 ),

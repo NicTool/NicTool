@@ -5,7 +5,6 @@ README
 contrib/addserver.pl
 contrib/DNS.pm
 contrib/zone2nic.pl
-dist.ini
 lib/NicTool.pm
 lib/NicTool/API.pm
 lib/NicTool/Cache.pm

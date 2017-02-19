@@ -1,0 +1,27 @@
+---
+abstract: 'A client framework for interaction with a NicToolServer via SOAP or XML-RPC.'
+author:
+  - 'Matt Simerson <msimerson@cpan.org>'
+  - 'Damon Edwards'
+  - 'Abe Shelton'
+  - 'Greg Schueler'
+build_requires:
+  Test: '0'
+dynamic_config: 0
+generated_by: 'CPAN::Meta::Converter version 2.143240'
+license: open_source
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: '1.4'
+name: NicTool
+requires:
+  Carp: '0'
+  Data::Dumper: '0'
+  LWP: '0'
+  RPC::XML: '1'
+  RPC::XML::Parser: '0'
+  SOAP::Lite: '0.51'
+  lib: '0'
+  parent: '0'
+  strict: '0'
+version: '1.02'

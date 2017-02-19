@@ -15,18 +15,61 @@
 use strict;
 use warnings;
 
-use lib '.';
 use lib 't';
 use lib 'lib';
-use Data::Dumper;
 use NicToolTest;
-use Test::More;
-use_ok('NicToolServer::Import::BIND');
-$Data::Dumper::Sortkeys=1;
+use Test;
+use NicToolServer::Import::BIND;
 
-my $bind = NicToolServer::Import::BIND->new();
-ok($bind, 'new');
+BEGIN { plan tests => 5 }
+
+my $nt_api = nt_api_connect();
+my $bind = nt_import_connect();
+
+my $res = $nt_api->get_group->new_group( name => 'test_delete_group' );
+die "Couldn't create test group"
+    unless noerrok($res)
+        and ok( $res->get('nt_group_id') => qr/^\d+$/ );
+my $gid1 = $res->get('nt_group_id');
+
+
+my $group1 = $nt_api->get_group( nt_group_id => $gid1 );
+die "Couldn't get test group1"
+    unless noerrok($group1)
+        and ok( $group1->id, $gid1 );
+
+$bind->{group_id} = $group1;
 
 $bind->import_records('t/fixtures/named.conf');
 
-done_testing();
+exit;
+
+
+sub nt_api_connect () {
+    my $user = new NicTool(
+        cache_users  => 0,
+        cache_groups => 0,
+        server_host  => Config('server_host'),
+        server_port  => Config('server_port')
+    );
+    die "Couldn't create NicTool Object" unless ok( ref $user, 'NicTool' );
+
+    $user->login(
+        username => Config('username'),
+        password => Config('password')
+    );
+
+    return $user;
+}
+
+sub nt_import_connect () {
+    my $bind = NicToolServer::Import::BIND->new();
+    $bind->nt_connect(
+        Config('server_host'),
+        Config('server_port'),
+        Config('username'),
+        Config('password')
+        );
+    return $bind;
+}
+

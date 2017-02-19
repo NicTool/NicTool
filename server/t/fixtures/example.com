@@ -1,8 +1,8 @@
 $ORIGIN example.com.     ; designates the start of this zone file in the namespace
 $TTL 1h                  ; default expiration time of all resource records without their own TTL value
-example.com.  IN  SOA   ns.example.com. username.example.com. ( 2007120710 1d 2h 4w 1h )
-example.com.  IN  NS    ns                    ; ns.example.com is a nameserver for example.com
-example.com.  IN  NS    ns.somewhere.example. ; ns.somewhere.example is a backup nameserver for example.com
+example.com.  IN  SOA   ns1.example.com. username.example.com. ( 2007120710 1d 2h 4w 1h )
+example.com.  IN  NS    ns1                   ; ns1.example.com is a nameserver for example.com
+@             IN  NS    ns2.example.com.      ; ns2.example.com is a secondary
 example.com.  IN  MX    10 mail.example.com.  ; mail.example.com is the mailserver for example.com
 @             IN  MX    20 mail2.example.com. ; equivalent to above line, "@" represents zone origin
 @             IN  MX    50 mail3              ; equivalent to above line, but using a relative host name
