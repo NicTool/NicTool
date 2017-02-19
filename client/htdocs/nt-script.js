@@ -58,6 +58,8 @@ function selectedRRType(rrType) {
       case 'NSEC3':      setFormRRTypeNSEC3();      break;
       case 'NSEC3PARAM': setFormRRTypeNSEC3PARAM(); break;
       case 'RRSIG':      setFormRRTypeRRSIG();      break;
+      case 'HINFO':      setFormRRTypeHINFO();      break;
+      case 'URI':        setFormRRTypeURI();        break;
     }
 }
 
@@ -357,6 +359,25 @@ function setFormRRTypeIPSECKEY() {
   $('input#other').attr('placeholder','2');
   var algoTypes = { '0' : 'none', '1' : 'DSA', '2' : 'RSA', };
   addValuesToSelect( algoTypes, 'other' );
+}
+
+function setFormRRTypeURI() {
+  setRfcHelp(['7553']);
+  $('input#name').attr('placeholder','_ftp._tcp');
+  $('input#address').attr('placeholder','ftp://ftp1.example.com/public');
+
+  $('#weight_row').show();
+  $('input#weight').attr('placeholder','10');
+
+  $('#priority_row').show();
+  $('input#priority').attr('placeholder','1');
+}
+
+function setFormRRTypeHINFO() {
+  setRfcHelp(['1035']);
+  $('input#name').attr('placeholder','host');
+  $('input#address').attr('placeholder','CPU OS');
+  $('td#address_label').text('Host Info');
 }
 
 function addValuesToSelect(array,selectName) {
