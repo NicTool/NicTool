@@ -8,7 +8,6 @@ META.yml
 Makefile.PL
 TODO.md
 bin/install_deps.pl
-dist.ini
 htdocs/delegate_zones.cgi
 htdocs/favicon.ico
 htdocs/group.cgi

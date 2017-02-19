@@ -1,7 +1,7 @@
 language: perl
 perl:
-# - "5.22"
-# - "5.18"
+  - "5.22"
+  - "5.18"
   - "5.10"
 
 services:
@@ -52,9 +52,11 @@ before_install:
     - sudo cpanm --notest CGI RPC::XML CryptX Crypt::Mac::HMAC Crypt::KeyDerivation DBD::mysql Apache::DBI Shell
 
       # locally installed modules, for tests
-    - cpanm --notest CGI RPC::XML Time::TAI64 CryptX Crypt::Mac::HMAC Crypt::KeyDerivation DBD::mysql Test::HTML::Lint Shell LWP::UserAgent Test::Output Test::Pod MIME::Base32
+    - cpanm --notest --force Test::More Test::HTML::Lint Test::Output Test::Pod
     - cpanm --notest --force Net::DNS || sudo cpanm --notest --force Net::DNS@1.0.6 || echo "double darn"
-    - cpanm --notest JSON SOAP::Lite XML::Parser Net::DNS Net::IP BIND::Conf_Parser DBIx::Simple DBI
+    - cd /home/travis/build/msimerson/NicTool/client && perl Makefile.PL && cpanm -n .
+    - cd /home/travis/build/msimerson/NicTool/server && perl Makefile.PL && cpanm -n .
+    - cd /home/travis/build/msimerson/NicTool
 
 install:
     - sudo cp .test/apache-nictool.conf /etc/apache2/sites-enabled/
@@ -64,9 +66,7 @@ install:
 before_script:
 
 script:
-    - cd /home/travis/build/msimerson/NicTool/client && perl Makefile.PL
     - make -C /home/travis/build/msimerson/NicTool/client test
-    - cd /home/travis/build/msimerson/NicTool/server && perl Makefile.PL
     - make -C /home/travis/build/msimerson/NicTool/server test
 
 after_success:

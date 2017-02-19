@@ -42,7 +42,8 @@ sub perm_fields {
         zone_create zone_delegate zone_delete zone_write
         zonerecord_create zonerecord_delegate zonerecord_delete zonerecord_write
         user_create user_delete user_write self_write
-        nameserver_create nameserver_delete nameserver_write/;
+        nameserver_create nameserver_delete nameserver_write
+    /;
 }
 
 sub get_user {
@@ -276,7 +277,7 @@ sub edit_user {
         # perms are inherited and inherit_group_permissions is 1: do nothing
     }
 
-    $data->{nt_group_id} = $prev_data->{nt_group_id} unless $data->{nt_group_id};
+    $data->{nt_group_id} = $prev_data->{nt_group_id} if ! $data->{nt_group_id};
     if ($action) {
         $self->log_user( $data, $action, $prev_data );
     }

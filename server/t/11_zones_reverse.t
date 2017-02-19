@@ -8,7 +8,7 @@ use NicToolServer::Import::Base;
 # use NicTool;
 use Test;
 
-BEGIN { plan tests => 25 }
+BEGIN { plan tests => 26 }
 
 
 my $user = new NicTool(
@@ -103,7 +103,7 @@ sub doit {
 
 
     my (@r) = $base->get_zone_id($rzone);
-    warn @r;
+    #warn @r;
     ok($r[0]);
 }
 
@@ -115,9 +115,7 @@ sub del {
 
     if ( defined $zid1 ) {
         $res = $user->delete_zones( zone_list => $zid1 );
-        unless ( noerrok($res) ) {
-            warn Data::Dumper::Dumper($res);
-        }
+        noerrok($res) or warn Data::Dumper::Dumper($res);
     }
     else {
         ok( 1, 0, "Couldn't delete test zone 1" );

@@ -15,23 +15,16 @@
 use strict;
 use warnings;
 
-# use lib '.';
 use lib 't';
 use lib 'lib';
-# use Data::Dumper;
 use NicToolTest;
 use Test;
-use_ok('NicToolServer::Import::BIND');
-# $Data::Dumper::Sortkeys=1;
+use NicToolServer::Import::BIND;
 
-
-BEGIN { plan tests => 2 }
+BEGIN { plan tests => 5 }
 
 my $nt_api = nt_api_connect();
 my $bind = nt_import_connect();
-
-ok($nt_api, 'new');
-ok($bind, 'new');
 
 my $res = $nt_api->get_group->new_group( name => 'test_delete_group' );
 die "Couldn't create test group"
@@ -48,8 +41,6 @@ die "Couldn't get test group1"
 $bind->{group_id} = $group1;
 
 $bind->import_records('t/fixtures/named.conf');
-
-done_testing();
 
 exit;
 
