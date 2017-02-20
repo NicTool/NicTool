@@ -11,3 +11,5 @@ $TTL 86400
 252	3600	IN  PTR	storage.example.com.
 203	3600	IN  PTR	color.example.com.
 65	3600	IN  PTR	nictool.
+66	3600	IN  PTR	dupe.
+66	3600	IN  PTR	dupe.

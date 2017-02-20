@@ -52,8 +52,8 @@ sub import_zone {
 
     print "zone: $zone \tfrom\t$file\n";
 
-    my $zonefile = Net::DNS::ZoneFile->new($file, [$zone] );
-    foreach my $rr ($zonefile->read) {
+    my $zonefile = Net::DNS::ZoneFile->new($file, $zone );
+    while (my $rr = $zonefile->read) {
         my $method = 'zr_' . lc $rr->type;
         print "$method\n";
         $self->$method( $rr, $zone );

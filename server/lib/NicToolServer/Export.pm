@@ -164,7 +164,7 @@ sub touch_publish_ts {
 sub cleanup_db {
     my $self = shift;
 
-# delete the "started, 0 changed zones, exiting" log entries older than today
+    # delete the "started, 0 changed zones, exiting" log entries older than today
     $self->exec_query(
         "DELETE FROM nt_nameserver_export_log
           WHERE copied=0 AND success=1
@@ -713,16 +713,16 @@ sub preflight {
     if ( $export ) {
         my $ts_success = $export->{date_start};
         if ( $ts_success ) {
-# have any zones for this NS changed since the last successful export?
+            # have any zones for this NS changed since the last successful export?
             my $c = $self->get_modified_zones_count( since => $ts_success );
-# store the last success ts for incrementals
+            # store the last success ts for incrementals
             $self->export_required( $c == 0 ? 0 : $ts_success );
             $self->elog( "$c changed");
         };
     };
     $self->elog("export required") if $self->export_required;
 
-#   $self->get_export_dir or return;   # determine export directory
+    $self->get_export_dir or return;   # determine export directory
     $self->write_runfile();            # provide a default 'run' file
 
     return 1;
