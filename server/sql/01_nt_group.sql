@@ -43,9 +43,7 @@ CREATE TABLE nt_group_subgroups(
 
 INSERT INTO `nt_group` (`nt_group_id`, `parent_group_id`, `name`)
 VALUES
-    (1,0,'NicTool'),
-    (2,1,'test_group');
+    (1,0,'NicTool');
 INSERT INTO nt_group_log(nt_group_id, nt_user_id, action, timestamp, modified_group_id, parent_group_id)
 VALUES
-    (1, 1, 'added', UNIX_TIMESTAMP(), 1, 0),
-    (2, 1, 'added', UNIX_TIMESTAMP(), 2, 1);
+    (1, 1, 'added', UNIX_TIMESTAMP(), 1, 0);
