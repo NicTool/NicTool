@@ -62,7 +62,11 @@ VALUES
     (1, 'Root', 'User', 'root', '$pass_hash', '$salt', '$nt_root_email'),
     (2, 'TestFirst','TestLast','nictest','7307552e39c9143bd5272f2610b610ed714d7d5e1fadd36e94fcb44d4a7fd65d','GdS=6WW1yTDsg`Nd','test\@example.com')
 ");
-
+$dbh->do("
+INSERT INTO `nt_perm` (`nt_perm_id`, `nt_group_id`, `nt_user_id`, `inherit_perm`, `perm_name`, `group_write`, `group_create`, `group_delete`, `zone_write`, `zone_create`, `zone_delegate`, `zone_delete`, `zonerecord_write`, `zonerecord_create`, `zonerecord_delegate`, `zonerecord_delete`, `user_write`, `user_create`, `user_delete`, `nameserver_write`, `nameserver_create`, `nameserver_delete`, `self_write`, `usable_ns`)
+VALUES
+    (2,2,NULL,NULL,NULL,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,'1,2,3');
+");
 $dbh->disconnect;
 print "\n";
 
