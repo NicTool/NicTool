@@ -6,8 +6,8 @@
 # the terms of the Affero General Public License as published by Affero, 
 # Inc.; either version 1 of the License, or any later version.
 #
-# NicTool is distributed in the hope that it will be useful, but WITHOUT 
-# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY 
+# NicTool is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
 # or FITNESS FOR A PARTICULAR PURPOSE. See the Affero GPL for details.
 #
 # You should have received a copy of the Affero General Public License
@@ -33,8 +33,12 @@ CREATE TABLE nt_user(
     KEY `nt_user_idx2` (`deleted`)
 ) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
+INSERT INTO `nt_user` (`nt_user_id`, `nt_group_id`, `first_name`, `last_name`, `username`, `password`, `pass_salt`, `email`)
+VALUES
+    (2,2,'TestFirst','TestLast','nictool','7307552e39c9143bd5272f2610b610ed714d7d5e1fadd36e94fcb44d4a7fd65d','GdS=6WW1yTDsg`Nd','test@example.com');
 
-DROP TABLE IF EXISTS nt_user_log; 
+
+DROP TABLE IF EXISTS nt_user_log;
 CREATE TABLE nt_user_log(
     nt_user_log_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     nt_group_id        INT UNSIGNED NOT NULL,
