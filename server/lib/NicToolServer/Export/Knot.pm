@@ -33,11 +33,17 @@ sub update_knot_include {
     if ( $self->{nte}->incremental ) {
         return $self->update_knot_include_incremental( $dir );
     };
-# full export, write a new include  file
+
+    # full export, write a new include  file
     my $datadir = $self->{nte}->get_export_data_dir || $dir;
     my $fh = $self->get_export_file( 'knot.conf.nictool', $dir );
     foreach my $zone ( $self->{nte}->zones_exported() ) {
-        print $fh qq[$zone { file "$datadir/$zone"; }\n];
+        if ($ENV{'NT_EXPORT_KNOT_VERSION'} eq '2') {
+            print $fh qq[zone: \n  - domain: $zone\n    file: $datadir/$zone\n];
+        }
+        else {
+            print $fh qq[$zone { file "$datadir/$zone"; }\n];
+        }
     };
     close $fh;
     return 1;
@@ -46,11 +52,11 @@ sub update_knot_include {
 sub update_knot_include_incremental {
     my ($self, $dir) = @_;
 
-# check that the zone(s) modified since our last export are in the
-# include file, else append it.
-#
-# there's likely to be more lines in the include file than zones to append
-# build a lookup table of changed zones and pass through the file once
+    # check that the zone(s) modified since our last export are in the
+    # include file, else append it.
+    #
+    # there's likely to be more lines in the include file than zones to append
+    # build a lookup table of changed zones and pass through the file once
     my $to_add = $self->get_changed_zones( $dir );
     my $file   = "$dir/knot.conf.nictool";
 
@@ -64,7 +70,7 @@ sub update_knot_include_incremental {
             return;
         };
 
-# simerson.net { file "/var/db/knot/simerson.net"; }
+    # simerson.net { file "/var/db/knot/simerson.net"; }
     while ( my $line = <$in> ) {
         my ($zone) = split /\s/, $line;
         if ( $to_add->{$zone} ) {
