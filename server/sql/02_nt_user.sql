@@ -33,10 +33,6 @@ CREATE TABLE nt_user(
     KEY `nt_user_idx2` (`deleted`)
 ) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
-INSERT INTO `nt_user` (`nt_user_id`, `nt_group_id`, `first_name`, `last_name`, `username`, `password`, `pass_salt`, `email`)
-VALUES
-    (2,2,'TestFirst','TestLast','nictool','7307552e39c9143bd5272f2610b610ed714d7d5e1fadd36e94fcb44d4a7fd65d','GdS=6WW1yTDsg`Nd','test@example.com');
-
 
 DROP TABLE IF EXISTS nt_user_log;
 CREATE TABLE nt_user_log(
