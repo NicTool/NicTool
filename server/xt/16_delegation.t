@@ -1154,8 +1154,8 @@ sub test_api_funcs {
     is( $res->size, 1 ) or do {
         warn "nt_group_id=$gid2, record_id: $zrid1";
         diag Data::Dumper::Dumper($res);
-        print "sleeping for 30 seconds...\n";
-        sleep 40;
+        print "sleeping for 20 seconds...\n";
+        sleep 20;
     };
 
     $z = $res->next;
