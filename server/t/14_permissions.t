@@ -38,7 +38,7 @@ use Test::More 'no_plan';
 my $user = nt_api_connect();
 my ($gid1, $group1) = test_new_group1();
 my ($uid1, $tuser)  = test_new_user();
-my %perms = get_perms_none();
+my %perms = get_perms_all();
 
 my ($uid, $group, $gid, $perm);
 
@@ -88,8 +88,6 @@ sub test_new_user {
         inherit_group_permissions => 1,
     );
     noerrok($res) or die "Couldn't create test user";
-    my $uid = $res->get('nt_user_id');
-
 
     #login as test user
     my $tuser = new NicTool(
@@ -106,10 +104,10 @@ sub test_new_user {
     );
     ok( $tuser->result );
 
-    return $uid, $tuser;
+    return $res->get('nt_user_id'), $tuser;
 }
 
-sub get_perms_none {
+sub get_perms_all {
     return (
         group_write  => 0,
         group_create => 0,
@@ -137,10 +135,6 @@ sub get_perms_none {
 
 sub test_perms {
 
-    ####################
-    # basic perms stuff
-    ####################
-
     # check group perms
     my $res = $group1->edit_group(%perms);
     noerrok($res);
@@ -150,28 +144,32 @@ sub test_perms {
         is( $group1->get($_), $perms{$_} );
     }
 
+    toggle_group_permissions();
+    toggle_user_permissions();
+    toggle_group_inherited_permissions();
+}
+
+sub toggle_group_permissions {
+
     # set and unset each permission for group. check inheritance
     foreach ( keys %perms ) {
 
         #set perm to TRUE
         $perms{$_} = 1;
 
-        $res = $group1->edit_group( $_ => 1 );
+        my $res = $group1->edit_group( $_ => 1 );
         noerrok($res);
-
         noerrok( $group1->refresh )
             or die "Couldn't refresh test group $gid1";
 
         foreach my $k ( keys %perms ) {
-            is( $group1->get($k), $perms{$k},
-                "perm $_ set to 1: $k incorrect" );
+            is( $group1->get($k), $perms{$k}, "perm $_ set to 1: $k incorrect" );
         }
 
         noerrok( $tuser->refresh ) or die "Couldn't refresh test user $uid1";
 
         foreach my $k ( keys %perms ) {
-            is( $tuser->get($k), $perms{$k},
-                "perm $_ set to 1: $k incorrect" );
+            is( $tuser->get($k), $perms{$k}, "perm $_ set to 1: $k incorrect" );
         }
 
         #set perm to FALSE
@@ -179,22 +177,22 @@ sub test_perms {
 
         $res = $group1->edit_group( $_ => 0 );
         noerrok($res);
-
         noerrok( $group1->refresh )
             or die "Couldn't refresh test group $gid1";
 
         foreach my $k ( keys %perms ) {
-            is( $group1->get($k), $perms{$k},
-                "perm $_ set to 0: $k incorrect" );
+            is( $group1->get($k), $perms{$k}, "perm $_ set to 0: $k incorrect" );
         }
 
         noerrok( $tuser->refresh ) or die "Couldn't refresh test user $uid1";
 
         foreach my $k ( keys %perms ) {
-            is( $tuser->get($k), $perms{$k},
-                "perm $_ set to 0: $k incorrect" );
+            is( $tuser->get($k), $perms{$k}, "perm $_ set to 0: $k incorrect" );
         }
     }
+}
+
+sub toggle_user_permissions {
 
     #set and unset each permission for user
     foreach my $p ( keys %perms ) {
@@ -202,14 +200,12 @@ sub test_perms {
         #set perm to TRUE
         $perms{$p} = 1;
 
-        $res = $user->edit_user(
-            nt_user_id                => $uid1,
-            $p                        => 1,
-            inherit_group_permissions => 0
+        my $res = $user->edit_user(
+            nt_user_id => $uid1, $p => 1, inherit_group_permissions => 0
         );
         noerrok($res);
-
-        noerrok( $group1->refresh ) or die "Couldn't refresh test group $gid1";
+        noerrok( $group1->refresh )
+            or die "Couldn't refresh test group $gid1";
 
         foreach my $k ( keys %perms ) {
             is( $group1->get($k), 0, "user perm $p set to 1: $k incorrect" );
@@ -218,8 +214,7 @@ sub test_perms {
         noerrok( $tuser->refresh ) or die "Couldn't refresh test user $uid1";
 
         foreach my $k ( keys %perms ) {
-            is( $tuser->get($k), $perms{$k},
-                "user perm $p set to 1: $k incorrect" );
+            is( $tuser->get($k), $perms{$k}, "user perm $p set to 1: $k incorrect" );
         }
 
         #set perm to FALSE
@@ -227,7 +222,6 @@ sub test_perms {
 
         $res = $user->edit_user( nt_user_id => $uid1, $p => 0 );
         noerrok($res);
-
         noerrok( $group1->refresh )
             or die "Couldn't refresh test group $gid1";
 
@@ -238,17 +232,17 @@ sub test_perms {
         noerrok( $tuser->refresh ) or die "Couldn't refresh test user $uid1";
 
         foreach my $k ( keys %perms ) {
-            is( $tuser->get($k), $perms{$k},
-                "user perm $p set to 0: $k incorrect" );
+            is( $tuser->get($k), $perms{$k}, "user perm $p set to 0: $k incorrect" );
         }
     }
+}
+
+sub toggle_group_inherited_permissions {
 
     #make user inherit perms again
-    $res = $user->edit_user(
-        nt_user_id                => $uid1,
-        inherit_group_permissions => 1
-    );
-    noerrok($res) or die "Couldn't modify test user perms";
+    my $res = $user->edit_user( nt_user_id => $uid1, inherit_group_permissions => 1 );
+    noerrok($res)
+        or die "Couldn't modify test user perms";
 
     # check inheritance again
     foreach ( keys %perms ) {
@@ -258,7 +252,6 @@ sub test_perms {
 
         $res = $group1->edit_group( $_ => 1 );
         noerrok($res);
-
         noerrok( $group1->refresh )
             or die "Couldn't refresh test group $gid1";
 
@@ -277,7 +270,6 @@ sub test_perms {
 
         $res = $group1->edit_group( $_ => 0 );
         noerrok($res);
-
         noerrok( $group1->refresh )
             or die "Couldn't refresh test group $gid1";
 
@@ -285,7 +277,8 @@ sub test_perms {
             is( $group1->get($k), $perms{$k}, "perm $_ set to 0" );
         }
 
-        noerrok( $tuser->refresh ) or die "Couldn't refresh test user $uid1";
+        noerrok( $tuser->refresh )
+            or die "Couldn't refresh test user $uid1";
 
         foreach my $k ( keys %perms ) {
             is( $tuser->get($k), $perms{$k}, "perm $_ set to 0" );
@@ -294,44 +287,64 @@ sub test_perms {
 }
 
 sub test_create {
-    ####################
-    # no create permissions
-    ####################
 
-    #try to create
+    test_create_zone_no_perms();
+    test_create_zone_perms();
 
-    #zone
-    my $res = $tuser->new_zone(
-        zone        => 'test.com',
-        serial      => 0,
-        ttl         => 86400,
-        description => "test delete me",
-        mailaddr    => "somebody.somewhere.com",
-        refresh     => 10,
-        retry       => 20,
-        expire      => 30,
-        minimum     => 40,
-    );
+    test_create_user_no_perms();
+    test_create_user_perms();
+
+    test_create_ns_no_perms();
+    test_create_ns_perms();
+
+    test_create_group_no_perms();
+    test_create_group_perms();
+
+    ####################
+    # allow user to create zones, but not records
+    ####################
+    my $res = $group1->edit_group( zone_create => 1 );
+    noerrok($res);
+
+    my $res = $tuser->new_zone( test_com_zone() );
+    noerrok($res);
+    my $zid1 = $res->get('nt_zone_id');
+
+    test_create_zone_recs_no_perms($zid1);
+    test_create_zone_recs_perms($zid1);
+
+    $res = $user->delete_zones( zone_list => $zid1 );
+    noerrok($res) or die "Couldn't delete test zone ID $zid1 !";
+}
+
+sub test_com_zone {
+    zone        => 'test.com',
+    serial      => 0,
+    ttl         => 86400,
+    description => "test delete me",
+    mailaddr    => "somebody.somewhere.com",
+    refresh     => 10,
+    retry       => 20,
+    expire      => 30,
+    minimum     => 40,
+}
+
+sub test_create_zone_no_perms {
+
+    my $res = $tuser->new_zone( test_com_zone() );
 
     noerrok( $res, 404, "create zone" );
     ok( $res->error_msg =~ qr/Not allowed to create new zone/ );
+}
+
+sub test_create_zone_perms {
 
     # let user create zones
-    $res = $group1->edit_group( zone_create => 1, );
+    my $res = $group1->edit_group( zone_create => 1 );
     noerrok($res);
 
     # create zone
-    $res = $tuser->new_zone(
-        zone        => 'test.com',
-        serial      => 0,
-        ttl         => 86400,
-        description => "test delete me",
-        mailaddr    => "somebody.somewhere.com",
-        refresh     => 10,
-        retry       => 20,
-        expire      => 30,
-        minimum     => 40,
-    );
+    $res = $tuser->new_zone( test_com_zone() );
 
     noerrok($res);
     my $zid = $res->get('nt_zone_id');
@@ -339,9 +352,12 @@ sub test_create {
 
     $res = $user->delete_zones( zone_list => $zid );
     noerrok($res) or die "Couldn't delete test zone ID $zid !";
+}
+
+sub test_create_user_no_perms {
 
     # don't let user create zones
-    $res = $group1->edit_group( zone_create => 0, );
+    my $res = $group1->edit_group( user_create => 0 );
     noerrok($res);
 
     # user
@@ -356,14 +372,15 @@ sub test_create {
 
     noerrok( $res, 404, "create user" );
     ok( $res->error_msg =~ qr/Not allowed to create new user/ );
+}
+
+sub test_create_user_perms {
 
     #let user create users
-
-    $res = $group1->edit_group( user_create => 1, );
+    my $res = $group1->edit_group( user_create => 1 );
     noerrok($res);
 
     #create test user
-
     $res = $tuser->new_user(
         first_name => 'test',
         last_name  => '1',
@@ -374,22 +391,21 @@ sub test_create {
     );
 
     noerrok($res);
-    $uid = $res->get('nt_user_id');
+    my $uid = $res->get('nt_user_id');
     ok( $uid =~ qr/^\d+$/ );
 
     #delete user
-
     $res = $user->delete_users( user_list => $uid );
     noerrok($res) or die "Couldn't delete test user ID $uid !";
 
     #don't let user create users
-
-    $res = $group1->edit_group( user_create => 0, );
+    $res = $group1->edit_group( user_create => 0 );
     noerrok($res);
+}
 
-    #nameserver
+sub test_create_ns_no_perms {
 
-    $res = $tuser->new_nameserver(
+    my $res = $tuser->new_nameserver(
         name          => 'ns.somewhere.com.',
         address       => '1.2.3.4',
         export_format => 'bind',
@@ -398,85 +414,67 @@ sub test_create {
 
     noerrok( $res, 404, "create nameserver" );
     ok( $res->error_msg =~ qr/Not allowed to create new nameserver/ );
+}
+
+sub test_create_ns_perms {
 
     #let user create nameservers
-
-    $res = $group1->edit_group( nameserver_create => 1, );
+    my $res = $group1->edit_group( nameserver_create => 1 );
     noerrok($res);
 
     #create nameserver
-
     $res = $tuser->new_nameserver(
         name          => 'ns.somewhere.com.',
         address       => '1.2.3.4',
         export_format => 'bind',
         ttl           => 86400
     );
-
     noerrok($res);
+
     my $nsid = $res->get('nt_nameserver_id');
     ok( $nsid =~ qr/^\d+$/ );
 
     $res = $user->delete_nameserver( nt_nameserver_id => $nsid );
     noerrok($res) or die "Couldn't delete test nameserver ID $nsid !";
 
-    #don't let user create nameservers
-
-    $res = $group1->edit_group( nameserver_create => 0, );
+    # don't let user create nameservers
+    $res = $group1->edit_group( nameserver_create => 0 );
     noerrok($res);
+}
 
-    #group
-    $res = $tuser->new_group( name => "test_delete_me 2" );
+sub test_create_group_no_perms {
+
+    my $res = $tuser->new_group( name => "test_delete_me 2" );
 
     noerrok( $res, 404, "Create group" );
     ok( $res->error_msg =~ qr/Not allowed to create new group/ );
+}
+
+sub test_create_group_perms {
 
     #let user create groups
-
-    $res = $group1->edit_group( group_create => 1, );
+    my $res = $group1->edit_group( group_create => 1 );
     noerrok($res);
 
     $res = $tuser->new_group( name => "test_delete_me 2" );
-
     noerrok($res);
-    $gid = $res->get('nt_group_id');
+
+    my $gid = $res->get('nt_group_id');
     ok( $gid =~ qr/^\d+$/ );
 
     $res = $user->delete_group( nt_group_id => $gid );
     noerrok($res) or die "Couldn't delete test group ID $gid !";
 
     #don't let user create groups
-
-    $res = $group1->edit_group( group_create => 0, );
+    $res = $group1->edit_group( group_create => 0 );
     noerrok($res);
+}
 
-    ####################
-    # allow user to create zones, but no records
-    ####################
+sub test_create_zone_recs_no_perms {
+    my ($zid) = @_;
 
-    $res = $group1->edit_group( zone_create => 1, );
-    noerrok($res);
-
-    ####################
-    # test user tries to create records
-    ####################
-
-    $res = $tuser->new_zone(
-        zone        => 'test.com',
-        serial      => 0,
-        ttl         => 86400,
-        description => "test delete me",
-        mailaddr    => "somebody.somewhere.com",
-        refresh     => 10,
-        retry       => 20,
-        expire      => 30,
-        minimum     => 40,
-    );
-    noerrok($res);
-    my $zid1 = $res->get('nt_zone_id');
-
-    $res = $tuser->new_zone_record(
-        nt_zone_id  => $zid1,
+    my $res = $tuser->new_zone_record(
+        nt_zone_id  => $zid,
         name        => 'a',
         ttl         => 86400,
         description => 'record 1',
@@ -487,14 +485,17 @@ sub test_create {
 
     noerrok( $res, 404, "create record" );
     ok( $res->error_msg =~ qr/Not allowed to create new zonerecord/ );
+}
 
-    $res = $group1->edit_group( zonerecord_create => 1, );
+sub test_create_zone_recs_perms {
+    my ($zid) = @_;
+
+    my $res = $group1->edit_group( zonerecord_create => 1 );
     noerrok($res);
 
     #now create record
-
     $res = $tuser->new_zone_record(
-        nt_zone_id  => $zid1,
+        nt_zone_id  => $zid,
         name        => 'a',
         ttl         => 86400,
         description => 'record 1',
@@ -509,18 +510,16 @@ sub test_create {
 
     $res = $user->delete_zone_record( nt_zone_record_id => $zrid );
     noerrok($res) or die "Couldn't delete test zone record ID $zrid !";
-
-    $res = $user->delete_zones( zone_list => $zid1 );
-    noerrok($res) or die "Couldn't delete test zone ID $zid1 !";
 }
 
 sub test_modify {
+
     ####################
     # test user tries to modify objects
     ####################
 
-    %perms = (
-        %perms,
+    my %perms = (
+        get_perms_all(),
         zone_create       => 1,
         user_create       => 1,
         group_create      => 1,
@@ -528,23 +527,13 @@ sub test_modify {
         nameserver_create => 1,
     );
 
-    my $res = $group1->edit_group(%perms);
+    my $res = $group1->edit_group( %perms );
 
     ####################
     # test zone_write
     ####################
 
-    my %zoneorig = (
-        zone        => 'test.com',
-        serial      => 0,
-        ttl         => 86400,
-        description => "test delete me",
-        mailaddr    => "somebody.somewhere.com",
-        refresh     => 10,
-        retry       => 20,
-        expire      => 30,
-        minimum     => 40,
-    );
+    my %zoneorig = test_com_zone();
 
     $res = $tuser->new_zone(%zoneorig);
     noerrok($res);
@@ -576,7 +565,7 @@ sub test_modify {
     }
 
     # set perms correctly
-    %perms = ( %perms, zone_write => 1, );
+    %perms = ( %perms, zone_write => 1 );
     $res = $group1->edit_group(%perms);
     noerrok($res);
 
@@ -656,8 +645,8 @@ sub test_modify {
         is( $group->get($_), $group{$_}, 'settings should not have changed' );
     }
 
-    #set group_write
-    %perms = ( %perms, group_write => 1, );
+    # set group_write
+    %perms = ( %perms, group_write => 1 );
     $res = $group1->edit_group(%perms);
     noerrok($res);
 
@@ -977,17 +966,7 @@ sub test_delete {
     # test zone_delete
     ####################
 
-    my %zoneorig = (
-        zone        => 'test.com',
-        serial      => 0,
-        ttl         => 86400,
-        description => "test delete me",
-        mailaddr    => "somebody.somewhere.com",
-        refresh     => 10,
-        retry       => 20,
-        expire      => 30,
-        minimum     => 40,
-    );
+    my %zoneorig = test_com_zone();
 
     $res = $tuser->new_zone(%zoneorig);
     noerrok($res);
@@ -1007,7 +986,7 @@ sub test_delete {
 
     # set perms correctly
 
-    %perms = ( %perms, zone_delete => 1, );
+    %perms = ( %perms, zone_delete => 1 );
     $res = $group1->edit_group(%perms);
     noerrok($res);
 
@@ -1075,7 +1054,7 @@ sub test_delete {
     is( $group->get('deleted'), 0, "group should not be deleted" );
 
     #set group_delete
-    %perms = ( %perms, group_delete => 1, );
+    %perms = ( %perms, group_delete => 1 );
     $res = $group1->edit_group(%perms);
     noerrok($res);
 
@@ -1142,17 +1121,7 @@ sub test_delete {
     ####################
     # test zonerecord_delete
     ####################
-    %zoneorig = (
-        zone        => 'test.com',
-        serial      => 0,
-        ttl         => '86400',
-        description => "test delete me",
-        mailaddr    => "somebody.somewhere.com",
-        refresh     => 10,
-        retry       => 20,
-        expire      => 30,
-        minimum     => 40,
-    );
+    %zoneorig = test_com_zone();
 
     #make zone
     $res = $tuser->new_zone(%zoneorig);
