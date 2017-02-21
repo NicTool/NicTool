@@ -35,9 +35,14 @@ use NicToolTest;
 use NicTool;
 use Test::More 'no_plan';
 
-my ($user, $tuser, $uid, $uid1, $group, $group1, $gid, $gid1, %perms, $perm);
+my $user = nt_api_connect();
+my ($gid1, $group1) = test_new_group1();
+my ($uid1, $tuser)  = test_new_user();
+my %perms = get_perms_none();
 
-&start;
+my ($uid, $group, $gid, $perm);
+
+
 eval {&test_perms};
 warn $@ if $@;
 eval {&test_create};
@@ -53,23 +58,27 @@ warn $@ if $@;
 eval {&del};
 warn $@ if $@;
 
-sub start {
 
-    $user = nt_api_connect();
+sub test_new_group1 {
 
-    #make a new group
+    # make a new group
     my $res = $user->new_group( name => 'test_delete_me1' );
     noerrok($res)
         && ok( $res->get('nt_group_id') =~ qr/^\d+$/ )
             or die "Couldn't create test group1";
-    $gid1 = $res->get('nt_group_id');
+    my $gid = $res->get('nt_group_id');
 
-    $group1 = $user->get_group( nt_group_id => $gid1 );
-    noerrok($group1)
-        && is( $group1->id, $gid1 )
+    my $group = $user->get_group( nt_group_id => $gid );
+    noerrok($group)
+        && is( $group->id, $gid )
             or die "Couldn't get test group1";
 
-    $res = $group1->new_user(
+    return $gid, $group;
+}
+
+sub test_new_user {
+
+    my $res = $group1->new_user(
         first_name                => 'test',
         last_name                 => '1',
         email                     => 'test@blah.blah',
@@ -79,10 +88,11 @@ sub start {
         inherit_group_permissions => 1,
     );
     noerrok($res) or die "Couldn't create test user";
-    $uid1 = $res->get('nt_user_id');
+    my $uid = $res->get('nt_user_id');
+
 
     #login as test user
-    $tuser = new NicTool(
+    my $tuser = new NicTool(
         cache_users  => 0,
         cache_groups => 0,
         server_host  => Config('server_host'),
@@ -96,7 +106,11 @@ sub start {
     );
     ok( $tuser->result );
 
-    %perms = (
+    return $uid, $tuser;
+}
+
+sub get_perms_none {
+    return (
         group_write  => 0,
         group_create => 0,
         group_delete => 0,
@@ -122,22 +136,21 @@ sub start {
 }
 
 sub test_perms {
+
     ####################
     # basic perms stuff
     ####################
 
-    #check group perms
-
+    # check group perms
     my $res = $group1->edit_group(%perms);
     noerrok($res);
-
     noerrok( $group1->refresh ) or die "Couldn't get test group $gid1";
 
     foreach ( keys %perms ) {
         is( $group1->get($_), $perms{$_} );
     }
 
-    #set and unset each permission for group. check inheritance
+    # set and unset each permission for group. check inheritance
     foreach ( keys %perms ) {
 
         #set perm to TRUE
@@ -288,7 +301,6 @@ sub test_create {
     #try to create
 
     #zone
-
     my $res = $tuser->new_zone(
         zone        => 'test.com',
         serial      => 0,
@@ -305,12 +317,10 @@ sub test_create {
     ok( $res->error_msg =~ qr/Not allowed to create new zone/ );
 
     # let user create zones
-
     $res = $group1->edit_group( zone_create => 1, );
     noerrok($res);
 
-    #create zone
-
+    # create zone
     $res = $tuser->new_zone(
         zone        => 'test.com',
         serial      => 0,
@@ -331,12 +341,10 @@ sub test_create {
     noerrok($res) or die "Couldn't delete test zone ID $zid !";
 
     # don't let user create zones
-
     $res = $group1->edit_group( zone_create => 0, );
     noerrok($res);
 
-    #user
-
+    # user
     $res = $tuser->new_user(
         first_name => 'test',
         last_name  => '1',
@@ -511,7 +519,7 @@ sub test_modify {
     # test user tries to modify objects
     ####################
 
-    my %perms = (
+    %perms = (
         %perms,
         zone_create       => 1,
         user_create       => 1,
@@ -949,7 +957,7 @@ sub test_delete {
     # test user tries to delete objects
     ####################
 
-    my %perms = (
+    %perms = (
         %perms,
         zone_create       => 1,
         user_create       => 1,
@@ -1324,15 +1332,15 @@ sub test_bounds {
     );
     noerrok($res);
 
-    foreach $perm (@perms) {
+    foreach my $perm (@perms) {
 
-        #modify user so they cannot do $perm
+        # modify user so they cannot do $perm
         $res = $group1->edit_group( %trueperms, $perm => 0 );
         noerrok($res);
 
         if ( $perm ne 'group_create' ) {
 
-            #create group with $perm
+            # create group with $perm
             $res = $tuser->new_group( %group, %trueperms, $perm => 1 );
             noerrok($res);
             die "Can't create test group" unless !$res->is_error;
@@ -1341,7 +1349,7 @@ sub test_bounds {
         }
         else {
 
-            #root creates group without $perm
+            # root creates group without $perm
             $res = $user->new_group(
                 nt_group_id => $tuser->user->get('nt_group_id'),
                 %group, %trueperms, $perm => 0
@@ -1351,7 +1359,7 @@ sub test_bounds {
             $gid = $res->get('nt_group_id');
         }
 
-        #group should not have $perm
+        # group should not have $perm
         $group = $user->get_group( nt_group_id => $gid );
         noerrok($group);
         is( $group->get($perm), 0, "create group with $perm" );

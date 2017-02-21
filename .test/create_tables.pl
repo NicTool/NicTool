@@ -53,20 +53,16 @@ foreach my $sql (@sql_files) {
     print "\n";
 }
 
-$dbh->do("INSERT INTO `nt_group` (`nt_group_id`, `parent_group_id`, `name`)
-VALUES (2,1,'test_group')");
-
-$dbh->do("
-INSERT INTO $db.nt_user(nt_group_id, first_name, last_name, username, password, pass_salt, email)
-VALUES
-    (1, 'Root', 'User', 'root', '$pass_hash', '$salt', '$nt_root_email'),
-    (2, 'TestFirst','TestLast','nictest','7307552e39c9143bd5272f2610b610ed714d7d5e1fadd36e94fcb44d4a7fd65d','GdS=6WW1yTDsg`Nd','test\@example.com')
-");
-$dbh->do("
-INSERT INTO `nt_perm` (`nt_perm_id`, `nt_group_id`, `nt_user_id`, `inherit_perm`, `perm_name`, `group_write`, `group_create`, `group_delete`, `zone_write`, `zone_create`, `zone_delegate`, `zone_delete`, `zonerecord_write`, `zonerecord_create`, `zonerecord_delegate`, `zonerecord_delete`, `user_write`, `user_create`, `user_delete`, `nameserver_write`, `nameserver_create`, `nameserver_delete`, `self_write`, `usable_ns`)
-VALUES
-    (2,2,NULL,NULL,NULL,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,'1,2,3');
-");
+$dbh->do("INSERT INTO `nt_group` VALUES (2,1,'test_group', 0)");
+$dbh->do("INSERT INTO `nt_group_log` VALUES
+    (2,1,1,'added',1487651312,2,1,'test_group')");
+$dbh->do("INSERT INTO `nt_group_subgroups` VALUES
+    (1,2,1000);");
+$dbh->do("INSERT INTO `nt_perm` VALUES
+   (2,2,NULL,NULL,NULL,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,'1,2,3',0);");
+$dbh->do("INSERT INTO `nt_user` VALUES
+   (1,1,'Root','User','root','$pass_hash','$salt','$nt_root_email',NULL,0),
+   (2,2,'TestFirst','TestLast','nictest','09afe1013ec0a14793df1317a8e5f28f5ee84cc9758f50a19cb6154857e07ffe',']]l7./*4,8]wvBbo','test\@example.com',NULL,0)");
 $dbh->disconnect;
 print "\n";
 
