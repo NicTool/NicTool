@@ -294,6 +294,10 @@ sub test_create {
     test_create_user_no_perms();
     test_create_user_perms();
 
+    # don't let user create users
+    my $res = $group1->edit_group( user_create => 0 );
+    noerrok($res);
+
     test_create_ns_no_perms();
     test_create_ns_perms();
 
@@ -303,7 +307,7 @@ sub test_create {
     ####################
     # allow user to create zones, but not records
     ####################
-    my $res = $group1->edit_group( zone_create => 1 );
+    $res = $group1->edit_group( zone_create => 1 );
     noerrok($res);
 
     my $res = $tuser->new_zone( test_com_zone() );
@@ -356,7 +360,6 @@ sub test_create_zone_perms {
 
 sub test_create_user_no_perms {
 
-    # don't let user create zones
     my $res = $group1->edit_group( user_create => 0 );
     noerrok($res);
 
@@ -394,13 +397,9 @@ sub test_create_user_perms {
     my $uid = $res->get('nt_user_id');
     ok( $uid =~ qr/^\d+$/ );
 
-    #delete user
+    # delete user
     $res = $user->delete_users( user_list => $uid );
     noerrok($res) or die "Couldn't delete test user ID $uid !";
-
-    #don't let user create users
-    $res = $group1->edit_group( user_create => 0 );
-    noerrok($res);
 }
 
 sub test_create_ns_no_perms {
@@ -452,7 +451,7 @@ sub test_create_group_no_perms {
 
 sub test_create_group_perms {
 
-    #let user create groups
+    # let user create groups
     my $res = $group1->edit_group( group_create => 1 );
     noerrok($res);
 
@@ -465,7 +464,7 @@ sub test_create_group_perms {
     $res = $user->delete_group( nt_group_id => $gid );
     noerrok($res) or die "Couldn't delete test group ID $gid !";
 
-    #don't let user create groups
+    # don't let user create groups
     $res = $group1->edit_group( group_create => 0 );
     noerrok($res);
 }
@@ -528,6 +527,7 @@ sub test_modify {
     );
 
     my $res = $group1->edit_group( %perms );
+    noerrok($res);
 
     ####################
     # test zone_write
@@ -535,14 +535,37 @@ sub test_modify {
 
     my %zoneorig = test_com_zone();
 
-    $res = $tuser->new_zone(%zoneorig);
+    $res = $tuser->new_zone( %zoneorig );
     noerrok($res);
     my $zid1 = $res->get('nt_zone_id');
 
-    #warn "zone id is $zid1";
+    test_edit_zone_no_perms($zid1);
+    test_edit_zone_perms($zid1);
 
-    #try to edit
-    my %zone = (
+    my $res = $group1->edit_group( %perms );  # reset perms
+    noerrok($res);
+
+    my %group_perms = ( name => "test_delete_me 2", get_perms_all() );
+    my $res = $tuser->new_group(%group_perms);
+    noerrok($res);
+    my $gid = $res->get('nt_group_id');
+
+
+    test_edit_group_no_perms($gid, \%group_perms);
+    test_edit_group_perms($gid, \%group_perms);
+
+    # delete test group
+    noerrok($user->delete_group( nt_group_id => $gid ));
+
+
+    test_edit_user();
+    test_zonerecord_write();
+    test_nameserver_write();
+    test_self_write();
+}
+
+sub test_com_edit {
+    return (
         serial      => '1',
         ttl         => '86401',
         description => 'please delete me',
@@ -552,80 +575,62 @@ sub test_modify {
         expire      => 31,
         minimum     => 41,
     );
-    $res = $tuser->edit_zone( nt_zone_id => $zid1, %zone );
+}
+
+sub test_edit_zone_no_perms {
+    my ($zid) = @_;
+
+    # try to edit
+    my %zone = test_com_edit();
+
+    my $res = $tuser->edit_zone( nt_zone_id => $zid, %zone );
     noerrok( $res, 404, 'edit zone' );
     ok( $res->error_msg =~
         qr/You have no 'write' permission for zone objects/ );
 
-    my $zone = $tuser->get_zone( nt_zone_id => $zid1 );
+    my $zone = $tuser->get_zone( nt_zone_id => $zid );
     noerrok($zone);
 
+    my %zoneorig = test_com_zone();
     foreach ( keys %zoneorig ) {
         is( $zone->get($_), $zoneorig{$_} );
     }
+}
+
+sub test_edit_zone_perms {
+    my ($zid) = @_;
+
+    my %edit_zone = test_com_edit();
 
     # set perms correctly
-    %perms = ( %perms, zone_write => 1 );
-    $res = $group1->edit_group(%perms);
+    my %perms = ( get_perms_all(), zone_write => 1 );
+    my $res = $group1->edit_group(%perms);
     noerrok($res);
 
-    # try to edit again
-    $res = $tuser->edit_zone( nt_zone_id => $zid1, %zone );
+    $res = $tuser->edit_zone( nt_zone_id => $zid, %edit_zone );
     noerrok($res);
 
-    $zone = $tuser->get_zone( nt_zone_id => $zid1 );
+    my $zone = $tuser->get_zone( nt_zone_id => $zid );
     noerrok($zone);
 
-    foreach ( keys %zone ) {
+    foreach ( keys %edit_zone ) {
         if ( $_ eq 'serial' ) {
-            is( $zone->get($_), ++$zone{$_} );
+            is( $zone->get($_), ++$edit_zone{$_} );
             next;
         }
-        is( $zone->get($_), $zone{$_} );
+        is( $zone->get($_), $edit_zone{$_} );
     }
 
     # delete zone
-    $res = $user->delete_zones( zone_list => [$zone] );
+    $res = $user->delete_zones( zone_list => $zid );
     noerrok($res);
+}
 
-    ####################
-    # test group_write
-    ####################
+sub test_edit_group_no_perms {
+    my ($gid, $group_perms) = @_;
 
-    #create
-    my %group = (
-        name         => "test_delete_me 2",
-        group_write  => 0,
-        group_create => 0,
-        group_delete => 0,
-
-        zone_write    => 0,
-        zone_create   => 0,
-        zone_delegate => 0,
-        zone_delete   => 0,
-
-        zonerecord_write    => 0,
-        zonerecord_create   => 0,
-        zonerecord_delegate => 0,
-        zonerecord_delete   => 0,
-
-        user_write  => 0,
-        user_create => 0,
-        user_delete => 0,
-
-        nameserver_write  => 0,
-        nameserver_create => 0,
-        nameserver_delete => 0,
-    );
-
-    $res = $tuser->new_group(%group);
-
-    noerrok($res);
-    $gid = $res->get('nt_group_id');
-
-    #try to edit
-
-    $res = $tuser->edit_group(
+    # try to edit
+    my $res = $tuser->edit_group(
         nt_group_id       => $gid,
         name              => "please delete me 2",
         group_create      => 1,
@@ -634,23 +639,37 @@ sub test_modify {
         user_create       => 1,
         nameserver_create => 1,
     );
-
     noerrok( $res, 404, 'edit group' );
     ok( $res->error_msg =~
         qr/You have no 'write' permission for group objects/ );
 
-    $group = $tuser->get_group( nt_group_id => $gid );
+    my $group = $tuser->get_group( nt_group_id => $gid );
     noerrok($group);
-    foreach ( keys %group ) {
-        is( $group->get($_), $group{$_}, 'settings should not have changed' );
+
+    foreach ( keys %$group_perms ) {
+        is( $group->get($_), $group_perms->{$_}, 'settings should not have changed' );
     }
+}
+
+sub test_edit_group_perms {
+    my ($gid) = @_;
 
     # set group_write
-    %perms = ( %perms, group_write => 1 );
-    $res = $group1->edit_group(%perms);
+    my $res = $group1->edit_group( get_perms_all(), group_write => 1 );
     noerrok($res);
 
-    #try to edit again
+    # restore user permissions, a user w/o perms can't add them to group
+    noerrok(
+        $user->edit_user(
+            nt_user_id        => $uid1,
+            group_write       => 1,
+            group_create      => 1,
+            zone_create       => 1,
+            zonerecord_create => 1,
+            user_create       => 1,
+            nameserver_create => 1,
+        )
+    );
 
     $res = $tuser->edit_group(
         nt_group_id       => $gid,
@@ -661,10 +680,13 @@ sub test_modify {
         user_create       => 1,
         nameserver_create => 1,
     );
-    ok($res);
-    %group = (
-        %group,
+    noerrok($res);
+    # diag Data::Dumper::Dumper($tuser);
+    # diag Data::Dumper::Dumper($res);
+
+    my %group_perms = (
         name              => "please delete me 2",
+        get_perms_all(),
         group_create      => 1,
         zone_create       => 1,
         zonerecord_create => 1,
@@ -672,19 +694,24 @@ sub test_modify {
         nameserver_create => 1,
     );
 
-    $group = $tuser->get_group( nt_group_id => $gid );
-    noerrok($group);
-    foreach ( keys %group ) {
-        is( $group->get($_), $group{$_}, 'changed group settings' );
+    my $group = $tuser->get_group( nt_group_id => $gid );
+    noerrok( $group );
+    # diag Data::Dumper::Dumper($group);
+
+    foreach ( keys %group_perms ) {
+        is( $group->get($_), $group_perms{$_}, "changed $_ group setting");
     }
+}
 
-    #delete group
-    $res = $user->delete_group( nt_group_id => $group );
-    noerrok($res);
+sub test_edit_user {
 
-    ####################
-    # test user_write
-    ####################
+    noerrok(
+        $user->edit_user( nt_user_id => $uid1, inherit_group_permissions => 1 )
+    );
+
+    noerrok(
+        $group1->edit_group( get_perms_all(), user_create => 1 )
+    );
 
     my %usert = (
         first_name => 'testo',
@@ -693,15 +720,14 @@ sub test_modify {
         email      => 'test@test.com',
     );
 
-    $res = $tuser->new_user(
+    my $res = $tuser->new_user(
         password  => 'testpass',
         password2 => 'testpass',
         %usert
     );
     noerrok($res);
-    $uid = $res->get('nt_user_id');
 
-    #edit user
+    my $uid = $res->get('nt_user_id');
     $res = $tuser->edit_user(
         nt_user_id => $uid,
         username   => 'test2permuser',
@@ -719,12 +745,11 @@ sub test_modify {
         is( $usert->get($_), $usert{$_}, "no user settings should change" );
     }
 
-    #set user_perm to 1
-    %perms = ( %perms, user_write => 1 );
-    $res = $group1->edit_group(%perms);
+    # set user_perm to 1
+    $res = $group1->edit_group( get_perms_all(), user_write => 1 );
     noerrok($res);
 
-    #edit again
+    # edit again
     %usert = (
         %usert,
         username   => 'test2permuser',
@@ -742,21 +767,27 @@ sub test_modify {
         is( $usert->get($_), $usert{$_}, "user settings should change" );
     }
 
-    #delete user
-    #$user->config(debug_request=>1);
+    # delete user
     $res = $user->delete_users( user_list => $usert );
     noerrok($res);
+}
 
-    ####################
-    # test zonerecord_write
-    ####################
+sub test_zonerecord_write {
 
-    #make zone
-    $res = $tuser->new_zone(%zoneorig);
+    noerrok(
+        $group1->edit_group(
+            get_perms_all(),
+            zone_create => 1,
+            zone_delete => 1,
+            zonerecord_create => 1,
+        )
+    );
+
+    my $res = $tuser->new_zone(test_com_zone());
     noerrok($res);
     my $zid = $res->get('nt_zone_id');
 
-    #make record
+    # make record
     my %record = (
         nt_zone_id  => $zid,
         name        => 'a',
@@ -770,7 +801,7 @@ sub test_modify {
     noerrok($res);
     my $zrid = $res->get('nt_zone_record_id');
 
-    #try to edit
+    # try to edit
     $res = $tuser->edit_zone_record(
         nt_zone_record_id => $zrid,
         name              => 'b',
@@ -793,7 +824,6 @@ sub test_modify {
     }
 
     #set zonerecord_write to 1
-
     %perms = ( %perms, zonerecord_write => 1 );
     $res = $group1->edit_group(%perms);
     noerrok($res);
@@ -828,22 +858,29 @@ sub test_modify {
     #delete zone
     $res = $user->delete_zones( zone_list => $zid );
     noerrok($res);
+}
 
-    ####################
-    # test nameserver_write
-    ####################
+sub test_nameserver_write {
+
+    noerrok(
+        $group1->edit_group(
+            get_perms_all(),
+            nameserver_create => 1,
+        )
+    );
+
     my %ns = (
         name          => 'ns.somewhere.com.',
         description   => 'blah blah blah',
         address       => '1.2.3.4',
         export_format => 'djbdns',
     );
-    $res = $tuser->new_nameserver(%ns);
-
+    my $res = $tuser->new_nameserver(%ns);
     noerrok($res);
+
     my $nsid = $res->get('nt_nameserver_id');
 
-    #try to edit nameserver
+    # try to edit nameserver
     $res = $tuser->edit_nameserver(
         nt_nameserver_id => $nsid,
         name             => 'ns2.somewhere.com.',
@@ -857,7 +894,6 @@ sub test_modify {
         qr/You have no 'write' permission for nameserver objects/ );
 
     #check that ns didn't change
-
     my $ns = $tuser->get_nameserver( nt_nameserver_id => $nsid );
     noerrok($ns);
 
@@ -866,11 +902,15 @@ sub test_modify {
     }
 
     #set nameserver_write perm to 1
-    %perms = ( %perms, nameserver_write => 1 );
-    $res = $group1->edit_group(%perms);
-    noerrok($res);
+    noerrok(
+        $group1->edit_group(
+            get_perms_all(),
+            nameserver_write => 1,
+            nameserver_delete => 1,
+        )
+    );
 
-    %ns = (
+    my %ns = (
         %ns,
         name          => 'ns2.somewhere.com.',
         description   => 'new nameserver addr',
@@ -894,13 +934,11 @@ sub test_modify {
     }
 
     #delete nameserver
-
     $res = $user->delete_nameserver( nt_nameserver_id => $nsid );
     noerrok($res);
+}
 
-    ####################
-    # test self_write
-    ####################
+sub test_self_write {
 
     #try to modify self.
     my %self = (
@@ -910,7 +948,7 @@ sub test_modify {
         username   => 'testuser1changed',
     );
 
-    $res = $tuser->edit_user(%self);
+    my $res = $tuser->edit_user(%self);
 
     noerrok( $res, 404, "no self_write perms" );
     ok( $res->error_msg =~ qr/Not allowed to modify self/ );
@@ -923,13 +961,10 @@ sub test_modify {
     }
 
     #allow self_write
-
-    %perms = ( %perms, self_write => 1 );
-    $res = $group1->edit_group(%perms);
+    $res = $group1->edit_group(get_perms_all(), self_write => 1);
     noerrok($res);
 
     #modify self again
-
     $res = $tuser->edit_user(%self);
     noerrok($res);
 
@@ -985,13 +1020,11 @@ sub test_delete {
     is( $zone->get('deleted'), 0, "zone should not be deleted" );
 
     # set perms correctly
-
     %perms = ( %perms, zone_delete => 1 );
     $res = $group1->edit_group(%perms);
     noerrok($res);
 
     # try to edit again
-
     $res = $tuser->delete_zones( zone_list => $zid1 );
     noerrok($res);
 
