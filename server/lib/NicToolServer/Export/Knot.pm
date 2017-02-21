@@ -46,11 +46,11 @@ sub update_knot_include {
 sub update_knot_include_incremental {
     my ($self, $dir) = @_;
 
-# check that the zone(s) modified since our last export are in the
-# include file, else append it.
-#
-# there's likely to be more lines in the include file than zones to append
-# build a lookup table of changed zones and pass through the file once
+    # check that the zone(s) modified since our last export are in the
+    # include file, else append it.
+    #
+    # there's likely to be more lines in the include file than zones to append
+    # build a lookup table of changed zones and pass through the file once
     my $to_add = $self->get_changed_zones( $dir );
     my $file   = "$dir/knot.conf.nictool";
 
@@ -64,7 +64,7 @@ sub update_knot_include_incremental {
             return;
         };
 
-# simerson.net { file "/var/db/knot/simerson.net"; }
+    # simerson.net { file "/var/db/knot/simerson.net"; }
     while ( my $line = <$in> ) {
         my ($zone) = split /\s/, $line;
         if ( $to_add->{$zone} ) {

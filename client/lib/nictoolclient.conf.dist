@@ -25,7 +25,7 @@ BEGIN {
 
     #Interface options
     $NicToolClient::app_title   = 'NicTool';
-    
+
     $NicToolClient::image_dir   = 'images';
 
     $NicToolClient::generic_error_message = qq(If you continue to get this error, please contact the system administrator, or your corporate contact.);
@@ -37,10 +37,10 @@ BEGIN {
     $NicToolClient::edit_after_new_zone = 1;
 
     #is the "include subgroups" checkbox automatically checked?
-    $NicToolClient::include_subgroups_checked = 1; 
+    $NicToolClient::include_subgroups_checked = 1;
 
     #is the "exact match" checkbox automatically checked?
-    $NicToolClient::exact_match_checked = 0; 
+    $NicToolClient::exact_match_checked = 0;
 
     $NicToolClient::template_dir                = "$NicToolClient::app_dir/templates";
     $NicToolClient::login_template              = "$NicToolClient::template_dir/login.html";

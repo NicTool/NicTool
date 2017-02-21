@@ -37,7 +37,7 @@ BEGIN {
     # $NicToolServer::ldap_basedn   = 'ou=Nictool users,dc=example,dc=com';  # Search base
     # $NicToolServer::ldap_user_mapping = 'uid';                             # Defaults to 'uid'
 
-    # If ldap_filter is set, NicTool will perform a subtree search (scope: sub) for user under ldap_basedn, 
+    # If ldap_filter is set, NicTool will perform a subtree search (scope: sub) for user under ldap_basedn,
     # otherwise it will guesstimate the dn at basedn level (ala scope: one)
     # $NicToolServer::ldap_filter = '(&(objectClass=*)(uid=*))';
 
@@ -49,11 +49,3 @@ BEGIN {
 }
 
 1;
-
-__END__
-
-=head1 SYNOPSIS
-
-    
-=cut
-
