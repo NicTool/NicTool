@@ -299,6 +299,13 @@ sub zr_soa {
         $z->{mailaddr} .= '.';     # append trailing dot
     };
 
+    # reasonable defaults for unspecified values
+    $z->{ttl}     ||= 86400;
+    $z->{refresh} ||= 16384;
+    $z->{retry}   ||= 900;
+    $z->{expire}  ||= 1048576;
+    $z->{minimum} ||= 2560;
+
     # name        ttl class rr    name-server email-addr  (sn ref ret ex min)
     return "
 \$TTL    $z->{ttl};
