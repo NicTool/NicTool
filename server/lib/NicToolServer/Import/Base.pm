@@ -231,7 +231,7 @@ sub nt_get_zone_records {
         limit        => 255,
     );
 
-    if ( $p{name} ) {
+    if ( defined $p{name} ) {
         $request{'1_field'}  = 'name';
         $request{'1_option'} = 'equals';
         $request{'1_value'}  = $p{name};
@@ -251,26 +251,24 @@ sub nt_get_zone_records {
         $request{'3_value'}     = $p{address};
     };
 
-    #warn Dumper(\%request);
+    # warn Dumper(\%request);
     my $r = $nt->get_zone_records(%request);
     return if !$r->{store}{records};
 
     #warn Dumper ( $r->{store}{records}[0]{store} ) if $p{debug};
 
     if ( $p{debug} ) {
-
         for ( my $i = 0; $i < scalar( @{ $r->{store}{records} } ); $i++ ) {
             print "$i\n";
             next if !defined $r->{store}{records}[$i]{store};
             printf "%35s  %5s  %35s\n", $r->{store}{records}[$i]{store}{name},
                 $r->{store}{records}[$i]{store}{type},
                 $r->{store}{records}[$i]{store}{address};
-        }
 
-        #warn "get_zone_records: returning $r->{store}{records}\n";
+        }
     }
 
-    if ( $p{name} ) {
+    if ( defined $p{name} ) {
         if ( $r->{store}{records}[1]{store} ) {
             warn "yikes, more than one record matched?!\n";
         }

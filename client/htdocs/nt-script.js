@@ -35,6 +35,7 @@ function changeRRType(rrType) {
 
 function selectedRRType(rrType) {
 
+    if (!rrType) rrType = $('select#rr_type').val();
     if (!rrType) return false;
     resetZoneRecordFormFields();
 

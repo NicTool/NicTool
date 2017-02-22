@@ -6,8 +6,8 @@
 # the terms of the Affero General Public License as published by Affero, 
 # Inc.; either version 1 of the License, or any later version.
 #
-# NicTool is distributed in the hope that it will be useful, but WITHOUT 
-# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY 
+# NicTool is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
 # or FITNESS FOR A PARTICULAR PURPOSE. See the Affero GPL for details.
 #
 # You should have received a copy of the Affero General Public License
@@ -34,7 +34,7 @@ CREATE TABLE nt_user(
 ) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 
-DROP TABLE IF EXISTS nt_user_log; 
+DROP TABLE IF EXISTS nt_user_log;
 CREATE TABLE nt_user_log(
     nt_user_log_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     nt_group_id        INT UNSIGNED NOT NULL,

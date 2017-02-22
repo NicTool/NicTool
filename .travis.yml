@@ -59,7 +59,7 @@ before_install:
     - cd /home/travis/build/msimerson/NicTool
 
 install:
-    - sudo cp .test/apache-nictool.conf /etc/apache2/sites-enabled/
+    - sudo cp .test/apache-travis.conf /etc/apache2/sites-enabled/nictool.conf
     - sudo service apache2 restart || sudo cat /var/log/apache2/error.log
     - perl .test/create_tables.pl
 

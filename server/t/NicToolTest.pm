@@ -6,9 +6,9 @@ use warnings;
 
 require Exporter;
 our @ISA    = 'Exporter';
-our @EXPORT = qw(diffhtok noerrok errtext nowarn yeswarn);
+our @EXPORT = qw/ diffhtok noerrok errtext nowarn yeswarn nt_api_connect /;
 
-use Test;
+use Test::More;
 use lib 'api/lib';
 use lib '../api/lib';
 
@@ -50,7 +50,10 @@ sub noerrok {
     $ec ||= '';
     $ed ||= '';
     $msg .= "($ec :$em :$ed)";
-    return ok( $ec => $code, $msg . " " . join( ":", caller ) );
+    if ($ec eq $code) {
+        return is( $ec, $code, $em );
+    }
+    return is( $ec, $code, $msg . " " . join( ":", caller ) );
 }
 
 sub errtext {
@@ -61,10 +64,7 @@ sub errtext {
             . $err->error_desc . ":"
             . $err->error_msg;
     }
-    else {
-        return
-            "$err->{'error_code'}:$err->{'error_desc'}:$err->{'error_msg'}";
-    }
+    return "$err->{'error_code'}:$err->{'error_desc'}:$err->{'error_msg'}";
 }
 
 sub diffhtok {
@@ -89,7 +89,7 @@ sub import {
     -f $file or $file = "t/test.cfg";
     -f $file or die "could not find your test.cfg file in t/test.cfg\n";
 
-    open( F, "<$file" );
+    open( F, "<", $file );
     my $c;
     {
         local $/;
@@ -122,10 +122,36 @@ sub import {
 
     eval "use NicTool";
     die "Couldn't 'use NicTool'. $@
-Please install the NicTool client library or edit 'test.cfg' to specify its location."
+Please install the NicTool api library or edit 'test.cfg' to specify its location."
         if $@;
 
-    NicToolTest->export_to_level(1, qw/diffhtok noerrok errtext nowarn yeswarn/ );
+    NicToolTest->export_to_level(1, qw/
+        diffhtok noerrok errtext nowarn yeswarn nt_api_connect
+    /);
+}
+
+sub nt_api_connect () {
+
+    my $user = new NicTool(
+        cache_users  => 0,
+        cache_groups => 0,
+        server_host  => main::Config('server_host'),
+        server_port  => main::Config('server_port')
+    );
+
+    ok( ref $user, 'NicTool API client' )
+        or die "Couldn't create NicTool Object";
+
+    $user->login(
+        username => main::Config('username'),
+        password => main::Config('password')
+    );
+
+    noerrok( $user->result ) or die "Couldn't log in";
+    ok( !$user->result->is_error, "login no error" );
+    ok( $user->nt_user_session, "login session" );
+
+    return $user;
 }
 
 1;

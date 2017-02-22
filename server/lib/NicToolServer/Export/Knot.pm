@@ -33,11 +33,17 @@ sub update_knot_include {
     if ( $self->{nte}->incremental ) {
         return $self->update_knot_include_incremental( $dir );
     };
-# full export, write a new include  file
+
+    # full export, write a new include  file
     my $datadir = $self->{nte}->get_export_data_dir || $dir;
     my $fh = $self->get_export_file( 'knot.conf.nictool', $dir );
     foreach my $zone ( $self->{nte}->zones_exported() ) {
-        print $fh qq[$zone { file "$datadir/$zone"; }\n];
+        if ($ENV{'NT_EXPORT_KNOT_VERSION'} eq '2') {
+            print $fh qq[zone: \n  - domain: $zone\n    file: $datadir/$zone\n];
+        }
+        else {
+            print $fh qq[$zone { file "$datadir/$zone"; }\n];
+        }
     };
     close $fh;
     return 1;

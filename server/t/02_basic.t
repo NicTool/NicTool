@@ -18,32 +18,15 @@
 
 use lib '.';
 use lib 't';
-use lib 'lib';
 use NicToolTest;
 use NicTool;
-use Test;
-BEGIN { plan tests => 7 }
+use Test::More 'no_plan';
 
-ok(1);
+my $user = nt_api_connect();
 
-#basic login test
-my $user = new NicTool(
-    server_host => Config('server_host'),
-    server_port => Config('server_port')
-);
-ok( ref $user, 'NicTool' );
-
-$user->login(
-    username => Config('username'),
-    password => Config('password')
-);
-ok( !$user->result->is_error );
-ok( $user->nt_user_session );
-
-#logout
 $user->logout;
-ok( !$user->result->is_error );
-ok( !$user->nt_user_session );
+ok( !$user->result->is_error, "logout" );
+ok( !$user->nt_user_session, "no session" );
 
 $user = undef;
 $user = new NicTool(
@@ -52,4 +35,4 @@ $user = new NicTool(
 );
 
 $user->login( username => Config('username'), password => 'WRONG' );
-ok( $user->result->is_error );
+ok( $user->result->is_error, "login fail" );

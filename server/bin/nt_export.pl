@@ -71,7 +71,7 @@ $dsn     ||= ask( "database DSN",
 $db_user ||= ask( "database user", default => 'root' );
 $db_pass ||= ask( "database pass", password => 1 );
 
-my $export = NicToolServer::Export->new( 
+my $export = NicToolServer::Export->new(
     ns_id => $nsid || 0,
     force => $force || 0,
     pfextra => $postflight_extra ? 1 : 0,
@@ -107,7 +107,7 @@ exit $result;
 sub get_nsid {
     my $export = shift || die "get_nsid() requires a NicToolServer::Export object";
     my $nslist = $export->get_active_nameservers();
-    
+
     # determine if the current hostname is a listed nameserver
     my $me = hostname();
     foreach my $nsentry (@$nslist) {
@@ -115,14 +115,14 @@ sub get_nsid {
             return $nsentry->{nt_nameserver_id};
         }
     }
-    
+
     printf( "\n%5s   %25s   %9s\n", 'nsid', 'name', 'format' );
     my $format = "%5.0f   %25s   %9s\n";
     foreach my $ns (sort @$nslist) {
         printf $format, $ns->{nt_nameserver_id}, $ns->{name}, $ns->{export_format};
     };
     print STDERR "\nERROR: missing nsid. Try this:
-    
+
     $0 -nsid N\n";
     exit 2;
 };
@@ -175,7 +175,7 @@ sub get_db_creds_from_nictoolserver_conf {
         # Unable to locate the config file
         return if ! $file;
     }
-    
+
     if ($verbose) {
         print "nsid $nsid " if $nsid;
         print "reading DB settings from $file\n";
@@ -209,7 +209,7 @@ sub usage {
   $0 -nsid <N> [-daemon] [-force] [-verbose] [-incremental] [--conf FILE]
 
 If nt_export is unable to automatically locate/access nictoolserver.conf,
-you can specify --conf with the path to the file. In addition, you may 
+you can specify --conf with the path to the file. In addition, you may
 specify the database connection properties manually:
 
    -dsn   DBI:mysql:database=nictool;host=127.0.0.1;port=3306
@@ -218,12 +218,12 @@ specify the database connection properties manually:
 
 Run the script without any -nsid argument to see a list of name servers.
 If nt_export is being executed on a registered name server, the nsid
-parameter will be automatically detected and the export will commence. 
+parameter will be automatically detected and the export will commence.
 
 When nt_export is executed, it will indicate if the export occurred with
-the exit status. An exit status of 1 is returned when the export did 
+the exit status. An exit status of 1 is returned when the export did
 occur and an exit status of 0 when the export did not occur (or no updates).
-If nt_export detects an error, then an exit status of 2 is returned. 
+If nt_export detects an error, then an exit status of 2 is returned.
 
 EOHELP
 ;

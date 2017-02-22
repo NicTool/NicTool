@@ -236,7 +236,7 @@ sub display_group_list {
                         {   nt_group_id => $ggid,
                             name        => $group->{'name'}
                         }
-                        ) ) );
+                    ) ) );
             print qq[
   <div class="$bgcolor"><img src=$NicToolClient::image_dir/group.gif alt="group">$dname
   <ul class="menu_r">];
