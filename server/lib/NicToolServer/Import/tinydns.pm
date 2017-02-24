@@ -36,7 +36,7 @@ sub import_records {
         next if $record =~ /^#/;     # comment
         next if $record =~ /^\s+$/;  # blank line
         next if $record =~ /^\-/;    # IGNORE: - fqdn : ip : ttl:timestamp:lo
-        Time::HiRes::sleep 0.1;      # go slow enough we can read
+        Time::HiRes::sleep 0.1;      # go slow enough a human can read
 
         my $first = substr($record, 0, 1);
         my $record = substr($record, 1 );
@@ -235,11 +235,11 @@ sub zr_soa {
         zone        => $zone,
         description => '',
         defined $rname   ? ( contact => $rname )   : (),  # only include
-        defined $ttl     ? ( ttl     => $ttl )     : (),  # these values
-        defined $refresh ? ( refresh => $refresh ) : (),  # when defined
-        defined $retry   ? ( retry   => $retry )   : (),
-        defined $expire  ? ( expire  => $expire )  : (),
-        defined $min     ? ( minimum => $min )     : (),
+        defined $ttl     ? ( ttl     => $ttl )     : (),  # when set
+        refresh     => $refresh ||   16384,
+        retry       => $retry   ||    2048,
+        expire      => $expire  || 1048576,
+        minimum     => $min     ||    2560,
         defined $timestamp ? ( timestamp => $timestamp ) : (),
         defined $location  ? ( location  => $location  ) : (),
     );
