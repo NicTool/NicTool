@@ -94,7 +94,7 @@ sub write_makefile {
     };
     return 1 if -e "$exportdir/Makefile";   # already exists
 
-    my $address = $self->{nte}{ns_ref}{address} || '127.0.0.1';
+    my $address = $self->{nte}{ns_ref}{syncaddress} || '127.0.0.1';
     my $datadir = $self->{nte}{ns_ref}{datadir} || getcwd . '/data-all';
     $datadir =~ s/\/$//;  # strip off any trailing /
     my $remote_login = $self->{nte}{ns_ref}{remote_login} || 'knot';
