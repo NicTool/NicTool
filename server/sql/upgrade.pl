@@ -98,6 +98,20 @@ EO_SOME_DAY
 ;
 };
 
+sub _sql_test_2_33 {
+    my $r = _get_db_version() or return 1;  # query failed
+    return 0 if $r eq '2.32';   # update!
+    return 1;                   # don't update
+}
+
+sub _sql_2_33 {
+    <<EO_SQL_2_33
+ALTER TABLE `nt_nameserver` ADD COLUMN syncaddress VARCHAR(127) DEFAULT NULL AFTER address6;
+ALTER TABLE `nt_nameserver_log` ADD COLUMN syncaddress VARCHAR(127) DEFAULT NULL AFTER address6; 
+EO_SQL_2_32
+;
+}
+
 
 sub _sql_test_2_32 {
     my $r = _get_db_version() or return 1;  # query failed
@@ -227,7 +241,8 @@ VALUES (1,'djbdns',    'djbdns (tinydns & axfrdns)',  'cr.yp.to/djbdns.html'),
        (5,'bind-nsupdate','BIND (nsupdate protocol)','www.isc.org/downloads/bind/'),
        (6,'NSD',       'NSD (Name Server Daemon)', 'www.nlnetlabs.nl/projects/nsd/'),
        (7,'dynect',    'DynECT Standard DNS','dyn.com/managed-dns/'),
-       (8,'knot',      'Knot DNS',           'www.knot-dns.cz');
+       (8,'knot',      'Knot DNS',           'www.knot-dns.cz'),
+       (9,'knot2',      'Knot v2.x DNS',           'www.knot-dns.cz'),
 
 UPDATE nt_nameserver SET export_type_id=1 WHERE export_format IN ('tinydns','djb','djbdns');
 UPDATE nt_nameserver SET export_type_id=2 WHERE export_format='bind';
@@ -944,4 +959,3 @@ sub _get_db_version {
     eval { $r = $dbh->query( $sql )->list; };
     return $r;
 };
-

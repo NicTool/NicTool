@@ -70,7 +70,7 @@ sub get_group_nameservers {
     my ( $self, $data ) = @_;
 
     $self->search_params_sanity_check( $data,
-        qw(name description address address6 remote_login export_type_id status group_name) );
+        qw(name description address address6 syncaddress remote_login export_type_id status group_name) );
 
     return $self->throw_sanity_error if $self->{errors};
     return $self->SUPER::get_group_nameservers($data);
@@ -91,6 +91,15 @@ sub _valid_ip_addresses {
     if ($data->{address6} && !$self->valid_ip_address($data->{address6})) {
         $self->error( 'address6', "Invalid IPv6 address - $data->{address6}");
     }
+
+    if ($data->{syncaddress}) {
+        if (!$self->valid_ip_address($data->{syncaddress})) {
+            $self->error( 'syncaddress', "Invalid Sync IP address - $data->{syncaddress}");
+        }
+        if ($data->{syncaddress} =~ /\.(0|255)$/) {
+            $self->error( 'syncaddress', "Invalid Sync IP address - $data->{syncaddress}");
+        }
+    };
 };
 
 sub _valid_chars {

@@ -76,7 +76,7 @@ sub do_new {
         return;
     };
 
-    my @fields = qw/ nt_group_id name ttl description address address6 logdir
+    my @fields = qw/ nt_group_id name ttl description address address6 syncaddress logdir
                 datadir remote_login export_format export_interval export_serials /;
     my %data;
     foreach my $x (@fields) {
@@ -115,7 +115,7 @@ sub do_edit {
 
     # user clicked the 'Save' button
     my @fields = qw/ nt_group_id nt_nameserver_id name ttl description
-                     address address6 logdir datadir remote_login
+                     address address6 syncaddress logdir datadir remote_login
                      export_format export_serials export_interval /;
 
     my %data;
@@ -423,7 +423,7 @@ sub display_edit_nameserver {
     my ( $nt_obj, $user, $q, $message, $edit ) = @_;
 
 # logdir
-    my @fields = qw/ name address address6 export_format datadir remote_login
+    my @fields = qw/ name address address6 syncaddress export_format datadir remote_login
                      ttl export_interval export_serials description / ;
 
     my $nameserver;
@@ -549,6 +549,12 @@ sub display_edit_nameserver_fields {
                     ? $q->textfield( -id => 'address6', -name => 'address6', -size => 45, -maxlength => 39)
                     : $nameserver->{'address6'},
         },
+        syncaddress    => {
+            label => 'Sync Address',
+            value => $modifyperm
+                    ? $q->textfield( -id => 'syncaddress', -name => 'syncaddress', -size => 20, -maxlength => 15)
+                    : $nameserver->{'syncaddress'},
+        },
         remote_login => {
             label => 'Remote Login',
             value => $modifyperm
@@ -622,4 +628,3 @@ sub display_edit_nameserver_fields {
         },
     );
 };
-

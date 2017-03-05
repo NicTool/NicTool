@@ -692,6 +692,10 @@ sub load_export_class {
         require NicToolServer::Export::Knot;
         $self->{export_class} = NicToolServer::Export::Knot->new( $self );
     }
+    elsif ( $self->{export_format} eq 'knot2' ) {
+        require NicToolServer::Export::Knot2;
+        $self->{export_class} = NicToolServer::Export::Knot2->new( $self );
+    }
     else {
         die "unknown export format: $self->{export_format}\n";
     };
