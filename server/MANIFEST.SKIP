@@ -1,0 +1,9 @@
+.DS_Store
+.git
+.gitignore
+.travis.yml
+Makefile
+blib
+client
+server
+MANIFEST.bak

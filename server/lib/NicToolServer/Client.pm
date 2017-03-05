@@ -60,16 +60,58 @@ sub data             { $_[0]->{data} }
 
 __END__
 
+=pod
+
+=encoding UTF-8
+
+=head1 NAME
+
+NicToolServer::Client - an RPC::XML implementation
+
+=head1 VERSION
+
+version 2.33
+
 =head1 SYNOPSIS
 
 =head1 METHODS
 
-=method decode_xml_rpc_data
+=head2 decode_xml_rpc_data
 
  Use XML-RPC parser to convert xml to xml-rpc objects.
  A request object has method 'args' which returns an array ref of data-type args.
  Each data-type has a value method to convert to perl data format.
  The 'name' method returns the function being invoked.
  The parser will return a ref to a data-type obj if successful otherwise a scalar error string
+
+=head1 AUTHORS
+
+=over 4
+
+=item *
+
+Matt Simerson <msimerson@cpan.org>
+
+=item *
+
+Damon Edwards
+
+=item *
+
+Abe Shelton
+
+=item *
+
+Greg Schueler
+
+=back
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is Copyright (c) 2017 by The Network People, Inc. This software is Copyright (c) 2001 by Damon Edwards, Abe Shelton, Greg Schueler.
+
+This is free software, licensed under:
+
+  The GNU Affero General Public License, Version 3, November 2007
 
 =cut

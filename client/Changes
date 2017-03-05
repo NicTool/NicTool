@@ -1,4 +1,8 @@
 
+2.34    2017.02.
+
+  * when selecting 'New Resource Record', update RR type form
+
 2.33    2015.12.07
 
   * client fix for moving users between groups (#103)

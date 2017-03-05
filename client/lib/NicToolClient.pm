@@ -187,8 +187,8 @@ sub parse_template {
     open my $FILE, '<', $template or die "unable to find template: $template\n";
 
     while (<$FILE>) {
-        s/{{(.+?)}}/$vars->{$1}/g;
-        s/{{ONLOAD_JS}}/$temp{'ONLOAD_JS'}/g;
+        s/\{\{(.+?)\}\}/$vars->{$1}/g;
+        s/\{\{ONLOAD_JS\}\}/$temp{'ONLOAD_JS'}/g;
         print;
     }
 
@@ -889,7 +889,7 @@ sub display_advanced_search {
     $q->end_form,
     qq[
 <div id="advancedSearchCancel" class="dark_grey_bg center">],
-    $q->startform( -action => $cgi_name, -method => 'POST' );
+    $q->start_form( -action => $cgi_name, -method => 'POST' );
 
     foreach ( @{ $self->paging_fields }, @$state_fields ) {
         next if $_ eq 'edit_search';
@@ -1421,16 +1421,57 @@ sub AUTOLOAD {
 }
 
 1;
+
 __END__
 
 =pod
+
+=encoding UTF-8
 
 =head1 NAME
 
 NicToolClient - CGI Interface to NicToolServer
 
+=head1 VERSION
+
+version 2.33
+
 =head1 SYNOPSIS
 
 Methods used by the CGI files in the htdocs directory
+
+=head1 NAME
+
+NicToolClient - CGI Interface to NicToolServer
+
+=head1 AUTHORS
+
+=over 4
+
+=item *
+
+Matt Simerson <msimerson@cpan.org>
+
+=item *
+
+Damon Edwards
+
+=item *
+
+Abe Shelton
+
+=item *
+
+Greg Schueler
+
+=back
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is Copyright (c) 2017 by The Network People, Inc. This software is Copyright (c) 2001 by Damon Edwards, Abe Shelton, Greg Schueler.
+
+This is free software, licensed under:
+
+  The GNU Affero General Public License, Version 3, November 2007
 
 =cut

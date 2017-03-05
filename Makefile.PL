@@ -10,7 +10,6 @@ WriteMakefile(
         dist               => { COMPRESS => 'bzip2', SUFFIX => '.bz2' },
         'MIN_PERL_VERSION' => 5.008001,
         'BUILD_REQUIRES'   => {
-                                'Dist::Zilla' => 0,
                               },
          PREREQ_PM         => {
                               },
@@ -22,8 +21,8 @@ sub MY::postamble {
     return <<'MAKE_FRAG'
 bundle : server client
 	tar -czf NicTool.tar.gz server/*.tar.gz client/*.tar.gz
-	cd server; dzil clean
-	cd client; dzil clean
+	cd server; make distclean
+	cd client; make distclean
 	make distclean
 
 server : server/NicToolServer.tar.gz
@@ -31,10 +30,10 @@ server : server/NicToolServer.tar.gz
 client : client/NicToolClient.tar.gz
 
 server/NicToolServer.tar.gz :
-	cd server; dzil clean; dzil build
+	cd server; perl Makefile.PL && make && make dist
 
 client/NicToolClient.tar.gz :
-	cd client; dzil clean; dzil build
+	cd client; perl Makefile.PL && make && make dist
 
 web : NicTool.tar.gz
 	scp NicTool.tar.gz www.nictool.com:/home/nictool.com/html/download/NicTool.tar.gz

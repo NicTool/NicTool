@@ -52,8 +52,8 @@ sub import_zone {
 
     print "zone: $zone \tfrom\t$file\n";
 
-    my $zonefile = Net::DNS::ZoneFile->new($file, [$zone] );
-    foreach my $rr ($zonefile->read) {
+    my $zonefile = Net::DNS::ZoneFile->new($file, $zone );
+    while (my $rr = $zonefile->read) {
         my $method = 'zr_' . lc $rr->type;
         print "$method\n";
         $self->$method( $rr, $zone );
@@ -329,7 +329,6 @@ sub zr_nsec { };
 sub zr_nsec3 { };
 sub zr_nsec3param { };
 sub zr_rrsig { };
-#    die Data::Dumper::Dumper($rr);
 
 1;
 
@@ -345,3 +344,49 @@ sub handle_zone {
 };
 
 1;
+
+__END__
+
+=pod
+
+=encoding UTF-8
+
+=head1 NAME
+
+NicToolServer::Import::BIND - import BIND zone files into NicTool
+
+=head1 VERSION
+
+version 2.33
+
+=head1 AUTHORS
+
+=over 4
+
+=item *
+
+Matt Simerson <msimerson@cpan.org>
+
+=item *
+
+Damon Edwards
+
+=item *
+
+Abe Shelton
+
+=item *
+
+Greg Schueler
+
+=back
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is Copyright (c) 2017 by The Network People, Inc. This software is Copyright (c) 2001 by Damon Edwards, Abe Shelton, Greg Schueler.
+
+This is free software, licensed under:
+
+  The GNU Affero General Public License, Version 3, November 2007
+
+=cut

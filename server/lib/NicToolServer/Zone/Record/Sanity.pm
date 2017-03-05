@@ -79,6 +79,7 @@ sub new_or_edit_basic_verify {
     $self->_valid_ns   ( @args ) if $data->{type} eq 'NS';
     $self->_valid_ptr  ( @args ) if $data->{type} eq 'PTR';
     $self->_valid_srv  ( @args ) if $data->{type} eq 'SRV';
+    $self->_valid_uri  ( @args ) if $data->{type} eq 'URI';
     $self->_valid_mx   ( @args ) if $data->{type} eq 'MX';
 
     $self->_name_collision($data, $z);
@@ -346,12 +347,12 @@ sub _valid_cname {
 sub _valid_a {
     my ( $self, $data, $zone_text, $collisions ) = @_;
 
-# NAME
+    # NAME
     if (grep { $_->{type} eq 'CNAME' } @$collisions) {
         $self->error( 'name', "record $data->{name} already exists within zone as an Alias (CNAME) record." );
     };
 
-# ADDRESS
+    # ADDRESS
     $self->_valid_address_chars( $data, $zone_text );
 
     Net::IP::ip_is_ipv4( $data->{address} ) or
@@ -446,10 +447,8 @@ sub _valid_mx {
 sub _valid_ns {
     my ( $self, $data, $zone_text ) = @_;
 
-# NAME
-    # _valid_name will check the name label for validity
+    # ADDRESS
 
-# ADDRESS
     # NS records must not point to a CNAME
     if ($self->record_exists( $data->{address}, 'CNAME',
             $data->{nt_zone_id}, $data->{nt_zone_record_id} ) ) {
@@ -459,9 +458,10 @@ sub _valid_ns {
     # NS records must point to absolute hostnames
     $self->_is_fully_qualified( $data, $zone_text );
 
-    $self->error('address',
-        "NS address must be a FQDN (not an IP): RFCs 1035, 2181" )
-            if $self->valid_ip_address( $data->{address} );
+    if ($self->valid_ip_address( $data->{address} )) {
+        $self->error('address',
+            "NS address must be a FQDN (not an IP): RFCs 1035, 2181" );
+    };
 
     if ( ! $self->valid_label( 'address', $data->{address} ) ) {
         $self->error('address', "NS address must be a FQDN: RFC 2181");
@@ -534,6 +534,25 @@ sub _valid_srv {
     $self->_valid_address( $data, $zone_text );
 }
 
+sub _valid_uri {
+    my ( $self, $data, $zone_text ) = @_;
+
+    # WEIGHT, PRIORITY
+    my %values_to_check = (
+        'weight'   => 'Weight',
+        'priority' => 'Priority',
+    );
+
+    # must be 16 bit integers
+    foreach my $check ( keys %values_to_check ) {
+        next if ! defined $data->{$check};
+        next if $self->valid_16bit_int( $check, $data->{$check} );
+        $self->error( $check,
+            "$values_to_check{$check} must be a 16bit integer, see RFC 7553"
+        );
+    }
+}
+
 sub _valid_ptr {
     my ( $self, $data, $zone_text) = @_;
 
@@ -582,7 +601,6 @@ sub get_invalid_chars {
     # regexp strings match all characters except those in their definition.
 
     # allow : char for AAAA
-    # https://www.tnpi.net/support/forums/index.php/topic,990.0.html
     return '[^a-fA-F0-9:]' if $type eq 'AAAA' && $field eq 'address';
     return '[^0-9\.]'      if $type eq 'A'    && $field eq 'address';
 
@@ -638,8 +656,48 @@ sub valid_reverse_label {
 
 __END__
 
+=pod
+
+=encoding UTF-8
+
+=head1 NAME
+
+NicToolServer::Zone::Record::Sanity - sanity tests for zone records
+
+=head1 VERSION
+
+version 2.33
+
 =head1 SYNOPSIS
 
+=head1 AUTHORS
+
+=over 4
+
+=item *
+
+Matt Simerson <msimerson@cpan.org>
+
+=item *
+
+Damon Edwards
+
+=item *
+
+Abe Shelton
+
+=item *
+
+Greg Schueler
+
+=back
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is Copyright (c) 2017 by The Network People, Inc. This software is Copyright (c) 2001 by Damon Edwards, Abe Shelton, Greg Schueler.
+
+This is free software, licensed under:
+
+  The GNU Affero General Public License, Version 3, November 2007
 
 =cut
-

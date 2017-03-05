@@ -139,10 +139,15 @@ sub nt_create_record {
         }
     );
 
+    my $rr_address = $p{address};
+    if ($p{type} !~ /NAPTR|A|TXT/) {
+        $rr_address = lc $p{address};
+    }
+
     my %request = (
         nt_zone_id => $p{zone_id},
         name       => lc $p{name},
-        address    => ($p{type} eq 'NAPTR' ? $p{address} : lc $p{address}),
+        address    => $rr_address,
         type       => $p{type},
     );
 
@@ -226,7 +231,7 @@ sub nt_get_zone_records {
         limit        => 255,
     );
 
-    if ( $p{name} ) {
+    if ( defined $p{name} ) {
         $request{'1_field'}  = 'name';
         $request{'1_option'} = 'equals';
         $request{'1_value'}  = $p{name};
@@ -246,26 +251,24 @@ sub nt_get_zone_records {
         $request{'3_value'}     = $p{address};
     };
 
-    #warn Dumper(\%request);
+    # warn Dumper(\%request);
     my $r = $nt->get_zone_records(%request);
     return if !$r->{store}{records};
 
     #warn Dumper ( $r->{store}{records}[0]{store} ) if $p{debug};
 
     if ( $p{debug} ) {
-
         for ( my $i = 0; $i < scalar( @{ $r->{store}{records} } ); $i++ ) {
             print "$i\n";
             next if !defined $r->{store}{records}[$i]{store};
             printf "%35s  %5s  %35s\n", $r->{store}{records}[$i]{store}{name},
                 $r->{store}{records}[$i]{store}{type},
                 $r->{store}{records}[$i]{store}{address};
-        }
 
-        #warn "get_zone_records: returning $r->{store}{records}\n";
+        }
     }
 
-    if ( $p{name} ) {
+    if ( defined $p{name} ) {
         if ( $r->{store}{records}[1]{store} ) {
             warn "yikes, more than one record matched?!\n";
         }
@@ -346,3 +349,48 @@ sub group_id {
 
 1;
 
+__END__
+
+=pod
+
+=encoding UTF-8
+
+=head1 NAME
+
+NicToolServer::Import::Base - base class for NicTool import classes
+
+=head1 VERSION
+
+version 2.33
+
+=head1 AUTHORS
+
+=over 4
+
+=item *
+
+Matt Simerson <msimerson@cpan.org>
+
+=item *
+
+Damon Edwards
+
+=item *
+
+Abe Shelton
+
+=item *
+
+Greg Schueler
+
+=back
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is Copyright (c) 2017 by The Network People, Inc. This software is Copyright (c) 2001 by Damon Edwards, Abe Shelton, Greg Schueler.
+
+This is free software, licensed under:
+
+  The GNU Affero General Public License, Version 3, November 2007
+
+=cut
