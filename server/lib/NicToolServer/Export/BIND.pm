@@ -259,7 +259,7 @@ sub zr_mx {
 sub zr_txt {
     my ($self, $r) = @_;
 
-    # fixup for quotes around DKIM in the DB (Luser error)
+    # fixup for quotes around DKIM in the DB (user error)
     $r->{address} =~ s/^"//g;   # strip off any leading quotes
     $r->{address} =~ s/"$//g;   # strip off any trailing quotes
 
@@ -267,6 +267,7 @@ sub zr_txt {
     if ( length $r->{address} > 255 ) {
         $r->{address} = join( '" "', unpack("(a255)*", $r->{address} ) );
     };
+
     # name  ttl  class   rr     text
     return "$r->{name}	$r->{ttl}	IN  TXT	\"$r->{address}\"\n";
 }
@@ -297,6 +298,13 @@ sub zr_soa {
         $z->{mailaddr} = $self->{nte}->qualify( $z->{mailaddr} ); # append domain
         $z->{mailaddr} .= '.';     # append trailing dot
     };
+
+    # reasonable defaults for unspecified values
+    $z->{ttl}     ||= 86400;
+    $z->{refresh} ||= 16384;
+    $z->{retry}   ||= 900;
+    $z->{expire}  ||= 1048576;
+    $z->{minimum} ||= 2560;
 
     # name        ttl class rr    name-server email-addr  (sn ref ret ex min)
     return "
@@ -429,18 +437,46 @@ sub zr_nsec3param {
     return "$r->{name}	$r->{ttl}	IN  NSEC3PARAM $r->{address}\n";
 }
 
+sub zr_hinfo {
+    my ($self, $r) = @_;
+
+    # Name     ttl  class   rr  address
+    return "$r->{name}	$r->{ttl}	IN  HINFO	$r->{address}\n";
+}
+
+sub zr_uri {
+    my ($self, $r) = @_;
+
+    my $priority = $self->{nte}->is_ip_port( $r->{priority} );
+    my $weight   = $self->{nte}->is_ip_port( $r->{weight} );
+
+    # Owner Name     ttl  class   rr  pri  weight target
+    return "$r->{name}	$r->{ttl}	IN  URI	$priority	$weight	\"$r->{address}\"\n";
+}
 
 1;
 
 __END__
 
+=pod
+
+=encoding UTF-8
+
 =head1 NAME
 
-NicToolServer::Export::BIND
+NicToolServer::Export::BIND - exporting DNS data to authoritative DNS servers
+
+=head1 VERSION
+
+version 2.33
 
 =head1 SYNOPSIS
 
 Export DNS information from NicTool as BIND zone files. These exports are also suitable for use with any BIND compatible authoritative name servers like PowerDNS, NSD, and Knot DNS.
+
+=head1 NAME
+
+NicToolServer::Export::BIND
 
 =head1 named.conf.local
 
@@ -448,16 +484,44 @@ This class will export a named.conf.nictool file with all the NicTool zones assi
 
  include "/etc/namedb/master/named.conf.nictool";
 
-
 =head1 Templates
 
 See the L<https://github.com/msimerson/NicTool/wiki/Export-to-BIND|Export to BIND> page.
-
 
 =head1 AUTHOR
 
 Matt Simerson
 
 Paul Hamby
+
+=head1 AUTHORS
+
+=over 4
+
+=item *
+
+Matt Simerson <msimerson@cpan.org>
+
+=item *
+
+Damon Edwards
+
+=item *
+
+Abe Shelton
+
+=item *
+
+Greg Schueler
+
+=back
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is Copyright (c) 2017 by The Network People, Inc. This software is Copyright (c) 2001 by Damon Edwards, Abe Shelton, Greg Schueler.
+
+This is free software, licensed under:
+
+  The GNU Affero General Public License, Version 3, November 2007
 
 =cut

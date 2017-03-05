@@ -2,10 +2,12 @@ Changes
 MANIFEST
 Makefile.PL
 README
+contrib/update_group_nameservers.pl
+LICENSE
+META.yml
 contrib/addserver.pl
 contrib/DNS.pm
 contrib/zone2nic.pl
-dist.ini
 lib/NicTool.pm
 lib/NicTool/API.pm
 lib/NicTool/Cache.pm
@@ -31,3 +33,4 @@ t/protocol.t
 t/result.t
 t/test.cfg
 t/transport.t
+t/cleanup.pl

@@ -1,5 +1,9 @@
 Revision history for NicToolServer
 
+2.44    2017.02.25
+    * update Knot exports for v2
+    * 
+
 2.33    2015.12.07
 
     * update NSD exports for version 4

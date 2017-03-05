@@ -1,6 +1,5 @@
 .perltidyrc
 AUTHORS.md
-dist.ini
 docs/api.htm
 docs/apiindex.htm
 docs/apinotes.htm

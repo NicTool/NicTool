@@ -19,32 +19,6 @@
 
 package NicTool::NTObject;
 
-=head1 NAME
-
-NicTool::NTObject - The base class for objects in the NicTool client framework.
-
-=head1 SYNOPSIS
-
-    my $obj = NicTool::NTObject->new(key=>'value',key2=>'value2');
-
-=head1 DESCRIPTION
-
-This is the base class for representing objects in the NicTool system.
-It provides a mechanism for getting/setting/checking attributes, and contains some
-meta-data for use by the B<NicTool> class.
-
-=head1 METHODS
-
-=over
-
-=item new(PARAMS)
-
-Creates a new object using the specified params as the attributes for the object.
-If the first item in PARAMS is a hash ref, that hash ref is used as the attributes
-hash instead, making it easy to use results of NicTool API calls which all return
-a single hash ref.
-
-=cut
 
 sub new {
     my $group = shift;
@@ -60,11 +34,6 @@ sub new {
     return bless { store => $self, type => undef, parent => undef }, $group;
 }
 
-=item type
-
-Returns the type of the object.
-
-=cut
 
 sub type {
     return $_[0]->{type};
@@ -74,14 +43,6 @@ sub parent {
     return $_[0]->{parent};
 }
 
-=item get(KEY,...)
-
-Returns the value of the attribute named KEY if only one KEY is 
-specified.
-If more than one key is specified, returns an array of all of the values
-of the attributes in the same order.
-
-=cut
 
 sub get {
     my $self = shift;
@@ -99,11 +60,6 @@ sub get {
     return;
 }
 
-=item set(KEY=>VALUE,...)
-
-Sets the value of each attribute KEY to the appropriate VALUE.
-
-=cut
 
 sub set {
     my $self = shift;
@@ -115,11 +71,6 @@ sub set {
     }
 }
 
-=item has(KEY)
-
-Returns a TRUE value if an attribute named KEY exists.
-
-=cut
 
 sub has {
     my $self = shift;
@@ -134,7 +85,66 @@ sub sob {
 
 }
 
+
+1;
+
+__END__
+
 =pod
+
+=encoding UTF-8
+
+=head1 NAME
+
+NicTool::NTObject
+
+=head1 VERSION
+
+version 1.02
+
+=head1 SYNOPSIS
+
+    my $obj = NicTool::NTObject->new(key=>'value',key2=>'value2');
+
+=head1 DESCRIPTION
+
+This is the base class for representing objects in the NicTool system.
+It provides a mechanism for getting/setting/checking attributes, and contains some
+meta-data for use by the B<NicTool> class.
+
+=head1 NAME
+
+NicTool::NTObject - The base class for objects in the NicTool client framework.
+
+=head1 METHODS
+
+=over
+
+=item new(PARAMS)
+
+Creates a new object using the specified params as the attributes for the object.
+If the first item in PARAMS is a hash ref, that hash ref is used as the attributes
+hash instead, making it easy to use results of NicTool API calls which all return
+a single hash ref.
+
+=item type
+
+Returns the type of the object.
+
+=item get(KEY,...)
+
+Returns the value of the attribute named KEY if only one KEY is 
+specified.
+If more than one key is specified, returns an array of all of the values
+of the attributes in the same order.
+
+=item set(KEY=>VALUE,...)
+
+Sets the value of each attribute KEY to the appropriate VALUE.
+
+=item has(KEY)
+
+Returns a TRUE value if an attribute named KEY exists.
 
 =back
 
@@ -142,6 +152,34 @@ sub sob {
 
 L<NicTool::Result>
 
-=cut
+=head1 AUTHORS
 
-1;
+=over 4
+
+=item *
+
+Matt Simerson <msimerson@cpan.org>
+
+=item *
+
+Damon Edwards
+
+=item *
+
+Abe Shelton
+
+=item *
+
+Greg Schueler
+
+=back
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is Copyright (c) 2017 by The Network People, Inc. This software is Copyright (c) 2001 by Damon Edwards, Abe Shelton, Greg Schueler.
+
+This is free software, licensed under:
+
+  The GNU Affero General Public License, Version 3, November 2007
+
+=cut

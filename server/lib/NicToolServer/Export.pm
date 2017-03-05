@@ -164,7 +164,7 @@ sub touch_publish_ts {
 sub cleanup_db {
     my $self = shift;
 
-# delete the "started, 0 changed zones, exiting" log entries older than today
+    # delete the "started, 0 changed zones, exiting" log entries older than today
     $self->exec_query(
         "DELETE FROM nt_nameserver_export_log
           WHERE copied=0 AND success=1
@@ -717,16 +717,16 @@ sub preflight {
     if ( $export ) {
         my $ts_success = $export->{date_start};
         if ( $ts_success ) {
-# have any zones for this NS changed since the last successful export?
+            # have any zones for this NS changed since the last successful export?
             my $c = $self->get_modified_zones_count( since => $ts_success );
-# store the last success ts for incrementals
+            # store the last success ts for incrementals
             $self->export_required( $c == 0 ? 0 : $ts_success );
             $self->elog( "$c changed");
         };
     };
     $self->elog("export required") if $self->export_required;
 
-#   $self->get_export_dir or return;   # determine export directory
+    $self->get_export_dir or return;   # determine export directory
     $self->write_runfile();            # provide a default 'run' file
 
     return 1;
@@ -784,6 +784,7 @@ exec 2>&1
 cd $self->{dir_orig}
 #
 EXPORT_USER=$user
+export NT_EXPORT_KNOT_VERSION=2
 #
 # when this run file is executed, it will run the nt_export.pl script with the
 # privileges of the EXPORT_USER. To export successfully, the enclosing
@@ -953,9 +954,17 @@ sub is_interactive {
 
 __END__
 
+=pod
+
+=encoding UTF-8
+
 =head1 NAME
 
-NicToolServer::Export
+NicToolServer::Export - export DNS data to authoritative DNS servers
+
+=head1 VERSION
+
+version 2.33
 
 =head1 SYNOPSIS
 
@@ -991,6 +1000,10 @@ postflight
 
 =back
 
+=head1 NAME
+
+NicToolServer::Export
+
 =head1 Export Classes
 
 In general, each export class is expected to provide the following methods:
@@ -1010,5 +1023,35 @@ One method needs to exist for each RR type (zr_a, zr_mx, zr_cname, etc.) used in
 The export_db method inherited from Base.pm is suitable for BIND style exports (exporting each zone to a file). If that doesn't work, write your own export_db method. See tinydns.pm and DynECT.pm for examples.
 
 =back
+
+=head1 AUTHORS
+
+=over 4
+
+=item *
+
+Matt Simerson <msimerson@cpan.org>
+
+=item *
+
+Damon Edwards
+
+=item *
+
+Abe Shelton
+
+=item *
+
+Greg Schueler
+
+=back
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is Copyright (c) 2017 by The Network People, Inc. This software is Copyright (c) 2001 by Damon Edwards, Abe Shelton, Greg Schueler.
+
+This is free software, licensed under:
+
+  The GNU Affero General Public License, Version 3, November 2007
 
 =cut

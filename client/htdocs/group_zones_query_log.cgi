@@ -18,7 +18,7 @@
 
 use strict;
 
-require nictoolclient.conf;
+require 'nictoolclient.conf';
 
 main();
 

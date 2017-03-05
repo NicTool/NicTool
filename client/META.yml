@@ -1,0 +1,33 @@
+---
+abstract: 'CGI Interface to NicToolServer'
+author:
+  - 'Matt Simerson <msimerson@cpan.org>'
+  - 'Damon Edwards'
+  - 'Abe Shelton'
+  - 'Greg Schueler'
+build_requires:
+  English: '0'
+  Test::More: '0'
+  lib: '0'
+  warnings: '0'
+configure_requires:
+  ExtUtils::MakeMaker: '0'
+dynamic_config: 0
+generated_by: 'CPAN::Meta::Converter version 2.143240'
+license: open_source
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: '1.4'
+name: NicToolClient
+requires:
+  CGI: '3'
+  Data::Dumper: '0'
+  JSON: '0'
+  LWP::UserAgent: '1'
+  RPC::XML: '1'
+  RPC::XML::Parser: '0'
+  SOAP::Lite: '0'
+  XML::Parser: '0'
+  strict: '0'
+  vars: '0'
+version: '2.33'

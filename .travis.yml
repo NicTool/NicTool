@@ -1,7 +1,80 @@
 language: perl
 perl:
+  - "5.22"
   - "5.18"
-  - "5.16"
-  - "5.14"
-  - "5.12"
   - "5.10"
+
+services:
+    - mysql
+
+addons:
+  apt:
+    packages:
+    - expat
+    - gettext
+    - apache2
+    - apache2.2-common
+    - apache2-mpm-worker
+    - libapache2-mod-perl2
+    - libapache2-mod-perl2-dev
+    - libdigest-hmac-perl
+    - libssl-dev
+    - bind9utils
+    - librpc-xml-perl
+    - libxml-libxml-perl
+    - libapache-dbi-perl
+    - libxml-parser-perl
+    - libjson-perl
+    - libsoap-lite-perl
+    - libmodule-build-perl
+    - libmime-base32-perl
+    - libmime-base64-perl
+    - libbind-confparser-perl
+    - libcrypt-openssl-rsa-perl
+    - libcrypt-openssl-dsa-perl
+    - libyaml-perl
+    - libwww-perl
+    - liburi-perl
+    - libmime-tools-perl
+    - libmailtools-perl
+    - libfile-sharedir-perl
+    - libperl-prereqscanner-perl
+    - libdbix-simple-perl
+    - libdbi-perl
+    - libnet-ip-perl
+    - libnet-dns-perl
+
+before_install:
+    - sudo .test/tls-setup.sh
+
+      # globally/system installed perl modules, for Apache::mod_perl
+    - curl -L https://cpanmin.us | sudo perl - --sudo App::cpanminus
+    - sudo cpanm --notest CGI RPC::XML CryptX Crypt::Mac::HMAC Crypt::KeyDerivation DBD::mysql Apache::DBI Shell
+
+      # locally installed modules, for tests
+    - cpanm --notest --force Test::More Test::HTML::Lint Test::Output Test::Pod
+    - cpanm --notest --force Net::DNS || sudo cpanm --notest --force Net::DNS@1.0.6 || echo "double darn"
+    - cd /home/travis/build/msimerson/NicTool/client && perl Makefile.PL && cpanm -n .
+    - cd /home/travis/build/msimerson/NicTool/server && perl Makefile.PL && cpanm -n .
+    - cd /home/travis/build/msimerson/NicTool
+
+install:
+    - sudo cp .test/apache-travis.conf /etc/apache2/sites-enabled/nictool.conf
+    - sudo service apache2 restart || sudo cat /var/log/apache2/error.log
+    - perl .test/create_tables.pl
+
+before_script:
+
+script:
+    - make -C /home/travis/build/msimerson/NicTool/client test
+    - make -C /home/travis/build/msimerson/NicTool/server test
+
+after_success:
+after_failure:
+    - pwd
+    - cat /var/log/apache2/error.log
+    - cat /etc/apache2/apache2.conf
+    - ls /usr/lib/apache2/modules/
+after_script:
+
+#sudo: false

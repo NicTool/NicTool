@@ -7,10 +7,10 @@ $TTL 3600
 604800 ; Expire
 3600) ; Minimum
 
-@ NS ns1.cybercity.dk.
-@ NS ns2.cybercity.dk.
-@ NS ns3.cybercity.dk.
-@ NS ns4.cybercity.dk.
+; @ NS ns1.cybercity.dk.
+; @ NS ns2.cybercity.dk.
+; @ NS ns3.cybercity.dk.
+; @ NS ns4.cybercity.dk.
 
 0 PTR 0x55508a00.adsl.cybercity.dk.
 1 PTR 0x55508a01.adsl.cybercity.dk.

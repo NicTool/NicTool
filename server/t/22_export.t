@@ -15,17 +15,18 @@
 use strict;
 use warnings;
 
-use lib '.';
+# use lib '.';
 use lib 't';
 use lib 'lib';
 use Data::Dumper;
 use NicToolTest;
 use NicToolServer::Export;
-use Test::More;
+use Test::More 'no_plan';
+use Test::Output;
 $Data::Dumper::Sortkeys=1;
 
 my $nsid = 0;
-my $export = NicToolServer::Export->new( ns_id=>$nsid );
+my $export = NicToolServer::Export->new( ns_id => $nsid );
 isa_ok( $export, 'NicToolServer::Export');
 
 my $r;
@@ -36,14 +37,11 @@ while ((my $key, my $val) = each %$types ) {
     $export->{rr_type_map}{names}{ $val } = $key;
 };
 
-#done_testing();
-#exit;
-
 # TODO: specify NS type when loading, so we can run these NS specific tests
 $export->load_export_class();
 
 #print "r: $r\n";
-#_tests_that_require_db();
+# _tests_that_require_db();
 _is_ip_port();
 _zr_nsec();
 _zr_rrsig();
@@ -54,27 +52,26 @@ _zr_nsec3param();
 _zr_ipseckey();
 _get_export_data_dir();
 
-done_testing() and exit;
+$export->get_dbh(
+    dsn  => Config('dsn'),
+    user => Config('db_user'),
+    pass => Config('db_pass'),
+);
 
-# Test::More doesn't like the output of these, and I'm not sure why
-# TODO: fix this Nov 18, 2011 - mps
-ok( $export->preflight, 'preflight');  # check if export can succeed
+done_testing();
+exit;
 
-ok( $export->export(), "export (nsid $nsid)");
+# ok( $export->preflight, 'preflight');  # check if export can succeed
+# ok( $export->export(), "export (nsid $nsid)");
 
 sub _tests_that_require_db {
-    $export->get_dbh(
-        dsn  => Config('dsn'),
-        user => Config('db_user'),
-        pass => Config('db_pass'),
-    );
 
     my $count = $export->get_modified_zones_count();
     ok( defined $count, "found $count zones");
 
     my $types = $export->get_rr_types();
     ok( $types, 'get_rr_types' );
-#print Dumper($types);
+    #print Dumper($types);
 
     cmp_ok( $export->get_rr_id('A'), '==', 1, 'get_rr_id');
     cmp_ok( $export->get_rr_id('NS'), '==', 2, 'get_rr_id');
@@ -82,49 +79,45 @@ sub _tests_that_require_db {
     cmp_ok( $export->get_rr_name(1), 'eq', 'A', 'get_rr_name');
     cmp_ok( $export->get_rr_name(2), 'eq', 'NS', 'get_rr_name');
 
-# this will get all zones, since we haven't given it a 'since' time
+    # this will get all zones, since we haven't given it a 'since' time
     $r = $export->get_modified_zones_count();
     ok( defined $r, "get_modified_zones_count, $r");
 
-#   $r = $export->get_last_ns_export();
-#   ok( $r, "get_last_ns_export, $nsid");
-#   warn Data::Dumper::Dumper($r);
+    #   $r = $export->get_last_ns_export();
+    #   ok( $r, "get_last_ns_export, $nsid");
+    #   warn Data::Dumper::Dumper($r);
 
-#my $logid = $export->get_log_id( success=>1 );
-#$logid = $export->get_log_id( success=>1,partial=>1 );
+    #my $logid = $export->get_log_id( success=>1 );
+    #$logid = $export->get_log_id( success=>1,partial=>1 );
 
-$r = $export->get_last_ns_export( success=>1 );
-ok( $r, "get_last_ns_export, $nsid, success");
-#warn Data::Dumper::Dumper($r);
+    $r = $export->get_last_ns_export( success=>1 );
+    ok( $r, "get_last_ns_export, $nsid, success");
+    #warn Data::Dumper::Dumper($r);
 
-$r = $export->get_last_ns_export( success=>1, partial=>1 );
-ok( $r, "get_last_ns_export, nsid $nsid, success, partial");
-#warn Data::Dumper::Dumper($r);
+    $r = $export->get_last_ns_export( success=>1, partial=>1 );
+    ok( $r, "get_last_ns_export, nsid $nsid, success, partial");
+    #warn Data::Dumper::Dumper($r);
 
-#$r = $export->get_zone_list( ns_id=> 0 );
-#$r = $export->get_zone_list( ns_id=> $nsid );
-#ok( $r, "export ($nsid), ".scalar @$r." zones");
-#warn Data::Dumper::Dumper($r);
-#exit;
-
+    #$r = $export->get_zone_list( ns_id=> 0 );
+    #$r = $export->get_zone_list( ns_id=> $nsid );
+    #ok( $r, "export ($nsid), ".scalar @$r." zones");
+    #warn Data::Dumper::Dumper($r);
+    #exit;
 };
 
 sub _is_ip_port {
-    my @bad_ports = qw/ -100 -1 65536 1000000 a buzz /;
-    push @bad_ports, ('', undef);
+    my @out_of_range = qw/ -100 -1 65536 1000000 /;
     my @good_ports = qw/ 0 1 53 995 65535 /;
 
     foreach ( @good_ports ) {
         my $r = $export->is_ip_port($_);
         ok(defined $r, "is_ip_port, valid, $_");
     };
-    foreach ( @bad_ports ) {
-        if (defined $_) {
-            ok( ! $export->is_ip_port($_), "is_ip_port, invalid, $_");
-        }
-        else {
-            ok( ! $export->is_ip_port($_), "is_ip_port, undef");
-        }
+    stderr_like { $export->is_ip_port('') } qr/empty/, "is_ip_port, empty";
+    stderr_like { $export->is_ip_port() } qr/not defined/, "is_ip_port, undefined";
+    stderr_like { $export->is_ip_port('a') } qr/non-numeric/, "is_ip_port, a";
+    foreach ( @out_of_range ) {
+	stderr_like { $export->is_ip_port($_) } qr/range/, "is_ip_port, out of range, $_";
     };
 };
 
@@ -172,6 +165,7 @@ sub _zr_nsec {
 ', 'zr_nsec');
     print $r;
 };
+
 sub _datestamp_to_int {
     $r = $export->{export_class}->datestamp_to_int( '20130401101010' );
     cmp_ok( $r, '==', 1364811010, "datestamp_to_int, $r");

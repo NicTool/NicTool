@@ -67,9 +67,6 @@ sub delegate_fields_select_as {
 sub get_group_permissions {
     my ( $self, $data ) = @_;
 
-=over
-get_group_permissions returns the permissions structure for a certain group
-=cut
 
     my $gid = $data->{nt_group_id};
     my $sql
@@ -91,10 +88,6 @@ get_group_permissions returns the permissions structure for a certain group
 sub get_user_permissions {
     my ( $self, $data ) = @_;
 
-=over
-get_user_permissions returns the permissions structure for a certain user
-user's inherit from their parent groups
-=cut
 
     my $uid   = $data->{nt_user_id};
     my $sql   = "SELECT * FROM nt_perm WHERE deleted != 1 AND nt_user_id = ?";
@@ -729,8 +722,55 @@ sub diff_changes {
 
 __END__
 
+=pod
+
+=encoding UTF-8
+
+=head1 NAME
+
+NicToolServer::Permission -  
+
+=head1 VERSION
+
+version 2.33
+
 =head1 SYNOPSIS
 
+=over 
+get_group_permissions returns the permissions structure for a certain group
+
+=over 
+get_user_permissions returns the permissions structure for a certain user
+user's inherit from their parent groups
+
+=head1 AUTHORS
+
+=over 4
+
+=item *
+
+Matt Simerson <msimerson@cpan.org>
+
+=item *
+
+Damon Edwards
+
+=item *
+
+Abe Shelton
+
+=item *
+
+Greg Schueler
+
+=back
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is Copyright (c) 2017 by The Network People, Inc. This software is Copyright (c) 2001 by Damon Edwards, Abe Shelton, Greg Schueler.
+
+This is free software, licensed under:
+
+  The GNU Affero General Public License, Version 3, November 2007
 
 =cut
-

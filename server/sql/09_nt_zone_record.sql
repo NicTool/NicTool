@@ -2,12 +2,12 @@
 # NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
 # NicTool v2.01 Copyright 2004 The Network People, Inc.
 #
-# NicTool is free software; you can redistribute it and/or modify it under 
-# the terms of the Affero General Public License as published by Affero, 
+# NicTool is free software; you can redistribute it and/or modify it under
+# the terms of the Affero General Public License as published by Affero,
 # Inc.; either version 1 of the License, or any later version.
 #
-# NicTool is distributed in the hope that it will be useful, but WITHOUT 
-# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY 
+# NicTool is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
 # or FITNESS FOR A PARTICULAR PURPOSE. See the Affero GPL for details.
 #
 # You should have received a copy of the Affero General Public License
@@ -32,7 +32,6 @@ CREATE TABLE nt_zone_record(
     deleted             TINYINT(1) UNSIGNED DEFAULT 0 NOT NULL,
     PRIMARY KEY (`nt_zone_record_id`),
     KEY `nt_zone_record_idx1` (`name`),
-    KEY `nt_zone_record_idx2` (`address`),
     KEY `nt_zone_record_idx3` (`nt_zone_id`),
     KEY `nt_zone_record_idx4` (`deleted`)
     /* CONSTRAINT `nt_zone_record_ibfk_1` FOREIGN KEY (`nt_zone_id`) REFERENCES `nt_zone` (`nt_zone_id`) ON DELETE CASCADE ON UPDATE CASCADE */

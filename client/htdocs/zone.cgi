@@ -523,7 +523,7 @@ sub display_zone_records {
     }
     my $state_string = join('&amp;', @state_fields);
 
-# Display the RR header: Resource Records  New Resource Record | View Resource Record Log
+    # Display the RR header: Resource Records  New Resource Record | View Resource Record Log
     my $gid = $q->param('nt_group_id');
     my $zonedelegate = exists $zone->{'delegated_by_id'};
 
@@ -739,7 +739,7 @@ sub display_zone_records_head {
     my $zonedelegate = exists $zone->{'delegated_by_id'};
     my $has_dperm = $zonedelegate ? $zone->{'delegate_write'} && $zone->{'delegate_add_records'} : 1;
     if ( !$zone->{'deleted'} && $user->{'zonerecord_create'} && $has_dperm ) {
-        $options .= qq[<li><a href="zone.cgi?nt_group_id=$gid&amp;nt_zone_id=$zid&amp;$state_string&amp;new_record=1#RECORD">New Resource Record</a></li>];
+        $options .= qq[<li><a href="zone.cgi?nt_group_id=$gid&amp;nt_zone_id=$zid&amp;$state_string&amp;new_record=1#RECORD" onClick="selectedRRType();">New Resource Record</a></li>];
     }
     else {
         $options .= qq[<li class=disabled>New Resource Record</li>];
@@ -760,10 +760,10 @@ sub display_zone_records_columns {
 
     my @columns = qw/ name type address ttl /;
 
-    if ( grep { $_->{type} =~ /^(?:MX|SRV|DS|IPSECKEY|DNSKEY|SSHFP|NAPTR)$/ } @$zone_records ) {
+    if ( grep { $_->{type} =~ /^(?:MX|SRV|URI|DS|IPSECKEY|DNSKEY|SSHFP|NAPTR)$/ } @$zone_records ) {
         push @columns, 'weight';
     };
-    if ( grep { $_->{type} =~ /^(?:SRV|DS|IPSECKEY|DNSKEY|SSHFP|NAPTR)$/ } @$zone_records ) {
+    if ( grep { $_->{type} =~ /^(?:SRV|URI|DS|IPSECKEY|DNSKEY|SSHFP|NAPTR)$/ } @$zone_records ) {
         push @columns, 'priority';
     };
     if ( grep { $_->{type} =~ /^(?:SRV|DS|IPSECKEY|DNSKEY)$/ } @$zone_records ) {

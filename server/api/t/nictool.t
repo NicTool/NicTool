@@ -3,10 +3,9 @@
 ##########
 
 use lib 't';
-use TestConfig (51);
+use TestConfig (41);
 use Test;
 use NicTool;
-ok(1);
 
 my $user = new NicTool(
     data_protocol => Config('data_protocol'),
