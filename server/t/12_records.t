@@ -428,7 +428,6 @@ sub doit {
     }
 
     # TTL update of RRset
-    
     my(@zr);
     my($i) = 0;
     foreach ('1.2.3.4', '2.3.4.5') {
@@ -445,6 +444,11 @@ sub doit {
     $res = $zr[0]->edit_zone_record( ttl => 6000 );
     # Test that the update has been propagated to the whole RRset
     is ($zr[0]->get('ttl'), $zr[1]->get('ttl'));
+    # Cleanup after us...
+    foreach (@zr) {
+	$res = $user->delete_zone_record(
+	    nt_zone_record_id => $_->{'nt_zone_record_id'} );
+    }
 
 
     ####################
