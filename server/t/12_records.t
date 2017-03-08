@@ -429,7 +429,7 @@ sub doit {
 
     # TTL update of RRset
     
-    my(@zrs);
+    my(@zr);
     my($i) = 0;
     foreach ('1.2.3.4', '2.3.4.5') {
 	my $id = $zone1->new_zone_record(
@@ -439,7 +439,7 @@ sub doit {
 	    ttl => 86400);
 	my $zrid = $id->get('nt_zone_record_id');
 	my $zr = $user->get_zone_record( nt_zone_record_id => $zrid );
-	$zrs[$i++] = $zr;
+	$zr[$i++] = $zr;
     }
 
     $res = $zr[0]->edit_zone_record( ttl => 6000 );
