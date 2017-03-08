@@ -439,7 +439,7 @@ sub doit {
 		ttl => 86400);
 	    my $zrid = $id->get('nt_zone_record_id');
 	    my $zr = $user->get_zone_record( nt_zone_record_id => $zrid );
-	    $id[$i] = $id;
+	    $id[$i] = $zrid;
 	    $zr[$i++] = $zr;
 	}
 
@@ -448,8 +448,8 @@ sub doit {
 	is ($zr[0]->get('ttl'), $zr[1]->get('ttl'));
 	# Cleanup after us...
 	foreach (@id) {
-	    $res = $user->delete_zone_record(
-		nt_zone_record_id => $_->{'nt_zone_record_id'} );
+	    $res = $user->delete_zone_record( nt_zone_record_id => $_ );
+	    noerrok($res) or die "Could not delete test record $_";
 	}
     }
 
