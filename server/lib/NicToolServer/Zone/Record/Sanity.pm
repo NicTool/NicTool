@@ -101,7 +101,11 @@ sub _valid_ttl {
     if (scalar @same_type && grep { $_->{ttl} != $data->{ttl} } @same_type) {
 	# RRs with identical Name and type must have identical TTL: RFC 2181
 	# Just make it so by applying TTL update to all records in RRset
-	map { $_->{ttl} = $data->{ttl} } @same_type;
+	map { 
+	    $_->{ttl} = $data->{ttl};
+	    # Push that update to the DB as well(!)
+	    $self->SUPER::edit_zone_record($_);
+	} @same_type;
     }
 }
 
