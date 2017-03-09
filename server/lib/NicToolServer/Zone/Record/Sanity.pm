@@ -585,15 +585,10 @@ sub _valid_caa {
     }
 
     if ($tag eq "iodef") {
-	my @match_one = ("mailto:", "http:", "https:");
+	my @valid_iodef_schemes = ("mailto:", "http:", "https:");
 	my $match = 0;
-	foreach (@match_one) {
-	    if ($value =~ /$_/i) {
-		$match = 1;
-	    }
-	}
-	if ($match == 0) {
-	    my $valid_uri_methods = join(", ", @match_one);
+	if (grep { $value !~ /^$_/i } @valid_iodef_schemes) {
+	    my $valid_uri_methods = join(", ", @valid_iodef_schemes);
 	    $self->error('address',
 			 "Tag value for iodef must start with " .
 			 "one of $valid_uri_methods, see RFC 6844");
