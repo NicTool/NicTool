@@ -457,6 +457,7 @@ sub doit {
     {
 	$res = $zone1->new_zone_record(
 	    name    => 'ca',
+	    type    => 'CAA',
 	    address => 'some random string',
 	    priority => 'iodef',
 	    weight  => '0',
@@ -476,6 +477,7 @@ sub doit {
     {
 	$res = $zone1->new_zone_record(
 	    name    => 'ca',
+	    type    => 'CAA',
 	    address => 'cert.example.com',
 	    priority => 'invalid-tag',
 	    weight  => '0',
