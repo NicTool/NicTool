@@ -453,6 +453,41 @@ sub doit {
 	}
     }
 
+    # CAA with invalid URI for iodef
+    {
+	$res = $zone1->new_zone_record(
+	    name    => 'ca',
+	    address => 'some random string',
+	    priority => 'iodef',
+	    weight  => '0',
+	    );
+	noerrok( $res, 300, 'Tag value for iodef' );
+	ok( $res->get('error_msg') =~ qr/Tag value for iodef/ );
+	ok( $res->get('error_desc') =~ qr/Sanity error/ );
+	
+	if ( !$res->is_error ) {
+	    $res = $user->delete_zone_record(
+		nt_zone_record_id => $res->get('nt_zone_record_id') );
+	}
+    }
+
+    # CAA with invalid tag value
+    {
+	$res = $zone1->new_zone_record(
+	    name    => 'ca',
+	    address => 'cert.example.com',
+	    priority => 'invalid-tag',
+	    weight  => '0',
+	    );
+	noerrok( $res, 300, 'Tag must be one of' );
+	ok( $res->get('error_msg') =~ qr/Tag must be one of/ );
+	ok( $res->get('error_desc') =~ qr/Sanity error/ );
+
+	if ( !$res->is_error ) {
+	    $res = $user->delete_zone_record(
+		nt_zone_record_id => $res->get('nt_zone_record_id') );
+	}
+    }
 
     ####################
     # success tests    #
@@ -474,6 +509,9 @@ sub doit {
         { name => 'test.com.', address => 'v=spf1 mx a ip4:127.0.0.6 ~all', type => 'SPF' },
         { name => 'test.com.', address => 'v=spf1 mx a ip4:127.0.0.6 ?all', type => 'SPF' },
         { name => 'www', address => '2607:f729:0000:0000:0000:0000:0000:0001', type => 'AAAA', },
+	{ name => 'test.com.', weight => '0', priority => "issue", address => "ca.example.com", type => 'CAA' },
+	{ name => 'test.com.', weight => '128', priority => "iodef", address => "mailto:security@test.com", type => 'CAA' },
+	{ name => 'test.com.', weight => '0', priority => "iodef", address => "https://ca-report.test.com/" },
     );
 
     # new record success tests
