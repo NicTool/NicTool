@@ -586,8 +586,7 @@ sub _valid_caa {
 
     if ($tag eq "iodef") {
 	my @valid_iodef_schemes = ("mailto:", "http:", "https:");
-	my $match = 0;
-	if (grep { $value !~ /^$_/i } @valid_iodef_schemes) {
+	if (! grep { $value =~ /^$_/i } @valid_iodef_schemes) {
 	    my $valid_uri_methods = join(", ", @valid_iodef_schemes);
 	    $self->error('address',
 			 "Tag value for iodef must start with " .
