@@ -40,7 +40,7 @@ sub main {
 
     my $cookie = $q->cookie('NicTool');
     if ( ! $cookie ) {
-        $nt_obj->display_login( $q->param('message') );
+        $nt_obj->display_login( scalar($q->param('message')) );
         return;
     }
 

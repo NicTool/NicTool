@@ -54,8 +54,8 @@ sub display {
     }
     elsif ( $q->param('Save') ) {
         my $rv = $nt_obj->move_nameservers(
-            nt_group_id     => $q->param('group_list'),
-            nameserver_list => $q->param('obj_list')
+            nt_group_id     => scalar($q->param('group_list')),
+            nameserver_list => scalar($q->param('obj_list'))
         );
         if ( $rv->{'error_code'} != 200 ) {
 
@@ -77,10 +77,10 @@ sub display {
 sub move {
     my ( $nt_obj, $user, $q, $message ) = @_;
 
-    $q->param( 'obj_list', join( ',', $q->param('obj_list') ) );
+    $q->param( 'obj_list', join( ',', $q->multi_param('obj_list') ) );
 
     my $rv = $nt_obj->get_nameserver_list(
-        nameserver_list => $q->param('obj_list') );
+        nameserver_list => scalar($q->param('obj_list')) );
 
     return $nt_obj->display_error($rv) if ( $rv->{'error_code'} != 200 );
 
