@@ -460,6 +460,7 @@ sub doit {
 	    address => 'some random string',
 	    priority => 'iodef',
 	    weight  => '0',
+	    ttl     => '3600',
 	    );
 	noerrok( $res, 300, 'Tag value for iodef' );
 	ok( $res->get('error_msg') =~ qr/Tag value for iodef/ );
@@ -478,6 +479,7 @@ sub doit {
 	    address => 'cert.example.com',
 	    priority => 'invalid-tag',
 	    weight  => '0',
+	    ttl     => '3600',
 	    );
 	noerrok( $res, 300, 'Tag must be one of' );
 	ok( $res->get('error_msg') =~ qr/Tag must be one of/ );
@@ -509,9 +511,9 @@ sub doit {
         { name => 'test.com.', address => 'v=spf1 mx a ip4:127.0.0.6 ~all', type => 'SPF' },
         { name => 'test.com.', address => 'v=spf1 mx a ip4:127.0.0.6 ?all', type => 'SPF' },
         { name => 'www', address => '2607:f729:0000:0000:0000:0000:0000:0001', type => 'AAAA', },
-	{ name => 'test.com.', weight => '0', priority => "issue", address => "ca.example.com", type => 'CAA' },
-	{ name => 'test.com.', weight => '128', priority => "iodef", address => "mailto:security@test.com", type => 'CAA' },
-	{ name => 'test.com.', weight => '0', priority => "iodef", address => "https://ca-report.test.com/" },
+	{ name => 'test.com.', weight => '0', priority => "issue", address => "ca.example.com", type => 'CAA', ttl=>3600 },
+	{ name => 'test.com.', weight => '128', priority => "iodef", address => "mailto:security@test.com", type => 'CAA', ttl=>3600 },
+	{ name => 'test.com.', weight => '0', priority => "iodef", address => "https://ca-report.test.com/", ttl=>3600 },
     );
 
     # new record success tests
