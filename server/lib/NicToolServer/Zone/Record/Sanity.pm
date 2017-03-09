@@ -81,6 +81,7 @@ sub new_or_edit_basic_verify {
     $self->_valid_srv  ( @args ) if $data->{type} eq 'SRV';
     $self->_valid_uri  ( @args ) if $data->{type} eq 'URI';
     $self->_valid_mx   ( @args ) if $data->{type} eq 'MX';
+    $self->_valid_caa  ( @args ) if $data->{type} eq 'CAA';
 
     $self->_name_collision($data, $z);
     $self->_valid_ttl( @args );
@@ -556,6 +557,47 @@ sub _valid_uri {
         $self->error( $check,
             "$values_to_check{$check} must be a 16bit integer, see RFC 7553"
         );
+    }
+}
+
+sub _valid_caa {
+    my ( $self, $data, $zone_text ) = @_;
+
+    my $crit = $data->{weight};
+    my $tag = $data->{priority};
+    my $value = $data->{address};
+
+    if ($crit != 0 && $crit != 128) {
+	$self->error('weight',
+		     "Critical flag must be either 0 or 128, see RFC 6844");
+    }
+
+    my %tags = (
+	'issue' => 1,
+	'issuewild' => 1,
+	'iodef' => 1,
+	);
+
+    if (!defined($tags{$tag})) {
+	my $valid_tags = join(" ", keys(%tags));
+	$self->error('priority',
+		     "Tag must be one of $valid_tags, see RFC 6844");
+    }
+
+    if ($tag eq "iodef") {
+	my @match_one = ("mailto:", "http:", "https:");
+	my $match = 0;
+	foreach (@match_one) {
+	    if ($value =~ /$_/i) {
+		$match = 1;
+	    }
+	}
+	if ($match == 0) {
+	    my $valid_uri_methods = join(", ", @match_one);
+	    $self->error('address',
+			 "Tag value for iodef must start with " .
+			 "one of $valid_uri_methods, see RFC 6844");
+	}
     }
 }
 

@@ -335,6 +335,21 @@ sub zr_uri {
     return $self->zr_generic( 256, $r, $rdata );
 }
 
+sub zr_caa {
+    my $self = shift;
+    my $r = shift or die;
+
+    # First flag byte
+    my $rdata = octal_escape( pack "n", $r{weight} );
+    # Then property tag as a length-prefixed text string
+    $rdata .= $self->characterCount( $r->{priority} ) .
+	$self->escape( $r->{priority} );
+    # Then the property value as the rest of the data length
+    $rdata .= $self->escape( $r->{address} );
+    
+    return $self->zr_generic( 257, $r, $rdata );
+}
+
 sub zr_srv {
     my $self = shift;
     my $r = shift or die;
