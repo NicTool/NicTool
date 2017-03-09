@@ -515,7 +515,7 @@ sub doit {
         { name => 'www', address => '2607:f729:0000:0000:0000:0000:0000:0001', type => 'AAAA', },
 	{ name => 'test.com.', weight => '0', priority => "issue", address => "ca.example.com", type => 'CAA', ttl=>3600 },
 	{ name => 'test.com.', weight => '128', priority => "iodef", address => "mailto:security@test.com", type => 'CAA', ttl=>3600 },
-	{ name => 'test.com.', weight => '0', priority => "iodef", address => "https://ca-report.test.com/", ttl=>3600 },
+	{ name => 'test.com.', weight => '0', priority => "iodef", address => "https://ca-report.test.com/", type => 'CAA', ttl=>3600 },
     );
 
     # new record success tests
