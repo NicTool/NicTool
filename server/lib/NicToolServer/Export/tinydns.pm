@@ -340,7 +340,7 @@ sub zr_caa {
     my $r = shift or die;
 
     # First flag byte
-    my $rdata = octal_escape( pack "n", $r{weight} );
+    my $rdata = octal_escape( pack "n", $r->{weight} );
     # Then property tag as a length-prefixed text string
     $rdata .= $self->characterCount( $r->{priority} ) .
 	$self->escape( $r->{priority} );
