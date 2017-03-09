@@ -50,15 +50,15 @@ sub display {
     my $level = $nt_obj->display_group_tree(
         $user,
         $user->{'nt_group_id'},
-        $q->param('nt_group_id'), 0
+        scalar($q->param('nt_group_id')), 0
     );
-    display_list_options( $user, $q->param('nt_group_id'), $level, 1 );
+    display_list_options( $user, scalar($q->param('nt_group_id')), $level, 1 );
 
     do_new( $nt_obj, $q, $user );
     do_edit( $nt_obj, $q, $user );
     do_delete( $nt_obj, $q );
 
-    my $group = $nt_obj->get_group( nt_group_id => $q->param('nt_group_id') );
+    my $group = $nt_obj->get_group( nt_group_id => scalar($q->param('nt_group_id')) );
 
     display_list( $nt_obj, $q, $group, $user );
 
@@ -94,8 +94,8 @@ sub do_delete {
     return if ! $q->param('delete');
 
     my $error = $nt_obj->delete_nameserver(
-        nt_group_id      => $q->param('nt_group_id'),
-        nt_nameserver_id => $q->param('nt_nameserver_id')
+        nt_group_id      => scalar($q->param('nt_group_id')),
+        nt_nameserver_id => scalar($q->param('nt_nameserver_id'))
     );
     if ( $error->{'error_code'} != 200 ) {
         $nt_obj->display_nice_error( $error, "Delete Nameserver" );
@@ -150,7 +150,7 @@ sub display_list {
         unshift @columns, 'group_name';
     }
 
-    my %params = ( nt_group_id => $q->param('nt_group_id') );
+    my %params = ( nt_group_id => scalar($q->param('nt_group_id')) );
 
     my $rv = $nt_obj->get_group_nameservers(%params);
 
@@ -172,12 +172,12 @@ sub display_list {
     my $state;
     foreach ( @{ $nt_obj->paging_fields } ) {
         next if ! $q->param($_);
-        $state .= "&amp;$_=" . $q->escape( $q->param($_) );
+        $state .= "&amp;$_=" . $q->escape( scalar($q->param($_)) );
     }
 
     display_list_actions( $q, $user, $user_group, $state, $list );
 
-    my %params = ( nt_group_id => $q->param('nt_group_id') );
+    my %params = ( nt_group_id => scalar($q->param('nt_group_id')) );
     my %sort_fields;
     $nt_obj->prepare_search_params( $q, \%labels, \%params, \%sort_fields, 100 );
     if ( ! %sort_fields ) {
@@ -430,8 +430,8 @@ sub display_edit_nameserver {
     if ( $q->param('nt_nameserver_id') && !$q->param('Save') ) {
         # get current settings
         $nameserver = $nt_obj->get_nameserver(
-            nt_group_id      => $q->param('nt_group_id'),
-            nt_nameserver_id => $q->param('nt_nameserver_id')
+            nt_group_id      => scalar($q->param('nt_group_id')),
+            nt_nameserver_id => scalar($q->param('nt_nameserver_id'))
         );
         if ( $nameserver->{'error_code'} != 200 ) {
             $message = $nameserver;

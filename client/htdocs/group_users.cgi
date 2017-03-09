@@ -50,11 +50,11 @@ sub display {
     my $level = $nt_obj->display_group_tree(
         $user,
         $user->{'nt_group_id'},
-        $q->param('nt_group_id'), 0
+        scalar($q->param('nt_group_id')), 0
     );
 
-    $nt_obj->display_user_list_options( $user, $q->param('nt_group_id'), $level, 1 );
-    my $group = $nt_obj->get_group( nt_group_id => $q->param('nt_group_id') );
+    $nt_obj->display_user_list_options( $user, scalar($q->param('nt_group_id')), $level, 1 );
+    my $group = $nt_obj->get_group( nt_group_id => scalar($q->param('nt_group_id')) );
 
     my @fields = qw/ user_create user_delete user_write group_create group_delete group_write zone_create zone_delegate zone_delete zone_write zonerecord_create zonerecord_delegate zonerecord_delete zonerecord_write nameserver_create nameserver_delete nameserver_write self_write /;
 
@@ -78,7 +78,7 @@ sub display {
     }
 
     if ( $q->param('delete') ) {
-        my $error = $nt_obj->delete_users( user_list => $q->param('obj_list') );
+        my $error = $nt_obj->delete_users( user_list => scalar($q->param('obj_list')) );
         if ( $error->{'error_code'} != 200 ) {
             $nt_obj->display_nice_error( $error, "Delete Users" );
         }
@@ -196,7 +196,7 @@ sub display_list {
         unshift @columns, 'group_name';
     }
 
-    my %params = ( nt_group_id => $q->param('nt_group_id') );
+    my %params = ( nt_group_id => scalar($q->param('nt_group_id')) );
     my %sort_fields;
     $nt_obj->prepare_search_params( $q, \%labels, \%params, \%sort_fields, 100 );
     if ( ! %sort_fields ) {
@@ -223,7 +223,7 @@ sub display_list {
     my @state_fields;
     foreach ( @{ $nt_obj->paging_fields } ) {
         next if ! $q->param($_);
-        push @state_fields, "$_=" . $q->escape( $q->param($_) );
+        push @state_fields, "$_=" . $q->escape( scalar($q->param($_)) );
     }
     my $gid = $q->param('nt_group_id');
     my $state_string = "nt_group_id=$gid" . join('&amp;', @state_fields);

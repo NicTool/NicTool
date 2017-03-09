@@ -96,11 +96,11 @@ sub display {
 
     my $message;
     my $topics = help_text;
-    my $t      = $topics->{ $q->param('topic') };
+    my $t      = $topics->{ scalar($q->param('topic')) };
 
     if (   $q->param("topic")
         && $q->param('topic') ne 'all'
-        && !exists $topics->{ $q->param('topic') } )
+        && !exists $topics->{ scalar($q->param('topic')) } )
     {
         $message = {
             error_msg =>
@@ -109,7 +109,7 @@ sub display {
         };
     }
 
-    if ( $q->param("topic") && exists $topics->{ $q->param('topic') } ) {
+    if ( $q->param("topic") && exists $topics->{ scalar($q->param('topic')) } ) {
         if ( $t->{'template'} ) {
             $nt_obj->parse_template(
                 $NicToolClient::template_dir . "/help_start.html", %$t );

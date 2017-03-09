@@ -52,7 +52,7 @@ sub display {
     );
 
     my $level = $nt_obj->display_group_tree(
-        $user, $user->{'nt_group_id'}, $q->param('nt_group_id'), 0
+        $user, $user->{'nt_group_id'}, scalar($q->param('nt_group_id')), 0
     );
 
     print qq[ 
@@ -92,7 +92,7 @@ sub display_log {
         description => 'Description',
     );
 
-    my $group = $nt_obj->get_group( nt_group_id  => $q->param('nt_group_id') );
+    my $group = $nt_obj->get_group( nt_group_id  => scalar($q->param('nt_group_id')) );
     my $include_subgroups = $group->{'has_children'} ? 'sub-groups' : undef;
 
     $nt_obj->display_sort_options( $q, \@columns, \%labels, 'group_log.cgi',
@@ -102,7 +102,7 @@ sub display_log {
         'group_log.cgi', ['nt_group_id'], $include_subgroups )
             if $q->param('edit_search');
 
-    my %params = ( nt_group_id => $q->param('nt_group_id') );
+    my %params = ( nt_group_id => scalar($q->param('nt_group_id')) );
     my %sort_fields;
     $nt_obj->prepare_search_params( $q, \%labels, \%params, \%sort_fields, 50 );
 
@@ -119,7 +119,7 @@ sub display_log {
     my @state_fields;
     foreach ( @{ $nt_obj->paging_fields } ) {
         next if ! $q->param($_);
-        push @state_fields, "$_=" . $q->escape( $q->param($_) );
+        push @state_fields, "$_=" . $q->escape( scalar($q->param($_)) );
     }
     my $state_string = @state_fields ? join('&amp;', @state_fields) : 'not_empty=1';
 

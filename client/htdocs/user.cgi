@@ -51,7 +51,7 @@ sub display {
         userid    => $user->{'nt_user_id'}
     );
 
-    my $duser = $nt_obj->get_user( nt_user_id => $q->param('nt_user_id') );
+    my $duser = $nt_obj->get_user( nt_user_id => scalar($q->param('nt_user_id')) );
     if ( $duser->{'error_code'} ne 200 ) {
         print $nt_obj->display_error($duser);
     }
@@ -94,7 +94,7 @@ sub display {
 
         # refresh the user info displayed in form
         if ( $q->param('nt_user_id') ) {
-            $duser = $nt_obj->get_user( nt_user_id => $q->param('nt_user_id') );
+            $duser = $nt_obj->get_user( nt_user_id => scalar($q->param('nt_user_id')) );
         };
     };
 
@@ -103,9 +103,9 @@ sub display {
     my $level = $nt_obj->display_group_tree(
         $user,
         $user->{'nt_group_id'},
-        $q->param('nt_group_id'), 0
+        scalar($q->param('nt_group_id')), 0
     );
-    $nt_obj->display_user_list_options( $user, $q->param('nt_group_id'), $level, 0 );
+    $nt_obj->display_user_list_options( $user, scalar($q->param('nt_group_id')), $level, 0 );
 
     $level++;
 
@@ -187,7 +187,7 @@ sub display_properties {
 
     my @state_fields;
     foreach ( @{ $nt_obj->paging_fields } ) {
-        push( @state_fields, "$_=" . $q->escape( $q->param($_) ) )
+        push( @state_fields, "$_=" . $q->escape( scalar($q->param($_)) ) )
             if ( $q->param($_) );
     }
 
@@ -264,7 +264,7 @@ sub display_global_log {
         \@req_fields )
         if $q->param('edit_search');
 
-    my %params = ( map { $_ => $q->param($_) } @req_fields );
+    my %params = ( map { $_ => scalar($q->param($_)) } @req_fields );
     my %sort_fields;
     $nt_obj->prepare_search_params( $q, \%labels, \%params, \%sort_fields,
         20 );
@@ -279,7 +279,7 @@ sub display_global_log {
 
     my @state_fields;
     foreach ( @{ $nt_obj->paging_fields } ) {
-        push( @state_fields, "$_=" . $q->escape( $q->param($_) ) )
+        push( @state_fields, "$_=" . $q->escape( scalar($q->param($_)) ) )
             if ( $q->param($_) );
     }
 

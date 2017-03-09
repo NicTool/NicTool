@@ -41,7 +41,7 @@ sub display {
     $nt_obj->parse_template($NicToolClient::start_html_template);
 
     my $expanded = {
-        'expanded' => { map { $_, 1 } split( /,/, $q->param('expanded') ) } };
+        'expanded' => { map { $_, 1 } split( /,/, scalar($q->param('expanded')) ) } };
 
     my $group = $nt_obj->get_group( nt_group_id => $user->{'nt_group_id'} );
 
