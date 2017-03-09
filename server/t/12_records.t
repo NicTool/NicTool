@@ -1050,9 +1050,10 @@ sub doit {
             name    => $_->{name},
             address => $_->{address},
             type    => $_->{type},
-            (($_->{type} eq 'MX' || $_->{type} eq 'SRV') ? (weight => 1) : ()),
-            ($_->{type} eq 'SRV' ? (priority => 1) : ()),
-            ($_->{type} eq 'SRV' ? (other => 1) : ()),
+            ($_->{ttl} ? (ttl => $_->{ttl}) : ()),
+            ($_->{weight} ? (weight => $_->{weight}) : ()),
+            ($_->{priority} ? (priority => $_->{priority}) : ()),
+            ($_->{other} ? (other => $_->{other}) : ()),
         );
 
         noerrok($res);
