@@ -375,7 +375,7 @@ function setFormRRTypeURI() {
   $('input#priority').attr('placeholder','1');
 }
 
-function setFormTypeCAA() {
+function setFormRRTypeCAA() {
     setRfcHelp(['6844']);
 
     // For the Issuer Critical field we use 'weight':
