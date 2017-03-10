@@ -398,7 +398,7 @@ function setFormRRTypeCAA() {
     addValuesToSelect(properties, 'other');
 
     // And the Address field is the property value:
-    $('input#address_label').text('Property value');
+    $('td#address_label').text('Property value');
 }
 
 function setFormRRTypeHINFO() {
