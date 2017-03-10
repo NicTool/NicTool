@@ -342,8 +342,8 @@ sub zr_caa {
     # First flag byte
     my $rdata = octal_escape( pack "n", $r->{weight} );
     # Then property tag as a length-prefixed text string
-    $rdata .= $self->characterCount( $r->{priority} ) .
-	$self->escape( $r->{priority} );
+    $rdata .= $self->characterCount( $r->{other} ) .
+	$self->escape( $r->{other} );
     # Then the property value as the rest of the data length
     $rdata .= $self->escape( $r->{address} );
     

@@ -459,7 +459,7 @@ sub doit {
 	    name    => 'ca',
 	    type    => 'CAA',
 	    address => 'some random string',
-	    priority => 'iodef',
+	    other   => 'iodef',
 	    weight  => '0',
 	    ttl     => '3600',
 	    );
@@ -479,7 +479,7 @@ sub doit {
 	    name    => 'ca',
 	    type    => 'CAA',
 	    address => 'cert.example.com',
-	    priority => 'invalid-tag',
+	    other   => 'invalid-tag',
 	    weight  => '0',
 	    ttl     => '3600',
 	    );
@@ -513,9 +513,9 @@ sub doit {
         { name => 'test.com.', address => 'v=spf1 mx a ip4:127.0.0.6 ~all', type => 'SPF' },
         { name => 'test.com.', address => 'v=spf1 mx a ip4:127.0.0.6 ?all', type => 'SPF' },
         { name => 'www', address => '2607:f729:0000:0000:0000:0000:0000:0001', type => 'AAAA', },
-	{ name => 'test.com.', weight => '0', priority => "issue", address => "ca.example.com", type => 'CAA', ttl=>3600 },
-	{ name => 'test.com.', weight => '128', priority => "iodef", address => "mailto:security@test.com", type => 'CAA', ttl=>3600 },
-	{ name => 'test.com.', weight => '0', priority => "iodef", address => "https://ca-report.test.com/", type => 'CAA', ttl=>3600 },
+	{ name => 'test.com.', weight => '0', other => "issue", address => "ca.example.com", type => 'CAA', ttl=>3600 },
+	{ name => 'test.com.', weight => '128', other => "iodef", address => "mailto:security@test.com", type => 'CAA', ttl=>3600 },
+	{ name => 'test.com.', weight => '0', other => "iodef", address => "https://ca-report.test.com/", type => 'CAA', ttl=>3600 },
     );
 
     # new record success tests

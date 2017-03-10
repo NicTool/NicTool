@@ -564,7 +564,7 @@ sub _valid_caa {
     my ( $self, $data, $zone_text ) = @_;
 
     my $crit = $data->{weight};
-    my $tag = $data->{priority};
+    my $tag = $data->{other};
     my $value = $data->{address};
 
     if ($crit != 0 && $crit != 128) {

@@ -388,14 +388,14 @@ function setFormRRTypeCAA() {
     addValuesToSelect(crit_values, 'weight');
     
     // For the Property Tag field we (ab)use 'priority':
-    $('#priority_row').show();
-    $('td#priority_label').text('Property tag');
+    $('#other_row').show();
+    $('td#other_label').text('Property tag');
     var properties = {
 	'issue' : 'issue',
 	'issuewild' : 'issuewild',
 	'iodef' : 'iodef',
     };
-    addValuesToSelect(properties, 'priority');
+    addValuesToSelect(properties, 'other');
 
     // And the Address field is the property value:
     $('input#address_label').text('Property value');
