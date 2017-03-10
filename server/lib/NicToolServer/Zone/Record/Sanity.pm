@@ -580,7 +580,7 @@ sub _valid_caa {
 
     if (!defined($tags{$tag})) {
 	my $valid_tags = join(" ", keys(%tags));
-	$self->error('priority',
+	$self->error('other',
 		     "Tag must be one of $valid_tags, see RFC 6844");
     }
 
