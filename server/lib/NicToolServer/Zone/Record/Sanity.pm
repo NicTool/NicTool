@@ -27,11 +27,13 @@ sub new_zone_record {
 
 sub edit_zone_record {
     my ( $self, $data ) = @_;
+
     my $zr = $self->get_zone_record($data);
     return $zr if $zr->{error_code} ne 200;
+
     $data->{nt_zone_id} = $zr->{nt_zone_id};
-    foreach (qw(type address)) {
-        $data->{$_} = $zr->{$_} unless exists $data->{$_};
+    foreach (qw/ type address /) {
+        $data->{$_} = $zr->{$_} if ! exists $data->{$_};
     }
 
     $self->new_or_edit_basic_verify($data);
