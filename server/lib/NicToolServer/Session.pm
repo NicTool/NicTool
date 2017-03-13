@@ -15,13 +15,17 @@ sub verify {
     my $self = shift;
 
     my $data = $self->{client}->data();
-    $data->{action} = uc $data->{action};
+    if ($data->{action}) {
+        $data->{action} = uc $data->{action};
+    }
 
     my $vcheck = $self->ver_check;
     return $vcheck if $vcheck;
 
-    #warn "action is ".$data->{action};
-    return $self->verify_login if $data->{action} eq 'LOGIN';
+    if ($data->{action}) {
+        #warn "action is ".$data->{action};
+        return $self->verify_login if $data->{action} eq 'LOGIN';
+    }
     return $self->verify_session;    # just verify the session
 }
 
