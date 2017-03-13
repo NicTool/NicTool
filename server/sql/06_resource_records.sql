@@ -39,4 +39,5 @@ VALUES
     (99,'SPF','Sender Policy Framework',0,1,0),
     (250,'TSIG','Transaction Signature',0,0,0),
     (252,'AXFR',NULL,0,0,0),
-    (256,'URI','URI',0,1,0);
+    (256,'URI','URI',0,1,0),
+    (257,'CAA','Certification Authority Authorization',0,1,0);

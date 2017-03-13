@@ -760,13 +760,13 @@ sub display_zone_records_columns {
 
     my @columns = qw/ name type address ttl /;
 
-    if ( grep { $_->{type} =~ /^(?:MX|SRV|URI|DS|IPSECKEY|DNSKEY|SSHFP|NAPTR)$/ } @$zone_records ) {
+    if ( grep { $_->{type} =~ /^(?:MX|SRV|URI|CAA|DS|IPSECKEY|DNSKEY|SSHFP|NAPTR)$/ } @$zone_records ) {
         push @columns, 'weight';
     };
     if ( grep { $_->{type} =~ /^(?:SRV|URI|DS|IPSECKEY|DNSKEY|SSHFP|NAPTR)$/ } @$zone_records ) {
         push @columns, 'priority';
     };
-    if ( grep { $_->{type} =~ /^(?:SRV|DS|IPSECKEY|DNSKEY)$/ } @$zone_records ) {
+    if ( grep { $_->{type} =~ /^(?:SRV|DS|CAA|IPSECKEY|DNSKEY)$/ } @$zone_records ) {
         push @columns, 'other';
     }
     push @columns, 'description';
