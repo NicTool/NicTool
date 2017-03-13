@@ -101,8 +101,8 @@ sub _valid_ttl {
     my @same_type = grep { $_->{type} eq $data->{type} } @$collisions;
     if (scalar @same_type && grep { $_->{ttl} != $data->{ttl} } @same_type) {
 	# RRs with identical Name and type must have identical TTL: RFC 2181
-	# Just make it so by applying TTL update to all records in RRset
-	map { 
+	# make it so by applying TTL update to all records in RRset
+	map {
 	    $_->{ttl} = $data->{ttl};
 	    # Push that update to the DB as well(!)
 	    $self->SUPER::edit_zone_record($_);
@@ -113,8 +113,15 @@ sub _valid_ttl {
 sub _duplicate_record {
     my ( $self, $data, $zone_text, $collisions ) = @_;
 
+    # AAAA records are stored in DB in expanded notation. Expand the request
+    # addr so duplicate detection works #160
+    my $address = $data->{address};
+    if ($data->{type} == 'AAAA') {
+        $address = Net::IP::ip_expand_address($data->{address},6);
+    }
+
     my @matches = grep { $_->{type} eq $data->{type} }
-                  grep { $_->{address} eq $data->{address} }
+                  grep { $_->{address} eq $address }
                   @$collisions;
 
     if (scalar @matches) {
@@ -203,8 +210,8 @@ sub _expand_shortcuts {
     my ( $self, $data, $zone_text ) = @_;
 
     # expand any @ symbol shortcuts
-    if ( $data->{name} =~ /\.\@$/ )
-    {    # replace something.@ with something.zone name
+    if ( $data->{name} =~ /\.\@$/ ) {
+        # replace something.@ with something.zone name
         $data->{name} =~ s/\.\@$//;
         $data->{name} = $data->{name} . ".$zone_text.";
     }
@@ -213,8 +220,8 @@ sub _expand_shortcuts {
         $data->{name} = "$zone_text.";
     }
 
-    if ( $data->{address} =~ /\.\@$/ )
-    {    # replace something.@ with something.zone name
+    if ( $data->{address} =~ /\.\@$/ ) {
+        # replace something.@ with something.zone name
         $data->{address} =~ s/\.\@$//;
         $data->{address} = $data->{address} . ".$zone_text.";
     }
@@ -224,8 +231,8 @@ sub _expand_shortcuts {
     }
 
     # expand the & shortcut
-    if ( $data->{address} =~ /\.\&$/ )
-    {    # replace something.& with something.in-addr.arpa.
+    if ( $data->{address} =~ /\.\&$/ ) {
+        # replace something.& with something.in-addr.arpa.
         $data->{address} =~ s/\.\&$//;
         $data->{address} = $data->{address} . ".in-addr.arpa.";
     }
@@ -336,7 +343,7 @@ sub _valid_rr_type {
 sub _valid_cname {
     my ( $self, $data, $zone_text, $collisions ) = @_;
 
-# NAME
+    # NAME
     if (grep { $_->{type} eq 'CNAME' } @$collisions) {
         $self->error( 'name', "multiple CNAME records with the same name are NOT allowed. (use plain old round robin)" );
     };
@@ -346,7 +353,7 @@ sub _valid_cname {
         $self->error( 'name', "record $data->{name} already exists within zone as an ($crash->{type}) record: RFC 1034, 2181, & 4035");
     };
 
-# ADDRESS
+    # ADDRESS
     $self->_valid_address( $data, $zone_text );
     $self->_valid_address_chars( $data, $zone_text );
 }
@@ -376,13 +383,13 @@ sub _valid_a {
 sub _valid_aaaa {
     my ( $self, $data, $zone_text, $collisions ) = @_;
 
-# NAME
+    # NAME
     if (grep { $_->{type} eq 'CNAME' } @$collisions) {
         $self->error( 'name',
             "record $data->{name} already exists within zone as an Alias (CNAME) record.");
     }
 
-# ADDRESS
+    # ADDRESS
     $data->{address} =~ s/ //g;     # strip out any spaces
     if ( ! Net::IP::ip_is_ipv4( $data->{address} ) ) {
         $data->{address} = Net::IP::ip_expand_address($data->{address},6);
@@ -390,7 +397,7 @@ sub _valid_aaaa {
 
     $self->_valid_address_chars( $data, $zone_text );
 
-# TODO: add support for IPv4 transitional IPs: 2001:db8::1.2.3.4
+    # TODO: add support for IPv4 transitional IPs: 2001:db8::1.2.3.4
     Net::IP::ip_is_ipv6( $data->{address} )
         or $self->error( 'address',
             'Address for AAAA records must be a valid IPv6 address.'
@@ -405,19 +412,19 @@ sub _valid_aaaa {
 sub _valid_mx {
     my ( $self, $data, $zone_text, $collisions ) = @_;
 
-# NAME
+    # NAME
     # MX records cannot share a name with a CNAME
     if (grep { $_->{type} eq 'CNAME' } @$collisions) {
         $self->error( 'name', "MX records must not exist as a CNAME: RFCs 1034, 2181" );
     };
 
-# WEIGHT
+    # WEIGHT
     # weight must be 16 bit integer
     if (defined $data->{weight}) {
         $self->valid_16bit_int( 'weight', $data->{weight} );
     }
 
-# ADDRESS
+    # ADDRESS
     # MX records must not point to a CNAME
     if ($self->record_exists( $data->{address}, 'CNAME',
             $data->{nt_zone_id}, $data->{nt_zone_record_id} ) ) {
@@ -435,7 +442,7 @@ sub _valid_mx {
         # TODO: use Net::DNS to query the target and assure it's not a CNAME
     };
 
-# reject if CNAME = 'mail'
+    # reject if CNAME = 'mail'
     # MX records must point to absolute hostnames
     $self->_is_fully_qualified( $data, $zone_text );
 
@@ -481,10 +488,10 @@ sub _valid_ns {
 sub _valid_srv {
     my ( $self, $data, $zone_text ) = @_;
 
-# NAME
+    # NAME
     # SRV records allow leading underscore: RFC 2782
-# since we allow _ in the valid_name_chars match, we still need to assure
-# that _ is only allowed in the leading position
+    # since we allow _ in the valid_name_chars match, we still need to assure
+    # that _ is only allowed in the leading position
 
     # get more restrictive pattern
     my $invalid_match = $self->get_invalid_chars( 'SRV', 'address', $zone_text );
@@ -504,7 +511,7 @@ sub _valid_srv {
         };
     };
 
-# WEIGHT, PRIORITY, PORT
+    # WEIGHT, PRIORITY, PORT
     # weight, priority, and port must all be 16 bit integers
     my %values_to_check = (
         'weight'   => 'Weight',
@@ -520,7 +527,7 @@ sub _valid_srv {
         );
     }
 
-# ADDRESS
+    # ADDRESS
     # SRV records must not point to a CNAME
     if ($self->record_exists( $data->{address}, 'CNAME',
             $data->{nt_zone_id}, $data->{nt_zone_record_id} ) ) {
@@ -619,17 +626,17 @@ sub _valid_naptr {
         }
     }
 
-# TODO: the following fields should be validated:
-# http://www.ietf.org/rfc/rfc2915.txt
+    # TODO: the following fields should be validated:
+    # http://www.ietf.org/rfc/rfc2915.txt
 
-# Flags Service Regexp Replacement
-# IN NAPTR 100  10  ""   ""  "/urn:cid:.+@([^\.]+\.)(.*)$/\2/i"    .
-# IN NAPTR 100  50  "s"  "z3950+I2L+I2C"     ""  _z3950._tcp.gatech.edu.
-# IN NAPTR 100  50  "s"  "rcds+I2C"          ""  _rcds._udp.gatech.edu.
-# IN NAPTR 100  50  "s"  "http+I2L+I2C+I2R"  ""  _http._tcp.gatech.edu.
+    # Flags Service Regexp Replacement
+    # IN NAPTR 100  10  ""   ""  "/urn:cid:.+@([^\.]+\.)(.*)$/\2/i"    .
+    # IN NAPTR 100  50  "s"  "z3950+I2L+I2C"     ""  _z3950._tcp.gatech.edu.
+    # IN NAPTR 100  50  "s"  "rcds+I2C"          ""  _rcds._udp.gatech.edu.
+    # IN NAPTR 100  50  "s"  "http+I2L+I2C+I2R"  ""  _http._tcp.gatech.edu.
 
 
-# ADDRESS
+    # ADDRESS
     $self->_is_fully_qualified( $data, $zone_text );
 }
 

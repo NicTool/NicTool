@@ -7,6 +7,7 @@ Revision history for NicToolServer
     * add URI & HINFO (obsolete) to record types #146
     * when updating TTL of record in RRset, update all TTLs #157
 * Updates & Changes
+    * expand AAAA addresses before duplicate checks #160
     * replace CGI->param() with CGI->multi_param() #159
     * replace deprecated CGI->startform with start_form
     * when importing tinydns, apply tinydns defaults #153
