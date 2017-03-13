@@ -47,11 +47,11 @@ non_object_tests();
 
 my $user = nt_api_connect();
 
-#try to do the tests
+# try to do the tests
 eval { object_tests(); };
 warn $@ if $@;
 
-#delete objects even if other tests bail
+# delete objects even if other tests bail
 eval { cleanup(); };
 warn $@ if $@;
 
