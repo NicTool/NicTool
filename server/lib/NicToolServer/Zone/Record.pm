@@ -291,6 +291,7 @@ sub get_zone_record {
       LEFT JOIN resource_record_type t ON r.type_id=t.id
         WHERE r.nt_zone_record_id=?
          ORDER BY r.$data->{sortby}";
+
     my $zrs = $self->exec_query( $sql, $data->{nt_zone_record_id} )
         or return {
         error_code => 600,
@@ -306,7 +307,7 @@ sub get_zone_record {
     my $del = $self->get_param_meta( 'nt_zone_record_id', 'delegate' )
         or return \%rv;
 
-    # this info comes from NicToolServer.pm when it checks for access perms to the objects
+    # this comes from NicToolServer.pm when it checks for access perms to the objects
     my %mapping = (
         delegated_by_id   => 'delegated_by_id',
         delegated_by_name => 'delegated_by_name',
