@@ -403,7 +403,7 @@ NicToolServer::Zone::Record - manage DNS zone records
 
 =head1 VERSION
 
-version 2.33
+version 2.34
 
 =head1 SYNOPSIS
 

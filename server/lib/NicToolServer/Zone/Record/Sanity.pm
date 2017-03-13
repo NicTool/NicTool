@@ -708,7 +708,7 @@ NicToolServer::Zone::Record::Sanity - sanity tests for zone records
 
 =head1 VERSION
 
-version 2.33
+version 2.34
 
 =head1 SYNOPSIS
 
