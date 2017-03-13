@@ -110,13 +110,12 @@ INSERT INTO `resource_record_type` (`id`, `name`, `description`, `reverse`, `for
 VALUES
     (13,'HINFO','Host Info',0,0,1),
     (256,'URI','URI',0,1,0),
-    (257,'CAA','Certification Authority Authorization',0,1,0)
+    (257,'CAA','Certification Authority Authorization',0,1,0);
 
 UPDATE nt_options SET option_value='2.34' WHERE option_name='db_version';
 EO_SQL_2_34
 ;
 }
-
 
 sub _sql_test_2_32 {
     my $r = _get_db_version() or return 1;  # query failed
