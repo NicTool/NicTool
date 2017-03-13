@@ -713,13 +713,13 @@ sub octal_escape {
 sub expand_aaaa {
     my ( $self, $aaaa ) = @_;
 
-# from djbdnsRecordBuilder, contributed by Matija Nalis
+    # from djbdnsRecordBuilder, contributed by Matija Nalis
     my $colons = $aaaa =~ tr/:/:/;             # count the colons
     if ($colons < 7) {
         $aaaa =~ s/::/':' x (9-$colons)/e;     # restore compressed colons
     };
 
-# restore any compressed leading zeros
+    # restore any compressed leading zeros
     $aaaa = join ':', map { sprintf '%04s', $_ } split /:/, $aaaa;
     return $aaaa;
 };
@@ -915,7 +915,7 @@ NicToolServer::Export::tinydns - export NicTool DNS data to tinydns (part of djb
 
 =head1 VERSION
 
-version 2.33
+version 2.34
 
 =head1 Instructions for Use
 

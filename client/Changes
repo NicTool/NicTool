@@ -1,7 +1,8 @@
 
-2.34    2017.02.
+2.34    2017.03.13
 
   * when selecting 'New Resource Record', update RR type form
+  * add support for CAA resource record type  #158
 
 2.33    2015.12.07
 

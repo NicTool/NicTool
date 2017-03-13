@@ -828,7 +828,7 @@ sub doit {
 
     for (qw(something* some*thing *something something.*)) {
 
-        #invalid name
+        # invalid name
         $res = $zr1->edit_zone_record(
             name    => $_,
             type    => 'A',
@@ -842,7 +842,7 @@ sub doit {
         ok( $res->get('error_desc') =~ qr/Sanity error/ );
     }
 
-# invalid chars in name, address
+    # invalid chars in name, address
     #for $type ( qw/ A MX NS CNAME PTR / ) {
     for $type ( qw/ MX / ) {
         for my $char ( @invalid_ascii ) {
@@ -904,7 +904,7 @@ sub doit {
         for my $address ( qw( -blah -blah.something -
             something.-something /blah.something blah./something.com) ) {
 
-#invalid address for type
+            # invalid address for type
             $res = $zr1->edit_zone_record(
                 name    => "something",
                 address => $address,
@@ -918,7 +918,7 @@ sub doit {
             ok( $res->get('error_msg') =~ qr/must point to a FQDN/, "edit_zone_record, $type, $address" );
             ok( $res->get('error_desc') =~ qr/Sanity error/, "edit_zone_record, $type, $address" );
 
-#invalid address for preset type
+            # invalid address for preset type
             $res = $zr1->edit_zone_record(
                 type    => $type,
                 address => 'fully.ok.name.',
@@ -936,7 +936,7 @@ sub doit {
         }
     }
 
-#invalid address for type
+    # invalid address for type
     for my $type ( qw/ MX NS SRV / ) {
         for my $address ( qw/ 1.2.3.4 5.1.2.8 5.1.2 a.b.c / ) {
 
@@ -1063,7 +1063,7 @@ sub doit {
         is( $zr1->get('type'),    $_->{type}    );
     };
 
-# SPF with shortcut expansion
+    # SPF with shortcut expansion
     $res = $zr1->edit_zone_record(
         name    => '@',
         address => 'v=spf1 mx a ip4:127.0.0.6 -all',
@@ -1075,7 +1075,7 @@ sub doit {
     is( $zr1->get('address'), 'v=spf1 mx a ip4:127.0.0.6 -all' );
     is( $zr1->get('type'),    'SPF' );
 
-# TXT with shortcut expansion
+    # TXT with shortcut expansion
     $res = $zr1->edit_zone_record(
         name    => '@',
         address => 'v=spf1 mx a ip4:127.0.0.6 -all',
@@ -1087,7 +1087,7 @@ sub doit {
     is( $zr1->get('address'), 'v=spf1 mx a ip4:127.0.0.6 -all' );
     is( $zr1->get('type'),    'TXT' );
 
-# AAAA with shortcut expansion
+    # AAAA with shortcut expansion
     $res = $zr1->edit_zone_record(
         name    => 'www',
         address => '2001:db8::0001',
@@ -1121,7 +1121,7 @@ sub doit {
         qr/multiple CNAME records with the same name are NOT allowed/ );
     ok( $res->get('error_desc') =~ qr/Sanity error/ );
 
-#CNAME conflict with A record
+    # CNAME conflict with A record
     $res = $zr1->edit_zone_record(
         name    => 'x',
         address => '1.2.3.4',
