@@ -52,12 +52,12 @@ sub display {
     my $level = $nt_obj->display_group_tree(
         $user,
         $user->{'nt_group_id'},
-        $q->param('nt_group_id'), 0
+        scalar($q->param('nt_group_id')), 0
     );
 
-    $nt_obj->display_zone_list_options( $user, $q->param('nt_group_id'), $level, 1 );
+    $nt_obj->display_zone_list_options( $user, scalar($q->param('nt_group_id')), $level, 1 );
 
-    my $group = $nt_obj->get_group( nt_group_id => $q->param('nt_group_id') );
+    my $group = $nt_obj->get_group( nt_group_id => scalar($q->param('nt_group_id')) );
 
     if ( $q->param('new') ) {
         $nt_obj->display_nice_message(@$nicemessage) if $nicemessage;
@@ -79,7 +79,7 @@ sub _display_delete {
     return if ! $q->param('delete');
     return if ! $q->param('zone_list');
 
-    my @zl = $q->param('zone_list');
+    my @zl = $q->multi_param('zone_list');
     my $error = $nt_obj->delete_zones( zone_list => join( ',', @zl ) );
 
     if ( $error->{'error_code'} != 200 ) {
@@ -104,8 +104,8 @@ sub _display_delete_delegate {
     return if ! $q->param('nt_group_id');
 
     my $error = $nt_obj->delete_zone_delegation(
-        nt_zone_id  => $q->param('nt_zone_id'),
-        nt_group_id => $q->param('nt_group_id')
+        nt_zone_id  => scalar($q->param('nt_zone_id')),
+        nt_group_id => scalar($q->param('nt_group_id'))
     );
     if ( $error->{'error_code'} != 200 ) {
         $nt_obj->display_nice_error( $error, "Remove Zone Delegation" );
@@ -129,7 +129,7 @@ sub _display_edit {
 
         my %data;
         foreach (@fields) { $data{$_} = $q->param($_); }
-        $data{'nameservers'} = join( ',', $q->param('nameservers') );
+        $data{'nameservers'} = join( ',', $q->multi_param('nameservers') );
 
         my $error = $nt_obj->edit_zone(%data);
         if ( $error->{'error_code'} != 200 ) {
@@ -175,7 +175,7 @@ sub display_list {
     }
     unshift @columns, 'zone';
 
-    my %params = ( nt_group_id => $q->param('nt_group_id') );
+    my %params = ( nt_group_id => scalar($q->param('nt_group_id')) );
     my %sort_fields;
     $nt_obj->prepare_search_params( $q, \%labels, \%params, \%sort_fields, 100 );
     if ( ! %sort_fields ) {
@@ -202,7 +202,7 @@ sub display_list {
     my @state_fields;
     foreach ( @{ $nt_obj->paging_fields } ) {
         next if ! $q->param($_);
-        push @state_fields, "$_=" . $q->escape( $q->param($_) );
+        push @state_fields, "$_=" . $q->escape( scalar($q->param($_)) );
     }
     my $gid = $q->param('nt_group_id');
     my $state_string = join('&amp;', @state_fields, "nt_group_id=$gid");
@@ -527,7 +527,7 @@ sub _get_available_nameservers {
     my ($nt_obj, $q) = @_;
 
     my $ns_tree = $nt_obj->get_usable_nameservers(
-        nt_group_id => $q->param('nt_group_id')
+        nt_group_id => scalar($q->param('nt_group_id'))
     );
 
     if ( @{ $ns_tree->{'nameservers'} } == 0 ) {
@@ -596,7 +596,7 @@ sub add_zone {
                 refresh retry expire minimum mailaddr template ttl /;
     my %data;
     foreach (@fields) { $data{$_} = $q->param($_); }
-    $data{'nameservers'} = join( ',', $q->param('nameservers') );
+    $data{'nameservers'} = join( ',', $q->multi_param('nameservers') );
 
     my $error = $nt_obj->new_zone(%data);
     if ( $error->{'error_code'} != 200 ) {
@@ -606,12 +606,12 @@ sub add_zone {
     # do the template stuff here
     my $nt_zone_id   = $error->{'nt_zone_id'};
     my $zone_records = $nt_obj->zone_record_template(
-        {   zone       => $q->param('zone'),
+        {   zone       => scalar($q->param('zone')),
             nt_zone_id => $nt_zone_id,
-            template   => $q->param('template'),
-            newip      => $q->param('newip'),
-            mailip     => $q->param('mailip'),
-            debug      => $q->param('debug')
+            template   => scalar($q->param('template')),
+            newip      => scalar($q->param('newip')),
+            mailip     => scalar($q->param('mailip')),
+            debug      => scalar($q->param('debug'))
         }
     );
     add_zone_records( $nt_obj, $zone_records );
@@ -659,7 +659,7 @@ sub display_zone_actions {
 
     my @state_fields;
     foreach ( @{ $nt_obj->paging_fields } ) {
-        push @state_fields, "$_=" . $q->escape( $q->param($_) ) if $q->param($_);
+        push @state_fields, "$_=" . $q->escape( scalar($q->param($_)) ) if $q->param($_);
     }
     my $gid = $q->param('nt_group_id');
     my $state_string = join('&amp;', @state_fields, "nt_group_id=$gid");

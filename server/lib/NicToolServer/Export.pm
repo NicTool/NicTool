@@ -960,7 +960,7 @@ NicToolServer::Export - export DNS data to authoritative DNS servers
 
 =head1 VERSION
 
-version 2.33
+version 2.34
 
 =head1 SYNOPSIS
 

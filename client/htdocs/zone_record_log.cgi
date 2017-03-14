@@ -53,18 +53,18 @@ sub display {
     );
 
     my $zone = $nt_obj->get_zone(
-        nt_group_id => $q->param('nt_group_id'),
-        nt_zone_id  => $q->param('nt_zone_id')
+        nt_group_id => scalar($q->param('nt_group_id')),
+        nt_zone_id  => scalar($q->param('nt_zone_id'))
     );
     $q->param( 'nt_group_id', $zone->{'nt_group_id'} );
 
     my $level = $nt_obj->display_group_tree(
         $user,
         $user->{'nt_group_id'},
-        $q->param('nt_group_id'), 0
+        scalar($q->param('nt_group_id')), 0
     );
 
-    $nt_obj->display_zone_list_options( $user, $q->param('nt_group_id'),
+    $nt_obj->display_zone_list_options( $user, scalar($q->param('nt_group_id')),
         $level, 0 );
     $nt_obj->display_zone_options( $user, $zone, $level + 1, 0 );
 
@@ -118,7 +118,7 @@ sub display_log {
         \@req_fields )
         if $q->param('edit_search');
 
-    my %params = ( map { $_, $q->param($_) } @req_fields );
+    my %params = ( map { $_, scalar($q->param($_)) } @req_fields );
     my %sort_fields;
     $nt_obj->prepare_search_params( $q, \%labels, \%params, \%sort_fields,
         $NicToolClient::page_length );
@@ -133,7 +133,7 @@ sub display_log {
 
     my @state_fields;
     foreach ( @{ $nt_obj->paging_fields } ) {
-        push( @state_fields, "$_=" . $q->escape( $q->param($_) ) )
+        push( @state_fields, "$_=" . $q->escape( scalar($q->param($_)) ) )
             if ( $q->param($_) );
     }
 

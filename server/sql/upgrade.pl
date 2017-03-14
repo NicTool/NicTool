@@ -21,8 +21,8 @@ if ( ! defined $dsn || ! defined $db_user || ! defined $db_pass ) {
     get_db_creds_from_nictoolserver_conf();
 }
 
-$db_host = ask( "database host", default => '127.0.0.1') if ! $db_host;
-$dsn     = ask( "database DSN", default  => "DBI:mysql:database=nictool;host=$db_host;port=3306") if ! $dsn;
+$db_host = ask( "database host", default => 'localhost') if ! $db_host;
+$dsn     = ask( "database DSN",  default  => "DBI:mysql:database=nictool;host=$db_host;port=3306") if ! $dsn;
 $db_user = ask( "database user", default => 'root' ) if ! $db_user;
 $db_pass = ask( "database pass", password => 1 ) if ! $db_pass;
 
@@ -33,10 +33,10 @@ my $dbh  = DBIx::Simple->connect( $dsn, $db_user, $db_pass )
 
 # NOTE: when making schema changes, update db_version in 12_nt_options.sql
 my @versions = qw/ 2.00 2.05 2.08 2.09 2.10 2.11 2.14 2.15 2.16 2.17 2.18
-                   2.24 2.27 2.28 2.29 2.30 /;
+                   2.24 2.27 2.28 2.29 2.30 2.32 2.34 /;
 
 foreach my $version ( @versions ) {
-# first, run a DB test query
+    # first, run a DB test query
     my $test_sub = '_sql_test_' . $version;  # assemble sub name
     $test_sub =~ s/\./_/g;                   # replace . with _
     no strict 'refs';  ## no critic
@@ -47,10 +47,10 @@ foreach my $version ( @versions ) {
         next;
     };
 
-# run the SQL updates, if needed
+    # run the SQL updates, if needed
     print "applying v $version SQL updates\n";
     my $queries = '_sql_' . $version;
-    $queries =~ s/\./_/g;                   # replace . with _
+    $queries =~ s/\./_/g;                 # replace . with _
     no strict 'refs';  ## no critic
     my $q_string = &$queries;             # fetch the queries
     use strict;
@@ -98,6 +98,24 @@ EO_SOME_DAY
 ;
 };
 
+sub _sql_test_2_34 {
+    my $r = _get_db_version() or return 1;  # query failed
+    return 0 if $r eq '2.32';   # update!
+    return 1;                   # don't update
+}
+
+sub _sql_2_34 {
+    <<EO_SQL_2_34
+INSERT INTO `resource_record_type` (`id`, `name`, `description`, `reverse`, `forward`, `obsolete`)
+VALUES
+    (13,'HINFO','Host Info',0,0,1),
+    (256,'URI','URI',0,1,0),
+    (257,'CAA','Certification Authority Authorization',0,1,0);
+
+UPDATE nt_options SET option_value='2.34' WHERE option_name='db_version';
+EO_SQL_2_34
+;
+}
 
 sub _sql_test_2_32 {
     my $r = _get_db_version() or return 1;  # query failed

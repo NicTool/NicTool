@@ -5,7 +5,7 @@ use strict;
 use vars qw/ $AUTOLOAD /;
 use NicToolServerAPI();
 
-$NicToolClient::VERSION = '2.33';
+$NicToolClient::VERSION = '2.34';
 $NicToolClient::NTURL   = 'http://www.nictool.com/';
 $NicToolClient::LICENSE = 'http://www.affero.org/oagpl.html';
 $NicToolClient::SRCURL  = 'http://www.nictool.com/download/NicTool.tar.gz';
@@ -80,8 +80,8 @@ sub login_user {
 
     return $server_obj->send_request(
         action   => "login",
-        username => $q->param('username'),
-        password => $q->param('password')
+        username => scalar($q->param('username')),
+        password => scalar($q->param('password'))
     );
 }
 
@@ -526,7 +526,7 @@ sub prepare_search_params {
                     $params->{ $_ . '_inclusive' }
                         = $q->param( $_ . '_inclusive' );
                     $params->{'search_query'}
-                        .= ' ' . uc( $q->param( $_ . '_inclusive' ) ) . ' ';
+                        .= ' ' . uc( scalar($q->param( $_ . '_inclusive' )) ) . ' ';
                 }
 
                 $params->{ $_ . '_field' }  = $q->param( $_ . '_field' );
@@ -534,7 +534,7 @@ sub prepare_search_params {
                 $params->{ $_ . '_value' }  = $q->param( $_ . '_value' );
 
                 $params->{'search_query'}
-                    .= $field_labels->{ $q->param( $_ . '_field' ) } . ' '
+                    .= $field_labels->{ scalar($q->param( $_ . '_field' )) } . ' '
                     . $q->param( $_ . '_option' ) . " '"
                     . $q->param( $_ . '_value' ) . "'";
             }
@@ -544,9 +544,9 @@ sub prepare_search_params {
     if ( $q->param('change_sortorder') || $params->{'Search'} ) {
         foreach ( 1 .. 3 ) {
             if ( $q->param( $_ . '_sortfield' ) ne '--' ) {
-                $sort_fields->{ $q->param( $_ . '_sortfield' ) } = {
+                $sort_fields->{ scalar($q->param( $_ . '_sortfield' )) } = {
                     'order' => $_,
-                    'mod'   => $q->param( $_ . '_sortmod' )
+                    'mod'   => scalar($q->param( $_ . '_sortmod' ))
                 };
 
                 $params->{'Sort'} = 1;
@@ -590,7 +590,7 @@ sub display_search_rows {
         next if $_ eq 'limit';
         next if $_ eq 'page';
 
-        push( @state_vars, "$_=" . $q->escape( $q->param($_) ) ) if $q->param($_);
+        push( @state_vars, "$_=" . $q->escape( scalar($q->param($_)) ) ) if $q->param($_);
     }
 
     print qq[
@@ -684,7 +684,7 @@ sub display_search_rows {
         next if $_ eq 'edit_sortorder';
         next if ! $q->param($_);
 
-        push @state_vars, "$_=" . $q->escape( $q->param($_) );
+        push @state_vars, "$_=" . $q->escape( scalar($q->param($_)) );
     }
 
     $state_string = join( '&amp;', @state_vars );
@@ -693,7 +693,7 @@ sub display_search_rows {
     my $browse_all = '<li class=first>';
     if ( $params->{'search_query'} ne 'ALL' ) {
         my $state_map = join( '&amp;',
-            map( "$_=" . $q->escape( $q->param($_) ), @$state_fields ) );
+            map( "$_=" . $q->escape( scalar($q->param($_)) ), @$state_fields ) );
         $state_map .= "&amp;$morestr" if $morestr;
         $browse_all .= qq[<a href="$cgi_name?$state_map">Browse All</a></li>
   <li>];
@@ -915,17 +915,17 @@ sub display_group_list {
     $q->param( 'nt_group_id', $user->{'nt_group_id'} )
         if ! $q->param('nt_group_id');
 
-    my $group = $self->get_group( nt_group_id => $q->param('nt_group_id') );
+    my $group = $self->get_group( nt_group_id => scalar($q->param('nt_group_id')) );
 
     if ( ! $group->{'has_children'} ) {
         print qq[<span class="center" style="color:red;"><strong>Group $group->{'name'} has no sub-groups!</strong></span>];
         $q->param( 'nt_group_id', $group->{'parent_group_id'} );
-        $group = $self->get_group( nt_group_id => $q->param('nt_group_id') );
+        $group = $self->get_group( nt_group_id => scalar($q->param('nt_group_id')) );
     }
     my $include_subgroups = $group->{'has_children'} ? 'sub-groups' : undef;
 
     my %params = (
-        nt_group_id    => $q->param('nt_group_id'),
+        nt_group_id    => scalar($q->param('nt_group_id')),
         start_group_id => $user->{'nt_group_id'}
     );
 
@@ -959,7 +959,7 @@ sub display_group_list {
     my @state_fields;
     foreach ( @{ $self->paging_fields } ) {
         next if ! $q->param($_);
-        push @state_fields, "$_=" . $q->escape( $q->param($_) );
+        push @state_fields, "$_=" . $q->escape( scalar($q->param($_)) );
     }
     print qq[
 <div id="groupListHeadline" class="dark_grey_bg side_pad">
@@ -975,7 +975,7 @@ sub display_group_list {
     print $q->start_form( -action => $cgi, -method => 'POST', -name => 'new' ),
         $q->hidden(
             -name     => 'obj_list',
-            -value    => join( ',', $q->param('obj_list') ),
+            -value    => join( ',', $q->multi_param('obj_list') ),
             -override => 1
         );
 
@@ -1058,8 +1058,8 @@ sub redirect_from_log {
 
     if ( $q->param('object') eq 'zone' ) {
         my $obj = $self->get_zone(
-            nt_group_id => $q->param('nt_group_id'),
-            nt_zone_id  => $q->param('obj_id')
+            nt_group_id => scalar($q->param('nt_group_id')),
+            nt_zone_id  => scalar($q->param('obj_id'))
         );
 
         return $obj if  $obj->{'error_code'} != 200;
@@ -1071,8 +1071,8 @@ sub redirect_from_log {
     };
     if ( $q->param('object') eq 'nameserver' ) {
         my $obj = $self->get_nameserver(
-            nt_group_id      => $q->param('nt_group_id'),
-            nt_nameserver_id => $q->param('obj_id')
+            nt_group_id      => scalar($q->param('nt_group_id')),
+            nt_nameserver_id => scalar($q->param('obj_id'))
         );
 
         return $obj if $obj->{'error_code'} != 200;
@@ -1091,8 +1091,8 @@ sub redirect_from_log {
     };
     if ( $q->param('object') eq 'user' ) {
         my $obj = $self->get_user(
-            nt_group_id => $q->param('nt_group_id'),
-            nt_user_id  => $q->param('obj_id')
+            nt_group_id => scalar($q->param('nt_group_id')),
+            nt_user_id  => scalar($q->param('obj_id'))
         );
 
         return $obj if $obj->{'error_code'} != 200;
@@ -1109,7 +1109,7 @@ sub redirect_from_log {
         return;
     };
     if ( $q->param('object') eq 'zone_record' ) {
-        my $obj = $self->get_zone_record( nt_zone_record_id => $q->param('obj_id') );
+        my $obj = $self->get_zone_record( nt_zone_record_id => scalar($q->param('obj_id')) );
 
         return $obj if $obj->{'error_code'} != 200;
         return {
@@ -1126,7 +1126,7 @@ sub redirect_from_log {
         return;
     };
     if ( $q->param('object') eq 'group' ) {
-        my $obj = $self->get_group( nt_group_id => $q->param('obj_id') );
+        my $obj = $self->get_group( nt_group_id => scalar($q->param('obj_id')) );
 
         return $obj if $obj->{'error_code'} != 200;
 
@@ -1434,7 +1434,7 @@ NicToolClient - CGI Interface to NicToolServer
 
 =head1 VERSION
 
-version 2.33
+version 2.34
 
 =head1 SYNOPSIS
 

@@ -61,6 +61,7 @@ function selectedRRType(rrType) {
       case 'RRSIG':      setFormRRTypeRRSIG();      break;
       case 'HINFO':      setFormRRTypeHINFO();      break;
       case 'URI':        setFormRRTypeURI();        break;
+      case 'CAA':        setFormRRTypeCAA();        break;
     }
 }
 
@@ -372,6 +373,32 @@ function setFormRRTypeURI() {
 
   $('#priority_row').show();
   $('input#priority').attr('placeholder','1');
+}
+
+function setFormRRTypeCAA() {
+    setRfcHelp(['6844']);
+
+    // For the Issuer Critical field we use 'weight':
+    $('#weight_row').show();
+    $('td#weight_label').text('Issuer critical');
+    var crit_values = {
+	'0' : 'Not critical',
+	'128' : 'Critical',
+    };
+    addValuesToSelect(crit_values, 'weight');
+    
+    // For the Property Tag field we (ab)use 'priority':
+    $('#other_row').show();
+    $('td#other_label').text('Property tag');
+    var properties = {
+	'issue' : 'issue',
+	'issuewild' : 'issuewild',
+	'iodef' : 'iodef',
+    };
+    addValuesToSelect(properties, 'other');
+
+    // And the Address field is the property value:
+    $('td#address_label').text('Property value');
 }
 
 function setFormRRTypeHINFO() {

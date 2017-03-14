@@ -94,7 +94,7 @@ sub print_zone_request_form {
         $q->popup_menu(
         -name    => 'action',
         -values  => [@actions],
-        -default => $q->param('action')
+        -default => scalar($q->param('action'))
         ),
         qq{   </td>
   <td class="right">New IP:</td>
@@ -102,7 +102,7 @@ sub print_zone_request_form {
         $q->textfield(
         -name  => 'newip',
         -size  => 15,
-        -value => $q->param('newip')
+        -value => scalar($q->param('newip'))
         ),
         qq{
   </td>
@@ -118,7 +118,7 @@ sub print_zone_request_form {
         $q->textfield(
         -name  => 'mailip',
         -size  => 15,
-        -value => $q->param('mailip')
+        -value => scalar($q->param('mailip'))
         ),
   qq{<br>(if different than new) </td>
  </tr>
@@ -135,7 +135,7 @@ sub print_zone_request_form {
  <tr class="light_grey_bg">
   <td>Zones:</td>
   <td colspan="2"> <textarea name="zone_list" rows="10" cols="40"> },
-        $q->param('zone_list'), qq{ </textarea></td>
+        $q->multi_param('zone_list'), qq{ </textarea></td>
   <td>A zone is also known as a domain name.<br>The same rules apply.<br>
 	<br>This is a zone: example.com<br><br>This is NOT: www.example.com
   </td>
@@ -193,7 +193,7 @@ sub zone_add {
         mailaddr    => "hostmaster.$zone.",
         description => "batch created",
         zone        => $zone,
-        nameservers => join( ',', $q->param('nameservers') ),
+        nameservers => join( ',', $q->multi_param('nameservers') ),
     );
     foreach my $s ( qw/ refresh retry expire minimum ttl serial nt_group_id / ) {
         $zone_vars{$s} = $vars{$s};
@@ -216,10 +216,10 @@ sub zone_add {
         $nt->zone_record_template(
             {   zone       => $zone,
                 nt_zone_id => $r->{'nt_zone_id'},
-                template   => $q->param('template'),
-                newip      => $q->param('newip'),
-                mailip     => $q->param('mailip'),
-                debug      => $q->param('debug')
+                template   => scalar($q->param('template')),
+                newip      => scalar($q->param('newip')),
+                mailip     => scalar($q->param('mailip')),
+                debug      => scalar($q->param('debug'))
             }
         )
     );
@@ -271,7 +271,7 @@ sub setup_http_vars {
     my @fields
         = qw(nt_group_id action newip nameservers mailip template do_reverse debug);
     foreach (@fields) { $data{$_} = $q->param($_) }
-    $data{'nameservers'} = join( ',', $q->param('nameservers') );
+    $data{'nameservers'} = join( ',', $q->multi_param('nameservers') );
 
     $data{'ttl'}     = $NicToolClient::default_zone_ttl     || 86400;
     $data{'refresh'} = $NicToolClient::default_zone_refresh || 16384;

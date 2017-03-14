@@ -454,6 +454,17 @@ sub zr_uri {
     return "$r->{name}	$r->{ttl}	IN  URI	$priority	$weight	\"$r->{address}\"\n";
 }
 
+sub zr_caa {
+    my ($self, $r) = @_;
+
+    my $crit = $self->{nte}->is_ip_port( $r->{weight} );
+    my $tag  = $self->{nte}->is_ip_port( $r->{other} );
+    
+    # Owner Name   TTL  CLASS   Type  Issue-Crit  Tag  Property
+    return "$r->{name}	$r->{ttl}	IN  CAA $crit $tag \"$r->{address}\"\n";
+}
+
+
 1;
 
 __END__
@@ -468,7 +479,7 @@ NicToolServer::Export::BIND - exporting DNS data to authoritative DNS servers
 
 =head1 VERSION
 
-version 2.33
+version 2.34
 
 =head1 SYNOPSIS
 

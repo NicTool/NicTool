@@ -36,8 +36,8 @@ client/NicToolClient.tar.gz :
 	cd client; perl Makefile.PL && make && make dist
 
 web : NicTool.tar.gz
-	scp NicTool.tar.gz www.nictool.com:/home/nictool.com/html/download/NicTool.tar.gz
-	scp NicTool.tar.gz www.nictool.com:/home/nictool.com/html/download/NicTool-$(VERSION).tar.gz
+	scp NicTool.tar.gz jails:/data/matt/www/nictool.com/download/NicTool.tar.gz
+	scp NicTool.tar.gz jails:/data/matt/www/nictool.com/download/NicTool-$(VERSION).tar.gz
 MAKE_FRAG
 ;
 }
