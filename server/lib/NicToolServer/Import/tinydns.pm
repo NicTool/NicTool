@@ -79,6 +79,18 @@ sub import_records {
         }
         elsif ( $first eq ':' ) {       #  GENERIC    =>  : fqdn : n  : rdata:ttl:timestamp:lo
             $self->zr_generic($record);
+        }
+        elsif ( $first eq '3') {        #  AAAA       =>  3 fqdn : ip : x:ttl:timestamp:lo
+            $self->zr_aaaa6($record);
+        }
+        elsif ( $first eq '6') {        # 'AAAA,PTR'  =>  6 fqdn : ip : x:ttl:timestamp:lo
+            $self->zr_aaaa6($record);
+            my ($fqdn, $addr, $ttl, $ts, $loc) = split(':', $record);
+            if ('*.' eq substr $fqdn, 0, 2) {  # a wildcard AAAA record is not a valid PTR name
+                $fqdn = substr $fqdn, 2;       # strip *. prefix
+            }
+            $self->zr_ptr(join(':', $self->ip6_to_ptr($addr),
+                $fqdn, $ttl || '', $ts || '', $loc || ''));
         };
     };
 
@@ -305,6 +317,27 @@ sub zr_aaaa {
     );
 }
 
+sub zr_aaaa6 {
+    my $self = shift;
+    my $r = shift or die;
+
+    my ($fqdn, $rdata, $ttl, $timestamp, $location) = split(':', $r);
+    my ($zone_id, $host) = $self->get_zone_id( $fqdn );
+
+    # rdata is one long string of hex digits
+    $rdata = join(':', unpack("(a4)*", $rdata));
+
+    $self->nt_create_record(
+        zone_id => $zone_id,
+        type    => 'AAAA',
+        name    => $host,
+        address => $rdata,
+        defined $ttl       ? ( ttl       => $ttl       ) : (),
+        defined $timestamp ? ( timestamp => $timestamp ) : (),
+        defined $location  ? ( location  => $location  ) : (),
+    );
+}
+
 sub zr_srv {
     my ($self, $r) = @_;
     $r or die "missing record";
@@ -335,6 +368,12 @@ sub ip_to_ptr {
     my ($self, $ip) = @_;
     return '' if ! $ip;
     return join '.', reverse(split /\./, $ip), 'in-addr.arpa.';
+}
+
+sub ip6_to_ptr {
+    my ($self, $ip) = @_;
+    return '' if ! $ip;
+    return join '.', reverse(split //, $ip), 'ip6.arpa.';
 }
 
 sub unpack_domain {
