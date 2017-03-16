@@ -346,7 +346,7 @@ sub zr_caa {
 	$self->escape( $r->{other} );
     # Then the property value as the rest of the data length
     $rdata .= $self->escape( $r->{address} );
-    
+
     return $self->zr_generic( 257, $r, $rdata );
 }
 
@@ -484,8 +484,8 @@ sub zr_sshfp {
     my $self = shift;
     my $r = shift or die;
 
-# http://www.openssh.org/txt/rfc4255.txt
-# http://tools.ietf.org/html/draft-os-ietf-sshfp-ecdsa-sha2-00
+    # http://www.openssh.org/txt/rfc4255.txt
+    # http://tools.ietf.org/html/draft-os-ietf-sshfp-ecdsa-sha2-00
 
     my $algo = $r->{weight};    #  1 octet - 1=RSA, 2=DSA, 3=ECDSA
     my $type = $r->{priority};  #  1 octet - 1=SHA-1, 2=SHA-256
@@ -502,7 +502,7 @@ sub zr_ipseckey {
     my $r = shift or die;
 
     # http://www.faqs.org/rfcs/rfc4025.html
-# IN IPSECKEY ( precedence gateway-type algorithm gateway base64-public-key )
+    # IN IPSECKEY ( precedence gateway-type algorithm gateway base64-public-key )
 
     my $rdata = $self->octal_escape( pack('CCC',
         $r->{weight},         # Precedence     1 octet
@@ -612,9 +612,9 @@ sub zr_nsec3 {
     my $r = shift or die;
 
     # NSEC3: https://tools.ietf.org/html/rfc5155
-# TTL should be same as zone SOA minimum: RFC 2308
+    # TTL should be same as zone SOA minimum: RFC 2308
 
-# IN NSEC3 1 1 12 aabbccdd ( 2t7b4g4vsa5smi47k61mv5bv1a22bojr MX DNSKEY NS SOA NSEC3PARAM RRSIG )
+    # IN NSEC3 1 1 12 aabbccdd ( 2t7b4g4vsa5smi47k61mv5bv1a22bojr MX DNSKEY NS SOA NSEC3PARAM RRSIG )
     my @data = split /\s+/, $r->{address};
     @data = grep { $_ ne '(' && $_ ne ')' } @data; # make parens optional
     if ( '(' eq substr( $data[0], 0, 1) ) { $data[0] = substr $data[0], 1; };
@@ -643,7 +643,7 @@ sub zr_nsec3param {
     # NSEC3PARAM: https://tools.ietf.org/html/rfc5155
     my ($hash_algo, $flags, $iters, $salt) = split /\s+/, $r->{address};
 
-#  RDATA mirrors the first four fields in the NSEC3
+    #  RDATA mirrors the first four fields in the NSEC3
     my $rdata = $self->pack_nsec3_params( $hash_algo, $flags, $iters, $salt );
 
     return $self->zr_generic( 51, $r, $rdata );
@@ -733,7 +733,7 @@ sub pack_domain_name {
     foreach my $label ( split /\./, $self->qualify( $name ) ) {
         $r .= octal_escape( pack( 'C a*', length( $label ), $label ) );
     };
-    $r.= '\000';   # terminating with a zero length label
+    $r .= '\000';   # terminating with a zero length label
     return $r;
 };
 
@@ -741,8 +741,8 @@ sub pack_hex {
     my ($self, $string) = @_;
 
     my $r;
-    foreach ( unpack "(a2)*", $string ) {  # nibble off 2 hex digits
-        $r .= sprintf '\%03lo', hex $_;    # pack 'em into an escaped octal
+    foreach ( unpack "(a2)*", $string ) {  # nibble off 2 hex digits (8 bits)
+        $r .= sprintf '\%03lo', hex $_;    # pack 'em to an escaped octal
     };
     return $r;
 };
@@ -808,7 +808,7 @@ sub qualify {
     return $record if substr($record,-1,1) eq '.';  # record ends in .
     $zone ||= $self->{nte}{zone_name} or return $record;
 
-# substr is measurably faster than a regexp
+    # substr is measurably faster than a regexp
     my $chars = length $zone;
     if ($zone eq substr($record,(-1*$chars),$chars)) {
         return $record;     # ends in $zone, no trailing .
@@ -889,17 +889,17 @@ sub precsize_valton {
 }
 
 # tinydns-data format: http://cr.yp.to/djbdns/tinydns-data.html
-#  A          =>  + fqdn : ip : ttl:timestamp:lo
-#  CNAME      =>  C fqdn :  p : ttl:timestamp:lo
-#  MX         =>  @ fqdn : ip : x:dist:ttl:timestamp:lo
-#  TXT        =>  ' fqdn :  s : ttl:timestamp:lo
-#  NS         =>  & fqdn : ip : x:ttl:timestamp:lo
-#  PTR        =>  ^ fqdn :  p : ttl:timestamp:lo
-#  SOA        =>  Z fqdn:mname:rname:ser:ref:ret:exp:min:ttl:time:lo
-#  'A,PTR'    =>  = fqdn : ip : ttl:timestamp:lo
-#  'SOA,NS,A' =>  . fqdn : ip : x:ttl:timestamp:lo
-#  GENERIC    =>  : fqdn : n  : rdata:ttl:timestamp:lo
-#  IGNORE     =>  - fqdn : ip : ttl:timestamp:lo
+#  A          =>  + fqdn : ip :            ttl:timestamp:lo
+#  CNAME      =>  C fqdn :  p :            ttl:timestamp:lo
+#  MX         =>  @ fqdn : ip : x : dist : ttl:timestamp:lo
+#  TXT        =>  ' fqdn :  s :            ttl:timestamp:lo
+#  NS         =>  & fqdn : ip : x :        ttl:timestamp:lo
+#  PTR        =>  ^ fqdn :  p :            ttl:timestamp:lo
+#  SOA        =>  Z fqdn : mname:rname:ser:ref:ret:exp:min:ttl:time:lo
+#  'A,PTR'    =>  = fqdn : ip :            ttl:timestamp:lo
+#  'SOA,NS,A' =>  . fqdn : ip : x :        ttl:timestamp:lo
+#  GENERIC    =>  : fqdn : n  : rdata :    ttl:timestamp:lo
+#  IGNORE     =>  - fqdn : ip :            ttl:timestamp:lo
 
 1;
 
