@@ -324,8 +324,8 @@ sub zr_aaaa6 {
     my ($fqdn, $rdata, $ttl, $timestamp, $location) = split(':', $r);
     my ($zone_id, $host) = $self->get_zone_id( $fqdn );
 
-    # rdata is one long string of hex digits
-    $rdata = join(':', unpack("(a4)*", $rdata));
+    # rdata is a string of hex characters
+    $rdata = join ':', unpack "(a4)*", $rdata;
 
     $self->nt_create_record(
         zone_id => $zone_id,
