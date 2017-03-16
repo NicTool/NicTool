@@ -140,7 +140,7 @@ sub nt_create_record {
     );
 
     my $rr_address = $p{address};
-    if ($p{type} !~ /NAPTR|A|TXT/) {
+    if ($p{type} !~ /^(:?NAPTR|A|TXT)$/) {
         $rr_address = lc $p{address};
     }
 
