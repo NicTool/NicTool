@@ -5,6 +5,7 @@ Revision history for NicToolServer
 * New Features
 * Updates & Changes
     * tinydns import: handle ascii and binary in AAAA rdata #163
+    * disable SPF records by default (flip DB flag to enable)
 
 2.34    2017.03.13
 

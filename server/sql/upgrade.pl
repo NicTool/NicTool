@@ -98,6 +98,21 @@ EO_SOME_DAY
 ;
 };
 
+sub _sql_test_2_35 {
+    my $r = _get_db_version() or return 1;  # query failed
+    return 0 if $r eq '2.34';   # update!
+    return 1;                   # don't update
+}
+
+sub _sql_2_35 {
+    <<EO_SQL_2_35
+UPDATE `resource_record_type` SET forward=0, obsolete=1 WHERE id=99;
+
+UPDATE nt_options SET option_value='2.35' WHERE option_name='db_version';
+EO_SQL_2_35
+;
+}
+
 sub _sql_test_2_34 {
     my $r = _get_db_version() or return 1;  # query failed
     return 0 if $r eq '2.32';   # update!

@@ -36,7 +36,7 @@ VALUES
     (48,'DNSKEY','DNS Public Key',0,1,0),
     (50,'NSEC3','Next Secure v3',0,0,0),
     (51,'NSEC3PARAM','NSEC3 Parameters',0,0,0),
-    (99,'SPF','Sender Policy Framework',0,1,0),
+    (99,'SPF','Sender Policy Framework',0,0,1),
     (250,'TSIG','Transaction Signature',0,0,0),
     (252,'AXFR',NULL,0,0,0),
     (256,'URI','URI',0,1,0),
