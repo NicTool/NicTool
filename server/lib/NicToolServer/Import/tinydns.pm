@@ -225,6 +225,10 @@ sub zr_soa {
     my ( $zone, $mname, $rname, $serial, $refresh, $retry, $expire, $min, $ttl, $timestamp, $location )
         = split(':', $r);
 
+    # TinyDNS auto-appends the trailing dot if missing
+    $mname .= '.' if '.' ne substr($mname, -1, 1);
+    $rname .= '.' if '.' ne substr($rname, -1, 1);
+
     my $zid = $self->nt_get_zone_id( zone => $zone );
     if ( $zid ) {
         print "zid: $zid\n";
