@@ -269,13 +269,11 @@ sub zr_spf {
 
     my ($zone_id, $host) = $self->get_zone_id( $fqdn );
 
-    $rdata = $self->unescape_octal( $rdata );
-
     $self->nt_create_record(
         zone_id => $zone_id,
         type    => 'SPF',
         name    => $host,
-        address => $rdata,
+        address => $self->unescape_octal( $rdata ),
         defined $ttl       ? ( ttl       => $ttl       ) : (),
         defined $timestamp ? ( timestamp => $timestamp ) : (),
         defined $location  ? ( location  => $location  ) : (),
@@ -362,8 +360,15 @@ sub unescape_octal {
 sub unescape_packed_hex {
     my ($self, $str) = @_;
     $str or die "missing string";
-    # convert escaped hex back to hex chars, like in an AAAA
-    $str =~ s/(\\)([0-9]{3})/sprintf('%02x',oct($2))/eg;
+
+    # https://tools.ietf.org/html/rfc3596#section-2.2
+    #    A 128 bit IPv6 address is encoded in the data portion of an AAAA
+    #    resource record in network byte order (high-order byte first).
+
+    # convert any octals to ASCII, then unpacks to hex chars
+    $str = unpack 'H*', $self->unescape_octal($str);
+
+    # inserts : after each 4 char set
     return join(':', unpack("(a4)*", $str));
 };
 
