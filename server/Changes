@@ -4,10 +4,15 @@ Revision history for NicToolServer
 
 * New Features
 * Updates & Changes
-    * tinydns import: handle ascii and binary in AAAA rdata #163
+    * import/tinydns:
+        * handle ascii and binary in AAAA rdata #163
+        * append trailing . to SOA mname and rname if missing #166
+        * anchor record type detection for case lowering #165
+        * add imports for type 3 & 6 (IPv6 patch) #167
     * disable SPF records by default (flip DB flag to enable)
-    * support all UTF8 characters (requires MySQL 5.5+)
+    * expand UTF support to cover all UTF8 characters (requires MySQL 5.5+)
         * change table encoding from utf8 (3 bits) to utf8mb4 (4 bits)
+    * Exports: split long SPF records into 255 byte strings
 
 2.34    2017.03.13
 
