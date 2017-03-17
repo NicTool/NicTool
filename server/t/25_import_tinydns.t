@@ -85,7 +85,7 @@ sub test_unpack_txt {
 
     my %packed_txt = (
         # Multi-string test with unescaped length bytes
-        '*v=spf1 mx ip4\072192.168.128.111 ip4\072192.168.!174.60 ip4\072192.168.174.62 ip4\072192'.168.108.35 ip4\072192.168.109.44 ip4\072192.\156168.191.0/25 ip4\072192.168.92.15 ip4\072192.168.92.200 ip4\072192.168.162.0/24 include\072spf.protection.outlook.com -all' =>
+        '*v=spf1 mx ip4\072192.168.128.111 ip4\072192.168.!174.60 ip4\072192.168.174.62 ip4\072192\'.168.108.35 ip4\072192.168.109.44 ip4\072192.\156168.191.0/25 ip4\072192.168.92.15 ip4\072192.168.92.200 ip4\072192.168.162.0/24 include\072spf.protection.outlook.com -all' =>
             'v=spf1 mx ip4:192.168.128.111 ip4:192.168.174.60 ip4:192.168.174.62 ip4:192.168.108.35 ip4:192.168.109.44 ip4:192.168.191.0/25 ip4:192.168.92.15 ip4:192.168.92.200 ip4:192.168.162.0/24 include:spf.protection.outlook.com -all',
         # Stress some earlier implementations: Octal escaped length byte followed by digits
         '\003007' => '007',
