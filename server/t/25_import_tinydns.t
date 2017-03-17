@@ -47,6 +47,7 @@ foreach my $test ( @$genericTests ) {
 
 test_unescape_octal();
 test_unescape_packed_hex();
+test_unpack_txt();
 
 done_testing();
 
@@ -77,5 +78,21 @@ sub test_unescape_packed_hex {
     foreach my $hex ( sort keys %packed_hex ) {
         my $r = $tinydns->unescape_packed_hex( $hex );
         cmp_ok($r, 'eq', $packed_hex{$hex}, "unescape_packed_hex, $hex");
+    };
+}
+
+sub test_unpack_txt {
+
+    my %packed_txt = (
+        # Multi-string test with unescaped length bytes
+        '*v=spf1 mx ip4\072192.168.128.111 ip4\072192.168.!174.60 ip4\072192.168.174.62 ip4\072192'.168.108.35 ip4\072192.168.109.44 ip4\072192.\156168.191.0/25 ip4\072192.168.92.15 ip4\072192.168.92.200 ip4\072192.168.162.0/24 include\072spf.protection.outlook.com -all' =>
+            'v=spf1 mx ip4:192.168.128.111 ip4:192.168.174.60 ip4:192.168.174.62 ip4:192.168.108.35 ip4:192.168.109.44 ip4:192.168.191.0/25 ip4:192.168.92.15 ip4:192.168.92.200 ip4:192.168.162.0/24 include:spf.protection.outlook.com -all',
+        # Stress some earlier implementations: Octal escaped length byte followed by digits
+        '\003007' => '007',
+    );
+
+    foreach my $txt ( sort keys %packed_txt ) {
+        my $r = $tinydns->unpack_txt( $txt );
+        cmp_ok($r, 'eq', $packed_txt{$txt}, "unpack_txt, $txt");
     };
 }
