@@ -199,7 +199,7 @@ function setFormRRTypeTXT() {
   setRfcHelp(['1035']);
 }
 function setFormRRTypeSPF() {
-  setRfcHelp(['4408']);
+  setRfcHelp(['7208']);
   $('input#name').attr('placeholder','@');
   $('input#address').attr('placeholder','v=spf1 mx a -all');
 }
