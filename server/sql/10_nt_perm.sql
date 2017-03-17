@@ -55,7 +55,7 @@ CREATE TABLE nt_perm(
     PRIMARY KEY (`nt_perm_id`),
     KEY `nt_perm_idx1` (`nt_group_id`,`nt_user_id`),
     KEY `nt_perm_idx2` (`nt_user_id`)
-) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 
 INSERT into nt_perm VALUES(1,1,0,NULL,NULL,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,0);
 

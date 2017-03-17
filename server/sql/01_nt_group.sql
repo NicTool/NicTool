@@ -9,9 +9,9 @@ CREATE TABLE `nt_group` (
     deleted           tinyint(1) unsigned NOT NULL DEFAULT 0,
     PRIMARY KEY (`nt_group_id`),
     KEY `nt_group_idx1` (`parent_group_id`),
-    KEY `nt_group_idx2` (`name`),
+    KEY `nt_group_idx2` (`name`(191)),
     KEY `nt_group_idx3` (`deleted`)
-) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 
 
 DROP TABLE IF EXISTS nt_group_log;
@@ -28,7 +28,7 @@ CREATE TABLE nt_group_log(
     KEY `nt_group_log_idx1` (`nt_group_id`),
     KEY `nt_group_log_idx2` (`timestamp`)
     /* CONSTRAINT `nt_group_log_ibfk_1` FOREIGN KEY (`nt_group_id`) REFERENCES `nt_group` (`nt_group_id`) ON DELETE CASCADE ON UPDATE CASCADE */
-) DEFAULT CHARSET=utf8 COLLATE=utf8_bin ROW_FORMAT=COMPRESSED;
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin ROW_FORMAT=COMPRESSED;
 
 
 DROP TABLE IF EXISTS nt_group_subgroups;
@@ -39,7 +39,7 @@ CREATE TABLE nt_group_subgroups(
     KEY `nt_group_subgroups_idx1` (`nt_group_id`),
     KEY `nt_group_subgroups_idx2` (`nt_subgroup_id`)
     /* CONSTRAINT `nt_group_subgroups_ibfk_1` FOREIGN KEY (`nt_group_id`) REFERENCES `nt_group` (`nt_group_id`) ON DELETE CASCADE ON UPDATE CASCADE */
-) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 
 INSERT INTO `nt_group` (`nt_group_id`, `parent_group_id`, `name`)
 VALUES
