@@ -6,6 +6,8 @@ Revision history for NicToolServer
 * Updates & Changes
     * tinydns import: handle ascii and binary in AAAA rdata #163
     * disable SPF records by default (flip DB flag to enable)
+    * support all UTF8 characters (requires MySQL 5.5+)
+        * change table encoding from utf8 (3 bits) to utf8mb4 (4 bits)
 
 2.34    2017.03.13
 

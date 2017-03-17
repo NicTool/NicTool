@@ -105,8 +105,113 @@ sub _sql_test_2_35 {
 }
 
 sub _sql_2_35 {
+
+    my @tables = qw/
+        nt_group            nt_group_log             nt_group_subgroups
+        nt_user             nt_user_global_log       nt_user_log
+        nt_user_session     nt_user_session_log
+        nt_nameserver       nt_nameserver_log        nt_nameserver_export_log
+        nt_zone             nt_zone_log              nt_zone_nameserver
+        nt_zone_record      nt_zone_record_log
+        nt_perm                  nt_options
+        resource_record_type
+        /;
+
+    my $encode_utf8mb4 = encode_utf8mb4( @tables );
+
     <<EO_SQL_2_35
-UPDATE `resource_record_type` SET forward=0, obsolete=1 WHERE id=99;
+/* Mark SPF as obsolete and disable */
+
+UPDATE resource_record_type SET forward=0, obsolete=1 WHERE id=99;
+
+/*  Update CHARACTER & COLLATION for VARCHAR columns */
+
+ALTER TABLE nt_nameserver DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin,
+    MODIFY name varchar(127) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '',
+    MODIFY description  varchar(255)
+      CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+    MODIFY address      varchar(127)
+      CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '',
+    MODIFY address6     varchar(127)
+      CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+    MODIFY remote_login varchar(127)
+      CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL;
+
+ALTER TABLE nt_zone DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin,
+    MODIFY zone varchar(255)
+      CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '',
+    MODIFY mailaddr varchar(127)
+      CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+    MODIFY description varchar(255)
+      CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+    MODIFY location varchar(8)
+      CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL;
+
+ALTER TABLE nt_zone_log DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin,
+    MODIFY zone varchar(255)
+      CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '',
+    MODIFY mailaddr varchar(127)
+      CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+    MODIFY description varchar(255)
+      CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+    ADD location varchar(8)
+      CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL;
+
+ALTER TABLE nt_zone_record DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin,
+  MODIFY name varchar(255)
+    CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '',
+  MODIFY description varchar(255)
+    CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+  MODIFY address varchar(5120)
+    CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+  MODIFY other varchar(512)
+    CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+  MODIFY location varchar(2)
+    CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL;
+
+ALTER TABLE nt_zone_record_log DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin,
+  MODIFY name varchar(255)
+    CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '',
+  MODIFY description varchar(255)
+    CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+  MODIFY address varchar(5120)
+    CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+  MODIFY other varchar(512)
+    CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+  MODIFY location varchar(2)
+    CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL;
+
+ALTER TABLE nt_user DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin,
+    MODIFY first_name varchar(120)
+        CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+    MODIFY last_name varchar(160)
+        CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+    MODIFY username varchar(200)
+        CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '',
+    MODIFY password varchar(1020)
+        CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+    MODIFY email varchar(400)
+        CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '';
+
+ALTER TABLE nt_user_log DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin,
+    MODIFY first_name varchar(120)
+        CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+    MODIFY last_name varchar(160)
+        CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+    MODIFY username varchar(200)
+        CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '',
+    MODIFY password varchar(1020)
+        CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+    MODIFY email varchar(400)
+        CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '';
+
+ALTER TABLE nt_group DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin,
+    MODIFY name varchar(255)
+        CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '';
+
+
+$encode_utf8mb4
+
 
 UPDATE nt_options SET option_value='2.35' WHERE option_name='db_version';
 EO_SQL_2_35
@@ -908,7 +1013,19 @@ sub encode_utf8 {
     };
 
     return $string;
-};
+}
+
+sub encode_utf8mb4 {
+    my @table_names = @_;
+
+    my $string = 'ALTER DATABASE nictool DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin;';
+    foreach my $table_name ( @_ ) {
+        $string .= "ALTER TABLE $table_name DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin;
+ OPTIMIZE TABLE $table_name;\n";
+    };
+
+    return $string;
+}
 
 sub engine_innodb {
     my @table_names = @_;
