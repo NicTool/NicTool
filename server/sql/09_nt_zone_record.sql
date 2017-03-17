@@ -23,19 +23,20 @@ CREATE TABLE nt_zone_record(
     ttl                 INT UNSIGNED NOT NULL DEFAULT 0,
     description         VARCHAR(255),
     type_id             SMALLINT(2) UNSIGNED NOT NULL,
-    address             VARCHAR(512) NOT NULL,
+    address             VARCHAR(5120) NOT NULL,
     weight              SMALLINT UNSIGNED,
     priority            SMALLINT UNSIGNED,
-    other               VARCHAR(255),
+    other               VARCHAR(512),
     location            VARCHAR(2) DEFAULT NULL,
     timestamp           timestamp NULL DEFAULT NULL,
     deleted             TINYINT(1) UNSIGNED DEFAULT 0 NOT NULL,
     PRIMARY KEY (`nt_zone_record_id`),
     KEY `nt_zone_record_idx1` (`name`),
+    KEY `nt_zone_record_idx2` (address(191)),
     KEY `nt_zone_record_idx3` (`nt_zone_id`),
     KEY `nt_zone_record_idx4` (`deleted`)
     /* CONSTRAINT `nt_zone_record_ibfk_1` FOREIGN KEY (`nt_zone_id`) REFERENCES `nt_zone` (`nt_zone_id`) ON DELETE CASCADE ON UPDATE CASCADE */
-) DEFAULT CHARSET=utf8 COLLATE=utf8_bin ROW_FORMAT=COMPRESSED;
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin ROW_FORMAT=COMPRESSED;
 
 
 DROP TABLE IF EXISTS nt_zone_record_log;
@@ -50,10 +51,10 @@ CREATE TABLE nt_zone_record_log(
     ttl                 INT UNSIGNED,
     description         VARCHAR(255),
     type_id             SMALLINT(2) UNSIGNED NOT NULL,
-    address             VARCHAR(512),
+    address             VARCHAR(5120),
     weight              SMALLINT UNSIGNED,
     priority            SMALLINT UNSIGNED,
-    other               VARCHAR(255),
+    other               VARCHAR(512),
     location            VARCHAR(2) DEFAULT NULL,
     PRIMARY KEY (`nt_zone_record_log_id`),
     KEY `nt_zone_record_log_idx1` (`timestamp`),
@@ -64,5 +65,5 @@ CREATE TABLE nt_zone_record_log(
     /* CONSTRAINT `nt_zone_record_log_ibfk_3` FOREIGN KEY (`nt_zone_record_id`) REFERENCES `nt_zone_record` (`nt_zone_record_id`) ON DELETE CASCADE ON UPDATE CASCADE,
     ** CONSTRAINT `nt_zone_record_log_ibfk_1` FOREIGN KEY (`nt_zone_id`) REFERENCES `nt_zone` (`nt_zone_id`) ON DELETE CASCADE ON UPDATE CASCADE,
     ** CONSTRAINT `nt_zone_record_log_ibfk_2` FOREIGN KEY (`nt_user_id`) REFERENCES `nt_user` (`nt_user_id`) ON DELETE CASCADE ON UPDATE CASCADE */
-) DEFAULT CHARSET=utf8 COLLATE=utf8_bin ROW_FORMAT=COMPRESSED;
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin ROW_FORMAT=COMPRESSED;
 
