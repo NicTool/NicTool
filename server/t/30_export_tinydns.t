@@ -31,11 +31,56 @@ isa_ok($tinydns, 'NicToolServer::Export::tinydns');
 
 my $r;
 
+test_pack_hex();
+test_escape();
+test_escapeNumber();
 test_characterCount();
 test_zr_spf();
 
 done_testing();
 exit;
+
+sub test_pack_hex {
+    my %tests = (
+        '0' => '\000',
+        '9' => '\011',
+        'A' => '\012',
+        'a' => '\012',
+        'f' => '\017',
+    );
+
+    foreach my $char (sort keys %tests) {
+        my $r = $tinydns->pack_hex($char);
+        cmp_ok($r, 'eq', $tests{$char}, "pack_hex: $char -> $r");
+    }
+}
+
+sub test_escape {
+    my %tests = (
+        ':' => '\072',
+        '\\' => '\134',
+        'a' => 'a',
+        '0' => '0',
+        '#' => '#',
+    );
+
+    foreach my $char (sort keys %tests) {
+        my $r = $tinydns->escape($char);
+        cmp_ok($r, 'eq', $tests{$char}, "escape: $char -> $r");
+    }
+}
+
+sub test_escapeNumber {
+    my %tests = (
+        '0' => '\000\000',
+        '65535' => '\377\377',
+    );
+
+    foreach my $num (sort keys %tests) {
+        my $r = $tinydns->escapeNumber($num);
+        cmp_ok($r, 'eq', $tests{$num}, "escapeNumber: $num -> $r");
+    }
+}
 
 sub test_zr_spf {
     cmp_ok(
