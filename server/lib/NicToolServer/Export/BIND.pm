@@ -324,6 +324,11 @@ sub zr_spf {
 
     # SPF record support was added in BIND v9.4.0
 
+    # BIND croaks when any string in the RR address is longer than 255
+    if ( length $r->{address} > 255 ) {
+        $r->{address} = join( '" "', unpack("(a255)*", $r->{address} ) );
+    };
+
     # name  ttl  class  type  type-specific-data
     return "$r->{name}	$r->{ttl}	IN  SPF	\"$r->{address}\"\n";
 }

@@ -163,7 +163,9 @@ sub export_db {
     # loop uses 150MB less RAM.
     my @sql = $self->{nte}->get_ns_zones(query_result=>1);
     my $result = $self->{nte}{dbix_r}->query( @sql );
+
     $self->{nte}->elog( $result->rows . " zones" );
+
     while ( my $z = $result->hash ) {
 
         $self->{nte}{zone_name} = $z->{zone};
@@ -175,9 +177,12 @@ sub export_db {
 
     # print all the rest
     @sql = $self->{nte}->get_ns_records(query_result=>1);
+
     $result = $self->{nte}{dbix_r}->query( @sql )
         or die $self->{nte}{dbix_r}->error;
+
     $self->{nte}->elog( $result->rows . " records" );
+
     while ( my $r = $result->hash ) {
         $self->{nte}{zone_name} = $r->{zone_name};
         $r->{location}  ||= '';
@@ -191,6 +196,7 @@ sub export_db {
         eval { print $fh $self->$method( @args ); };
         $self->{nte}->elog( $@ ) if $@;
     };
+
     $result->finish;
 
     close $fh;
@@ -281,7 +287,7 @@ sub zr_soa {
     my $self = shift;
     my $z = shift or die;
 
-# using sprintf versus concatenation takes the same amount of time.
+    # using sprintf versus concatenation takes the same amount of time.
     return 'Z'. $z->{zone}           # fqdn
         . ':' . $z->{nsname}         # mname
         . ':' . $z->{mailaddr}       # rname
@@ -305,9 +311,9 @@ sub zr_generic {
         . $self->qualify( $r->{name} )     # fqdn
         . ':' . $rrid                      # n
         . ':' . $rdata                     # rdata
-        . ':' . $r->{ttl}                  # ttl
-        . ':' . $r->{timestamp}            # timestamp
-        . ':' . $r->{location}             # lo
+        . ':' . ($r->{ttl} || '')          # ttl
+        . ':' . ($r->{timestamp} || '')    # timestamp
+        . ':' . ($r->{location}  || '')    # lo
         . "\n";
 };
 
@@ -315,9 +321,10 @@ sub zr_spf {
     my $self = shift;
     my $r = shift or die;
 
-    # assistance from djbdnsRecordBuilder
-    my $rdata = $self->characterCount( $r->{address} )
-              . $self->escape( $r->{address} );
+    my $rdata = join('',
+        map { $self->characterCount($_) . $self->escape($_) }
+        unpack "(a255)*", $r->{address}
+    );
 
     return $self->zr_generic( 99, $r, $rdata );
 }
@@ -843,9 +850,8 @@ sub base32str_to_bin {
 
 # next 3 subs based on http://www.anders.com/projects/sysadmin/djbdnsRecordBuilder/
 sub escape {
-    my $line = pop @_;
     my $out;
-    foreach ( split //, $line ) {
+    foreach ( split //, $_[-1] ) {
         $out .= $_ =~ /[^\r\n\t:\\\/]/ ? $_ : sprintf '\%03lo', ord $_;
     }
     return $out;
