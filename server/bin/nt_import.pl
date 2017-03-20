@@ -58,7 +58,16 @@ warn Dumper($nt->result->{store}) if $verbose;
 $nti->group_id( $group_id );
 
 print "\nStarting import using: $filename\n";
-$nti->import_records($filename);
+# Catch and report fatal import errors
+eval { $nti->import_records($filename); }
+if ($@) {
+    print STDERR $@; # Write die() string (unchanged) on STDERR
+    # Compress message to one line for STDOUT
+    my $msg = $@;
+    chomp $msg;
+    $msg =~ s/\n/ /g;
+    print "FATAL   : $msg\n";
+}
 
 exit 0;
 
