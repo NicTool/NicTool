@@ -56,7 +56,12 @@ sub import_zone {
     while (my $rr = $zonefile->read) {
         my $method = 'zr_' . lc $rr->type;
         print "$method\n";
-        $self->$method( $rr, $zone );
+        my $err = $self->$method( $rr, $zone );
+        # Report errors from nt_create_{zone,record}
+        if (ref $err && $err->{error_code} != 200) {
+            printf "ERROR   : %s: %s ( %s )\n",
+                $err->{error_code}, $err->{error_desc}, $err->{error_msg};
+        }
         Time::HiRes::sleep 0.1;
     };
 };

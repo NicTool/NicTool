@@ -42,56 +42,74 @@ sub import_records {
         my $record = substr($record, 1 );
         chomp $record;
 
+        my @err; # Collect errors from nt_create_{zone,record}
+
         if ( $first eq 'Z' ) {          #  SOA        =>  Z fqdn:mname:rname:ser:ref:ret:exp:min:ttl:time:lo
-            $self->zr_soa($record);
+            push @err, $self->zr_soa($record);
         }
         elsif ( $first eq '.' ) {       #  'SOA,NS,A' =>  . fqdn : ip : x:ttl:timestamp:lo
-            $self->zr_soa($record);
-            $self->zr_ns($record);
+            push @err, $self->zr_soa($record);
+            push @err, $self->zr_ns($record);
             my ( $fqdn, $ip, $ttl, $timestamp, $location ) = split(':', $record);
-            $self->zr_a($record) if $ip;
+            push @err, $self->zr_a($record) if $ip;
         }
         elsif ( $first eq '=' ) {       #  'A,PTR'    =>  = fqdn : ip : ttl:timestamp:lo
-            $self->zr_a($record);
+            push @err, $self->zr_a($record);
             my ($fqdn, $addr, $ttl, $ts, $loc) = split(':', $record);
             if ('*.' eq substr $fqdn, 0, 2) {  # a wildcard A record is not a valid PTR name
                 $fqdn = substr $fqdn, 2;       # strip *. prefix
             }
-            $self->zr_ptr(join(':', $self->ip_to_ptr($addr), $fqdn, $ttl || '', $ts || '', $loc || ''));
+            push @err, $self->zr_ptr(join(':', $self->ip_to_ptr($addr), $fqdn, $ttl || '', $ts || '', $loc || ''));
         }
         elsif ( $first eq '&' ) {       #  NS         =>  & fqdn : ip : x:ttl:timestamp:lo
-            $self->zr_ns($record);
+            push @err, $self->zr_ns($record);
         }
         elsif ( $first eq '^' ) {       #  PTR        =>  ^ fqdn :  p : ttl:timestamp:lo
-            $self->zr_ptr($record);
+            push @err, $self->zr_ptr($record);
         }
         elsif ( $first eq '+' ) {       #  A          =>  + fqdn : ip : ttl:timestamp:lo
-            $self->zr_a($record);
+            push @err, $self->zr_a($record);
         }
         elsif ( $first eq 'C' ) {       #  CNAME      =>  C fqdn :  p : ttl:timestamp:lo
-            $self->zr_cname($record);
+            push @err, $self->zr_cname($record);
         }
         elsif ( $first eq '@' ) {       #  MX         =>  @ fqdn : ip : x:dist:ttl:timestamp:lo
-            $self->zr_mx($record);
+            push @err, $self->zr_mx($record);
         }
         elsif ( $first eq '\'' ) {      #  TXT        =>  ' fqdn :  s : ttl:timestamp:lo
-            $self->zr_txt($record);
+            push @err, $self->zr_txt($record);
         }
         elsif ( $first eq ':' ) {       #  GENERIC    =>  : fqdn : n  : rdata:ttl:timestamp:lo
-            $self->zr_generic($record);
+            push @err, $self->zr_generic($record);
         }
         elsif ( $first eq '3') {        #  AAAA       =>  3 fqdn : ip : x:ttl:timestamp:lo
-            $self->zr_aaaa6($record);
+            push @err, $self->zr_aaaa6($record);
         }
         elsif ( $first eq '6') {        # 'AAAA,PTR'  =>  6 fqdn : ip : x:ttl:timestamp:lo
-            $self->zr_aaaa6($record);
+            push @err, $self->zr_aaaa6($record);
             my ($fqdn, $addr, $ttl, $ts, $loc) = split(':', $record);
             if ('*.' eq substr $fqdn, 0, 2) {  # a wildcard AAAA record is not a valid PTR name
                 $fqdn = substr $fqdn, 2;       # strip *. prefix
             }
-            $self->zr_ptr(join(':', $self->ip6_to_ptr($addr),
+            push @err, $self->zr_ptr(join(':', $self->ip6_to_ptr($addr),
                 $fqdn, $ttl || '', $ts || '', $loc || ''));
+        }
+        else { # Emit a local error (not from nt_create_* on the server) if record type unknown
+            $first = sprintf '\%03o', ord($first) # Escape unprintable ascii
+                if $first =~ /^[\x00-\x20\x7F-\xFF]$/;
+            push @err, {
+                error_code => 501,
+                error_desc => "Unknown TinyDNS record type '$first'",
+                error_msg  => $record };
         };
+
+        map { # Report any errors returned from nt_create_{zone,record}
+            if (ref $_ && $_->{error_code} != 200) {
+                printf "ERROR   : %s: %s ( %s )\n",
+                    $_->{error_code}, $_->{error_desc}, $_->{error_msg};
+            }
+        } @err;
+
     };
 
     print "done\n";
