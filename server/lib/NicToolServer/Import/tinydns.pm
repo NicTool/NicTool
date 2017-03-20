@@ -266,14 +266,33 @@ sub zr_generic {
     $r or die;
     print "Generic : $r\n";
     my ( $fqdn, $n, $rdata, $ttl, $timestamp, $location ) = split ':', $r;
-    return $self->zr_spf(  $r ) if $n == 99;
-    return $self->zr_aaaa( $r ) if $n == 28;
-    return $self->zr_srv( $r )  if $n == 33;
-    if ($n == 16) {
-        $r =~ s/:16:\\[\d]{3,}/:/;
-        return $self->zr_txt( $r );
-    };
+    return $self->zr_spf(  $r )    if $n == 99;
+    return $self->zr_aaaa( $r )    if $n == 28;
+    return $self->zr_srv( $r )     if $n == 33;
+    return $self->zr_gen_txt( $r ) if $n == 16;
     die "oops, no generic support for record type $n in $fqdn\n";
+}
+
+sub zr_gen_txt {
+    my $self = shift;
+    my $r = shift or die;
+
+    print "TXT : $r\n";
+    my ( $fqdn, $n, $rdata, $ttl, $timestamp, $location ) = split(':', $r);
+
+    my ($zone_id, $host) = $self->get_zone_id( $fqdn );
+
+    $rdata = $self->unpack_txt( $rdata );
+
+    $self->nt_create_record(
+        zone_id => $zone_id,
+        type    => 'TXT',
+        name    => $host,
+        address => $rdata,
+        defined $ttl       ? ( ttl       => $ttl       ) : (),
+        defined $timestamp ? ( timestamp => $timestamp ) : (),
+        defined $location  ? ( location  => $location  ) : (),
+    );
 }
 
 sub zr_spf {
@@ -285,11 +304,15 @@ sub zr_spf {
 
     my ($zone_id, $host) = $self->get_zone_id( $fqdn );
 
+    # DNS RRtype 99 (SPF) and RRtype 16 (TXT) uses the same rdata format.
+    # TinyDNS gen type :16: and :99: records are identical, except for the type.
+    $rdata = $self->unpack_txt( $rdata );
+
     $self->nt_create_record(
         zone_id => $zone_id,
         type    => 'SPF',
         name    => $host,
-        address => $self->unescape_octal( $rdata ),
+        address => $rdata,
         defined $ttl       ? ( ttl       => $ttl       ) : (),
         defined $timestamp ? ( timestamp => $timestamp ) : (),
         defined $location  ? ( location  => $location  ) : (),
@@ -392,6 +415,40 @@ sub unpack_domain {
     die "domain name unpack failed\n";
 }
 
+sub unpack_txt {
+    my $self = shift;
+    my $rdata = shift or die;
+
+    # Gen type 16 (TXT) rdata contains one or more strings of
+    # between 1 and 127 (or maybe up to 255) bytes (inclusive,
+    # after unescape), each preceeded by a length byte.
+    #
+    # Any byte (length and string bytes) *can* be octal escaped,
+    # but doesn't *have* to be if it's printable ascii (except
+    # colon ':' and backslash '\', which must always be escaped).
+    #
+    # Note: Long TXT records in the ' (quote) TXT record syntax variant
+    # (which doesn't contain length fields) will be split into segments
+    # of only 127 bytes max by tinydns-data when generating data.cdb.
+    # Some parts of TinyDNS thus uses a max length of 127 bytes,
+    # so to play it safe, use 127 as the upper limit ... although
+    # tests have shown that TinyDNS *can* handle gen type 16 TXT
+    # records with strings up to the full DNS limit of 255 bytes.
+    # YMMV though - you have been warned ...
+
+    # Unescape everything (length and string bytes), then
+    # build the TXT string one element (1-255 bytes) at a time
+    my $raw = $self->unescape_octal( $rdata );
+    $rdata = ''; # Reset for string build
+    while (length $raw) {
+        my $len = ord(substr($raw,0,1,'')); # Length byte
+        die "Zero length element in TXT rdata ?\n" unless $len;
+        $rdata .= substr($raw,0,$len,''); # String (1..255 bytes)
+    }
+
+    return $rdata;
+}
+
 sub unescape_octal {
     my ($self, $str) = @_;
     $str or die "missing string";
@@ -408,10 +465,10 @@ sub unescape_packed_hex {
     #    A 128 bit IPv6 address is encoded in the data portion of an AAAA
     #    resource record in network byte order (high-order byte first).
 
-    # convert any octals to ASCII, then unpacks to hex chars
+    # convert any octals to ASCII, then unpack to hex chars
     $str = unpack 'H*', $self->unescape_octal($str);
 
-    # inserts : after each 4 char set
+    # insert : after each 4 char set
     return join(':', unpack("(a4)*", $str));
 };
 
