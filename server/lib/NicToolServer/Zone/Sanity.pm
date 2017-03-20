@@ -59,7 +59,7 @@ sub new_zone {
                     $self->error( 'zone', "Sub-domain creation not allowed: Access to zone $orig_zone denied: $error[1]");
                 }
                 if ($self->record_exists_within_zone( $zref->{nt_zone_id}, $z )) {
-                    $self->error( 'zone', "A record within $orig_zone named $z already exists. Delete or rename the record and then you can add $z as a sub-domain.\n"
+                    $self->error( 'zone', "A record within $orig_zone named $z already exists. Delete or rename the record and then you can add $z as a sub-domain."
                     );
                 }
 
