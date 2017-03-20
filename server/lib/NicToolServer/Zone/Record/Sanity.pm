@@ -310,7 +310,7 @@ sub _valid_address_chars {
     return if $data->{type} =~ /^TXT|SPF$/;
 
     my $invalid_chars = $self->get_invalid_chars( $data->{type}, 'address', $zone_text );
-    if ( $data->{address} =~ m/$invalid_chars/g ) {
+    if ( $data->{address} =~ m/($invalid_chars)/g ) {
         $self->error('address', "invalid character in record address -- $1");
     };
 }
