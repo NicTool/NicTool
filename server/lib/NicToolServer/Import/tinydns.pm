@@ -304,11 +304,15 @@ sub zr_spf {
 
     my ($zone_id, $host) = $self->get_zone_id( $fqdn );
 
+    # DNS RRtype 99 (SPF) and RRtype 16 (TXT) uses the same rdata format.
+    # TinyDNS gen type :16: and :99: records are identical, except for the type.
+    $rdata = $self->unpack_txt( $rdata );
+
     $self->nt_create_record(
         zone_id => $zone_id,
         type    => 'SPF',
         name    => $host,
-        address => $self->unescape_octal( $rdata ),
+        address => $rdata,
         defined $ttl       ? ( ttl       => $ttl       ) : (),
         defined $timestamp ? ( timestamp => $timestamp ) : (),
         defined $location  ? ( location  => $location  ) : (),
