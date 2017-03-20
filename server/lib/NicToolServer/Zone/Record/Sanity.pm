@@ -199,7 +199,7 @@ sub _name_collision {
     while ( my $name = pop @tocheck ) {
 
         #warn "checking if exists $name";
-        if ( $self->zone_exists( $name, 0 ) ) {
+        if ( $self->zone_exists( $name, 0 ) and $data->{type} ne 'NS' and $data->{type} ne 'DS') {
             $self->error( 'name',
                 "Cannot create/edit Record '$data->{name}' in zone '$z->{zone}': it conflicts with existing zone '$name'."
             );
