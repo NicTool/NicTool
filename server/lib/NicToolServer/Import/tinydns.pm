@@ -102,7 +102,7 @@ sub zr_a {
     my $self = shift;
     my $r = shift or die;
 
-    print "A  : $r\n";
+    print "A       : $r\n";
     my ( $fqdn, $ip, $ttl, $timestamp, $location ) = split(':', $r);
 
     my ($zone_id, $host) = $self->get_zone_id( $fqdn );
@@ -122,7 +122,7 @@ sub zr_cname {
     my $self = shift;
     my $r = shift or die;
 
-    print "CNAME: $r\n";
+    print "CNAME   : $r\n";
     my ( $fqdn, $addr, $ttl, $timestamp, $location ) = split(':', $r);
 
     my ($zone_id, $host) = $self->get_zone_id( $fqdn );
@@ -142,7 +142,7 @@ sub zr_mx {
     my $self = shift;
     my $r = shift or die;
 
-    print "MX : $r\n";
+    print "MX      : $r\n";
     my ( $fqdn, $ip, $addr, $distance, $ttl, $timestamp, $location ) = split(':', $r);
 
     my ($zone_id, $host) = $self->get_zone_id( $fqdn );
@@ -163,7 +163,7 @@ sub zr_txt {
     my $self = shift;
     my $r = shift or die;
 
-    print "TXT: $r\n";
+    print "TXT     : $r\n";
     my ( $fqdn, $addr, $ttl, $timestamp, $location ) = split(':', $r);
 
     my ($zone_id, $host) = $self->get_zone_id( $fqdn );
@@ -183,7 +183,7 @@ sub zr_ns {
     my $self = shift;
     my $r = shift or die;
 
-    print "NS : $r\n";
+    print "NS      : $r\n";
     my ( $fqdn, $ip, $addr, $ttl, $timestamp, $location ) = split(':', $r);
 
     my ($zone_id, $host) = $self->get_zone_id( $fqdn );
@@ -203,7 +203,7 @@ sub zr_ptr {
     my $self = shift;
     my $r = shift or die;
 
-    print "PTR: $r\n";
+    print "PTR     : $r\n";
     my ( $fqdn, $addr, $ttl, $timestamp, $location ) = split(':', $r);
     my ($zone_id, $host);
     eval { ($zone_id, $host) = $self->get_zone_id( $fqdn ) };
@@ -233,7 +233,7 @@ sub zr_soa {
     my $self = shift;
     my $r = shift or die;
 
-    print "SOA: $r\n";
+    print "SOA     : $r\n";
     my ( $zone, $mname, $rname, $serial, $refresh, $retry, $expire, $min, $ttl, $timestamp, $location )
         = split(':', $r);
 
@@ -277,7 +277,7 @@ sub zr_gen_txt {
     my $self = shift;
     my $r = shift or die;
 
-    print "TXT : $r\n";
+    print "TXT     : $r\n";
     my ( $fqdn, $n, $rdata, $ttl, $timestamp, $location ) = split(':', $r);
 
     my ($zone_id, $host) = $self->get_zone_id( $fqdn );
@@ -299,7 +299,7 @@ sub zr_spf {
     my $self = shift;
     my $r = shift or die;
 
-    print "SPF : $r\n";
+    print "SPF     : $r\n";
     my ( $fqdn, $n, $rdata, $ttl, $timestamp, $location ) = split(':', $r);
 
     my ($zone_id, $host) = $self->get_zone_id( $fqdn );
@@ -323,7 +323,7 @@ sub zr_aaaa {
     my $self = shift;
     my $r = shift or die;
 
-    print "AAAA : $r\n";
+    print "AAAA    : $r\n";
     my ($fqdn, $n, $rdata, $ttl, $timestamp, $location) = split(':', $r);
     my ($zone_id, $host) = $self->get_zone_id( $fqdn );
 
@@ -365,7 +365,7 @@ sub zr_srv {
     my ($self, $r) = @_;
     $r or die "missing record";
 
-    print "SRV : $r\n";
+    print "SRV     : $r\n";
     my ($fqdn, $n, $rdata, $ttl, $timestamp, $location) = split ':', $r;
     my ($zone_id, $host) = $self->get_zone_id( $fqdn );
 

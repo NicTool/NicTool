@@ -88,7 +88,7 @@ sub zr_ns {
 
     my $address = lc $rr->nsdname;
     $address .= '.' if substr($address, -1, 1) ne '.';
-    print 'NS : ' . $rr->name . "\t$address\n";
+    print 'NS      : ' . $rr->name . "\t$address\n";
 
     my ($zone_id, $host) = $self->get_zone_id( $rr->name, $zone );
 
@@ -105,7 +105,7 @@ sub zr_a {
     my ($self, $rr, $zone) = @_;
     $rr or die;
 
-    print "A : " . $rr->name . "\t" . $rr->address . "\n";
+    print "A       : " . $rr->name . "\t" . $rr->address . "\n";
     my ($zone_id, $host) = $self->get_zone_id( $rr->name, $zone );
 
     $self->nt_create_record(
@@ -121,7 +121,7 @@ sub zr_mx {
     my ($self, $rr, $zone) = @_;
     $rr or die;
 
-    print "MX : " . $rr->name . "\t" . $rr->exchange . "\n";
+    print "MX      : " . $rr->name . "\t" . $rr->exchange . "\n";
     my ($zone_id, $host) = $self->get_zone_id( $rr->name, $zone );
 
     $self->nt_create_record(
@@ -138,7 +138,7 @@ sub zr_txt {
     my ($self, $rr, $zone) = @_;
     $rr or die;
 
-    print "TXT : " . $rr->name . "\t" . $rr->txtdata . "\n";
+    print "TXT     : " . $rr->name . "\t" . $rr->txtdata . "\n";
     my ($zone_id, $host) = $self->get_zone_id( $rr->name, $zone );
 
     $self->nt_create_record(
@@ -154,7 +154,7 @@ sub zr_cname {
     my ($self, $rr, $zone) = @_;
     $rr or die;
 
-    print "CNAME : ".$rr->name."\t".$rr->cname."\n";
+    print "CNAME   : ".$rr->name."\t".$rr->cname."\n";
     my ($zone_id, $host) = $self->get_zone_id( $rr->name, $zone );
 
     $self->nt_create_record(
@@ -170,7 +170,7 @@ sub zr_spf {
     my ($self, $rr, $zone) = @_;
     $rr or die;
 
-    print "SPF : " . $rr->name . "\t" . $rr->txtdata . "\n";
+    print "SPF     : " . $rr->name . "\t" . $rr->txtdata . "\n";
     my ($zone_id, $host) = $self->get_zone_id( $rr->name, $zone );
 
     $self->nt_create_record(
@@ -186,7 +186,7 @@ sub zr_aaaa {
     my ($self, $rr, $zone) = @_;
     $rr or die;
 
-    print "AAAA : " . $rr->name . "\t" . $rr->address . "\n";
+    print "AAAA    : " . $rr->name . "\t" . $rr->address . "\n";
     my ($zone_id, $host) = $self->get_zone_id( $rr->name, $zone );
 
     $self->nt_create_record(
@@ -202,7 +202,7 @@ sub zr_srv {
     my ($self, $rr, $zone) = @_;
     $rr or die;
 
-    print "SRV : " . $rr->name . "\t" . $rr->target . "\n";
+    print "SRV     : " . $rr->name . "\t" . $rr->target . "\n";
     my ($zone_id, $host) = $self->get_zone_id( $rr->name, $zone );
 
     $self->nt_create_record(
@@ -221,7 +221,7 @@ sub zr_loc {
     my ($self, $rr, $zone) = @_;
     $rr or die;
 
-    print "LOC : " . $rr->name . "\n";
+    print "LOC     : " . $rr->name . "\n";
     my ($zone_id, $host) = $self->get_zone_id( $rr->name, $zone );
 
     $self->nt_create_record(
@@ -237,7 +237,7 @@ sub zr_dname {
     my ($self, $rr, $zone) = @_;
     $rr or die;
 
-    print "DNAME : ".$rr->name."\t".$rr->target."\n";
+    print "DNAME   : ".$rr->name."\t".$rr->target."\n";
     my ($zone_id, $host) = $self->get_zone_id( $rr->name, $zone );
 
     $self->nt_create_record(
@@ -253,7 +253,7 @@ sub zr_sshfp {
     my ($self, $rr, $zone) = @_;
     $rr or die;
 
-    print "SSHFP : " . $rr->name . "\t" . $rr->fp . "\n";
+    print "SSHFP   : " . $rr->name . "\t" . $rr->fp . "\n";
     my ($zone_id, $host) = $self->get_zone_id( $rr->name, $zone );
 
     $self->nt_create_record(
@@ -271,7 +271,7 @@ sub zr_naptr {
     my ($self, $rr, $zone) = @_;
     $rr or die;
 
-    print "NAPTR : " . $rr->name . "\t" . $rr->service . "\n";
+    print "NAPTR   : " . $rr->name . "\t" . $rr->service . "\n";
     my ($zone_id, $host) = $self->get_zone_id( $rr->name, $zone );
 
     $self->nt_create_record(
@@ -290,7 +290,7 @@ sub zr_ptr {
     my ($self, $rr, $zone) = @_;
     $rr or die;
 
-    print "PTR : " . $rr->name . "\t" . $rr->ptrdname . "\n";
+    print "PTR     : " . $rr->name . "\t" . $rr->ptrdname . "\n";
     my ($zone_id, $host) = $self->get_zone_id( $rr->name, $zone );
 
     $self->nt_create_record(
@@ -306,7 +306,7 @@ sub zr_ipseckey {
     my ($self, $rr, $zone) = @_;
     $rr or die;
 
-    print "IPSECKEY : " . $rr->name . "\t" . $rr->gateway . "\n";
+    print "IPSECKEY: " . $rr->name . "\t" . $rr->gateway . "\n";
     my ($zone_id, $host) = $self->get_zone_id( $rr->name, $zone );
 
     $self->nt_create_record(
