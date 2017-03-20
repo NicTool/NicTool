@@ -415,20 +415,31 @@ sub unpack_txt {
     my $self = shift;
     my $rdata = shift or die;
 
-    # Gen type 16 (TXT) rdata contains one or more strings of between 1 and
-    # 127 bytes (inclusive, after unescape), each preceeded by a length byte.
+    # Gen type 16 (TXT) rdata contains one or more strings of
+    # between 1 and 127 (or maybe up to 255) bytes (inclusive,
+    # after unescape), each preceeded by a length byte.
+    #
     # Any byte (length and string bytes) *can* be octal escaped,
     # but doesn't *have* to be if it's printable ascii (except
     # colon ':' and backslash '\', which must always be escaped).
+    #
+    # Note: Long TXT records in the ' (quote) TXT record syntax variant
+    # (which doesn't contain length fields) will be split into segments
+    # of only 127 bytes max by tinydns-data when generating data.cdb.
+    # Some parts of TinyDNS thus uses a max length of 127 bytes,
+    # so to play it safe, use 127 as the upper limit ... although
+    # tests have shown that TinyDNS *can* handle gen type 16 TXT
+    # records with strings up to the full DNS limit of 255 bytes.
+    # YMMV though - you have been warned ...
 
     # Unescape everything (length and string bytes), then
-    # build the TXT string one element (1-127 bytes) at a time
+    # build the TXT string one element (1-255 bytes) at a time
     my $raw = $self->unescape_octal( $rdata );
     $rdata = ''; # Reset for string build
     while (length $raw) {
         my $len = ord(substr($raw,0,1,'')); # Length byte
         die "Zero length element in TXT rdata ?\n" unless $len;
-        $rdata .= substr($raw,0,$len,''); # String (1..127 bytes)
+        $rdata .= substr($raw,0,$len,''); # String (1..255 bytes)
     }
 
     return $rdata;
