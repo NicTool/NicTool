@@ -465,10 +465,10 @@ sub unescape_packed_hex {
     #    A 128 bit IPv6 address is encoded in the data portion of an AAAA
     #    resource record in network byte order (high-order byte first).
 
-    # convert any octals to ASCII, then unpacks to hex chars
+    # convert any octals to ASCII, then unpack to hex chars
     $str = unpack 'H*', $self->unescape_octal($str);
 
-    # inserts : after each 4 char set
+    # insert : after each 4 char set
     return join(':', unpack("(a4)*", $str));
 };
 
