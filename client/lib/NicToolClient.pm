@@ -154,6 +154,7 @@ sub set_cookie {
         -name    => 'NicTool',
         -value   => $value,
         -expires => '+1M',
+        -secure  => 1,
     );
 
     print $q->header( -cookie => $cookie );
@@ -162,13 +163,13 @@ sub set_cookie {
 sub expire_cookie {
     my $self = shift;
     my $q = shift || $self->{'CGI'};
-    my $value = shift || undef;
 
     my $cookie = $q->cookie(
         -name    => 'NicTool',
-        -value   => $value,
+        -value   => '',
         -expires => '-1d',
         -path    => '/',
+        -secure  => 1,
     );
     print $q->header( -cookie => $cookie );
 };
