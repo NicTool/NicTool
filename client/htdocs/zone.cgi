@@ -1204,6 +1204,7 @@ sub _build_rr_location {
 
 sub display_edit_record_delegates {
     my ($nt_obj, $q, $user, $zone_record, $delegates  ) = @_;
+    my $delperms_link = $nt_obj->help_link('delperms');
 
     print qq[
 <table class="fat"><tr class=dark_grey_bg><td>Delegates</td></tr></table>
@@ -1214,7 +1215,7 @@ sub display_edit_record_delegates {
     <tr class=light_grey_bg>
      <td class="nowrap"> Group</td>
      <td class="nowrap"> Delegated By</td>
-     <td class="nowrap"> Access Permissions $nt_obj->help_link('delperms') </td>
+     <td class="nowrap"> Access Permissions $delperms_link </td>
      <td class="nowrap width1"> Edit</td>
      <td class="nowrap center width1"><img src="$NicToolClient::image_dir/trash-delegate.gif" alt="trash delegate"></td>
     </tr>
