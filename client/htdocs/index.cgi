@@ -68,8 +68,7 @@ sub display_frameset {
 
     $nt_obj->set_cookie( $data->{nt_user_session} ); 
 
-    my $q = $nt_obj->{'CGI'};
-    print $q->header (-charset=>"utf-8");
+    print $nt_obj->{'CGI'}->header (-charset=>"utf-8");
  
     $nt_obj->parse_template(
         $NicToolClient::frameset_template,
