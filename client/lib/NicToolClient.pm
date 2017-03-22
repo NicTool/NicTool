@@ -112,7 +112,7 @@ sub display_login {
         $message = $error;
     };
 
-    print $nt_obj->{'CGI'}->header (-charset=>"utf-8");
+    print $self->{'CGI'}->header (-charset=>"utf-8");
 
     $self->parse_template( $NicToolClient::login_template, 'message' => $message);
 }
