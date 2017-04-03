@@ -153,11 +153,12 @@ sub set_status {
 }
 
 sub touch_publish_ts {
-    my ($self, $zone) = @_;
+    my ($self, $zone, $deleted) = @_;
     die "missing zone to touch" if ! $zone;
+    if (!defined $deleted) { $deleted = 0 };
     $self->exec_query(
-        "UPDATE nt_zone SET last_publish=NOW() WHERE zone=? AND deleted=0",
-         [ $zone ]
+        "UPDATE nt_zone SET last_publish=NOW() WHERE zone=? AND deleted=?",
+         [ $zone, $deleted ]
     );
 }
 
@@ -482,6 +483,19 @@ sub get_ns_zones {
     if (scalar @descrs) { $descr_human .= join(', ', @descrs) . ' '; }
     $self->elog( "retrieved " . scalar @$r . "${descr_human}zones" );
     return $r;
+}
+
+sub zone_exists {
+    my $self = shift;
+    my %p = validate( @_, {
+        zone    => { type => SCALAR },
+        deleted => { type => BOOLEAN, optional => 1, default => 0 },
+    });
+
+    return scalar $self->exec_query(
+        "SELECT nt_zone_id FROM nt_zone WHERE z.deleted=? AND zone=?",
+        [ $p{deleted}, $p{zone} ]
+    );
 }
 
 sub get_ns_records {
