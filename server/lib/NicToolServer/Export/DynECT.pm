@@ -54,17 +54,14 @@ sub export_db {
         if ($self->{nte}->in_export_list($zone)) {
             $self->{nte}->elog("$zone recreated, skipping delete");
             next;
-        };
-        if (!$self->api_get("Zone/$zone/")) {   # zone not published on Dyn
-            next;
-        };
-
-        # don't delete if the zone exists in undeleted state
-        if ($self->{nte}->zone_exists(zone => $zone, deleted=>0)) {
+        }
+        if ($self->{nte}->get_ns_zones(zone => $zone, deleted=>0)) {
             $self->{nte}->touch_publish_ts($zone, 1);
             next;
         }
-
+        if (!$self->api_get("Zone/$zone/")) {   # zone not published on Dyn
+            next;
+        }
         if ($self->api_delete("Zone/$zone/")) {
             $self->{nte}->touch_publish_ts($zone, 1);
             $self->{nte}->elog("deleted $zone");

@@ -436,6 +436,7 @@ sub get_ns_zones {
           query_result  => { type => BOOLEAN, optional => 1 },
           deleted       => { type => BOOLEAN, optional => 1, default => 0 },
           publish_ts    => { type => BOOLEAN, optional => 1, default => 0 },
+          zone          => { type => SCALAR,  optional => 1 },
         },
     );
 
@@ -462,6 +463,11 @@ sub get_ns_zones {
         push @args, $self->{ns_id};
     }
 
+    if ( $p{zone} ) {
+        $sql .= " AND z.zone =?";
+        push @args, $p{zone};
+    }
+
     if ( $p{publish_ts} ) {
         $sql .= " AND z.last_modified > z.last_publish";
     }
@@ -483,19 +489,6 @@ sub get_ns_zones {
     if (scalar @descrs) { $descr_human .= join(', ', @descrs) . ' '; }
     $self->elog( "retrieved " . scalar @$r . "${descr_human}zones" );
     return $r;
-}
-
-sub zone_exists {
-    my $self = shift;
-    my %p = validate( @_, {
-        zone    => { type => SCALAR },
-        deleted => { type => BOOLEAN, optional => 1, default => 0 },
-    });
-
-    return scalar $self->exec_query(
-        "SELECT nt_zone_id FROM nt_zone WHERE z.deleted=? AND zone=?",
-        [ $p{deleted}, $p{zone} ]
-    );
 }
 
 sub get_ns_records {
