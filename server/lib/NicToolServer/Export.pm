@@ -153,11 +153,12 @@ sub set_status {
 }
 
 sub touch_publish_ts {
-    my ($self, $zone) = @_;
+    my ($self, $zone, $deleted) = @_;
     die "missing zone to touch" if ! $zone;
+    if (!defined $deleted) { $deleted = 0 };
     $self->exec_query(
-        "UPDATE nt_zone SET last_publish=NOW() WHERE zone=? AND deleted=0",
-         [ $zone ]
+        "UPDATE nt_zone SET last_publish=NOW() WHERE zone=? AND deleted=?",
+         [ $zone, $deleted ]
     );
 }
 
@@ -435,6 +436,7 @@ sub get_ns_zones {
           query_result  => { type => BOOLEAN, optional => 1 },
           deleted       => { type => BOOLEAN, optional => 1, default => 0 },
           publish_ts    => { type => BOOLEAN, optional => 1, default => 0 },
+          zone          => { type => SCALAR,  optional => 1 },
         },
     );
 
@@ -459,6 +461,11 @@ sub get_ns_zones {
   LEFT JOIN nt_zone_nameserver n ON z.nt_zone_id=n.nt_zone_id
     WHERE z.deleted=? AND n.nt_nameserver_id=?";
         push @args, $self->{ns_id};
+    }
+
+    if ( $p{zone} ) {
+        $sql .= " AND z.zone =?";
+        push @args, $p{zone};
     }
 
     if ( $p{publish_ts} ) {

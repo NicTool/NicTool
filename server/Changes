@@ -13,6 +13,8 @@ Revision history for NicToolServer
     * expand UTF support to cover all UTF8 characters (requires MySQL 5.5+)
         * change table encoding from utf8 (3 bits) to utf8mb4 (4 bits)
     * Exports: split long SPF records into 255 byte strings
+    * Export/Dyn: more robust handling of zone deletions, that could
+      result in a new zone with the same name getting unpublished.
 
 2.34    2017.03.13
 
