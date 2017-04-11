@@ -118,7 +118,7 @@ sub _duplicate_record {
     # AAAA records are stored in DB in expanded notation. Expand the request
     # addr so duplicate detection works #160
     my $address = $data->{address};
-    if ($data->{type} == 'AAAA') {
+    if ($data->{type} eq 'AAAA') {
         $address = Net::IP::ip_expand_address($data->{address},6);
     }
 

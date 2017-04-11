@@ -277,7 +277,7 @@ sub log_zone_record {
 
     my @g_columns = qw/ nt_user_id timestamp action object object_id log_entry_id title description /;
     $col_string = join(',', @g_columns);
-    @values = map( $data->{$_}, @g_columns );
+    @values = map { $data->{$_} } @g_columns;
     $self->exec_query( "INSERT INTO nt_user_global_log($col_string) VALUES(??)", \@values );
 }
 
