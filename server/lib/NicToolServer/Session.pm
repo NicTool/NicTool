@@ -249,12 +249,31 @@ sub populate_groups {
         );
     }
     else {
-        my $default_group = $self->get_option('default_group') || 'NicTool';
 
-        $ids = $self->exec_query(
-            "SELECT nt_group_id FROM nt_group WHERE deleted=0 AND name IN (?)",
-            [$default_group],
+        my $temp = $self->exec_query(
+            q/ SELECT ntu.nt_group_id
+                FROM nt_user AS ntu
+                LEFT JOIN nt_group AS ntg
+                    ON ntu.nt_group_id = ntg.nt_group_id
+                WHERE 1=1
+                    AND ntg.deleted = 0
+                    AND ntu.username = ?
+                -- /,
+            $data->{username}
         );
+
+        if (@$temp == 1) {
+            $ids = $temp
+        }
+        else { # more than one user or none
+
+            $ids = $self->exec_query(
+                q/ SELECT nt_group_id FROM nt_group WHERE deleted=0 AND name IN (?) -- /,
+                [$self->get_option('default_group') || 'NicTool' ]
+            );
+
+        }
+
     }
 
     foreach (@$ids) {
