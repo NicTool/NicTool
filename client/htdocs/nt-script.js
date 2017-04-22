@@ -73,6 +73,7 @@ function selectedNSType(nsType) {
       case 'bind-nsupdate':  setFormNSTypeNSUPD(); break;
       case 'NSD':            setFormNSTypeNSD();   break;
       case 'knot':           setFormNSTypeKnot();  break;
+      case 'knot2':          setFormNSTypeKnot2(); break;
       case 'maradns':        setFormNSTypeMara();  break;
       case 'djbdns':         setFormNSTypeDJB();   break;
       case 'dynect':         setFormNSTypeDyn();   break;
@@ -96,6 +97,11 @@ function setFormNSTypeNSD () {
 }
 function setFormNSTypeKnot () {
     setSpanURL('export_format_url', 'http://www.knot-dns.cz/', 'Knot DNS');
+    $('input#datadir').attr('placeholder', '/var/db/knot');
+    $('input#remote_login').attr('placeholder', 'knot');
+}
+function setFormNSTypeKnot2 () {
+    setSpanURL('export_format_url', 'http://www.knot-dns.cz/', 'Knot v2.x DNS');
     $('input#datadir').attr('placeholder', '/var/db/knot');
     $('input#remote_login').attr('placeholder', 'knot');
 }
@@ -515,4 +521,3 @@ function selectAllNameserver(pForm, pAction) {
 function selectAllSelf(pForm, pAction) {
     if (pForm.self_write) { pForm.self_write.checked = pAction; }
 }
-
