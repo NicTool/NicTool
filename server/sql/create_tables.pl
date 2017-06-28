@@ -3,12 +3,12 @@
 # NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
 # NicTool v2.01+ Copyright 2004-2008 The Network People, Inc.
 #
-# NicTool is free software; you can redistribute it and/or modify it under 
-# the terms of the Affero General Public License as published by Affero, 
+# NicTool is free software; you can redistribute it and/or modify it under
+# the terms of the Affero General Public License as published by Affero,
 # Inc.; either version 1 of the License, or any later version.
 #
-# NicTool is distributed in the hope that it will be useful, but WITHOUT 
-# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY 
+# NicTool is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
 # or FITNESS FOR A PARTICULAR PURPOSE. See the Affero GPL for details.
 #
 # You should have received a copy of the Affero General Public License
@@ -20,8 +20,22 @@ use strict;
 use Crypt::KeyDerivation;
 use DBI;
 use English;
+use Getopt::Long qw/HelpMessage/;
+
 $|++;
-my $test_run = $ARGV[0] eq '-test';
+
+GetOptions(
+    'test'                          => \my $test_run,
+    'environment'                   => \my $environment,
+    'db-hostname=s'                 => \my $db_hostname,
+    'mysql-root-password=s'         => \my $mysql_root_password,
+    'nictool-db-name=s'             => \my $nictool_db_name,
+    'nictool-db-user=s'             => \my $nictool_db_user,
+    'nictool-db-user-password=s'    => \my $nictool_db_user_password,
+    'nictool-root-email=s'          => \my $nictool_root_email,
+    'nictool-root-password=s'       => \my $nictool_root_password,
+    'help' => sub { HelpMessage(0) },
+) or HelpMessage(1);
 
 my ($dbh, $db_host) = get_dbh();
 
@@ -30,22 +44,76 @@ print "
               NicTool DSN (database connection settings)
 #########################################################################
 ";
-my $db  = answer("the NicTool database name", 'nictool');
+
+my $db = undef;
+
+if ($environment) {
+    $nictool_db_name = undef;
+    die "NICTOOL_DB_NAME not set!!!\n" unless $ENV{NICTOOL_DB_NAME};
+    $db = $ENV{NICTOOL_DB_NAME};
+} elsif ($nictool_db_name) {
+    $db = $nictool_db_name;
+} else {
+    $db  = answer("the NicTool database name", 'nictool');
+}
+
 die "Sorry\n" if $db =~/^mysql$/i;
 
-my $db_user = answer("the NicTool database user", 'nictool');
-my $db_pass = get_password("the DB user $db_user");
+my $db_user = undef;
+
+if ($environment) {
+    $nictool_db_user = undef;
+    die "NICTOOL_DB_USER not set!!!\n" unless $ENV{NICTOOL_DB_USER};
+    $db_user = $ENV{NICTOOL_DB_USER};
+} elsif ($nictool_db_user) {
+    $db_user = $nictool_db_user;
+} else {
+    $db_user = answer("the NicTool database user", 'nictool');
+}
+
+my $db_pass = undef;
+
+if ($environment) {
+    $nictool_db_user_password = undef;
+    die "NICTOOL_DB_USER_PASSWORD not set!!!\n" unless $ENV{NICTOOL_DB_USER_PASSWORD};
+    $db_pass = $ENV{NICTOOL_DB_USER_PASSWORD};
+} elsif ($nictool_db_user_password) {
+    $db_pass = $nictool_db_user_password;
+} else {
+    $db_pass = get_password("the DB user $db_user");
+}
 
 print "\n
 #########################################################################
         NicTool admin user (http://root\@$db_host/)
 #########################################################################
 ";
-my $nt_root_email;
-while(!$nt_root_email){
-    $nt_root_email = answer("the NicTool 'root' users email address", $nt_root_email);
+my $nt_root_email = undef;
+
+if ($environment) {
+    $nictool_root_email = undef;
+    die "ROOT_USER_EMAIL not set!!!\n" unless $ENV{ROOT_USER_EMAIL};
+    $nt_root_email = $ENV{ROOT_USER_EMAIL};
+} elsif ($nictool_root_email) {
+    $nt_root_email = $nictool_root_email;
+} else {
+    while(!$nt_root_email){
+        $nt_root_email = answer("the NicTool 'root' users email address", $nt_root_email);
+    }
 }
-my $clear_pass = get_password("the NicTool user 'root'");
+
+my $clear_pass = undef;
+
+if ($environment) {
+    $nictool_root_password = undef;
+    die "ROOT_USER_PASSWORD not set!!!\n" unless $ENV{ROOT_USER_PASSWORD};
+    $clear_pass = $ENV{ROOT_USER_PASSWORD};
+} elsif ($nictool_root_password) {
+    $clear_pass = $nictool_root_password;
+} else {
+    $clear_pass = get_password("the NicTool user 'root'");
+}
+
 my $salt = _get_salt(16);
 my $pass_hash = unpack("H*", Crypt::KeyDerivation::pbkdf2($clear_pass, $salt, 5000, 'SHA512'));
 
@@ -112,11 +180,32 @@ sub get_dbh {
 #########################################################################
              Administrator DSN (database connection settings)
 #########################################################################\n";
-    my $db_host = answer("database hostname", '127.0.0.1');
 
-    system "stty -echo";
-    my $db_root_pw = answer("mysql root password");
-    system "stty echo";
+    my $db_host = undef;
+
+    if ($environment) {
+        $db_hostname = undef;
+        die "DB_HOSTNAME not set!!!\n" unless $ENV{DB_HOSTNAME};
+        $db_host = $ENV{DB_HOSTNAME};
+    } elsif ($db_hostname) {
+        $db_host = $db_hostname;
+    } else {
+        $db_host = answer("database hostname", '127.0.0.1');
+    }
+
+    my $db_root_pw = undef;
+
+    if ($environment) {
+        $mysql_root_password = undef;
+        die "MYSQL_ROOT_PASSWORD not set!!!\n" unless $ENV{MYSQL_ROOT_PASSWORD};
+        $db_root_pw = $ENV{MYSQL_ROOT_PASSWORD};
+    } elsif ($mysql_root_password) {
+        $db_root_pw = $mysql_root_password;
+    } else {
+        system "stty -echo";
+        $db_root_pw = answer("mysql root password");
+        system "stty echo";
+    }
     print "\n";
 
     return if $test_run;
@@ -131,7 +220,7 @@ sub get_dbh {
 sub answer {
 
     my ( $question, $default, $timeout) = @_;
-            
+
     # this sub is useless without a question.
     unless ($question) {
         die "question called incorrectly. RTFM. \n";
@@ -149,7 +238,7 @@ sub answer {
             alarm $timeout;
             $response = <STDIN>;
             alarm 0;
-        };  
+        };
         if ($EVAL_ERROR) {
             ( $EVAL_ERROR eq "alarm\n" )
                 ? print "timed out!\n"
@@ -218,3 +307,34 @@ sub _get_salt {
     };
     return $salt;
 }
+
+=head1 NAME
+
+create_tables.pl - configure the NicTool database.
+
+=head1 SYNOPSIS
+
+  --help                        Displays this message. If called without any arguments, this script
+                                will simply run interactively.
+
+  --test                        Perform a test run.
+
+  --environment                 Use environment variables to set up the database. These
+                                are as follows: DB_HOSTNAME, MYSQL_ROOT_PASSWORD,
+                                NICTOOL_DB_NAME, NICTOOL_DB_USER, NICTOOL_DB_USER_PASSWORD,
+                                ROOT_USER_EMAIL, ROOT_USER_PASSWORD. If this flag is
+                                present, the remaining arguments below are ignored.
+
+  --db-hostname                 The MySQL database hostname or IP address to connect to.
+  --mysql-root-password         The MySQL root user password.
+  --nictool-db-name             The name of the NicTool database. Defaults to 'nictool'.
+  --nictool-db-user             The MySQL user of the NicTool database. Defaults to 'nictool'.
+  --nictool-db-user-password    The password to use for the MySQL user of the NicTool database.
+  --nictool-root-email          The e-mail address of the 'root' user of the NicTool web UI.
+  --nictool-root-password       The password for the 'root' user of the NicTool web UI.
+
+=head1 VERSION
+
+2.33
+
+=cut
