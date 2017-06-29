@@ -142,7 +142,16 @@ exit if $test_run;
 # Create database and initial privileges
 $dbh->do("DROP DATABASE IF EXISTS $db");
 $dbh->do("CREATE DATABASE $db");
-$dbh->do("GRANT ALL PRIVILEGES ON $db.* TO $db_user\@$db_host IDENTIFIED BY '$db_pass'");
+
+# remote sessions will never be recognized as 'db_user'@'db_hostname' as MySQL does
+# a reverse lookup of the initiating host's IP address and uses that as the 
+# connection string, eg 'db_user'@'x.x.x.x'
+if ($db_host eq 'localhost' || $db_host eq '127.0.0.1') {
+    $dbh->do("GRANT ALL PRIVILEGES ON $db.* TO $db_user\@$db_host IDENTIFIED BY '$db_pass'");
+} else {
+    $dbh->do("GRANT ALL PRIVILEGES ON $db.* TO $db_user\@'%' IDENTIFIED BY '$db_pass'");
+}
+
 $dbh->do("USE $db");
 
 my @sql_files = get_sql_files();
