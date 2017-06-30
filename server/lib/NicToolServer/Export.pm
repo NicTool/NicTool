@@ -679,7 +679,7 @@ sub load_export_class {
         require NicToolServer::Export::BIND::nsupdate;
         $self->{export_class} = NicToolServer::Export::BIND::nsupdate->new( $self );
     }
-    elsif ( $self->{export_format} eq 'NSD' ) {
+    elsif ( $self->{export_format} eq 'nsd' || $self->{export_format} eq 'NSD' ) {
         require NicToolServer::Export::NSD;
         $self->{export_class} = NicToolServer::Export::NSD->new( $self );
     }
