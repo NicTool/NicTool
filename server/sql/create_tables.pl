@@ -28,7 +28,7 @@ GetOptions(
     'test'                          => \my $test_run,
     'environment'                   => \my $environment,
     'db-hostname=s'                 => \my $db_hostname,
-    'mysql-root-password=s'         => \my $mysql_root_password,
+    'db-root-password=s'            => \my $db_root_password,
     'nictool-db-name=s'             => \my $nictool_db_name,
     'nictool-db-user=s'             => \my $nictool_db_user,
     'nictool-db-user-password=s'    => \my $nictool_db_user_password,
@@ -146,7 +146,7 @@ $dbh->do("CREATE DATABASE $db");
 # remote sessions will never be recognized as 'db_user'@'db_hostname' as MySQL does
 # a reverse lookup of the initiating host's IP address and uses that as the 
 # connection string, eg 'db_user'@'x.x.x.x'
-if ($db_host eq 'localhost' || $db_host eq '127.0.0.1') {
+if ($db_host eq 'localhost' || $db_host eq '127.0.0.1' || $db_host eq '::1') {
     $dbh->do("GRANT ALL PRIVILEGES ON $db.* TO $db_user\@$db_host IDENTIFIED BY '$db_pass'");
 } else {
     $dbh->do("GRANT ALL PRIVILEGES ON $db.* TO $db_user\@'%' IDENTIFIED BY '$db_pass'");
@@ -205,11 +205,11 @@ sub get_dbh {
     my $db_root_pw = undef;
 
     if ($environment) {
-        $mysql_root_password = undef;
-        die "MYSQL_ROOT_PASSWORD not set!!!\n" unless $ENV{MYSQL_ROOT_PASSWORD};
-        $db_root_pw = $ENV{MYSQL_ROOT_PASSWORD};
-    } elsif ($mysql_root_password) {
-        $db_root_pw = $mysql_root_password;
+        $db_root_password = undef;
+        die "DB_ROOT_PASSWORD not set!!!\n" unless $ENV{DB_ROOT_PASSWORD};
+        $db_root_pw = $ENV{DB_ROOT_PASSWORD};
+    } elsif ($db_root_password) {
+        $db_root_pw = $db_root_password;
     } else {
         system "stty -echo";
         $db_root_pw = answer("mysql root password");
@@ -329,13 +329,13 @@ create_tables.pl - configure the NicTool database.
   --test                        Perform a test run.
 
   --environment                 Use environment variables to set up the database. These
-                                are as follows: DB_HOSTNAME, MYSQL_ROOT_PASSWORD,
+                                are as follows: DB_HOSTNAME, DB_ROOT_PASSWORD,
                                 NICTOOL_DB_NAME, NICTOOL_DB_USER, NICTOOL_DB_USER_PASSWORD,
                                 ROOT_USER_EMAIL, ROOT_USER_PASSWORD. If this flag is
                                 present, the remaining arguments below are ignored.
 
   --db-hostname                 The MySQL database hostname or IP address to connect to.
-  --mysql-root-password         The MySQL root user password.
+  --db-root-password            The MySQL root user password.
   --nictool-db-name             The name of the NicTool database. Defaults to 'nictool'.
   --nictool-db-user             The MySQL user of the NicTool database. Defaults to 'nictool'.
   --nictool-db-user-password    The password to use for the MySQL user of the NicTool database.
