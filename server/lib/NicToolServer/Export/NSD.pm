@@ -61,13 +61,13 @@ sub write_makefile {
 
 # NSD v4
 compile: $exportdir/nsd.nictool.conf
-\t/bin/true
+\ttest 1
 
 remote: $exportdir
 \trsync -az --delete $exportdir/ $remote_login\@$address:$datadir/
 
 restart: $exportdir
-\tssh $remote_login\@$address nsd-control reconfig && nsd-control reload
+\tssh $remote_login\@$address "nsd-control reconfig && nsd-control reload"
 
 EO_MAKE
 ;
