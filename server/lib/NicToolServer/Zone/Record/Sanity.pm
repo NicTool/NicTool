@@ -126,6 +126,14 @@ sub _duplicate_record {
                   grep { $_->{address} eq $address }
                   @$collisions;
 
+    if (scalar @matches == 0) { return; }
+
+    if ($data->{type} eq 'CAA') {
+        # same address is tolerated if property tag is different, allows
+	# setting 'issue' and 'issuewild' for the same CA
+        @matches = grep { $_->{other} eq $data->{other} } @matches;
+    }
+
     if (scalar @matches) {
         $self->error( 'name', "Duplicate Resource Records are not allowed: RFC 2181");
     }
