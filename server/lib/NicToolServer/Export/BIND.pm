@@ -463,8 +463,8 @@ sub zr_caa {
     my ($self, $r) = @_;
 
     my $crit = $self->{nte}->is_ip_port( $r->{weight} );
-    my $tag  = $self->{nte}->is_ip_port( $r->{other} );
-    
+    my $tag  = $r->{other};
+
     # Owner Name   TTL  CLASS   Type  Issue-Crit  Tag  Property
     return "$r->{name}	$r->{ttl}	IN  CAA $crit $tag \"$r->{address}\"\n";
 }
