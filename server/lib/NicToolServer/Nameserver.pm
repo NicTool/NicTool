@@ -35,7 +35,7 @@ SELECT ns.nt_nameserver_id, ns.nt_group_id, ns.name, ns.description, ns.address,
     if ($usable_string && scalar @usable) {
         $sql .= " OR ns.nt_nameserver_id IN ($usable_string)";
     };
-    $sql .= ")";
+    $sql .= ") ORDER BY ns.nt_nameserver_id";
 
     #warn $sql;
     my $nameservers = $self->exec_query($sql)
@@ -440,7 +440,48 @@ sub find_nameserver {
 
 __END__
 
+=pod
+
+=encoding UTF-8
+
+=head1 NAME
+
+NicToolServer::Nameserver - manage NicTool nameservers
+
+=head1 VERSION
+
+version 2.34
+
 =head1 SYNOPSIS
 
-=cut
+=head1 AUTHORS
 
+=over 4
+
+=item *
+
+Matt Simerson <msimerson@cpan.org>
+
+=item *
+
+Damon Edwards
+
+=item *
+
+Abe Shelton
+
+=item *
+
+Greg Schueler
+
+=back
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is Copyright (c) 2017 by The Network People, Inc. This software is Copyright (c) 2001 by Damon Edwards, Abe Shelton, Greg Schueler.
+
+This is free software, licensed under:
+
+  The GNU Affero General Public License, Version 3, November 2007
+
+=cut

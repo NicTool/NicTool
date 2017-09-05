@@ -15,13 +15,11 @@
 
 use strict;
 
-use lib '.';
 use lib 't';
-use lib 'lib';
 use NicToolTest;
-use Test::More tests => 39;
+use Test::More 'no_plan';
+use Test::Output;
 use Data::Dumper;
-
 
 BEGIN {
     use_ok( 'DBIx::Simple' );
@@ -30,114 +28,168 @@ BEGIN {
     use_ok( 'NicToolServer::Zone' );
 };
 
-my $nts = NicToolServer->new();
-$NicToolServer::dsn = Config('dsn');
-$NicToolServer::db_user = Config('db_user');
-$NicToolServer::db_pass = Config('db_pass');
+my $nts = get_nictoolserver_with_dbh();
+my $r;
 
-my $dbh = NicToolServer->dbh();
-ok( $dbh, 'dbh handle' );
-#warn Data::Dumper::Dumper($dbh);
-#isa_ok( $dbih, 'DBI::db' );
+test_exec_select();
+test_cleanups();
 
-$nts = NicToolServer->new(undef,undef,$dbh);
-#warn Data::Dumper::Dumper($nts);
+my $zid = test_exec_insert();
 
-# test exec_query
-my $dbix = $nts->dbix();
-ok( $dbix, "DBIx::Simple handle");
+test_exec_update($zid);
+test_exec_delete($zid);
 
-my $r = $nts->exec_query( "SELECT email FROM nt_user WHERE deleted=0" );
-ok( scalar @$r, "select users: ".scalar @$r );
-#warn Data::Dumper::Dumper($r->[0]);
-
-$r = $nts->exec_query( "SELECT testfake FROM nt_user" );
-ok( ! $r, "invalid select" );
-
-my $zid = $nts->exec_query( "INSERT INTO nt_zone SET zone='testing.com',deleted=1");
-ok( $zid, "Insert zone ID $zid" );
-#warn Data::Dumper::Dumper($r);
-
-$r = $nts->exec_query( "UPDATE nt_zone SET description='delete me' WHERE nt_zone_id=?", $zid);
-ok( $r, "Update zone $zid description" );
-
-$r = $nts->exec_query( "UPDATE nt_zone SET fake='delete me' WHERE nt_zone_id=?", $zid);
-ok( ! $r, "Update zone error" );
-
-$r = $nts->exec_query( "DELETE FROM nt_zone WHERE nt_zone_id=?", $zid);
-ok( $r, "Delete zone $zid");
-
-$r = $nts->exec_query( "INSERT INTO nt_zone SET fake='testing.com',deleted=1");
-ok( ! $r, "Insert zone fail" );
-
-$r = $nts->exec_query( "DELETE FROM nt_fake WHERE nt_zone_id=?", $r );
-ok( ! $r, "Delete zone fail");
 
 # is_subgroup
-ok( ! $nts->is_subgroup(1,1), 'is_subgroup');
+ok( ! $nts->is_subgroup(1,1), 'is_subgroup, root');
 
-# valid_ttl
-foreach ( qw/ -299 -2592001 -2 -1 2147483648 oops / ) {
-    ok( ! $nts->valid_ttl( $_ ), "valid_ttl: $_");
-};
-
-# valid_ip_address
-foreach ( qw/ 1.0.0.0 1.2.3.4 5.6.7.8 255.255.255.254 / ) {
-    my $ip = $nts->valid_ip_address( $_ );
-    ok( $ip, "valid_ip_address: $_ -> $ip");
-};
-
-foreach ( qw/ 0.0.0.0 0.0.0.1 255.255.255.255 / ) {
-    my $ip = $nts->valid_ip_address( $_ );
-    ok( ! $ip, "valid_ip_address: $_ -> $ip");
-};
-
-# serial number tests
-my $zone = NicToolServer::Zone->new(undef,undef,$dbh );
-my @datestr = localtime(time);
-my $year  = $datestr[5] + 1900;
-my $month = sprintf( "%02d", $datestr[4] + 1 );
-my $day   = sprintf( "%02d", $datestr[3] );
-
-my %serials = (
-    1 => 2,
-    2 => 3,
-    4294967294 => 4294967295,
-    4294967295 => 1,
-    4500000000 => 1,
-    2011010100 => $year . $month . $day . '00',
-    $year.$month.$day.'00' => $year . $month . $day . '01',
-);
-
-foreach my $k ( sort keys %serials ) {
-    my $r = $zone->bump_serial( 1, $k );
-    ok( $r == $serials{$k}, "bump_serial, $k -> $serials{$k} ($r)");
-};
-
-$r = $zone->bump_serial( 'new' );
-ok( $r == $year.$month.$day.'00', "bump_serial, 'new'");
-
+valid_ttl();
+valid_ip_address();
+valid_serials();
 
 foreach my $opt ( qw/ db_version session_timeout default_group / ) {
     ok( $nts->get_option($opt), "get_option, $opt");
 }
 
-#$r = $nts->is_subgroup(1,320);
-#ok( $r, "is_subgroup ($r)");
-
-#my $dbix = DBIx::Simple->connect( $nts->{dbh} );
-#my $query = "SELECT nt_nameserver_id FROM nt_zone_nameserver WHERE nt_zone_id=?";
-#my @nsids = $dbix->query( $query, 25 )->flat;
-#warn Dumper(\@nsids);
-
-#use NicToolServer::Zone;
-#my $ntz = NicToolServer::Zone->new();
-#$ntz->{dbh} = $dbh;
-#$ntz->{dbix} = $dbix;
-#$r = NicToolServer::Zone::pack_nameservers( undef, { nt_zone_id=>25 } );
-#warn Dumper($r);
-
 diag( "Testing NicToolServer $NicToolServer::VERSION, Perl $], $^X" );
 
+done_testing();
+exit;
+
+sub get_nictoolserver_with_dbh {
+
+    my $nts = NicToolServer->new();
+
+    $NicToolServer::dsn     = Config('dsn');
+    $NicToolServer::db_user = Config('db_user');
+    $NicToolServer::db_pass = Config('db_pass');
+
+    my $dbh = NicToolServer->dbh();
+    ok( $dbh, 'dbh handle' ) or diag Data::Dumper::Dumper($dbh);
+    isa_ok( $dbh, 'DBI::db' );
+
+    $nts = NicToolServer->new(undef, undef, $dbh) or
+        warn Data::Dumper::Dumper($nts);
+
+    return $nts;
+}
+
+sub test_exec_select {
+
+    my $dbix = $nts->dbix();
+    ok( $dbix, "DBIx::Simple handle");
+
+    my $r = $nts->exec_query( "SELECT email FROM nt_user WHERE deleted=0" );
+    ok( scalar @$r, "select users: " . scalar @$r ) or
+        diag Data::Dumper::Dumper($r->[0]);
 
 
+    stderr_like {
+        $nts->exec_query( "SELECT testfake FROM nt_user" )
+    }
+    qr/Unknown column/, 'invalid select';
+}
+
+sub test_cleanups {
+
+    # clean up after previous tests
+    my $r = $nts->exec_query( "DELETE FROM nt_zone WHERE zone='testing.com'" );
+    if ($r) {
+        print "deleted $r records\n";
+    }
+}
+
+sub test_exec_insert {
+
+    my $zid = $nts->exec_query(
+        "INSERT INTO nt_zone SET zone='testing.com', nt_group_id=1, deleted=1"
+    );
+
+    ok( $zid, "Insert zone ID $zid" )
+        or diag Data::Dumper::Dumper($zid);
+
+
+    stderr_like {
+        $nts->exec_query("INSERT INTO nt_zone SET fake='testing.com',deleted=1")
+    }
+    qr/Unknown column/, 'insert zone fail';
+
+    return $zid;
+}
+
+sub test_exec_update {
+    my $zid = shift;
+
+    my $r = $nts->exec_query(
+        "UPDATE nt_zone SET description='delete me' WHERE nt_zone_id=?",
+        $zid
+    );
+    ok( $r, "Update zone $zid description" );
+
+    stderr_like {
+        $nts->exec_query(
+            "UPDATE nt_zone SET fake='delete me' WHERE nt_zone_id=?", $zid )
+    }
+    qr/Unknown column/, 'invalid update';
+}
+
+sub test_exec_delete {
+    my $zid = shift;
+
+    $r = $nts->exec_query( "DELETE FROM nt_zone WHERE nt_zone_id=?", $zid);
+    ok( $r, "Delete zone $zid");
+
+    stderr_like {
+        $nts->exec_query("DELETE FROM nt_fake WHERE nt_zone_id=1")
+    }
+    qr/doesn't exist/, 'Delete zone fail';
+}
+
+sub valid_ttl {
+    foreach ( qw/ 1 100 1000 2147483647 / ) {
+        ok( $nts->valid_ttl( $_ ), "valid_ttl: $_");
+    };
+
+    foreach ( qw/ -299 -2592001 -2 -1 2147483648 oops / ) {
+        ok( ! $nts->valid_ttl( $_ ), "invalid_ttl: $_");
+    };
+}
+
+sub valid_ip_address {
+
+    foreach ( qw/ 1.0.0.0 1.2.3.4 5.6.7.8 255.255.255.254 / ) {
+        my $ip = $nts->valid_ip_address( $_ );
+        ok( $ip, "valid_ip_address: $_ -> $ip");
+    };
+
+    foreach ( qw/ 0.0.0.0 0.0.0.1 255.255.255.255 / ) {
+        my $ip = $nts->valid_ip_address( $_ );
+        ok( ! $ip, "valid_ip_address: $_ -> $ip");
+    };
+}
+
+sub valid_serials {
+    my $zone = NicToolServer::Zone->new(undef, undef, NicToolServer->dbh());
+    my @datestr = localtime(time);
+    my $year  = $datestr[5] + 1900;
+    my $month = sprintf( "%02d", $datestr[4] + 1 );
+    my $day   = sprintf( "%02d", $datestr[3] );
+
+    my %serials = (
+        1 => 2,
+        2 => 3,
+        4294967294 => 4294967295,
+        4294967295 => 1,
+        4500000000 => 1,
+        2011010100 => $year . $month . $day . '00',
+        $year.$month.$day.'00' => $year . $month . $day . '01',
+    );
+
+    foreach my $k ( sort keys %serials ) {
+        my $r = $zone->bump_serial( 1, $k );
+        ok( $r == $serials{$k}, "bump_serial, $k -> $serials{$k} ($r)");
+    };
+
+    $r = $zone->bump_serial( 'new' );
+    ok( $r == $year.$month.$day.'00', "bump_serial, 'new'");
+}

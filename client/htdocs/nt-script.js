@@ -35,6 +35,7 @@ function changeRRType(rrType) {
 
 function selectedRRType(rrType) {
 
+    if (!rrType) rrType = $('select#rr_type').val();
     if (!rrType) return false;
     resetZoneRecordFormFields();
 
@@ -44,6 +45,7 @@ function selectedRRType(rrType) {
       case 'NS':         setFormRRTypeNS();         break;
       case 'MX':         setFormRRTypeMX();         break;
       case 'CNAME':      setFormRRTypeCNAME();      break;
+      case 'TXT':        setFormRRTypeTXT();        break;
       case 'DNAME':      setFormRRTypeDNAME();      break;
       case 'SRV':        setFormRRTypeSRV();        break;
       case 'SPF':        setFormRRTypeSPF();        break;
@@ -57,6 +59,9 @@ function selectedRRType(rrType) {
       case 'NSEC3':      setFormRRTypeNSEC3();      break;
       case 'NSEC3PARAM': setFormRRTypeNSEC3PARAM(); break;
       case 'RRSIG':      setFormRRTypeRRSIG();      break;
+      case 'HINFO':      setFormRRTypeHINFO();      break;
+      case 'URI':        setFormRRTypeURI();        break;
+      case 'CAA':        setFormRRTypeCAA();        break;
     }
 }
 
@@ -190,8 +195,11 @@ function setFormRRTypeSRV() {
   $('input#other').attr('placeholder','53');
 }
 
+function setFormRRTypeTXT() {
+  setRfcHelp(['1035']);
+}
 function setFormRRTypeSPF() {
-  setRfcHelp(['4408']);
+  setRfcHelp(['7208']);
   $('input#name').attr('placeholder','@');
   $('input#address').attr('placeholder','v=spf1 mx a -all');
 }
@@ -353,6 +361,51 @@ function setFormRRTypeIPSECKEY() {
   $('input#other').attr('placeholder','2');
   var algoTypes = { '0' : 'none', '1' : 'DSA', '2' : 'RSA', };
   addValuesToSelect( algoTypes, 'other' );
+}
+
+function setFormRRTypeURI() {
+  setRfcHelp(['7553']);
+  $('input#name').attr('placeholder','_ftp._tcp');
+  $('input#address').attr('placeholder','ftp://ftp1.example.com/public');
+
+  $('#weight_row').show();
+  $('input#weight').attr('placeholder','10');
+
+  $('#priority_row').show();
+  $('input#priority').attr('placeholder','1');
+}
+
+function setFormRRTypeCAA() {
+    setRfcHelp(['6844']);
+
+    // For the Issuer Critical field we use 'weight':
+    $('#weight_row').show();
+    $('td#weight_label').text('Issuer critical');
+    var crit_values = {
+	'0' : 'Not critical',
+	'128' : 'Critical',
+    };
+    addValuesToSelect(crit_values, 'weight');
+    
+    // For the Property Tag field we (ab)use 'priority':
+    $('#other_row').show();
+    $('td#other_label').text('Property tag');
+    var properties = {
+	'issue' : 'issue',
+	'issuewild' : 'issuewild',
+	'iodef' : 'iodef',
+    };
+    addValuesToSelect(properties, 'other');
+
+    // And the Address field is the property value:
+    $('td#address_label').text('Property value');
+}
+
+function setFormRRTypeHINFO() {
+  setRfcHelp(['1035']);
+  $('input#name').attr('placeholder','host');
+  $('input#address').attr('placeholder','CPU OS');
+  $('td#address_label').text('Host Info');
 }
 
 function addValuesToSelect(array,selectName) {

@@ -18,9 +18,41 @@
 
 package NicTool::Record;
 
+
+use NicTool::DBObject;
+our @ISA = 'NicTool::DBObject';
+
+sub _id_name {'nt_zone_record_id'}
+
+sub _api {
+    +{  _get_self => { 'function' => 'get_zone_record', 'includeid' => 1 },
+        _delete_self =>
+            { 'function' => 'delete_zone_record', 'includeid' => 1 },
+        edit_zone_record              => { 'includeid' => 1 },
+        delete_zone_record            => { 'includeid' => 1 },
+        get_zone_record               => { 'includeid' => 1 },
+        get_zone_record_delegates     => { 'includeid' => 1 },
+        get_zone_records              => { 'include'   => 'nt_zone_id' },
+        get_zone_record_log_entry     => { 'includeid' => 1 },
+        edit_zone_record_delegation   => { 'includeid' => 1 },
+        delete_zone_record_delegation => { 'includeid' => 1 },
+        get_zone_record_delegates     => { 'includeid' => 1 },
+    };
+}
+
+__END__
+
+=pod
+
+=encoding UTF-8
+
 =head1 NAME
 
-NicTool::Record - Class representing a Record in the NicTool system.
+NicTool::Record
+
+=head1 VERSION
+
+version 1.02
 
 =head1 SYNOPSIS
 
@@ -79,26 +111,38 @@ Returns a B<NicTool::List> containing B<NicTool::Group> objects.
 
 =back
 
+=head1 NAME
+
+NicTool::Record - Class representing a Record in the NicTool system.
+
+=head1 AUTHORS
+
+=over 4
+
+=item *
+
+Matt Simerson <msimerson@cpan.org>
+
+=item *
+
+Damon Edwards
+
+=item *
+
+Abe Shelton
+
+=item *
+
+Greg Schueler
+
+=back
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is Copyright (c) 2017 by The Network People, Inc. This software is Copyright (c) 2001 by Damon Edwards, Abe Shelton, Greg Schueler.
+
+This is free software, licensed under:
+
+  The GNU Affero General Public License, Version 3, November 2007
+
 =cut
-
-use NicTool::DBObject;
-our @ISA = 'NicTool::DBObject';
-
-sub _id_name {'nt_zone_record_id'}
-
-sub _api {
-    +{  _get_self => { 'function' => 'get_zone_record', 'includeid' => 1 },
-        _delete_self =>
-            { 'function' => 'delete_zone_record', 'includeid' => 1 },
-        edit_zone_record              => { 'includeid' => 1 },
-        delete_zone_record            => { 'includeid' => 1 },
-        get_zone_record               => { 'includeid' => 1 },
-        get_zone_record_delegates     => { 'includeid' => 1 },
-        get_zone_records              => { 'include'   => 'nt_zone_id' },
-        get_zone_record_log_entry     => { 'includeid' => 1 },
-        edit_zone_record_delegation   => { 'includeid' => 1 },
-        delete_zone_record_delegation => { 'includeid' => 1 },
-        get_zone_record_delegates     => { 'includeid' => 1 },
-    };
-}
-

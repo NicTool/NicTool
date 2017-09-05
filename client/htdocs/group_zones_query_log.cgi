@@ -18,7 +18,7 @@
 
 use strict;
 
-require nictoolclient.conf;
+require 'nictoolclient.conf';
 
 main();
 
@@ -50,9 +50,9 @@ sub display {
     my $level = $nt_obj->display_group_tree(
         $user,
         $user->{'nt_group_id'},
-        $q->param('nt_group_id'), 0
+        scalar($q->param('nt_group_id')), 0
     );
-    $nt_obj->display_zone_list_options( $user, $q->param('nt_group_id'), $level, 0 );
+    $nt_obj->display_zone_list_options( $user, scalar($q->param('nt_group_id')), $level, 0 );
 
     print qq[<table class="fat">
     <tr class=light_grey_bg><td><table class="no_pad fat">

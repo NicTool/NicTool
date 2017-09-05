@@ -7,7 +7,7 @@ use strict;
 
 sub perm_fields_select {
     qq(
-    nt_perm.group_write, 
+    nt_perm.group_write,
     nt_perm.group_create,
     nt_perm.group_delete,
 
@@ -20,7 +20,7 @@ sub perm_fields_select {
     nt_perm.zonerecord_create,
     nt_perm.zonerecord_delegate,
     nt_perm.zonerecord_delete,
-    
+
     nt_perm.user_write,
     nt_perm.user_create,
     nt_perm.user_delete,
@@ -40,7 +40,7 @@ sub new_group {
 
     my %error = ( 'error_code' => 200, 'error_msg' => 'OK' );
 
-    my $sql = "SELECT COUNT(*) AS count FROM nt_group 
+    my $sql = "SELECT COUNT(*) AS count FROM nt_group
         WHERE deleted=0 AND parent_group_id=? AND name=?";
 
     my $groups
@@ -79,7 +79,7 @@ sub new_group {
         . ") VALUES(??)";
 
     my @values = map( $data->{$_}, @permcols );
-    push @values, join(',', $data->{usable_nameservers} );
+    push @values, join(',', sort $data->{usable_nameservers} );
     my $permid = $self->exec_query( $sql, [ $insertid, @values ] );
     warn "$sql\n" if $self->debug_sql;
 
@@ -87,7 +87,8 @@ sub new_group {
         $error{error_code} = 505;
         $error{error_msg}  = $self->{dbh}->errstr;
 
-# now we have to undo the nt_group insert otherwise we have a group with no perms, and that's a problem
+        # now we have to undo the nt_group insert else we have a group with
+        # no perms, and that's a problem
         $sql = "DELETE FROM nt_group WHERE nt_group_id=$insertid";
         if ( !$self->exec_query( $sql, $insertid ) ) {
             $error{error_msg} .= " (further:) " . $self->{dbh}->errstr;
@@ -132,56 +133,56 @@ sub edit_group {
         $action = 'modified';
         $error{nt_group_id} = $data->{nt_group_id};
     }
+
     my @perms = qw(group_create group_delete group_write
         zone_create zone_delegate zone_delete zone_write
         zonerecord_create zonerecord_delegate zonerecord_delete zonerecord_write
         user_create user_delete user_write self_write
-        nameserver_create nameserver_delete nameserver_write 
+        nameserver_create nameserver_delete nameserver_write
     );
     my @permcols = grep { exists $data->{$_} && $data->{user}{$_} } @perms;
 
     my %usable = map { $_ => 1 } split( /,/, $data->{usable_nameservers} );
 
-    #merge the usable nameservers settings
+    # merge the usable nameservers settings
     $sql = "SELECT * from nt_perm WHERE nt_group_id = ?";
     my $gperms = $self->exec_query( $sql, $data->{nt_group_id} )
         or return $self->error_response( 505, $dbh->errstr );
-       $gperms = $gperms->[0];
+    $gperms = $gperms->[0];
     %$prev_data = ( %$prev_data, map { $_ => $gperms->{$_} } @perms );
 
-    if ($gperms) {
-
-        my %userns  = map { $_ => 1 } split(/,/, $data->{user}{usable_ns} );
-        my %groupns = map { $_ => 1 } split(/,/, $gperms->{usable_ns} );
-
-        foreach my $n ( keys %groupns ) {
-            delete $groupns{$n} if !$usable{$n};
-
-            next if !$userns{$n};   # no access
-            next if !$self->get_access_permission( 'NAMESERVER', $n, 'read' );
-
-            #delete it or set it to true according to presence in the data array
-            $groupns{$n} = 1 if $usable{$n};
-            delete $usable{$n};
-        }
-
-        #add the nameservers that weren't present before
-        foreach my $n ( keys %usable ) {
-            $groupns{$n} = 1;
-        }
-
-        #leave the rest
-        my @newns;
-        foreach ( keys %groupns ) {
-            push @newns, $_ if exists $groupns{$_};
-            delete $groupns{$_};
-        }
-        $data->{usable_ns} = scalar @newns ? join(',', @newns) : '';
-    }
-    else {
+    if (!$gperms) {
         return $self->error_response( 507,
             "No permissions found for group ID $data->{nt_group_id}." );
     }
+
+    my %userns  = map { $_ => 1 } split(/,/, $data->{user}{usable_ns} );
+    my %groupns = map { $_ => 1 } split(/,/, $gperms->{usable_ns} );
+
+    foreach my $n ( keys %groupns ) {
+        delete $groupns{$n} if !$usable{$n};
+
+        next if !$userns{$n};   # no access
+        next if !$self->get_access_permission( 'NAMESERVER', $n, 'read' );
+
+        #delete it or set it to true according to presence in the data array
+        $groupns{$n} = 1 if $usable{$n};
+        delete $usable{$n};
+    }
+
+    # add the nameservers that weren't present before
+    foreach my $n ( keys %usable ) {
+        $groupns{$n} = 1;
+    }
+
+    # leave the rest
+    my @newns;
+    foreach ( keys %groupns ) {
+        push @newns, $_ if exists $groupns{$_};
+        delete $groupns{$_};
+    }
+    $data->{usable_ns} = scalar @newns ? join(',', sort @newns) : '';
+
 
     if ( @permcols ) {
         my @s = map( "$_ = " . $dbh->quote( $data->{$_} ), @permcols );
@@ -226,7 +227,7 @@ sub delete_group {
 
     my %error = ( 'error_code' => 200, 'error_msg' => 'OK' );
 
-    my $sql = "SELECT COUNT(*) AS count FROM nt_zone 
+    my $sql = "SELECT COUNT(*) AS count FROM nt_zone
         WHERE deleted=0 AND nt_group_id = ?";
     my $c = $self->exec_query( $sql, $data->{nt_group_id} );
 
@@ -236,7 +237,7 @@ sub delete_group {
         );
     }
 
-    $sql = "SELECT COUNT(*) AS count FROM nt_user 
+    $sql = "SELECT COUNT(*) AS count FROM nt_user
     WHERE deleted=0 AND nt_group_id = ?";
     $c = $self->exec_query( $sql, $data->{nt_group_id} );
     if ( $c->[0]->{count} > 0 ) {
@@ -362,7 +363,7 @@ sub get_group_subgroups {
 
     my $group_string = join(',', @group_list );
     my $cond_string = join(' ', @$conditions );
-    my $sql = "SELECT COUNT(*) AS count FROM nt_group 
+    my $sql = "SELECT COUNT(*) AS count FROM nt_group
   WHERE deleted=0 AND parent_group_id IN ($group_string)";
     $sql .= " AND ($cond_string)" if scalar @$conditions;
 
@@ -376,8 +377,8 @@ sub get_group_subgroups {
     return $r_data if $r_data->{total} == 0;
 
     my $sort_string = join( ', ', @$sortby);
-    $sql = "SELECT nt_group.* FROM nt_group 
-WHERE deleted=0 AND parent_group_id IN ($group_string)";
+    $sql = "SELECT nt_group.* FROM nt_group
+  WHERE deleted=0 AND parent_group_id IN ($group_string)";
     $sql .= " AND ($cond_string)" if scalar @$conditions;
     $sql .= " ORDER BY $sort_string" if (@$sortby);
     $sql .= " LIMIT " . ( $r_data->{start} - 1 ) . ", $r_data->{limit}";
@@ -598,7 +599,48 @@ sub find_group {
 
 __END__
 
+=pod
+
+=encoding UTF-8
+
+=head1 NAME
+
+NicToolServer::Group - nictool groups (aka, permission realms)
+
+=head1 VERSION
+
+version 2.34
+
 =head1 SYNOPSIS
 
-=cut
+=head1 AUTHORS
 
+=over 4
+
+=item *
+
+Matt Simerson <msimerson@cpan.org>
+
+=item *
+
+Damon Edwards
+
+=item *
+
+Abe Shelton
+
+=item *
+
+Greg Schueler
+
+=back
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is Copyright (c) 2017 by The Network People, Inc. This software is Copyright (c) 2001 by Damon Edwards, Abe Shelton, Greg Schueler.
+
+This is free software, licensed under:
+
+  The GNU Affero General Public License, Version 3, November 2007
+
+=cut

@@ -42,7 +42,8 @@ sub perm_fields {
         zone_create zone_delegate zone_delete zone_write
         zonerecord_create zonerecord_delegate zonerecord_delete zonerecord_write
         user_create user_delete user_write self_write
-        nameserver_create nameserver_delete nameserver_write/;
+        nameserver_create nameserver_delete nameserver_write
+    /;
 }
 
 sub get_user {
@@ -276,7 +277,7 @@ sub edit_user {
         # perms are inherited and inherit_group_permissions is 1: do nothing
     }
 
-    $data->{nt_group_id} = $prev_data->{nt_group_id} unless $data->{nt_group_id};
+    $data->{nt_group_id} = $prev_data->{nt_group_id} if ! $data->{nt_group_id};
     if ($action) {
         $self->log_user( $data, $action, $prev_data );
     }
@@ -818,7 +819,48 @@ sub locate_ldap_user {
 
 __END__
 
+=pod
+
+=encoding UTF-8
+
+=head1 NAME
+
+NicToolServer::User - NicTool user management
+
+=head1 VERSION
+
+version 2.34
+
 =head1 SYNOPSIS
 
+=head1 AUTHORS
+
+=over 4
+
+=item *
+
+Matt Simerson <msimerson@cpan.org>
+
+=item *
+
+Damon Edwards
+
+=item *
+
+Abe Shelton
+
+=item *
+
+Greg Schueler
+
+=back
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is Copyright (c) 2017 by The Network People, Inc. This software is Copyright (c) 2001 by Damon Edwards, Abe Shelton, Greg Schueler.
+
+This is free software, licensed under:
+
+  The GNU Affero General Public License, Version 3, November 2007
 
 =cut

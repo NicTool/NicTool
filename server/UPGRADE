@@ -12,8 +12,8 @@ To upgrade NicTool to v2.10+, the following steps should be taken:
      # service httpd stop
 
 3. install NicTool client & server
-     http://www.nictool.com/docs/client/install.shtml
-     http://www.nictool.com/docs/server/install.shtml
+     https://github.com/msimerson/NicTool/wiki/Install-NicToolClient
+     https://github.com/msimerson/NicTool/wiki/Install-NicToolServer
 
      Note the default path changes and apply them as shown.
 
@@ -41,7 +41,7 @@ To upgrade NicTool to v2.10+, the following steps should be taken:
 After a successful export, this last step will leave behind:
   1. 'run' file
   2. data directory with the exported data file(s).
-  3. if NS type is tinydns, it will also leave behind a Makefile, customized for building data.cdb and rsyncing it to the right place. If the settings are incorrect, just edit the Makefile. To customize the export (to rsync to multiple servers, or different servers, or via private IPs, or whatever), edit the Makefile.
+  3. a Makefile, customized for the NS type, any compilation needed, and rsyncing the data file(s) to the right place. If the settings are incorrect, just edit the Makefile. To customize the export (to rsync to multiple servers, or different servers, or via private IPs, or whatever), edit the Makefile.
 
     # ./run  (test the run file)
 

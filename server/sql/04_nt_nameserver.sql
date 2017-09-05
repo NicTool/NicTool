@@ -23,7 +23,7 @@ CREATE TABLE nt_nameserver(
     KEY `nt_nameserver_idx2` (`deleted`),
     KEY `nt_group_id` (`nt_group_id`)
     /* CONSTRAINT `nt_nameserver_ibfk_1` FOREIGN KEY (`nt_group_id`) REFERENCES `nt_group` (`nt_group_id`) ON DELETE CASCADE ON UPDATE CASCADE */
-) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 
 
 DROP TABLE IF EXISTS nt_nameserver_log;
@@ -47,7 +47,7 @@ CREATE TABLE nt_nameserver_log(
     PRIMARY KEY (`nt_nameserver_log_id`),
     KEY `nt_nameserver_log_idx1` (`nt_nameserver_id`),
     KEY `nt_nameserver_log_idx2` (`timestamp`)
-) DEFAULT CHARSET=utf8 COLLATE=utf8_bin ROW_FORMAT=COMPRESSED;
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin ROW_FORMAT=COMPRESSED;
 
 
 DROP TABLE IF EXISTS nt_nameserver_export_type;
@@ -57,7 +57,7 @@ CREATE TABLE `nt_nameserver_export_type` (
     `descr`  varchar(56) NOT NULL DEFAULT '',
     `url`    varchar(128) DEFAULT NULL,
     PRIMARY KEY (`id`)
-) DEFAULT CHARSET=utf8;
+) DEFAULT CHARSET=utf8mb4;
 
 INSERT INTO `nt_nameserver_export_type` (`id`, `name`, `descr`, `url`)
 VALUES (1,'djbdns','djbdns (tinydns & axfrdns)','cr.yp.to/djbdns.html'),
@@ -94,4 +94,4 @@ CREATE TABLE nt_nameserver_export_log(
     success                         tinyint(1) UNSIGNED NULL DEFAULT NULL,
     partial                         tinyint(1) UNSIGNED NOT NULL DEFAULT 0,
     KEY `nt_nameserver_export_log_idx1` (`nt_nameserver_id`)
-) DEFAULT CHARSET=utf8 COLLATE=utf8_bin ROW_FORMAT=COMPRESSED;
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin ROW_FORMAT=COMPRESSED;

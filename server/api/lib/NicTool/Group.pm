@@ -18,9 +18,63 @@ package NicTool::Group;
 ###
 
 
+
+use strict;
+use lib 'lib';
+use NicTool::DBObject;
+our @ISA = 'NicTool::DBObject';
+
+sub _id_name {'nt_group_id'}
+
+sub _api {
+    +{  _get_self    => { 'function'  => 'get_group',    'includeid' => 1 },
+        _delete_self => { 'function'  => 'delete_group', 'includeid' => 1 },
+        new_user     => { 'includeid' => 1 },
+        new_group    => { 'includeid' => 1 },
+        get_delegated_zones           => { 'includeid' => 1 },
+        get_delegated_zone_records    => { 'includeid' => 1 },
+        get_group                     => { 'includeid' => 1 },
+        get_group_users               => { 'includeid' => 1 },
+        move_users                    => { 'includeid' => 1 },
+        edit_group                    => { 'includeid' => 1, sully => 1 },
+        delete_group                  => { 'includeid' => 1 },
+        get_group_groups              => { 'includeid' => 1 },
+        get_group_branch              => { 'includeid' => 1 },
+        get_group_subgroups           => { 'includeid' => 1 },
+        get_global_application_log    => { 'includeid' => 1 },
+        get_group_zones               => { 'includeid' => 1 },
+        new_zone                      => { 'includeid' => 1 },
+        move_zones                    => { 'includeid' => 1 },
+        new_nameserver                => { 'includeid' => 1 },
+        get_group_nameservers         => { 'includeid' => 1 },
+        move_nameservers              => { 'includeid' => 1 },
+        delegate_zones                => { 'includeid' => 1 },
+        delegate_zone_records         => { 'includeid' => 1 },
+        edit_zone_delegation          => { 'includeid' => 1 },
+        edit_zone_record_delegation   => { 'includeid' => 1 },
+        delete_zone_delegation        => { 'includeid' => 1 },
+        delete_zone_record_delegation => { 'includeid' => 1 },
+        get_delegated_zones           => { 'includeid' => 1 },
+        get_delegated_zone_records    => { 'includeid' => 1 },
+    };
+}
+
+
+1;
+
+__END__
+
+=pod
+
+=encoding UTF-8
+
 =head1 NAME
 
-NicTool::Group - Class representing a Group in the NicTool system.
+NicTool::Group
+
+=head1 VERSION
+
+version 1.02
 
 =head1 SYNOPSIS
 
@@ -135,47 +189,9 @@ Returns a B<NicTool::List> containing B<NicTool::Record> objects.
 
 =back
 
-=cut
+=head1 NAME
 
-use strict;
-use lib 'lib';
-use NicTool::DBObject;
-our @ISA = 'NicTool::DBObject';
-
-sub _id_name {'nt_group_id'}
-
-sub _api {
-    +{  _get_self    => { 'function'  => 'get_group',    'includeid' => 1 },
-        _delete_self => { 'function'  => 'delete_group', 'includeid' => 1 },
-        new_user     => { 'includeid' => 1 },
-        new_group    => { 'includeid' => 1 },
-        get_delegated_zones           => { 'includeid' => 1 },
-        get_delegated_zone_records    => { 'includeid' => 1 },
-        get_group                     => { 'includeid' => 1 },
-        get_group_users               => { 'includeid' => 1 },
-        move_users                    => { 'includeid' => 1 },
-        edit_group                    => { 'includeid' => 1, sully => 1 },
-        delete_group                  => { 'includeid' => 1 },
-        get_group_groups              => { 'includeid' => 1 },
-        get_group_branch              => { 'includeid' => 1 },
-        get_group_subgroups           => { 'includeid' => 1 },
-        get_global_application_log    => { 'includeid' => 1 },
-        get_group_zones               => { 'includeid' => 1 },
-        new_zone                      => { 'includeid' => 1 },
-        move_zones                    => { 'includeid' => 1 },
-        new_nameserver                => { 'includeid' => 1 },
-        get_group_nameservers         => { 'includeid' => 1 },
-        move_nameservers              => { 'includeid' => 1 },
-        delegate_zones                => { 'includeid' => 1 },
-        delegate_zone_records         => { 'includeid' => 1 },
-        edit_zone_delegation          => { 'includeid' => 1 },
-        edit_zone_record_delegation   => { 'includeid' => 1 },
-        delete_zone_delegation        => { 'includeid' => 1 },
-        delete_zone_record_delegation => { 'includeid' => 1 },
-        get_delegated_zones           => { 'includeid' => 1 },
-        get_delegated_zone_records    => { 'includeid' => 1 },
-    };
-}
+NicTool::Group - Class representing a Group in the NicTool system.
 
 =head1 SEE ALSO
 
@@ -211,6 +227,34 @@ L<NicTool::Zone>
 
 =back
 
-=cut
+=head1 AUTHORS
 
-1;
+=over 4
+
+=item *
+
+Matt Simerson <msimerson@cpan.org>
+
+=item *
+
+Damon Edwards
+
+=item *
+
+Abe Shelton
+
+=item *
+
+Greg Schueler
+
+=back
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is Copyright (c) 2017 by The Network People, Inc. This software is Copyright (c) 2001 by Damon Edwards, Abe Shelton, Greg Schueler.
+
+This is free software, licensed under:
+
+  The GNU Affero General Public License, Version 3, November 2007
+
+=cut

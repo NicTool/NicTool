@@ -1,4 +1,13 @@
 
+2.35    2017.__.__
+
+  * update SPF URL to 7208
+
+2.34    2017.03.13
+
+  * when selecting 'New Resource Record', update RR type form
+  * add support for CAA resource record type  #158
+
 2.33    2015.12.07
 
   * client fix for moving users between groups (#103)

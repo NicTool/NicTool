@@ -40,7 +40,7 @@ sub main {
 
     my $cookie = $q->cookie('NicTool');
     if ( ! $cookie ) {
-        $nt_obj->display_login( $q->param('message') );
+        $nt_obj->display_login( scalar($q->param('message')) );
         return;
     }
 
@@ -67,6 +67,8 @@ sub display_frameset {
     my ( $nt_obj, $data ) = @_;
 
     $nt_obj->set_cookie( $data->{nt_user_session} ); 
+
+    print $nt_obj->{'CGI'}->header (-charset=>"utf-8");
  
     $nt_obj->parse_template(
         $NicToolClient::frameset_template,

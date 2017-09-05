@@ -48,12 +48,12 @@ sub display {
         userid    => $user->{'nt_user_id'},
     );
 
-    my $zone = $nt_obj->get_zone( nt_zone_id => $q->param('nt_zone_id') );
+    my $zone = $nt_obj->get_zone( nt_zone_id => scalar($q->param('nt_zone_id')) );
 
     my $level = $nt_obj->display_group_tree(
         $user,
         $user->{'nt_group_id'},
-        $zone->{'delegated_by_id'} ? '' : $q->param('nt_group_id'), 0
+        $zone->{'delegated_by_id'} ? '' : scalar($q->param('nt_group_id')), 0
     );
 
     if ( $zone->{'error_code'} ne 200 ) {
@@ -61,7 +61,7 @@ sub display {
         return;
     }
 
-    $nt_obj->display_zone_list_options( $user, $q->param('nt_group_id'), $level, 0 );
+    $nt_obj->display_zone_list_options( $user, scalar($q->param('nt_group_id')), $level, 0 );
     $nt_obj->display_zone_options( $user, $zone, $level + 1, 0 );    #1);
 
     $zone = display_zone( $nt_obj, $user, $q, $zone );
@@ -103,8 +103,8 @@ sub do_delete_delegation {
 
     if ( $q->param('type') ne 'record' && $q->param('nt_zone_id') ) {
         my $error = $nt_obj->delete_zone_delegation(
-            nt_zone_id  => $q->param('nt_zone_id'),
-            nt_group_id => $q->param('delegate_group_id')
+            nt_zone_id  => scalar($q->param('nt_zone_id')),
+            nt_group_id => scalar($q->param('delegate_group_id'))
         );
         if ( $error->{'error_code'} != 200 ) {
             $nt_obj->display_nice_error( $error, "Delete Zone Delegation" );
@@ -117,8 +117,8 @@ sub do_delete_delegation {
     }
     elsif ( $q->param('type') eq 'record' && $q->param('nt_zone_record_id') ) {
         my $error = $nt_obj->delete_zone_record_delegation(
-            nt_zone_record_id => $q->param('nt_zone_record_id'),
-            nt_group_id       => $q->param('delegate_group_id')
+            nt_zone_record_id => scalar($q->param('nt_zone_record_id')),
+            nt_group_id       => scalar($q->param('delegate_group_id'))
         );
         if ( $error->{'error_code'} != 200 ) {
             $nt_obj->display_nice_error( $error,
@@ -150,7 +150,7 @@ sub do_edit_zone {
         next if ! defined $q->param($_);
         $data{$_} = $q->param($_);
     };
-    $data{'nameservers'} = join( ',', $q->param('nameservers') );
+    $data{'nameservers'} = join( ',', $q->multi_param('nameservers') );
     if ( $q->param('undelete') ) {
         $data{'deleted'} = 0;
     };
@@ -161,8 +161,8 @@ sub do_edit_zone {
         return;
     };
     return $nt_obj->get_zone(
-        nt_group_id => $q->param('nt_group_id'),
-        nt_zone_id  => $q->param('nt_zone_id')
+        nt_group_id => scalar($q->param('nt_group_id')),
+        nt_zone_id  => scalar($q->param('nt_zone_id'))
     );
 };
 
@@ -179,8 +179,8 @@ sub do_new_zone {
 
     my @fields = qw/ nt_group_id zone nameservers description mailaddr
                     serial refresh retry expire ttl minimum/;
-    my %data = map { $_ => $q->param($_) } @fields;
-    $data{'nameservers'} = join( ',', $q->param('nameservers') );
+    my %data = map { $_ => scalar($q->param($_)) } @fields;
+    $data{'nameservers'} = join( ',', $q->multi_param('nameservers') );
 
     my $error = $nt_obj->new_zone(%data);
     if ( $error->{'error_code'} != 200 ) {
@@ -195,7 +195,7 @@ sub do_new_zone {
         return $nt_obj->redirect_from_log($q);
     }
     $zone = $nt_obj->get_zone(
-        nt_group_id => $q->param('nt_group_id'),
+        nt_group_id => scalar($q->param('nt_group_id')),
         nt_zone_id  => $zid,
     );
     if ( $zone->{'error_code'} != 200 ) {
@@ -367,7 +367,7 @@ sub display_zone_properties {
     my $state = 'nt_group_id=' . $q->param('nt_group_id');
     foreach ( @{ $nt_obj->paging_fields } ) {
         next if ! $q->param($_);
-        $state .= "&amp;$_=" . $q->escape( $q->param($_) );
+        $state .= "&amp;$_=" . $q->escape( scalar($q->param($_)) );
     }
     $state .= "&amp;nt_zone_id=$zone->{'nt_zone_id'}&amp;edit_zone=1";
 
@@ -444,7 +444,7 @@ sub display_nameservers {
         my $state = 'nt_group_id=' . $q->param('nt_group_id');
         foreach ( @{ $nt_obj->paging_fields } ) {
             next if ! $q->param($_);
-            $state .= "&amp;$_=" . $q->escape( $q->param($_) );
+            $state .= "&amp;$_=" . $q->escape( scalar($q->param($_)) );
         }
         $state .= "&amp;nt_zone_id=$zone->{'nt_zone_id'}&amp;edit_zone=1";
         print qq[<li><a href="zone.cgi?$state">Edit</a></li>];
@@ -503,7 +503,7 @@ sub display_zone_records {
             [ 'nt_group_id', 'nt_zone_id' ] );
     };
 
-    my %params = ( nt_zone_id => $q->param('nt_zone_id') );
+    my %params = ( nt_zone_id => scalar($q->param('nt_zone_id')) );
     my %sort_fields;
     $nt_obj->prepare_search_params( $q, \%labels, \%params, \%sort_fields, 50 );
     if ( ! %sort_fields ) {
@@ -519,11 +519,11 @@ sub display_zone_records {
     my @state_fields;
     foreach ( @{ $nt_obj->paging_fields } ) {
         next if ! $q->param($_);
-        push @state_fields, "$_=" . $q->escape( $q->param($_) );
+        push @state_fields, "$_=" . $q->escape( scalar($q->param($_)) );
     }
     my $state_string = join('&amp;', @state_fields);
 
-# Display the RR header: Resource Records  New Resource Record | View Resource Record Log
+    # Display the RR header: Resource Records  New Resource Record | View Resource Record Log
     my $gid = $q->param('nt_group_id');
     my $zonedelegate = exists $zone->{'delegated_by_id'};
 
@@ -670,7 +670,7 @@ sub display_zone_records_new {
     my @fields = qw/ nt_group_id nt_zone_id name type address
                      weight priority other ttl location description /;
 
-    my %data = map { $_ => $q->param($_) } @fields;
+    my %data = map { $_ => scalar($q->param($_)) } @fields;
 
     my $error = $nt_obj->new_zone_record(%data);
     if ( $error->{'error_code'} != 200 ) {
@@ -713,8 +713,8 @@ sub display_zone_records_delete {
     return if ! $q->param('delete_record');
 
     my $error = $nt_obj->delete_zone_record(
-        nt_group_id       => $q->param('nt_group_id'),
-        nt_zone_record_id => $q->param('nt_zone_record_id')
+        nt_group_id       => scalar($q->param('nt_group_id')),
+        nt_zone_record_id => scalar($q->param('nt_zone_record_id'))
     );
 
     if ( $error->{'error_code'} != 200 ) {
@@ -739,7 +739,7 @@ sub display_zone_records_head {
     my $zonedelegate = exists $zone->{'delegated_by_id'};
     my $has_dperm = $zonedelegate ? $zone->{'delegate_write'} && $zone->{'delegate_add_records'} : 1;
     if ( !$zone->{'deleted'} && $user->{'zonerecord_create'} && $has_dperm ) {
-        $options .= qq[<li><a href="zone.cgi?nt_group_id=$gid&amp;nt_zone_id=$zid&amp;$state_string&amp;new_record=1#RECORD">New Resource Record</a></li>];
+        $options .= qq[<li><a href="zone.cgi?nt_group_id=$gid&amp;nt_zone_id=$zid&amp;$state_string&amp;new_record=1#RECORD" onClick="selectedRRType();">New Resource Record</a></li>];
     }
     else {
         $options .= qq[<li class=disabled>New Resource Record</li>];
@@ -760,13 +760,13 @@ sub display_zone_records_columns {
 
     my @columns = qw/ name type address ttl /;
 
-    if ( grep { $_->{type} =~ /^(?:MX|SRV|DS|IPSECKEY|DNSKEY|SSHFP|NAPTR)$/ } @$zone_records ) {
+    if ( grep { $_->{type} =~ /^(?:MX|SRV|URI|CAA|DS|IPSECKEY|DNSKEY|SSHFP|NAPTR)$/ } @$zone_records ) {
         push @columns, 'weight';
     };
-    if ( grep { $_->{type} =~ /^(?:SRV|DS|IPSECKEY|DNSKEY|SSHFP|NAPTR)$/ } @$zone_records ) {
+    if ( grep { $_->{type} =~ /^(?:SRV|URI|DS|IPSECKEY|DNSKEY|SSHFP|NAPTR)$/ } @$zone_records ) {
         push @columns, 'priority';
     };
-    if ( grep { $_->{type} =~ /^(?:SRV|DS|IPSECKEY|DNSKEY)$/ } @$zone_records ) {
+    if ( grep { $_->{type} =~ /^(?:SRV|DS|CAA|IPSECKEY|DNSKEY)$/ } @$zone_records ) {
         push @columns, 'other';
     }
     push @columns, 'description';
@@ -950,16 +950,16 @@ sub _display_edit_record_action {
     if ( $q->param('nt_zone_record_log_id') ) {
         $action = 'Recover';
         $zone_record = $nt_obj->get_zone_record_log_entry(
-            nt_zone_record_id     => $q->param('nt_zone_record_id'),
-            nt_zone_record_log_id => $q->param('nt_zone_record_log_id')
+            nt_zone_record_id     => scalar($q->param('nt_zone_record_id')),
+            nt_zone_record_log_id => scalar($q->param('nt_zone_record_log_id'))
         );
     }
     else {
         $action = 'Edit';
         $zone_record = $nt_obj->get_zone_record(
-            nt_group_id       => $q->param('nt_group_id'),
-            nt_zone_id        => $q->param('nt_zone_id'),
-            nt_zone_record_id => $q->param('nt_zone_record_id')
+            nt_group_id       => scalar($q->param('nt_group_id')),
+            nt_zone_id        => scalar($q->param('nt_zone_id')),
+            nt_zone_record_id => scalar($q->param('nt_zone_record_id'))
         );
     }
 
@@ -1204,6 +1204,7 @@ sub _build_rr_location {
 
 sub display_edit_record_delegates {
     my ($nt_obj, $q, $user, $zone_record, $delegates  ) = @_;
+    my $delperms_link = $nt_obj->help_link('delperms');
 
     print qq[
 <table class="fat"><tr class=dark_grey_bg><td>Delegates</td></tr></table>
@@ -1214,7 +1215,7 @@ sub display_edit_record_delegates {
     <tr class=light_grey_bg>
      <td class="nowrap"> Group</td>
      <td class="nowrap"> Delegated By</td>
-     <td class="nowrap"> Access Permissions $nt_obj->help_link('delperms') </td>
+     <td class="nowrap"> Access Permissions $delperms_link </td>
      <td class="nowrap width1"> Edit</td>
      <td class="nowrap center width1"><img src="$NicToolClient::image_dir/trash-delegate.gif" alt="trash delegate"></td>
     </tr>
@@ -1413,7 +1414,7 @@ sub display_edit_zone {
 
     # get list of available nameservers
     my $ns_tree = $nt_obj->get_usable_nameservers(
-        nt_group_id => $q->param('nt_group_id'),
+        nt_group_id => scalar($q->param('nt_group_id')),
     );
 
     if ( @{ $ns_tree->{'nameservers'} } == 0 ) {

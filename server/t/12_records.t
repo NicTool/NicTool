@@ -31,29 +31,14 @@
 
 =cut
 
-use lib '.';
+# use lib '.';
 use lib 't';
 use lib 'lib';
 use NicToolTest;
 use NicTool;
-use Test;
+use Test::More 'no_plan';
 
-BEGIN { plan tests => 5589 }
-
-$user = new NicTool(
-    cache_users  => 0,
-    cache_groups => 0,
-    server_host  => Config('server_host'),
-    server_port  => Config('server_port')
-);
-die "Couldn't create NicTool Object" unless ok( ref $user, 'NicTool' );
-
-$user->login(
-    username => Config('username'),
-    password => Config('password')
-);
-die "Couldn't log in" unless noerrok( $user->result );
-die "Couldn't log in" unless ok( $user->nt_user_session );
+my $user = nt_api_connect();
 
 my $fqdn = 'fully.qualified.com.';
 my @ascii = map( chr $_, 0..128);  # ascii table
@@ -77,28 +62,28 @@ sub doit {
     ####################
 
     # make a new group
-    $res = $user->get_group->new_group( name => 'test_delete_me1' );
-    die "Couldn't create test group1"
-        unless noerrok($res)
-            and ok( $res->get('nt_group_id') => qr/^\d+$/ );
-    $gid1 = $res->get('nt_group_id');
+    my $res = $user->get_group->new_group( name => 'test_delete_me1' );
+    noerrok($res)
+        && ok( $res->get('nt_group_id') =~ qr/^\d+$/ )
+            or die "Couldn't create test group1";
 
+    $gid1 = $res->get('nt_group_id');
     $group1 = $user->get_group( nt_group_id => $gid1 );
-    die "Couldn't get test group1"
-        unless noerrok($group1)
-            and ok( $group1->id, $gid1 );
+    noerrok($group1)
+        && is( $group1->id, $gid1 )
+            or die "Couldn't get test group1";
 
     # make a new group
     $res = $user->get_group->new_group( name => 'test_delete_me2' );
-    die "Couldn't create test group2"
-        unless noerrok($res)
-            and ok( $res->get('nt_group_id') => qr/^\d+$/ );
-    $gid2 = $res->get('nt_group_id');
+    noerrok($res)
+        && ok( $res->get('nt_group_id') =~ qr/^\d+$/ )
+            or die "Couldn't create test group2";
 
+    $gid2 = $res->get('nt_group_id');
     $group2 = $user->get_group( nt_group_id => $gid2 );
-    die "Couldn't get test group2"
-        unless noerrok($group2)
-            and ok( $group2->id, $gid2 );
+    noerrok($group2)
+        && is( $group2->id, $gid2 )
+            or die "Couldn't get test group2";
 
     # make test nameservers
     $res = $group1->new_nameserver(
@@ -107,9 +92,9 @@ sub doit {
         export_format => 'bind',
         ttl           => 86400
     );
-    die "couldn't make test nameserver"
-        unless noerrok($res)
-            and ok( $res->get('nt_nameserver_id') => qr/^\d+$/ );
+    noerrok($res)
+        && ok( $res->get('nt_nameserver_id') =~ qr/^\d+$/ )
+            or die "couldn't make test nameserver";
     $nsid1 = $res->get('nt_nameserver_id');
 
     $res = $group1->new_nameserver(
@@ -118,12 +103,12 @@ sub doit {
         export_format => 'djbdns',
         ttl           => 86401
     );
-    die "couldn't make test nameserver"
-        unless noerrok($res)
-            and ok( $res->get('nt_nameserver_id') => qr/^\d+$/ );
+    noerrok($res)
+        && ok( $res->get('nt_nameserver_id') =~ qr/^\d+$/ )
+            or die "couldn't make test nameserver";
     $nsid2 = $res->get('nt_nameserver_id');
 
-# make new zones
+    # make new zones
     $res = $group1->new_zone(
         zone        => 'test.com',
         serial      => 0,
@@ -136,12 +121,14 @@ sub doit {
         expire      => 30,
         minimum     => 40,
     );
-    die "couldn't make test zone1"
-        unless noerrok($res)
-            and ok( $res->get('nt_zone_id') => qr/^\d+$/ );
+    noerrok($res)
+        && ok( $res->get('nt_zone_id') =~ qr/^\d+$/ )
+            or die "couldn't make test zone1";
+
     $zid1 = $res->get('nt_zone_id');
     $zone1 = $user->get_zone( nt_zone_id => $zid1 );
-    die "Couldn't get test zone 1" unless noerrok($zone1);
+    noerrok($zone1)
+        or die "Couldn't get test zone 1";
 
     $res = $group1->new_zone(
         zone        => 'anothertest.com',
@@ -155,16 +142,17 @@ sub doit {
         expire      => 300,
         minimum     => 400,
     );
-    die "couldn't make test zone2"
-        unless noerrok($res)
-            and ok( $res->get('nt_zone_id') => qr/^\d+$/ );
+    noerrok($res)
+        && ok( $res->get('nt_zone_id') =~ qr/^\d+$/ )
+            or die "couldn't make test zone2";
+
     $zid2 = $res->get('nt_zone_id');
     $zone2 = $user->get_zone( nt_zone_id => $zid2 );
-    die "Couldn't get test zone 1" unless noerrok($zone2);
+    noerrok($zone2) or die "Couldn't get test zone 1";
 
-####################
+    ####################
     # new_zone_record  #
-####################
+    ####################
 
     #no zone_id
     $res = $zone1->new_zone_record(
@@ -175,8 +163,8 @@ sub doit {
         address    => '1.1.1.1'
     );
     noerrok( $res, 301 );
-    ok( $res->get('error_msg')  => 'nt_zone_id' );
-    ok( $res->get('error_desc') => qr/Required parameters missing/ );
+    is( $res->get('error_msg'), 'nt_zone_id' );
+    ok( $res->get('error_desc') =~ qr/Required parameters missing/ );
     if ( !$res->is_error ) {
         $res = $user->delete_zone_record(
             nt_zone_record_id => $res->{'nt_zone_record_id'} );
@@ -192,8 +180,8 @@ sub doit {
             address    => '1.1.1.1'
         );
         noerrok( $res, 302 );
-        ok( $res->get('error_msg')  => 'nt_zone_id' );
-        ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
+        is( $res->get('error_msg'), 'nt_zone_id' );
+        ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
         if ( !$res->is_error ) {
             $res = $user->delete_zone_record(
                 nt_zone_record_id => $res->{'nt_zone_record_id'} );
@@ -208,8 +196,8 @@ sub doit {
         address => '1.1.1.1'
     );
     noerrok( $res, 301 );
-    ok( $res->get('error_msg')  => 'name' );
-    ok( $res->get('error_desc') => qr/Required parameters missing/ );
+    is( $res->get('error_msg'), 'name' );
+    ok( $res->get('error_desc') =~ qr/Required parameters missing/ );
     if ( !$res->is_error ) {
         $res = $user->delete_zone_record(
             nt_zone_record_id => $res->{'nt_zone_record_id'} );
@@ -223,14 +211,14 @@ sub doit {
         address => '1.1.1.1'
     );
     noerrok( $res, 301 );
-    ok( $res->get('error_msg')  => 'type' );
-    ok( $res->get('error_desc') => qr/Required parameters missing/ );
+    is( $res->get('error_msg'), 'type' );
+    ok( $res->get('error_desc') =~ qr/Required parameters missing/ );
     if ( !$res->is_error ) {
         $res = $user->delete_zone_record(
             nt_zone_record_id => $res->{'nt_zone_record_id'} );
     }
 
-    #no address value
+    # no address value
     $res = $zone1->new_zone_record(
         name => 'a',
         type => 'A',
@@ -238,14 +226,14 @@ sub doit {
         #address=>'1.1.1.1'
     );
     noerrok( $res, 301 );
-    ok( $res->get('error_msg')  => 'address' );
-    ok( $res->get('error_desc') => qr/Required parameters missing/ );
+    is( $res->get('error_msg'), 'address' );
+    ok( $res->get('error_desc') =~ qr/Required parameters missing/ );
     if ( !$res->is_error ) {
         $res = $user->delete_zone_record(
             nt_zone_record_id => $res->{'nt_zone_record_id'} );
     }
 
-#invalid name (wildcards)
+    #invalid name (wildcards)
     for ( qw/ something* some*thing *something something.* / ) {
 
         $res = $zone1->new_zone_record(
@@ -256,37 +244,38 @@ sub doit {
         );
         noerrok( $res, 300, "name $_" );
         ok( $res->get('error_msg') =>
-                qr/only \*\.something or \* \(by itself\) is a valid wildcard record/
+            qr/only \*\.something or \* \(by itself\) is a valid wildcard record/
         );
-        ok( $res->get('error_desc') => qr/Sanity error/ );
+        ok( $res->get('error_desc') =~ qr/Sanity error/ );
         if ( !$res->is_error ) {
             $res = $user->delete_zone_record(
                 nt_zone_record_id => $res->{'nt_zone_record_id'} );
         }
     }
 
-#invalid name (bad chars)
-    for $type ( qw/A AAAA MX NS CNAME PTR SRV/ ) {
-        for my $char ( @invalid_ascii ) {
+# invalid name (bad chars)
+# for IDN support, any 8bit octet is valid for name char
+#   for $type ( qw/A AAAA MX NS CNAME PTR SRV/ ) {
+#       for my $char ( @invalid_ascii ) {
+#
+#           $res = $zone1->new_zone_record(
+#               name    => "some${char}thing",
+#               type    => $type,
+#               ttl     => 86400,
+#               address => $type eq 'A' ? '1.1.1.1' : 'a.b.c.d.',
+#               ($type eq 'MX' ? (weight => 1) : ()),
+#           );
+#           noerrok( $res, 300, "type $type name some${char}thing" );
+#           ok( $res->get('error_msg') =~ qr/invalid character/ );
+#           ok( $res->get('error_desc') =~ qr/Sanity error/ );
+#           if ( !$res->is_error ) {
+#               $res = $user->delete_zone_record(
+#                   nt_zone_record_id => $res->{'nt_zone_record_id'} );
+#           }
+#       }
+#   }
 
-            $res = $zone1->new_zone_record(
-                name    => "some${char}thing",
-                type    => $type,
-                ttl     => 86400,
-                address => $type eq 'A' ? '1.1.1.1' : 'a.b.c.d.',
-                ($type eq 'MX' ? (weight => 1) : ()),
-            );
-            noerrok( $res, 300, "type $type name some${char}thing" );
-            ok( $res->get('error_msg') => qr/invalid character/ );
-            ok( $res->get('error_desc') => qr/Sanity error/ );
-            if ( !$res->is_error ) {
-                $res = $user->delete_zone_record(
-                    nt_zone_record_id => $res->{'nt_zone_record_id'} );
-            }
-        }
-    }
-
-    #invalid name (fqdn)
+    # invalid name (fqdn)
     foreach my $name ( qw/ a.m. something.test. / ) {
 
         $res = $zone1->new_zone_record(
@@ -296,14 +285,14 @@ sub doit {
             address => '1.1.1.1'
         );
         noerrok( $res, 300, "name $name" );
-        ok( $res->get('error_msg') => qr/absolute host names are NOT allowed/, "new_zone_record: $name" );
-        ok( $res->get('error_desc') => qr/Sanity error/, "new_zone_record: $name" );
+        ok( $res->get('error_msg') =~ qr/absolute host names are NOT allowed/, "new_zone_record: $name" );
+        ok( $res->get('error_desc') =~ qr/Sanity error/, "new_zone_record: $name" );
         if ( !$res->is_error ) {
             $res = $user->delete_zone_record( nt_zone_record_id => $res->{'nt_zone_record_id'} );
         }
     }
 
-    #invalid chars in address
+    # invalid chars in address
     for $type ( qw/ A AAAA MX NS CNAME PTR SRV / ) {
         for my $char ( @invalid_ascii ) {
             next if $type eq 'AAAA' && $char eq ':';  # legal char
@@ -316,8 +305,8 @@ sub doit {
                 ($type eq 'MX' ? (weight => 1) : ()),
             );
             noerrok( $res, 300, "type $type address some${char}thing" );
-            ok( $res->get('error_msg')  => qr/invalid character / );
-            ok( $res->get('error_desc') => qr/Sanity error/ );
+            ok( $res->get('error_msg')  =~ qr/invalid character / );
+            ok( $res->get('error_desc') =~ qr/Sanity error/ );
             if ( !$res->is_error ) {
                 $res = $user->delete_zone_record(
                     nt_zone_record_id => $res->{'nt_zone_record_id'} );
@@ -325,7 +314,7 @@ sub doit {
         }
     }
 
-    #invalid record type
+    # invalid record type
     for ( qw/ blah x Y P Q R S TU VW XYZ 1 23 / ) {
         $res = $zone1->new_zone_record(
             name    => "something",
@@ -334,15 +323,15 @@ sub doit {
             ttl     => 86400,
         );
         noerrok( $res, 300, "type $_" );
-        ok( $res->get('error_msg')  => qr/Invalid record type/ );
-        ok( $res->get('error_desc') => qr/Sanity error/ );
+        ok( $res->get('error_msg')  =~ qr/Invalid record type/ );
+        ok( $res->get('error_desc') =~ qr/Sanity error/ );
         if ( !$res->is_error ) {
             $res = $user->delete_zone_record(
                 nt_zone_record_id => $res->{'nt_zone_record_id'} );
         }
     }
 
-#invalid address for type
+    # invalid address for type
     for my $type ( qw/ MX NS / ) {
         for my $address ( qw{ -blah -blah.something - something.-something
                 /blah.something blah./something.com } ) {
@@ -355,8 +344,8 @@ sub doit {
                 ($type eq 'MX' ? (weight => 1) : ()),
             );
             noerrok( $res, 300, "type $type address $address" );
-            ok( $res->get('error_msg') => qr/must point to a FQDN/, "new_zone_record $type $address" );
-            ok( $res->get('error_desc') => qr/Sanity error/, "new_zone_record $type $address" );
+            ok( $res->get('error_msg') =~ qr/must point to a FQDN/, "new_zone_record $type $address" );
+            ok( $res->get('error_desc') =~ qr/Sanity error/, "new_zone_record $type $address" );
             if ( !$res->is_error ) {
                 $res = $user->delete_zone_record(
                     nt_zone_record_id => $res->{'nt_zone_record_id'} );
@@ -374,15 +363,15 @@ sub doit {
             ($type eq 'MX' ? (weight => 1) : ()),
         );
         noerrok( $res, 300, "type $type address '1.2.3.4" );
-        ok( $res->get('error_msg') => qr/must point to a FQDN/, "new_zone_record, $type" );
-        ok( $res->get('error_desc') => qr/Sanity error/, "new_zone_record, $type" );
+        ok( $res->get('error_msg') =~ qr/must point to a FQDN/, "new_zone_record, $type" );
+        ok( $res->get('error_desc') =~ qr/Sanity error/, "new_zone_record, $type" );
         if ( !$res->is_error ) {
             $res = $user->delete_zone_record(
                 nt_zone_record_id => $res->{'nt_zone_record_id'} );
         }
     }
 
-#invalid IP address for A records
+    # invalid IP address for A records
     for ( qw/ 1.x.2.3 .1.2.3 0.0.0.0 1234.1.2.3 256.2.3.4  1.-.2.3 1.2.3 1.2
               1 1.2.3. -1.2.3.4/, '1. .3.4', '1.2,3.4', '1.,.3.4' ) {
 
@@ -393,33 +382,34 @@ sub doit {
             ttl     => 86400,
         );
         noerrok( $res, 300, "A record, invalid address $_" );
-        ok( $res->get('error_msg') =>
-                qr/Address for A records must be a valid IP address/ );
-        ok( $res->get('error_desc') => qr/Sanity error/ );
+        ok( $res->get('error_msg') =~
+            qr/Address for A records must be a valid IP address/ );
+        ok( $res->get('error_desc') =~ qr/Sanity error/ );
         if ( !$res->is_error ) {
             $res = $user->delete_zone_record(
                 nt_zone_record_id => $res->{'nt_zone_record_id'} );
         }
     }
 
-    #invalid to have NS record with same name as zone
-    $res = $zone1->new_zone_record(
-        name    => '@',
-        address => 'ns.somewhere.com.',
-        type    => 'NS',
-        ttl     => 86400,
-    );
-    noerrok( $res, 300, "redundant NS record test" );
-    ok( $res->get('error_msg') =>
-            qr/The NS Records for 'test\.com\.' will automatically be created when the Zone is published to a Nameserver/
-    );
-    ok( $res->get('error_desc') => qr/Sanity error/ );
-    if ( !$res->is_error ) {
-        $res = $user->delete_zone_record(
-            nt_zone_record_id => $res->{'nt_zone_record_id'} );
-    }
+#   #invalid to have NS record with same name as zone
+#      unless you want to delegate the zone...
+#    $res = $zone1->new_zone_record(
+#        name    => '@',
+#        address => 'ns.somewhere.com.',
+#        type    => 'NS',
+#        ttl     => 86400,
+#    );
+#    noerrok( $res, 300, "redundant NS record test" );
+#    ok( $res->get('error_msg') =>
+#            qr/The NS Records for 'test\.com\.' will automatically be created when the Zone is published to a Nameserver/
+#    );
+#    ok( $res->get('error_desc') =~ qr/Sanity error/ );
+#    if ( !$res->is_error ) {
+#        $res = $user->delete_zone_record(
+#            nt_zone_record_id => $res->{'nt_zone_record_id'} );
+#    }
 
-#invalid ttl
+    # invalid ttl
     for ( qw/ -1 -4 -299 2147483648 / ) {
 
         $res = $zone1->new_zone_record(
@@ -429,39 +419,108 @@ sub doit {
             ttl     => $_
         );
         noerrok( $res, 300, "ttl $_" );
-        ok( $res->get('error_msg')  => qr/Invalid TTL/ );
-        ok( $res->get('error_desc') => qr/Sanity error/ );
+        ok( $res->get('error_msg')  =~ qr/Invalid TTL/ );
+        ok( $res->get('error_desc') =~ qr/Sanity error/ );
         if ( !$res->is_error ) {
             $res = $user->delete_zone_record(
                 nt_zone_record_id => $res->{'nt_zone_record_id'} );
         }
     }
 
+    # TTL update of RRset
+    {
+        my(@zr, @id);
+	my($i) = 0;
+	foreach ('1.2.3.4', '2.3.4.5') {
+	    my $id = $zone1->new_zone_record(
+		name => "rrsetname",
+		address => $_,
+		type => 'A',
+		ttl => 86400);
+	    my $zrid = $id->get('nt_zone_record_id');
+	    my $zr = $user->get_zone_record( nt_zone_record_id => $zrid );
+	    $id[$i] = $zrid;
+	    $zr[$i++] = $zr;
+	}
+
+	$res = $zr[0]->edit_zone_record( ttl => 6000 );
+	# Test that the update has been propagated to the whole RRset
+	is ($zr[0]->get('ttl'), $zr[1]->get('ttl'));
+	# Cleanup after us...
+	foreach (@id) {
+	    $res = $user->delete_zone_record( nt_zone_record_id => $_ );
+	    noerrok($res) or die "Could not delete test record $_";
+	}
+    }
+
+    # CAA with invalid URI for iodef
+    {
+	$res = $zone1->new_zone_record(
+	    name    => 'ca',
+	    type    => 'CAA',
+	    address => 'some random string',
+	    other   => 'iodef',
+	    weight  => '0',
+	    ttl     => '3600',
+	    );
+	noerrok( $res, 300, 'Tag value for iodef' );
+	ok( $res->get('error_msg') =~ qr/Tag value for iodef/ );
+	ok( $res->get('error_desc') =~ qr/Sanity error/ );
+	
+	if ( !$res->is_error ) {
+	    $res = $user->delete_zone_record(
+		nt_zone_record_id => $res->get('nt_zone_record_id') );
+	}
+    }
+
+    # CAA with invalid tag value
+    {
+	$res = $zone1->new_zone_record(
+	    name    => 'ca',
+	    type    => 'CAA',
+	    address => 'cert.example.com',
+	    other   => 'invalid-tag',
+	    weight  => '0',
+	    ttl     => '3600',
+	    );
+	noerrok( $res, 300, 'Tag must be one of' );
+	ok( $res->get('error_msg') =~ qr/Tag must be one of/ );
+	ok( $res->get('error_desc') =~ qr/Sanity error/ );
+
+	if ( !$res->is_error ) {
+	    $res = $user->delete_zone_record(
+		nt_zone_record_id => $res->get('nt_zone_record_id') );
+	}
+    }
+
     ####################
     # success tests    #
     ####################
 
-my @success_tests = (
-    { name => 'x',            address => '1.2.3.4', type => 'A',  ttl=>3600 },
-    { name => '2x',           address => '1.2.3.5', type => 'A',  ttl=>3600 },
-    { name => '*',            address => '1.1.1.3', type => 'A',  ttl=>3601 },
-    { name => '*.something',  address => '1.1.1.4', type => 'A',  ttl=>3602 },
-    { name => 'some.*.thing', address => '1.1.1.5', type => 'A',  ttl=>3603 },
-    { name => 'x',            address => $fqdn,     type => 'NS', ttl=>300  },
-    { name => 'x',            address => $fqdn,     type => 'MX', ttl=>301, weight=>1 },
-    { name => '_sip._udp',    address => $fqdn,     type => 'SRV', priority=>1, other=>2, weight=>1},
-    { name => 'test.com.', address => 'v=spf1 mx a ip4:127.0.0.6 -all', type => 'TXT' },
-    { name => 'test.com.', address => 'v=spf1 mx a ip4:127.0.0.6 ~all', type => 'TXT' },
-    { name => 'test.com.', address => 'v=spf1 mx a ip4:127.0.0.6 ?all', type => 'TXT' },
-    { name => 'test.com.', address => 'v=spf1 mx a ip4:127.0.0.6 -all', type => 'SPF' },
-    { name => 'test.com.', address => 'v=spf1 mx a ip4:127.0.0.6 ~all', type => 'SPF' },
-    { name => 'test.com.', address => 'v=spf1 mx a ip4:127.0.0.6 ?all', type => 'SPF' },
-    { name => 'www', address => '2607:f729:0000:0000:0000:0000:0000:0001', type => 'AAAA', },
-);
+    my @success_tests = (
+        { name => 'x',            address => '1.2.3.4', type => 'A',  ttl=>3600 },
+        { name => '2x',           address => '1.2.3.5', type => 'A',  ttl=>3600 },
+        { name => '*',            address => '1.1.1.3', type => 'A',  ttl=>3601 },
+        { name => '*.something',  address => '1.1.1.4', type => 'A',  ttl=>3602 },
+        { name => 'some.*.thing', address => '1.1.1.5', type => 'A',  ttl=>3603 },
+        { name => 'x',            address => $fqdn,     type => 'NS', ttl=>300  },
+        { name => 'x',            address => $fqdn,     type => 'MX', ttl=>301, weight=>1 },
+        { name => '_sip._udp',    address => $fqdn,     type => 'SRV', priority=>1, other=>2, weight=>1},
+        { name => 'test.com.', address => 'v=spf1 mx a ip4:127.0.0.6 -all', type => 'TXT' },
+        { name => 'test.com.', address => 'v=spf1 mx a ip4:127.0.0.6 ~all', type => 'TXT' },
+        { name => 'test.com.', address => 'v=spf1 mx a ip4:127.0.0.6 ?all', type => 'TXT' },
+        { name => 'test.com.', address => 'v=spf1 mx a ip4:127.0.0.6 -all', type => 'SPF' },
+        { name => 'test.com.', address => 'v=spf1 mx a ip4:127.0.0.6 ~all', type => 'SPF' },
+        { name => 'test.com.', address => 'v=spf1 mx a ip4:127.0.0.6 ?all', type => 'SPF' },
+        { name => 'www', address => '2607:f729:0000:0000:0000:0000:0000:0001', type => 'AAAA', },
+	{ name => 'test.com.', weight => '0', other => "issue", address => "ca.example.com", type => 'CAA', ttl=>3600 },
+	{ name => 'test.com.', weight => '128', other => "iodef", address => "mailto:security@test.com", type => 'CAA', ttl=>3600 },
+	{ name => 'test.com.', weight => '0', other => "iodef", address => "https://ca-report.test.com/", type => 'CAA', ttl=>3600 },
+    );
 
-# new record success tests
+    # new record success tests
     foreach ( @success_tests ) {
-#warn "name: $_->{name}\n";
+        #warn "name: $_->{name}\n";
         $res = $zone1->new_zone_record(
             name    => $_->{name},
             address => $_->{address},
@@ -475,7 +534,7 @@ my @success_tests = (
         $t = $res->get('nt_zone_record_id');
         if ( $t ) {
             $res = $user->delete_zone_record( nt_zone_record_id => $t );
-            die "couldn't delete test record $t " unless noerrok($res);
+            noerrok($res) or die "couldn't delete test record $t ";
         };
     };
 
@@ -495,9 +554,9 @@ my @success_tests = (
         type    => 'CNAME',
     );
     noerrok( $res, 300, 'multiple CNAME records' );
-    ok( $res->get('error_msg') =>
-            qr/multiple CNAME records with the same name are NOT allowed/ );
-    ok( $res->get('error_desc') => qr/Sanity error/ );
+    ok( $res->get('error_msg') =~
+        qr/multiple CNAME records with the same name are NOT allowed/ );
+    ok( $res->get('error_desc') =~ qr/Sanity error/ );
 
     if ( !$res->is_error ) {
         $res = $user->delete_zone_record(
@@ -521,10 +580,8 @@ my @success_tests = (
         type    => 'CNAME',
     );
     noerrok( $res, 300, 'CNAME conflict with A records' );
-    ok( $res->get('error_msg') =>
-            qr/record x already exists within zone as an Address \(A\) record/
-    );
-    ok( $res->get('error_desc') => qr/Sanity error/ );
+    ok( $res->get('error_msg') =~ qr/record x already exists within zone as/ );
+    ok( $res->get('error_desc') =~ qr/Sanity error/ );
 
     if ( !$res->is_error ) {
         $res = $user->delete_zone_record(
@@ -533,7 +590,7 @@ my @success_tests = (
     $res = $user->delete_zone_record( nt_zone_record_id => $t );
     die "couldn't delete test record $t " unless noerrok($res);
 
-    #A conflict with CNAME record
+    # A conflict with CNAME record
     $res = $zone1->new_zone_record(
         name    => 'x',
         address => 'abc.defg.com.',
@@ -548,10 +605,10 @@ my @success_tests = (
         type    => 'A',
     );
     noerrok( $res, 300, 'A conflict with CNAME records' );
-    ok( $res->get('error_msg') =>
-            qr/record x already exists within zone as an Alias \(CNAME\) record/
+    ok( $res->get('error_msg') =~
+        qr/record x already exists within zone as an Alias \(CNAME\) record/
     );
-    ok( $res->get('error_desc') => qr/Sanity error/ );
+    ok( $res->get('error_desc') =~ qr/Sanity error/ );
 
     if ( !$res->is_error ) {
         $res = $user->delete_zone_record(
@@ -571,10 +628,10 @@ my @success_tests = (
         type    => 'A',
     );
     noerrok( $res, 300, "record conflicts with subzone", "new_zone_record, A sub" );
-    ok( $res->get('error_msg') =>
-            qr/Cannot create\/edit Record .*: it conflicts with existing zone/
+    ok( $res->get('error_msg') =~
+        qr/Cannot create\/edit Record .*: it conflicts with existing zone/
     );
-    ok( $res->get('error_desc') => qr/Sanity error/, "new_zone_record, A sub" );
+    ok( $res->get('error_desc') =~ qr/Sanity error/, "new_zone_record, A sub" );
 
     if ( !$res->is_error ) {
         $res = $user->delete_zone_record(
@@ -587,10 +644,10 @@ my @success_tests = (
         type    => 'A',
     );
     noerrok( $res, 300, "record conflicts with subzone" );
-    ok( $res->get('error_msg') =>
-            qr/Cannot create\/edit Record .*: it conflicts with existing zone/
+    ok( $res->get('error_msg') =~
+        qr/Cannot create\/edit Record .*: it conflicts with existing zone/
     );
-    ok( $res->get('error_desc') => qr/Sanity error/ );
+    ok( $res->get('error_desc') =~ qr/Sanity error/ );
     if ( !$res->is_error ) {
         $res = $user->delete_zone_record(
             nt_zone_record_id => $res->get('nt_zone_record_id') );
@@ -612,14 +669,15 @@ my @success_tests = (
         weight      => 0
     );
     $res = $zone1->new_zone_record(%zr1);
-    die "Couldn't create test record"
-        unless noerrok($res)
-            and $res->get('nt_zone_record_id') =~ /^\d+$/;
+    noerrok($res)
+        && ok($res->get('nt_zone_record_id') =~ /^\d+$/)
+            or die "Couldn't create test record";
+
     $zrid1 = $res->get('nt_zone_record_id');
     $zr1 = $user->get_zone_record( nt_zone_record_id => $zrid1 );
-    die "Couldn't get test record 1"
-        unless noerrok($res)
-            and $zr1->get('nt_zone_record_id') eq $zrid1;
+    noerrok($res)
+        && is($zr1->get('nt_zone_record_id'), $zrid1) or
+            die "Couldn't get test record 1";
 
     %zr2 = (
         name        => 'b',
@@ -630,18 +688,19 @@ my @success_tests = (
         weight      => 0,
     );
     $res = $zone1->new_zone_record(%zr2);
-    die "Couldn't create test record"
-        unless noerrok($res)
-            and $res->get('nt_zone_record_id') =~ /^\d+$/;
+    noerrok($res)
+        && ok($res->get('nt_zone_record_id') =~ /^\d+$/) or
+            die "Couldn't create test record";
+
     $zrid2 = $res->get('nt_zone_record_id');
     $zr2 = $user->get_zone_record( nt_zone_record_id => $zrid2 );
-    die "Couldn't get test record 1"
-        unless noerrok($res)
-            and $zr2->get('nt_zone_record_id') eq $zrid2;
+    noerrok($res)
+        && is($zr2->get('nt_zone_record_id'), $zrid2) or
+            die "Couldn't get test record 1";
 
-####################
+    ####################
     # get_zone_record
-####################
+    ####################
 
     ####################
     # parameters       #
@@ -649,22 +708,22 @@ my @success_tests = (
 
     $res = $user->get_zone_record( nt_zone_record_id => '' );
     noerrok( $res, 301 );
-    ok( $res->get('error_msg')  => 'nt_zone_record_id' );
-    ok( $res->get('error_desc') => qr/Required parameters missing/ );
+    is( $res->get('error_msg'), 'nt_zone_record_id' );
+    ok( $res->get('error_desc') =~ qr/Required parameters missing/ );
 
     $res = $user->get_zone_record( nt_zone_record_id => 'abc' );
     noerrok( $res, 302 );
-    ok( $res->get('error_msg')  => 'nt_zone_record_id' );
-    ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
+    is( $res->get('error_msg'), 'nt_zone_record_id' );
+    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
 
     $res = $user->get_zone_record( nt_zone_record_id => 0 );
     noerrok( $res, 302 );
-    ok( $res->get('error_msg')  => 'nt_zone_record_id' );
-    ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
+    is( $res->get('error_msg'), 'nt_zone_record_id' );
+    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
 
-####################
+    ####################
     # get_zone_records
-####################
+    ####################
 
     ####################
     # parameters       #
@@ -672,18 +731,18 @@ my @success_tests = (
 
     $res = $zone1->get_zone_records( nt_zone_id => '' );
     noerrok( $res, 301 );
-    ok( $res->get('error_msg')  => 'nt_zone_id' );
-    ok( $res->get('error_desc') => qr/Required parameters missing/ );
+    is( $res->get('error_msg'), 'nt_zone_id' );
+    ok( $res->get('error_desc') =~ qr/Required parameters missing/ );
 
     $res = $zone1->get_zone_records( nt_zone_id => 'abc' );
     noerrok( $res, 302 );
-    ok( $res->get('error_msg')  => 'nt_zone_id' );
-    ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
+    is( $res->get('error_msg'), 'nt_zone_id' );
+    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
 
     $res = $zone1->get_zone_records( nt_zone_id => 0 );
     noerrok( $res, 302 );
-    ok( $res->get('error_msg')  => 'nt_zone_id' );
-    ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
+    is( $res->get('error_msg'), 'nt_zone_id' );
+    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
 
     ####################
     # get test records #
@@ -691,8 +750,8 @@ my @success_tests = (
 
     $res = $zone1->get_zone_records;
     noerrok($res);
-    ok( ref $res   => 'NicTool::List' );
-    ok( $res->size => 2 );
+    isa_ok( $res, 'NicTool::List' );
+    is( $res->size, 2 );
     $saw1 = 0;
     $saw2 = 0;
     if ( $res->size => 2 ) {
@@ -700,28 +759,28 @@ my @success_tests = (
             if ( $z->id eq $zrid1 ) {
                 $saw1 = 1;
                 for (qw(name ttl address description type weight)) {
-                    ok( $z->get($_) => $zr1{$_} );
+                    is( $z->get($_), $zr1{$_} );
                 }
             }
             elsif ( $z->id eq $zrid2 ) {
                 $saw2 = 1;
                 for (qw(name ttl address description type weight)) {
-                    ok( $z->get($_) => $zr2{$_} );
+                    is( $z->get($_), $zr2{$_} );
                 }
 
             }
         }
     }
     if ( !$saw1 ) {
-        for ( 1 .. 5 ) { ok( 0, 1, "Didn't find test zone record 1" ) }
+        for ( 1 .. 5 ) { is( 0, 1, "Didn't find test zone record 1" ) }
     }
     if ( !$saw2 ) {
-        for ( 1 .. 5 ) { ok( 0, 1, "Didn't find test zone record 2" ) }
+        for ( 1 .. 5 ) { is( 0, 1, "Didn't find test zone record 2" ) }
     }
 
-####################
+    ####################
     # edit_zone_record
-####################
+    ####################
 
     ####################
     # parameters       #
@@ -736,8 +795,8 @@ my @success_tests = (
         address           => '1.1.1.3'
     );
     noerrok( $res, 301 );
-    ok( $res->get('error_msg')  => 'nt_zone_record_id' );
-    ok( $res->get('error_desc') => qr/Required parameters missing/ );
+    is( $res->get('error_msg'), 'nt_zone_record_id' );
+    ok( $res->get('error_desc') =~ qr/Required parameters missing/ );
     if ( !$res->is_error ) {
         $res = $user->delete_zone_record(
             nt_zone_record_id => $res->{'nt_zone_record_id'} );
@@ -752,8 +811,8 @@ my @success_tests = (
         address           => '1.1.1.3'
     );
     noerrok( $res, 302 );
-    ok( $res->get('error_msg')  => 'nt_zone_record_id' );
-    ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
+    is( $res->get('error_msg'), 'nt_zone_record_id' );
+    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
 
     #invalid zone_id
     $res = $zr1->edit_zone_record(
@@ -764,12 +823,12 @@ my @success_tests = (
         address           => '1.1.1.3'
     );
     noerrok( $res, 302 );
-    ok( $res->get('error_msg')  => 'nt_zone_record_id' );
-    ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
+    is( $res->get('error_msg'), 'nt_zone_record_id' );
+    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
 
     for (qw(something* some*thing *something something.*)) {
 
-        #invalid name
+        # invalid name
         $res = $zr1->edit_zone_record(
             name    => $_,
             type    => 'A',
@@ -777,14 +836,15 @@ my @success_tests = (
             address => '1.1.1.3'
         );
         noerrok( $res, 300, "name $_" );
-        ok( $res->get('error_msg') =>
+        ok( $res->get('error_msg') =~
                 qr/only \*\.something or \* \(by itself\) is a valid wildcard record/
         );
-        ok( $res->get('error_desc') => qr/Sanity error/ );
+        ok( $res->get('error_desc') =~ qr/Sanity error/ );
     }
 
-# invalid chars in name, address
-    for $type ( qw/ A MX NS CNAME PTR / ) {
+    # invalid chars in name, address
+    #for $type ( qw/ A MX NS CNAME PTR / ) {
+    for $type ( qw/ MX / ) {
         for my $char ( @invalid_ascii ) {
 
             #invalid chars in name
@@ -795,8 +855,8 @@ my @success_tests = (
                 ttl     => 86403,
             );
             noerrok( $res, 300, "type $type name some${char}thing" );
-            ok( $res->get('error_msg')  => qr/invalid character/ );
-            ok( $res->get('error_desc') => qr/Sanity error/ );
+            ok( $res->get('error_msg')  =~ qr/invalid character/ );
+            ok( $res->get('error_desc') =~ qr/Sanity error/ );
 
             #invalid chars in address
             $res = $zr1->edit_zone_record(
@@ -806,12 +866,12 @@ my @success_tests = (
                 ttl     => 86403,
             );
             noerrok( $res, 300, "type $type address some${char}thing" );
-            ok( $res->get('error_msg')  => qr/invalid character / );
-            ok( $res->get('error_desc') => qr/Sanity error/ );
+            ok( $res->get('error_msg')  =~ qr/invalid character / );
+            ok( $res->get('error_desc') =~ qr/Sanity error/ );
         }
     }
 
-#invalid name
+    # invalid name
     for ( qw/ a.m. something.test. / ) {
 
         $res = $zr1->edit_zone_record(
@@ -821,12 +881,12 @@ my @success_tests = (
             address => '1.1.1.3'
         );
         noerrok( $res, 300, "name $_" );
-        ok( $res->get('error_msg') =>
+        ok( $res->get('error_msg') =~
                 qr/absolute host names are NOT allowed/ );
-        ok( $res->get('error_desc') => qr/Sanity error/ );
+        ok( $res->get('error_desc') =~ qr/Sanity error/ );
     }
 
-#invalid record type
+    # invalid record type
     for ( qw/ blah x Y P Q R S TU VW XYZ 1 23/ ) {
 
         $res = $zr1->edit_zone_record(
@@ -836,15 +896,15 @@ my @success_tests = (
             ttl     => 86403,
         );
         noerrok( $res, 300, "type $_" );
-        ok( $res->get('error_msg')  => qr/Invalid record type/ );
-        ok( $res->get('error_desc') => qr/Sanity error/ );
+        ok( $res->get('error_msg')  =~ qr/Invalid record type/ );
+        ok( $res->get('error_desc') =~ qr/Sanity error/ );
     }
 
     for my $type ( qw/ MX NS SRV / ) {
         for my $address ( qw( -blah -blah.something -
             something.-something /blah.something blah./something.com) ) {
 
-#invalid address for type
+            # invalid address for type
             $res = $zr1->edit_zone_record(
                 name    => "something",
                 address => $address,
@@ -855,10 +915,10 @@ my @success_tests = (
                 ($type eq 'SRV' ? (other => 1) : ()),
             );
             noerrok( $res, 300, "type $type address $address" );
-            ok( $res->get('error_msg') => qr/must point to a FQDN/, "edit_zone_record, $type, $address" );
-            ok( $res->get('error_desc') => qr/Sanity error/, "edit_zone_record, $type, $address" );
+            ok( $res->get('error_msg') =~ qr/must point to a FQDN/, "edit_zone_record, $type, $address" );
+            ok( $res->get('error_desc') =~ qr/Sanity error/, "edit_zone_record, $type, $address" );
 
-#invalid address for preset type
+            # invalid address for preset type
             $res = $zr1->edit_zone_record(
                 type    => $type,
                 address => 'fully.ok.name.',
@@ -870,13 +930,13 @@ my @success_tests = (
             for (  qw[ -blah -blah.something - something.-something /blah.something blah./something.com ] ) {
                 $res = $zr1->edit_zone_record( address => $address );
                 noerrok( $res, 300, "type $type address $address" );
-                ok( $res->get('error_msg') => qr/must point to a FQDN/, "edit_zone_record, $type, $address" );
-                ok( $res->get('error_desc') => qr/Sanity error/, "edit_zone_record, $type, $address" );
+                ok( $res->get('error_msg') =~ qr/must point to a FQDN/, "edit_zone_record, $type, $address" );
+                ok( $res->get('error_desc') =~ qr/Sanity error/, "edit_zone_record, $type, $address" );
             }
         }
     }
 
-#invalid address for type
+    # invalid address for type
     for my $type ( qw/ MX NS SRV / ) {
         for my $address ( qw/ 1.2.3.4 5.1.2.8 5.1.2 a.b.c / ) {
 
@@ -890,8 +950,8 @@ my @success_tests = (
                 ($type eq 'SRV' ? (other => 1) : ()),
             );
             noerrok( $res, 300, "type $type address $address" );
-            ok( $res->get('error_msg')  => qr/must point to a FQDN/ );
-            ok( $res->get('error_desc') => qr/Sanity error/ );
+            ok( $res->get('error_msg')  =~ qr/must point to a FQDN/ );
+            ok( $res->get('error_desc') =~ qr/Sanity error/ );
 
             $res = $zr1->edit_zone_record(
                 type    => $type,
@@ -905,12 +965,12 @@ my @success_tests = (
             #invalid address for preset type
             $res = $zr1->edit_zone_record( address => $address );
             noerrok( $res, 300, "type $type address $address" );
-            ok( $res->get('error_msg')  => qr/must point to a FQDN/ );
-            ok( $res->get('error_desc') => qr/Sanity error/ );
+            ok( $res->get('error_msg')  =~ qr/must point to a FQDN/ );
+            ok( $res->get('error_desc') =~ qr/Sanity error/ );
         }
     }
 
-#invalid IP address for A records
+    # invalid IP address for A records
     for my $address ( qw/ 1.x.2.3 .1.2.3 0.0.0.0 1234.1.2.3 256.2.3.4  1.-.2.3 1.2.3 1.2
             1 1.2.3. -1.2.3.4/, '1. .3.4', '1.2,3.4', '1.,.3.4' ) {
 
@@ -921,12 +981,12 @@ my @success_tests = (
             ttl     => 86403,
         );
         noerrok( $res, 300, "address $address" );
-        ok( $res->get('error_msg') =>
+        ok( $res->get('error_msg') =~
                 qr/Address for A records must be a valid IP address/ );
-        ok( $res->get('error_desc') => qr/Sanity error/ );
+        ok( $res->get('error_desc') =~ qr/Sanity error/ );
     }
 
-#invalid IP address for AAAA records
+    # invalid IP address for AAAA records
     for ( qw/ abcd:efg1::1 1.2.3.4 200.200.200.200 / ) {
 
         $res = $zr1->edit_zone_record(
@@ -936,11 +996,11 @@ my @success_tests = (
             ttl     => 86403,
         );
         noerrok( $res, 300, "address $_" );
-        ok( $res->get('error_msg') => qr/must be a valid IPv6 address/ );
-        ok( $res->get('error_desc') => qr/Sanity error/ );
+        ok( $res->get('error_msg') =~ qr/must be a valid IPv6 address/ );
+        ok( $res->get('error_desc') =~ qr/Sanity error/ );
     };
 
-#invalid IP address for preset A record
+    #invalid IP address for preset A record
     $res = $zr1->edit_zone_record( type => 'A', address => '1.2.3.4');
     noerrok($res);
 
@@ -949,25 +1009,25 @@ my @success_tests = (
 
         $res = $zr1->edit_zone_record( address => $_ );
         noerrok( $res, 300, "address $_" );
-        ok( $res->get('error_msg') =>
+        ok( $res->get('error_msg') =~
                 qr/Address for A records must be a valid IP address/ );
-        ok( $res->get('error_desc') => qr/Sanity error/ );
+        ok( $res->get('error_desc') =~ qr/Sanity error/ );
     }
 
     #invalid to have NS record with same name as zone...
-    $res = $zr1->edit_zone_record(
-        name    => '@',
-        address => 'ns.somewhere.com.',
-        type    => 'NS',
-        ttl     => 86400,
-    );
-    noerrok( $res, 300, "redundant NS record test" );
-    ok( $res->get('error_msg') =>
-            qr/The NS Records for 'test\.com\.' will automatically be created when the Zone is published to a Nameserver/
-    );
-    ok( $res->get('error_desc') => qr/Sanity error/ );
+    #   $res = $zr1->edit_zone_record(
+    #       name    => '@',
+    #       address => 'ns.somewhere.com.',
+    #       type    => 'NS',
+    #       ttl     => 86400,
+    #   );
+    #   noerrok( $res, 300, "redundant NS record test" );
+    #   ok( $res->get('error_msg') =>
+    #           qr/The NS Records for 'test\.com\.' will automatically be created when the Zone is published to a Nameserver/
+    #   );
+    #   ok( $res->get('error_desc') =~ qr/Sanity error/ );
 
-#invalid ttl
+    #invalid ttl
     for ( qw/ -1 -4 -299 2147483648 -2 / ) {
 
         $res = $zr1->edit_zone_record(
@@ -977,8 +1037,8 @@ my @success_tests = (
             ttl     => $_,
         );
         noerrok( $res, 300, "ttl $_" );
-        ok( $res->get('error_msg')  => qr/Invalid TTL/ );
-        ok( $res->get('error_desc') => qr/Sanity error/ );
+        ok( $res->get('error_msg')  =~ qr/Invalid TTL/ );
+        ok( $res->get('error_desc') =~ qr/Sanity error/ );
     }
 
     ####################
@@ -990,19 +1050,20 @@ my @success_tests = (
             name    => $_->{name},
             address => $_->{address},
             type    => $_->{type},
-            (($_->{type} eq 'MX' || $_->{type} eq 'SRV') ? (weight => 1) : ()),
-            ($_->{type} eq 'SRV' ? (priority => 1) : ()),
-            ($_->{type} eq 'SRV' ? (other => 1) : ()),
+            ($_->{ttl} ? (ttl => $_->{ttl}) : ()),
+            ($_->{weight} ? (weight => $_->{weight}) : ()),
+            ($_->{priority} ? (priority => $_->{priority}) : ()),
+            ($_->{other} ? (other => $_->{other}) : ()),
         );
 
         noerrok($res);
         $zr1->refresh;
-        ok( $zr1->get('name'),    $_->{name}    );
-        ok( $zr1->get('address'), $_->{address} );
-        ok( $zr1->get('type'),    $_->{type}    );
+        is( $zr1->get('name'),    $_->{name}    );
+        is( $zr1->get('address'), $_->{address} );
+        is( $zr1->get('type'),    $_->{type}    );
     };
 
-# SPF with shortcut expansion
+    # SPF with shortcut expansion
     $res = $zr1->edit_zone_record(
         name    => '@',
         address => 'v=spf1 mx a ip4:127.0.0.6 -all',
@@ -1010,11 +1071,11 @@ my @success_tests = (
     );
     noerrok($res);
     $zr1->refresh;
-    ok( $zr1->get('name'),    'test.com.' );
-    ok( $zr1->get('address'), 'v=spf1 mx a ip4:127.0.0.6 -all' );
-    ok( $zr1->get('type'),    'SPF' );
+    is( $zr1->get('name'),    'test.com.' );
+    is( $zr1->get('address'), 'v=spf1 mx a ip4:127.0.0.6 -all' );
+    is( $zr1->get('type'),    'SPF' );
 
-# TXT with shortcut expansion
+    # TXT with shortcut expansion
     $res = $zr1->edit_zone_record(
         name    => '@',
         address => 'v=spf1 mx a ip4:127.0.0.6 -all',
@@ -1022,11 +1083,11 @@ my @success_tests = (
     );
     noerrok($res);
     $zr1->refresh;
-    ok( $zr1->get('name'),    'test.com.' );
-    ok( $zr1->get('address'), 'v=spf1 mx a ip4:127.0.0.6 -all' );
-    ok( $zr1->get('type'),    'TXT' );
+    is( $zr1->get('name'),    'test.com.' );
+    is( $zr1->get('address'), 'v=spf1 mx a ip4:127.0.0.6 -all' );
+    is( $zr1->get('type'),    'TXT' );
 
-# AAAA with shortcut expansion
+    # AAAA with shortcut expansion
     $res = $zr1->edit_zone_record(
         name    => 'www',
         address => '2001:db8::0001',
@@ -1034,9 +1095,9 @@ my @success_tests = (
     );
     noerrok($res);
     $zr1->refresh;
-    ok( $zr1->get('name'),    'www' );
-    ok( $zr1->get('address'), '2001:0db8:0000:0000:0000:0000:0000:0001' );
-    ok( $zr1->get('type'),    'AAAA' );
+    is( $zr1->get('name'),    'www' );
+    is( $zr1->get('address'), '2001:0db8:0000:0000:0000:0000:0000:0001' );
+    is( $zr1->get('type'),    'AAAA' );
 
     # multiple CNAMES with same name
     $res = $zr1->edit_zone_record(
@@ -1046,9 +1107,9 @@ my @success_tests = (
     );
     noerrok($res);
     $zr1->refresh;
-    ok( $zr1->get('name'),    'x' );
-    ok( $zr1->get('address'), $fqdn );
-    ok( $zr1->get('type'),    'CNAME' );
+    is( $zr1->get('name'),    'x' );
+    is( $zr1->get('address'), $fqdn );
+    is( $zr1->get('type'),    'CNAME' );
 
     $res = $zr2->edit_zone_record(
         name    => 'x',
@@ -1056,11 +1117,11 @@ my @success_tests = (
         type    => 'CNAME',
     );
     noerrok( $res, 300, 'multiple CNAME records' );
-    ok( $res->get('error_msg') =>
-            qr/multiple CNAME records with the same name are NOT allowed/ );
-    ok( $res->get('error_desc') => qr/Sanity error/ );
+    ok( $res->get('error_msg') =~
+        qr/multiple CNAME records with the same name are NOT allowed/ );
+    ok( $res->get('error_desc') =~ qr/Sanity error/ );
 
-#CNAME conflict with A record
+    # CNAME conflict with A record
     $res = $zr1->edit_zone_record(
         name    => 'x',
         address => '1.2.3.4',
@@ -1068,9 +1129,9 @@ my @success_tests = (
     );
     noerrok($res);
     $zr1->refresh;
-    ok( $zr1->get('name'),    'x' );
-    ok( $zr1->get('address'), '1.2.3.4' );
-    ok( $zr1->get('type'),    'A' );
+    is( $zr1->get('name'),    'x' );
+    is( $zr1->get('address'), '1.2.3.4' );
+    is( $zr1->get('type'),    'A' );
 
     $res = $zr2->edit_zone_record(
         name    => 'x',
@@ -1078,10 +1139,10 @@ my @success_tests = (
         type    => 'CNAME',
     );
     noerrok( $res, 300, 'CNAME conflict with A records' );
-    ok( $res->get('error_msg') =>
-            qr/record x already exists within zone as an Address \(A\) record/
+    ok( $res->get('error_msg') =~
+        qr/record x already exists within zone as an/
     );
-    ok( $res->get('error_desc') => qr/Sanity error/ );
+    ok( $res->get('error_desc') =~ qr/Sanity error/ );
 
     # A conflict with CNAME record
     $res = $zr1->edit_zone_record(
@@ -1091,9 +1152,9 @@ my @success_tests = (
     );
     noerrok($res);
     $zr1->refresh;
-    ok( $zr1->get('name'),    'x' );
-    ok( $zr1->get('address'), 'abc.defg.com.' );
-    ok( $zr1->get('type'),    'CNAME' );
+    is( $zr1->get('name'),    'x' );
+    is( $zr1->get('address'), 'abc.defg.com.' );
+    is( $zr1->get('type'),    'CNAME' );
 
     $res = $zr2->edit_zone_record(
         name    => 'x',
@@ -1101,12 +1162,12 @@ my @success_tests = (
         type    => 'A',
     );
     noerrok( $res, 300, 'A conflict with CNAME records' );
-    ok( $res->get('error_msg') =>
-            qr/record x already exists within zone as an Alias \(CNAME\) record/
+    ok( $res->get('error_msg') =~
+        qr/record x already exists within zone as an Alias \(CNAME\) record/
     );
-    ok( $res->get('error_desc') => qr/Sanity error/ );
+    ok( $res->get('error_desc') =~ qr/Sanity error/ );
 
-    #conflicting sub-zones and records
+    # conflicting sub-zones and records
     $res = $group1->new_zone( zone => 'sub.test.com' );
     noerrok($res);
     $t = $res->get('nt_zone_id');
@@ -1117,10 +1178,10 @@ my @success_tests = (
         type    => 'A',
     );
     noerrok( $res, 300, "record conflicts with subzone" );
-    ok( $res->get('error_msg') =>
-            qr/Cannot create\/edit Record .*: it conflicts with existing zone/
+    ok( $res->get('error_msg') =~
+        qr/Cannot create\/edit Record .*: it conflicts with existing zone/
     );
-    ok( $res->get('error_desc') => qr/Sanity error/ );
+    ok( $res->get('error_desc') =~ qr/Sanity error/ );
 
     $res = $zr1->edit_zone_record(
         name    => 'sub.sub',
@@ -1128,39 +1189,37 @@ my @success_tests = (
         type    => 'A',
     );
     noerrok( $res, 300, "record conflicts with subzone" );
-    ok( $res->get('error_msg') =>
-            qr/Cannot create\/edit Record .*: it conflicts with existing zone/
+    ok( $res->get('error_msg') =~
+        qr/Cannot create\/edit Record .*: it conflicts with existing zone/
     );
-    ok( $res->get('error_desc') => qr/Sanity error/ );
+    ok( $res->get('error_desc') =~ qr/Sanity error/ );
 
     $res = $user->delete_zones( zone_list => $t );
     noerrok($res);
 
-####################
-# delete_zone_record
-####################
 
     ####################
-    # parameters       #
+    # delete_zone_record
     ####################
+
     $res = $user->delete_zone_record( nt_zone_record_id => '' );
     noerrok( $res, 301 );
-    ok( $res->get('error_msg')  => 'nt_zone_record_id' );
-    ok( $res->get('error_desc') => qr/Required parameters missing/ );
+    is( $res->get('error_msg'), 'nt_zone_record_id' );
+    ok( $res->get('error_desc') =~ qr/Required parameters missing/ );
 
     $res = $user->delete_zone_record( nt_zone_record_id => 'abc' );
     noerrok( $res, 302 );
-    ok( $res->get('error_msg')  => 'nt_zone_record_id' );
-    ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
+    is( $res->get('error_msg'), 'nt_zone_record_id' );
+    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
 
     $res = $user->delete_zone_record( nt_zone_record_id => 0 );
     noerrok( $res, 302 );
-    ok( $res->get('error_msg')  => 'nt_zone_record_id' );
-    ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
+    is( $res->get('error_msg'), 'nt_zone_record_id' );
+    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
 
-####################
-# get_record_type
-####################
+    ####################
+    # get_record_type
+    ####################
 
     $res = $user->get_record_type( type => 'ALL');
     noerrok($res);
@@ -1171,60 +1230,48 @@ sub del {
 
     if ( defined $zrid2 ) {
         $res = $user->delete_zone_record( nt_zone_record_id => $zrid2 );
-        unless ( noerrok($res) ) {
-            warn Data::Dumper::Dumper($res);
-        }
+        noerrok($res) or warn Data::Dumper::Dumper($res);
     }
     else {
-        ok( 1, 0, "Couldn't delete test zone record 2" );
+        is( 1, 0, "Couldn't delete test zone record 2" );
     }
     if ( defined $zrid1 ) {
         $res = $user->delete_zone_record( nt_zone_record_id => $zrid1 );
-        unless ( noerrok($res) ) {
-            warn Data::Dumper::Dumper($res);
-        }
+        noerrok($res) or warn Data::Dumper::Dumper($res);
     }
     else {
-        ok( 1, 0, "Couldn't delete test zone record 1" );
+        is( 1, 0, "Couldn't delete test zone record 1" );
     }
 
     if ( defined $zid1 ) {
         $res = $user->delete_zones( zone_list => $zid1 );
-        unless ( noerrok($res) ) {
-            warn Data::Dumper::Dumper($res);
-        }
+        noerrok($res) or warn Data::Dumper::Dumper($res);
     }
     else {
-        ok( 1, 0, "Couldn't delete test zone 1" );
+        is( 1, 0, "Couldn't delete test zone 1" );
     }
 
     if ( defined $zid2 ) {
         $res = $user->delete_zones( zone_list => $zid2 );
-        unless ( noerrok($res) ) {
-            warn Data::Dumper::Dumper($res);
-        }
+        noerrok($res) or warn Data::Dumper::Dumper($res);
     }
     else {
-        ok( 1, 0, "Couldn't delete test zone 2" );
+        is( 1, 0, "Couldn't delete test zone 2" );
     }
 
     if ( defined $nsid1 ) {
         $res = $user->delete_nameserver( nt_nameserver_id => $nsid1 );
-        unless ( noerrok($res) ) {
-            warn Data::Dumper::Dumper($res);
-        }
+        noerrok($res) or warn Data::Dumper::Dumper($res);
     }
     else {
-        ok( 1, 0, "Couldn't delete test nameserver1" );
+        is( 1, 0, "Couldn't delete test nameserver1" );
     }
     if ( defined $nsid2 ) {
         $res = $user->delete_nameserver( nt_nameserver_id => $nsid2 );
-        unless ( noerrok($res) ) {
-            warn Data::Dumper::Dumper($res);
-        }
+        noerrok($res) or warn Data::Dumper::Dumper($res);
     }
     else {
-        ok( 1, 0, "Couldn't delete test nameserver2" );
+        is( 1, 0, "Couldn't delete test nameserver2" );
     }
 
     if ( defined $gid1 ) {
@@ -1232,14 +1279,14 @@ sub del {
         noerrok($res);
     }
     else {
-        ok( 1, 0, "Couldn't delete test group1" );
+        is( 1, 0, "Couldn't delete test group1" );
     }
     if ( defined $gid2 ) {
         $res = $user->delete_group( nt_group_id => $gid2 );
         noerrok($res);
     }
     else {
-        ok( 1, 0, "Couldn't delete test group2" );
+        is( 1, 0, "Couldn't delete test group2" );
     }
 }
 

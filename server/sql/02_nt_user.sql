@@ -6,8 +6,8 @@
 # the terms of the Affero General Public License as published by Affero, 
 # Inc.; either version 1 of the License, or any later version.
 #
-# NicTool is distributed in the hope that it will be useful, but WITHOUT 
-# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY 
+# NicTool is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
 # or FITNESS FOR A PARTICULAR PURPOSE. See the Affero GPL for details.
 #
 # You should have received a copy of the Affero General Public License
@@ -20,21 +20,21 @@ DROP TABLE IF EXISTS nt_user;
 CREATE TABLE nt_user(
     nt_user_id          INT UNSIGNED AUTO_INCREMENT NOT NULL,
     nt_group_id         INT UNSIGNED NOT NULL,
-    first_name          VARCHAR(30),
-    last_name           VARCHAR(40),
-    username            VARCHAR(50) NOT NULL,
-    password            VARCHAR(255) NOT NULL,
+    first_name          VARCHAR(120),
+    last_name           VARCHAR(160),
+    username            VARCHAR(200) NOT NULL,
+    password            VARCHAR(1020) NOT NULL,
     pass_salt           VARCHAR(16),
-    email               VARCHAR(100) NOT NULL,
+    email               VARCHAR(400) NOT NULL,
     is_admin            TINYINT(1) UNSIGNED DEFAULT NULL,
     deleted             TINYINT(1) UNSIGNED DEFAULT 0 NOT NULL,
     PRIMARY KEY (`nt_user_id`),
-    KEY `nt_user_idx1` (`username`,`password`),
+    KEY `nt_user_idx1` (`username`(191),`password`(191)),
     KEY `nt_user_idx2` (`deleted`)
-) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 
 
-DROP TABLE IF EXISTS nt_user_log; 
+DROP TABLE IF EXISTS nt_user_log;
 CREATE TABLE nt_user_log(
     nt_user_log_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     nt_group_id        INT UNSIGNED NOT NULL,
@@ -42,13 +42,13 @@ CREATE TABLE nt_user_log(
     action             ENUM('added','modified','deleted','moved') NOT NULL,
     timestamp          INT UNSIGNED NOT NULL,
     modified_user_id   INT UNSIGNED NOT NULL,
-    first_name         VARCHAR(30),
-    last_name          VARCHAR(40),
-    username           VARCHAR(50),
-    password           VARCHAR(255),
+    first_name         VARCHAR(120),
+    last_name          VARCHAR(160),
+    username           VARCHAR(200),
+    password           VARCHAR(1020),
     pass_salt          VARCHAR(16),
-    email              VARCHAR(100)
-) DEFAULT CHARSET=utf8 COLLATE=utf8_bin ROW_FORMAT=COMPRESSED;
+    email              VARCHAR(400)
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin ROW_FORMAT=COMPRESSED;
 
 
 DROP TABLE IF EXISTS nt_user_session;
@@ -60,7 +60,7 @@ CREATE TABLE nt_user_session(
     PRIMARY KEY (`nt_user_session_id`),
     KEY `nt_user_session_idx1` (`nt_user_id`,`nt_user_session`)
     /* CONSTRAINT `nt_user_session_ibfk_1` FOREIGN KEY (`nt_user_id`) REFERENCES `nt_user` (`nt_user_id`) ON DELETE CASCADE ON UPDATE CASCADE */
-) DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 
 DROP TABLE IF EXISTS nt_user_session_log;
 CREATE TABLE nt_user_session_log(
@@ -73,7 +73,7 @@ CREATE TABLE nt_user_session_log(
     PRIMARY KEY (`nt_user_session_log_id`),
     KEY `nt_user_id` (`nt_user_id`)
     /* CONSTRAINT `nt_user_session_log_ibfk_1` FOREIGN KEY (`nt_user_id`) REFERENCES `nt_user` (`nt_user_id`) ON DELETE CASCADE ON UPDATE CASCADE */
-) DEFAULT CHARSET=utf8 COLLATE=utf8_bin ROW_FORMAT=COMPRESSED;
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin ROW_FORMAT=COMPRESSED;
 
 DROP TABLE IF EXISTS nt_user_global_log;
 CREATE TABLE nt_user_global_log(
@@ -92,4 +92,4 @@ CREATE TABLE nt_user_global_log(
     PRIMARY KEY (`nt_user_global_log_id`),
     KEY `nt_user_global_log_idx1` (`nt_user_id`)
     /* CONSTRAINT `nt_user_global_log_ibfk_1` FOREIGN KEY (`nt_user_id`) REFERENCES `nt_user` (`nt_user_id`) ON DELETE CASCADE ON UPDATE CASCADE */
-) DEFAULT CHARSET=utf8 COLLATE=utf8_bin ROW_FORMAT=COMPRESSED;
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin ROW_FORMAT=COMPRESSED;

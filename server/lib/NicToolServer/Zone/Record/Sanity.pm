@@ -27,11 +27,13 @@ sub new_zone_record {
 
 sub edit_zone_record {
     my ( $self, $data ) = @_;
+
     my $zr = $self->get_zone_record($data);
     return $zr if $zr->{error_code} ne 200;
+
     $data->{nt_zone_id} = $zr->{nt_zone_id};
-    foreach (qw(type address)) {
-        $data->{$_} = $zr->{$_} unless exists $data->{$_};
+    foreach (qw/ type address /) {
+        $data->{$_} = $zr->{$_} if ! exists $data->{$_};
     }
 
     $self->new_or_edit_basic_verify($data);
@@ -79,7 +81,9 @@ sub new_or_edit_basic_verify {
     $self->_valid_ns   ( @args ) if $data->{type} eq 'NS';
     $self->_valid_ptr  ( @args ) if $data->{type} eq 'PTR';
     $self->_valid_srv  ( @args ) if $data->{type} eq 'SRV';
+    $self->_valid_uri  ( @args ) if $data->{type} eq 'URI';
     $self->_valid_mx   ( @args ) if $data->{type} eq 'MX';
+    $self->_valid_caa  ( @args ) if $data->{type} eq 'CAA';
 
     $self->_name_collision($data, $z);
     $self->_valid_ttl( @args );
@@ -98,16 +102,37 @@ sub _valid_ttl {
 
     my @same_type = grep { $_->{type} eq $data->{type} } @$collisions;
     if (scalar @same_type && grep { $_->{ttl} != $data->{ttl} } @same_type) {
-        $self->error('ttl', "RRs with identical Name and Type must have identical TTL: RFC 2181");
+	# RRs with identical Name and type must have identical TTL: RFC 2181
+	# make it so by applying TTL update to all records in RRset
+	map {
+	    $_->{ttl} = $data->{ttl};
+	    # Push that update to the DB as well(!)
+	    $self->SUPER::edit_zone_record($_);
+	} @same_type;
     }
 }
 
 sub _duplicate_record {
     my ( $self, $data, $zone_text, $collisions ) = @_;
 
+    # AAAA records are stored in DB in expanded notation. Expand the request
+    # addr so duplicate detection works #160
+    my $address = $data->{address};
+    if ($data->{type} eq 'AAAA') {
+        $address = Net::IP::ip_expand_address($data->{address},6);
+    }
+
     my @matches = grep { $_->{type} eq $data->{type} }
-                  grep { $_->{address} eq $data->{address} }
+                  grep { $_->{address} eq $address }
                   @$collisions;
+
+    if (scalar @matches == 0) { return; }
+
+    if ($data->{type} eq 'CAA') {
+        # same address is tolerated if property tag is different, allows
+	# setting 'issue' and 'issuewild' for the same CA
+        @matches = grep { $_->{other} eq $data->{other} } @matches;
+    }
 
     if (scalar @matches) {
         $self->error( 'name', "Duplicate Resource Records are not allowed: RFC 2181");
@@ -195,8 +220,8 @@ sub _expand_shortcuts {
     my ( $self, $data, $zone_text ) = @_;
 
     # expand any @ symbol shortcuts
-    if ( $data->{name} =~ /\.\@$/ )
-    {    # replace something.@ with something.zone name
+    if ( $data->{name} =~ /\.\@$/ ) {
+        # replace something.@ with something.zone name
         $data->{name} =~ s/\.\@$//;
         $data->{name} = $data->{name} . ".$zone_text.";
     }
@@ -205,8 +230,8 @@ sub _expand_shortcuts {
         $data->{name} = "$zone_text.";
     }
 
-    if ( $data->{address} =~ /\.\@$/ )
-    {    # replace something.@ with something.zone name
+    if ( $data->{address} =~ /\.\@$/ ) {
+        # replace something.@ with something.zone name
         $data->{address} =~ s/\.\@$//;
         $data->{address} = $data->{address} . ".$zone_text.";
     }
@@ -216,8 +241,8 @@ sub _expand_shortcuts {
     }
 
     # expand the & shortcut
-    if ( $data->{address} =~ /\.\&$/ )
-    {    # replace something.& with something.in-addr.arpa.
+    if ( $data->{address} =~ /\.\&$/ ) {
+        # replace something.& with something.in-addr.arpa.
         $data->{address} =~ s/\.\&$//;
         $data->{address} = $data->{address} . ".in-addr.arpa.";
     }
@@ -293,7 +318,7 @@ sub _valid_address_chars {
     return if $data->{type} =~ /^TXT|SPF$/;
 
     my $invalid_chars = $self->get_invalid_chars( $data->{type}, 'address', $zone_text );
-    if ( $data->{address} =~ m/$invalid_chars/g ) {
+    if ( $data->{address} =~ m/($invalid_chars)/g ) {
         $self->error('address', "invalid character in record address -- $1");
     };
 }
@@ -328,7 +353,7 @@ sub _valid_rr_type {
 sub _valid_cname {
     my ( $self, $data, $zone_text, $collisions ) = @_;
 
-# NAME
+    # NAME
     if (grep { $_->{type} eq 'CNAME' } @$collisions) {
         $self->error( 'name', "multiple CNAME records with the same name are NOT allowed. (use plain old round robin)" );
     };
@@ -338,7 +363,7 @@ sub _valid_cname {
         $self->error( 'name', "record $data->{name} already exists within zone as an ($crash->{type}) record: RFC 1034, 2181, & 4035");
     };
 
-# ADDRESS
+    # ADDRESS
     $self->_valid_address( $data, $zone_text );
     $self->_valid_address_chars( $data, $zone_text );
 }
@@ -346,12 +371,12 @@ sub _valid_cname {
 sub _valid_a {
     my ( $self, $data, $zone_text, $collisions ) = @_;
 
-# NAME
+    # NAME
     if (grep { $_->{type} eq 'CNAME' } @$collisions) {
         $self->error( 'name', "record $data->{name} already exists within zone as an Alias (CNAME) record." );
     };
 
-# ADDRESS
+    # ADDRESS
     $self->_valid_address_chars( $data, $zone_text );
 
     Net::IP::ip_is_ipv4( $data->{address} ) or
@@ -368,13 +393,13 @@ sub _valid_a {
 sub _valid_aaaa {
     my ( $self, $data, $zone_text, $collisions ) = @_;
 
-# NAME
+    # NAME
     if (grep { $_->{type} eq 'CNAME' } @$collisions) {
         $self->error( 'name',
             "record $data->{name} already exists within zone as an Alias (CNAME) record.");
     }
 
-# ADDRESS
+    # ADDRESS
     $data->{address} =~ s/ //g;     # strip out any spaces
     if ( ! Net::IP::ip_is_ipv4( $data->{address} ) ) {
         $data->{address} = Net::IP::ip_expand_address($data->{address},6);
@@ -382,7 +407,7 @@ sub _valid_aaaa {
 
     $self->_valid_address_chars( $data, $zone_text );
 
-# TODO: add support for IPv4 transitional IPs: 2001:db8::1.2.3.4
+    # TODO: add support for IPv4 transitional IPs: 2001:db8::1.2.3.4
     Net::IP::ip_is_ipv6( $data->{address} )
         or $self->error( 'address',
             'Address for AAAA records must be a valid IPv6 address.'
@@ -397,19 +422,19 @@ sub _valid_aaaa {
 sub _valid_mx {
     my ( $self, $data, $zone_text, $collisions ) = @_;
 
-# NAME
+    # NAME
     # MX records cannot share a name with a CNAME
     if (grep { $_->{type} eq 'CNAME' } @$collisions) {
         $self->error( 'name', "MX records must not exist as a CNAME: RFCs 1034, 2181" );
     };
 
-# WEIGHT
+    # WEIGHT
     # weight must be 16 bit integer
     if (defined $data->{weight}) {
         $self->valid_16bit_int( 'weight', $data->{weight} );
     }
 
-# ADDRESS
+    # ADDRESS
     # MX records must not point to a CNAME
     if ($self->record_exists( $data->{address}, 'CNAME',
             $data->{nt_zone_id}, $data->{nt_zone_record_id} ) ) {
@@ -427,7 +452,7 @@ sub _valid_mx {
         # TODO: use Net::DNS to query the target and assure it's not a CNAME
     };
 
-# reject if CNAME = 'mail'
+    # reject if CNAME = 'mail'
     # MX records must point to absolute hostnames
     $self->_is_fully_qualified( $data, $zone_text );
 
@@ -446,10 +471,8 @@ sub _valid_mx {
 sub _valid_ns {
     my ( $self, $data, $zone_text ) = @_;
 
-# NAME
-    # _valid_name will check the name label for validity
+    # ADDRESS
 
-# ADDRESS
     # NS records must not point to a CNAME
     if ($self->record_exists( $data->{address}, 'CNAME',
             $data->{nt_zone_id}, $data->{nt_zone_record_id} ) ) {
@@ -459,9 +482,10 @@ sub _valid_ns {
     # NS records must point to absolute hostnames
     $self->_is_fully_qualified( $data, $zone_text );
 
-    $self->error('address',
-        "NS address must be a FQDN (not an IP): RFCs 1035, 2181" )
-            if $self->valid_ip_address( $data->{address} );
+    if ($self->valid_ip_address( $data->{address} )) {
+        $self->error('address',
+            "NS address must be a FQDN (not an IP): RFCs 1035, 2181" );
+    };
 
     if ( ! $self->valid_label( 'address', $data->{address} ) ) {
         $self->error('address', "NS address must be a FQDN: RFC 2181");
@@ -474,10 +498,10 @@ sub _valid_ns {
 sub _valid_srv {
     my ( $self, $data, $zone_text ) = @_;
 
-# NAME
+    # NAME
     # SRV records allow leading underscore: RFC 2782
-# since we allow _ in the valid_name_chars match, we still need to assure
-# that _ is only allowed in the leading position
+    # since we allow _ in the valid_name_chars match, we still need to assure
+    # that _ is only allowed in the leading position
 
     # get more restrictive pattern
     my $invalid_match = $self->get_invalid_chars( 'SRV', 'address', $zone_text );
@@ -497,7 +521,7 @@ sub _valid_srv {
         };
     };
 
-# WEIGHT, PRIORITY, PORT
+    # WEIGHT, PRIORITY, PORT
     # weight, priority, and port must all be 16 bit integers
     my %values_to_check = (
         'weight'   => 'Weight',
@@ -513,7 +537,7 @@ sub _valid_srv {
         );
     }
 
-# ADDRESS
+    # ADDRESS
     # SRV records must not point to a CNAME
     if ($self->record_exists( $data->{address}, 'CNAME',
             $data->{nt_zone_id}, $data->{nt_zone_record_id} ) ) {
@@ -532,6 +556,60 @@ sub _valid_srv {
 
     $self->_valid_address_chars( $data, $zone_text );
     $self->_valid_address( $data, $zone_text );
+}
+
+sub _valid_uri {
+    my ( $self, $data, $zone_text ) = @_;
+
+    # WEIGHT, PRIORITY
+    my %values_to_check = (
+        'weight'   => 'Weight',
+        'priority' => 'Priority',
+    );
+
+    # must be 16 bit integers
+    foreach my $check ( keys %values_to_check ) {
+        next if ! defined $data->{$check};
+        next if $self->valid_16bit_int( $check, $data->{$check} );
+        $self->error( $check,
+            "$values_to_check{$check} must be a 16bit integer, see RFC 7553"
+        );
+    }
+}
+
+sub _valid_caa {
+    my ( $self, $data, $zone_text ) = @_;
+
+    my $crit = $data->{weight};
+    my $tag = $data->{other};
+    my $value = $data->{address};
+
+    if ($crit != 0 && $crit != 128) {
+	$self->error('weight',
+		     "Critical flag must be either 0 or 128, see RFC 6844");
+    }
+
+    my %tags = (
+	'issue' => 1,
+	'issuewild' => 1,
+	'iodef' => 1,
+	);
+
+    if (!defined($tags{$tag})) {
+	my $valid_tags = join(" ", keys(%tags));
+	$self->error('other',
+		     "Tag must be one of $valid_tags, see RFC 6844");
+    }
+
+    if ($tag eq "iodef") {
+	my @valid_iodef_schemes = ("mailto:", "http:", "https:");
+	if (! grep { $value =~ /^$_/i } @valid_iodef_schemes) {
+	    my $valid_uri_methods = join(", ", @valid_iodef_schemes);
+	    $self->error('address',
+			 "Tag value for iodef must start with " .
+			 "one of $valid_uri_methods, see RFC 6844");
+	}
+    }
 }
 
 sub _valid_ptr {
@@ -558,17 +636,17 @@ sub _valid_naptr {
         }
     }
 
-# TODO: the following fields should be validated:
-# http://www.ietf.org/rfc/rfc2915.txt
+    # TODO: the following fields should be validated:
+    # http://www.ietf.org/rfc/rfc2915.txt
 
-# Flags Service Regexp Replacement
-# IN NAPTR 100  10  ""   ""  "/urn:cid:.+@([^\.]+\.)(.*)$/\2/i"    .
-# IN NAPTR 100  50  "s"  "z3950+I2L+I2C"     ""  _z3950._tcp.gatech.edu.
-# IN NAPTR 100  50  "s"  "rcds+I2C"          ""  _rcds._udp.gatech.edu.
-# IN NAPTR 100  50  "s"  "http+I2L+I2C+I2R"  ""  _http._tcp.gatech.edu.
+    # Flags Service Regexp Replacement
+    # IN NAPTR 100  10  ""   ""  "/urn:cid:.+@([^\.]+\.)(.*)$/\2/i"    .
+    # IN NAPTR 100  50  "s"  "z3950+I2L+I2C"     ""  _z3950._tcp.gatech.edu.
+    # IN NAPTR 100  50  "s"  "rcds+I2C"          ""  _rcds._udp.gatech.edu.
+    # IN NAPTR 100  50  "s"  "http+I2L+I2C+I2R"  ""  _http._tcp.gatech.edu.
 
 
-# ADDRESS
+    # ADDRESS
     $self->_is_fully_qualified( $data, $zone_text );
 }
 
@@ -582,7 +660,6 @@ sub get_invalid_chars {
     # regexp strings match all characters except those in their definition.
 
     # allow : char for AAAA
-    # https://www.tnpi.net/support/forums/index.php/topic,990.0.html
     return '[^a-fA-F0-9:]' if $type eq 'AAAA' && $field eq 'address';
     return '[^0-9\.]'      if $type eq 'A'    && $field eq 'address';
 
@@ -638,8 +715,48 @@ sub valid_reverse_label {
 
 __END__
 
+=pod
+
+=encoding UTF-8
+
+=head1 NAME
+
+NicToolServer::Zone::Record::Sanity - sanity tests for zone records
+
+=head1 VERSION
+
+version 2.34
+
 =head1 SYNOPSIS
 
+=head1 AUTHORS
+
+=over 4
+
+=item *
+
+Matt Simerson <msimerson@cpan.org>
+
+=item *
+
+Damon Edwards
+
+=item *
+
+Abe Shelton
+
+=item *
+
+Greg Schueler
+
+=back
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is Copyright (c) 2017 by The Network People, Inc. This software is Copyright (c) 2001 by Damon Edwards, Abe Shelton, Greg Schueler.
+
+This is free software, licensed under:
+
+  The GNU Affero General Public License, Version 3, November 2007
 
 =cut
-

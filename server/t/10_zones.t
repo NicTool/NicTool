@@ -29,67 +29,58 @@
 
 =cut
 
-use lib '.';
+use strict;
+use warnings;
+
+# use lib '.';
 use lib 't';
 use lib 'lib';
 use NicToolTest;
 use NicTool;
-use Test;
+use Test::More 'no_plan';
 
-BEGIN { plan tests => 313 }
+my $user = nt_api_connect();
 
-$user = new NicTool(
-    cache_users  => 0,
-    cache_groups => 0,
-    server_host  => Config('server_host'),
-    server_port  => Config('server_port')
-);
-die "Couldn't create NicTool Object" unless ok( ref $user, 'NicTool' );
+my ($group1, $group2, $gid1, $gid2, $nsid1, $nsid2, $zid1, $zid2);
+my ($rzid1, $rzid2, %z1, %z2, $zone1, $zone2, $n1, $n2, $z, @z);
 
-$user->login(
-    username => Config('username'),
-    password => Config('password')
-);
-die "Couldn't log in" unless noerrok( $user->result );
-die "Couldn't log in" unless ok( $user->nt_user_session );
-
-#try to do the tests
-eval {&doit};
+# try to do the tests
+eval {&all_the_tests};
 warn $@ if $@;
 
-#delete objects even if other tests bail
-eval {&del};
+# delete objects even if other tests bail
+eval {&test_cleanups};
 warn $@ if $@;
 
-sub doit {
+sub all_the_tests {
 
     ####################
     # setup            #
     ####################
 
     #make a new group
-    $res = $user->get_group->new_group( name => 'test_delete_me1' );
-    die "Couldn't create test group1"
-        unless noerrok($res)
-            and ok( $res->get('nt_group_id') => qr/^\d+$/ );
+    my $res = $user->get_group->new_group( name => 'test_delete_me1' );
+    noerrok($res)
+        && ok( $res->get('nt_group_id') =~ qr/^\d+$/ ) or
+            die "Couldn't create test group1";
     $gid1 = $res->get('nt_group_id');
 
     $group1 = $user->get_group( nt_group_id => $gid1 );
-    die "Couldn't get test group1"
-        unless noerrok($group1)
-            and ok( $group1->id, $gid1 );
+    noerrok($group1)
+        && is( $group1->id, $gid1 ) or
+            die "Couldn't get test group1";
 
-    #make a new group
+    # make a new group
     $res = $user->get_group->new_group( name => 'test_delete_me2' );
-    die "Couldn't create test group2"
-        unless noerrok($res)
-            and ok( $res->get('nt_group_id') => qr/^\d+$/ );
+    noerrok($res)
+        && ok( $res->get('nt_group_id') =~ qr/^\d+$/ ) or
+            die "Couldn't create test group2";
     $gid2 = $res->get('nt_group_id');
 
     $group2 = $user->get_group( nt_group_id => $gid2 );
-    die "Couldn't get test group2"
-        unless noerrok($group2)
-            and ok( $group2->id, $gid2 );
+    noerrok($group2)
+        && is( $group2->id, $gid2 ) or
+            die "Couldn't get test group2";
 
     #make test nameservers
     $res = $group1->new_nameserver(
@@ -98,9 +89,9 @@ sub doit {
         export_format => 'bind',
         ttl           => 86400
     );
-    die "couldn't make test nameserver"
-        unless noerrok($res)
-            and ok( $res->get('nt_nameserver_id') => qr/^\d+$/ );
+    noerrok($res)
+        && ok( $res->get('nt_nameserver_id') =~ qr/^\d+$/ ) or
+            die "couldn't make test nameserver";
     $nsid1 = $res->get('nt_nameserver_id');
 
     $res = $group1->new_nameserver(
@@ -109,21 +100,91 @@ sub doit {
         export_format => 'djbdns',
         ttl           => 86401
     );
-    die "couldn't make test nameserver"
-        unless noerrok($res)
-            and ok( $res->get('nt_nameserver_id') => qr/^\d+$/ );
+    noerrok($res)
+        && ok( $res->get('nt_nameserver_id') =~ qr/^\d+$/ ) or
+            die "couldn't make test nameserver";
     $nsid2 = $res->get('nt_nameserver_id');
 
-####################
-    # new_zone         #
-####################
+    test_new_zone();
+    test_get_zone();
+    test_get_zone_list();
+    test_get_group_zones();
+    test_edit_zone();
+    test_move_zones();
+    test_delete_zones();
+}
 
-    ####################
-    # parameters tests #
-    ####################
+sub test_cleanups {
 
-    #nt_group_id missing
-    $res = $group1->new_zone(
+    if ( defined $zid1 ) {
+        my $res = $user->delete_zones( zone_list => $zid1 );
+        noerrok($res) or do {
+            warn "Couldn't delete test zone 1";
+            diag Data::Dumper::Dumper($res);
+        }
+    }
+
+    if ( defined $zid2 ) {
+        my $res = $user->delete_zones( zone_list => $zid2 );
+        noerrok($res) or do {
+            warn "Couldn't delete test zone 2";
+            diag Data::Dumper::Dumper($res);
+        }
+    }
+
+    if ( defined $rzid1 ) {
+        my $res = $user->delete_zones( zone_list => $rzid1 );
+        noerrok($res) or do {
+            warn "Couldn't delete test reverse zone 1";
+            diag Data::Dumper::Dumper($res);
+        }
+    }
+
+    if ( defined $rzid2 ) {
+        my $res = $user->delete_zones( zone_list => $rzid2 );
+        noerrok($res) or do {
+            warn "Couldn't delete test reverse zone 2";
+            diag Data::Dumper::Dumper($res);
+        }
+    }
+
+    if ( defined $nsid1 ) {
+        my $res = $user->delete_nameserver( nt_nameserver_id => $nsid1 );
+        noerrok($res) or do {
+            warn "Couldn't delete test nameserver1";
+            diag Data::Dumper::Dumper($res);
+        }
+    }
+
+    if ( defined $nsid2 ) {
+        my $res = $user->delete_nameserver( nt_nameserver_id => $nsid2 );
+        noerrok($res) or do {
+            warn "Couldn't delete test nameserver2";
+            diag Data::Dumper::Dumper($res);
+        }
+    }
+
+    if ( defined $gid1 ) {
+        my $res = $user->delete_group( nt_group_id => $gid1 );
+        noerrok($res) or do {
+            warn "Couldn't delete test group1";
+            diag $res;
+        }
+    }
+
+    if ( defined $gid2 ) {
+        my $res = $user->delete_group( nt_group_id => $gid2 );
+        noerrok($res) or do {
+            warn "Couldn't delete test group2";
+            diag $res;
+        }
+    }
+}
+
+sub test_new_zone {
+
+    # nt_group_id missing
+    my $res = $group1->new_zone(
         nt_group_id => '',
         zone        => 'test.com',
         serial      => 0,
@@ -132,15 +193,15 @@ sub doit {
         description => "test delete me",
     );
     noerrok( $res, 301 );
-    ok( $res->get('error_msg')  => 'nt_group_id' );
-    ok( $res->get('error_desc') => qr/Required parameters missing/ );
+    is( $res->get('error_msg'), 'nt_group_id' );
+    ok( $res->get('error_desc') =~ qr/Required parameters missing/ );
     if ( !$res->is_error ) {
         $res = $user->delete_zones( zone_list => $res->get('nt_zone_id') );
-        die "Couldn't delete zone mistake " . $res->get('nt_zone_id')
-            unless noerrok($res);
+        noerrok($res) or
+            die "Couldn't delete zone mistake " . $res->get('nt_zone_id');
     }
 
-    #nt_group_id not int
+    # nt_group_id not int
     $res = $group1->new_zone(
         nt_group_id => 'abc',
         zone        => 'test.com',
@@ -150,8 +211,8 @@ sub doit {
         description => "test delete me",
     );
     noerrok( $res, 302 );
-    ok( $res->get('error_msg')  => 'nt_group_id' );
-    ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
+    is( $res->get('error_msg'), 'nt_group_id' );
+    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
     if ( !$res->is_error ) {
         $res = $user->delete_zones( zone_list => $res->get('nt_zone_id') );
         die "Couldn't delete zone mistake " . $res->get('nt_zone_id')
@@ -168,15 +229,15 @@ sub doit {
         description => "test delete me",
     );
     noerrok( $res, 302 );
-    ok( $res->get('error_msg')  => 'nt_group_id' );
-    ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
+    is( $res->get('error_msg'), 'nt_group_id' );
+    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
     if ( !$res->is_error ) {
         $res = $user->delete_zones( zone_list => $res->get('nt_zone_id') );
-        die "Couldn't delete zone mistake " . $res->get('nt_zone_id')
-            unless noerrok($res);
+        noerrok($res) or
+            die "Couldn't delete zone mistake " . $res->get('nt_zone_id');
     }
 
-    #nameservers not int
+    # nameservers not int
     $res = $group1->new_zone(
         zone        => 'test.com',
         serial      => 0,
@@ -185,12 +246,12 @@ sub doit {
         description => "test delete me",
     );
     noerrok( $res, 302 );
-    ok( $res->get('error_msg')  => 'nameservers' );
-    ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
+    is( $res->get('error_msg'), 'nameservers' );
+    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
     if ( !$res->is_error ) {
         $res = $user->delete_zones( zone_list => $res->get('nt_zone_id') );
-        die "Couldn't delete zone mistake " . $res->get('nt_zone_id')
-            unless noerrok($res);
+        noerrok($res) or
+            die "Couldn't delete zone mistake " . $res->get('nt_zone_id');
     }
 
     #nameservers not valid
@@ -202,12 +263,12 @@ sub doit {
         description => "test delete me",
     );
     noerrok( $res, 302 );
-    ok( $res->get('error_msg')  => 'nameservers' );
-    ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
+    is( $res->get('error_msg'), 'nameservers' );
+    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
     if ( !$res->is_error ) {
         $res = $user->delete_zones( zone_list => $res->get('nt_zone_id') );
-        die "Couldn't delete zone mistake " . $res->get('nt_zone_id')
-            unless noerrok($res);
+        noerrok($res) or
+            die "Couldn't delete zone mistake " . $res->get('nt_zone_id');
     }
 
     #nameservers not valid
@@ -219,37 +280,35 @@ sub doit {
         description => "test delete me",
     );
     noerrok( $res, 302 );
-    ok( $res->get('error_msg')  => 'nameservers' );
-    ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
+    is( $res->get('error_msg'), 'nameservers' );
+    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
     if ( !$res->is_error ) {
         $res = $user->delete_zones( zone_list => $res->get('nt_zone_id') );
         die "Couldn't delete zone mistake " . $res->get('nt_zone_id')
             unless noerrok($res);
     }
 
-    #zone missing
+    # zone missing
     $res = $group1->new_zone(
-
-        #zone=>'test.com',
+        #zone       => 'test.com',
         serial      => 0,
         ttl         => 86400,
         nameservers => "$nsid1,$nsid2",
         description => "test delete me",
     );
     noerrok( $res, 301 );
-    ok( $res->get('error_msg')  => 'zone' );
-    ok( $res->get('error_desc') => qr/Required parameters missing/ );
+    is( $res->get('error_msg'), 'zone' );
+    ok( $res->get('error_desc') =~ qr/Required parameters missing/ );
     if ( !$res->is_error ) {
         $res = $user->delete_zones( zone_list => $res->get('nt_zone_id') );
-        die "Couldn't delete zone mistake " . $res->get('nt_zone_id')
-            unless noerrok($res);
+        noerrok($res) or
+            die "Couldn't delete zone mistake " . $res->get('nt_zone_id');
     }
 
     for ( qw{~ ` ! @ $ % ^ & * ( ) + = \ | ' " ; : < > / ?},
         ',', '#', "\n", ' ', qw({ }) )
     {
-
-        #invalid character in zone
+        # invalid character in zone
         $res = $group1->new_zone(
             zone        => "thisis${_}atest.com",
             serial      => 0,
@@ -258,19 +317,18 @@ sub doit {
             description => "test delete me",
         );
         noerrok( $res, 300, "zone thisis${_}atest.com" );
-        ok( $res->get('error_msg')  => qr/invalid character in zone/, "new_zone, thisis${_}atest.com" );
-        ok( $res->get('error_desc') => qr/Sanity error/ );
+        ok( $res->get('error_msg')  =~ qr/invalid character in zone/, "new_zone, thisis${_}atest.com" );
+        ok( $res->get('error_desc') =~ qr/Sanity error/ );
         if ( !$res->is_error ) {
-            $res
-                = $user->delete_zones( zone_list => $res->get('nt_zone_id') );
-            die "Couldn't delete zone mistake " . $res->get('nt_zone_id')
-                unless noerrok($res);
+            $res = $user->delete_zones( zone_list => $res->get('nt_zone_id') );
+            noerrok($res) or
+                die "Couldn't delete zone mistake " . $res->get('nt_zone_id');
         }
     }
 
     foreach my $ttl (qw(-42 -1 2147483648 grover)) {
 
-        #invalid ttl
+        # invalid ttl
         $res = $group1->new_zone(
             zone        => "something.com",
             serial      => 0,
@@ -279,13 +337,12 @@ sub doit {
             description => "test delete me",
         );
         noerrok( $res, 300, "ttl $ttl" );
-        ok( $res->get('error_msg')  => qr/Invalid TTL/, "invalid TTL: $ttl" );
-        ok( $res->get('error_desc') => qr/Sanity error/, "invalid TTL: $ttl" );
+        ok( $res->get('error_msg')  =~ qr/Invalid TTL/, "invalid TTL: $ttl" );
+        ok( $res->get('error_desc') =~ qr/Sanity error/, "invalid TTL: $ttl" );
         if ( !$res->is_error ) {
-            $res
-                = $user->delete_zones( zone_list => $res->get('nt_zone_id') );
-            die "Couldn't delete zone mistake " . $res->get('nt_zone_id')
-                unless noerrok($res);
+            $res = $user->delete_zones( zone_list => $res->get('nt_zone_id') );
+            noerrok($res) or
+                die "Couldn't delete zone mistake " . $res->get('nt_zone_id');
         }
     }
 
@@ -306,9 +363,10 @@ sub doit {
         minimum     => 40,
     );
     $res = $group1->new_zone(%z1);
-    die "couldn't make test zone1"
-        unless noerrok($res)
-            and ok( $res->get('nt_zone_id') => qr/^\d+$/ );
+    noerrok($res)
+        && ok( $res->get('nt_zone_id') =~ qr/^\d+$/ )
+            or die "couldn't make test zone1";
+
     $zid1 = $res->get('nt_zone_id');
 
     %z2 = (
@@ -324,9 +382,10 @@ sub doit {
         minimum     => 400,
     );
     $res = $group1->new_zone(%z2);
-    die "couldn't make test zone2"
-        unless noerrok($res)
-            and ok( $res->get('nt_zone_id') => qr/^\d+$/ );
+    noerrok($res)
+        && ok( $res->get('nt_zone_id') =~ qr/^\d+$/ )
+            or die "couldn't make test zone2";
+
     $zid2 = $res->get('nt_zone_id');
 
     ####################
@@ -341,12 +400,12 @@ sub doit {
         description => "test delete me",
     );
     noerrok( $res, 300 );
-    ok( $res->get('error_msg')  => qr/Zone is already taken/ );
-    ok( $res->get('error_desc') => qr/Sanity error/ );
+    ok( $res->get('error_msg')  =~ qr/Zone is already taken/ );
+    ok( $res->get('error_desc') =~ qr/Sanity error/ );
     if ( !$res->is_error ) {
         $res = $user->delete_zones( zone_list => $res->get('nt_zone_id') );
-        die "Couldn't delete zone mistake " . $res->get('nt_zone_id')
-            unless noerrok($res);
+        noerrok($res) or
+            die "Couldn't delete zone mistake " . $res->get('nt_zone_id');
     }
 
     my %rz1 = (
@@ -362,9 +421,9 @@ sub doit {
         minimum     => 400,
     );
     $res = $group1->new_zone(%rz1);
-    die "couldn't make test reverse zone 1"
-        unless noerrok($res)
-            and ok( $res->get('nt_zone_id') => qr/^\d+$/ );
+    noerrok($res)
+        && ok( $res->get('nt_zone_id') =~ qr/^\d+$/ )
+            or die "couldn't make test reverse zone 1";
     $rzid1 = $res->get('nt_zone_id');
 
     my %rz2 = (
@@ -380,49 +439,46 @@ sub doit {
         minimum     => 400,
     );
     $res = $group1->new_zone(%rz2);
-    die "couldn't make test reverse zone 1"
-        unless noerrok($res)
-            and ok( $res->get('nt_zone_id') => qr/^\d+$/ );
+    noerrok($res)
+        && ok( $res->get('nt_zone_id') =~ qr/^\d+$/ ) or
+            die "couldn't make test reverse zone 1";
+
     $rzid2 = $res->get('nt_zone_id');
+}
 
-####################
-    # get_zone         #
-####################
+sub test_get_zone {
 
-    ####################
-    # parameters test  #
-    ####################
-
-    $res = $user->get_zone( nt_zone_id => '' );
+    my $res = $user->get_zone( nt_zone_id => '' );
     noerrok( $res, 301 );
-    ok( $res->get('error_msg')  => 'nt_zone_id' );
-    ok( $res->get('error_desc') => qr/Required parameters missing/ );
+    is( $res->get('error_msg'), 'nt_zone_id' );
+    ok( $res->get('error_desc') =~ qr/Required parameters missing/ );
 
     $res = $user->get_zone( nt_zone_id => 'abc' );
     noerrok( $res, 302 );
-    ok( $res->get('error_msg')  => 'nt_zone_id' );
-    ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
+    is( $res->get('error_msg'), 'nt_zone_id' );
+    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
 
     $res = $user->get_zone( nt_zone_id => 0 );
     noerrok( $res, 302 );
-    ok( $res->get('error_msg')  => 'nt_zone_id' );
-    ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
+    is( $res->get('error_msg'), 'nt_zone_id' );
+    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
 
     ####################
     # get test zones   #
     ####################
 
     $zone1 = $user->get_zone( nt_zone_id => $zid1 );
-    die "Couldn't get test zone $zid1 : " . errtext($zone1)
-        unless noerrok($zone1)
-            and ok( $zone1->id, $zid1 );
+    noerrok($zone1)
+        && is( $zone1->id, $zid1 ) or
+            die "Couldn't get test zone $zid1 : " . errtext($zone1);
+
     for (
         qw(zone serial ttl description mailaddr refresh retry expire minimum))
     {
-        ok( $zone1->get($_) => $z1{$_} );
+        ok( $zone1->get($_) =~ $z1{$_} );
     }
-    $saw1 = 0;
-    $saw2 = 0;
+    my $saw1 = 0;
+    my $saw2 = 0;
     foreach ( @{ $zone1->get('nameservers') } ) {
         if ( $_->{'nt_nameserver_id'} eq $nsid1 ) {
             $saw1 = 1;
@@ -435,13 +491,14 @@ sub doit {
     ok($saw2);
 
     $zone2 = $user->get_zone( nt_zone_id => $zid2 );
-    die "Couldn't get test zone $zid2 : " . errtext($zone2)
-        unless noerrok($zone2)
-            and ok( $zone2->id, $zid2 );
+    noerrok($zone2)
+        && is( $zone2->id, $zid2 ) or
+            die "Couldn't get test zone $zid2 : " . errtext($zone2);
+
     for (
         qw(zone serial ttl description mailaddr refresh retry expire minimum))
     {
-        ok( $zone2->get($_) => $z2{$_} );
+        is( $zone2->get($_), $z2{$_} );
     }
     $saw1 = 0;
     $saw2 = 0;
@@ -455,29 +512,24 @@ sub doit {
     }
     ok($saw1);
     ok($saw2);
+}
 
-####################
-    # get_zone_list    #
-####################
+sub test_get_zone_list {
 
-    ####################
-    # parameters       #
-    ####################
-
-    $res = $user->get_zone_list( zone_list => '' );
+    my $res = $user->get_zone_list( zone_list => '' );
     noerrok( $res, 301 );
-    ok( $res->get('error_msg')  => 'zone_list' );
-    ok( $res->get('error_desc') => qr/Required parameters missing/ );
+    is( $res->get('error_msg'), 'zone_list' );
+    ok( $res->get('error_desc') =~ qr/Required parameters missing/ );
 
     $res = $user->get_zone_list( zone_list => 'abc' );
     noerrok( $res, 302 );
-    ok( $res->get('error_msg')  => 'zone_list' );
-    ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
+    is( $res->get('error_msg'), 'zone_list' );
+    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
 
     $res = $user->get_zone_list( zone_list => 0 );
     noerrok( $res, 302 );
-    ok( $res->get('error_msg')  => 'zone_list' );
-    ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
+    is( $res->get('error_msg'), 'zone_list' );
+    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
 
     ####################
     # get test zones   #
@@ -485,9 +537,9 @@ sub doit {
 
     $res = $user->get_zone_list( zone_list => [ $zid1, $zid2 ] );
     noerrok($res);
-    ok( ref $res   => 'NicTool::List' );
-    ok( $res->size => 2 );
-    if ( $res->size => 2 ) {
+    isa_ok($res, 'NicTool::List' );
+    is( $res->size, 2 );
+    if ( $res->size >= 2 ) {
         @z  = $res->list;
         $n1 = -1;
         $n2 = -1;
@@ -498,56 +550,43 @@ sub doit {
             $n2 = $_ if $z[$_]->id eq $zid2;
         }
         if ( $n1 > -1 ) {
-            ok( $z[$n1]->id => $zid1 );
+            is( $z[$n1]->id, $zid1 );
             for (
                 qw/zone serial ttl description mailaddr refresh retry expire minimum/
                 )
             {
-                ok( $z[$n1]->get($_) => $z1{$_} );
+                is( $z[$n1]->get($_), $z1{$_} );
             }
         }
-        else {
-            for ( 1 .. 10 ) { ok(0) }
-        }
+
         if ( $n2 > -1 ) {
-            ok( $z[$n2]->id => $zid2 );
+            is( $z[$n2]->id, $zid2 );
             for (
                 qw/zone serial ttl description mailaddr refresh retry expire minimum/
                 )
             {
-                ok( $z[$n2]->get($_) => $z2{$_} );
+                is( $z[$n2]->get($_), $z2{$_} );
             }
         }
-        else {
-            for ( 1 .. 10 ) { ok(0) }
-        }
     }
-    else {
-        for ( 1 .. 20 ) { ok(0) }
-    }
+}
 
-####################
-    # get_group_zones  #
-####################
+sub test_get_group_zones {
 
-    ####################
-    # parameters       #
-    ####################
-
-    $res = $group1->get_group_zones( nt_group_id => '' );
+    my $res = $group1->get_group_zones( nt_group_id => '' );
     noerrok( $res, 301 );
-    ok( $res->get('error_msg')  => 'nt_group_id' );
-    ok( $res->get('error_desc') => qr/Required parameters missing/ );
+    is( $res->get('error_msg'), 'nt_group_id' );
+    ok( $res->get('error_desc') =~ qr/Required parameters missing/ );
 
     $res = $group1->get_group_zones( nt_group_id => 'abc' );
     noerrok( $res, 302 );
-    ok( $res->get('error_msg')  => 'nt_group_id' );
-    ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
+    is( $res->get('error_msg'), 'nt_group_id' );
+    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
 
     $res = $group1->get_group_zones( nt_group_id => 0 );
     noerrok( $res, 302 );
-    ok( $res->get('error_msg')  => 'nt_group_id' );
-    ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
+    is( $res->get('error_msg'), 'nt_group_id' );
+    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
 
     ####################
     # get test zones   #
@@ -555,66 +594,60 @@ sub doit {
 
     $res = $group1->get_group_zones;
     noerrok($res);
-    ok( ref $res   => 'NicTool::List' );
-    ok( $res->size => 4 );
-    $saw1 = 0;
-    $saw2 = 0;
+    isa_ok( $res, 'NicTool::List' );
+    is( $res->size, 4 );
+    my $saw1 = 0;
+    my $saw2 = 0;
     if ( $res->size => 4 ) {
         for $z ( $res->list ) {
             if ( $z->id eq $zid1 ) {
                 $saw1 = 1;
-                ok( $z->get('zone')        => $z1{zone} );
-                ok( $z->get('description') => $z1{description} );
-                ok( $z->get('nt_zone_id')  => $zid1 );
-                ok( $z->get('nt_group_id') => $gid1 );
-                ok( $z->get('group_name')  => 'test_delete_me1' );
+                is( $z->get('zone')       , $z1{zone} );
+                is( $z->get('description'), $z1{description} );
+                is( $z->get('nt_zone_id') , $zid1 );
+                is( $z->get('nt_group_id'), $gid1 );
+                is( $z->get('group_name') , 'test_delete_me1' );
             }
             elsif ( $z->id eq $zid2 ) {
                 $saw2 = 1;
-                ok( $z->get('zone')        => $z2{zone} );
-                ok( $z->get('description') => $z2{description} );
-                ok( $z->get('nt_zone_id')  => $zid2 );
-                ok( $z->get('nt_group_id') => $gid1 );
-                ok( $z->get('group_name')  => 'test_delete_me1' );
-
+                is( $z->get('zone')       , $z2{zone} );
+                is( $z->get('description'), $z2{description} );
+                is( $z->get('nt_zone_id') , $zid2 );
+                is( $z->get('nt_group_id'), $gid1 );
+                is( $z->get('group_name') , 'test_delete_me1' );
             }
         }
     }
     if ( !$saw1 ) {
-        for ( 1 .. 5 ) { ok( 0, 1, "Didn't find test zone 1" ) }
+        for ( 1 .. 5 ) { is( 0, 1, "Didn't find test zone 1" ) }
     }
     if ( !$saw2 ) {
-        for ( 1 .. 5 ) { ok( 0, 1, "Didn't find test zone 2" ) }
+        for ( 1 .. 5 ) { is( 0, 1, "Didn't find test zone 2" ) }
     }
+}
 
-####################
-    # edit_zone        #
-####################
+sub test_edit_zone {
 
-    ####################
-    # parameters       #
-    ####################
-
-    $res = $zone1->edit_zone( nt_zone_id => '' );
+    my $res = $zone1->edit_zone( nt_zone_id => '' );
     noerrok( $res, 301 );
-    ok( $res->get('error_msg')  => 'nt_zone_id' );
-    ok( $res->get('error_desc') => qr/Required parameters missing/ );
+    is( $res->get('error_msg'), 'nt_zone_id' );
+    ok( $res->get('error_desc') =~ qr/Required parameters missing/ );
 
     $res = $zone1->edit_zone( nt_zone_id => 'abc' );
     noerrok( $res, 302 );
-    ok( $res->get('error_msg')  => 'nt_zone_id' );
-    ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
+    is( $res->get('error_msg'), 'nt_zone_id' );
+    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
 
     $res = $zone1->edit_zone( nt_zone_id => 0 );
     noerrok( $res, 302 );
-    ok( $res->get('error_msg')  => 'nt_zone_id' );
-    ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
+    is( $res->get('error_msg'), 'nt_zone_id' );
+    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
 
     for (qw(-2 -1 -299 2147483648 abc)) {
         $res = $zone1->edit_zone( ttl => $_ );
         noerrok( $res, 300, "ttl $_" );
-        ok( $res->get('error_msg')  => qr/Invalid TTL/ );
-        ok( $res->get('error_desc') => qr/Sanity error/ );
+        ok( $res->get('error_msg')  =~ qr/Invalid TTL/ );
+        ok( $res->get('error_desc') =~ qr/Sanity error/ );
     }
 
     ####################
@@ -637,15 +670,16 @@ sub doit {
     noerrok($res);
 
     $zone1 = $user->get_zone( nt_zone_id => $zid1 );
-    die "Couldn't get test zone $zid1 : " . errtext($zone1)
-        unless noerrok($zone1)
-            and ok( $zone1->id, $zid1 );
+    noerrok($zone1)
+        && is( $zone1->id, $zid1 ) or
+            die "Couldn't get test zone $zid1 : " . errtext($zone1);
+
     for ( qw/zone ttl description mailaddr refresh retry expire minimum/ ) {
-        ok( $zone1->get($_) => $z1{$_} );
+        is( $zone1->get($_), $z1{$_} );
     }
-    ok( $zone1->get('serial') => '3' );
-    $saw1 = 0;
-    $saw2 = 0;
+    is( $zone1->get('serial'), '3' );
+    my $saw1 = 0;
+    my $saw2 = 0;
     foreach ( @{ $zone1->get('nameservers') } ) {
         if ( $_->{'nt_nameserver_id'} eq $nsid1 ) {
             $saw1 = 1;
@@ -654,57 +688,52 @@ sub doit {
             $saw2 = 1;
         }
     }
-    ok( $saw1,  1, "should have seen Nameserver $nsid1" );
-    ok( !$saw2, 1, "should NOT have seen Nameserver $nsid2" );
+    is( $saw1, 1, "should have seen Nameserver $nsid1" );
+    is( $saw2, 0, "should NOT have seen Nameserver $nsid2" );
 
     #print Data::Dumper::Dumper($zone1->get('nameservers'));
+}
 
-####################
-    # move_zones       #
-####################
+sub test_move_zones {
 
-    ####################
-    # parameters       #
-    ####################
-
-    $res = $group2->move_zones( zone_list => '' );
+    my $res = $group2->move_zones( zone_list => '' );
     noerrok( $res, 301 );
-    ok( $res->get('error_msg')  => 'zone_list' );
-    ok( $res->get('error_desc') => qr/Required parameters missing/ );
+    is( $res->get('error_msg'), 'zone_list' );
+    ok( $res->get('error_desc') =~ qr/Required parameters missing/ );
 
     $res = $group2->move_zones( zone_list => 'abc' );
     noerrok( $res, 302 );
-    ok( $res->get('error_msg')  => 'zone_list' );
-    ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
+    is( $res->get('error_msg'), 'zone_list' );
+    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
 
     $res = $group2->move_zones( zone_list => 0 );
     noerrok( $res, 302 );
-    ok( $res->get('error_msg')  => 'zone_list' );
-    ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
+    is( $res->get('error_msg'), 'zone_list' );
+    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
 
     $res = $group2->move_zones(
         nt_group_id => '',
         zone_list   => [ $zid1, $zid2 ]
     );
     noerrok( $res, 301 );
-    ok( $res->get('error_msg')  => 'nt_group_id' );
-    ok( $res->get('error_desc') => qr/Required parameters missing/ );
+    is( $res->get('error_msg'), 'nt_group_id' );
+    ok( $res->get('error_desc') =~ qr/Required parameters missing/ );
 
     $res = $group2->move_zones(
         nt_group_id => 'abc',
         zone_list   => [ $zid1, $zid2 ]
     );
     noerrok( $res, 302 );
-    ok( $res->get('error_msg')  => 'nt_group_id' );
-    ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
+    is( $res->get('error_msg'), 'nt_group_id' );
+    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
 
     $res = $group2->move_zones(
         nt_group_id => 0,
         zone_list   => [ $zid1, $zid2 ]
     );
     noerrok( $res, 302 );
-    ok( $res->get('error_msg')  => 'nt_group_id' );
-    ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
+    is( $res->get('error_msg'), 'nt_group_id' );
+    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
 
     ####################
     # move test zones  #
@@ -715,116 +744,27 @@ sub doit {
 
     $zone1 = $user->get_zone( nt_zone_id => $zid1 );
     noerrok($zone1);
-    ok( $zone1->get('nt_group_id') => $gid2 );
+    ok( $zone1->get('nt_group_id') =~ $gid2 );
 
     $zone2 = $user->get_zone( nt_zone_id => $zid2 );
     noerrok($zone2);
-    ok( $zone2->get('nt_group_id') => $gid2 );
+    ok( $zone2->get('nt_group_id') =~ $gid2 );
+}
 
-####################
-    # delete_zones     #
-####################
+sub test_delete_zones {
 
-    ####################
-    # parameters       #
-    ####################
-
-    $res = $user->delete_zones( zone_list => '' );
+    my $res = $user->delete_zones( zone_list => '' );
     noerrok( $res, 301 );
-    ok( $res->get('error_msg')  => 'zone_list' );
-    ok( $res->get('error_desc') => qr/Required parameters missing/ );
+    is( $res->get('error_msg'), 'zone_list' );
+    ok( $res->get('error_desc') =~ qr/Required parameters missing/ );
 
     $res = $user->delete_zones( zone_list => 'abc' );
     noerrok( $res, 302 );
-    ok( $res->get('error_msg')  => 'zone_list' );
-    ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
+    is( $res->get('error_msg'), 'zone_list' );
+    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
 
     $res = $user->delete_zones( zone_list => 0 );
     noerrok( $res, 302 );
-    ok( $res->get('error_msg')  => 'zone_list' );
-    ok( $res->get('error_desc') => qr/Some parameters were invalid/ );
-
+    is( $res->get('error_msg'), 'zone_list' );
+    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
 }
-
-sub del {
-
-####################
-    # cleanup support objects
-####################
-
-    if ( defined $zid1 ) {
-        $res = $user->delete_zones( zone_list => $zid1 );
-        unless ( noerrok($res) ) {
-            warn Data::Dumper::Dumper($res);
-        }
-    }
-    else {
-        ok( 1, 0, "Couldn't delete test zone 1" );
-    }
-
-    if ( defined $zid2 ) {
-        $res = $user->delete_zones( zone_list => $zid2 );
-        unless ( noerrok($res) ) {
-            warn Data::Dumper::Dumper($res);
-        }
-    }
-    else {
-        ok( 1, 0, "Couldn't delete test zone 2" );
-    }
-
-    if ( defined $rzid1 ) {
-        $res = $user->delete_zones( zone_list => $rzid1 );
-        unless ( noerrok($res) ) {
-            warn Data::Dumper::Dumper($res);
-        }
-    }
-    else {
-        ok( 1, 0, "Couldn't delete test reverse zone 1" );
-    }
-
-    if ( defined $rzid2 ) {
-        $res = $user->delete_zones( zone_list => $rzid2 );
-        unless ( noerrok($res) ) {
-            warn Data::Dumper::Dumper($res);
-        }
-    }
-    else {
-        ok( 1, 0, "Couldn't delete test reverse zone 2" );
-    }
-
-    if ( defined $nsid1 ) {
-        $res = $user->delete_nameserver( nt_nameserver_id => $nsid1 );
-        unless ( noerrok($res) ) {
-            warn Data::Dumper::Dumper($res);
-        }
-    }
-    else {
-        ok( 1, 0, "Couldn't delete test nameserver1" );
-    }
-    if ( defined $nsid2 ) {
-        $res = $user->delete_nameserver( nt_nameserver_id => $nsid2 );
-        unless ( noerrok($res) ) {
-            warn Data::Dumper::Dumper($res);
-        }
-    }
-    else {
-        ok( 1, 0, "Couldn't delete test nameserver2" );
-    }
-
-    if ( defined $gid1 ) {
-        $res = $user->delete_group( nt_group_id => $gid1 );
-        noerrok($res);
-    }
-    else {
-        ok( 1, 0, "Couldn't delete test group1" );
-    }
-    if ( defined $gid2 ) {
-        $res = $user->delete_group( nt_group_id => $gid2 );
-        noerrok($res);
-    }
-    else {
-        ok( 1, 0, "Couldn't delete test group2" );
-    }
-
-}
-

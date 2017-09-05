@@ -16,7 +16,7 @@ use Params::Validate qw/ :all /;
 use Time::Local;
 use Time::TAI64 qw/ unixtai64 /;
 
-# maybe TODO: append DB ids (but why?)
+# maybe: append DB ids (but why?)
 
 sub get_export_file {
     my $self = shift;
@@ -158,26 +158,31 @@ sub export_db {
 
     my $fh = $self->get_export_file() or return;
 
-# the while loop fetches a row at at time. Grabbing them all in one pass is
-# no faster. It takes 3 seconds to fetch 150,000 zones either way. The while
-# loop uses 150MB less RAM.
+    # the while loop fetches a row at at time. Grabbing them all in one pass is
+    # no faster. It takes 3 seconds to fetch 150,000 zones either way. The while
+    # loop uses 150MB less RAM.
     my @sql = $self->{nte}->get_ns_zones(query_result=>1);
     my $result = $self->{nte}{dbix_r}->query( @sql );
+
     $self->{nte}->elog( $result->rows . " zones" );
+
     while ( my $z = $result->hash ) {
 
         $self->{nte}{zone_name} = $z->{zone};
-# print SOA & NS records
+        # print SOA & NS records
         print $fh $self->{nte}->zr_soa( $z );
         print $fh $self->{nte}->zr_ns( $z );
     }
     $result->finish;
 
-# print all the rest
+    # print all the rest
     @sql = $self->{nte}->get_ns_records(query_result=>1);
+
     $result = $self->{nte}{dbix_r}->query( @sql )
         or die $self->{nte}{dbix_r}->error;
+
     $self->{nte}->elog( $result->rows . " records" );
+
     while ( my $r = $result->hash ) {
         $self->{nte}{zone_name} = $r->{zone_name};
         $r->{location}  ||= '';
@@ -191,6 +196,7 @@ sub export_db {
         eval { print $fh $self->$method( @args ); };
         $self->{nte}->elog( $@ ) if $@;
     };
+
     $result->finish;
 
     close $fh;
@@ -281,7 +287,7 @@ sub zr_soa {
     my $self = shift;
     my $z = shift or die;
 
-# using sprintf versus concatenation takes the same amount of time.
+    # using sprintf versus concatenation takes the same amount of time.
     return 'Z'. $z->{zone}           # fqdn
         . ':' . $z->{nsname}         # mname
         . ':' . $z->{mailaddr}       # rname
@@ -299,15 +305,15 @@ sub zr_soa {
 sub zr_generic {
     my ($self, $rrid, $r, $rdata) = @_;
 
-# 'You may use octal \nnn codes to include arbitrary bytes inside rdata'
+    # 'You may use octal \nnn codes to include arbitrary bytes inside rdata'
 
     return ':'                             # special char (none = generic)
         . $self->qualify( $r->{name} )     # fqdn
         . ':' . $rrid                      # n
         . ':' . $rdata                     # rdata
-        . ':' . $r->{ttl}                  # ttl
-        . ':' . $r->{timestamp}            # timestamp
-        . ':' . $r->{location}             # lo
+        . ':' . ($r->{ttl} || '')          # ttl
+        . ':' . ($r->{timestamp} || '')    # timestamp
+        . ':' . ($r->{location}  || '')    # lo
         . "\n";
 };
 
@@ -315,11 +321,40 @@ sub zr_spf {
     my $self = shift;
     my $r = shift or die;
 
-# assistance from djbdnsRecordBuilder
-    my $rdata = $self->characterCount( $r->{address} )
-              . $self->escape( $r->{address} );
+    my $rdata = join('',
+        map { $self->characterCount($_) . $self->escape($_) }
+        unpack "(a255)*", $r->{address}
+    );
 
     return $self->zr_generic( 99, $r, $rdata );
+}
+
+sub zr_uri {
+    my $self = shift;
+    my $r = shift or die;
+
+    my $rdata = octal_escape( pack "nn",
+        $self->{nte}->is_ip_port( $r->{priority} ),   # Priority, 16 bit (n)
+        $self->{nte}->is_ip_port( $r->{weight} ),     # Weight,   16 bit (n)
+    );
+
+    $rdata .= $r->{address}; # Target, URI
+    return $self->zr_generic( 256, $r, $rdata );
+}
+
+sub zr_caa {
+    my $self = shift;
+    my $r = shift or die;
+
+    # First flag byte
+    my $rdata = octal_escape( pack "C", $r->{weight} );
+    # Then property tag as a length-prefixed text string
+    $rdata .= $self->characterCount( $r->{other} ) .
+	$self->escape( $r->{other} );
+    # Then the property value as the rest of the data length
+    $rdata .= $self->escape( $r->{address} );
+
+    return $self->zr_generic( 257, $r, $rdata );
 }
 
 sub zr_srv {
@@ -456,8 +491,8 @@ sub zr_sshfp {
     my $self = shift;
     my $r = shift or die;
 
-# http://www.openssh.org/txt/rfc4255.txt
-# http://tools.ietf.org/html/draft-os-ietf-sshfp-ecdsa-sha2-00
+    # http://www.openssh.org/txt/rfc4255.txt
+    # http://tools.ietf.org/html/draft-os-ietf-sshfp-ecdsa-sha2-00
 
     my $algo = $r->{weight};    #  1 octet - 1=RSA, 2=DSA, 3=ECDSA
     my $type = $r->{priority};  #  1 octet - 1=SHA-1, 2=SHA-256
@@ -474,7 +509,7 @@ sub zr_ipseckey {
     my $r = shift or die;
 
     # http://www.faqs.org/rfcs/rfc4025.html
-# IN IPSECKEY ( precedence gateway-type algorithm gateway base64-public-key )
+    # IN IPSECKEY ( precedence gateway-type algorithm gateway base64-public-key )
 
     my $rdata = $self->octal_escape( pack('CCC',
         $r->{weight},         # Precedence     1 octet
@@ -584,9 +619,9 @@ sub zr_nsec3 {
     my $r = shift or die;
 
     # NSEC3: https://tools.ietf.org/html/rfc5155
-# TTL should be same as zone SOA minimum: RFC 2308
+    # TTL should be same as zone SOA minimum: RFC 2308
 
-# IN NSEC3 1 1 12 aabbccdd ( 2t7b4g4vsa5smi47k61mv5bv1a22bojr MX DNSKEY NS SOA NSEC3PARAM RRSIG )
+    # IN NSEC3 1 1 12 aabbccdd ( 2t7b4g4vsa5smi47k61mv5bv1a22bojr MX DNSKEY NS SOA NSEC3PARAM RRSIG )
     my @data = split /\s+/, $r->{address};
     @data = grep { $_ ne '(' && $_ ne ')' } @data; # make parens optional
     if ( '(' eq substr( $data[0], 0, 1) ) { $data[0] = substr $data[0], 1; };
@@ -615,7 +650,7 @@ sub zr_nsec3param {
     # NSEC3PARAM: https://tools.ietf.org/html/rfc5155
     my ($hash_algo, $flags, $iters, $salt) = split /\s+/, $r->{address};
 
-#  RDATA mirrors the first four fields in the NSEC3
+    #  RDATA mirrors the first four fields in the NSEC3
     my $rdata = $self->pack_nsec3_params( $hash_algo, $flags, $iters, $salt );
 
     return $self->zr_generic( 51, $r, $rdata );
@@ -685,13 +720,13 @@ sub octal_escape {
 sub expand_aaaa {
     my ( $self, $aaaa ) = @_;
 
-# from djbdnsRecordBuilder, contributed by Matija Nalis
+    # from djbdnsRecordBuilder, contributed by Matija Nalis
     my $colons = $aaaa =~ tr/:/:/;             # count the colons
     if ($colons < 7) {
         $aaaa =~ s/::/':' x (9-$colons)/e;     # restore compressed colons
     };
 
-# restore any compressed leading zeros
+    # restore any compressed leading zeros
     $aaaa = join ':', map { sprintf '%04s', $_ } split /:/, $aaaa;
     return $aaaa;
 };
@@ -705,7 +740,7 @@ sub pack_domain_name {
     foreach my $label ( split /\./, $self->qualify( $name ) ) {
         $r .= octal_escape( pack( 'C a*', length( $label ), $label ) );
     };
-    $r.= '\000';   # terminating with a zero length label
+    $r .= '\000';   # terminating with a zero length label
     return $r;
 };
 
@@ -713,8 +748,8 @@ sub pack_hex {
     my ($self, $string) = @_;
 
     my $r;
-    foreach ( unpack "(a2)*", $string ) {  # nibble off 2 hex digits
-        $r .= sprintf '\%03lo', hex $_;    # pack 'em into an escaped octal
+    foreach ( unpack "(a2)*", $string ) {  # nibble off 2 hex digits (8 bits)
+        $r .= sprintf '\%03lo', hex $_;    # pack 'em to an escaped octal
     };
     return $r;
 };
@@ -780,7 +815,7 @@ sub qualify {
     return $record if substr($record,-1,1) eq '.';  # record ends in .
     $zone ||= $self->{nte}{zone_name} or return $record;
 
-# substr is measurably faster than a regexp
+    # substr is measurably faster than a regexp
     my $chars = length $zone;
     if ($zone eq substr($record,(-1*$chars),$chars)) {
         return $record;     # ends in $zone, no trailing .
@@ -810,16 +845,13 @@ sub base32str_to_bin {
 
     # The MB fallback method is encode_09AV, which will work if we uc the
     # string first.
-    return MIME::Base32::decode( uc $str );
-
-#TODO: patch MIME::Base32 to implement RFC 4648
+    return MIME::Base32::decode_base32hex( uc $str );
 };
 
 # next 3 subs based on http://www.anders.com/projects/sysadmin/djbdnsRecordBuilder/
 sub escape {
-    my $line = pop @_;
     my $out;
-    foreach ( split //, $line ) {
+    foreach ( split //, $_[-1] ) {
         $out .= $_ =~ /[^\r\n\t:\\\/]/ ? $_ : sprintf '\%03lo', ord $_;
     }
     return $out;
@@ -863,21 +895,33 @@ sub precsize_valton {
 }
 
 # tinydns-data format: http://cr.yp.to/djbdns/tinydns-data.html
-#  A          =>  + fqdn : ip : ttl:timestamp:lo
-#  CNAME      =>  C fqdn :  p : ttl:timestamp:lo
-#  MX         =>  @ fqdn : ip : x:dist:ttl:timestamp:lo
-#  TXT        =>  ' fqdn :  s : ttl:timestamp:lo
-#  NS         =>  & fqdn : ip : x:ttl:timestamp:lo
-#  PTR        =>  ^ fqdn :  p : ttl:timestamp:lo
-#  SOA        =>  Z fqdn:mname:rname:ser:ref:ret:exp:min:ttl:time:lo
-#  'A,PTR'    =>  = fqdn : ip : ttl:timestamp:lo
-#  'SOA,NS,A' =>  . fqdn : ip : x:ttl:timestamp:lo
-#  GENERIC    =>  : fqdn : n  : rdata:ttl:timestamp:lo
-#  IGNORE     =>  - fqdn : ip : ttl:timestamp:lo
+#  A          =>  + fqdn : ip :            ttl:timestamp:lo
+#  CNAME      =>  C fqdn :  p :            ttl:timestamp:lo
+#  MX         =>  @ fqdn : ip : x : dist : ttl:timestamp:lo
+#  TXT        =>  ' fqdn :  s :            ttl:timestamp:lo
+#  NS         =>  & fqdn : ip : x :        ttl:timestamp:lo
+#  PTR        =>  ^ fqdn :  p :            ttl:timestamp:lo
+#  SOA        =>  Z fqdn : mname:rname:ser:ref:ret:exp:min:ttl:time:lo
+#  'A,PTR'    =>  = fqdn : ip :            ttl:timestamp:lo
+#  'SOA,NS,A' =>  . fqdn : ip : x :        ttl:timestamp:lo
+#  GENERIC    =>  : fqdn : n  : rdata :    ttl:timestamp:lo
+#  IGNORE     =>  - fqdn : ip :            ttl:timestamp:lo
 
 1;
 
 __END__
+
+=pod
+
+=encoding UTF-8
+
+=head1 NAME
+
+NicToolServer::Export::tinydns - export NicTool DNS data to tinydns (part of djbdns)
+
+=head1 VERSION
+
+version 2.34
 
 =head1 Instructions for Use
 
@@ -887,5 +931,34 @@ https://github.com/msimerson/NicTool/wiki/Export-to-tinydns
 
 Matt Simerson
 
-=cut
+=head1 AUTHORS
 
+=over 4
+
+=item *
+
+Matt Simerson <msimerson@cpan.org>
+
+=item *
+
+Damon Edwards
+
+=item *
+
+Abe Shelton
+
+=item *
+
+Greg Schueler
+
+=back
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is Copyright (c) 2017 by The Network People, Inc. This software is Copyright (c) 2001 by Damon Edwards, Abe Shelton, Greg Schueler.
+
+This is free software, licensed under:
+
+  The GNU Affero General Public License, Version 3, November 2007
+
+=cut

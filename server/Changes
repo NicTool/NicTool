@@ -1,14 +1,58 @@
 Revision history for NicToolServer
 
+2.35    2017.__.__
+
+* New Features
+* Updates & Changes
+    * import/tinydns:
+        * handle ascii and binary in AAAA rdata #163
+        * append trailing . to SOA mname and rname if missing #166
+        * anchor record type detection for case lowering #165
+        * add imports for type 3 & 6 (IPv6 patch) #167
+    * disable SPF records by default (flip DB flag to enable)
+    * expand UTF support to cover all UTF8 characters (requires MySQL 5.5+)
+        * change table encoding from utf8 (3 bits) to utf8mb4 (4 bits)
+    * Exports: split long SPF records into 255 byte strings
+    * Export/Dyn: more robust handling of zone deletions, that could
+      result in a new zone with the same name getting unpublished.
+
+2.34    2017.03.13
+
+* New Features
+    * Add support for CAA resource record type #158
+    * add URI & HINFO (obsolete) to record types #146
+    * when updating TTL of record in RRset, update all TTLs #157
+* Updates & Changes
+    * expand AAAA addresses before duplicate checks #160
+    * replace CGI->param() with CGI->multi_param() #159
+    * replace deprecated CGI->startform with start_form
+    * when importing tinydns, apply tinydns defaults #153
+    * update nsd Makefile for NSD 4 compat #147
+    * update Knot exports for v2 #150
+    * Export/BIND: add missing SOA values with defaults #151
+    * enable strictures in tests #150
+    * enable deeper travis CI testing #139
+    * when logging changes, assure type_id is set #139
+    * update MIME::Base32 syntax to match upstream
+    * drop index on nt_zone_record.address, InnoDB key length limit
+    * replace Net::DNS::Zone::Parser with Net::DNS::ZoneFile #124
+    * log the zone minimum and serial #138
+    * moved is_admin column into 2.17 schema #128
+    * export/bind/nsupdate: add check for NOTAUTH failure #125
+    * clean up nt_export path resolution #149
+    * on import, do not lc TXT or A records #135
+    * import: strip octal length prefix off generic tinydns TXT recs #137
+    * update SRV record export to add missing zone #126
+
 2.33    2015.12.07
 
-    * update NSD exports for version 4
-    * add HTTPS support to nt_import (#102)
-    * prevent CNAME collisions (#113)
+    * update NSD exports for version 4  #112
+    * add HTTPS support to nt_import    #102
+    * prevent CNAME collisions          #113
 
 2.32    2015.07.26
 
-    * clean up old successful exports 
+    * clean up old successful exports
     * add a . to the end of NAPTR records (@djzort) #89
     * server/contrib/zone2nic.pl:
         * removed unneeded variable

@@ -60,7 +60,7 @@ sub display {
     $nt_obj->display_group_tree(
         $user,
         $user->{'nt_group_id'},
-        $q->param('nt_group_id'), 1
+        scalar($q->param('nt_group_id')), 1
     );
 
     if ( $q->param('edit') ) {
@@ -95,12 +95,12 @@ sub display {
     }
 
     if ( $q->param('delete') ) {
-        my $rv = $nt_obj->delete_group( nt_group_id => $q->param('delete') );
+        my $rv = $nt_obj->delete_group( nt_group_id => scalar($q->param('delete')) );
         $nt_obj->display_nice_error( $rv, "Delete Group" ) if $rv->{'error_code'} != 200;
         $nt_obj->refresh_nav();
     }
 
-    my $group = $nt_obj->get_group( nt_group_id  => $q->param('nt_group_id') );
+    my $group = $nt_obj->get_group( nt_group_id  => scalar($q->param('nt_group_id')) );
 
     display_group_list( $nt_obj, $q, $group, $user );
 
@@ -111,10 +111,10 @@ sub _display_new_group {
     my ( $nt_obj, $q, $fields ) = @_;
 
     my %params = (
-        nt_group_id => $q->param('nt_group_id'),
-        name        => $q->param('name')
+        nt_group_id => scalar($q->param('nt_group_id')),
+        name        => scalar($q->param('name'))
     );
-    my @ns = $q->param("usable_nameservers");
+    my @ns = $q->multi_param("usable_nameservers");
     $params{"usable_nameservers"} = join( ',', @ns );
     foreach (@$fields) {
         $params{$_} = $q->param($_) ? 1 : 0;
@@ -127,11 +127,11 @@ sub _display_edit_group {
     my ( $nt_obj, $q, $fields ) = @_;
 
     my %params = (
-        nt_group_id => $q->param('nt_group_id'),
-        name        => $q->param('name'),
+        nt_group_id => scalar($q->param('nt_group_id')),
+        name        => scalar($q->param('name')),
     );
 
-    my @ns = $q->param("usable_nameservers");
+    my @ns = $q->multi_param("usable_nameservers");
     $params{"usable_nameservers"} = join( ",", @ns );
     foreach (@$fields) {
         $params{$_} = $q->param($_) ? 1 : 0;
@@ -147,7 +147,7 @@ sub display_zone_search {
 <table class="fat">
  <tr class=dark_grey_bg><td><table class="no_pad fat">
     <tr> ],
-    $q->startform( -action => 'group.cgi', -method => 'POST' ),
+    $q->start_form( -action => 'group.cgi', -method => 'POST' ),
     $q->hidden( -name => 'nt_group_id' ),
     qq[ <td> ],
     $q->textfield( -name => 'search_value', -size => 30, -override => 1 ),
@@ -186,8 +186,8 @@ sub display_group_list {
     my $include_subgroups = $group->{'has_children'} ? 'sub-groups' : undef;
 
     my %params = (
-        nt_group_id    => $q->param('nt_group_id'),
-        start_group_id => $q->param('nt_group_id'),
+        nt_group_id    => scalar($q->param('nt_group_id')),
+        start_group_id => scalar($q->param('nt_group_id')),
     );
     my %sort_fields;
     $nt_obj->prepare_search_params( $q, \%labels, \%params, \%sort_fields, 10 );
@@ -236,7 +236,7 @@ sub display_group_list {
                         {   nt_group_id => $ggid,
                             name        => $group->{'name'}
                         }
-                        ) ) );
+                    ) ) );
             print qq[
   <div class="$bgcolor"><img src=$NicToolClient::image_dir/group.gif alt="group">$dname
   <ul class="menu_r">];
@@ -294,7 +294,7 @@ sub _display_group_create_link {
 
     foreach ( @{ $nt_obj->paging_fields } ) {
         next if ! $q->param($_);
-        $state .= "&amp;$_=" . $q->escape( $q->param($_) );
+        $state .= "&amp;$_=" . $q->escape( scalar($q->param($_)) );
     }
     print qq[<a href="group.cgi?$state&amp;new=1">New Sub-Group</a></span></div>];
 };
@@ -306,7 +306,7 @@ sub display_edit {
     my %param = ();
 
     if ( $edit eq 'edit' ) {
-        my $rv = $nt_obj->get_group( nt_group_id => $q->param('nt_group_id') );
+        my $rv = $nt_obj->get_group( nt_group_id => scalar($q->param('nt_group_id')) );
 
         return $nt_obj->display_nice_error( $rv, "Get Group Details" )
             if $rv->{'error_code'} != 200;
@@ -318,7 +318,7 @@ sub display_edit {
     }
     else {
         if ( $q->param('nt_group_id') eq $user->{'nt_group_id'} ) {
-            %param = ( nt_group_id => $q->param('nt_group_id') );
+            %param = ( nt_group_id => scalar($q->param('nt_group_id')) );
         };
     }
 

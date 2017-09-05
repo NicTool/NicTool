@@ -97,7 +97,7 @@ sub display_record {
 sub delegate_zones {
     my ( $nt_obj, $user, $q, $message, $edit ) = @_;
     my $modifyperm = $user->{'group_modify'} && $user->{'zone_delegate'} && $edit eq 'edit';
-    $q->param( 'obj_list', join( ',', $q->param('obj_list') ) );
+    $q->param( 'obj_list', join( ',', $q->multi_param('obj_list') ) );
     my $type  = $q->param('type');
     my $obj   = $type eq 'record' ? 'resource record' : 'zone';
     my $ucobj = $type eq 'record' ? 'Resource Record' : 'Zone';
@@ -107,11 +107,11 @@ sub delegate_zones {
     my $moreparams;
 
     if ($type) {
-        $moreparams = { type => $type, nt_zone_id => $q->param('nt_zone_id') };
+        $moreparams = { type => $type, nt_zone_id => scalar($q->param('nt_zone_id')) };
     }
     my $del;    #delegation object
     if ( $type ne 'record' ) {
-        my $rv = $nt_obj->get_zone_list( zone_list => $q->param('obj_list') );
+        my $rv = $nt_obj->get_zone_list( zone_list => scalar($q->param('obj_list')) );
 
         return $nt_obj->display_nice_error( $rv, "Get Zone Details" )
             if $rv->{'error_code'} != 200;
@@ -130,8 +130,8 @@ sub delegate_zones {
 <div id="delegateZoneList" class="light_grey_bg">Zone: $dzone</div>];
     }
     elsif ( $type eq 'record' ) {
-        my $zr = $nt_obj->get_zone_record( nt_zone_record_id => $q->param('obj_list') );
-        my $zone = $nt_obj->get_zone( nt_zone_id => $q->param('nt_zone_id') );
+        my $zr = $nt_obj->get_zone_record( nt_zone_record_id => scalar($q->param('obj_list')) );
+        my $zone = $nt_obj->get_zone( nt_zone_id => scalar($q->param('nt_zone_id')) );
 
         return $nt_obj->display_nice_error( $zr, "Get Zone Record Details" )
             if $zr->{'error_code'} != 200;
@@ -150,11 +150,11 @@ sub delegate_zones {
         my $delegates;
         if ( $type ne 'record' ) {
             $delegates = $nt_obj->get_zone_delegates(
-                nt_zone_id => $q->param('obj_list') );
+                nt_zone_id => scalar($q->param('obj_list')) );
         }
         elsif ( $type eq 'record' ) {
             $delegates = $nt_obj->get_zone_record_delegates(
-                nt_zone_record_id => $q->param('obj_list') );
+                nt_zone_record_id => scalar($q->param('obj_list')) );
         }
         return $nt_obj->display_nice_error( $delegates,
             "Get Zone " . ucfirst($type) . " Delegates List" )
@@ -174,15 +174,15 @@ sub delegate_zones {
         "\n",
         $q->hidden(
         -name     => 'obj_list',
-        -value    => join( ',', $q->param('obj_list') ),
+        -value    => join( ',', $q->multi_param('obj_list') ),
         -override => 1
         ),
         "\n", $q->hidden( -name => $edit, -value => 1 ),
-        "\n", $q->hidden( -name => 'type', -value => $q->param('type') ),
+        "\n", $q->hidden( -name => 'type', -value => scalar($q->param('type')) ),
         "\n", $q->hidden( -name  => 'nt_zone_id',
-            -value => $edit eq 'record' ? $q->param('nt_zone_id') : $q->param('obj_list')
+            -value => $edit eq 'record' ? scalar($q->param('nt_zone_id')) : scalar($q->param('obj_list'))
             ),
-        "\n", $q->hidden( -name=>'nt_group_id', -value=>$q->param('nt_group_id')),
+        "\n", $q->hidden( -name=>'nt_group_id', -value=>scalar($q->param('nt_group_id'))),
         "\n";
 
         if ( ref $del ) {
@@ -309,8 +309,8 @@ sub do_save {
     };
 
     my %params = (
-        nt_group_id => $q->param('group_list'),
-        $plist      => $q->param('obj_list'),
+        nt_group_id => scalar($q->param('group_list')),
+        $plist      => scalar($q->param('obj_list')),
     );
 
     foreach ( qw/ perm_write perm_delete perm_delegate 
@@ -343,8 +343,8 @@ sub do_modify {
     };
 
     my %params = (
-        nt_group_id => $q->param('nt_group_id'),
-        $list_id    => $q->param('obj_list')
+        nt_group_id => scalar($q->param('nt_group_id')),
+        $list_id    => scalar($q->param('obj_list'))
     );
 
     foreach ( qw/ perm_write perm_delete perm_delegate  
@@ -367,8 +367,8 @@ sub do_remove {
     my ($nt_obj, $q, $user) = @_;
 
     my $rv = $nt_obj->delete_zone_delegation(
-                nt_group_id => $q->param('nt_group_id'),
-                nt_zone_id  => $q->param('nt_zone_id'),
+                nt_group_id => scalar($q->param('nt_group_id')),
+                nt_zone_id  => scalar($q->param('nt_zone_id')),
             );
 
     if ( $rv->{'error_code'} != 200 ) {

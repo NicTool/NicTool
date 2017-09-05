@@ -2,6 +2,12 @@
 .cshrc
 .travis.yml
 .build
+blib
+pm_to_blib
+MYMETA.*
+Makefile
 *~
 client/bin/do_build_test.sh
 server/bin/do_build_test.sh
+client/lib/nictoolclient.conf
+server/lib/nictoolserver.conf
