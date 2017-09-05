@@ -80,6 +80,9 @@ sub build_nsupdate {
     open FILE, "+>", "$dir/nsupdate.log" or die $!;
 
     foreach my $record (@results) {
+        # Check if its a zone_record entry, otherwise skip
+        next unless $record->{"object"} =~ m/zone_record/;
+
         my @zone_records = get_zone_record( $self, $record->{object_id} );
         my $r            = $zone_records[0];
         my $mode         = "add";
@@ -458,6 +461,47 @@ sub zr_nsec3param {
     return "update $mode $r->{name} $r->{ttl} NSEC3PARAM $r->{address}\n";
 }
 
+sub zr_hinfo {
+    my ( $self, $r, $mode ) = @_;
+
+    $r->{zone} = $self->{nte}->{zone_name} unless defined( $r->{zone} );
+    # Name     ttl  class   rr  address
+    return "update $mode "
+        . $r->{name}
+        . (substr($r->{name}, -1, 1) eq '.' ? '' : '.' . $r->{zone})
+        . " $r->{ttl} HINFO $r->{address}\n";
+}
+
+sub zr_uri {
+    my ( $self, $r, $mode ) = @_;
+    $mode = "add" unless defined($mode);
+
+    $r->{zone} = $self->{nte}->{zone_name} unless defined( $r->{zone} );
+    my $priority = $self->{nte}->is_ip_port( $r->{priority} );
+    my $weight   = $self->{nte}->is_ip_port( $r->{weight} );
+
+    # Owner Name     ttl  class   rr  pri  weight target
+    return "update $mode "
+        . $r->{name}
+        . (substr($r->{name}, -1, 1) eq '.' ? '' : '.' . $r->{zone})
+        . " $r->{ttl} URI $priority $weight \"$r->{address}\"\n";
+}
+
+sub zr_caa {
+    my ( $self, $r, $mode ) = @_;
+    $mode = "add" unless defined($mode);
+
+    $r->{zone} = $self->{nte}->{zone_name} unless defined( $r->{zone} );
+    my $crit = $self->{nte}->is_ip_port( $r->{weight} );
+    my $tag  = $r->{other};
+
+    # Owner Name   TTL  CLASS   Type  Issue-Crit  Tag  Property
+    return "update $mode " 
+        . $r->{name}
+        . (substr($r->{name}, -1, 1) eq '.' ? '' : '.' . $r->{zone})
+        . " $r->{ttl} CAA $crit $tag \"$r->{address}\"\n";
+}
+
 1;
 
 __END__
@@ -485,9 +529,7 @@ NicToolServer::Export::BIND::nsupdate
 
 =head1 nsupdate.log
 
-This class will export a nsupdate.log file with only the changes that have occured since the last run. This file should be injected into the named server using nsupdate and is currently set up to not use a key (use IP restrictions to secure your dynamic updates)
-
-A key secured method will be added at a later date.
+This class will export a nsupdate.log file with only the changes that have occured since the last run. This file should be injected into the named server using nsupdate and is currently set up to accept either no key (use IP restrictions to secure your dynamic updates) or key secured updates (recommended)
 
 =head1 AUTHORS
 
