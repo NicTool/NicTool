@@ -115,10 +115,10 @@ sub _valid_ttl {
 sub _duplicate_record {
     my ( $self, $data, $zone_text, $collisions ) = @_;
 
-    # AAAA records are stored in DB in expanded notation. Expand the request
-    # addr so duplicate detection works #160
     my $address = $data->{address};
     if ($data->{type} eq 'AAAA') {
+        # AAAA records are stored in DB in expanded notation. Expand the request
+        # addr so duplicate detection works #160
         $address = Net::IP::ip_expand_address($data->{address},6);
     }
 
@@ -130,7 +130,11 @@ sub _duplicate_record {
 
     if ($data->{type} eq 'CAA') {
         # same address is tolerated if property tag is different, allows
-	# setting 'issue' and 'issuewild' for the same CA
+        # setting 'issue' and 'issuewild' for the same CA
+        @matches = grep { $_->{other} eq $data->{other} } @matches;
+    }
+    elsif ($data->{type} eq 'SRV') {
+        # same address is okay if different port is specified
         @matches = grep { $_->{other} eq $data->{other} } @matches;
     }
 
