@@ -165,6 +165,10 @@ sub touch_publish_ts {
 sub cleanup_db {
     my $self = shift;
 
+    # only run in the early morning
+    my @ts = localtime;
+    if ($ts[2] != 0) { return; }
+
     # delete the "started, 0 changed zones, exiting" log entries older than today
     $self->exec_query(
         "DELETE FROM nt_nameserver_export_log
