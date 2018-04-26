@@ -174,7 +174,7 @@ function setFormRRTypeCNAME() {
 }
 
 function setFormRRTypeDNAME() {
-  setRfcHelp(['2672']);
+  setRfcHelp(['2672','6672']);
   $('input#name').attr('placeholder','subdomain');
   $('td#address_label').text('Target');
   $('input#address').attr('placeholder','fqdn.example.com.');
