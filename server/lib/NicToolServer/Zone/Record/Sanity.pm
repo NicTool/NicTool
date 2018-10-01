@@ -588,7 +588,7 @@ sub _valid_caa {
     my $tag = $data->{other};
     my $value = $data->{address};
 
-    if ($crit != 0 && $crit != 128) {
+    if (!defined($crit) || ($crit != 0 && $crit != 128)) {
 	$self->error('weight',
 		     "Critical flag must be either 0 or 128, see RFC 6844");
     }
