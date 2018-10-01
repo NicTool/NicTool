@@ -381,6 +381,8 @@ function setFormRRTypeCAA() {
     // For the Issuer Critical field we use 'weight':
     $('#weight_row').show();
     $('td#weight_label').text('Issuer critical');
+    $('input#weight').attr('placeholder', '0');
+    $('input#weight').attr('required', 'required');
     var crit_values = {
 	'0' : 'Not critical',
 	'128' : 'Critical',
@@ -390,6 +392,8 @@ function setFormRRTypeCAA() {
     // For the Property Tag field we (ab)use 'priority':
     $('#other_row').show();
     $('td#other_label').text('Property tag');
+    $('input#other').attr('placeholder', 'issue');
+    $('input#other').attr('required', 'required');
     var properties = {
 	'issue' : 'issue',
 	'issuewild' : 'issuewild',
