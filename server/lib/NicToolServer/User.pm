@@ -635,7 +635,7 @@ sub valid_password {
     }
 
     return 0;   # No match
-};
+}
 
 sub select_user {
     my ( $self, $uid ) = @_;
@@ -659,7 +659,7 @@ sub _select_user_perm {
        AND nt_user_id = ?", $uid )
         or return $self->error_response( 505, $self->{dbh}->errstr );
     return (undef, $r->[0]);
-};
+}
 
 sub _select_group_perm {
     my ($self, $uid) = @_;
@@ -673,7 +673,7 @@ sub _select_group_perm {
     or return $self->error_response( 505, $self->{dbh}->errstr );
 
     return (undef, $r->[0]);
-};
+}
 
 sub get_sha1_hash {
     my ($self, $pass, $user) = @_;
@@ -681,7 +681,7 @@ sub get_sha1_hash {
     # RCC - use hmac to store the password using the username as a key
     #use Digest::HMAC_SHA1;
     #return Digest::HMAC_SHA1::hmac_sha1_hex( $pass, lc($user) );
-};
+}
 
 sub get_pbkdf2_hash {
     my ($self, $pass, $salt) = @_;
@@ -750,7 +750,7 @@ sub verify_ldap_user {
 
     return 1 if ( $ldap_result->code == 0 );
     return 0;
-};
+}
 
 sub locate_ldap_user {
     my ( $self, $user ) = @_;
@@ -813,7 +813,7 @@ sub locate_ldap_user {
 
     $ldap->unbind();
     return $user_dn;
-};
+}
 
 1;
 
