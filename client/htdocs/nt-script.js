@@ -218,6 +218,8 @@ function setFormRRTypeNAPTR() {
   $('input#address').attr('placeholder','"" "" "/urn:cid:.+@([^\\.]+\\.)(.*)$/\\2/i"');
 
   $('td#description_label').text('Replacement');
+  $('input#description').attr('placeholder','Replacement domain or empty string');
+  $('input#description').attr('required','required');
 }
 
 function setFormRRTypeLOC() {
