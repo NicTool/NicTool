@@ -327,6 +327,23 @@ sub zr_ipseckey {
     );
 };
 
+sub zr_caa {
+    my ($self, $rr, $zone) = @_;
+    $rr or die;
+
+    print "CAA     : " . $rr->name . "\t" . $rr->flags . " " . $rr->tag . " " . $rr->value . "\n";
+    my ($zone_id, $host) = $self->get_zone_id( $rr->name, $zone );
+
+    $self->nt_create_record(
+        zone_id => $zone_id,
+        type    => 'CAA',
+        name    => $host,
+        address => $rr->value,
+        other   => $rr->tag,
+        weight  => $rr->flags,
+        ttl     => $rr->ttl,
+    );
+}
 
 sub zr_ds { };
 sub zr_dnskey { };
