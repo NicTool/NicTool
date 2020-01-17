@@ -525,10 +525,10 @@ sub doit {
             name    => $_->{name},
             address => $_->{address},
             type    => $_->{type},
-            ($_->{ttl} ? (ttl => $_->{ttl}) : ()),
-            ($_->{weight} ? (weight => $_->{weight}) : ()),
-            ($_->{priority} ? (priority => $_->{priority}) : ()),
-            ($_->{other} ? (other => $_->{other}) : ()),
+            (defined $_->{ttl} ? (ttl => $_->{ttl}) : ()),
+            (defined $_->{weight} ? (weight => $_->{weight}) : ()),
+            (defined $_->{priority} ? (priority => $_->{priority}) : ()),
+            (defined $_->{other} ? (other => $_->{other}) : ()),
         );
         noerrok($res);
         $t = $res->get('nt_zone_record_id');
@@ -1050,10 +1050,10 @@ sub doit {
             name    => $_->{name},
             address => $_->{address},
             type    => $_->{type},
-            ($_->{ttl} ? (ttl => $_->{ttl}) : ()),
-            ($_->{weight} ? (weight => $_->{weight}) : ()),
-            ($_->{priority} ? (priority => $_->{priority}) : ()),
-            ($_->{other} ? (other => $_->{other}) : ()),
+            (defined $_->{ttl}      ? (ttl      => $_->{ttl})      : ()),
+            (defined $_->{weight}   ? (weight   => $_->{weight})   : ()),
+            (defined $_->{priority} ? (priority => $_->{priority}) : ()),
+            (defined $_->{other}    ? (other    => $_->{other})    : ()),
         );
 
         noerrok($res);

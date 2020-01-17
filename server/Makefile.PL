@@ -28,6 +28,7 @@ my %WriteMakefileArgs = (
     "English" => 0,
     "File::Copy" => 0,
     "File::Path" => 0,
+    "HTML::Parser" => 0,
     "IO::File" => 0,
     "JSON" => 0,
     "LWP::UserAgent" => 0,
