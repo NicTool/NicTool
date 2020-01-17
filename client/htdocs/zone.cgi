@@ -697,7 +697,7 @@ sub display_zone_records_edit {
             address weight priority other ttl description deleted location timestamp);
     my %data;
     foreach my $x (@fields) {
-	next if $q->param($x) eq "";
+        next if $q->param($x) eq '';
         $data{$x} = $q->param($x);
     }
     my $error = $nt_obj->edit_zone_record(%data);
