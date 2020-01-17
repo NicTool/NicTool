@@ -62,7 +62,7 @@ sub new_or_edit_basic_verify {
 
     $self->_expand_shortcuts( $data, $zone_text );  # expand @ and & shortcuts
 
-    if ( $data->{name} =~ /^(.+)\.$zone_text\.$/ ) {  # ends in domain name
+    if ( $data->{name} =~ /^(.+)\.$zone_text\.*$/ ) {  # ends in domain name
         $data->{name} = $1; # strip domain. record names are NOT stored absolute
     }
 
@@ -312,7 +312,7 @@ sub _valid_address {
 
     $data->{address} = $data->{address} . ".$zone_text."
         unless $data->{address} =~ /\.$/;
-};
+}
 
 sub _valid_address_chars {
     my ( $self, $data, $zone_text ) = @_;
@@ -670,7 +670,7 @@ sub get_invalid_chars {
     # DNS & BIND, 4.5: Names that are not host names can consist of any
     # printable ASCII character.
     if ( $field eq 'name' ) {
-        return '[^ -~]' if $type !~ /^(?:A|AAAA|MX|LOC|SPF|SSHFP)$/;
+        return '[^!-~]' if $type !~ /^(?:A|AAAA|MX|LOC|SPF|SSHFP)$/;
     };
 
     # allow / in reverse zones, for both name & address: RFC 2317
