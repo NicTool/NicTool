@@ -70,7 +70,7 @@ sub display {
 
         if (! $user->{'ldap_only'} ) {
             push @new_fields, qw/ password password2 /;
-            push @new_fields, qw/ password password2 current_password /;
+            push @edit_fields, qw/ password password2 current_password /;
         }
 
         #warn "group_defaults is ".$q->param('group_defaults');
