@@ -94,6 +94,9 @@ sub import_records {
             push @err, $self->zr_ptr(join(':', $self->ip6_to_ptr($addr),
                 $fqdn, $ttl || '', $ts || '', $loc || ''));
         }
+        elsif ( $first eq 'S' ) {       #  SRV
+            push @err, $self->zr_srv_S($record);
+        }
         else { # Emit a local error (not from nt_create_* on the server) if record type unknown
             $first = sprintf '\%03o', ord($first) # Escape unprintable ascii
                 if $first =~ /^[\x00-\x20\x7F-\xFF]$/;
@@ -373,6 +376,29 @@ sub zr_aaaa6 {
         type    => 'AAAA',
         name    => $host,
         address => $rdata,
+        defined $ttl       ? ( ttl       => $ttl       ) : (),
+        defined $timestamp ? ( timestamp => $timestamp ) : (),
+        defined $location  ? ( location  => $location  ) : (),
+    );
+}
+
+sub zr_srv_S {
+    my $self = shift;
+    my $r = shift or die;
+
+    print "SRV     : $r\n";   # patched tinydns that has S records
+    my ( $fqdn, $addr, $port, $priority, $weight, $ttl, $timestamp, $location ) = split ':', $r;
+
+    my ( $zone_id, $host ) = $self->get_zone_id( $fqdn );
+
+    $self->nt_create_record(
+        zone_id  => $zone_id,
+        type     => 'SRV',
+        name     => $host,
+        address  => $self->fully_qualify( $addr ),
+        weight   => $weight,
+        priority => $priority,
+        other    => $port,
         defined $ttl       ? ( ttl       => $ttl       ) : (),
         defined $timestamp ? ( timestamp => $timestamp ) : (),
         defined $location  ? ( location  => $location  ) : (),
