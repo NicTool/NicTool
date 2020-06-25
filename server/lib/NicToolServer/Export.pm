@@ -480,10 +480,10 @@ sub get_ns_zones {
         push @args, $p{last_modified};
     }
     else {
-        if ( $self->incremental && $self->export_required > 1 ) {
+        if ( $self->incremental && $self->export_required > 0 ) {
             push @descrs, 'incremental';
             $sql .= " AND z.last_modified > ?";
-            push @args, $self->export_required;
+            push @args, $self->{last_success_ts};
         };
     }
 
@@ -727,7 +727,8 @@ sub preflight {
             # have any zones for this NS changed since the last successful export?
             my $c = $self->get_modified_zones_count( since => $ts_success );
             # store the last success ts for incrementals
-            $self->export_required( $c == 0 ? 0 : $ts_success );
+            $self->{last_success_ts} = $ts_success;
+            $self->export_required( $c );
             $self->elog( "$c changed");
         };
     };
