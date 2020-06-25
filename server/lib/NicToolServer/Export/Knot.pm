@@ -47,7 +47,7 @@ sub update_knot_include {
     };
     close $fh;
     return 1;
-};
+}
 
 sub update_knot_include_incremental {
     my ($self, $dir) = @_;
@@ -89,7 +89,7 @@ sub update_knot_include_incremental {
     unlink $file;
     File::Copy::move("$file.tmp", $file);
     return 1;
-};
+}
 
 sub write_makefile {
     my $self = shift;
@@ -131,7 +131,7 @@ MAKE
 ;
     close $M;
     return 1;
-};
+}
 
 1;
 

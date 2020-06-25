@@ -47,7 +47,7 @@ sub update_named_include {
     };
     close $fh;
     return 1;
-};
+}
 
 sub update_named_include_incremental {
     my ($self, $dir) = @_;
@@ -89,7 +89,7 @@ sub update_named_include_incremental {
     unlink $file;
     File::Copy::move("$file.tmp", $file);
     return 1;
-};
+}
 
 sub get_changed_zones {
     my ($self, $dir) = @_;
@@ -104,7 +104,7 @@ sub get_changed_zones {
         $has_changes{$zone} = qq[zone "$zone"\t IN { type master; file "$datadir/$zone"; };\n];
     };
     return \%has_changes;
-};
+}
 
 sub get_template {
     my ($self, $export_dir, $zone) = @_;
@@ -148,7 +148,7 @@ sub compile {
     $message .= " ($elapsed secs)" if $elapsed > 5;
     $self->{nte}->elog($message);
     return 1;
-};
+}
 
 sub restart {
     my $self = shift;
@@ -168,7 +168,7 @@ sub restart {
     $message .= " ($elapsed secs)" if $elapsed > 5;
     $self->{nte}->elog($message);
     return 1;
-};
+}
 
 sub rsync {
     my $self = shift;
@@ -189,7 +189,7 @@ sub rsync {
     $self->{nte}->set_copied(1);
     $self->{nte}->elog($message);
     return 1;
-};
+}
 
 sub write_makefile {
     my $self = shift;
@@ -233,7 +233,7 @@ MAKE
 ;
     close $M;
     return 1;
-};
+}
 
 sub zr_a {
     my ($self, $r) = @_;
@@ -398,7 +398,7 @@ sub zr_ipseckey {
     my $public_key = $r->{description};
 
     return "$r->{name}	$r->{ttl}	IN  IPSECKEY	( $precedence $gw_type $algorithm $gateway $public_key )\n";
-};
+}
 
 sub zr_dnskey {
     my ($self, $r) = @_;

@@ -117,7 +117,7 @@ sub display_save {
     if ( $error->{'error_code'} != 200 ) {
         display_edit_user( $nt_obj, $user, $group, $q, $error, $e_or_s );
     }
-};
+}
 
 sub display_edit_user {
     my ( $nt_obj, $user, $group, $q, $message, $edit ) = @_;

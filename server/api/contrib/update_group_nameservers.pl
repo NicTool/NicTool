@@ -35,7 +35,7 @@ die $sublist->error_msg if $sublist->is_error;
 if ( $sublist->size == 0 ) {
     print "no subgroups found in group ID $group_id";
     exit;
-};
+}
 
 foreach my $group_ref ( $sublist->list ) {
 
@@ -74,7 +74,7 @@ foreach my $group_ref ( $sublist->list ) {
             print "\tzid: ".$zone_ref->get('nt_zone_id')." ok.\n";
         };
     };
-};
+}
 
 $user->logout;
 

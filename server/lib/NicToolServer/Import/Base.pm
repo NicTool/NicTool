@@ -22,7 +22,7 @@ sub new {
             nt_https    => 0,
         }, $class;
     return $self;
-};
+}
 
 sub get_zone {
     my ($self, $fqdn) = @_;
@@ -32,7 +32,7 @@ sub get_zone {
     my $zone = join '.', @bits;
     #print "h: $host, z: $zone ($fqdn)\n";
     return ($host, $zone);
-};
+}
 
 sub get_zone_id {
     my ($self, $fqdn, $zone) = @_;
@@ -63,7 +63,7 @@ sub get_zone_id {
     }
 
     die "could not find zone for $fqdn\n";
-};
+}
 
 sub nt_create_zone {
     my $self = shift;
@@ -118,7 +118,7 @@ sub nt_create_zone {
     my $zone_id = $r->{store}{nt_zone_id};
     warn "created zone $p{zone} ( $zone_id )\n";
     return $zone_id;
-};
+}
 
 sub nt_create_record {
     my $self = shift;
@@ -321,7 +321,7 @@ sub fully_qualify {
     my ($self, $host) = @_;
     return $host if substr($host, -1, 1) eq '.';
     return "$host.";
-};
+}
 
 sub record_exists {
     my ($self, $record) = @_;
@@ -338,14 +338,14 @@ sub record_exists {
         return 1;
     };
     return 0;
-};
+}
 
 sub group_id {
     my ($self, $gid) = @_;
     return $self->{group_id} if ! $gid;
     $self->{group_id} = $gid;
     return $gid;
-};
+}
 
 1;
 

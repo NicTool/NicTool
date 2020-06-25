@@ -546,7 +546,7 @@ my $ripe = {
                         }
                 } ]
 }
-};
+}
 
 my $json = to_json($ripe,{utf8 => 1, pretty => 1});
 
@@ -788,7 +788,7 @@ sub create_zone {
     }
 	my $zone_id = $r->{store}{nt_zone_id};
 	return ($zone_id,$nt_group_id);
-};
+}
 
 sub create_forward {
     my ( $host, $zone, $ip, $type ) = @_;
@@ -813,7 +813,7 @@ sub create_forward {
 
     print("created $type $host $zone $ip");
     return 1;
-};
+}
 
 sub create_ptr {
     my ( $ip, $address ) = @_;
@@ -834,7 +834,7 @@ sub create_ptr {
     or die ("failed to create PTR for $ip");
     print("created $ip PTR $address");
     return 1;
-};
+}
 sub get_reverse {
     my ($type, $ip) = @_;
 
@@ -854,7 +854,7 @@ sub get_reverse {
     else {
         die "unknown reverse type: $type\n";
     };
-};
+}
 
 
 #Unused
@@ -958,7 +958,7 @@ my $zoneid = get_zone_id($zone);
     print("Searching for zone [$zone]\n") if($debug);
     return get_zone_records($zone,$octets[3]);
 
-};
+}
 
 
 sub get_zone_records_advanced {

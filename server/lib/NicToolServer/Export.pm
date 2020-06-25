@@ -71,7 +71,7 @@ sub daemon {
         $waitleft--;
     };
     return $result;
-};
+}
 
 sub elog {
     my $self    = shift;
@@ -133,7 +133,7 @@ sub set_no_change {
 
     $self->set_status("last run:$last_ts<br>last cp :$last_cp_ts");
     $self->elog("exiting\n",success=>1);
-};
+}
 
 sub set_partial {
     my ($self, $boolean) = @_;
@@ -192,7 +192,7 @@ sub cleanup_db {
             AND nt_nameserver_id=?",
         [ $self->{ns_id} ]
     );
-};
+}
 
 sub exec_query {
     my $self = shift;
@@ -309,7 +309,7 @@ sub get_export_data_dir {
     my $dir = $self->{ns_ref}{datadir} or return;
     if ((substr $dir, -1, 1) eq '/') { chop $dir; }
     return $dir;
-};
+}
 
 sub get_export_dir {
     my $self = shift;
@@ -363,7 +363,7 @@ sub get_export_dir {
     };
     $self->elog("unable to create dir ($dir): $@\n");
     return;
-};
+}
 
 sub get_last_ns_export {
     my $self = shift;
@@ -599,19 +599,19 @@ sub get_rr_types {
         $self->{rr_type_map}{names}{ $_->{name} } = $_->{id};
     };
     return $self->{rr_types};
-};
+}
 
 sub get_rr_id {
     my ($self, $name) = @_;
     $self->get_rr_types() unless defined $self->{rr_type_map};
     return $self->{rr_type_map}{names}{$name};
-};
+}
 
 sub get_rr_name {
     my ($self, $id) = @_;
     $self->get_rr_types() unless defined $self->{rr_type_map};
     return $self->{rr_type_map}{ids}{$id};
-};
+}
 
 sub get_zone_ns_ids {
     my $self = shift;
@@ -706,7 +706,7 @@ sub load_export_class {
     else {
         die "unknown export format: $self->{export_format}\n";
     };
-};
+}
 
 sub preflight {
     my $self = shift;
@@ -763,7 +763,7 @@ sub update_status {
     else {
         $self->set_status( "last: SUCCESS" );
     };
-};
+}
 
 sub write_runfile {
     my $self = shift;
@@ -834,7 +834,7 @@ EORUN
 ;
     close $F;
     CORE::chmod( oct('0755'), 'run' );
-};
+}
 
 sub zr_soa {
     my $self = shift;
@@ -905,19 +905,19 @@ sub export_required {
     return $self->{export_required} if ! defined $er;
     $self->{export_required} = $er;
     return $er;
-};
+}
 
 sub incremental {
     my ($self, $val) = @_;
     return $self->{incremental} if ! defined $val;
     $self->{incremental} = $val;
     return $val;
-};
+}
 
 sub in_export_list {
     my ($self, $zone) = @_;
     return $self->{export_list}{$zone} ? 1 : 0;
-};
+}
 
 sub zones_exported {
     my ($self, $zone) = @_;
@@ -926,7 +926,7 @@ sub zones_exported {
     };
     $self->{export_list}{$zone} = 1;          # setter
     return 0;
-};
+}
 
 sub is_interactive {
 

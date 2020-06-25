@@ -30,7 +30,7 @@ foreach my $glob ( @$fileGlobs ) {
         my $exit_code = sprintf ("%d", $CHILD_ERROR >> 8);
         ok( $exit_code == 0, "syntax $_");
     };
-};
+}
 
 my $r = `$this_perl $perl_args -c lib/nictoolclient.conf.dist 2>&1`;
 my $exit_code = sprintf ("%d", $CHILD_ERROR >> 8);

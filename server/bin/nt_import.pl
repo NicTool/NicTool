@@ -85,11 +85,11 @@ sub load_type {
         return;
     };
     die "unknown type: $type\n";
-};
+}
 
 sub get_type {
     return ask("are you importing from tinydns or BIND?", default=>'BIND');
-};
+}
 
 sub ask {
     my $question = shift;

@@ -97,6 +97,6 @@ sub do_login {
     }
 
     display_frameset( $nt_obj, $data );
-};
+}
 
 1;

@@ -86,7 +86,7 @@ sub do_new {
     if ( $error->{'error_code'} != 200 ) {
         display_edit_nameserver( $nt_obj, $user, $q, $error, 'new' );
     }
-};
+}
 
 sub do_delete {
     my ( $nt_obj, $q ) = @_;
@@ -100,7 +100,7 @@ sub do_delete {
     if ( $error->{'error_code'} != 200 ) {
         $nt_obj->display_nice_error( $error, "Delete Nameserver" );
     }
-};
+}
 
 sub do_edit {
     my ( $nt_obj, $q, $user ) = @_;
@@ -126,7 +126,7 @@ sub do_edit {
     if ( $error->{'error_code'} != 200 ) {
         display_edit_nameserver( $nt_obj, $user, $q, $error, 'edit' );
     }
-};
+}
 
 sub display_list {
     my ( $nt_obj, $q, $group, $user ) = @_;
@@ -257,7 +257,7 @@ sub display_list_actions {
  </ul>
 </div>
 ];
-};
+}
 
 sub display_list_header {
     my ( $nt_obj, $q, $rv, $columns, $labels, $user_group, $sort_fields ) = @_;
@@ -301,7 +301,7 @@ sub display_list_header {
    <td class=width1 id="Trash"></td>
   </tr>
  </thead>];
-};
+}
 
 sub display_list_move_checkbox {
     my ( $q, $user, $user_group, $obj ) = @_;
@@ -325,7 +325,7 @@ sub display_list_move_checkbox {
     }
     print qq[
   </td>];
-};
+}
 
 sub display_list_subgroups {
     my ( $width, $obj, $map ) = @_;
@@ -357,7 +357,7 @@ sub display_list_name {
      <a href="group_nameservers.cgi?nt_nameserver_id=$obj->{'nt_nameserver_id'}&amp;nt_group_id=$obj->{'nt_group_id'}&amp;edit=1">
       <img src="$NicToolClient::image_dir/nameserver.gif" alt="nameserver"> $obj->{'name'} </a>
   </td>];
-};
+}
 
 sub display_list_options {
     my ( $user, $group_id, $level, $in_ns_summary ) = @_;
@@ -417,7 +417,7 @@ sub display_list_delete {
   <td class=width1>
    <img src="$NicToolClient::image_dir/trash-disabled.gif" alt="disabled trash"></td>];
     }
-};
+}
 
 sub display_edit_nameserver {
     my ( $nt_obj, $user, $q, $message, $edit ) = @_;
@@ -621,5 +621,5 @@ sub display_edit_nameserver_fields {
                     : $nameserver->{export_interval},
         },
     );
-};
+}
 

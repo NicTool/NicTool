@@ -121,7 +121,7 @@ sub _display_new_group {
     };
 
     return $nt_obj->new_group(%params);
-};
+}
 
 sub _display_edit_group {
     my ( $nt_obj, $q, $fields ) = @_;
@@ -297,7 +297,7 @@ sub _display_group_create_link {
         $state .= "&amp;$_=" . $q->escape( scalar($q->param($_)) );
     }
     print qq[<a href="group.cgi?$state&amp;new=1">New Sub-Group</a></span></div>];
-};
+}
 
 sub display_edit {
     my ( $nt_obj, $user, $q, $edit ) = @_;

@@ -58,7 +58,7 @@ Getopt::Long::GetOptions(
 ) or do {
     print STDERR "error parsing command line options";
     exit 2;
-};
+}
 
 usage() and exit if $usage;
 
@@ -81,7 +81,7 @@ $export->incremental( $incremental || 0);
 $export->get_dbh( dsn => $dsn, user => $db_user, pass => $db_pass,) or do {
     print STDERR "database connection failed";
     exit 2;
-};
+}
 
 # If nsid has not been specified, try to locate the nsid for this server,
 # or display a table of nsid to use to generate the zone files.
@@ -125,7 +125,7 @@ sub get_nsid {
 
     $0 -nsid N\n";
     exit 2;
-};
+}
 
 sub ask {
     my $question = shift;
@@ -193,7 +193,7 @@ sub get_db_creds_from_nictoolserver_conf {
     if ( ! $db_pass ) {
         ($db_pass) = $contents =~ m/db_pass\s+=\s+'(.*)?'/;
     };
-};
+}
 
 sub graceful_exit {
     my $signal = shift;
@@ -227,4 +227,4 @@ If nt_export detects an error, then an exit status of 2 is returned.
 
 EOHELP
 ;
-};
+}

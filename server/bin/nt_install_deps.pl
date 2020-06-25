@@ -18,13 +18,13 @@ my $apps = [
 $EUID == 0 or do {
     warn "You will have better luck if you run me as root.\n"; ## no critic (Carp)
     sleep 2;
-};
+}
 
 my @failed;
 foreach ( @$apps ) {
     my $name = $_->{app} or die 'missing app name'; ## no critic (Carp)
     install_app( $name, $_->{info} );
-};
+}
 
 foreach ( get_perl_modules() ) {
 #print Dumper($_);
@@ -61,7 +61,7 @@ sub get_perl_modules {
         return get_perl_modules_from_Makefile_PL();
     };
     die "unable to find module list. Run this script in the dist dir\n"; ## no critic (Carp)
-};
+}
 
 sub get_perl_modules_from_Makefile_PL {
     my $fh = IO::File->new( 'Makefile.PL', 'r' )
@@ -85,7 +85,7 @@ sub get_perl_modules_from_Makefile_PL {
     }
     $fh->close;
     return @modules;
-};
+}
 
 sub get_perl_modules_from_ini {
     my $fh = IO::File->new( 'dist.ini', 'r' )
@@ -115,7 +115,7 @@ sub get_perl_modules_from_ini {
     $fh->close;
 #print Dumper(\@modules);
     return @modules;
-};
+}
 
 sub install_app {
     my ( $app, $info ) = @_;
@@ -130,7 +130,7 @@ sub install_app {
         install_app_linux( $app, $info );
     };
     return;
-};
+}
 
 sub install_app_darwin {
     my ($app, $info ) = @_;
@@ -168,7 +168,7 @@ sub install_app_freebsd {
 
     print "installing $app";
     return install_app_freebsd_port($app, $info);
-};
+}
 
 sub install_app_freebsd_port {
     my ( $app, $info ) = @_;
@@ -184,7 +184,7 @@ sub install_app_freebsd_port {
         };
     };
     return;
-};
+}
 
 sub install_app_freebsd_pkg {
     my ( $info, $app ) = @_;
@@ -199,7 +199,7 @@ sub install_app_freebsd_pkg {
     system "$pkg install -y $app";
     return 1 if is_freebsd_port_installed($app);
     return 0;
-};
+}
 
 sub install_app_linux {
     my ($app, $info ) = @_;
@@ -216,7 +216,7 @@ sub install_app_linux {
         warn "no Linux package manager detected\n"; ## no critic (Carp)
     };
     return;
-};
+}
 
 
 sub install_module {
@@ -238,7 +238,7 @@ sub install_module {
 
     install_module_cpan($module, $version);
     return;
-};
+}
 
 sub install_module_cpan {
 
@@ -306,7 +306,7 @@ sub install_module_freebsd_pkg {
     print "installing $module\n";
     system "$pkg install -y $module";
     return is_freebsd_port_installed($module);
-};
+}
 
 sub is_freebsd_port_installed {
     my ( $module, $portname ) = @_;
@@ -317,14 +317,14 @@ sub is_freebsd_port_installed {
     }
 
     return 0;
-};
+}
 
 sub get_freebsd_pkg_info {
     if ( -x '/usr/sbin/pkg_info' ) {
         return '/usr/sbin/pkg_info';
     };
     return;
-};
+}
 
 sub get_freebsd_pkgng {
     my $pkg = '/usr/local/sbin/pkg';  # port version is likely newest
@@ -334,7 +334,7 @@ sub get_freebsd_pkgng {
         return 0;
     }
     return $pkg;
-};
+}
 
 sub install_module_linux {
     my ($module, $info, $version) = @_;
@@ -348,7 +348,7 @@ sub install_module_linux {
     }
     warn "no Linux package manager detected\n"; ## no critic (Carp)
     return;
-};
+}
 
 sub install_module_linux_yum {
     my ($module, $info) = @_;
@@ -361,7 +361,7 @@ sub install_module_linux_yum {
     };
     system "/usr/bin/yum -y install $package";
     return;
-};
+}
 
 sub install_module_linux_apt {
     my ($module, $info) = @_;
@@ -374,7 +374,7 @@ sub install_module_linux_apt {
     };
     system "/usr/bin/apt-get -y install $package";
     return;
-};
+}
 
 sub get_cpan_config {
 
@@ -437,7 +437,7 @@ sub name_overrides {
     my ($match) = grep { $_->{module} eq $mod } @modules;
     return $match if $match;
     return { module=>$mod, info => { } };
-};
+}
 
 # PODNAME: install_deps.pl
 # ABSTRACT: install dependencies with package manager or CPAN

@@ -32,7 +32,7 @@ sub get_import_file {
         or die "failed to open '$filename': $!";
 
     return $self->{FH} = $FH;
-};
+}
 
 sub import_records {
     my ($self, $file) = @_;
@@ -45,7 +45,7 @@ sub import_records {
     #print "loaded parser\n";
     $p->parse_fh( $self->{FH} );
     #print "done parsing\n";
-};
+}
 
 sub import_zone {
     my ($self, $zone, $file) = @_;
@@ -64,7 +64,7 @@ sub import_zone {
         }
         Time::HiRes::sleep 0.1;
     };
-};
+}
 
 sub zr_soa {
     my ($self, $rr, $zone) = @_;
@@ -85,7 +85,7 @@ sub zr_soa {
             expire      => $rr->expire,
             minimum     => $rr->minimum,
             );
-};
+}
 
 sub zr_ns {
     my ($self, $rr, $zone) = @_;
@@ -104,7 +104,7 @@ sub zr_ns {
         address => $address,
         ttl     => $rr->ttl,
     );
-};
+}
 
 sub zr_a {
     my ($self, $rr, $zone) = @_;
@@ -120,7 +120,7 @@ sub zr_a {
         address => $rr->address,
         ttl     => $rr->ttl,
     );
-};
+}
 
 sub zr_mx {
     my ($self, $rr, $zone) = @_;
@@ -201,7 +201,7 @@ sub zr_aaaa {
         address => $rr->address,
         ttl     => $rr->ttl,
     );
-};
+}
 
 sub zr_srv {
     my ($self, $rr, $zone) = @_;
@@ -270,7 +270,7 @@ sub zr_sshfp {
         priority=> $rr->fptype,
         ttl     => $rr->ttl,
     );
-};
+}
 
 sub zr_naptr {
     my ($self, $rr, $zone) = @_;
@@ -289,7 +289,7 @@ sub zr_naptr {
         ttl     => $rr->ttl,
         description=> $self->fully_qualify( $rr->replacement ),
     );
-};
+}
 
 sub zr_ptr {
     my ($self, $rr, $zone) = @_;
@@ -305,7 +305,7 @@ sub zr_ptr {
         address => $self->fully_qualify( $rr->ptrdname ),
         ttl     => $rr->ttl,
     );
-};
+}
 
 sub zr_ipseckey {
     my ($self, $rr, $zone) = @_;
@@ -325,7 +325,7 @@ sub zr_ipseckey {
         ttl     => $rr->ttl,
         description => $rr->key,
     );
-};
+}
 
 sub zr_caa {
     my ($self, $rr, $zone) = @_;
@@ -363,7 +363,7 @@ use vars qw(@ISA);
 sub handle_zone {
     my ($self, $name, $class, $type, $options) = @_;
     $self->import_zone( $name, $options->{file} );
-};
+}
 
 1;
 
