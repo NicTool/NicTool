@@ -33,7 +33,7 @@ my $get_zone_tests = {
     'host.example.com.' => 'example.com',
     'www.bbc.co.uk'     => 'bbc.co.uk',
     'www.bbc.co.uk.'    => 'bbc.co.uk',
-}
+};
 
 foreach my $fqdn ( keys %$get_zone_tests ) {
     cmp_ok($base->get_zone($fqdn), 'eq', $get_zone_tests->{$fqdn}, "$fqdn");
