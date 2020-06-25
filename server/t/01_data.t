@@ -26,7 +26,7 @@ BEGIN {
     use_ok( 'NicTool' );
     use_ok( 'NicToolServer' );
     use_ok( 'NicToolServer::Zone' );
-};
+}
 
 my $nts = get_nictoolserver_with_dbh();
 my $r;

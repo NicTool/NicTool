@@ -17,7 +17,7 @@ sub postflight {
     my $self = shift;
     my $dir = shift || $self->{nte}->get_export_dir or return;
 
-    my $nsupdate = "";
+    my $nsupdate = '';
 
     build_nsupdate( $self, $dir );
 
@@ -35,38 +35,38 @@ sub postflight {
         $self->{nte}->set_status("last: FAILED, reason: BADKEY");
         $self->{nte}->elog("nsupdate FAILED, reason: BADKEY", success=>0);
         exit 0;
-    }  
+    }
     elsif ( $nsupdate =~ m/could\snot\sread\skey\*file\s\not\sfound/ )
     {
         $self->{nte}->set_status("last: FAILED, reason: Keyfile not found");
         $self->{nte}->elog("nsupdate FAILED, reason: Keyfile not found", success=>0);
         exit 0;
-    }  
+    }
     elsif ( $nsupdate =~ m/REFUSED/ )
     {
         $self->{nte}->set_status("last: FAILED, reason: REFUSED");
         $self->{nte}->elog("nsupdate FAILED, reason: REFUSED", success=>0);
         exit 0;
-    } 
-    elsif ( $nsupdate =~ m/NOTZONE/ || $nsupdate =~ m/enclosing\szone/ ) 
+    }
+    elsif ( $nsupdate =~ m/NOTZONE/ || $nsupdate =~ m/enclosing\szone/ )
     {
         $self->{nte}->set_status("last: FAILED, reason: NOTZONE");
         $self->{nte}->elog("nsupdate FAILED, reason: NOTZONE", success=>0);
         exit 0;
-    } 
-    elsif ( $nsupdate =~ m/Communication\swith.*failed/ || $nsupdate =~ m/timed\sout/ || $nsupdate =~ m/could\snot\stalk/ ) 
+    }
+    elsif ( $nsupdate =~ m/Communication\swith.*failed/ || $nsupdate =~ m/timed\sout/ || $nsupdate =~ m/could\snot\stalk/ )
     {
         $self->{nte}->set_status("last: FAILED, reason: TIMEOUT");
         $self->{nte}->elog("nsupdate FAILED, reason: TIMEOUT", success=>0);
         exit 0;
-    } 
+    }
     elsif ( $nsupdate =~ m/NOTAUTH/ )
     {
         $self->{nte}->set_status("last: FAILED, reason: NOTAUTH");
         $self->{nte}->elog("nsupdate FAILED, reason: NOTAUTH", success=>0);
         exit 0;
     }
-    
+
     return 1;
 }
 
@@ -300,9 +300,8 @@ sub zr_ptr {
 sub zr_soa {
     my ( $self, $z ) = @_;
 
-#no real "soa" for an nsupdate - so lets set the server we want to update to instead
-    $z->{nsname} = $self->{nte}->{ns_ref}->{name}
-        unless defined( $z->{nsname} );
+    #no real "soa" for an nsupdate - so lets set the server we want to update to instead
+    $z->{nsname} = $self->{nte}->{ns_ref}->{name} unless defined $z->{nsname};
     return "server $z->{nsname}\n";
 }
 
@@ -489,14 +488,14 @@ sub zr_uri {
 
 sub zr_caa {
     my ( $self, $r, $mode ) = @_;
-    $mode = "add" unless defined($mode);
+    $mode = "add" unless defined $mode;
 
-    $r->{zone} = $self->{nte}->{zone_name} unless defined( $r->{zone} );
+    $r->{zone} = $self->{nte}->{zone_name} unless defined $r->{zone};
     my $crit = $self->{nte}->is_ip_port( $r->{weight} );
     my $tag  = $r->{other};
 
     # Owner Name   TTL  CLASS   Type  Issue-Crit  Tag  Property
-    return "update $mode " 
+    return "update $mode "
         . $r->{name}
         . (substr($r->{name}, -1, 1) eq '.' ? '' : '.' . $r->{zone})
         . " $r->{ttl} CAA $crit $tag \"$r->{address}\"\n";

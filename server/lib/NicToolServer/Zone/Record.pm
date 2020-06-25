@@ -113,7 +113,7 @@ sub _add_matching_spf_record {
     $values->[4] = 16;  # switch SPF rec type to TXT type
     $self->exec_query(
         "INSERT INTO nt_zone_record($col_string) VALUES(??)", $values);
-};
+}
 
 sub edit_zone_record {
     my ( $self, $data ) = @_;
@@ -382,7 +382,7 @@ sub get_record_type {
     };
 
     return $self->{record_types}{$lookup}{id};  # got a type, return ID
-};
+}
 
 sub _bump_and_update_serial {
     my ( $self, $nt_zone_id, $z_serial ) = @_;

@@ -23,7 +23,7 @@ sub get_import_file {
         or die "failed to open '$filename'";
 
     return $self->{FH} = $FH;
-};
+}
 
 sub import_records {
     my ($self, $file) = @_;
@@ -114,7 +114,7 @@ sub import_records {
 
     print "done\n";
     return 1;
-};
+}
 
 sub zr_a {
     my $self = shift;
@@ -320,7 +320,7 @@ sub zr_spf {
     print "SPF     : $r\n";
     my ( $fqdn, $n, $rdata, $ttl, $timestamp, $location ) = split(':', $r);
 
-    my ($zone_id, $host) = $self->get_zone_id( $fqdn );
+    my ( $zone_id, $host ) = $self->get_zone_id( $fqdn );
 
     # DNS RRtype 99 (SPF) and RRtype 16 (TXT) uses the same rdata format.
     # TinyDNS gen type :16: and :99: records are identical, except for the type.
@@ -473,7 +473,7 @@ sub unescape_octal {
     # convert octal escapes to ascii
     $str =~ s/(\\)([0-9]{3})/chr(oct($2))/eg;
     return $str;
-};
+}
 
 sub unescape_packed_hex {
     my ($self, $str) = @_;
@@ -488,7 +488,7 @@ sub unescape_packed_hex {
 
     # insert : after each 4 char set
     return join(':', unpack("(a4)*", $str));
-};
+}
 
 1;
 

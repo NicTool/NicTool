@@ -83,7 +83,7 @@ sub add_zonefile {
     # TODO: check size of zone_str, and if larger than 1MB, split into multiple
     # requests.
     return $self->api_add("ZoneFile/$zone/", { file => $zone_str });
-};
+}
 
 sub add_ns_records {
     my ($self, $z) = @_;
@@ -96,7 +96,7 @@ sub add_ns_records {
                    };
         $self->api_add("NSRecord/$zone/$zone", $form);
     }
-};
+}
 
 sub add_zone_record {
     my ($self, $type, $zone, $fqdn, $req) = @_;
@@ -105,7 +105,7 @@ sub add_zone_record {
     $type = uc($type) . 'Record';
 
     return $self->api_add("$type/$zone/$fqdn", $req);
-};
+}
 
 sub get_zone_record {
     my ($self, $type, $zone, $fqdn, $id) = @_;
@@ -189,7 +189,7 @@ sub publish_zone {
     $self->{nte}->touch_publish_ts($zone);
     $self->{nte}->elog("published $zone");
     return 1;
-};
+}
 
 sub add_zone {
     my ($self, $zone) = @_;
@@ -198,7 +198,7 @@ sub add_zone {
 
     my $form = {rname => 'hostmaster@'.$zone, ttl => 3600, 'serial_style' => 'day'};
     return $self->api_add("Zone/$zone", $form);
-};
+}
 
 sub api_get {
     my ($self, $path) = @_;
@@ -288,7 +288,7 @@ sub remove_dyn_ns {
         # check $api_r2, if zone ends with dynect.net, remove it
         #$self->api_delete("NSRecord/$zone/$zone/$id/");
     }
-};
+}
 
 sub new_session {
     my ($self) = @_;
@@ -323,7 +323,7 @@ sub end_session {
     $ua->delete( $dyn_rest_url . 'Session/' );
     delete $self->{token};
     return;
-};
+}
 
 sub get_api_response {
     my ($self, $method, $rest_loc, $form_args) = @_;
@@ -348,7 +348,7 @@ sub get_api_response {
     }
 
     return $ua->request($req);
-};
+}
 
 sub postflight { return 1; }
 

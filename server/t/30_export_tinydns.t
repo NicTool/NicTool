@@ -109,4 +109,4 @@ sub test_zr_spf {
 sub test_characterCount {
     cmp_ok( $tinydns->characterCount("1234567890"), 'eq', '\012', 'characterCount, 1234567890');
     cmp_ok( $tinydns->characterCount("a"), 'eq', '\001', 'characterCount, a');
-};
+}

@@ -361,7 +361,7 @@ sub do_modify {
         print qq[<script> window.close(); </script>
         <span class="center bold">$message</span>];
     }
-};
+}
 
 sub do_remove {
     my ($nt_obj, $q, $user) = @_;

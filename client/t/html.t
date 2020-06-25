@@ -13,7 +13,7 @@ if ( $EVAL_ERROR ) {
 }
 else {
     plan 'no_plan';
-};
+}
 
 use_ok( 'Test::HTML::Lint' );
 
@@ -26,5 +26,5 @@ if ( -d $templates ) {
     foreach my $file ( glob "$templates/*.html" ) {
         html_fragment_ok( $file, "HTML valid: $file" );
     };
-};
+}
 

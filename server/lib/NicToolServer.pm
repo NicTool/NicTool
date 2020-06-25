@@ -813,7 +813,7 @@ sub error {
     my ($self, $type, $message) = @_;
     $self->{errors}{$type}++ if $type;
     push @{ $self->{error_messages} }, $message;
-};
+}
 
 sub verify_required {
     my ( $self, $req, $data ) = @_;
@@ -1418,7 +1418,7 @@ sub valid_ttl {
 
     $self->error( 'ttl', "Invalid TTL -- valid ttl range is 0 to 2,147,483,647: RFC 2181" );
     return;
-};
+}
 
 sub group_usage_ok {
     my ( $self, $id ) = @_;
@@ -1545,7 +1545,7 @@ sub get_option {
     );
     return if ! scalar @$refs;
     return $refs->[0]{option_value};
-};
+}
 
 sub dbh {
 
@@ -1748,7 +1748,7 @@ sub format_search_conditions {
     my @conditions = $self->get_advanced_search_conditions( $data, $field_map );
     push @conditions, $self->get_quick_search_conditions( $data, $field_map );
     return \@conditions;
-};
+}
 
 sub get_quick_search_conditions {
     my ($self, $data, $field_map ) = @_;
@@ -1998,7 +1998,7 @@ sub clean_perm_data {
     foreach ( qw/ nt_user_id nt_group_id nt_perm_id perm_name / ) {
         delete $obj->{$_};
     };
-};
+}
 
 1;
 

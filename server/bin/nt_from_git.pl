@@ -10,7 +10,7 @@ my $ntdir  = '/usr/local/nictool';
 if ( ! -d $gitdir ) {
     die "git dir not found. Did you check out the NicTool repo to $gitdir?\n
 Try: git clone https://github.com/msimerson/NicTool.git $gitdir\n";
-};
+}
 
 
 my @exclude = qw/ NicToolTest.pm test.cfg nictoolclient.conf nictoolserver.conf /;
@@ -21,7 +21,7 @@ my $client = "$rsync $exclude $gitdir/client/ $ntdir/client/";
 if ( ! -d "$ntdir/server" || ! -d "$ntdir/client" ) {
     die "This script can only update an existing NicTool install. Install
 NicTool and/or edit this script to set ntdir.\n";
-};
+}
 
 print "$server\n";
 system $server;

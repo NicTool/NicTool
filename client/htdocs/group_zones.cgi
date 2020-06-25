@@ -94,7 +94,7 @@ sub _display_delete {
             . " successfully removed.",
         "Zone$plural Removed"
     );
-};
+}
 
 sub _display_delete_delegate {
     my ($nt_obj, $q) = @_;
@@ -115,7 +115,7 @@ sub _display_delete_delegate {
     $nt_obj->display_nice_message(
         "The zone delegation was successfully removed.",
         "Delegation Removed" );
-};
+}
 
 sub _display_edit {
     my ($nt_obj, $q) = @_;
@@ -139,7 +139,7 @@ sub _display_edit {
     else {
         display_new_zone( $nt_obj, $q, '', 'edit' );
     }
-};
+}
 
 sub _display_new {
     my ($nt_obj, $q, $user) = @_;
@@ -153,7 +153,7 @@ sub _display_new {
 
     my $r = add_zone( $nt_obj, $q, $user ) or return;
     return ( $r->{newzone}, $r->{nicemessage} );
-};
+}
 
 sub display_list {
     my ( $nt_obj, $q, $group, $user ) = @_;
@@ -282,7 +282,7 @@ sub display_list_header {
   <td class="center width1" title="Delegate"></td>
   <td class="width1" title="Trash"></td>
  </tr>];
-};
+}
 
 sub display_list_move_checkbox {
     my ( $zone, $user, $user_group ) = @_;
@@ -301,7 +301,7 @@ sub display_list_move_checkbox {
 <img src="$NicToolClient::image_dir/nobox.gif" alt="no box">
 </td>];
     }
-};
+}
 
 sub display_list_zone_name {
     my ( $zone, $width, $bgcolor, $gid ) = @_;
@@ -334,7 +334,7 @@ sub display_list_zone_name {
     print qq[
    </div>
   </td>];
-};
+}
 
 sub display_list_group_name {
     my ( $zone, $width, $map ) = @_;
@@ -357,7 +357,7 @@ sub display_list_group_name {
     print qq[ $group_string
   </div>
  </td>];
-};
+}
 
 sub display_list_delegate_icon {
     my ( $zone, $user, $user_group ) = @_;
@@ -376,7 +376,7 @@ sub display_list_delegate_icon {
     else {
         print qq[<img src="$NicToolClient::image_dir/delegate-disabled.gif" alt="disabled"></td>];
     }
-};
+}
 
 sub display_list_delete_icon {
     my ( $zone, $user, $gid, $state_string ) = @_;
@@ -395,7 +395,7 @@ sub display_list_delete_icon {
     else {
         print qq[<img src="$NicToolClient::image_dir/trash-disabled.gif" alt="disabled trash"></td>];
     }
-};
+}
 
 sub display_new_zone {
     my ( $nt_obj, $q, $message, $edit ) = @_;
@@ -521,7 +521,7 @@ sub _get_new_zone_name {
         )
     )
     . qq[<a href="zones.cgi?nt_group_id=$gid">Batch</a>];
-};
+}
 
 sub _get_available_nameservers {
     my ($nt_obj, $q) = @_;
@@ -550,7 +550,7 @@ sub _get_available_nameservers {
         . "<BR>";
     };
     return $ns_list;
-};
+}
 
 sub _get_new_description {
     my ($q) = @_;
@@ -560,7 +560,7 @@ sub _get_new_description {
         -rows      => 4,
         -maxlength => 255
     ),
-};
+}
 
 sub _get_new_ttl {
     my ($q) = @_;
@@ -574,7 +574,7 @@ sub _get_new_ttl {
     )
     .
     qq[<input type="button" value="Default" onClick="this.form.ttl.value=$NicToolClient::default_zone_ttl"> $NicToolClient::default_zone_ttl];
-};
+}
 
 sub _get_new_refresh {
     my ( $q ) = @_;
@@ -587,7 +587,7 @@ sub _get_new_refresh {
         )
     ) .
     qq[<input type="button" value="Default" onClick="this.form.refresh.value=$NicToolClient::default_zone_refresh"> $NicToolClient::default_zone_refresh ];
-};
+}
 
 sub add_zone {
     my ($nt_obj, $q, $user) = @_;
@@ -627,7 +627,7 @@ sub add_zone {
 
     $q->param( -name  => 'new_zone_id', -value => $error->{'nt_zone_id'} );
     return { nicemessage => [ $nice, "Zone Created" ] };
-};
+}
 
 sub add_zone_records {
     my ( $nt, $recs, $debug ) = @_;
@@ -687,5 +687,5 @@ sub display_zone_actions {
     print qq[
  </ul>
 </div>];
-};
+}
 

@@ -287,7 +287,7 @@ sub get_nameserver_export_types {
     };
 
     return $self->{export_types}{$lookup}{id};  # got a name, return ID
-};
+}
 
 sub new_nameserver {
     my ( $self, $data ) = @_;

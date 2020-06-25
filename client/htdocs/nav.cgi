@@ -182,5 +182,5 @@ sub display_group {
   <td><a href="group_log.$suffix">Log</a></td>
  </tr>
 </table>];
-};
+}
 

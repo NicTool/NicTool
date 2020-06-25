@@ -91,7 +91,7 @@ sub _valid_ip_addresses {
     if ($data->{address6} && !$self->valid_ip_address($data->{address6})) {
         $self->error( 'address6', "Invalid IPv6 address - $data->{address6}");
     }
-};
+}
 
 sub _valid_chars {
     my ($self, $name) = @_;
@@ -103,7 +103,7 @@ sub _valid_chars {
     };
 
     return 1;
-};
+}
 
 sub _valid_export_type {
     my ($self, $data) = @_;
@@ -131,7 +131,7 @@ sub _valid_export_type {
 
     $self->error( 'export_format', 'Invalid export format.' );
     return 0;
-};
+}
 
 sub _valid_fqdn {
     my ($self, $name) = @_;
@@ -163,7 +163,7 @@ sub _valid_nsname {
         }
     }
     return $has_err ? 0 : 1;
-};
+}
 
 1;
 

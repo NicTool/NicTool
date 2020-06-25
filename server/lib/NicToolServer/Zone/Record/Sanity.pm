@@ -87,7 +87,7 @@ sub new_or_edit_basic_verify {
 
     $self->_name_collision($data, $z);
     $self->_valid_ttl( @args );
-};
+}
 
 sub _valid_ttl {
     my ($self, $data, $zone_text, $collisions) = @_;
@@ -621,7 +621,7 @@ sub _valid_ptr {
 
     $self->_valid_address( $data, $zone_text );
     $self->_valid_address_chars( $data, $zone_text );
-};
+}
 
 sub _valid_naptr {
     my ( $self, $data, $zone_text ) = @_;
@@ -677,7 +677,7 @@ sub get_invalid_chars {
     return '[^a-zA-Z0-9\-\.\/_]' if $zone_text =~ /(in-addr|ip6)\.arpa[\.]{0,1}$/i;
 
     return '[^a-zA-Z0-9\-\._]';
-};
+}
 
 sub valid_reverse_label {
     my $self = shift;
@@ -712,7 +712,7 @@ sub valid_reverse_label {
             $self->error($type, "Domain labels $label_explain must not end with a hyphen: RFC 1035");
         };
     };
-};
+}
 
 
 1;

@@ -134,7 +134,7 @@ pass :  encrypted as: $pass_hash
 email:  $nt_root_email
 -------------------------
 Otherwise, hit return to continue...
-};
+}
 my $read = <STDIN>;
 
 exit if $test_run;
@@ -288,7 +288,7 @@ sub get_password {
         };
     }
     return $answer;
-};
+}
 
 sub get_sql_files {
     my @r;
@@ -304,7 +304,7 @@ sub get_sql_files {
         die "didn't find *.sql files. Are you running this in the sql dir?\n";
     };
     return @r;
-};
+}
 
 sub _get_salt {
     my $self = shift;

@@ -744,7 +744,7 @@ sub edit_zone_nameservers {
         $self->set_zone_nameservers( $data->{nt_zone_id}, \@newns );
         $data->{nameservers} = join(',', sort @newns );
     };
-};
+}
 
 sub log_zone {
     my ( $self, $data, $action, $prev_data ) = @_;
@@ -991,7 +991,7 @@ sub valid_mailaddr {
     };
 
     return $has_error == 0 ? 1 : 0;
-};
+}
 
 sub valid_label {
     my ( $self, $field, $name ) = @_;
@@ -1025,7 +1025,7 @@ sub valid_label {
     };
 
     return $has_error == 0 ? 1 : 0;
-};
+}
 
 ### serial number routines
 sub bump_serial {
