@@ -12,7 +12,7 @@ my $apps = [
     { app => 'gettext'       , info => {}, },
     { app => 'gmake'         , info => { yum  => 'make', apt => 'make' }, },
     { app => 'rsync'         , info => { }, },
-    { app => 'cpanm'         , info => { apt => 'cpanminus' }, },
+    { app => 'cpanm'         , info => { port => 'App-cpanminus', apt => 'cpanminus' }, },
 ];
 
 $EUID == 0 or do {
