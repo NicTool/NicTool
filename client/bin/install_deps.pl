@@ -8,7 +8,7 @@ use CPAN;
 use English qw( -no_match_vars );
 
 my $apps = [
-    { app => 'cpanm'         , info => { }, },
+    { app => 'cpanm'         , info => { port => 'App-cpanminus', apt => 'cpanminus' }, },
 ];
 
 $EUID == 0 or do {

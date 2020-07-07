@@ -127,88 +127,55 @@ UPDATE resource_record_type SET forward=0, obsolete=1 WHERE id=99;
 /*  Update CHARACTER & COLLATION for VARCHAR columns */
 
 ALTER TABLE nt_nameserver DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin,
-    MODIFY name varchar(127) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '',
-    MODIFY description  varchar(255)
-      CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-    MODIFY address      varchar(127)
-      CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '',
-    MODIFY address6     varchar(127)
-      CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-    MODIFY remote_login varchar(127)
-      CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL;
+    MODIFY name         varchar(127) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '',
+    MODIFY description  varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+    MODIFY address      varchar(127) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '',
+    MODIFY address6     varchar(127) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+    MODIFY remote_login varchar(127) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL;
 
 ALTER TABLE nt_zone DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin,
-    MODIFY zone varchar(255)
-      CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '',
-    MODIFY mailaddr varchar(127)
-      CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-    MODIFY description varchar(255)
-      CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-    MODIFY location varchar(8)
-      CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL;
+    MODIFY zone        varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '',
+    MODIFY mailaddr    varchar(127) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+    MODIFY description varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+    MODIFY location    varchar(8)   CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+    MODIFY last_publish DATETIME DEFAULT NULL;
 
 ALTER TABLE nt_zone_log DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin,
-    MODIFY zone varchar(255)
-      CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '',
-    MODIFY mailaddr varchar(127)
-      CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-    MODIFY description varchar(255)
-      CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-    ADD location varchar(8)
-      CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL;
+    MODIFY zone        varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '',
+    MODIFY mailaddr    varchar(127) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+    MODIFY description varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+    ADD location       varchar(8)   CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL;
 
 ALTER TABLE nt_zone_record DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin,
-  MODIFY name varchar(255)
-    CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '',
-  MODIFY description varchar(255)
-    CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-  MODIFY address varchar(5120)
-    CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-  MODIFY other varchar(512)
-    CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-  MODIFY location varchar(2)
-    CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL;
+  MODIFY name        varchar(255)  CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '',
+  MODIFY description varchar(255)  CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+  MODIFY address     varchar(5120) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+  MODIFY other       varchar(512)  CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+  MODIFY location    varchar(2)    CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL;
 
 ALTER TABLE nt_zone_record_log DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin,
-  MODIFY name varchar(255)
-    CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '',
-  MODIFY description varchar(255)
-    CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-  MODIFY address varchar(5120)
-    CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-  MODIFY other varchar(512)
-    CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-  MODIFY location varchar(2)
-    CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL;
+  MODIFY name        varchar(255)  CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '',
+  MODIFY description varchar(255)  CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+  MODIFY address     varchar(5120) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+  MODIFY other       varchar(512)  CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+  MODIFY location    varchar(2)    CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL;
 
 ALTER TABLE nt_user DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin,
-    MODIFY first_name varchar(120)
-        CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-    MODIFY last_name varchar(160)
-        CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-    MODIFY username varchar(200)
-        CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '',
-    MODIFY password varchar(1020)
-        CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-    MODIFY email varchar(400)
-        CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '';
+    MODIFY first_name varchar(120)  CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+    MODIFY last_name  varchar(160)  CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+    MODIFY username   varchar(200)  CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '',
+    MODIFY password   varchar(1020) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+    MODIFY email      varchar(400)  CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '';
 
 ALTER TABLE nt_user_log DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin,
-    MODIFY first_name varchar(120)
-        CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-    MODIFY last_name varchar(160)
-        CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-    MODIFY username varchar(200)
-        CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '',
-    MODIFY password varchar(1020)
-        CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-    MODIFY email varchar(400)
-        CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '';
+    MODIFY first_name varchar(120)  CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+    MODIFY last_name  varchar(160)  CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+    MODIFY username   varchar(200)  CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '',
+    MODIFY password   varchar(1020) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+    MODIFY email      varchar(400)  CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '';
 
 ALTER TABLE nt_group DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin,
-    MODIFY name varchar(255)
-        CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '';
-
+    MODIFY name varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '';
 
 $encode_utf8mb4
 
@@ -294,7 +261,7 @@ sub _sql_test_2_28 {
 
 sub _sql_2_28 {
     <<EO_SQL_2_28
-ALTER TABLE nt_zone ADD COLUMN last_publish TIMESTAMP DEFAULT 0 AFTER last_modified;
+ALTER TABLE nt_zone ADD COLUMN last_publish DATETIME DEFAULT NULL AFTER last_modified;
 
 UPDATE nt_options SET option_value='2.28' WHERE option_name='db_version';
 EO_SQL_2_28
