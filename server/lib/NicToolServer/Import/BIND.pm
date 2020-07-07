@@ -50,6 +50,7 @@ sub import_records {
 sub import_zone {
     my ($self, $zone, $file) = @_;
 
+    $zone =~ s/\.$//; #remove trailing dot
     print "zone: $zone \tfrom\t$file\n";
 
     my $zonefile = Net::DNS::ZoneFile->new($file, $zone );
