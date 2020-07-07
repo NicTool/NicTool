@@ -1,10 +1,10 @@
 language: perl
 perl:
-  - "5.26"
+  - "5.28"
   - "5.24"
   - "5.20"
 
-dist: trusty
+dist: xenial
 
 services:
     - mysql
@@ -15,7 +15,6 @@ addons:
     - expat
     - gettext
     - apache2
-    - apache2-mpm-worker
     - libapache2-mod-perl2
     - libapache2-mod-perl2-dev
     - libapache-dbi-perl
