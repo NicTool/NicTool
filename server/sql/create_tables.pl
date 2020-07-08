@@ -134,7 +134,7 @@ pass :  encrypted as: $pass_hash
 email:  $nt_root_email
 -------------------------
 Otherwise, hit return to continue...
-}
+};
 my $read = <STDIN>;
 
 exit if $test_run;

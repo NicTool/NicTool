@@ -8,13 +8,13 @@ use CPAN;
 use English qw( -no_match_vars );
 
 my $apps = [
-    { app => 'cpanm'         , info => { }, },
+    { app => 'cpanm'         , info => { port => 'App-cpanminus', apt => 'cpanminus' }, },
 ];
 
 $EUID == 0 or do {
     warn "You will have better luck if you run me as root.\n"; ## no critic (Carp)
     sleep 2;
-}
+};
 
 my @failed;
 foreach ( @$apps ) {

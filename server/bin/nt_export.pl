@@ -58,7 +58,7 @@ Getopt::Long::GetOptions(
 ) or do {
     print STDERR "error parsing command line options";
     exit 2;
-}
+};
 
 usage() and exit if $usage;
 
@@ -81,7 +81,7 @@ $export->incremental( $incremental || 0);
 $export->get_dbh( dsn => $dsn, user => $db_user, pass => $db_pass,) or do {
     print STDERR "database connection failed";
     exit 2;
-}
+};
 
 # If nsid has not been specified, try to locate the nsid for this server,
 # or display a table of nsid to use to generate the zone files.
