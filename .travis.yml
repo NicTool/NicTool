@@ -4,7 +4,7 @@ perl:
   - "5.24"
   - "5.20"
 
-dist: xenial
+dist: precise
 
 services:
     - mysql
@@ -53,7 +53,7 @@ addons:
 
 before_install:
     - sudo .test/tls-setup.sh
-    - sudo .test/mysql-setup.sh
+#   - sudo .test/mysql-setup.sh
 
       # globally/system installed perl modules, for Apache::mod_perl
     - curl -L https://cpanmin.us | sudo perl - --sudo App::cpanminus
