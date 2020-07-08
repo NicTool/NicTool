@@ -36,7 +36,7 @@ addons:
     - libssl-dev
     - libcrypt-openssl-rsa-perl
     - libcrypt-openssl-dsa-perl
-    - libshell-perl
+#   - libshell-perl
     - libnet-dns-perl
     - libyaml-perl
     - bind9utils
