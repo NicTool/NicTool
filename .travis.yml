@@ -4,7 +4,7 @@ perl:
   - "5.24"
   - "5.20"
 
-dist: xenial
+dist: precise
 
 services:
     - mysql
@@ -36,7 +36,7 @@ addons:
     - libssl-dev
     - libcrypt-openssl-rsa-perl
     - libcrypt-openssl-dsa-perl
-    - libshell-perl
+#   - libshell-perl
     - libnet-dns-perl
     - libyaml-perl
     - bind9utils
@@ -67,7 +67,7 @@ before_install:
 
 install:
     - sudo cp .test/apache-travis.conf /etc/apache2/sites-enabled/nictool.conf
-    - sudo a2dismod mpm_event; sudo a2dismod mpm_worker; sudo a2enmod mpm_prefork
+#   - sudo a2dismod mpm_event; sudo a2dismod mpm_worker; sudo a2enmod mpm_prefork
     - sudo service apache2 restart || sudo cat /var/log/apache2/error.log
     - perl .test/create_tables.pl
 

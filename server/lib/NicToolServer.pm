@@ -62,7 +62,6 @@ sub handler {
     $self->{user} = $client_obj->data()->{user};
 
     my $cmd = $self->api_commands->{$action} or do {
-
         # fart on unknown actions
         warn "unknown NicToolServer action: $action\n" if $self->debug;
         $response_obj->respond( $self->error_response( 500, $action ) );

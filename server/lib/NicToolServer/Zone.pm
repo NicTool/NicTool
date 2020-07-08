@@ -344,10 +344,10 @@ sub get_group_zones {
 
     # get zones that are 'pseudo' delegates: some of their records are delegated.
     $sql = "SELECT nt_zone.nt_zone_id,
-               COUNT(*) as delegated_records,
-               ANY_VALUE(nt_delegate.delegated_by_id),
-               ANY_VALUE(nt_delegate.delegated_by_name),
-               ANY_VALUE(1 as pseudo)
+               COUNT(*) AS delegated_records,
+               nt_delegate.delegated_by_id,
+               nt_delegate.delegated_by_name,
+               1 AS pseudo
          FROM nt_delegate
          INNER JOIN nt_zone_record ON nt_delegate.nt_object_id=nt_zone_record.nt_zone_record_id
          INNER JOIN nt_zone ON nt_zone.nt_zone_id=nt_zone_record.nt_zone_id

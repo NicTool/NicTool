@@ -140,7 +140,7 @@ sub test_group_new {
         ok( $res->get('error_desc') =~ qr/Sanity error/ );
         $res->is_error or do {
             $res = $user->delete_group(nt_group_id => $res->get('nt_group_id'));
-        }
+        };
     }
 
     for ( ' test', qw(-test _test 'test .test @test) ) {

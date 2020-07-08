@@ -121,7 +121,7 @@ sub test_cleanups {
         noerrok($res) or do {
             warn "Couldn't delete test zone 1";
             diag Data::Dumper::Dumper($res);
-        }
+        };
     }
 
     if ( defined $zid2 ) {
@@ -129,7 +129,7 @@ sub test_cleanups {
         noerrok($res) or do {
             warn "Couldn't delete test zone 2";
             diag Data::Dumper::Dumper($res);
-        }
+        };
     }
 
     if ( defined $rzid1 ) {
@@ -137,7 +137,7 @@ sub test_cleanups {
         noerrok($res) or do {
             warn "Couldn't delete test reverse zone 1";
             diag Data::Dumper::Dumper($res);
-        }
+        };
     }
 
     if ( defined $rzid2 ) {
@@ -145,7 +145,7 @@ sub test_cleanups {
         noerrok($res) or do {
             warn "Couldn't delete test reverse zone 2";
             diag Data::Dumper::Dumper($res);
-        }
+        };
     }
 
     if ( defined $nsid1 ) {
@@ -153,7 +153,7 @@ sub test_cleanups {
         noerrok($res) or do {
             warn "Couldn't delete test nameserver1";
             diag Data::Dumper::Dumper($res);
-        }
+        };
     }
 
     if ( defined $nsid2 ) {
@@ -161,7 +161,7 @@ sub test_cleanups {
         noerrok($res) or do {
             warn "Couldn't delete test nameserver2";
             diag Data::Dumper::Dumper($res);
-        }
+        };
     }
 
     if ( defined $gid1 ) {
@@ -169,7 +169,7 @@ sub test_cleanups {
         noerrok($res) or do {
             warn "Couldn't delete test group1";
             diag $res;
-        }
+        };
     }
 
     if ( defined $gid2 ) {
@@ -177,7 +177,7 @@ sub test_cleanups {
         noerrok($res) or do {
             warn "Couldn't delete test group2";
             diag $res;
-        }
+        };
     }
 }
 
