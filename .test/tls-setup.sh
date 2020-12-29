@@ -1,25 +1,28 @@
 #!/bin/sh
 
-TLS_DIR=${TLS_DIR:="/etc/ssl"}
+TLS_DIR=${TLS_DIR:="/home/travis/build/msimerson/NicTool/ssl"}
+if [ -n "$GITHUB_ACTIONS" ]; then
+    TLS_DIR="/home/runner/work/NicTool/NicTool/tls"
+fi
 
-for _d in "$TLS_DIR/certs" "$TLS_DIR/private"; do
-    if [ ! -d "$_d" ]; then
-        mkdir "$_d"
-    fi
-done
+env
 
-chmod o-r "$TLS_DIR/private"
+mkdir -p "$TLS_DIR"
+chmod 755 "$TLS_DIR"
+
 # If installed openssl supports Elliptical Curve...
-#   -newkey ec \
-#   -pkeyopt ec_paramgen_curve:prime256v1 \
+# -newkey rsa:2048 \
+
 openssl req \
     -new \
-    -newkey rsa:2048 \
+    -newkey ec \
     -days 2190 \
     -nodes \
     -x509 \
     -subj "/C=US/ST=Washington/L=Seattle/O=TNPI/CN=travis.tnpi.net" \
-    -keyout "$TLS_DIR/private/server.key" \
-    -out "$TLS_DIR/certs/server.crt"
+    -pkeyopt ec_paramgen_curve:prime256v1 \
+    -keyout "$TLS_DIR/server.key" \
+    -out "$TLS_DIR/server.crt"
 
-a2enmod ssl
+sudo a2enmod ssl
+sudo systemctl restart apache2
