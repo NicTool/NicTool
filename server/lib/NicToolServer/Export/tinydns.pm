@@ -288,17 +288,17 @@ sub zr_soa {
     my $z = shift or die;
 
     # using sprintf versus concatenation takes the same amount of time.
-    return 'Z'. $z->{zone}            # fqdn
-        . ':' . $z->{nsname}          # mname
-        . ':' . $z->{mailaddr}  || '' # rname
-        . ':' . $z->{serial}    || '' # serial
-        . ':' . $z->{refresh}   || '' # refresh
-        . ':' . $z->{retry}     || '' # retry
-        . ':' . $z->{expire}    || '' # expire
-        . ':' . $z->{minimum}   || '' # min
-        . ':' . $z->{ttl}       || '' # ttl
-        . ':' . $z->{timestamp} || '' # timestamp
-        . ':' . $z->{location}  || '' # location
+    return 'Z'. $z->{zone}               # fqdn
+        . ':' . $z->{nsname}             # mname
+        . ':' . ($z->{mailaddr}  || '')  # rname
+        . ':' . ($z->{serial}    || '')  # serial
+        . ':' . ($z->{refresh}   || '')  # refresh
+        . ':' . ($z->{retry}     || '')  # retry
+        . ':' . ($z->{expire}    || '')  # expire
+        . ':' . ($z->{minimum}   || '')  # min
+        . ':' . ($z->{ttl}       || '')  # ttl
+        . ':' . ($z->{timestamp} || '')  # timestamp
+        . ':' . ($z->{location}  || '')  # location
         . "\n";
 }
 
@@ -311,7 +311,7 @@ sub zr_generic {
         . $self->qualify( $r->{name} )     # fqdn
         . ':' . $rrid                      # n
         . ':' . $rdata                     # rdata
-        . ':' . ($r->{ttl} || '')          # ttl
+        . ':' . ($r->{ttl}       || '')    # ttl
         . ':' . ($r->{timestamp} || '')    # timestamp
         . ':' . ($r->{location}  || '')    # lo
         . "\n";
