@@ -26,20 +26,20 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
 
-      - name: Install Apache
-        run: sudo apt-get install -y apache2
-
-      - name: Set up MySQL
-        run: |
-          # sudo apt-get install -y mysql-server
-          sudo service mysql start
-          sudo .test/mysql-setup.sh
+      - name: APT packages
+        run: .test/setup-ubuntu.sh
 
       - name: TLS setup
-        run: .test/tls-setup.sh
+        run: .test/setup-tls.sh
+
+      - name: Set up MySQL
+        run: .test/setup-mysql.sh
+
+      - name: Setup Apache
+        run: .test/setup-apache.sh
 
     services:
       mysql:
-        image: mysql:5.7
+        image: mysql:5.6
         env:
           MYSQL_ALLOW_EMPTY_PASSWORD: yes

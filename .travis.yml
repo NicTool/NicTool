@@ -4,10 +4,7 @@ perl:
   - "5.24"
   - "5.20"
 
-dist: precise
-
-env:
-  TLS_DIR=/home/travis/build/msimerson/NicTool/ssl
+dist: trusty
 
 services:
     - mysql
@@ -39,7 +36,6 @@ addons:
     - libssl-dev
     - libcrypt-openssl-rsa-perl
     - libcrypt-openssl-dsa-perl
-#   - libshell-perl
     - libnet-dns-perl
     - libyaml-perl
     - bind9utils
@@ -55,23 +51,22 @@ addons:
     - libtest-output-perl
 
 before_install:
-    - sudo .test/tls-setup.sh
-#   - sudo .test/mysql-setup.sh
+    - .test/setup-tls.sh
+    - .test/setup-mysql.sh
+    - .test/setup-apache.sh
 
     # globally/system installed perl modules, for Apache::mod_perl
     - curl -L https://cpanmin.us | sudo perl - --sudo App::cpanminus
-    - sudo cpanm --notest CGI RPC::XML CryptX Crypt::Mac::HMAC Crypt::KeyDerivation DBD::mysql Apache::DBI URI
+    - sudo cpanm --notest CGI RPC::XML CryptX Crypt::Mac::HMAC Crypt::KeyDerivation DBD::mysql Apache::DBI
 
     # locally installed modules, for tests
-    - cpanm --notest --force Test::More Test::HTML::Lint Test::Output Test::Pod URI
+    - cpanm --notest --force Test::More Test::HTML::Lint Test::Output Test::Pod
     - cpanm --notest --force Net::DNS || sudo cpanm --notest --force Net::DNS@1.0.6 || echo "double darn"
     - cd /home/travis/build/msimerson/NicTool/client && perl Makefile.PL && cpanm -n .
     - cd /home/travis/build/msimerson/NicTool/server && perl Makefile.PL && cpanm -n .
     - cd /home/travis/build/msimerson/NicTool
 
 install:
-    - sudo cp .test/apache-travis.conf /etc/apache2/sites-enabled/nictool.conf
-#   - sudo a2dismod mpm_event; sudo a2dismod mpm_worker; sudo a2enmod mpm_prefork
     - sudo service apache2 restart || sudo cat /var/log/apache2/error.log
     - perl .test/create_tables.pl
 
