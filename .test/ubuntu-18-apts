@@ -32,3 +32,9 @@ gettext
 cpanminus
 git
 rsync
+mysql-server
+mysql-client
+libmysqlclient-dev
+libdbi-perl
+libdbd-mysql-perl
+libdbix-simple-perl

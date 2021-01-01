@@ -58,8 +58,8 @@ before_install:
 
       # locally installed modules, for tests
     - cpanm --notest --force Test::More Test::HTML::Lint Test::Output Test::Pod URI
-    - cpanm --notest DBI CryptX Crypt::Mac::HMAC Crypt::KeyDerivation
-    - cpanm --notest --force Net::DNS || sudo cpanm --notest --force Net::DNS@1.0.6 || echo "double darn"
+    - cpanm --notest DBI DBD::mysql CryptX Crypt::Mac::HMAC Crypt::KeyDerivation
+    # - cpanm --notest --force Net::DNS || sudo cpanm --notest --force Net::DNS@1.0.6 || echo "double darn"
 
     - .test/setup-tls.sh
     - .test/setup-mysql.sh
@@ -70,7 +70,7 @@ before_install:
     - cd /home/travis/build/msimerson/NicTool
 
 install:
-    - sudo service apache2 restart || sudo cat /var/log/apache2/error.log
+    # - sudo service apache2 restart || sudo cat /var/log/apache2/error.log
 
 before_script:
 
