@@ -20,6 +20,7 @@ if [ -n "$TRAVIS" ]; then
     #configure_mysqld
     #sudo service mysql restart
     mysql -u root -e 'SET GLOBAL sql_mode = "";'
+    perl .test/create_tables.pl
 
 elif [ -n "$GITHUB_ACTIONS" ]; then
 
@@ -27,6 +28,7 @@ elif [ -n "$GITHUB_ACTIONS" ]; then
     configure_mysqld
     sudo service mysql start
     mysql -u root -proot -e 'SET GLOBAL sql_mode = "";'
+    perl .test/create_tables.pl
 
 else
 
@@ -35,7 +37,6 @@ else
     configure_mysqld
     sudo service mysql start
     sudo mysql -e 'SET GLOBAL sql_mode = "";'
+    sudo perl .test/create_tables.pl
 
 fi
-
-perl .test/create_tables.pl

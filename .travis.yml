@@ -54,7 +54,9 @@ before_install:
       # globally/system installed perl modules, for Apache::mod_perl
       # - curl -L https://cpanmin.us | sudo perl - --sudo App::cpanminus
       # Time::TAI64
-    - sudo cpanm --notest CGI RPC::XML CryptX Crypt::Mac::HMAC Crypt::KeyDerivation DBD::mysql Apache::DBI URI
+    - sudo cpanm --notest CryptX Crypt::Mac::HMAC Crypt::KeyDerivation
+    # - cd /home/travis/build/msimerson/NicTool/server && perl Makefile.PL && sudo cpanm --installdeps -n .
+    # - cd /home/travis/build/msimerson/NicTool
 
       # locally installed modules, for tests
     - cpanm --notest --force Test::More Test::HTML::Lint Test::Output Test::Pod URI
