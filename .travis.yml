@@ -52,10 +52,11 @@ addons:
 
 before_install:
     - .test/setup-tls.sh
-    - .test/setup-mysql.sh
+    # - .test/setup-mysql.sh
     - .test/setup-apache.sh
 
     # globally/system installed perl modules, for Apache::mod_perl
+    - curl -L https://cpanmin.us | sudo perl - --sudo App::cpanminus
     - sudo cpanm --notest CGI RPC::XML CryptX Crypt::Mac::HMAC Crypt::KeyDerivation DBD::mysql Apache::DBI Time::TAI64 URI
 
     # locally installed modules, for tests
