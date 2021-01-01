@@ -12,6 +12,7 @@ services:
 addons:
   apt:
     packages:
+    - curl
     - expat
     - cpanminus
     - libdbix-simple-perl
@@ -55,11 +56,11 @@ before_install:
     # - .test/setup-mysql.sh
     - .test/setup-apache.sh
 
-    # globally/system installed perl modules, for Apache::mod_perl
+      # globally/system installed perl modules, for Apache::mod_perl
     - curl -L https://cpanmin.us | sudo perl - --sudo App::cpanminus
     - sudo cpanm --notest CGI RPC::XML CryptX Crypt::Mac::HMAC Crypt::KeyDerivation DBD::mysql Apache::DBI Time::TAI64 URI
 
-    # locally installed modules, for tests
+      # locally installed modules, for tests
     - cpanm --notest --force Test::More Test::HTML::Lint Test::Output Test::Pod URI
     - cpanm --notest --force Net::DNS || sudo cpanm --notest --force Net::DNS@1.0.6 || echo "double darn"
     - cd /home/travis/build/msimerson/NicTool/client && perl Makefile.PL && cpanm --installdeps -n .
