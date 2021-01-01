@@ -73,6 +73,9 @@ sub get_dbh {
 #########################################################################\n";
     my $db_host = 'localhost';
     my $db_root_pw = '';
+    if ($ENV{'GITHUB_ACTIONS'}) {
+        $db_root_pw = 'root';
+    }
 
     my $dbh = DBI->connect("dbi:mysql:host=$db_host", 'root', $db_root_pw, {
             ChopBlanks => 1,

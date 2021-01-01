@@ -12,10 +12,14 @@ elif [ -n "$GITHUB_ACTIONS" ]; then
     # sudo cpanm --notest DBD::mysql
     sudo service mysql start
     mysql -u root -proot -e 'SET GLOBAL sql_mode = "";'
+
 else
     echo 'sql_mode=""' | sudo tee -a /etc/mysql/mysql.conf.d/mysqld.cnf
     sudo apt-get install -y mysql-server mysql-client libmysqlclient-dev libdbi-perl libdbd-mysql-perl libdbix-simple-perl
     # sudo cpanm --notest DBD::mysql
     sudo service mysql start
     sudo mysql -e 'SET GLOBAL sql_mode = "";'
+
 fi
+
+perl .test/create_tables.pl
