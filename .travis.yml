@@ -51,14 +51,13 @@ addons:
     - libtest-output-perl
 
 before_install:
-    - .test/setup-tls.sh
-    - .test/setup-mysql.sh
-    - .test/setup-apache.sh
-
       # globally/system installed perl modules, for Apache::mod_perl
       # - curl -L https://cpanmin.us | sudo perl - --sudo App::cpanminus
       # Time::TAI64
     - sudo cpanm --notest CGI RPC::XML CryptX Crypt::Mac::HMAC Crypt::KeyDerivation DBD::mysql Apache::DBI URI
+    - .test/setup-tls.sh
+    - .test/setup-mysql.sh
+    - .test/setup-apache.sh
 
       # locally installed modules, for tests
     - cpanm --notest --force Test::More Test::HTML::Lint Test::Output Test::Pod URI

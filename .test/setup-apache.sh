@@ -49,6 +49,8 @@ elif [ -n "$GITHUB_ACTIONS" ]; then
     sudo a2enmod mpm_prefork
     sudo cpanm --notest Apache::DBI
     sudo systemctl restart apache2 || sudo cat /var/log/apache2/error.log
+    sleep 3
+
 else
     sudo apt-get install -y apache2 libapache2-mod-perl2 libapache2-mod-perl2-dev libapache-dbi-perl
     echo "enabling SSL module"
@@ -58,4 +60,5 @@ else
     sudo a2enmod mpm_prefork
     sudo cpanm --notest Apache::DBI
     sudo systemctl restart apache2 || sudo cat /var/log/apache2/error.log
+
 fi
