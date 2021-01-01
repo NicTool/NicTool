@@ -2,8 +2,8 @@
 
 
 if [ -n "$TRAVIS" ]; then
-    echo 'sql_mode=""' | sudo tee -a /etc/mysql/mysql.conf.d/mysqld.cnf
-    sudo service mysql restart
+    #echo 'sql_mode=""' | sudo tee -a /etc/mysql/mysql.conf.d/mysqld.cnf
+    #sudo service mysql restart
     mysql -u root -e 'SET GLOBAL sql_mode = "";'
 
 elif [ -n "$GITHUB_ACTIONS" ]; then
