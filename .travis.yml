@@ -56,7 +56,7 @@ before_install:
 #   - sudo .test/mysql-setup.sh
 
       # globally/system installed perl modules, for Apache::mod_perl
-    - curl -L https://cpanmin.us | sudo perl - --sudo App::cpanminus
+    # - curl -L https://cpanmin.us | sudo perl - --sudo App::cpanminus
     - sudo cpanm --notest CGI RPC::XML CryptX Crypt::Mac::HMAC Crypt::KeyDerivation DBD::mysql Apache::DBI URI
 
       # locally installed modules, for tests
