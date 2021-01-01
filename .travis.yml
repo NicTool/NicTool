@@ -57,7 +57,8 @@ before_install:
 
       # globally/system installed perl modules, for Apache::mod_perl
     # - curl -L https://cpanmin.us | sudo perl - --sudo App::cpanminus
-    - sudo cpanm --notest CGI RPC::XML CryptX Crypt::Mac::HMAC Crypt::KeyDerivation DBD::mysql Apache::DBI URI
+    # - sudo cpanm --notest CGI RPC::XML CryptX Crypt::Mac::HMAC Crypt::KeyDerivation DBD::mysql Apache::DBI URI
+    - sudo cpanm --notest CryptX Crypt::Mac::HMAC Crypt::KeyDerivation URI
 
       # locally installed modules, for tests
     - cpanm --notest --force Test::More Test::HTML::Lint Test::Output Test::Pod URI
@@ -83,6 +84,9 @@ after_failure:
     - pwd
     - mysql --version
     - apache2 -version
+    - perl --version
+    - sudo perl --version
+    - sudo which perl
     - sudo cat /var/log/apache2/error.log
     - cat /etc/apache2/apache2.conf
     - ls /usr/lib/apache2/modules/
