@@ -58,7 +58,7 @@ before_install:
 
       # locally installed modules, for tests
     - cpanm --notest --force Test::More Test::HTML::Lint Test::Output Test::Pod URI
-    - cpanm --notest CryptX Crypt::Mac::HMAC Crypt::KeyDerivation
+    - cpanm --notest DBI CryptX Crypt::Mac::HMAC Crypt::KeyDerivation
     - cpanm --notest --force Net::DNS || sudo cpanm --notest --force Net::DNS@1.0.6 || echo "double darn"
 
     - .test/setup-tls.sh
