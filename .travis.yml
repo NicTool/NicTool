@@ -4,7 +4,7 @@ perl:
   - "5.24"
   - "5.20"
 
-dist: trusty
+dist: precise
 
 services:
     - mysql
@@ -56,14 +56,13 @@ before_install:
     - .test/setup-apache.sh
 
     # globally/system installed perl modules, for Apache::mod_perl
-    - curl -L https://cpanmin.us | sudo perl - --sudo App::cpanminus
-    - sudo cpanm --notest CGI RPC::XML CryptX Crypt::Mac::HMAC Crypt::KeyDerivation DBD::mysql Apache::DBI
+    - sudo cpanm --notest CGI RPC::XML CryptX Crypt::Mac::HMAC Crypt::KeyDerivation DBD::mysql Apache::DBI Time::TAI64 URI
 
     # locally installed modules, for tests
-    - cpanm --notest --force Test::More Test::HTML::Lint Test::Output Test::Pod
+    - cpanm --notest --force Test::More Test::HTML::Lint Test::Output Test::Pod URI
     - cpanm --notest --force Net::DNS || sudo cpanm --notest --force Net::DNS@1.0.6 || echo "double darn"
-    - cd /home/travis/build/msimerson/NicTool/client && perl Makefile.PL && cpanm -n .
-    - cd /home/travis/build/msimerson/NicTool/server && perl Makefile.PL && cpanm -n .
+    - cd /home/travis/build/msimerson/NicTool/client && perl Makefile.PL && cpanm --installdeps -n .
+    - cd /home/travis/build/msimerson/NicTool/server && perl Makefile.PL && cpanm --installdeps -n .
     - cd /home/travis/build/msimerson/NicTool
 
 install:

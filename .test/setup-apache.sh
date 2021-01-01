@@ -21,7 +21,7 @@ echo "installing /etc/apache2/sites-enabled/nictool.conf"
 sudo cp .test/apache.conf /etc/apache2/sites-enabled/nictool.conf
 
 if [ -e "/etc/apache2/sites-enabled/000-default.conf" ]; then
-    rm /etc/apache2/sites-enabled/000-default.conf
+    sudo rm /etc/apache2/sites-enabled/000-default.conf
 fi
 
 if [ -n "$TRAVIS" ]; then

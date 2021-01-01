@@ -24,6 +24,7 @@ libmailtools-perl
 libperl-prereqscanner-perl
 libtest-pod-perl
 libtest-output-perl
+libcryptx-perl
 curl
 gcc
 make
