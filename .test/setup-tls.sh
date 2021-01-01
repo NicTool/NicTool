@@ -33,4 +33,4 @@ else
 
 fi
 
-a2enmod ssl
+sudo a2enmod ssl
