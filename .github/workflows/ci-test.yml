@@ -29,6 +29,12 @@ jobs:
       - name: Apache setup
         run: .test/setup-apache.sh
 
+      - name: NicToolClient tests
+        run: make -C client test
+
+      - name: NicToolServer tests
+        run: make -C server test
+
     services:
       mysql:
         image: mysql:5.7
