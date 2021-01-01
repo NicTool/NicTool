@@ -52,7 +52,7 @@ addons:
     - libtest-output-perl
 
 before_install:
-    - sudo .test/tls-setup.sh
+    - sudo .test/setup-tls.sh
 #   - sudo .test/mysql-setup.sh
 
       # globally/system installed perl modules, for Apache::mod_perl
