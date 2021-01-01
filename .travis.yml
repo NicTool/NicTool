@@ -4,7 +4,7 @@ perl:
   - "5.24"
   - "5.20"
 
-dist: trusty
+dist: xenial
 
 services:
     - mysql
@@ -56,13 +56,13 @@ before_install:
 #   - sudo .test/mysql-setup.sh
 
       # globally/system installed perl modules, for Apache::mod_perl
-    # - curl -L https://cpanmin.us | sudo perl - --sudo App::cpanminus
+    - curl -L https://cpanmin.us | sudo /usr/bin/perl - --sudo App::cpanminus
     - sudo cpanm --notest CryptX Crypt::Mac::HMAC Crypt::KeyDerivation
     - sudo cpanm --notest URI
     - sudo cpanm --notest CGI RPC::XML DBD::mysql Apache::DBI
 
       # locally installed modules, for tests
-    - cpanm --notest --force Test::More Test::HTML::Lint Test::Output Test::Pod URI
+    - cpanm --notest --force Test::More Test::HTML::Lint Test::Output Test::Pod
     - cpanm --notest --force Net::DNS || sudo cpanm --notest --force Net::DNS@1.0.6 || echo "double darn"
     - cd /home/travis/build/msimerson/NicTool/client && perl Makefile.PL && cpanm -n .
     - cd /home/travis/build/msimerson/NicTool/server && perl Makefile.PL && cpanm -n .
