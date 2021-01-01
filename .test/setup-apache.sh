@@ -17,10 +17,19 @@ do
     fi
 done
 
+if [ ! -f "client/lib/nictoolclient.conf" ]; then
+    cp .test/nictoolclient.conf client/lib/
+fi
+
+if [ ! -f "server/lib/nictoolserver.conf" ]; then
+    cp .test/nictoolserver.conf server/lib/
+fi
+
 echo "installing /etc/apache2/sites-enabled/nictool.conf"
 sudo cp .test/apache.conf /etc/apache2/sites-enabled/nictool.conf
 
 if [ -e "/etc/apache2/sites-enabled/000-default.conf" ]; then
+    echo "deleting 000-default.conf"
     sudo rm /etc/apache2/sites-enabled/000-default.conf
 fi
 
