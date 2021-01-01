@@ -27,9 +27,9 @@ fi
 if [ -n "$TRAVIS" ]; then
     echo "enabling SSL module"
     sudo a2enmod ssl
-    sudo a2dismod mpm_event
-    sudo a2dismod mpm_worker
-    sudo a2enmod mpm_prefork
+    # sudo a2dismod mpm_event
+    # sudo a2dismod mpm_worker
+    # sudo a2enmod mpm_prefork
     # sudo service apache2 restart || sudo cat /var/log/apache2/error.log
 elif [ -n "$GITHUB_ACTIONS" ]; then
     sudo apt-get install -y apache2 libapache2-mod-perl2 libapache2-mod-perl2-dev libapache-dbi-perl
