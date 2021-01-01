@@ -59,9 +59,9 @@ before_install:
     - cd /home/travis/build/msimerson/NicTool/client && perl Makefile.PL && sudo cpanm --installdeps -n .
     - cd /home/travis/build/msimerson/NicTool
 
-      # locally installed modules, for tests
+      # locally installed modules, for tests needed by setup scripts
     - cpanm --notest --force Test::More Test::HTML::Lint Test::Output Test::Pod URI
-    # - cpanm --notest DBI DBD::mysql CryptX Crypt::Mac::HMAC Crypt::KeyDerivation
+    - cpanm --notest DBI DBD::mysql CryptX Crypt::Mac::HMAC Crypt::KeyDerivation
     # - cpanm --notest --force Net::DNS || sudo cpanm --notest --force Net::DNS@1.0.6 || echo "double darn"
 
     - .test/setup-tls.sh
