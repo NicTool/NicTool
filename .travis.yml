@@ -36,7 +36,6 @@ addons:
     - libssl-dev
     - libcrypt-openssl-rsa-perl
     - libcrypt-openssl-dsa-perl
-#   - libshell-perl
     - libnet-dns-perl
     - libyaml-perl
     - bind9utils
@@ -56,13 +55,11 @@ before_install:
 #   - sudo .test/mysql-setup.sh
 
       # globally/system installed perl modules, for Apache::mod_perl
-    - curl -L https://cpanmin.us | sudo /usr/bin/perl - --sudo App::cpanminus
-    - sudo cpanm --notest CryptX Crypt::Mac::HMAC Crypt::KeyDerivation
-    - sudo cpanm --notest URI
-    - sudo cpanm --notest CGI RPC::XML DBD::mysql Apache::DBI
+    # - curl -L https://cpanmin.us | sudo /usr/bin/perl - --sudo App::cpanminus
+    - sudo cpanm --notest Apache::DBI CGI CryptX Crypt::Mac::HMAC Crypt::KeyDerivation DBD::mysql RPC::XML URI
 
       # locally installed modules, for tests
-    - cpanm --notest --force Test::More Test::HTML::Lint Test::Output Test::Pod
+    - cpanm --notest --force Test::More Test::HTML::Lint Test::Output Test::Pod URI
     - cpanm --notest --force Net::DNS || sudo cpanm --notest --force Net::DNS@1.0.6 || echo "double darn"
     - cd /home/travis/build/msimerson/NicTool/client && perl Makefile.PL && cpanm -n .
     - cd /home/travis/build/msimerson/NicTool/server && perl Makefile.PL && cpanm -n .
@@ -70,7 +67,7 @@ before_install:
 
 install:
     - sudo cp .test/apache-travis.conf /etc/apache2/sites-enabled/nictool.conf
-#   - sudo a2dismod mpm_event; sudo a2dismod mpm_worker; sudo a2enmod mpm_prefork
+    - sudo a2dismod mpm_event; sudo a2dismod mpm_worker; sudo a2enmod mpm_prefork
     - sudo service apache2 restart || sudo cat /var/log/apache2/error.log
     - perl .test/create_tables.pl
 
@@ -87,10 +84,9 @@ after_failure:
     - apache2 -version
     - perl --version
     - sudo perl --version
-    - sudo which perl
     - sudo cat /var/log/apache2/error.log
     - cat /etc/apache2/apache2.conf
-    - ls /usr/lib/apache2/modules/
+    # - ls /usr/lib/apache2/modules/
 after_script:
 
 #sudo: false
