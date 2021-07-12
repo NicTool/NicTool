@@ -27,6 +27,7 @@ $|++;
 GetOptions(
     'test'                          => \my $test_run,
     'environment'                   => \my $environment,
+    'db-engine=s'                   => \my $db_engine,
     'db-hostname=s'                 => \my $db_hostname,
     'db-root-password=s'            => \my $db_root_password,
     'nictool-db-name=s'             => \my $nictool_db_name,
@@ -37,7 +38,7 @@ GetOptions(
     'help' => sub { HelpMessage(0) },
 ) or HelpMessage(1);
 
-my ($dbh, $db_host) = get_dbh();
+my ($dbh, $db_host, $db_engine) = get_dbh();
 
 print "
 #########################################################################
@@ -121,7 +122,7 @@ print qq{\n
 Beginning table creation.
 If any of the information you entered is incorrect, press Control-C now!
 -------------------------
-DATABASE DSN:  mysql://$db_user:******\@$db_host/$db
+DATABASE DSN:  $db_engine://$db_user:******\@$db_host/$db
 host: $db_host
 db  : $db
 user: $db_user
@@ -193,6 +194,16 @@ sub get_dbh {
     my $db_host = undef;
 
     if ($environment) {
+        $db_engine = undef;
+        die "DB_ENGINE not set!!!\n" unless $ENV{DB_ENGINE};
+        $db_engine = $ENV{DB_ENGINE};
+    } elsif ($db_engine) {
+        $db_engine = $db_engine;
+    } else {
+        $db_engine = answer("database engine", 'mysql');
+    }
+
+    if ($environment) {
         $db_hostname = undef;
         die "DB_HOSTNAME not set!!!\n" unless $ENV{DB_HOSTNAME};
         $db_host = $ENV{DB_HOSTNAME};
@@ -218,12 +229,12 @@ sub get_dbh {
     print "\n";
 
     return if $test_run;
-    my $dbh = DBI->connect("dbi:mysql:host=$db_host", "root", $db_root_pw, {
+    my $dbh = DBI->connect("dbi:$db_engine:host=$db_host", "root", $db_root_pw, {
             ChopBlanks => 1,
         })
         or die $DBI::errstr;
 
-    return ($dbh, $db_host);
+    return ($dbh, $db_host, $db_engine);
 }
 
 sub answer {
@@ -329,11 +340,12 @@ create_tables.pl - configure the NicTool database.
   --test                        Perform a test run.
 
   --environment                 Use environment variables to set up the database. These
-                                are as follows: DB_HOSTNAME, DB_ROOT_PASSWORD,
+                                are as follows: DB_ENGINE, DB_HOSTNAME, DB_ROOT_PASSWORD,
                                 NICTOOL_DB_NAME, NICTOOL_DB_USER, NICTOOL_DB_USER_PASSWORD,
                                 ROOT_USER_EMAIL, ROOT_USER_PASSWORD. If this flag is
                                 present, the remaining arguments below are ignored.
 
+  --db-engine                   The MySQL database engine (mysql or MariaDB).
   --db-hostname                 The MySQL database hostname or IP address to connect to.
   --db-root-password            The MySQL root user password.
   --nictool-db-name             The name of the NicTool database. Defaults to 'nictool'.
@@ -344,6 +356,6 @@ create_tables.pl - configure the NicTool database.
 
 =head1 VERSION
 
-2.33
+2.33.2
 
 =cut
