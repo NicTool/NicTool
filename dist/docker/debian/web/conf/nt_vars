@@ -1,3 +1,4 @@
+DB_TYPE="mysql"
 DB_HOSTNAME="changeme"
 DB_ROOT_PASSWORD="changeme"
 NICTOOL_DB_NAME="changeme"
