@@ -183,7 +183,7 @@ sub get_db_creds_from_nictoolserver_conf {
     my $contents = `cat $file`;
 
     if ( ! $dsn ) {
-        ($dsn) = $contents =~ m/['"](DBI:mysql.*?)["']/;
+        ($dsn) = $contents =~ m/['"](DBI:.*?)["']/;
     };
 
     if ( ! $db_user ) {
