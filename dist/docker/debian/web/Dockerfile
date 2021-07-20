@@ -1,5 +1,5 @@
-FROM debian:10
-MAINTAINER John Jensen <jensenja@gmail.com>
+FROM debian
+MAINTAINER Gerhard <gerhard@tinned-software.net>
 
 ENV DEBIAN_FRONTEND=noninteractive LANG=en_US.UTF-8 LC_ALL=C.UTF-8 LANGUAGE=en_US.UTF-8
 
@@ -19,6 +19,7 @@ RUN apt-get -q update && apt-get install -qy --force-yes \
       gettext \
       git \
       bind9utils \
+      mariadb-client \
       && apt-get clean \
       && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
@@ -37,37 +38,19 @@ RUN cd /usr/local/nictool/server \
       cd /usr/local/nictool/client \
       && perl bin/install_deps.pl
 
-# source environment variables
-COPY ./nt_vars /root/nt_vars
-
-# set up the database, generate self-signed cert
-RUN . /root/nt_vars; \
-      cd /usr/local/nictool/server/sql; \
-      ./create_tables.pl --environment \
-      && chmod o-r /etc/ssl/private; \
-      openssl req \
-      -x509 \
-      -nodes \
-      -days 2190 \
-      -newkey rsa:2048 \
-      -keyout /etc/ssl/private/server.key \
-      -out /etc/ssl/certs/server.crt \
-      -subj "/C=$CERT_COUNTRY/ST=$CERT_STATE/L=$CERT_LOCALITY/O=$CERT_ORG/OU=$CERT_OU/CN=$CERT_CN/emailAddress=$CERT_EMAIL"; \
-      rm -rf /root/nt_vars
-
-# copy configuration files
-COPY ./nictoolclient.conf /usr/local/nictool/client/lib/nictoolclient.conf
-COPY ./nictoolserver.conf /usr/local/nictool/server/lib/nictoolserver.conf
-
 # set up apache
 RUN rm -rf /etc/apache2/sites-enabled/* \
       && rm -rf /etc/apache2/sites-available/*
-COPY ./nictool.conf /etc/apache2/sites-available/nictool.conf
 
-RUN cd /etc/apache2/sites-enabled; \
-      ln -s ../sites-available/nictool.conf nictool.conf; \
-      a2enmod ssl
+# ensure exposed 
+RUN mkdir -p /etc/nictool/ && mkdir -p /var/lib/nictool/
+
+RUN a2enmod ssl
+
+ADD startup.sh /startup.sh
 
 EXPOSE 80 443
 
-CMD . /etc/apache2/envvars && exec /usr/sbin/apache2 -DFOREGROUND
+VOLUME /etc/nictool/ /var/lib/nictool/
+
+CMD /bin/bash /startup.sh
