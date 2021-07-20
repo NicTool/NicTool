@@ -1,4 +1,4 @@
-FROM debian:8.8
+FROM debian:10
 MAINTAINER John Jensen <jensenja@gmail.com>
 
 ENV DEBIAN_FRONTEND=noninteractive LANG=en_US.UTF-8 LC_ALL=C.UTF-8 LANGUAGE=en_US.UTF-8
@@ -13,7 +13,7 @@ RUN apt-get -q update && apt-get install -qy --force-yes \
       libapache2-mod-perl2-dev \
       libxml2 \
       libssl-dev \
-      libmysqld-dev \
+      libmariadb-dev \
       expat \
       libexpat-dev \
       gettext \
