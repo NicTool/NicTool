@@ -45,7 +45,7 @@ RUN rm -rf /etc/apache2/sites-enabled/* \
 # ensure exposed 
 RUN mkdir -p /etc/nictool/ && mkdir -p /var/lib/nictool/
 
-RUN a2enmod ssl
+RUN a2enmod ssl && a2dismod mpm_event && a2enmod mpm_prefork
 
 ADD startup.sh /startup.sh
 
