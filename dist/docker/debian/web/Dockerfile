@@ -38,6 +38,9 @@ RUN cd /usr/local/nictool/server \
       cd /usr/local/nictool/client \
       && perl bin/install_deps.pl
 
+# install Perl module for LDAP authentication
+RUN cpanm Net::LDAP
+
 # set up apache
 RUN rm -rf /etc/apache2/sites-enabled/* \
       && rm -rf /etc/apache2/sites-available/*
