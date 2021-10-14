@@ -36,7 +36,7 @@ sub update_named_include {
     # full export, write a new include  file
     my $datadir = $self->{nte}->get_export_data_dir || $dir;
     my $fh = $self->get_export_file( 'named.conf.nictool', $dir );
-    foreach my $zone ( $self->{nte}->zones_exported ) {
+    foreach my $zone ( sort $self->{nte}->zones_exported ) {
         my $tmpl = $self->get_template($dir, $zone);
         if ( $tmpl ) {
             print $fh $tmpl;
