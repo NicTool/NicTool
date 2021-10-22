@@ -338,7 +338,7 @@ sub zr_uri {
         $self->{nte}->is_ip_port( $r->{weight} ),     # Weight,   16 bit (n)
     );
 
-    $rdata .= $r->{address}; # Target, URI
+    $rdata .= $self->escape( $r->{address} ); # Target, URI
     return $self->zr_generic( 256, $r, $rdata );
 }
 
