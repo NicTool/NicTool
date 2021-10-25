@@ -351,6 +351,7 @@ sub zr_caa {
     # Then property tag as a length-prefixed text string
     $rdata .= $self->characterCount( $r->{other} ) .
 	$self->escape( $r->{other} );
+
     # Then the property value as the rest of the data length
     $rdata .= $self->escape( $r->{address} );
 
@@ -460,7 +461,7 @@ sub zr_naptr {
 # :example.com:35:\000\012\000\144\001u\007E2U+sip\036!^.*$!sip\072info@example.com.br!\000:300
 #                 |-order-|-pref--|flag|-services-|---------------regexp---------------|re-|
 
-    my ($flag, $services, $regexp, $replace) = split /__/, $r->{address};
+    my ($flag, $services, $regexp) = $r->{address} =~ /("[^"]*")/g;
 
     my $rdata = $self->escapeNumber( $r->{'weight'} )    # order, 16-bit
            . $self->escapeNumber( $r->{'priority'} )     # pref,  16-bit
@@ -468,6 +469,7 @@ sub zr_naptr {
            . $self->characterCount( $services ) . $self->escape( $services )
            . $self->characterCount( $regexp )   . $self->escape( $regexp );
 
+    my $replace = $r->{description}
     if ( $replace ne '' ) {
         $rdata .= $self->characterCount( $replace ) . $self->escape( $replace );
     };
