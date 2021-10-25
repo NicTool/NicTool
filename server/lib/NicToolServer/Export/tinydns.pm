@@ -471,7 +471,7 @@ sub zr_naptr {
 
     my $replace = $r->{description}
     if ( $replace ne '' ) {
-        $rdata .= $self->characterCount( $replace ) . $replace;
+        $rdata .= $self->characterCount( $replace ) . $self->escape( $replace );
     };
     $rdata .= '\000';
 
