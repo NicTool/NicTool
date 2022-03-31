@@ -70,7 +70,7 @@ fi
 
 
 echo ""
-echo -e "***\n*** Checking the Certificate files\n***/n"
+echo -e "***\n*** Checking the Certificate files\n***\n"
 if [ ! -f "${CONF_DIR}/server.crt" ]; then
 	echo "INIT - Create TLS Key and CSR ..."
 	openssl req -x509 -nodes -days 2190 -newkey rsa:2048 \
@@ -86,6 +86,6 @@ fi
 
 
 echo ""
-echo -e "***\n*** Start the Apache webserver\n***/n"
+echo -e "***\n*** Start the Apache webserver\n***\n"
 . /etc/apache2/envvars && exec /usr/sbin/apache2 -DFOREGROUND
 
