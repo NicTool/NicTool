@@ -102,13 +102,13 @@ sub _valid_ttl {
 
     my @same_type = grep { $_->{type} eq $data->{type} } @$collisions;
     if (scalar @same_type && grep { $_->{ttl} != $data->{ttl} } @same_type) {
-	# RRs with identical Name and type must have identical TTL: RFC 2181
-	# make it so by applying TTL update to all records in RRset
-	map {
-	    $_->{ttl} = $data->{ttl};
-	    # Push that update to the DB as well(!)
-	    $self->SUPER::edit_zone_record($_);
-	} @same_type;
+        # RRs with identical Name and type must have identical TTL: RFC 2181
+        # make it so by applying TTL update to all records in RRset
+        map {
+            $_->{ttl} = $data->{ttl};
+            # Push that update to the DB as well(!)
+            $self->SUPER::edit_zone_record($_);
+        } @same_type;
     }
 }
 
@@ -586,33 +586,29 @@ sub _valid_caa {
 
     my $crit = $data->{weight};
     my $tag = $data->{other};
-    my $value = $data->{address};
+    my $value = $data->{address} =~ s/^"|"$//g;
 
     if ($crit != 0 && $crit != 128) {
-	$self->error('weight',
-		     "Critical flag must be either 0 or 128, see RFC 6844");
+        $self->error('weight', "Critical flag must be either 0 or 128, see RFC 6844");
     }
 
     my %tags = (
-	'issue' => 1,
-	'issuewild' => 1,
-	'iodef' => 1,
-	);
+        'issue' => 1,
+        'issuewild' => 1,
+        'iodef' => 1,
+    );
 
     if (!defined($tags{$tag})) {
-	my $valid_tags = join(" ", keys(%tags));
-	$self->error('other',
-		     "Tag must be one of $valid_tags, see RFC 6844");
+        my $valid_tags = join(" ", keys(%tags));
+        $self->error('other', "Tag must be one of $valid_tags, see RFC 6844");
     }
 
     if ($tag eq "iodef") {
-	my @valid_iodef_schemes = ("mailto:", "http:", "https:");
-	if (! grep { $value =~ /^$_/i } @valid_iodef_schemes) {
-	    my $valid_uri_methods = join(", ", @valid_iodef_schemes);
-	    $self->error('address',
-			 "Tag value for iodef must start with " .
-			 "one of $valid_uri_methods, see RFC 6844");
-	}
+        my @valid_iodef_schemes = qw/ mailto: http: https: /;
+        if (! grep { $value =~ /^$_/i } @valid_iodef_schemes) {
+           my $valid_uri_methods = join(", ", @valid_iodef_schemes);
+           $self->error('address', "Tag value for iodef must start with one of $valid_uri_methods, see RFC 6844");
+        }
     }
 }
 
