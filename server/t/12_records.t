@@ -44,7 +44,7 @@ my $fqdn = 'fully.qualified.com.';
 my @ascii = map( chr $_, 0..128);  # ascii table
 # weed out legit chars (a-z, 0-9, - . *)
 my @invalid_ascii = grep /[^0-9a-zA-Z_\-\.\*]/, @ascii;
-# the contents of invalid_ascii look a lot like this:
+# the contents of invalid_ascii look like this:
 # ! # " $ % & ' ( ) + , / : ; < = > ? @ \ ^ ` { | } ~ - .
 
 #try to do the tests
