@@ -457,7 +457,7 @@ sub zr_naptr {
 # :example.com:35:\000\012\000\144\001u\007E2U+sip\036!^.*$!sip\072info@example.com.br!\000:300
 #                 |-order-|-pref--|flag|-services-|---------------regexp---------------|re-|
 
-    my ($flag, $services, $regexp) = $r->{address} =~ /("[^"]*")/g;
+    my ($flag, $services, $regexp) = $r->{address} =~ /"([^"]*)"/g;
 
     my $rdata = $self->escapeNumber( $r->{'weight'} )    # order, 16-bit
            . $self->escapeNumber( $r->{'priority'} )     # pref,  16-bit
