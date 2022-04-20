@@ -465,7 +465,7 @@ sub zr_naptr {
            . $self->characterCount( $services ) . $self->escape( $services )
            . $self->characterCount( $regexp )   . $self->escape( $regexp );
 
-    my $replace = $r->{description}
+    my $replace = $r->{description};
     if ( $replace ne '' ) {
         $rdata .= $self->characterCount( $replace ) . $self->escape( $replace );
     };
