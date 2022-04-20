@@ -14,6 +14,7 @@ CERT_ORG="changeme"
 CERT_OU="changeme"
 CERT_EMAIL="changeme"
 
+export DB_ENGINE
 export DB_HOSTNAME
 export DB_ROOT_PASSWORD
 export NICTOOL_DB_NAME
