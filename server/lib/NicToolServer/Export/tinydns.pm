@@ -364,14 +364,10 @@ sub zr_srv {
 
     # SRV - https://www.ietf.org/rfc/rfc2782.txt
     # format of SRV record derived from djbdnsRecordBuilder
-
-    my $rdata = octal_escape( pack "nnn",
-        $self->{nte}->is_ip_port( $r->{priority} ),   # Priority, 16 bit (n)
-        $self->{nte}->is_ip_port( $r->{weight} ),     # Weight,   16 bit (n)
-        $self->{nte}->is_ip_port( $r->{other} ),      # Port,     16 bit (n)
-    );
-
-    $rdata .= $self->pack_domain_name( $r->{address} ); # Target, domain name
+    my $rdata = escapeNumber($self->{nte}->is_ip_port( $r->{priority} ))
+              . escapeNumber($self->{nte}->is_ip_port( $r->{weight} ))
+              . escapeNumber($self->{nte}->is_ip_port( $r->{other} ))
+              . $self->pack_domain_name( $r->{address} ); # Target, domain name
 
     return $self->zr_generic( 33, $r, $rdata );
 }
