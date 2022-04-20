@@ -37,7 +37,7 @@ fi
 
 
 echo ""
-echo -e "***\n*** Lead the nt_vars environment variables\n***\n"
+echo -e "***\n*** Load the nt_vars environment variables\n***\n"
 . ${CONF_DIR}/nt_vars
 
 
