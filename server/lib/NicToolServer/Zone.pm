@@ -23,7 +23,7 @@ sub get_zone {
 
     if ( my $del = $self->get_param_meta( 'nt_zone_id', 'delegate' ) ) {
 
-# this info comes from NicToolServer.pm when it checks for access perms to the objects
+    # this comes from NicToolServer.pm when it checks for access perms to the objects
         my %mapping = (
             delegated_by_id   => 'delegated_by_id',
             delegated_by_name => 'delegated_by_name',
