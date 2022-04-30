@@ -143,7 +143,7 @@ sub edit_zone_record {
             push @values, $self->get_record_type({ type=> $data->{$c} });
         }
         elsif ( $c eq 'timestamp' || $c eq 'weight' || $c eq 'priority' ) {
-            if( ! defined $data->{$c} || $data->{$c} == '') {
+            if( $data->{$c} == '') {
                 $sql =~ s/,$//;
                 next;
             }
