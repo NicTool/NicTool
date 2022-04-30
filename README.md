@@ -31,7 +31,7 @@ NicTool is a open source DNS management suite that takes the headaches out of ma
 
 * NicTool Server - Exposes the DNS data via a SOAP web service.
 * NicTool API - The NicTool API is what connects to the NicTool Server. The format of requests is defined in the reference API at http://www.nictool.com/docs/api/
-* NicTool Client - A CGI application thatt provides a web interface for managing DNS data. NicTool Client has customizable HTML templates and a CSS style sheet. It is slowly becoming a modern JS web app
+* NicTool Client - A CGI application that provides a web interface for managing DNS data. NicTool Client has customizable HTML templates and a CSS style sheet. It is slowly becoming a modern JS web app
 
 ### Testimonials and NicTool Users
 
