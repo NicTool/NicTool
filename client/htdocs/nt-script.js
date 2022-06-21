@@ -242,7 +242,7 @@ function setFormRRTypeSSHFP() {
   $('#weight_row').show();
   $('td#weight_label').text('Algorithm');
   $('input#weight').attr('placeholder','3');
-  var algoTypes = { '1' : 'RSA', '2' : 'DSA', '3' : 'ECDSA' };
+  var algoTypes = { '1' : 'RSA', '2' : 'DSA', '3' : 'ECDSA', '4' : 'Ed25519', '6', 'Ed448' };
   addValuesToSelect(algoTypes, 'weight');
   $('select#weight').show();
 
