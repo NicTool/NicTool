@@ -1,0 +1,44 @@
+env:
+  es6: true
+  node: true
+  mocha: true
+  es2020: true
+  jquery: true
+
+root: true
+
+parserOptions:
+  sourceType: module
+
+extends:
+  - eslint:recommended
+
+rules:
+  quotes: [ error, single, { avoidEscape: true, allowTemplateLiterals: true } ]
+  semi: [ warn, never ]
+  semi-style: [ error, last ]
+  no-unused-vars: [ error, { args: none } ]
+  array-bracket-spacing: [ warn, always, { arraysInArrays: false, objectsInArrays: false } ]
+  no-trailing-spaces: [ error ]
+  space-before-function-paren: [ error, always ]
+  object-curly-spacing: [ error, always ]
+  indent: [ error, 2, { SwitchCase: 1 } ]
+  key-spacing:
+    - warn
+    - singleLine:
+        beforeColon: false
+        afterColon: true
+      multiLine:
+        beforeColon: false
+        afterColon: true
+        align: colon
+        mode: minimum
+  comma-dangle:
+    - warn
+    - arrays: always-multiline
+      objects: always-multiline
+      functions: only-multiline
+  arrow-parens: [ error, as-needed ]
+  brace-style: [ error, stroustrup ]
+  dot-notation: error
+  prefer-const: warn
