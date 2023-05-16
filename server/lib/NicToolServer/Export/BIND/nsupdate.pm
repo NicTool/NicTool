@@ -154,9 +154,9 @@ sub build_nsupdate {
 
             $mode = "add";
         }
-        elsif ( $record->{description} =~ m/changed\stimestamp/ ) {
+        elsif ( $record->{description} =~ m/changed\stimestamp/ || $record->{"description"} =~ m/nothing modified/) {
 
-            # on just a timestamp change - dont bother generating any entries
+            # on just a timestamp change or blank update - dont bother generating any entries
             next;
         }
 
@@ -184,7 +184,7 @@ sub get_log {
     my $ns_id = $self->{nte}->{ns_ref}->{nt_nameserver_id};
     my $time   = time - 300;
 
-    my $sql = "SELECT * FROM nictool.nt_user_global_log WHERE timestamp > (SELECT UNIX_TIMESTAMP(date_start) FROM nt_nameserver_export_log WHERE success=1 AND nt_nameserver_id=$ns_id ORDER BY date_start DESC LIMIT 1) AND object IN ('zone','zone_record')";
+    my $sql = "SELECT * FROM nictool.nt_user_global_log WHERE timestamp > (SELECT UNIX_TIMESTAMP(date_start) FROM nt_nameserver_export_log WHERE success=1 AND nt_nameserver_id=$ns_id ORDER BY date_start DESC LIMIT 1) AND object IN ('zone_record')";
 
     return $dbix_w->query($sql)->hashes;
 }
@@ -222,8 +222,8 @@ sub get_changed_zones {
 
 sub zr_a {
     my ( $self, $r, $mode ) = @_;
-    $mode = "add" unless defined($mode);
-    $r->{zone} = $self->{nte}->{zone_name} unless defined( $r->{zone} );
+    $mode = "add" unless defined $mode;
+    $r->{zone} = $self->{nte}->{zone_name} unless defined $r->{zone};
 
     return
           "update $mode "
@@ -234,8 +234,8 @@ sub zr_a {
 
 sub zr_cname {
     my ( $self, $r, $mode ) = @_;
-    $mode = "add" unless defined($mode);
-    $r->{zone} = $self->{nte}->{zone_name} unless defined( $r->{zone} );
+    $mode = "add" unless defined $mode;
+    $r->{zone} = $self->{nte}->{zone_name} unless defined $r->{zone};
 
     return
           "update $mode "
@@ -246,8 +246,8 @@ sub zr_cname {
 
 sub zr_mx {
     my ( $self, $r, $mode ) = @_;
-    $mode = "add" unless defined($mode);
-    $r->{zone} = $self->{nte}->{zone_name} unless defined( $r->{zone} );
+    $mode = "add" unless defined $mode;
+    $r->{zone} = $self->{nte}->{zone_name} unless defined $r->{zone};
 
     return
           "update $mode "
@@ -258,8 +258,8 @@ sub zr_mx {
 
 sub zr_txt {
     my ( $self, $r, $mode ) = @_;
-    $mode = "add" unless defined($mode);
-    $r->{zone} = $self->{nte}->{zone_name} unless defined( $r->{zone} );
+    $mode = "add" unless defined $mode;
+    $r->{zone} = $self->{nte}->{zone_name} unless defined $r->{zone};
 
     # BIND will croak if the length of the text record is longer than 255
     if ( length $r->{address} > 255 ) {
@@ -276,8 +276,8 @@ sub zr_txt {
 
 sub zr_ns {
     my ( $self, $r, $mode ) = @_;
-    $mode = "add" unless defined($mode);
-    $r->{zone} = $self->{nte}->{zone_name} unless defined( $r->{zone} );
+    $mode = "add" unless defined $mode;
+    $r->{zone} = $self->{nte}->{zone_name} unless defined $r->{zone};
 
     my $name = $r->{name};
     $name .= '.' if '.' ne substr( $name, -1, 1 );
@@ -287,8 +287,8 @@ sub zr_ns {
 
 sub zr_ptr {
     my ( $self, $r, $mode ) = @_;
-    $mode = "add" unless defined($mode);
-    $r->{zone} = $self->{nte}->{zone_name} unless defined( $r->{zone} );
+    $mode = "add" unless defined $mode;
+    $r->{zone} = $self->{nte}->{zone_name} unless defined $r->{zone};
 
     return
           "update $mode "
@@ -307,8 +307,8 @@ sub zr_soa {
 
 sub zr_spf {
     my ( $self, $r, $mode ) = @_;
-    $mode = "add" unless defined($mode);
-    $r->{zone} = $self->{nte}->{zone_name} unless defined( $r->{zone} );
+    $mode = "add" unless defined $mode;
+    $r->{zone} = $self->{nte}->{zone_name} unless defined $r->{zone};
 
     # SPF record support was added in BIND v9.4.0
 
@@ -322,8 +322,8 @@ sub zr_spf {
 
 sub zr_srv {
     my ( $self, $r, $mode ) = @_;
-    $mode = "add" unless defined($mode);
-    $r->{zone} = $self->{nte}->{zone_name} unless defined( $r->{zone} );
+    $mode = "add" unless defined $mode;
+    $r->{zone} = $self->{nte}->{zone_name} unless defined $r->{zone};
 
     my $priority = $self->{nte}->is_ip_port( $r->{priority} );
     my $weight   = $self->{nte}->is_ip_port( $r->{weight} );
@@ -339,8 +339,8 @@ sub zr_srv {
 
 sub zr_aaaa {
     my ( $self, $r, $mode ) = @_;
-    $mode = "add" unless defined($mode);
-    $r->{zone} = $self->{nte}->{zone_name} unless defined( $r->{zone} );
+    $mode = "add" unless defined $mode;
+    $r->{zone} = $self->{nte}->{zone_name} unless defined $r->{zone};
 
     # name  ttl  class  type  type-specific-data
     return
@@ -352,13 +352,13 @@ sub zr_aaaa {
 
 sub zr_loc {
     my ( $self, $r, $mode ) = @_;
-    $mode = "add" unless defined($mode);
+    $mode = "add" unless defined $mode;
     return "update $mode $r->{name} $r->{ttl} LOC $r->{address}\n";
 }
 
 sub zr_naptr {
     my ( $self, $r, $mode ) = @_;
-    $mode = "add" unless defined($mode);
+    $mode = "add" unless defined $mode;
 
     # http://www.ietf.org/rfc/rfc2915.txt
     # https://www.ietf.org/rfc/rfc3403.txt
@@ -378,7 +378,7 @@ sub zr_naptr {
 
 sub zr_dname {
     my ( $self, $r, $mode ) = @_;
-    $mode = "add" unless defined($mode);
+    $mode = "add" unless defined $mode;
 
     # name  ttl  class   rr     target
     return "update $mode $r->{name} $r->{ttl} DNAME $r->{address}\n";
@@ -386,7 +386,7 @@ sub zr_dname {
 
 sub zr_sshfp {
     my ( $self, $r, $mode ) = @_;
-    $mode = "add" unless defined($mode);
+    $mode = "add" unless defined $mode;
 
     my $algo = $r->{weight};      #  1=RSA,   2=DSS,     3=ECDSA
     my $type = $r->{priority};    #  1=SHA-1, 2=SHA-256
@@ -396,7 +396,7 @@ sub zr_sshfp {
 
 sub zr_ipseckey {
     my ( $self, $r, $mode ) = @_;
-    $mode = "add" unless defined($mode);
+    $mode = "add" unless defined $mode;
 
     my $precedence = $r->{weight};
     my $gw_type    = $r->{priority};
@@ -410,7 +410,7 @@ sub zr_ipseckey {
 
 sub zr_dnskey {
     my ( $self, $r, $mode ) = @_;
-    $mode = "add" unless defined($mode);
+    $mode = "add" unless defined $mode;
 
     my $flags     = $r->{weight};
     my $protocol  = $r->{priority};    # always 3, RFC 4034
@@ -424,7 +424,7 @@ sub zr_dnskey {
 
 sub zr_ds {
     my ( $self, $r, $mode ) = @_;
-    $mode = "add" unless defined($mode);
+    $mode = "add" unless defined $mode;
 
     my $key_tag   = $r->{weight};
     my $algorithm = $r->{priority};    # same as DNSKEY algo -^
@@ -436,34 +436,34 @@ sub zr_ds {
 
 sub zr_rrsig {
     my ( $self, $r, $mode ) = @_;
-    $mode = "add" unless defined($mode);
+    $mode = "add" unless defined $mode;
 
     return "update $mode $r->{name} $r->{ttl} RRSIG $r->{address}\n";
 }
 
 sub zr_nsec {
     my ( $self, $r, $mode ) = @_;
-    $mode = "add" unless defined($mode);
+    $mode = "add" unless defined $mode;
     $r->{description} =~ s/[\(\)]//g;
     return "update $mode $r->{name} $r->{ttl} NSEC $r->{address} ( $r->{description} )\n";
 }
 
 sub zr_nsec3 {
     my ( $self, $r, $mode ) = @_;
-    $mode = "add" unless defined($mode);
+    $mode = "add" unless defined $mode;
     return "update $mode $r->{name} $r->{ttl} NSEC3 $r->{address}\n";
 }
 
 sub zr_nsec3param {
     my ( $self, $r, $mode ) = @_;
-    $mode = "add" unless defined($mode);
+    $mode = "add" unless defined $mode;
     return "update $mode $r->{name} $r->{ttl} NSEC3PARAM $r->{address}\n";
 }
 
 sub zr_hinfo {
     my ( $self, $r, $mode ) = @_;
 
-    $r->{zone} = $self->{nte}->{zone_name} unless defined( $r->{zone} );
+    $r->{zone} = $self->{nte}->{zone_name} unless defined $r->{zone};
     # Name     ttl  class   rr  address
     return "update $mode "
         . $r->{name}
@@ -473,9 +473,9 @@ sub zr_hinfo {
 
 sub zr_uri {
     my ( $self, $r, $mode ) = @_;
-    $mode = "add" unless defined($mode);
+    $mode = "add" unless defined $mode;
 
-    $r->{zone} = $self->{nte}->{zone_name} unless defined( $r->{zone} );
+    $r->{zone} = $self->{nte}->{zone_name} unless defined $r->{zone};
     my $priority = $self->{nte}->is_ip_port( $r->{priority} );
     my $weight   = $self->{nte}->is_ip_port( $r->{weight} );
 
