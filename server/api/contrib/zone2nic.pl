@@ -274,7 +274,7 @@ foreach my $zone ( @zones ) {
 
             # Turn name from fqdn back to hostname
             my $name = $rr->name;
-            $name =~ s/\.?$zone\.?//;
+            $name =~ s/\.?$zone\.?//i;
             $name = '@' if( $name eq "" );
 
             if( $rr->type eq "A" || $rr->type eq "AAAA" ) {

@@ -96,8 +96,14 @@ sub new_user {
 
     my @columns = qw/nt_group_id first_name last_name username email password pass_salt/;
 
-    $data->{pass_salt} = $self->_get_salt();
-    $data->{password} = $self->get_pbkdf2_hash($data->{password}, $data->{pass_salt});
+    if ($self->{user}->{ldap_only}) {
+        $data->{pass_salt} = 'ldap_only';
+        $data->{password} = 'ldap_only';
+    }
+    else {
+        $data->{pass_salt} = $self->_get_salt();
+        $data->{password} = $self->get_pbkdf2_hash($data->{password}, $data->{pass_salt});
+    }
 
     my $sql
         = "INSERT INTO nt_user("
@@ -614,20 +620,24 @@ sub log_user {
 sub valid_password {
     my ($self, $attempt, $db_pass, $user, $salt) = @_;
 
-    # Check for PBKDF2 password
-    if ( $salt ) {
-        my $hashed = $self->get_pbkdf2_hash($attempt, $salt);
-        return 1 if $hashed eq $db_pass;
-    };
+    if ( ! $NicToolServer::ldap_only ) {
 
-    # Check for HMAC SHA-1 password
-    if ( $db_pass =~ /[0-9a-f]{40}/ ) {        # DB has HMAC SHA-1 hash
-        my $hashed = $self->get_sha1_hash($attempt, $user);
-        return 1 if $hashed eq $db_pass;
+        # Check for PBKDF2 password
+        if ( $salt ) {
+            my $hashed = $self->get_pbkdf2_hash($attempt, $salt);
+            return 1 if $hashed eq $db_pass;
+        };
+
+        # Check for HMAC SHA-1 password
+        if ( $db_pass =~ /[0-9a-f]{40}/ ) {        # DB has HMAC SHA-1 hash
+            my $hashed = $self->get_sha1_hash($attempt, $user);
+            return 1 if $hashed eq $db_pass;
+        }
+
+        # Check for Plain password
+        return 1 if ( ! $salt && $attempt eq $db_pass );   # plain password
+
     }
-
-    # Check for Plain password
-    return 1 if ( ! $salt && $attempt eq $db_pass );   # plain password
 
     # If LDAP is defined - check for LDAP based user
     if ( $NicToolServer::ldap_servers ) {
@@ -635,7 +645,7 @@ sub valid_password {
     }
 
     return 0;   # No match
-};
+}
 
 sub select_user {
     my ( $self, $uid ) = @_;
@@ -659,7 +669,7 @@ sub _select_user_perm {
        AND nt_user_id = ?", $uid )
         or return $self->error_response( 505, $self->{dbh}->errstr );
     return (undef, $r->[0]);
-};
+}
 
 sub _select_group_perm {
     my ($self, $uid) = @_;
@@ -673,7 +683,7 @@ sub _select_group_perm {
     or return $self->error_response( 505, $self->{dbh}->errstr );
 
     return (undef, $r->[0]);
-};
+}
 
 sub get_sha1_hash {
     my ($self, $pass, $user) = @_;
@@ -681,7 +691,7 @@ sub get_sha1_hash {
     # RCC - use hmac to store the password using the username as a key
     #use Digest::HMAC_SHA1;
     #return Digest::HMAC_SHA1::hmac_sha1_hex( $pass, lc($user) );
-};
+}
 
 sub get_pbkdf2_hash {
     my ($self, $pass, $salt) = @_;
@@ -750,7 +760,7 @@ sub verify_ldap_user {
 
     return 1 if ( $ldap_result->code == 0 );
     return 0;
-};
+}
 
 sub locate_ldap_user {
     my ( $self, $user ) = @_;
@@ -813,7 +823,7 @@ sub locate_ldap_user {
 
     $ldap->unbind();
     return $user_dn;
-};
+}
 
 1;
 

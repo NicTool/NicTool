@@ -160,7 +160,7 @@ sub set_cookie {
     );
 
     print $q->header( -cookie => $cookie );
-};
+}
 
 sub expire_cookie {
     my $self = shift;
@@ -174,7 +174,7 @@ sub expire_cookie {
         -secure  => 1,
     );
     print $q->header( -cookie => $cookie );
-};
+}
 
 sub parse_template {
     my $self     = shift;
@@ -231,7 +231,7 @@ sub display_group_menu {
     };
     print qq[</ul>\n];
 
-};
+}
 
 sub display_group_tree {
     my ( $self, $user, $user_group, $curr_group, $in_summary ) = @_;
@@ -323,7 +323,7 @@ sub _can_group_delete {
     return if ! $user->{'group_delete'};
     return 1 if ( !exists $group->{'delegate_delete'} || $group->{'delegate_delete'} );
     return 0;
-};
+}
 
 sub _can_group_write {
     my ($user,$group) = @_;
@@ -331,7 +331,7 @@ sub _can_group_write {
     return if ! $user->{'group_write'};
     return 1 if ( !exists $group->{'delegate_write'} || $group->{'delegate_write'} );
     return 0;
-};
+}
 
 sub display_zone_list_options {
     my ( $self, $user, $group_id, $level, $in_zone_list ) = @_;

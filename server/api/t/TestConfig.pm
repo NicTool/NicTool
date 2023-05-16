@@ -10,9 +10,9 @@ sub import {
 
     my $file = "test.cfg";
     -f $file or $file = "t/test.cfg";
-    -f $file or die "could not find your test.cfg file in t/test.cfg\n";
+    -f $file or die "could not find file test.cfg\n";
 
-    open( F, "<$file" );
+    open F, '<', $file;
     my $c;
     local $/ = '';
     $c = <F>;
@@ -45,4 +45,3 @@ sub import {
 }
 
 1;
-

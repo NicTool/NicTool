@@ -49,7 +49,7 @@ MAKE
 ;
     close $M;
     return 1;
-};
+}
 
 1;
 

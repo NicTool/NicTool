@@ -15,13 +15,17 @@ sub verify {
     my $self = shift;
 
     my $data = $self->{client}->data();
-    $data->{action} = uc $data->{action};
+    if ($data->{action}) {
+        $data->{action} = uc $data->{action};
+    }
 
     my $vcheck = $self->ver_check;
     return $vcheck if $vcheck;
 
-    #warn "action is ".$data->{action};
-    return $self->verify_login if $data->{action} eq 'LOGIN';
+    if ($data->{action}) {
+        #warn "action is ".$data->{action};
+        return $self->verify_login if $data->{action} eq 'LOGIN';
+    }
     return $self->verify_session;    # just verify the session
 }
 
@@ -116,7 +120,7 @@ sub _get_user {
     return $self->auth_error('no such username') if scalar @$users == 0;
     return $self->auth_error('invalid username') if scalar @$users  > 1;
     return (undef, $users->[0]);
-};
+}
 
 sub _get_user_perms {
     my ($self, $nt_uid) = @_;
@@ -126,7 +130,7 @@ sub _get_user_perms {
         $nt_uid
     ) or return $self->error_response( 505, $self->{dbh}->errstr );
     return (undef, $perms->[0]);
-};
+}
 
 sub _get_group_perms {
     my ($self, $nt_uid) = @_;
@@ -141,7 +145,7 @@ sub _get_group_perms {
     my $perms = $self->exec_query( $sql, $nt_uid )
         or return $self->error_response( 505, $self->{dbh}->errstr );
     return (undef, $perms->[0]);
-};
+}
 
 sub verify_session {
     my $self = shift;
@@ -200,6 +204,8 @@ sub verify_session {
     );
 
     $self->clean_user_data;
+
+    $data->{user}{ldap_only} = $NicToolServer::ldap_only || 0;
 
     return 0;
 }
@@ -314,7 +320,7 @@ sub session_id {
     my $session = int( rand(60000) );
     $session = unpack( "H*", pack( "Nnn", time, $$, $session ) );
     return $session;
-};
+}
 
 
 sub _get_session {
@@ -330,7 +336,7 @@ SELECT u.*, s.*, g.name AS groupname
         $id
     ) or return $self->error_response( 505, $self->{dbh}->errstr );
     return (undef, $sessions->[0]);
-};
+}
 
 sub _delete_session {
     my ($self, $id) = @_;
@@ -341,7 +347,7 @@ sub _delete_session {
     $self->exec_query( "DELETE FROM nt_user_session WHERE nt_user_session_id = ?",
         $id
     );
-};
+}
 
 sub _insert_session_log {
     my ($self, $sess_id, $uid, $sess, $why) = @_;
@@ -350,7 +356,7 @@ sub _insert_session_log {
         (nt_user_id, action, timestamp, nt_user_session, nt_user_session_id) VALUES (??)",
         [ $uid, $why, time(), $sess, $sess_id ]
     );
-};
+}
 
 1;
 

@@ -44,7 +44,7 @@ my $fqdn = 'fully.qualified.com.';
 my @ascii = map( chr $_, 0..128);  # ascii table
 # weed out legit chars (a-z, 0-9, - . *)
 my @invalid_ascii = grep /[^0-9a-zA-Z_\-\.\*]/, @ascii;
-# the contents of invalid_ascii look a lot like this:
+# the contents of invalid_ascii look like this:
 # ! # " $ % & ' ( ) + , / : ; < = > ? @ \ ^ ` { | } ~ - .
 
 #try to do the tests
@@ -525,10 +525,10 @@ sub doit {
             name    => $_->{name},
             address => $_->{address},
             type    => $_->{type},
-            ($_->{ttl} ? (ttl => $_->{ttl}) : ()),
-            ($_->{weight} ? (weight => $_->{weight}) : ()),
-            ($_->{priority} ? (priority => $_->{priority}) : ()),
-            ($_->{other} ? (other => $_->{other}) : ()),
+            (defined $_->{ttl} ? (ttl => $_->{ttl}) : ()),
+            (defined $_->{weight} ? (weight => $_->{weight}) : ()),
+            (defined $_->{priority} ? (priority => $_->{priority}) : ()),
+            (defined $_->{other} ? (other => $_->{other}) : ()),
         );
         noerrok($res);
         $t = $res->get('nt_zone_record_id');
@@ -1050,10 +1050,10 @@ sub doit {
             name    => $_->{name},
             address => $_->{address},
             type    => $_->{type},
-            ($_->{ttl} ? (ttl => $_->{ttl}) : ()),
-            ($_->{weight} ? (weight => $_->{weight}) : ()),
-            ($_->{priority} ? (priority => $_->{priority}) : ()),
-            ($_->{other} ? (other => $_->{other}) : ()),
+            (defined $_->{ttl}      ? (ttl      => $_->{ttl})      : ()),
+            (defined $_->{weight}   ? (weight   => $_->{weight})   : ()),
+            (defined $_->{priority} ? (priority => $_->{priority}) : ()),
+            (defined $_->{other}    ? (other    => $_->{other})    : ()),
         );
 
         noerrok($res);

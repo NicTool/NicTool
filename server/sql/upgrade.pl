@@ -62,7 +62,7 @@ foreach my $version ( @versions ) {
         $dbh->query( $q ) or die DBIx::Simple->error;   # run it!
     };
     print "\n";
-};
+}
 
 sub _sql_2_some_fine_day {
     my @tables = $dbh->query("SHOW TABLES")->flat;
@@ -96,7 +96,7 @@ ALTER TABLE `nt_group_log` ADD FOREIGN KEY (`nt_group_id`) REFERENCES `nt_group`
 ALTER TABLE `nt_delegate` ADD FOREIGN KEY (`nt_group_id`) REFERENCES `nt_group` (`nt_group_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 EO_SOME_DAY
 ;
-};
+}
 
 sub _sql_test_2_35 {
     my $r = _get_db_version() or return 1;  # query failed
@@ -127,88 +127,55 @@ UPDATE resource_record_type SET forward=0, obsolete=1 WHERE id=99;
 /*  Update CHARACTER & COLLATION for VARCHAR columns */
 
 ALTER TABLE nt_nameserver DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin,
-    MODIFY name varchar(127) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '',
-    MODIFY description  varchar(255)
-      CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-    MODIFY address      varchar(127)
-      CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '',
-    MODIFY address6     varchar(127)
-      CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-    MODIFY remote_login varchar(127)
-      CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL;
+    MODIFY name         varchar(127) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '',
+    MODIFY description  varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+    MODIFY address      varchar(127) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '',
+    MODIFY address6     varchar(127) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+    MODIFY remote_login varchar(127) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL;
 
 ALTER TABLE nt_zone DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin,
-    MODIFY zone varchar(255)
-      CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '',
-    MODIFY mailaddr varchar(127)
-      CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-    MODIFY description varchar(255)
-      CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-    MODIFY location varchar(8)
-      CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL;
+    MODIFY zone        varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '',
+    MODIFY mailaddr    varchar(127) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+    MODIFY description varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+    MODIFY location    varchar(8)   CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+    MODIFY last_publish DATETIME DEFAULT NULL;
 
 ALTER TABLE nt_zone_log DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin,
-    MODIFY zone varchar(255)
-      CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '',
-    MODIFY mailaddr varchar(127)
-      CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-    MODIFY description varchar(255)
-      CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-    ADD location varchar(8)
-      CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL;
+    MODIFY zone        varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '',
+    MODIFY mailaddr    varchar(127) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+    MODIFY description varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+    ADD location       varchar(8)   CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL;
 
 ALTER TABLE nt_zone_record DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin,
-  MODIFY name varchar(255)
-    CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '',
-  MODIFY description varchar(255)
-    CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-  MODIFY address varchar(5120)
-    CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-  MODIFY other varchar(512)
-    CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-  MODIFY location varchar(2)
-    CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL;
+  MODIFY name        varchar(255)  CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '',
+  MODIFY description varchar(255)  CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+  MODIFY address     varchar(5120) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+  MODIFY other       varchar(512)  CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+  MODIFY location    varchar(2)    CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL;
 
 ALTER TABLE nt_zone_record_log DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin,
-  MODIFY name varchar(255)
-    CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '',
-  MODIFY description varchar(255)
-    CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-  MODIFY address varchar(5120)
-    CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-  MODIFY other varchar(512)
-    CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-  MODIFY location varchar(2)
-    CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL;
+  MODIFY name        varchar(255)  CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '',
+  MODIFY description varchar(255)  CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+  MODIFY address     varchar(5120) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+  MODIFY other       varchar(512)  CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+  MODIFY location    varchar(2)    CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL;
 
 ALTER TABLE nt_user DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin,
-    MODIFY first_name varchar(120)
-        CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-    MODIFY last_name varchar(160)
-        CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-    MODIFY username varchar(200)
-        CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '',
-    MODIFY password varchar(1020)
-        CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-    MODIFY email varchar(400)
-        CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '';
+    MODIFY first_name varchar(120)  CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+    MODIFY last_name  varchar(160)  CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+    MODIFY username   varchar(200)  CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '',
+    MODIFY password   varchar(1020) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+    MODIFY email      varchar(400)  CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '';
 
 ALTER TABLE nt_user_log DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin,
-    MODIFY first_name varchar(120)
-        CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-    MODIFY last_name varchar(160)
-        CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-    MODIFY username varchar(200)
-        CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '',
-    MODIFY password varchar(1020)
-        CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-    MODIFY email varchar(400)
-        CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '';
+    MODIFY first_name varchar(120)  CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+    MODIFY last_name  varchar(160)  CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+    MODIFY username   varchar(200)  CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '',
+    MODIFY password   varchar(1020) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+    MODIFY email      varchar(400)  CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '';
 
 ALTER TABLE nt_group DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin,
-    MODIFY name varchar(255)
-        CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '';
-
+    MODIFY name varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '';
 
 $encode_utf8mb4
 
@@ -257,7 +224,7 @@ sub _sql_test_2_30 {
     my $r = _get_db_version() or return 1;  # query failed
     return 0 if $r eq '2.29';   # update!
     return 1;                   # don't update
-};
+}
 
 sub _sql_2_30 {
     <<EO_SQL_2_30
@@ -274,7 +241,7 @@ sub _sql_test_2_29 {
     return 1 if $r eq '2.29';   # already up-to-date
     return 0 if $r eq '2.28';   # do it!
     return 1;                   # don't update
-};
+}
 
 sub _sql_2_29 {
     <<EO_SQL_2_29
@@ -290,11 +257,11 @@ sub _sql_test_2_28 {
     return 1 if $r eq '2.28';   # already up-to-date
     return 0 if $r eq '2.27';   # do it!
     return 1;                   # don't update
-};
+}
 
 sub _sql_2_28 {
     <<EO_SQL_2_28
-ALTER TABLE nt_zone ADD COLUMN last_publish TIMESTAMP DEFAULT 0 AFTER last_modified;
+ALTER TABLE nt_zone ADD COLUMN last_publish DATETIME DEFAULT NULL AFTER last_modified;
 
 UPDATE nt_options SET option_value='2.28' WHERE option_name='db_version';
 EO_SQL_2_28
@@ -311,7 +278,7 @@ sub _sql_test_2_27 {
 
     return 0 if $r eq '2.24';   # do it!
     return 1;                   # don't update
-};
+}
 
 sub _sql_2_27 {
     <<EO_SQL_2_27
@@ -337,7 +304,7 @@ sub _sql_test_2_24 {
 
     return 0 if $r eq '2.18';   # do it!
     return 1;                   # don't update
-};
+}
 
 sub _sql_2_24 {
     <<EO_SQL_2_24
@@ -375,7 +342,7 @@ ALTER TABLE nt_nameserver DROP column export_format;
 
 UPDATE nt_options SET option_value='2.24' WHERE option_name='db_version';
 EO_SQL_2_24
-};
+}
 
 sub _sql_test_2_18 {
     my $r = _get_db_version();
@@ -388,7 +355,7 @@ sub _sql_test_2_18 {
 
     return 0 if $r eq '2.17';   # do it!
     return 1;                   # don't update
-};
+}
 
 sub _sql_2_18 {
     <<EO_SQL_2_18
@@ -411,7 +378,7 @@ UPDATE nt_zone SET mailaddr=CONCAT('hostmaster.',zone,'.') WHERE mailaddr LIKE '
 UPDATE nt_zone SET mailaddr=SUBSTRING(mailaddr, 1, LENGTH(mailaddr)-1) WHERE mailaddr LIKE '%.';
 UPDATE nt_options SET option_value='2.18' WHERE option_name='db_version';
 EO_SQL_2_18
-};
+}
 
 sub _sql_test_2_17 {
     my $r = _get_db_version();
@@ -424,7 +391,7 @@ sub _sql_test_2_17 {
 
     return 0 if $r eq '2.16';   # do it!
     return 1;                   # don't update
-};
+}
 
 sub _sql_2_17 {
 
@@ -444,7 +411,7 @@ sub _sql_test_2_16 {
 
     return 0 if $r eq '2.15';   # do it!
     return 1;                   # don't update
-};
+}
 
 sub _sql_2_16 {
     return <<EO_SQL_2_16
@@ -464,14 +431,14 @@ ALTER TABLE nt_zone_record MODIFY address VARCHAR(512) NOT NULL;
 ALTER TABLE nt_zone_record_log MODIFY address VARCHAR(512) NOT NULL;
 UPDATE nt_options SET option_value='2.16' WHERE option_name='db_version';
 EO_SQL_2_16
-};
+}
 
 sub _sql_test_2_15 {
     my $r = _get_db_version();
     return 1 if ! defined $r;   # query failed
     return 0 if $r eq '2.14';   # do it!
     return 1;                   # don't update
-};
+}
 
 sub _sql_2_15 {
     <<EO_SQL_2_15
@@ -480,14 +447,14 @@ UPDATE nt_zone_record SET address = REPLACE(address,'\\072',':');
 UPDATE nt_options SET option_value='2.15' WHERE option_name='db_version';
 EO_SQL_2_15
 ;
-};
+}
 
 sub _sql_test_2_14 {
     my $r = _get_db_version();
     return 1 if ! defined $r;   # query failed
     return 0 if $r eq '2.11';   # do it! (no DB changes since v2.11)
     return 1;                   # don't update
-};
+}
 
 sub _sql_2_14 {
     <<EO_SQL_2_14
@@ -511,14 +478,14 @@ VALUES
 UPDATE nt_options SET option_value='2.14' WHERE option_name='db_version';
 EO_SQL_2_14
 ;
-};
+}
 
 sub _sql_test_2_11 {
     my $r = _get_db_version();
     return 1 if ! defined $r;   # query failed
     return 0 if $r eq '2.10';   # do it!
     return 1;                   # don't update
-};
+}
 
 sub _sql_2_11 {
 
@@ -585,7 +552,7 @@ INSERT INTO `resource_record_type` VALUES (2,'NS','Name Server',1,1),(5,'CNAME',
 UPDATE nt_options SET option_value='2.11' WHERE option_name='db_version';
 EO_211
 ;
-};
+}
 
 sub _sql_test_2_10 {
     my $r;
@@ -594,7 +561,7 @@ sub _sql_test_2_10 {
     return 1 if ! defined $r;   # query failed, 2.09 not applied yet
     return 0 if $r eq '2.09';   # set is_applied=0
     return 1;                   # DB version is probably > 2.09 already
-};
+}
 
 sub _sql_2_10 {
 
@@ -722,7 +689,7 @@ UPDATE nt_options SET option_value='2.10' WHERE option_name='db_version';
 
 EO_SQL_2_10
 ;
-};
+}
 
 sub _sql_test_2_09 {
 # the nt_options table was added in 2.09.
@@ -730,7 +697,7 @@ sub _sql_test_2_09 {
     eval { $r = $dbh->query( 'SELECT option_id FROM nt_options LIMIT 1' ); };
     return 0 if ! defined $r;   # query failed, set is_applied=0
     return $r;                  # result will be a positive int
-};
+}
 
 sub _sql_2_09 {
     <<EO_SQL_2_09
@@ -772,7 +739,7 @@ ALTER TABLE nt_nameserver_export_log DROP column stat1;
 
 EO_SQL_2_09
 ;
-};
+}
 
 sub _sql_test_2_08 {
 # was varchar 15. These queries will succeed after the initial failure
@@ -788,7 +755,7 @@ sub _sql_test_2_08 {
 # ID will be undefined if the query fails.
 # Otherwise, it'll return some positive integer, meaning 'patch applied'
     return $id;
-};
+}
 
 sub _sql_2_08 {
     return <<EO_SQL_2_08
@@ -796,14 +763,14 @@ ALTER table nt_user MODIFY password VARCHAR(128);
 ALTER table nt_user_log MODIFY password VARCHAR(128);
 EO_SQL_2_08
 ;
-};
+}
 
 sub _sql_test_2_05 {
     my $r;
     eval { $r = $dbh->query( 'SELECT priority FROM nt_zone_record LIMIT 1' )->list; };
     return 1 if $dbh->error eq 'DBI error: ';  # the query succeeded
     return;
-};
+}
 
 sub _sql_2_05 {
 
@@ -817,14 +784,14 @@ ALTER TABLE nt_zone_record_log ADD other    SMALLINT UNSIGNED DEFAULT 0 AFTER pr
 ALTER TABLE nt_zone_record_log MODIFY type enum('A','AAAA','MX','PTR','NS','TXT','CNAME','SRV');
 EO_SQL_2_05
 ;
-};
+}
 
 sub _sql_test_2_00 {
 
     # the nt_perm table was introduced in 2.00. A failed query means the patch
     # needs to be applied.
     return $dbh->query( 'SELECT nt_perm_id FROM nt_perm')->list;
-};
+}
 
 sub _sql_2_00 {
     <<EO_SQL_2_00
@@ -974,7 +941,7 @@ INSERT INTO nt_perm (nt_group_id,group_write, group_create, group_delete, zone_w
     SELECT nt_group_id, 1 as group_write, 1 as group_create, 1 as group_delete, 1 as zone_write, 1 as zone_create, 1 as zone_delegate, 1 as zone_delete, 1 as zonerecord_write, 1 as zonerecord_create, 1 as zonerecord_delegate, 1 as zonerecord_delete, 1 as user_write, 1 as user_create, 1 as user_delete, 1 as nameserver_write, 1 as nameserver_create, 1 as nameserver_delete, 1 as self_write FROM nt_group;
 EO_SQL_2_00
 ;
-};
+}
 
 
 sub ask {
@@ -1039,7 +1006,7 @@ sub engine_innodb {
         $string .= "ALTER TABLE $table_name ENGINE = InnoDB;\n";
     };
     return $string;
-};
+}
 
 sub get_db_creds_from_nictoolserver_conf {
 
@@ -1066,7 +1033,7 @@ sub get_db_creds_from_nictoolserver_conf {
         #warn "\tparsing DB pass from $file\n";
         ($db_pass) = $contents =~ m/db_pass\s+=\s+'(.*)?'/;
     };
-};
+}
 
 sub prompt_last_chance {
     print qq{
@@ -1083,15 +1050,15 @@ You made a backup already, right?
   # gzip nictool-2011-11-16.sql
 
 Hit return to continue...
-};
+}
 
     my $r = <STDIN>;
-};
+}
 
 sub _get_db_version {
     my $sql = 'SELECT option_value FROM nt_options WHERE option_name="db_version"';
     my $r;
     eval { $r = $dbh->query( $sql )->list; };
     return $r;
-};
+}
 

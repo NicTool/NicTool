@@ -23,7 +23,7 @@ sub get_import_file {
         or die "failed to open '$filename'";
 
     return $self->{FH} = $FH;
-};
+}
 
 sub import_records {
     my ($self, $file) = @_;
@@ -94,6 +94,9 @@ sub import_records {
             push @err, $self->zr_ptr(join(':', $self->ip6_to_ptr($addr),
                 $fqdn, $ttl || '', $ts || '', $loc || ''));
         }
+        elsif ( $first eq 'S' ) {       #  SRV
+            push @err, $self->zr_srv_S($record);
+        }
         else { # Emit a local error (not from nt_create_* on the server) if record type unknown
             $first = sprintf '\%03o', ord($first) # Escape unprintable ascii
                 if $first =~ /^[\x00-\x20\x7F-\xFF]$/;
@@ -114,7 +117,7 @@ sub import_records {
 
     print "done\n";
     return 1;
-};
+}
 
 sub zr_a {
     my $self = shift;
@@ -320,7 +323,7 @@ sub zr_spf {
     print "SPF     : $r\n";
     my ( $fqdn, $n, $rdata, $ttl, $timestamp, $location ) = split(':', $r);
 
-    my ($zone_id, $host) = $self->get_zone_id( $fqdn );
+    my ( $zone_id, $host ) = $self->get_zone_id( $fqdn );
 
     # DNS RRtype 99 (SPF) and RRtype 16 (TXT) uses the same rdata format.
     # TinyDNS gen type :16: and :99: records are identical, except for the type.
@@ -373,6 +376,29 @@ sub zr_aaaa6 {
         type    => 'AAAA',
         name    => $host,
         address => $rdata,
+        defined $ttl       ? ( ttl       => $ttl       ) : (),
+        defined $timestamp ? ( timestamp => $timestamp ) : (),
+        defined $location  ? ( location  => $location  ) : (),
+    );
+}
+
+sub zr_srv_S {
+    my $self = shift;
+    my $r = shift or die;
+
+    print "SRV     : $r\n";   # patched tinydns that has S records
+    my ( $fqdn, $addr, $port, $priority, $weight, $ttl, $timestamp, $location ) = split ':', $r;
+
+    my ( $zone_id, $host ) = $self->get_zone_id( $fqdn );
+
+    $self->nt_create_record(
+        zone_id  => $zone_id,
+        type     => 'SRV',
+        name     => $host,
+        address  => $self->fully_qualify( $addr ),
+        weight   => $weight,
+        priority => $priority,
+        other    => $port,
         defined $ttl       ? ( ttl       => $ttl       ) : (),
         defined $timestamp ? ( timestamp => $timestamp ) : (),
         defined $location  ? ( location  => $location  ) : (),
@@ -473,7 +499,7 @@ sub unescape_octal {
     # convert octal escapes to ascii
     $str =~ s/(\\)([0-9]{3})/chr(oct($2))/eg;
     return $str;
-};
+}
 
 sub unescape_packed_hex {
     my ($self, $str) = @_;
@@ -488,7 +514,7 @@ sub unescape_packed_hex {
 
     # insert : after each 4 char set
     return join(':', unpack("(a4)*", $str));
-};
+}
 
 1;
 

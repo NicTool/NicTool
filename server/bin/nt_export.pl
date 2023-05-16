@@ -125,7 +125,7 @@ sub get_nsid {
 
     $0 -nsid N\n";
     exit 2;
-};
+}
 
 sub ask {
     my $question = shift;
@@ -183,7 +183,7 @@ sub get_db_creds_from_nictoolserver_conf {
     my $contents = `cat $file`;
 
     if ( ! $dsn ) {
-        ($dsn) = $contents =~ m/['"](DBI:mysql.*?)["']/;
+        ($dsn) = $contents =~ m/['"](DBI:.*?)["']/;
     };
 
     if ( ! $db_user ) {
@@ -193,7 +193,7 @@ sub get_db_creds_from_nictoolserver_conf {
     if ( ! $db_pass ) {
         ($db_pass) = $contents =~ m/db_pass\s+=\s+'(.*)?'/;
     };
-};
+}
 
 sub graceful_exit {
     my $signal = shift;
@@ -227,4 +227,4 @@ If nt_export detects an error, then an exit status of 2 is returned.
 
 EOHELP
 ;
-};
+}

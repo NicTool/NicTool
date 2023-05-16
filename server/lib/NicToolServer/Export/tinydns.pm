@@ -36,7 +36,7 @@ sub get_export_file {
 
     $self->{FH} = $FH;
     return $FH;
-};
+}
 
 sub postflight {
     my $self = shift;
@@ -68,7 +68,7 @@ sub compile_cdb {
     $message .= " ($elapsed secs)" if $elapsed > 5;
     $self->{nte}->elog($message);
     return 1;
-};
+}
 
 sub append_makefile {
     my $self = shift;
@@ -87,7 +87,7 @@ remote: data.cdb
 MAKE
 ;
     close $M;
-};
+}
 
 sub write_makefile {
     my $self = shift;
@@ -124,7 +124,7 @@ MAKE
 ;
     close $M;
     return 1;
-};
+}
 
 sub rsync_cdb {
     my $self = shift;
@@ -151,7 +151,7 @@ sub rsync_cdb {
     $self->{nte}->elog($message);
     $self->{nte}->set_copied(1);  # we copied
     return 1;
-};
+}
 
 sub export_db {
     my $self = shift;
@@ -200,7 +200,7 @@ sub export_db {
     $result->finish;
 
     close $fh;
-};
+}
 
 sub zr_a {
     my $self = shift;
@@ -288,17 +288,17 @@ sub zr_soa {
     my $z = shift or die;
 
     # using sprintf versus concatenation takes the same amount of time.
-    return 'Z'. $z->{zone}           # fqdn
-        . ':' . $z->{nsname}         # mname
-        . ':' . $z->{mailaddr}       # rname
-        . ':' . $z->{serial}         # serial
-        . ':' . $z->{refresh}        # refresh
-        . ':' . $z->{retry}          # retry
-        . ':' . $z->{expire}         # expire
-        . ':' . $z->{minimum}        # min
-        . ':' . $z->{ttl}            # ttl
-        . ':' . $z->{timestamp}      # timestamp
-        . ':' . $z->{location}       # location
+    return 'Z'. $z->{zone}               # fqdn
+        . ':' . $z->{nsname}             # mname
+        . ':' . ($z->{mailaddr}  || '')  # rname
+        . ':' . ($z->{serial}    || '')  # serial
+        . ':' . ($z->{refresh}   || '')  # refresh
+        . ':' . ($z->{retry}     || '')  # retry
+        . ':' . ($z->{expire}    || '')  # expire
+        . ':' . ($z->{minimum}   || '')  # min
+        . ':' . ($z->{ttl}       || '')  # ttl
+        . ':' . ($z->{timestamp} || '')  # timestamp
+        . ':' . ($z->{location}  || '')  # location
         . "\n";
 }
 
@@ -311,11 +311,11 @@ sub zr_generic {
         . $self->qualify( $r->{name} )     # fqdn
         . ':' . $rrid                      # n
         . ':' . $rdata                     # rdata
-        . ':' . ($r->{ttl} || '')          # ttl
+        . ':' . ($r->{ttl}       || '')    # ttl
         . ':' . ($r->{timestamp} || '')    # timestamp
         . ':' . ($r->{location}  || '')    # lo
         . "\n";
-};
+}
 
 sub zr_spf {
     my $self = shift;
@@ -338,7 +338,7 @@ sub zr_uri {
         $self->{nte}->is_ip_port( $r->{weight} ),     # Weight,   16 bit (n)
     );
 
-    $rdata .= $r->{address}; # Target, URI
+    $rdata .= $self->escape( $r->{address} ); # Target, URI
     return $self->zr_generic( 256, $r, $rdata );
 }
 
@@ -351,6 +351,7 @@ sub zr_caa {
     # Then property tag as a length-prefixed text string
     $rdata .= $self->characterCount( $r->{other} ) .
 	$self->escape( $r->{other} );
+
     # Then the property value as the rest of the data length
     $rdata .= $self->escape( $r->{address} );
 
@@ -363,14 +364,10 @@ sub zr_srv {
 
     # SRV - https://www.ietf.org/rfc/rfc2782.txt
     # format of SRV record derived from djbdnsRecordBuilder
-
-    my $rdata = octal_escape( pack "nnn",
-        $self->{nte}->is_ip_port( $r->{priority} ),   # Priority, 16 bit (n)
-        $self->{nte}->is_ip_port( $r->{weight} ),     # Weight,   16 bit (n)
-        $self->{nte}->is_ip_port( $r->{other} ),      # Port,     16 bit (n)
-    );
-
-    $rdata .= $self->pack_domain_name( $r->{address} ); # Target, domain name
+    my $rdata = escapeNumber($self->{nte}->is_ip_port( $r->{priority} ))
+              . escapeNumber($self->{nte}->is_ip_port( $r->{weight} ))
+              . escapeNumber($self->{nte}->is_ip_port( $r->{other} ))
+              . $self->pack_domain_name( $r->{address} ); # Target, domain name
 
     return $self->zr_generic( 33, $r, $rdata );
 }
@@ -387,7 +384,7 @@ sub zr_aaaa {
     $self->aaaa_to_ptr( $aaaa ) if 1 == 0; # TODO: add option to enable
 
     return $self->zr_generic( 28, $r, $rdata );
-};
+}
 
 sub zr_loc {
     my $self = shift;
@@ -460,7 +457,7 @@ sub zr_naptr {
 # :example.com:35:\000\012\000\144\001u\007E2U+sip\036!^.*$!sip\072info@example.com.br!\000:300
 #                 |-order-|-pref--|flag|-services-|---------------regexp---------------|re-|
 
-    my ($flag, $services, $regexp, $replace) = split /__/, $r->{address};
+    my ($flag, $services, $regexp) = $r->{address} =~ /"([^"]*)"/g;
 
     my $rdata = $self->escapeNumber( $r->{'weight'} )    # order, 16-bit
            . $self->escapeNumber( $r->{'priority'} )     # pref,  16-bit
@@ -468,6 +465,7 @@ sub zr_naptr {
            . $self->characterCount( $services ) . $self->escape( $services )
            . $self->characterCount( $regexp )   . $self->escape( $regexp );
 
+    my $replace = $r->{description};
     if ( $replace ne '' ) {
         $rdata .= $self->characterCount( $replace ) . $self->escape( $replace );
     };
@@ -485,7 +483,7 @@ sub zr_dname {
     my $rdata = $self->pack_domain_name( $self->qualify( $r->{address} ) );
 
     return $self->zr_generic( 39, $r, $rdata );
-};
+}
 
 sub zr_sshfp {
     my $self = shift;
@@ -502,7 +500,7 @@ sub zr_sshfp {
     $rdata .= $self->pack_hex( $fingerprint );
 
     return $self->zr_generic( 44, $r, $rdata );
-};
+}
 
 sub zr_ipseckey {
     my $self = shift;
@@ -547,7 +545,7 @@ sub zr_ipseckey {
     };
 
     return $self->zr_generic( 45, $r, $rdata );
-};
+}
 
 sub zr_dnskey {
     my $self = shift;
@@ -568,7 +566,7 @@ sub zr_dnskey {
         );
 
     return $self->zr_generic( 48, $r, $rdata );
-};
+}
 
 sub zr_rrsig {
     my $self = shift;
@@ -600,7 +598,7 @@ sub zr_rrsig {
     $rdata .= octal_escape( pack "a*", $signature );    # Signature
 
     return $self->zr_generic( 46, $r, $rdata );
-};
+}
 
 sub zr_nsec {
     my $self = shift;
@@ -612,7 +610,7 @@ sub zr_nsec {
     $rdata .= $self->pack_type_bitmap( $r->{description} );
 
     return $self->zr_generic( 47, $r, $rdata );
-};
+}
 
 sub zr_nsec3 {
     my $self = shift;
@@ -641,7 +639,7 @@ sub zr_nsec3 {
     $rdata .= $self->pack_type_bitmap( $bitmap_list ); # Type Bit Maps
 
     return $self->zr_generic( 50, $r, $rdata );
-};
+}
 
 sub zr_nsec3param {
     my $self = shift;
@@ -654,7 +652,7 @@ sub zr_nsec3param {
     my $rdata = $self->pack_nsec3_params( $hash_algo, $flags, $iters, $salt );
 
     return $self->zr_generic( 51, $r, $rdata );
-};
+}
 
 sub zr_ds {
     my $self = shift;
@@ -673,7 +671,7 @@ sub zr_ds {
     $rdata .= $self->pack_hex( $digest );
 
     return $self->zr_generic( 43, $r, $rdata );
-};
+}
 
 sub aaaa_to_ptr {
     my ( $self, $r ) = @_;
@@ -686,7 +684,7 @@ sub aaaa_to_ptr {
             timestamp  => $r->{timestamp},
             location   => $r->{location},
         });
-};
+}
 
 sub datestamp_to_int {
     my ($self, $ds) = @_;
@@ -701,7 +699,7 @@ sub datestamp_to_int {
         substr($ds,  4, 2) -1,    # month
         substr($ds,  0, 4)        # year
     );
-};
+}
 
 sub octal_escape {
     my $line = pop @_;
@@ -729,7 +727,7 @@ sub expand_aaaa {
     # restore any compressed leading zeros
     $aaaa = join ':', map { sprintf '%04s', $_ } split /:/, $aaaa;
     return $aaaa;
-};
+}
 
 sub pack_domain_name {
     my ($self, $name) = @_;
@@ -742,7 +740,7 @@ sub pack_domain_name {
     };
     $r .= '\000';   # terminating with a zero length label
     return $r;
-};
+}
 
 sub pack_hex {
     my ($self, $string) = @_;
@@ -752,7 +750,7 @@ sub pack_hex {
         $r .= sprintf '\%03lo', hex $_;    # pack 'em to an escaped octal
     };
     return $r;
-};
+}
 
 sub pack_nsec3_params {
     my ($self, $hash_algo, $flags, $iters, $salt ) = @_;
@@ -767,7 +765,7 @@ sub pack_nsec3_params {
         length( $salt ),      # Salt Length      1 octet
         $salt,                # Salt             binary octets
     );
-};
+}
 
 sub pack_type_bitmap {
     my ( $self, $rr_type_list ) = @_;
@@ -808,7 +806,7 @@ sub pack_type_bitmap {
         };
     };
     return $bitmap;
-};
+}
 
 sub qualify {
     my ($self, $record, $zone) = @_;
@@ -828,7 +826,7 @@ sub to_tai64 {
     my ($self, $ts) = @_;
     return '' if ! $ts;
     return substr unixtai64( $ts ), 1;
-};
+}
 
 sub base32str_to_bin {
     my ($self, $str) = @_;
@@ -846,7 +844,7 @@ sub base32str_to_bin {
     # The MB fallback method is encode_09AV, which will work if we uc the
     # string first.
     return MIME::Base32::decode_base32hex( uc $str );
-};
+}
 
 # next 3 subs based on http://www.anders.com/projects/sysadmin/djbdnsRecordBuilder/
 sub escape {
@@ -855,7 +853,7 @@ sub escape {
         $out .= $_ =~ /[^\r\n\t:\\\/]/ ? $_ : sprintf '\%03lo', ord $_;
     }
     return $out;
-};
+}
 
 sub escapeNumber {
     my $number     = pop @_;

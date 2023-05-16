@@ -30,7 +30,7 @@ sub get_export_file {
         return;
     };
     return $fh;
-};
+}
 
 sub get_records {
     my $self = shift;

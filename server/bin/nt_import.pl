@@ -59,7 +59,7 @@ $nti->group_id( $group_id );
 
 print "\nStarting import using: $filename\n";
 # Catch and report fatal import errors
-eval { $nti->import_records($filename); }
+eval { $nti->import_records($filename); };
 if ($@) {
     print STDERR $@; # Write die() string (unchanged) on STDERR
     # Compress message to one line for STDOUT
@@ -85,11 +85,11 @@ sub load_type {
         return;
     };
     die "unknown type: $type\n";
-};
+}
 
 sub get_type {
     return ask("are you importing from tinydns or BIND?", default=>'BIND');
-};
+}
 
 sub ask {
     my $question = shift;

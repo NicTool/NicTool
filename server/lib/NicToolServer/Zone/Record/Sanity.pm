@@ -62,7 +62,7 @@ sub new_or_edit_basic_verify {
 
     $self->_expand_shortcuts( $data, $zone_text );  # expand @ and & shortcuts
 
-    if ( $data->{name} =~ /^(.+)\.$zone_text\.$/ ) {  # ends in domain name
+    if ( $data->{name} =~ /^(.+)\.$zone_text\.*$/ ) {  # ends in domain name
         $data->{name} = $1; # strip domain. record names are NOT stored absolute
     }
 
@@ -87,7 +87,7 @@ sub new_or_edit_basic_verify {
 
     $self->_name_collision($data, $z);
     $self->_valid_ttl( @args );
-};
+}
 
 sub _valid_ttl {
     my ($self, $data, $zone_text, $collisions) = @_;
@@ -102,23 +102,23 @@ sub _valid_ttl {
 
     my @same_type = grep { $_->{type} eq $data->{type} } @$collisions;
     if (scalar @same_type && grep { $_->{ttl} != $data->{ttl} } @same_type) {
-	# RRs with identical Name and type must have identical TTL: RFC 2181
-	# make it so by applying TTL update to all records in RRset
-	map {
-	    $_->{ttl} = $data->{ttl};
-	    # Push that update to the DB as well(!)
-	    $self->SUPER::edit_zone_record($_);
-	} @same_type;
+        # RRs with identical Name and type must have identical TTL: RFC 2181
+        # make it so by applying TTL update to all records in RRset
+        map {
+            $_->{ttl} = $data->{ttl};
+            # Push that update to the DB as well(!)
+            $self->SUPER::edit_zone_record($_);
+        } @same_type;
     }
 }
 
 sub _duplicate_record {
     my ( $self, $data, $zone_text, $collisions ) = @_;
 
-    # AAAA records are stored in DB in expanded notation. Expand the request
-    # addr so duplicate detection works #160
     my $address = $data->{address};
     if ($data->{type} eq 'AAAA') {
+        # AAAA records are stored in DB in expanded notation. Expand the request
+        # addr so duplicate detection works #160
         $address = Net::IP::ip_expand_address($data->{address},6);
     }
 
@@ -130,7 +130,11 @@ sub _duplicate_record {
 
     if ($data->{type} eq 'CAA') {
         # same address is tolerated if property tag is different, allows
-	# setting 'issue' and 'issuewild' for the same CA
+        # setting 'issue' and 'issuewild' for the same CA
+        @matches = grep { $_->{other} eq $data->{other} } @matches;
+    }
+    elsif ($data->{type} eq 'SRV') {
+        # same address is okay if different port is specified
         @matches = grep { $_->{other} eq $data->{other} } @matches;
     }
 
@@ -308,7 +312,7 @@ sub _valid_address {
 
     $data->{address} = $data->{address} . ".$zone_text."
         unless $data->{address} =~ /\.$/;
-};
+}
 
 sub _valid_address_chars {
     my ( $self, $data, $zone_text ) = @_;
@@ -582,33 +586,29 @@ sub _valid_caa {
 
     my $crit = $data->{weight};
     my $tag = $data->{other};
-    my $value = $data->{address};
+    my $value = $data->{address} =~ s/^"|"$//g;
 
     if ($crit != 0 && $crit != 128) {
-	$self->error('weight',
-		     "Critical flag must be either 0 or 128, see RFC 6844");
+        $self->error('weight', "Critical flag must be either 0 or 128, see RFC 6844");
     }
 
     my %tags = (
-	'issue' => 1,
-	'issuewild' => 1,
-	'iodef' => 1,
-	);
+        'issue' => 1,
+        'issuewild' => 1,
+        'iodef' => 1,
+    );
 
     if (!defined($tags{$tag})) {
-	my $valid_tags = join(" ", keys(%tags));
-	$self->error('other',
-		     "Tag must be one of $valid_tags, see RFC 6844");
+        my $valid_tags = join(" ", keys(%tags));
+        $self->error('other', "Tag must be one of $valid_tags, see RFC 6844");
     }
 
     if ($tag eq "iodef") {
-	my @valid_iodef_schemes = ("mailto:", "http:", "https:");
-	if (! grep { $value =~ /^$_/i } @valid_iodef_schemes) {
-	    my $valid_uri_methods = join(", ", @valid_iodef_schemes);
-	    $self->error('address',
-			 "Tag value for iodef must start with " .
-			 "one of $valid_uri_methods, see RFC 6844");
-	}
+        my @valid_iodef_schemes = qw/ mailto: http: https: /;
+        if (! grep { $value =~ /^$_/i } @valid_iodef_schemes) {
+           my $valid_uri_methods = join(", ", @valid_iodef_schemes);
+           $self->error('address', "Tag value for iodef must start with one of $valid_uri_methods, see RFC 6844");
+        }
     }
 }
 
@@ -617,7 +617,7 @@ sub _valid_ptr {
 
     $self->_valid_address( $data, $zone_text );
     $self->_valid_address_chars( $data, $zone_text );
-};
+}
 
 sub _valid_naptr {
     my ( $self, $data, $zone_text ) = @_;
@@ -666,14 +666,14 @@ sub get_invalid_chars {
     # DNS & BIND, 4.5: Names that are not host names can consist of any
     # printable ASCII character.
     if ( $field eq 'name' ) {
-        return '[^ -~]' if $type !~ /^(?:A|AAAA|MX|LOC|SPF|SSHFP)$/;
+        return '[^!-~]' if $type !~ /^(?:A|AAAA|MX|LOC|SPF|SSHFP)$/;
     };
 
     # allow / in reverse zones, for both name & address: RFC 2317
     return '[^a-zA-Z0-9\-\.\/_]' if $zone_text =~ /(in-addr|ip6)\.arpa[\.]{0,1}$/i;
 
     return '[^a-zA-Z0-9\-\._]';
-};
+}
 
 sub valid_reverse_label {
     my $self = shift;
@@ -708,7 +708,7 @@ sub valid_reverse_label {
             $self->error($type, "Domain labels $label_explain must not end with a hyphen: RFC 1035");
         };
     };
-};
+}
 
 
 1;

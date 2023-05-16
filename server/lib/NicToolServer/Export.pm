@@ -71,7 +71,7 @@ sub daemon {
         $waitleft--;
     };
     return $result;
-};
+}
 
 sub elog {
     my $self    = shift;
@@ -133,7 +133,7 @@ sub set_no_change {
 
     $self->set_status("last run:$last_ts<br>last cp :$last_cp_ts");
     $self->elog("exiting\n",success=>1);
-};
+}
 
 sub set_partial {
     my ($self, $boolean) = @_;
@@ -165,6 +165,10 @@ sub touch_publish_ts {
 sub cleanup_db {
     my $self = shift;
 
+    # only run in the early morning
+    my @ts = localtime;
+    if ($ts[2] != 0) { return; }
+
     # delete the "started, 0 changed zones, exiting" log entries older than today
     $self->exec_query(
         "DELETE FROM nt_nameserver_export_log
@@ -188,7 +192,7 @@ sub cleanup_db {
             AND nt_nameserver_id=?",
         [ $self->{ns_id} ]
     );
-};
+}
 
 sub exec_query {
     my $self = shift;
@@ -305,7 +309,7 @@ sub get_export_data_dir {
     my $dir = $self->{ns_ref}{datadir} or return;
     if ((substr $dir, -1, 1) eq '/') { chop $dir; }
     return $dir;
-};
+}
 
 sub get_export_dir {
     my $self = shift;
@@ -359,7 +363,7 @@ sub get_export_dir {
     };
     $self->elog("unable to create dir ($dir): $@\n");
     return;
-};
+}
 
 sub get_last_ns_export {
     my $self = shift;
@@ -476,10 +480,10 @@ sub get_ns_zones {
         push @args, $p{last_modified};
     }
     else {
-        if ( $self->incremental && $self->export_required > 1 ) {
+        if ( $self->incremental && $self->export_required > 0 ) {
             push @descrs, 'incremental';
             $sql .= " AND z.last_modified > ?";
-            push @args, $self->export_required;
+            push @args, $self->{last_success_ts};
         };
     }
 
@@ -595,19 +599,19 @@ sub get_rr_types {
         $self->{rr_type_map}{names}{ $_->{name} } = $_->{id};
     };
     return $self->{rr_types};
-};
+}
 
 sub get_rr_id {
     my ($self, $name) = @_;
     $self->get_rr_types() unless defined $self->{rr_type_map};
     return $self->{rr_type_map}{names}{$name};
-};
+}
 
 sub get_rr_name {
     my ($self, $id) = @_;
     $self->get_rr_types() unless defined $self->{rr_type_map};
     return $self->{rr_type_map}{ids}{$id};
-};
+}
 
 sub get_zone_ns_ids {
     my $self = shift;
@@ -702,7 +706,7 @@ sub load_export_class {
     else {
         die "unknown export format: $self->{export_format}\n";
     };
-};
+}
 
 sub preflight {
     my $self = shift;
@@ -723,7 +727,8 @@ sub preflight {
             # have any zones for this NS changed since the last successful export?
             my $c = $self->get_modified_zones_count( since => $ts_success );
             # store the last success ts for incrementals
-            $self->export_required( $c == 0 ? 0 : $ts_success );
+            $self->{last_success_ts} = $ts_success;
+            $self->export_required( $c );
             $self->elog( "$c changed");
         };
     };
@@ -759,7 +764,7 @@ sub update_status {
     else {
         $self->set_status( "last: SUCCESS" );
     };
-};
+}
 
 sub write_runfile {
     my $self = shift;
@@ -830,7 +835,7 @@ EORUN
 ;
     close $F;
     CORE::chmod( oct('0755'), 'run' );
-};
+}
 
 sub zr_soa {
     my $self = shift;
@@ -901,19 +906,19 @@ sub export_required {
     return $self->{export_required} if ! defined $er;
     $self->{export_required} = $er;
     return $er;
-};
+}
 
 sub incremental {
     my ($self, $val) = @_;
     return $self->{incremental} if ! defined $val;
     $self->{incremental} = $val;
     return $val;
-};
+}
 
 sub in_export_list {
     my ($self, $zone) = @_;
     return $self->{export_list}{$zone} ? 1 : 0;
-};
+}
 
 sub zones_exported {
     my ($self, $zone) = @_;
@@ -922,7 +927,7 @@ sub zones_exported {
     };
     $self->{export_list}{$zone} = 1;          # setter
     return 0;
-};
+}
 
 sub is_interactive {
 

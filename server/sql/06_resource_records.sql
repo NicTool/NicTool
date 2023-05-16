@@ -13,7 +13,7 @@ CREATE TABLE resource_record_type (
 
 INSERT INTO `resource_record_type` (`id`, `name`, `description`, `reverse`, `forward`, `obsolete`)
 VALUES
-    (1,'A','Address',0,1,0),
+    (1,'A','Address',1,1,0),
     (2,'NS','Name Server',1,1,0),
     (5,'CNAME','Canonical Name',1,1,0),
     (6,'SOA','Start Of Authority',0,0,0),

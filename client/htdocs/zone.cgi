@@ -130,7 +130,7 @@ sub do_delete_delegation {
                 "Delegation Removed" );
         }
     }
-};
+}
 
 sub do_edit_zone {
     my ( $nt_obj, $user, $q, $zone ) = @_;
@@ -164,7 +164,7 @@ sub do_edit_zone {
         nt_group_id => scalar($q->param('nt_group_id')),
         nt_zone_id  => scalar($q->param('nt_zone_id'))
     );
-};
+}
 
 sub do_new_zone {
     my ( $nt_obj, $user, $q, $zone ) = @_;
@@ -289,7 +289,7 @@ sub display_zone_delegate {
   </td>
  </tr>
 </table>];
-};
+}
 
 sub display_zone_delegation {
     my ( $nt_obj, $q, $user, $zone ) = @_;
@@ -359,7 +359,7 @@ sub display_zone_delegation {
     }
     print qq[
 </table>];
-};
+}
 
 sub display_zone_properties {
     my ($nt_obj, $q, $zone, $user) = @_;
@@ -421,7 +421,7 @@ sub display_zone_properties {
  </tr>
 </table>
 </div>];
-};
+}
 
 sub display_nameservers {
     my ( $nt_obj, $user, $q, $zone ) = @_;
@@ -682,7 +682,7 @@ sub display_zone_records_new {
                -value => $error->{'nt_zone_record_id'} );
     $nt_obj->display_nice_message(
             "New Zone Record '$data{name}' Created", "New Zone Record" );
-};
+}
 
 sub display_zone_records_edit {
     my ( $nt_obj, $user, $q, $zone ) = @_;
@@ -697,6 +697,7 @@ sub display_zone_records_edit {
             address weight priority other ttl description deleted location timestamp);
     my %data;
     foreach my $x (@fields) {
+        next if $q->param($x) eq '' and $x ne 'description';
         $data{$x} = $q->param($x);
     }
     my $error = $nt_obj->edit_zone_record(%data);
@@ -705,7 +706,7 @@ sub display_zone_records_edit {
     }
     $nt_obj->display_nice_message(
             "Zone Record successfully modified.", "Edit Zone Record" );
-};
+}
 
 sub display_zone_records_delete {
     my ( $nt_obj, $q ) = @_;
@@ -725,7 +726,7 @@ sub display_zone_records_delete {
             "Zone Record successfully deleted.",
             "Delete Zone Record" );
     }
-};
+}
 
 sub display_zone_records_head {
     my ($q, $user, $zone, $state_string) = @_;
@@ -753,7 +754,7 @@ sub display_zone_records_head {
     $options
   </ul>
 </div>];
-};
+}
 
 sub display_zone_records_columns {
     my ($zone_records) = @_;
@@ -771,7 +772,7 @@ sub display_zone_records_columns {
     }
     push @columns, 'description';
     return @columns;
-};
+}
 
 sub display_zone_records_table_head {
     my ( $columns, $sort_fields, $labels ) = @_;
@@ -797,7 +798,7 @@ sub display_zone_records_table_head {
   <td class="center width1"></td>
   <td class="center width1"></td>
  </tr>];
-};
+}
 
 sub display_edit_record {
     my ( $nt_obj, $user, $q, $message, $zone, $edit ) = @_;
@@ -973,7 +974,7 @@ sub _display_edit_record_action {
         if $zone_record->{'address'} eq "@" && $zone->{'zone'};
 
     return ($zone_record, $action, '');
-};
+}
 
 sub _build_rr_name {
     my ( $q, $zone_record, $zone, $modifyperm ) = @_;
@@ -993,7 +994,7 @@ sub _build_rr_name {
 #       -pattern   => 'TODO: apply label rules here',
     )
     . $suffix;
-};
+}
 
 sub _build_rr_type {
     my ( $nt_obj, $q, $zone, $zone_record, $default_record_type, $modifyperm ) = @_;
@@ -1069,7 +1070,7 @@ sub _build_rr_type {
         ) );
     $q->autoEscape(1);
     return $popup . q[ <span id=rfc_help></span>];
-};
+}
 
 sub _build_rr_address {
     my ( $q, $zone_record, $modifyperm) = @_;
@@ -1084,7 +1085,7 @@ sub _build_rr_address {
         -default   => $zone_record->{'address'},
         -required  => 'required',
     );
-};
+}
 
 sub _build_rr_ttl {
     my ( $q, $zone_record, $modifyperm) = @_;
@@ -1113,7 +1114,7 @@ if ( $('select#ttl').val() == '' && $('input#ttl').val() != '' )
     $('select#ttl').val( $('input#ttl').val() );
 </script>
 ];
-};
+}
 
 sub _build_rr_weight {
     my ( $q, $zone_record, $modifyperm) = @_;
@@ -1129,7 +1130,7 @@ sub _build_rr_weight {
     )
     . q[<select id=weight class='hidden' onChange="$('input#weight').val(this.value);"></select>
 ];
-};
+}
 
 sub _build_rr_priority {
     my ( $q, $zone_record, $modifyperm) = @_;
@@ -1145,7 +1146,7 @@ sub _build_rr_priority {
         )
     . q[<select id=priority class='hidden' onChange="$('input#priority').val(this.value);"></select>
 ];
-};
+}
 
 sub _build_rr_other {
     my ( $q, $zone_record, $modifyperm) = @_;
@@ -1161,7 +1162,7 @@ sub _build_rr_other {
         )
     . q[<select id=other class='hidden' onChange="$('input#other').val(this.value);"></select>
 ];
-};
+}
 
 sub _build_rr_description {
     my ( $q, $zone_record, $modifyperm) = @_;
@@ -1174,7 +1175,7 @@ sub _build_rr_description {
         -maxlength => 128,
         -default   => $zone_record->{'description'}
     );
-};
+}
 
 sub _build_rr_timestamp {
     my ( $q, $zone_record, $modifyperm) = @_;
@@ -1187,7 +1188,7 @@ sub _build_rr_timestamp {
         -maxlength => 19,
         -default   => $zone_record->{'timestamp'}
     );
-};
+}
 
 sub _build_rr_location {
     my ( $q, $zone_record, $modifyperm) = @_;
@@ -1200,7 +1201,7 @@ sub _build_rr_location {
         -maxlength => 2,
         -default   => $zone_record->{'location'}
     );
-};
+}
 
 sub display_edit_record_delegates {
     my ($nt_obj, $q, $user, $zone_record, $delegates  ) = @_;
@@ -1282,7 +1283,7 @@ sub display_edit_record_delegates {
   </td>
  </tr>
 </table>];
-};
+}
 
 sub display_new_record_delegates {
     my ($user, $zone_record, $q  ) = @_;

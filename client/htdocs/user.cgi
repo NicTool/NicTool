@@ -65,8 +65,13 @@ sub display {
 
         my ( $error, %data );
         my @fields = qw/ user_create user_delete user_write group_create group_delete group_write zone_create zone_delegate zone_delete zone_write zonerecord_create zonerecord_delegate zonerecord_delete zonerecord_write nameserver_create nameserver_delete nameserver_write self_write /;
-        my @new_fields  = qw/ nt_group_id username first_name last_name email password password2 /;
-        my @edit_fields = qw/ nt_user_id username first_name last_name email password password2 current_password/;
+        my @new_fields  = qw/ nt_group_id username first_name last_name email /;
+        my @edit_fields = qw/ nt_user_id username first_name last_name email /;
+
+        if (! $user->{'ldap_only'} ) {
+            push @new_fields, qw/ password password2 /;
+            push @edit_fields, qw/ password password2 current_password /;
+        }
 
         #warn "group_defaults is ".$q->param('group_defaults');
         if ( $q->param('group_defaults') eq '0' ) {
@@ -441,29 +446,37 @@ sub display_edit {
     </tr>";
 
     if ($modifyperm) {
-        if ( ! $user->{is_admin} ) {    # note that is_admin is global
-        print qq[<tr class="dark_grey_bg"><td colspan="2">Change Password</td></tr>
-<tr class="light_grey_bg">
-<td class="right nowrap">Current Password:</td>
-<td class="fat">],
-            $q->password_field( -name => 'current_password', -override => 1 ),
-            qq[</td>
-</tr>];
-        };
 
-        print qq[<tr class="light_grey_bg"><td colspan="2">&nbsp;</td></tr>
-<tr class="light_grey_bg">
-<td class="right nowrap">New Password:</td>
-<td class="fat">],
-            $q->password_field( -name => 'password', -size=>15, -maxlength => 30, -override  => 1),
-            qq[</td>
-</tr>
+        if ( $user->{ldap_only} ) {
+
+        	   print qq[<tr class="dark_grey_bg"><td colspan="2">Change Password</td></tr>
+        	   <tr class="light_grey_bg"><td colspan="2">All password in LDAP</td></tr>];
+        }
+        else {
+
+                if ( ! $user->{is_admin} ) {    # note that is_admin is global
+        	   print qq[<tr class="dark_grey_bg"><td colspan="2">Change Password</td></tr>
+        <tr class="light_grey_bg">
+            <td class="right nowrap">Current Password:</td>
+            <td class="fat">],
+        	   $q->password_field( -name => 'current_password', -override => 1 ),
+        	   q[</td></tr>];
+        	};
+
+        	print qq[<tr class="light_grey_bg"><td colspan="2">&nbsp;</td></tr>
+        <tr class="light_grey_bg">
+        	<td class="right nowrap">New Password:</td>
+        	<td class="fat">],
+        	 $q->password_field( -name => 'password', -size=>15, -maxlength => 30, -override  => 1),
+                 qq[</td></tr>
 <tr class="light_grey_bg">
 <td class="right nowrap">Confirm New Password:</td>
 <td class="fat">],
-            $q->password_field( -name => 'password2', -size=>15, -maxlength => 30, -override  => 1),
-            qq[</td>
-        </tr>];
+        	  $q->password_field( -name => 'password2', -size=>15, -maxlength => 30, -override  => 1),
+        	  q[</td></tr>];
+
+        }
+
     }
 
     if ($showpermissions) {

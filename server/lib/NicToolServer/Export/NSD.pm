@@ -28,7 +28,7 @@ EO_ZONE
     };
     close $fh;
     return 1;
-};
+}
 
 sub write_makefile {
     my $self = shift;
@@ -73,7 +73,7 @@ EO_MAKE
 ;
     close $M;
     return 1;
-};
+}
 
 1;
 

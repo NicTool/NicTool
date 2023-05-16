@@ -35,7 +35,7 @@ my $types = _get_rr_types();
 while ((my $key, my $val) = each %$types ) {
     $export->{rr_type_map}{ids}{ $key } = $val;
     $export->{rr_type_map}{names}{ $val } = $key;
-};
+}
 
 # TODO: specify NS type when loading, so we can run these NS specific tests
 $export->load_export_class();
@@ -103,7 +103,7 @@ sub _tests_that_require_db {
     #ok( $r, "export ($nsid), ".scalar @$r." zones");
     #warn Data::Dumper::Dumper($r);
     #exit;
-};
+}
 
 sub _is_ip_port {
     my @out_of_range = qw/ -100 -1 65536 1000000 /;
@@ -119,7 +119,7 @@ sub _is_ip_port {
     foreach ( @out_of_range ) {
 	stderr_like { $export->is_ip_port($_) } qr/range/, "is_ip_port, out of range, $_";
     };
-};
+}
 
 sub _zr_rrsig {
     $r = $export->{export_class}->zr_rrsig( {
@@ -139,7 +139,7 @@ sub _zr_rrsig {
     } );
     cmp_ok( $r, 'eq', ':localhost.simerson.com.:46:\000\001\005\003\000\001Q\213Q\321A\323QZ\232\323\313g\010simerson\003com\000\220\133\227\057l\023\221\140\373\005\213t\307w\271\032Fk\273\231\202\235\375\100\232\100a\136\216\301\001\043\047\221\025\242\322\032\032\100\244\072\3628U\236O\223y\327\275\265\263\342\020\030\035\200\351\173.C\214\001\333g\007\052\014u\314\325\362D\340E\303\100\346u\241\266\327\323\371\176\345\075\343\227\237h\240.\350\244\355\307\262X\174\226\210\050\136\017\074\217\134\010\047\265\306PX\245\025\014\220\204\253\240\316\324\201\016\301aQ\002\005\230\240i\327T\323Z\051c\364\042\032\072\011\045\356\214\257\045\275\027\100-\217\226cz\272\320d\301\047\012\053D\202\051\353\021\031\133rdn\365\133\012\0522\006o\025C\232\357F7\3553J\356\340\140\002l\312s\345\213\040k\266\311Y\232\035li9\304De\134\261\216\211\221y\177\137\263\201d\177\212\012\050\252\303\357\031\042\100\134\362\372\100\040\341\237\245\174r\212\026F\330\233\330\362\353\201\327\261\033:86400::
 ', 'zr_rrsig');
-};
+}
 
 sub _zr_nsec {
     $r = $export->{export_class}->zr_nsec( {
@@ -164,7 +164,7 @@ sub _zr_nsec {
     cmp_ok( $r, 'eq', ':localhost.simerson.com.:47:\011mbp-hires\010simerson\003com\000\000\006\100\000\000\000\000\003:86400::
 ', 'zr_nsec');
     print $r;
-};
+}
 
 sub _datestamp_to_int {
     $r = $export->{export_class}->datestamp_to_int( '20130401101010' );
@@ -173,7 +173,7 @@ sub _datestamp_to_int {
     $r = $export->{export_class}->expand_aaaa( '2607:f060:b008:feed::6' );
     cmp_ok( $r, 'eq', '2607:f060:b008:feed:0000:0000:0000:0006', 'expand_aaaa');
 #print "r: $r\n";
-};
+}
 
 sub _aaaa_to_ptr {
 
@@ -187,7 +187,7 @@ sub _aaaa_to_ptr {
 
     cmp_ok( $r, 'eq', '^6.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.d.e.e.f.8.0.0.b.0.6.0.f.7.0.6.2.ip6.arpa.:ns2.cadillac.net.:86400::
 ', 'aaaa_to_ptr');
-};
+}
 
 sub _zr_nsec3 {
     $r = $export->{export_class}->zr_nsec3( {
@@ -201,7 +201,7 @@ sub _zr_nsec3 {
     cmp_ok( $r, 'eq', ':nsec3.simerson.com.:50:\001\001\000\014\004\252\273\314\335\024\027N\262\100\237\342\213\313H\207\241\203o\225\177\012\204\045\342\173\000\007\042\001\000\000\000\002\220:86400::
 ', 'zr_nsec3');
 
-};
+}
 
 sub _zr_ipseckey {
     $r = $export->{export_class}->zr_ipseckey( {
@@ -218,7 +218,7 @@ sub _zr_ipseckey {
     cmp_ok( $r, 'eq', ':ipsec.simerson.com.:45:\001\003\002\004matt\010simerson\003net\000\322\300\020\075\343\260\000\140\317.\260\336l\275j\344\270\074\135oA\375\337L\237\032\245\314\206\012\136\033\331\075a\0075\201\217\354\014\000E\077\355\232G\2036\176\307\074\313\1403\241\210\301\016\051\320\241\213\175\044hP\246\343\264\371QU\345\230-\273\0475w\205S\226\334\207\046\036\177G\237b\042\245\305\227h:86400::
 ', 'zr_ipseckey');
 
-};
+}
 
 sub _zr_nsec3param {
     $r = $export->{export_class}->zr_nsec3param( {
@@ -232,7 +232,7 @@ sub _zr_nsec3param {
     cmp_ok( $r, 'eq', ':nsec3param.simerson.com.:51:\001\001\000\014\004\252\273\314\335:86400::
 ', 'zr_nsec3param');
 
-};
+}
 
 sub _get_rr_types {
     return {
@@ -262,7 +262,7 @@ sub _get_rr_types {
         250 => 'TSIG',
         252 => 'AXFR',
     };
-};
+}
 
 sub _get_export_data_dir {
 

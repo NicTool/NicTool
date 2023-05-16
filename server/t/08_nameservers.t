@@ -112,7 +112,7 @@ sub non_object_tests {
         $res = $sanity->_valid_export_type({ export_type_id => $bad_id });
         is( $res, 0 );
     }
-};
+}
 
 sub object_tests {
 

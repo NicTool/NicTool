@@ -2,12 +2,12 @@
 # NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
 # NicTool v2.01 Copyright 2004 The Network People, Inc.
 #
-# NicTool is free software; you can redistribute it and/or modify it under 
-# the terms of the Affero General Public License as published by Affero, 
+# NicTool is free software; you can redistribute it and/or modify it under
+# the terms of the Affero General Public License as published by Affero,
 # Inc.; either version 1 of the License, or any later version.
 #
-# NicTool is distributed in the hope that it will be useful, but WITHOUT 
-# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY 
+# NicTool is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
 # or FITNESS FOR A PARTICULAR PURPOSE. See the Affero GPL for details.
 #
 # You should have received a copy of the Affero General Public License
@@ -31,7 +31,7 @@ CREATE TABLE nt_zone(
     ttl                 INT UNSIGNED,
     location            VARCHAR(8) DEFAULT NULL,
     last_modified       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP,
-    last_publish        TIMESTAMP DEFAULT 0,
+    last_publish        DATETIME DEFAULT NULL,
     deleted             TINYINT(1) UNSIGNED DEFAULT 0 NOT NULL,
     PRIMARY KEY (`nt_zone_id`),
     KEY `nt_zone_idx1` (`nt_group_id`),

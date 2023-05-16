@@ -14,7 +14,8 @@ sub new_user {
 
     $self->_valid_username($data);
     $self->_valid_email($data);
-    $self->_valid_password($data);
+    $self->_valid_password($data)
+        unless $self->{user}->{ldap_only};
 
     return $self->throw_sanity_error if $self->{errors};
     $self->SUPER::new_user($data);
@@ -181,34 +182,24 @@ sub _valid_password {
     my ( $self, $data ) = @_;
 
     if ( length( $data->{password} ) < 8 ) {
-        $self->error( 'password',
-            "Password too short, must be 8-30 characters long."
-        );
+        $self->error( 'password', "Password too short, must be 8-30 characters long.");
     }
 
     if ( length( $data->{password} ) > 30 ) {
-        $self->error( 'password',
-            "Password too long, must be 8-30 characters long."
-        );
+        $self->error( 'password', "Password too long, must be 8-30 characters long.");
     }
 
     my $username = $data->{username};
     if ( !$username ) {
-        $self->error( 'password',
-            "Internal error. Missing username in password update request."
-        );
+        $self->error( 'password', "Internal error. Missing username in password update request.");
     }
     else {
         if ( $data->{password} eq $username ) {
-            $self->error( 'password',
-                "Password cannot be the same as username!"
-            );
+            $self->error( 'password', "Password cannot be the same as username!");
         }
 
         if ( $data->{password} =~ m/$username/ ) {
-            $self->error( 'password',
-                "Password cannot contain your username!"
-            );
+            $self->error( 'password', "Password cannot contain your username!" );
         }
     }
 

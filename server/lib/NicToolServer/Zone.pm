@@ -23,7 +23,7 @@ sub get_zone {
 
     if ( my $del = $self->get_param_meta( 'nt_zone_id', 'delegate' ) ) {
 
-# this info comes from NicToolServer.pm when it checks for access perms to the objects
+    # this comes from NicToolServer.pm when it checks for access perms to the objects
         my %mapping = (
             delegated_by_id   => 'delegated_by_id',
             delegated_by_name => 'delegated_by_name',
@@ -342,12 +342,12 @@ sub get_group_zones {
 
     my %delegates;
 
-  #get zones that are 'pseudo' delegates: some of their records are delegated.
-    $sql = " SELECT nt_zone.nt_zone_id,
-                 count(*) as delegated_records,
+    # get zones that are 'pseudo' delegates: some of their records are delegated.
+    $sql = "SELECT nt_zone.nt_zone_id,
+               COUNT(*) AS delegated_records,
                nt_delegate.delegated_by_id,
                nt_delegate.delegated_by_name,
-               1 as pseudo
+               1 AS pseudo
          FROM nt_delegate
          INNER JOIN nt_zone_record ON nt_delegate.nt_object_id=nt_zone_record.nt_zone_record_id
          INNER JOIN nt_zone ON nt_zone.nt_zone_id=nt_zone_record.nt_zone_id
@@ -420,7 +420,7 @@ sub get_group_zones {
                nt_zone.nt_group_id as owner_group_id,
                nt_zone.description,
                nt_zone.deleted,
-        	   nt_group.name as group_name,
+               nt_group.name as group_name,
                nt_group.nt_group_id,
                UNIX_TIMESTAMP(nt_zone.last_modified) AS last_modified
         FROM nt_zone
@@ -744,7 +744,7 @@ sub edit_zone_nameservers {
         $self->set_zone_nameservers( $data->{nt_zone_id}, \@newns );
         $data->{nameservers} = join(',', sort @newns );
     };
-};
+}
 
 sub log_zone {
     my ( $self, $data, $action, $prev_data ) = @_;
@@ -991,7 +991,7 @@ sub valid_mailaddr {
     };
 
     return $has_error == 0 ? 1 : 0;
-};
+}
 
 sub valid_label {
     my ( $self, $field, $name ) = @_;
@@ -1025,7 +1025,7 @@ sub valid_label {
     };
 
     return $has_error == 0 ? 1 : 0;
-};
+}
 
 ### serial number routines
 sub bump_serial {

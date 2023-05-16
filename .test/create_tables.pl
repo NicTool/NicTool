@@ -96,7 +96,7 @@ sub get_sql_files {
         die "didn't find *.sql files. Are you running this in the sql dir?\n";
     };
     return @r;
-};
+}
 
 sub _get_salt {
     my $self = shift;

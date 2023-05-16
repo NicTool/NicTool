@@ -101,7 +101,7 @@ t/08_nameservers.t
 t/10_zones.t
 t/11_zones_reverse.t
 t/12_records.t
-t/14_permissions.t
+xt/14_permissions.t
 xt/16_delegation.t
 xt/18_interaction.t
 xt/20_permission.t

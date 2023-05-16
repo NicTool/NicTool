@@ -117,7 +117,7 @@ sub display_save {
     if ( $error->{'error_code'} != 200 ) {
         display_edit_user( $nt_obj, $user, $group, $q, $error, $e_or_s );
     }
-};
+}
 
 sub display_edit_user {
     my ( $nt_obj, $user, $group, $q, $message, $edit ) = @_;
@@ -151,13 +151,16 @@ sub display_edit_user {
     my $tr = '<tr class=light_grey_bg><td class=right>';
     print qq[
 <table class="fat">
- <tr class=dark_bg><td colspan=2><b>New User</b></td></tr>
- $tr Username:</td><td class=width80>$username</td></tr>
- $tr First Name:</td><td class=width80>$firstname</td></tr>
- $tr Last Name:</td><td class=width80>$lastname</td></tr>
- $tr Email Address:</td><td class=width80>$email</td></tr>
- $tr Password:</td><td class=width80>$password</td></tr>
+ <tr class="dark_bg"><td colspan="2"><b>New User</b></td></tr>
+ $tr Username:</td><td class="width80">$username</td></tr>
+ $tr First Name:</td><td class="width80">$firstname</td></tr>
+ $tr Last Name:</td><td class="width80">$lastname</td></tr>
+ $tr Email Address:</td><td class="width80">$email</td></tr>];
+ if (! $user->{ldap_only}) {
+     print qq[
+ $tr Password:</td><td class="width80">$password</td></tr>
  $tr Password (Again):</td><td style="width:80%;">$password2</td></tr>];
+ }
 
     display_user_permissions( $nt_obj, $q, $group, $user );
 

@@ -34,7 +34,7 @@ requires:
   Crypt::Mac::HMAC: '0'
   CryptX: '0.021'
   Cwd: '0'
-  DBD::mysql: '2.0416'
+  DBD::MariaDB: '0'
   DBI: '1.20'
   DBIx::Simple: '0'
   Data::Dumper: '0'

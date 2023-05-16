@@ -1,0 +1,15 @@
+###
+### Nictool Reverse DNS management tool
+### 2018-03-01 Per Abildgaard Toft (per@minfejl.dk)
+### Reverse Configuration file
+###
+
+
+#CIDR Networks			#Naming algorithm	#Domain
+83.72.0.0/14			NUMIP	static.telenor.dk 
+213.237.0.0/17			HEXIP	static.telenor.dk
+
+
+#Overrides must be last in this file
+83.72.185.0/24		MANUAL	NULL
+83.72.186.0/24		NUMIP	test.telenor.dk

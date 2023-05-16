@@ -1,8 +1,9 @@
 Revision history for NicToolServer
 
-2.35    2017.__.__
+2.35    2020.__.__
 
 * New Features
+    * import: tinydns type 'S' records #246
 * Updates & Changes
     * import/tinydns:
         * handle ascii and binary in AAAA rdata #163
