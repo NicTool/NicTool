@@ -5,7 +5,7 @@ use ExtUtils::MakeMaker;
 
 my %WriteMakefileArgs = (
   "ABSTRACT" => "CGI Interface to NicToolServer",
-  "AUTHOR" => "Matt Simerson <msimerson\@cpan.org>, Damon Edwards, Abe Shelton, Greg Schueler",
+  "AUTHOR" => "Matt Simerson <msimerson\@cpan.org>, Damon Edwards, Abe Ingersoll, Greg Schueler",
   "CONFIGURE_REQUIRES" => {
     "ExtUtils::MakeMaker" => 0
   },

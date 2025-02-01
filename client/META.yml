@@ -3,7 +3,7 @@ abstract: 'CGI Interface to NicToolServer'
 author:
   - 'Matt Simerson <msimerson@cpan.org>'
   - 'Damon Edwards'
-  - 'Abe Shelton'
+  - 'Abe Ingersoll'
   - 'Greg Schueler'
 build_requires:
   English: '0'

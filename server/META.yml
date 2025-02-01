@@ -3,7 +3,7 @@ abstract: 'NicTool API reference server'
 author:
   - 'Matt Simerson <msimerson@cpan.org>'
   - 'Damon Edwards'
-  - 'Abe Shelton'
+  - 'Abe Ingersoll'
   - 'Greg Schueler'
 build_requires:
   Exporter: '0'

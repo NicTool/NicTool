@@ -3,7 +3,7 @@ abstract: 'A client framework for interaction with a NicToolServer via SOAP or X
 author:
   - 'Matt Simerson <msimerson@cpan.org>'
   - 'Damon Edwards'
-  - 'Abe Shelton'
+  - 'Abe Ingersoll'
   - 'Greg Schueler'
 build_requires:
   Test: '0'

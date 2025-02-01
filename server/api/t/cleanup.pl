@@ -3,7 +3,7 @@
 # Recursively delete a list of Groups and all of it's objects + groups.
 # usage: cleanup.pl <group_id> [...]
 #
-# NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
+# NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Ingersoll & Greg Schueler
 # NicTool v2.01 Copyright 2004 The Network People, Inc.
 #
 # NicTool is free software; you can redistribute it and/or modify it under 

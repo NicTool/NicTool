@@ -10,7 +10,7 @@ use ExtUtils::MakeMaker 6.30;
 
 my %WriteMakefileArgs = (
   "ABSTRACT" => "A client framework for interaction with a NicToolServer via SOAP or XML-RPC.",
-  "AUTHOR" => "Matt Simerson <msimerson\@cpan.org>, Damon Edwards, Abe Shelton, Greg Schueler",
+  "AUTHOR" => "Matt Simerson <msimerson\@cpan.org>, Damon Edwards, Abe Ingersoll, Greg Schueler",
   "BUILD_REQUIRES" => {
     "English" => 0,
     "Test" => 0,
