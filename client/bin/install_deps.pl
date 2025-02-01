@@ -6,6 +6,7 @@ use warnings;
 
 use CPAN;
 use English qw( -no_match_vars );
+use File::Copy;
 
 my $apps = [
     { app => 'cpanm'         , info => { port => 'App-cpanminus', apt => 'cpanminus' }, },
@@ -46,6 +47,9 @@ if ( scalar @failed > 0 ) {
     print join( "\n", @failed );
     print "\n";
 }
+
+# Copy the LICENSE file into the htdocs directory as LICENSE.txt
+copy('../LICENSE', '../htdocs/LICENSE.txt') or die "Failed to copy LICENSE file: $!";
 
 exit;
 

@@ -7,7 +7,7 @@ use NicToolServerAPI();
 
 $NicToolClient::VERSION = '2.34';
 $NicToolClient::NTURL   = 'http://www.nictool.com/';
-$NicToolClient::LICENSE = 'http://www.affero.org/oagpl.html';
+$NicToolClient::LICENSE = 'LICENSE.txt';
 $NicToolClient::SRCURL  = 'http://www.nictool.com/download/NicTool.tar.gz';
 
 sub new {
