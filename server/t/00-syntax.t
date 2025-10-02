@@ -1,5 +1,5 @@
 
-use Config 'myconfig';
+use Config;
 use Data::Dumper;
 use English '-no_match_vars';
 use Test::More 'no_plan';

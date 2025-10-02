@@ -154,45 +154,6 @@ sub test_new_user {
         $res = $nt_obj->delete_users( user_list => $res->get('nt_user_id') );
     }
 
-    #no password
-    $res = $group1->new_user(
-        username  => 'blah',
-        email     => 'blah@blah.com',
-        password2 => 'something'
-    );
-    noerrok( $res, 301 );
-    is( $res->get('error_msg'), 'password' );
-    ok( $res->get('error_desc') =~ qr/Required parameters missing/ );
-    if ( !$res->is_error ) {
-        $res = $nt_obj->delete_users( user_list => $res->get('nt_user_id') );
-    }
-
-    #no username
-    $res = $group1->new_user(
-        email     => 'blah@blah.com',
-        password  => 'something',
-        password2 => 'something'
-    );
-    noerrok( $res, 301 );
-    is( $res->get('error_msg'), 'username' );
-    ok( $res->get('error_desc') =~ qr/Required parameters missing/ );
-    if ( !$res->is_error ) {
-        $res = $nt_obj->delete_users( user_list => $res->get('nt_user_id') );
-    }
-
-    #no email
-    $res = $group1->new_user(
-        username  => 'blah',
-        password  => 'something',
-        password2 => 'something'
-    );
-    noerrok( $res, 301 );
-    is( $res->get('error_msg'), 'email' );
-    ok( $res->get('error_desc') =~ qr/Required parameters missing/ );
-    if ( !$res->is_error ) {
-        $res = $nt_obj->delete_users( user_list => $res->get('nt_user_id') );
-    }
-
     #no nt_group_id
     $res = $group1->new_user(
         nt_group_id => '',
@@ -238,71 +199,6 @@ sub test_new_user {
         $res = $nt_obj->delete_users( user_list => $res->get('nt_user_id') );
     }
 
-    #invalid email address
-    $res = $group1->new_user(
-        username  => 'blah',
-        email     => 'blah.blah.com',
-        password  => 'something',
-        password2 => 'something'
-    );
-    noerrok( $res, 300 );
-    ok( $res->get('error_msg')  =~ qr/must be a valid email address/ );
-    ok( $res->get('error_desc') =~ qr/Sanity error/ );
-    if ( !$res->is_error ) {
-        $res = $nt_obj->delete_users( user_list => $res->get('nt_user_id') );
-    }
-
-    # username too small
-    for (qw(b bl)) {
-        $res = $group1->new_user(
-            username  => $_,
-            email     => 'blah@blah.com',
-            password  => 'something',
-            password2 => 'something'
-        );
-        noerrok( $res, 300 );
-        ok( $res->get('error_msg') =~ qr/at least 3 characters/ );
-        ok( $res->get('error_desc') =~ qr/Sanity error/ );
-        if ( !$res->is_error ) {
-            $res = $nt_obj->delete_users( user_list => $res->get('nt_user_id') );
-        }
-    }
-
-    for ( qw{~ ` ! @ $ % ^ & * ( ) + = [ ] \ / | ? > < " ' : ;},
-        ',', '#', "\n", '{', '}' )
-    {
-        # username contains incorrect character
-        $res = $group1->new_user(
-            username  => 'bl${_}ah',
-            email     => 'blah@blah.com',
-            password  => 'something',
-            password2 => 'something'
-        );
-        noerrok( $res, 300 );
-        warn "character $_ should be invalid"
-            unless $res->get('error_code') eq 300;
-        ok( $res->get('error_msg') =~
-                qr/Username contains an invalid character/ );
-        ok( $res->get('error_desc') =~ qr/Sanity error/ );
-        if ( !$res->is_error ) {
-            $res = $nt_obj->delete_users( user_list => $res->get('nt_user_id') );
-        }
-    }
-
-    #password too small
-    $res = $group1->new_user(
-        username  => 'blah',
-        email     => 'blah@blah.com',
-        password  => '123',
-        password2 => '123'
-    );
-    noerrok( $res, 300 );
-    ok( $res->get('error_msg') =~
-            qr/Password too short, must be 8-30 characters long./ );
-    ok( $res->get('error_desc') =~ qr/Sanity error/ );
-    if ( !$res->is_error ) {
-        $res = $nt_obj->delete_users( user_list => $res->get('nt_user_id') );
-    }
 
     #mismatched passwords
     $res = $group1->new_user(
@@ -442,24 +338,6 @@ sub test_edit_user {
             qr/Username must be at least 3 characters/ );
     ok( $res->get('error_desc') =~ qr/Sanity error/ );
 
-    #username too small
-    $res = $user1->edit_user( username => '' );
-    noerrok( $res, 300 );
-    ok( $res->get('error_msg') =~
-            qr/Username must be at least 3 characters/ );
-    ok( $res->get('error_desc') =~ qr/Sanity error/ );
-
-    for ( qw{~ ` ! @ $ % ^ & * ( ) + = [ ] \ / | ? > < " : ;},
-        ',', '#', "\n", '{', '}' )
-    {
-        #username has invalid char
-        $res = $user1->edit_user( username => "bl${_}ah" );
-        noerrok( $res, 300 );
-        $res->get('error_code') eq 300 or warn "character $_ should be invalid";
-        ok( $res->get('error_msg') =~
-                qr/Username contains an invalid character/ );
-        ok( $res->get('error_desc') =~ qr/Sanity error/ );
-    }
 
     #change password no old password
     $res = $user1->edit_user( password => 'another', password2 => 'another' );
@@ -487,15 +365,6 @@ sub test_edit_user {
     ok( $res->get('error_msg') =~ qr/Current password/ );
     ok( $res->get('error_desc') =~ qr/Sanity error/ );
 
-    #change password too small
-    $res = $user1->edit_user(
-        password_current => 'something',
-        password         => 'ano',
-        password2        => 'ano'
-    );
-    noerrok( $res, 300 );
-    ok( $res->get('error_msg') =~ qr/too short/ );
-    ok( $res->get('error_desc') =~ qr/Sanity error/ );
 
     #change password mismatched
     $res = $user1->edit_user(

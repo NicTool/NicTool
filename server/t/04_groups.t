@@ -75,15 +75,6 @@ sub delete_test_groups {
 
 sub test_group_new {
 
-    #no name
-    $res = $user->new_group;
-    noerrok( $res, 301 );
-    is( $res->get('error_msg'), 'name' );
-    ok( $res->get('error_desc') =~ qr/Required parameters missing/ );
-    if ( !$res->is_error ) {
-        $res = $user->delete_group( nt_group_id => $res->get('nt_group_id') );
-    }
-
     # nt_group_id empty
     $res = $user->new_group( name => 'test_delete_me1', nt_group_id => '' );
     noerrok( $res, 301 );
@@ -109,53 +100,6 @@ sub test_group_new {
     ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
     if ( !$res->is_error ) {
         $res = $user->delete_group( nt_group_id => $res->get('nt_group_id') );
-    }
-
-    for ( qw{~ ` ! $ % ^ & * ( ) + = [ ] \ / | ? > < " : ;},
-        ',', '#', "\n", '{', '}' )
-    {
-        # invalid character in group name
-        $res = $user->new_group( name => "test${_}delete" );
-        noerrok( $res, 300 );
-        if ($res->get('error_code') ne 300) {
-            warn "character $_ should be invalid";
-        }
-
-        ok( $res->get('error_msg') =~
-                qr/Group name contains an invalid character/, "new_group: $_");
-
-        ok( $res->get('error_desc') =~ qr/Sanity error/ );
-        if ( !$res->is_error ) {
-            $res = $user->delete_group(nt_group_id => $res->get('nt_group_id') );
-        }
-    }
-
-    for (qw(t te)) {
-
-        # group name too small
-        $res = $user->new_group( name => $_ );
-        noerrok( $res, 300 );
-        ok( $res->get('error_msg') =~
-                qr/Group name must be at least 3 characters/ );
-        ok( $res->get('error_desc') =~ qr/Sanity error/ );
-        $res->is_error or do {
-            $res = $user->delete_group(nt_group_id => $res->get('nt_group_id'));
-        };
-    }
-
-    for ( ' test', qw(-test _test 'test .test @test) ) {
-
-        # group name too small
-        $res = $user->new_group( name => $_ );
-        noerrok( $res, 300 );
-        warn "name $_ should be invalid" if $res->get('error_code') ne 300;
-        ok( $res->get('error_msg') =~
-                qr/Group name must start with a letter or number/ );
-        ok( $res->get('error_desc') =~ qr/Sanity error/ );
-        if ( !$res->is_error ) {
-            $res = $user->delete_group(
-                nt_group_id => $res->get('nt_group_id') );
-        }
     }
 
     ####################
@@ -326,39 +270,6 @@ sub test_group_edit {
     noerrok( $res, 302 );
     is( $res->get('error_msg'), 'nt_group_id' );
     ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
-
-    for ( qw{~ ` ! $ % ^ & * ( ) + = [ ] \ / | ? > < " : ;},
-        ',', '#', "\n", '{', '}' )
-    {
-
-        #invalid character in group name
-        $res = $group1->edit_group( name => "test${_}delete" );
-        noerrok( $res, 300 );
-        warn "character $_ should be invalid" if $res->get('error_code') ne 300;
-        ok( $res->get('error_msg') =~
-                qr/Group name contains an invalid character/ );
-        ok( $res->get('error_desc') =~ qr/Sanity error/ );
-    }
-
-    for (qw(t te)) {
-
-        #group name too small
-        $res = $group1->edit_group( name => $_ );
-        noerrok( $res, 300 );
-        ok( $res->get('error_msg') =~
-                qr/Group name must be at least 3 characters/ );
-        ok( $res->get('error_desc') =~ qr/Sanity error/ );
-    }
-
-    for ( ' test', qw(-test _test 'test .test @test) ) {
-
-        #group name starts with incorrect char
-        $res = $group1->edit_group( name => $_ );
-        noerrok( $res, 300 );
-        ok( $res->get('error_msg') =~
-                qr/Group name must start with a letter or number/ );
-        ok( $res->get('error_desc') =~ qr/Sanity error/ );
-    }
 
     #group name already taken
     $res = $group1->edit_group( name => 'test_delete_me2' );

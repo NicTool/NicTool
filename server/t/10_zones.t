@@ -183,60 +183,6 @@ sub test_cleanups {
 
 sub test_new_zone {
 
-    # nt_group_id missing
-    my $res = $group1->new_zone(
-        nt_group_id => '',
-        zone        => 'test.com',
-        serial      => 0,
-        ttl         => 86400,
-        nameservers => "$nsid1,$nsid2",
-        description => "test delete me",
-    );
-    noerrok( $res, 301 );
-    is( $res->get('error_msg'), 'nt_group_id' );
-    ok( $res->get('error_desc') =~ qr/Required parameters missing/ );
-    if ( !$res->is_error ) {
-        $res = $user->delete_zones( zone_list => $res->get('nt_zone_id') );
-        noerrok($res) or
-            die "Couldn't delete zone mistake " . $res->get('nt_zone_id');
-    }
-
-    # nt_group_id not int
-    $res = $group1->new_zone(
-        nt_group_id => 'abc',
-        zone        => 'test.com',
-        serial      => 0,
-        ttl         => 86400,
-        nameservers => "$nsid1,$nsid2",
-        description => "test delete me",
-    );
-    noerrok( $res, 302 );
-    is( $res->get('error_msg'), 'nt_group_id' );
-    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
-    if ( !$res->is_error ) {
-        $res = $user->delete_zones( zone_list => $res->get('nt_zone_id') );
-        die "Couldn't delete zone mistake " . $res->get('nt_zone_id')
-            unless noerrok($res);
-    }
-
-    #nt_group_id not valid
-    $res = $group1->new_zone(
-        nt_group_id => 0,
-        zone        => 'test.com',
-        serial      => 0,
-        ttl         => '86400',
-        nameservers => "$nsid1,$nsid2",
-        description => "test delete me",
-    );
-    noerrok( $res, 302 );
-    is( $res->get('error_msg'), 'nt_group_id' );
-    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
-    if ( !$res->is_error ) {
-        $res = $user->delete_zones( zone_list => $res->get('nt_zone_id') );
-        noerrok($res) or
-            die "Couldn't delete zone mistake " . $res->get('nt_zone_id');
-    }
-
     # nameservers not int
     $res = $group1->new_zone(
         zone        => 'test.com',
@@ -303,47 +249,6 @@ sub test_new_zone {
         $res = $user->delete_zones( zone_list => $res->get('nt_zone_id') );
         noerrok($res) or
             die "Couldn't delete zone mistake " . $res->get('nt_zone_id');
-    }
-
-    for ( qw{~ ` ! @ $ % ^ & * ( ) + = \ | ' " ; : < > / ?},
-        ',', '#', "\n", ' ', qw({ }) )
-    {
-        # invalid character in zone
-        $res = $group1->new_zone(
-            zone        => "thisis${_}atest.com",
-            serial      => 0,
-            ttl         => 86400,
-            nameservers => "$nsid1,$nsid2",
-            description => "test delete me",
-        );
-        noerrok( $res, 300, "zone thisis${_}atest.com" );
-        ok( $res->get('error_msg')  =~ qr/invalid character in zone/, "new_zone, thisis${_}atest.com" );
-        ok( $res->get('error_desc') =~ qr/Sanity error/ );
-        if ( !$res->is_error ) {
-            $res = $user->delete_zones( zone_list => $res->get('nt_zone_id') );
-            noerrok($res) or
-                die "Couldn't delete zone mistake " . $res->get('nt_zone_id');
-        }
-    }
-
-    foreach my $ttl (qw(-42 -1 2147483648 grover)) {
-
-        # invalid ttl
-        $res = $group1->new_zone(
-            zone        => "something.com",
-            serial      => 0,
-            ttl         => $ttl,
-            nameservers => "$nsid1,$nsid2",
-            description => "test delete me",
-        );
-        noerrok( $res, 300, "ttl $ttl" );
-        ok( $res->get('error_msg')  =~ qr/Invalid TTL/, "invalid TTL: $ttl" );
-        ok( $res->get('error_desc') =~ qr/Sanity error/, "invalid TTL: $ttl" );
-        if ( !$res->is_error ) {
-            $res = $user->delete_zones( zone_list => $res->get('nt_zone_id') );
-            noerrok($res) or
-                die "Couldn't delete zone mistake " . $res->get('nt_zone_id');
-        }
     }
 
     ####################

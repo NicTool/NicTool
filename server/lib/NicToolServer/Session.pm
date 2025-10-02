@@ -105,8 +105,8 @@ sub verify_login {
 sub _get_user {
     my ($self, $user, $groups) = @_;
 
-# nt_user_id|nt_group_id|first_name|last_name|username|password|email      |is_admin|deleted|groupname|
-#         1 |         1 | Root     | User    | root   |50aaa...|user@domain|    NULL|      0|NicTool  |
+    # nt_user_id|nt_group_id|first_name|last_name|username|password|email      |is_admin|deleted|groupname|
+    #         1 |         1 | Root     | User    | root   |50aaa...|user@domain|    NULL|      0|NicTool  |
     my $sql = "SELECT nt_user.*, nt_group.name AS groupname
     FROM nt_user, nt_group
     WHERE nt_user.nt_group_id = nt_group.nt_group_id
@@ -240,7 +240,7 @@ sub logout {
 sub populate_groups {
     my $self = shift;
 
-# return true on successful population of @$data->{groups}
+    # return true on successful population of @$data->{groups}
 
     my $data = $self->{client}->data();
 
@@ -297,7 +297,7 @@ sub clean_user_data {
     my $self = shift;
 
     # delete unused and password data from DB-returned user hash
-    foreach my $f ( qw/ password deleted nt_user_session_id last_access / ) {
+    foreach my $f ( qw/ password pass_salt deleted nt_user_session_id last_access / ) {
         next if ! exists $self->{client}->data->{user}->{$f};
         delete $self->{client}->data->{user}->{$f};
     }
@@ -316,23 +316,23 @@ sub session_id {
     warn "mod_uniqueid not available - building my own unique ID.\n"
         if $self->debug;
 
-    srand( $$ | time );
+    # srand( $$ | time );
     my $session = int( rand(60000) );
     $session = unpack( "H*", pack( "Nnn", time, $$, $session ) );
     return $session;
 }
 
-
 sub _get_session {
     my ($self, $id) = @_;
 
     my $sessions = $self->exec_query( "
-SELECT u.*, s.*, g.name AS groupname
-  FROM nt_user_session s
-   LEFT JOIN nt_user u ON s.nt_user_id = u.nt_user_id
-   LEFT JOIN nt_group g ON u.nt_group_id = g.nt_group_id
-  WHERE u.deleted=0
-    AND s.nt_user_session = ?",
+  SELECT u.*, s.*, g.name AS groupname
+    FROM nt_user_session s
+      LEFT JOIN nt_user u ON s.nt_user_id = u.nt_user_id
+      LEFT JOIN nt_group g ON u.nt_group_id = g.nt_group_id
+    WHERE u.deleted=0
+      AND g.deleted=0
+      AND s.nt_user_session = ?",
         $id
     ) or return $self->error_response( 505, $self->{dbh}->errstr );
     return (undef, $sessions->[0]);
