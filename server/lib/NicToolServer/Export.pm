@@ -256,6 +256,7 @@ sub export {
     }
     elsif ( ! $self->export_required ) {
         $self->set_no_change();
+        $self->postflight;
         return 0;                   # signal no export occurred
     };
 

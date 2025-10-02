@@ -210,7 +210,7 @@ sub add_to_group_subgroups {
     my ( $self, $gid, $parent_group_id, $rank ) = @_;
 
     my $sql
-        = "INSERT INTO nt_group_subgroups(nt_group_id, nt_subgroup_id, rank) VALUES(??)";
+        = "INSERT INTO nt_group_subgroups(nt_group_id, nt_subgroup_id, `rank`) VALUES(??)";
     $self->exec_query( $sql, [ $parent_group_id, $gid, $rank ] );
 
     $sql = "SELECT parent_group_id FROM nt_group WHERE nt_group_id = ?";

@@ -35,7 +35,7 @@ DROP TABLE IF EXISTS nt_group_subgroups;
 CREATE TABLE nt_group_subgroups(
     nt_group_id         INT UNSIGNED NOT NULL,
     nt_subgroup_id      INT UNSIGNED NOT NULL,
-    rank                INT UNSIGNED NOT NULL,
+    `rank`              INT UNSIGNED NOT NULL,
     KEY `nt_group_subgroups_idx1` (`nt_group_id`),
     KEY `nt_group_subgroups_idx2` (`nt_subgroup_id`)
     /* CONSTRAINT `nt_group_subgroups_ibfk_1` FOREIGN KEY (`nt_group_id`) REFERENCES `nt_group` (`nt_group_id`) ON DELETE CASCADE ON UPDATE CASCADE */
