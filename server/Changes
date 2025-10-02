@@ -336,7 +336,7 @@ Revision history for NicToolServer
     * SQL: added nt_zone_record.timestamp field. See the timestamp description
       on the tinydns-data page. Allows start/stop times for records.
     * added location support to database and tinydns exports. See
-      https://www.tnpi.net/support/forums/index.php/topic,1004.0.html
+      https://www.tnpi.net/support/forums/index.php%3Ftopic=1004.0.html
     * added RFC 2181 tests. CNAME records cannot coexist with any other record
       type (except DNSSEC). NS and MX must not point to a CNAME.
     * SQL: added record types to database: DS, DNSKEY, KEY (not used yet)

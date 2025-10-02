@@ -329,16 +329,16 @@ function setFormRRTypeRRSIG () {
   setRfcHelp([ '4034' ])
 
   /*
-There aren't enough fields in the RR table to enter the 9 pieces of data
-separately. Require them to be in the canonical presentation format, packed
-in the Address field.
+  There aren't enough fields in the RR table to enter the 9 pieces of data
+  separately. Require them to be in the canonical presentation format, packed
+  in the Address field.
 
-host.example.com. 86400 IN RRSIG A 5 3 86400 20030322173103 (
+  host.example.com. 86400 IN RRSIG A 5 3 86400 20030322173103 (
                                   20030220173103 2642 example.com.
                                   oJB1W6WNGv+ldvQ3WDG0MQkg5IEhjRip8WTr
                                   <snip 3 lines>
                                   J5D6fwFm8nN+6pBzeDQfsS3Ap3o= )
-*/
+  */
   var iA = $('input#address')
   iA.attr('size', 100 )    // suggest that we're expecting a very long value
     .attr('placeholder', 'A 5 3 86400 20030322173103 ( 20030220173103 2642 example.com. oJB1W6...)' )
@@ -393,7 +393,7 @@ function setFormRRTypeCAA () {
   }
   addValuesToSelect(crit_values, 'weight')
 
-  // For the Property Tag field we (ab)use 'priority':
+  // For the Property Tag field we (ab)use 'other':
   $('#other_row').show()
   $('td#other_label').text('Property tag')
   $('input#other').attr('placeholder','issue')

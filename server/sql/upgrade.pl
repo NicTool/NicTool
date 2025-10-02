@@ -113,7 +113,7 @@ sub _sql_2_35 {
         nt_nameserver       nt_nameserver_log        nt_nameserver_export_log
         nt_zone             nt_zone_log              nt_zone_nameserver
         nt_zone_record      nt_zone_record_log
-        nt_perm                  nt_options
+        nt_perm             nt_options
         resource_record_type
         /;
 
@@ -121,7 +121,6 @@ sub _sql_2_35 {
 
     <<EO_SQL_2_35
 /* Mark SPF as obsolete and disable */
-
 UPDATE resource_record_type SET forward=0, obsolete=1 WHERE id=99;
 
 /*  Update CHARACTER & COLLATION for VARCHAR columns */

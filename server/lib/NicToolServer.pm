@@ -830,7 +830,6 @@ sub verify_required {
     return 0 unless (@missing);
 
     return $self->error_response( 301, join( " ", @missing ) );
-
 }
 
 sub get_group_id {
@@ -1330,7 +1329,7 @@ sub set_param_meta {
     $self->{meta}{$param} = {} unless exists $self->{meta}{$param};
     $self->{meta}{$param}{$key} = $value;
 
-#warn "final param meta: param $param, key $key, value ".Data::Dumper::Dumper($self->{meta});;
+    #warn "final param meta: param $param, key $key, value ".Data::Dumper::Dumper($self->{meta});;
 }
 
 sub valid_id {
@@ -1412,8 +1411,8 @@ sub valid_ttl {
     };
 
     return 1 if ( $ttl >= 0 && $ttl <= 2147483647 );
-# Clarifications to the DNS specification: http://tools.ietf.org/html/rfc2181
-# valid TTL is unsigned number from 0 to 2147483647
+    # Clarifications to the DNS specification: http://tools.ietf.org/html/rfc2181
+    # valid TTL is unsigned number from 0 to 2147483647
 
     $self->error( 'ttl', "Invalid TTL -- valid ttl range is 0 to 2,147,483,647: RFC 2181" );
     return;
@@ -2045,7 +2044,8 @@ Greg Schueler
 
 =head1 COPYRIGHT AND LICENSE
 
-This software is Copyright (c) 2017 by The Network People, Inc. This software is Copyright (c) 2001 by Damon Edwards, Abe Shelton, Greg Schueler.
+This software is Copyright (c) 2017 by The Network People, Inc.
+This software is Copyright (c) 2001 by Damon Edwards, Abe Shelton, Greg Schueler.
 
 This is free software, licensed under:
 

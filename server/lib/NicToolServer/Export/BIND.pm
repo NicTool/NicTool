@@ -33,7 +33,7 @@ sub update_named_include {
     if ( $self->{nte}->incremental ) {
         return $self->update_named_include_incremental( $dir );
     };
-    # full export, write a new include  file
+    # full export, write a new include file
     my $datadir = $self->{nte}->get_export_data_dir || $dir;
     my $fh = $self->get_export_file( 'named.conf.nictool', $dir );
     foreach my $zone ( sort $self->{nte}->zones_exported ) {
