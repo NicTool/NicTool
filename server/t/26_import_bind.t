@@ -1,4 +1,4 @@
-# NicTool v2.34 Copyright 2015 The Network People, Inc.
+# NicTool v2.35 Copyright 2015 The Network People, Inc.
 #
 # NicTool is free software; you can redistribute it and/or modify it under
 # the terms of the Affero General Public License as published by Affero,

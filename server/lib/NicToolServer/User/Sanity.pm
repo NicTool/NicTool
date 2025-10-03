@@ -223,7 +223,7 @@ NicToolServer::User::Sanity - sanity tests for nictool users
 
 =head1 VERSION
 
-version 2.34
+version 2.35
 
 =head1 SYNOPSIS
 

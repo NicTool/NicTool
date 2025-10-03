@@ -15,7 +15,7 @@ Revision history for NicToolServer
     * client: add SSHFP algos 4 & 6 #303
     * export/BIND: add sort order #270
 * Fixes
-    * bump DB version to 2.34 on new install (was 2.27)
+    * bump DB version to 2.35 on new install (was 2.27)
     * sql
         * add quotes to rank (now a MySQL keyword)
         * don't save empty strings for INTs #268

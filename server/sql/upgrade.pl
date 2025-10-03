@@ -198,7 +198,7 @@ VALUES
     (256,'URI','URI',0,1,0),
     (257,'CAA','Certification Authority Authorization',0,1,0);
 
-UPDATE nt_options SET option_value='2.34' WHERE option_name='db_version';
+UPDATE nt_options SET option_value='2.35' WHERE option_name='db_version';
 EO_SQL_2_34
 ;
 }

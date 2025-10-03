@@ -135,7 +135,7 @@ NicToolServer::Group::Sanity - sanity tests for NicTool groups
 
 =head1 VERSION
 
-version 2.34
+version 2.35
 
 =head1 SYNOPSIS
 

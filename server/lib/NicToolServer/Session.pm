@@ -372,7 +372,7 @@ NicToolServer::Session - manage nictool login sessions
 
 =head1 VERSION
 
-version 2.34
+version 2.35
 
 =head1 SYNOPSIS
 
