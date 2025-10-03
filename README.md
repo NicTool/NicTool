@@ -14,18 +14,18 @@ NicTool is a open source DNS management suite that takes the headaches out of ma
 
 ### Supported formats for exporting DNS data to servers
 
-* [djbdns / ndjbdns (tinydns)](https://github.com/msimerson/NicTool/wiki/Export-to-tinydns)
-* [BIND](https://github.com/msimerson/NicTool/wiki/Export-to-BIND)
-* [PowerDNS](https://github.com/msimerson/NicTool/wiki/Export-to-PowerDNS)
-* [DynECT](https://github.com/msimerson/NicTool/wiki/Export-to-DynECT-Managed-DNS)
-* [Knot DNS](https://github.com/msimerson/NicTool/wiki/Install-Knot)
-* [NSD](https://github.com/msimerson/NicTool/wiki/Install-NSD)
-* [MaraDNS](https://github.com/msimerson/NicTool/wiki/Install-MaraDNS)
+* [djbdns / ndjbdns (tinydns)](https://github.com/nictool/NicTool/wiki/Export-to-tinydns)
+* [BIND](https://github.com/nictool/NicTool/wiki/Export-to-BIND)
+* [PowerDNS](https://github.com/nictool/NicTool/wiki/Export-to-PowerDNS)
+* [DynECT](https://github.com/nictool/NicTool/wiki/Export-to-DynECT-Managed-DNS)
+* [Knot DNS](https://github.com/nictool/NicTool/wiki/Install-Knot)
+* [NSD](https://github.com/nictool/NicTool/wiki/Install-NSD)
+* [MaraDNS](https://github.com/nictool/NicTool/wiki/Install-MaraDNS)
 
-### Supported formats for [importing](https://github.com/msimerson/NicTool/wiki/Imports) existing DNS data
+### Supported formats for [importing](https://github.com/nictool/NicTool/wiki/Imports) existing DNS data
 
-* [BIND](https://github.com/msimerson/NicTool/wiki/Import-from-BIND)
-* [djbdns / ndjbdns (tinydns)](https://github.com/msimerson/NicTool/wiki/Import-from-tinydns)
+* [BIND](https://github.com/nictool/NicTool/wiki/Import-from-BIND)
+* [djbdns / ndjbdns (tinydns)](https://github.com/nictool/NicTool/wiki/Import-from-tinydns)
 
 ### Components
 
@@ -36,11 +36,11 @@ NicTool is a open source DNS management suite that takes the headaches out of ma
 ### Testimonials and NicTool Users
 
 See
-[TESTIMONIALS.md](https://github.com/msimerson/NicTool/blob/master/TESTIMONIALS.md)
+[TESTIMONIALS.md](https://github.com/nictool/NicTool/blob/master/TESTIMONIALS.md)
 
 ### Authors
 
-See [AUTHORS.md](https://github.com/msimerson/NicTool/blob/master/AUTHORS.md)
+See [AUTHORS.md](https://github.com/nictool/NicTool/blob/master/AUTHORS.md)
 
 ### Support
 
@@ -48,4 +48,4 @@ See [AUTHORS.md](https://github.com/msimerson/NicTool/blob/master/AUTHORS.md)
 * [Forums](http://www.tnpi.net/support/forums/index.php/board,10.0.html)
 * [Mailing Lists](https://mail.theartfarm.com/list-archives/?1)
 * [Email](mailto:support@nictool.com) - Requests not accompanied by payments are handled on a "best effort" basis.
-* [Wiki](https://github.com/msimerson/NicTool/wiki)
+* [Wiki](https://github.com/nictool/NicTool/wiki)

@@ -1,6 +1,6 @@
 ### Testimonials
 
-List yourself here! Fork [NicTool](https://github.com/msimerson/NicTool), edit [TESTIMONIALS.md](https://github.com/msimerson/NicTool/blob/master/TESTIMONIALS.md), and submit a PR.
+List yourself here! Fork [NicTool](https://github.com/nictool/NicTool), edit [TESTIMONIALS.md](https://github.com/nictool/NicTool/blob/master/TESTIMONIALS.md), and submit a PR.
 
 * [Miva Merchant](http://mivamerchant.com) (2014-current)
 * [ColocateUSA.net](http://www.colocateusa.net) (2012-current):

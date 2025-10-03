@@ -24,7 +24,7 @@ RUN apt-get -q update && apt-get install -qy --force-yes \
       && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # clone the NicTool repo
-RUN git clone https://github.com/msimerson/NicTool.git /usr/local/nictool
+RUN git clone https://github.com/nictool/NicTool.git /usr/local/nictool
 
 # install Perl dependencies
 RUN cd /usr/local/nictool/server \

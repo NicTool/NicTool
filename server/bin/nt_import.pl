@@ -41,7 +41,7 @@ if($help) {
      print "  --group_id       NicTool group id zones are placed into\n";
      print "  --use-https      Use https towards NicTool Server\n";
      print "  --verbose        Show extra messages verbose\n\n";
-     print "Report issues at https://github.com/msimerson/NicTool/issues\n";
+     print "Report issues at https://github.com/nictool/NicTool/issues\n";
      exit 0;
 }
 

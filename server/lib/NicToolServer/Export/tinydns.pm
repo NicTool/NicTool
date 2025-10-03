@@ -110,7 +110,7 @@ data.cdb: data
 # copies the data file to the remote host. The address is the nameservers IP
 # as defined in the NicTool database. Adjust it if necessary. Add additional
 # rsync lines to copy to additional hosts. See the FAQ for details:
-#    FAQ: https://github.com/msimerson/NicTool/wiki/FAQ
+#    FAQ: https://github.com/nictool/NicTool/wiki/FAQ
 remote: data.cdb
 \trsync -az data.cdb $remote_login\@$address:$datadir/data.cdb
 
@@ -923,7 +923,7 @@ version 2.35
 
 =head1 Instructions for Use
 
-https://github.com/msimerson/NicTool/wiki/Export-to-tinydns
+https://github.com/nictool/NicTool/wiki/Export-to-tinydns
 
 =head1 AUTHOR
 

@@ -26,7 +26,7 @@ sub postflight {
     #$nsupdate = `nsupdate < $dir/nsupdate.log 2<&1`;
 
     # Uncomment this if you would like to do nsupdate with a keyfile
-    # For more info go to https://github.com/msimerson/NicTool/wiki/Export-to-BIND-nsupdate
+    # For more info go to https://github.com/nictool/NicTool/wiki/Export-to-BIND-nsupdate
     #my $keyfile = "/etc/Knsupdate.+157+44682.key";
     #$nsupdate = `nsupdate -k $keyfile < $dir/nsupdate.log 2<&1`;
 

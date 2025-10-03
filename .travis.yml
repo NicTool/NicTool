@@ -62,9 +62,9 @@ before_install:
       # locally installed modules, for tests
     - cpanm --notest --force Test::More Test::HTML::Lint Test::Output Test::Pod URI
     - cpanm --notest --force Net::DNS || sudo cpanm --notest --force Net::DNS@1.0.6 || echo "double darn"
-    - cd /home/travis/build/msimerson/NicTool/client && perl Makefile.PL && cpanm -n .
-    - cd /home/travis/build/msimerson/NicTool/server && perl Makefile.PL && cpanm -n .
-    - cd /home/travis/build/msimerson/NicTool
+    - cd /home/travis/build/nictool/NicTool/client && perl Makefile.PL && cpanm -n .
+    - cd /home/travis/build/nictool/NicTool/server && perl Makefile.PL && cpanm -n .
+    - cd /home/travis/build/nictool/NicTool
 
 install:
     - sudo cp .test/apache-travis.conf /etc/apache2/sites-enabled/nictool.conf
@@ -75,8 +75,8 @@ install:
 before_script:
 
 script:
-    - make -C /home/travis/build/msimerson/NicTool/client test
-    - make -C /home/travis/build/msimerson/NicTool/server test
+    - make -C /home/travis/build/nictool/NicTool/client test
+    - make -C /home/travis/build/nictool/NicTool/server test
 
 after_success:
 after_failure:

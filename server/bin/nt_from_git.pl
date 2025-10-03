@@ -9,7 +9,7 @@ my $ntdir  = '/usr/local/nictool';
 
 if ( ! -d $gitdir ) {
     die "git dir not found. Did you check out the NicTool repo to $gitdir?\n
-Try: git clone https://github.com/msimerson/NicTool.git $gitdir\n";
+Try: git clone https://github.com/nictool/NicTool.git $gitdir\n";
 }
 
 

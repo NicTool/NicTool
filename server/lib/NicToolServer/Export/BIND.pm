@@ -503,7 +503,7 @@ This class will export a named.conf.nictool file with all the NicTool zones assi
 
 =head1 Templates
 
-See the L<https://github.com/msimerson/NicTool/wiki/Export-to-BIND|Export to BIND> page.
+See the L<https://github.com/nictool/NicTool/wiki/Export-to-BIND|Export to BIND> page.
 
 =head1 AUTHOR
 

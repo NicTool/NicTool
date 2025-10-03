@@ -12,8 +12,8 @@ To upgrade NicTool to v2.10+, the following steps should be taken:
      # service httpd stop
 
 3. install NicTool client & server
-     https://github.com/msimerson/NicTool/wiki/Install-NicToolClient
-     https://github.com/msimerson/NicTool/wiki/Install-NicToolServer
+     https://github.com/nictool/NicTool/wiki/Install-NicToolClient
+     https://github.com/nictool/NicTool/wiki/Install-NicToolServer
 
      Note the default path changes and apply them as shown.
 

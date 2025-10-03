@@ -378,7 +378,7 @@ NicToolServer::Export::DynECT
 
 =head1 SEE ALSO
 
-https://github.com/msimerson/NicTool/wiki/Export-to-DynECT-Managed-DNS
+https://github.com/nictool/NicTool/wiki/Export-to-DynECT-Managed-DNS
 
 =head1 ACKNOWLEDGEMENTS
 
