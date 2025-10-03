@@ -39,11 +39,11 @@ sub update_knot_include {
     my $datadir = $self->{nte}->get_export_data_dir || $dir;
     my $fh = $self->get_export_file( 'knot.conf.nictool', $dir );
     foreach my $zone ( $self->{nte}->zones_exported() ) {
-        if ($ENV{'NT_EXPORT_KNOT_VERSION'} eq '2') {
-            print $fh qq[zone: \n  - domain: $zone\n    file: $datadir/$zone\n];
+        if ($ENV{'NT_EXPORT_KNOT_VERSION'} eq '1') {
+            print $fh qq[$zone { file "$datadir/$zone"; }\n];
         }
         else {
-            print $fh qq[$zone { file "$datadir/$zone"; }\n];
+            print $fh qq[zone: \n  - domain: $zone\n    file: $datadir/$zone\n];
         }
     };
     close $fh;

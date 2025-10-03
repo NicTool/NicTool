@@ -793,7 +793,7 @@ exec 2>&1
 cd $self->{dir_orig}
 #
 EXPORT_USER=$user
-export NT_EXPORT_KNOT_VERSION=2
+export NT_EXPORT_KNOT_VERSION=3
 #
 # when this run file is executed, it will run the nt_export.pl script with the
 # privileges of the EXPORT_USER. To export successfully, the enclosing
