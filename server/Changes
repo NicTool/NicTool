@@ -20,6 +20,7 @@ Revision history for NicToolServer
         * add quotes to rank (now a MySQL keyword)
         * don't save empty strings for INTs #268
         * zone.last_publish: TIMESTAMP DEFAULT 0 -> DATETIME DEFAULT NULL #249
+        * enable PTR in forward zones, fixes #250
     * SRV: always octal_escape numbers correctly #302
     * CAA: remove any quotes added to domain name #302
     * update MANIFEST path #302
