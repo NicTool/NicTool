@@ -50,7 +50,7 @@ Revision history for NicToolServer
     * Export/Dyn: more robust handling of zone deletions, that could
       result in a new zone with the same name getting unpublished.
     * Exports: split long SPF records into 255 byte strings #173
-    * Exports: run postflight after no-change export
+    * Exports: run cleanup_db after no-change export
     * session: prune pass_salt from result hash
     * session: omit sessions from deleted groups
     * test: delete tests already migrated to nt3

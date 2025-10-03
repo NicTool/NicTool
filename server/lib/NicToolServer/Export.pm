@@ -256,7 +256,7 @@ sub export {
     }
     elsif ( ! $self->export_required ) {
         $self->set_no_change();
-        $self->postflight;
+        $self->cleanup_db();
         return 0;                   # signal no export occurred
     };
 
@@ -893,7 +893,7 @@ sub qualify {
     return $record if substr($record,-1,1) eq '.';  # record ends in .
     $zone ||= $self->{zone_name} or return $record;
 
-# substr is measurably faster than a regexp
+    # substr is measurably faster than a regexp
     my $chars = length($zone);
     if ( $zone eq substr( $record, (-1 * $chars), $chars ) ) {
         return $record;    # name included zone name
