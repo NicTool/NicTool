@@ -1,6 +1,7 @@
 .DS_Store
 .git
 .gitignore
+.release
 .test
 .travis.yml
 Makefile
