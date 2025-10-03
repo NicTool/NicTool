@@ -1,21 +1,62 @@
 Revision history for NicToolServer
 
-2.35    2020.__.__
+2.36    202_.__.__
+
+* Updates & Changes
+    * 
+
+2.35    2025.10.02
 
 * New Features
-    * import: tinydns type 'S' records #246
+    * allow A records in in-addr.arpa #230
+    * import
+        * tinydns type 'S' records #246
+        * bind: add CAA imports #225
+    * client: add SSHFP algos 4 & 6 #303
+    * export/BIND: add sort order #270
+* Fixes
+    * bump DB version to 2.35 on new install (was 2.27)
+    * sql
+        * add quotes to rank (now a MySQL keyword)
+        * don't save empty strings for INTs #268
+        * zone.last_publish: TIMESTAMP DEFAULT 0 -> DATETIME DEFAULT NULL #249
+        * enable PTR in forward zones, fixes #250
+    * SRV: always octal_escape numbers correctly #302
+    * CAA: remove any quotes added to domain name #302
+    * update MANIFEST path #302
+    * NAPTR: do not export/encode quotes #302
+    * NAPTR: tinydns export fix #297
+    * URI: tinydns export needs target escaped #296
+    * export: store last ts separate #247
+    * client: fix user password change #241
 * Updates & Changes
+    * client: add help for CAA records #219
+    * client: require NAPTR replacement #221
+    * client: only send cookie when secure #181
+    * zr/sanity: don't allow spaces in names #238
+    * import/bind: strip trailing dot from zone #248
+    * import/bind: report reason on rejected records #178
     * import/tinydns:
-        * handle ascii and binary in AAAA rdata #163
         * append trailing . to SOA mname and rname if missing #166
         * anchor record type detection for case lowering #165
         * add imports for type 3 & 6 (IPv6 patch) #167
-    * disable SPF records by default (flip DB flag to enable)
+        * handle ascii and binary in AAAA rdata #163
+        * improved TXT & SPF imports #171
+    * disable SPF records by default (flip DB flag to enable) #168
     * expand UTF support to cover all UTF8 characters (requires MySQL 5.5+)
-        * change table encoding from utf8 (3 bits) to utf8mb4 (4 bits)
-    * Exports: split long SPF records into 255 byte strings
+        * change table encoding from utf8 (3 bits) to utf8mb4 (4 bits) #170
+    * Export/BIND: export CAA correctly #193
+    * Export/BIND/dyn: fixes for ZR updates #199, #306
     * Export/Dyn: more robust handling of zone deletions, that could
       result in a new zone with the same name getting unpublished.
+    * Exports: split long SPF records into 255 byte strings #173
+    * Exports: run cleanup_db after no-change export
+    * session: prune pass_salt from result hash
+    * session: omit sessions from deleted groups
+    * test: delete tests already migrated to nt3
+    * zone2nic: match domain w/o case #254
+    * improved sql/create_tables.pl #190
+    * docker: container updates #300, #269, #267, #266, #265, #264, #263, #262, #260
 
 2.34    2017.03.13
 

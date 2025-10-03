@@ -380,7 +380,7 @@ NicToolServer::Import::BIND - import BIND zone files into NicTool
 
 =head1 VERSION
 
-version 2.34
+version 2.35
 
 =head1 AUTHORS
 

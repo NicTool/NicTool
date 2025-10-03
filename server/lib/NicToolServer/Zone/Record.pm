@@ -412,7 +412,7 @@ NicToolServer::Zone::Record - manage DNS zone records
 
 =head1 VERSION
 
-version 2.34
+version 2.35
 
 =head1 SYNOPSIS
 

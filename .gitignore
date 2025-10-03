@@ -6,6 +6,7 @@ blib
 pm_to_blib
 MYMETA.*
 Makefile
+MANIFEST.bak
 *~
 client/bin/do_build_test.sh
 server/bin/do_build_test.sh

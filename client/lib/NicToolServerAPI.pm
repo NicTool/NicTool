@@ -222,7 +222,7 @@ NicToolServerAPI - manage the connection to the NicToolServer
 
 =head1 VERSION
 
-version 2.34
+version 2.35
 
 =head1 SYNOPSIS
 

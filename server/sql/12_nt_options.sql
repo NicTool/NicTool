@@ -9,7 +9,7 @@ CREATE TABLE nt_options (
 ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 
 INSERT INTO `nt_options`
-VALUES (1,'db_version','2.34'),
+VALUES (1,'db_version','2.35'),
        (2,'session_timeout','45'),
        (3,'default_group','NicTool')
        ;

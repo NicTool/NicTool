@@ -1,5 +1,9 @@
 .perltidyrc
 AUTHORS.md
+dist/docker/debian/web/conf/nictool.conf
+dist/docker/debian/web/conf/nt_vars
+dist/docker/debian/web/Dockerfile
+dist/docker/debian/web/startup.sh
 docs/api.htm
 docs/apiindex.htm
 docs/apinotes.htm
@@ -23,7 +27,7 @@ docs/zonesfuncs.htm
 Makefile.PL
 MANIFEST			This list of files
 MANIFEST.SKIP
+META.yml
 README
 README.md
 TESTIMONIALS.md
-META.yml

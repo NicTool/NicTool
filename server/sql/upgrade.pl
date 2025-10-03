@@ -33,7 +33,7 @@ my $dbh  = DBIx::Simple->connect( $dsn, $db_user, $db_pass )
 
 # NOTE: when making schema changes, update db_version in 12_nt_options.sql
 my @versions = qw/ 2.00 2.05 2.08 2.09 2.10 2.11 2.14 2.15 2.16 2.17 2.18
-                   2.24 2.27 2.28 2.29 2.30 2.32 2.34 /;
+                   2.24 2.27 2.28 2.29 2.30 2.32 2.34 2.35 /;
 
 foreach my $version ( @versions ) {
     # first, run a DB test query
@@ -198,7 +198,7 @@ VALUES
     (256,'URI','URI',0,1,0),
     (257,'CAA','Certification Authority Authorization',0,1,0);
 
-UPDATE nt_options SET option_value='2.34' WHERE option_name='db_version';
+UPDATE nt_options SET option_value='2.35' WHERE option_name='db_version';
 EO_SQL_2_34
 ;
 }

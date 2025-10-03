@@ -30,19 +30,20 @@ sub postflight {
 
 sub update_knot_include {
     my ($self, $dir) = @_;
+
     if ( $self->{nte}->incremental ) {
         return $self->update_knot_include_incremental( $dir );
     };
 
-    # full export, write a new include  file
+    # full export, write a new include file
     my $datadir = $self->{nte}->get_export_data_dir || $dir;
     my $fh = $self->get_export_file( 'knot.conf.nictool', $dir );
     foreach my $zone ( $self->{nte}->zones_exported() ) {
-        if ($ENV{'NT_EXPORT_KNOT_VERSION'} eq '2') {
-            print $fh qq[zone: \n  - domain: $zone\n    file: $datadir/$zone\n];
+        if ($ENV{'NT_EXPORT_KNOT_VERSION'} eq '1') {
+            print $fh qq[$zone { file "$datadir/$zone"; }\n];
         }
         else {
-            print $fh qq[$zone { file "$datadir/$zone"; }\n];
+            print $fh qq[zone: \n  - domain: $zone\n    file: $datadir/$zone\n];
         }
     };
     close $fh;
@@ -147,7 +148,7 @@ NicToolServer::Export::Knot - exporting DNS data to Knot DNS
 
 =head1 VERSION
 
-version 2.34
+version 2.35
 
 =head1 SYNOPSIS
 

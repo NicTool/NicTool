@@ -97,7 +97,7 @@ sub get_user_permissions {
     my $perm = $perms->[0];
     if ( !$perm ) {
         $sql
-            = "SELECT nt_perm.* FROM nt_perm,nt_user WHERE nt_perm.deleted!=1 "
+            = "SELECT nt_perm.* FROM nt_perm,nt_user WHERE nt_perm.deleted != 1 "
             . "AND nt_user.deleted != 1 "
             . "AND nt_user.nt_user_id = ?"
             . "AND nt_perm.nt_group_id = nt_user.nt_group_id";
@@ -732,7 +732,7 @@ NicToolServer::Permission -
 
 =head1 VERSION
 
-version 2.34
+version 2.35
 
 =head1 SYNOPSIS
 

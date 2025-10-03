@@ -256,7 +256,7 @@ sub export {
     }
     elsif ( ! $self->export_required ) {
         $self->set_no_change();
-        $self->postflight;
+        $self->cleanup_db();
         return 0;                   # signal no export occurred
     };
 
@@ -793,7 +793,7 @@ exec 2>&1
 cd $self->{dir_orig}
 #
 EXPORT_USER=$user
-export NT_EXPORT_KNOT_VERSION=2
+export NT_EXPORT_KNOT_VERSION=3
 #
 # when this run file is executed, it will run the nt_export.pl script with the
 # privileges of the EXPORT_USER. To export successfully, the enclosing
@@ -893,7 +893,7 @@ sub qualify {
     return $record if substr($record,-1,1) eq '.';  # record ends in .
     $zone ||= $self->{zone_name} or return $record;
 
-# substr is measurably faster than a regexp
+    # substr is measurably faster than a regexp
     my $chars = length($zone);
     if ( $zone eq substr( $record, (-1 * $chars), $chars ) ) {
         return $record;    # name included zone name
@@ -973,7 +973,7 @@ NicToolServer::Export - export DNS data to authoritative DNS servers
 
 =head1 VERSION
 
-version 2.34
+version 2.35
 
 =head1 SYNOPSIS
 
