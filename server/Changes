@@ -19,7 +19,7 @@ Revision history for NicToolServer
     * zone: avoid false sub-domain collision when first-label zrs exist, #322
     * user: don't leak valid usernames, #325
 * Updates & Changes
-    * perltidy
+    * perltidy, #324
 
 2.35    2025.10.02
 
