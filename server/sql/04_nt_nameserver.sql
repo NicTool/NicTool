@@ -65,7 +65,7 @@ VALUES (1,'djbdns','djbdns (tinydns & axfrdns)','cr.yp.to/djbdns.html'),
        (3,'maradns','MaraDNS', 'maradns.samiam.org'),
        (4,'powerdns','PowerDNS','www.powerdns.com'),
        (5,'bind-nsupdate','BIND (nsupdate protocol)',''),
-       (6,'NSD','Name Server Daemon (NSD)','www.nlnetlabs.nl/projects/nsd/'),
+       (6,'nsd','Name Server Daemon (NSD)','www.nlnetlabs.nl/projects/nsd/'),
        (7,'dynect','DynECT Standard DNS','dyn.com/managed-dns/'),
        (8,'knot','Knot DNS','www.knot-dns.cz');
 

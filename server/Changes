@@ -8,10 +8,12 @@ Revision history for NicToolServer
         * tests: add regressions in t/12_records.t to verify
     * zone: make delegated-zone queries compatible with sql_mode=ONLY_FULL_GROUP_BY.
     * zone/record: fix CAA iodef validation
+    * zr: don't require TTL, defaults to 0, exports as empty #319
     * ci: replace dead Travis CI with Github Actions workflow
     * session: provide a better fallback for mod_unique_id, #314
     * import: improve resume with better duplicate detection, #316
     * sql: add schema object checks to better detect SQL version, #317
+    * sql: lowercase NSD in the nameserver table, #319
 
 2.35    2025.10.02
 
