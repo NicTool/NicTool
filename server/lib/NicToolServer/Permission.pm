@@ -427,7 +427,7 @@ FROM $table
   AND nt_delegate.nt_object_type='$type' "
         . (
         $type eq 'ZONERECORD'
-        ? "INNER JOIN nt_zone ON nt_zone.nt_zone_id=nt_delegate.nt_object_id 
+        ? "INNER JOIN nt_zone ON nt_zone.nt_zone_id=$table.nt_zone_id
            INNER JOIN nt_group ON nt_group.nt_group_id = nt_zone.nt_group_id "
         : "INNER JOIN nt_group ON $table.nt_group_id=nt_group.nt_group_id "
         )

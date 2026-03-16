@@ -15,7 +15,8 @@ Revision history for NicToolServer
     * sql: add schema object checks to better detect SQL version, #317
     * sql: lowercase NSD in the nameserver table, #319
     * export: exit with signal 2 after error in postflight, #320
-    * permissions: require delete permission to undelete zones/records, #321
+    * perms: require delete permission to undelete zones/records, #321
+    * perms: zone: use delegated groups permission, #326
     * zone: avoid false sub-domain collision when first-label zrs exist, #322
     * user: don't leak valid usernames, #325
 * Updates & Changes
