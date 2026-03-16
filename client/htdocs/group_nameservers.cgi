@@ -485,7 +485,7 @@ sub display_edit_nameserver {
  <tr class=dark_grey_bg>
   <td colspan=2 class=center>],
         $q->submit( $edit eq 'edit' ? 'Save' : 'Create' ),
-        $q->submit('Cancel'), "</td>
+        $q->submit( -name => 'Cancel', -value => 'Cancel', -formnovalidate => 'formnovalidate' ), "</td>
  </tr>
  <script>\$(document).ready(function(){ changeNSExportType(); });</script>";
     }
