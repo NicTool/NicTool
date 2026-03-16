@@ -1068,12 +1068,15 @@ sub get_zonerecord_delegate_access {
     my $group_id = $self->{user}{nt_group_id};
 
     #check delegation
-    my $sql =
-          "SELECT nt_delegate.*,nt_group.name AS group_name FROM nt_delegate "
+        my $sql =
+                    "SELECT nt_delegate.*,nt_group.name AS group_name FROM nt_delegate "
         . " INNER JOIN nt_zone_record on nt_zone_record.nt_zone_record_id= nt_delegate.nt_object_id AND nt_delegate.nt_object_type='ZONERECORD'"
         . " INNER JOIN nt_zone on nt_zone.nt_zone_id=nt_zone_record.nt_zone_id"
         . " INNER JOIN nt_group on nt_zone.nt_group_id = nt_group.nt_group_id"
-        . " WHERE nt_delegate.nt_group_id=? AND nt_delegate.nt_object_id=? AND nt_delegate.nt_object_type='ZONERECORD'";
+                . " WHERE nt_delegate.nt_group_id=?"
+                . " AND nt_delegate.nt_object_id=?"
+                . " AND nt_delegate.nt_object_type='ZONERECORD'"
+                . " AND nt_delegate.deleted=0";
 
     my $r = $self->exec_query( $sql, [ $group_id, $id ] );
     return $r->[0] if $r->[0];
@@ -1083,8 +1086,10 @@ sub get_zonerecord_delegate_access {
         . " INNER JOIN nt_zone on nt_zone.nt_zone_id=nt_delegate.nt_object_id AND nt_delegate.nt_object_type='ZONE'"
         . " INNER JOIN nt_zone_record on nt_zone_record.nt_zone_id= nt_zone.nt_zone_id"
         . " INNER JOIN nt_group on nt_zone.nt_group_id = nt_group.nt_group_id"
-        . " WHERE nt_zone_record.nt_zone_record_id=?";
-    $r = $self->exec_query( $sql, $id );
+        . " WHERE nt_delegate.nt_group_id=?"
+        . " AND nt_zone_record.nt_zone_record_id=?"
+        . " AND nt_delegate.deleted=0";
+    $r = $self->exec_query( $sql, [ $group_id, $id ] );
     return $r->[0];
 }
 

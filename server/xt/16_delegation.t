@@ -1642,12 +1642,66 @@ sub test_zones {
     }
     ok( !$saw1 );
 
-    ##delegate again
+    #delegate again
     $res = $tuser->delegate_zones(
         zone_list   => $zid1,
         nt_group_id => $gid2,
         %dpermsnone,
     );
+    noerrok($res);
+
+    # Regression test for issue #307:
+    # when the same zone is delegated to multiple groups, permissions must be
+    # evaluated for the requesting user's group, not the first delegation row.
+    $res = $user->new_group(
+        nt_group_id => $gid1,
+        name        => "test-cross-delegation-group",
+    );
+    noerrok($res);
+    my $cross_gid = $res->get('nt_group_id');
+
+    # Make a permissive delegation for another group first.
+    $res = $tuser->delegate_zones(
+        zone_list   => $zid1,
+        nt_group_id => $cross_gid,
+        %dpermsfull,
+    );
+    noerrok($res);
+
+    # Re-create the restrictive delegation for gid2 after the permissive one.
+    $res = $tuser->delete_zone_delegation(
+        nt_zone_id  => $zid1,
+        nt_group_id => $gid2,
+    );
+    noerrok($res);
+
+    $res = $tuser->delegate_zones(
+        zone_list   => $zid1,
+        nt_group_id => $gid2,
+        %dpermsnone,
+    );
+    noerrok($res);
+
+    $res = $tuser2->edit_zone_record(
+        nt_zone_record_id => $zrid1,
+        name              => 'cross-deleg-test',
+        ttl               => 86400,
+        description       => 'record 1',
+        type              => 'A',
+        address           => '192.168.1.1',
+        weight            => 0,
+    );
+    noerrok( $res, 404 );
+    ok( $res->error_msg =~ qr/You have no 'write' permission for the delegated object/ );
+
+    # Clean up the additional delegation/group used by this regression test.
+    $res = $user->delete_zone_delegation(
+        nt_zone_id  => $zid1,
+        nt_group_id => $cross_gid,
+    );
+    noerrok($res);
+
+    $res = $user->delete_group( nt_group_id => $cross_gid );
     noerrok($res);
 
     #zone_perm_add_records
