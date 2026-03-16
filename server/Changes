@@ -14,6 +14,7 @@ Revision history for NicToolServer
     * import: improve resume with better duplicate detection, #316
     * sql: add schema object checks to better detect SQL version, #317
     * sql: lowercase NSD in the nameserver table, #319
+    * export: exit with signal 2 after error in postflight, #320
 
 2.35    2025.10.02
 
