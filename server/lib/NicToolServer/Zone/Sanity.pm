@@ -211,7 +211,7 @@ sub record_exists_within_zone {
     my $sql = "SELECT nt_zone_record_id, nt_zone_id, name FROM nt_zone_record
       WHERE deleted=0
         AND nt_zone_id = ?
-        AND ( BINARY name = BINARY ? OR BINARY name = BINARY ? )
+        AND ( name = ? OR name = ? )
         AND type_id NOT IN (2)";  # ignore NS records, they're delegations
     my $zrs = $self->exec_query( $sql, [ $zid, $relative_name, $relative_name_dot ] );
 
