@@ -81,8 +81,7 @@ jobs:
       - name: Install Perl modules for Apache/mod_perl
         run: |
           # Install modules not available as apt packages
-          sudo cpanm --notest CryptX Crypt::Mac::HMAC Crypt::KeyDerivation Test::HTML::Lint Time::TAI64
-
+          sudo cpanm --notest CryptX Crypt::Mac::HMAC Crypt::KeyDerivation Test::HTML::Lint Time::TAI64 DBD::MariaDB
       - name: Install NicTool client and server
         run: |
           cd "$GITHUB_WORKSPACE/client"

@@ -10,6 +10,7 @@ Revision history for NicToolServer
     * zone: make delegated-zone queries compatible with sql_mode=ONLY_FULL_GROUP_BY.
     * zone/record: fix CAA iodef validation
     * ci: replace dead Travis CI with Github Actions workflow
+    * session: provide a better fallback for mod_unique_id, fixes #308
 
 2.35    2025.10.02
 

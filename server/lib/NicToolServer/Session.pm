@@ -3,8 +3,10 @@ package NicToolServer::Session;
 
 use strict;
 use warnings;
+use Time::HiRes qw/gettimeofday/;
 
 @NicToolServer::Session::ISA = qw/NicToolServer NicToolServer::User/;
+our $SESSION_SEQUENCE = 0;
 
 sub debug_session_sql {0}
 
@@ -316,10 +318,22 @@ sub session_id {
     warn "mod_uniqueid not available - building my own unique ID.\n"
         if $self->debug;
 
-    # srand( $$ | time );
-    my $session = int( rand(60000) );
-    $session = unpack( "H*", pack( "Nnn", time, $$, $session ) );
-    return $session;
+    my ($seconds, $microseconds) = gettimeofday();
+
+    # Multiple logins can occur within the same second and within the same
+    # worker. Include microseconds and a per-process sequence to avoid reuse.
+    $SESSION_SEQUENCE = ($SESSION_SEQUENCE + 1) & 0xffffffff;
+
+    return unpack(
+        'H*',
+        pack(
+            'NnnN',
+            $seconds,
+            $$ & 0xffff,
+            $microseconds & 0xffff,
+            $SESSION_SEQUENCE,
+        )
+    );
 }
 
 sub _get_session {
