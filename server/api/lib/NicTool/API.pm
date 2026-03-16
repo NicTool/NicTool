@@ -367,7 +367,7 @@ sub api_commands {
                 'nt_zone_id' =>
                     { access => 'read', required => 1, type => 'ZONE' },
                 'name'    => { required => 1 },
-                'ttl'     => { required => 1 },
+                'ttl'     => { required => 0 },
                 'address' => { required => 1 },
             },
         },

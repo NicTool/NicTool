@@ -33,7 +33,7 @@ my $dbh  = DBIx::Simple->connect( $dsn, $db_user, $db_pass )
 
 # NOTE: when making schema changes, update db_version in 12_nt_options.sql
 my @versions = qw/ 2.00 2.05 2.08 2.09 2.10 2.11 2.14 2.15 2.16 2.17 2.18
-                   2.24 2.27 2.28 2.29 2.30 2.32 2.34 2.35 /;
+                   2.24 2.27 2.28 2.29 2.30 2.32 2.34 2.35 2.36 /;
 
 foreach my $version ( @versions ) {
     # first, run a DB test query
@@ -96,6 +96,27 @@ ALTER TABLE `nt_group_log` ADD FOREIGN KEY (`nt_group_id`) REFERENCES `nt_group`
 ALTER TABLE `nt_delegate` ADD FOREIGN KEY (`nt_group_id`) REFERENCES `nt_group` (`nt_group_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 EO_SOME_DAY
 ;
+}
+
+sub _sql_test_2_36 {
+    my $r = _get_db_version();
+    return 1 if ! defined $r;   # query failed
+
+    my $tbl = $dbh->query("SHOW TABLES LIKE 'nt_nameserver_export_type'")->hashes;
+    return 1 unless scalar $tbl && $tbl->[0];   # table missing
+
+    my $normalized = $dbh->query("SELECT id FROM nt_nameserver_export_type WHERE id=6 AND name='nsd'")->hashes;
+    return 0 unless scalar $normalized && $normalized->[0];
+
+    return 0 if $r eq '2.35';   # do it! bump db_version
+    return 1;                   # don't update
+}
+
+sub _sql_2_36 {
+    <<EO_SQL_2_36
+UPDATE nt_nameserver_export_type SET name='nsd' WHERE id=6 AND LOWER(name)='nsd';
+UPDATE nt_options SET option_value='2.36' WHERE option_name='db_version';
+EO_SQL_2_36
 }
 
 sub _sql_test_2_35 {
