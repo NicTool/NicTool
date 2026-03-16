@@ -536,8 +536,6 @@ sub _get_available_nameservers {
 
     my $ns_list;
     foreach ( 1 .. scalar( @{ $ns_tree->{'nameservers'} } ) ) {
-        last if ( $_ > 10 );
-
         my $ns = $ns_tree->{'nameservers'}->[ $_ - 1 ];
 
         $ns_list .= sprintf( $q->checkbox(
