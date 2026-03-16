@@ -420,6 +420,92 @@ sub doit {
         for ( 1 .. 5 ) { is( 0, 1, "Didn't find test zone record 2" ) }
     }
 
+    #############################
+    # issue #310 regressions    #
+    #############################
+
+    {
+        my $created = $zone1->new_zone_record(
+            name        => 'issue310-a',
+            ttl         => 86400,
+            description => 'issue310 before',
+            type        => 'A',
+            address     => '203.0.113.10',
+        );
+        noerrok($created) or die "Couldn't create issue310 A record";
+
+        my $issue310_a_id = $created->get('nt_zone_record_id');
+        my $updated = $zone1->new_zone_record(
+            nt_zone_record_id => $issue310_a_id,
+            nt_zone_id        => $zid1,
+            name              => 'issue310-a',
+            ttl               => 300,
+            description       => 'issue310 after',
+            type              => 'A',
+            address           => '203.0.113.10',
+        );
+        noerrok($updated, 200, 'new_zone_record updates existing A record') or die errtext($updated);
+        is( $updated->get('nt_zone_record_id'), $issue310_a_id, 'new_zone_record returns existing A record id when updating' );
+
+        my $issue310_a = $user->get_zone_record( nt_zone_record_id => $issue310_a_id );
+        noerrok($issue310_a);
+        is( $issue310_a->get('ttl'), 300, 'updated A record ttl changed in place' );
+        is( $issue310_a->get('description'), 'issue310 after', 'updated A record description changed in place' );
+
+        my $zone_records = $zone1->get_zone_records;
+        noerrok($zone_records);
+        my @issue310_a_matches = grep {
+            $_->get('name') eq 'issue310-a'
+                && $_->get('type') eq 'A'
+                && $_->get('address') eq '203.0.113.10'
+        } $zone_records->list;
+        is( scalar @issue310_a_matches, 1, 'update via new_zone_record does not duplicate A record' );
+
+        $res = $user->delete_zone_record( nt_zone_record_id => $issue310_a_id );
+        noerrok($res) or die "Could not delete issue310 A record $issue310_a_id";
+    }
+
+    {
+        my $created = $zone1->new_zone_record(
+            name        => 'issue310-cname',
+            ttl         => 86400,
+            description => 'issue310 cname before',
+            type        => 'CNAME',
+            address     => 'before.example.net.',
+        );
+        noerrok($created) or die "Couldn't create issue310 CNAME record";
+
+        my $issue310_cname_id = $created->get('nt_zone_record_id');
+        my $updated = $zone1->new_zone_record(
+            nt_zone_record_id => $issue310_cname_id,
+            nt_zone_id        => $zid1,
+            name              => 'issue310-cname',
+            ttl               => 300,
+            description       => 'issue310 cname after',
+            type              => 'CNAME',
+            address           => 'before.example.net.',
+        );
+        noerrok($updated, 200, 'new_zone_record updates existing CNAME record') or die errtext($updated);
+        is( $updated->get('nt_zone_record_id'), $issue310_cname_id, 'new_zone_record returns existing CNAME id when updating' );
+
+        my $issue310_cname = $user->get_zone_record( nt_zone_record_id => $issue310_cname_id );
+        noerrok($issue310_cname);
+        is( $issue310_cname->get('ttl'), 300, 'updated CNAME ttl changed in place' );
+        is( $issue310_cname->get('description'), 'issue310 cname after', 'updated CNAME description changed in place' );
+
+        my $zone_records = $zone1->get_zone_records;
+        noerrok($zone_records);
+        my @issue310_cname_matches = grep {
+            $_->get('name') eq 'issue310-cname'
+                && $_->get('type') eq 'CNAME'
+                && $_->get('address') eq 'before.example.net.'
+        } $zone_records->list;
+        is( scalar @issue310_cname_matches, 1, 'update via new_zone_record does not duplicate CNAME record' );
+
+        $res = $user->delete_zone_record( nt_zone_record_id => $issue310_cname_id );
+        noerrok($res) or die "Could not delete issue310 CNAME record $issue310_cname_id";
+    }
+
     ####################
     # edit_zone_record
     ####################

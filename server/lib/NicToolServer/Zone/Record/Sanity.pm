@@ -9,6 +9,10 @@ use Net::IP;
 sub new_zone_record {
     my ( $self, $data ) = @_;
 
+    if ( $data->{nt_zone_record_id} ) {
+        return $self->edit_zone_record($data);
+    }
+
     $self->new_or_edit_basic_verify($data);
 
     # these are only checked for *validity* above (not required for edit).
@@ -586,7 +590,8 @@ sub _valid_caa {
 
     my $crit = $data->{weight};
     my $tag = $data->{other};
-    my $value = $data->{address} =~ s/^"|"$//g;
+    my $value = $data->{address};
+    $value =~ s/^"|"$//g;
 
     if ($crit != 0 && $crit != 128) {
         $self->error('weight', "Critical flag must be either 0 or 128, see RFC 6844");

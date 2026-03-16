@@ -12,7 +12,7 @@ my $db  = 'nictool';
 my $db_user = 'nictool';
 my $db_pass = 'lootcin!mysql';
 
-my $nt_root_email = 'ci@travis-ci.com';
+my $nt_root_email = 'workflows@github.com';
 my $salt = _get_salt(16);
 my $pass_hash = unpack("H*", Crypt::KeyDerivation::pbkdf2($db_pass, $salt, 5000, 'SHA512'));
 
@@ -75,6 +75,7 @@ sub get_dbh {
     my $db_root_pw = '';
 
     my $dbh = DBI->connect("dbi:mysql:host=$db_host", 'root', $db_root_pw, {
+            mysql_ssl => 1,
             ChopBlanks => 1,
         })
         or die $DBI::errstr;

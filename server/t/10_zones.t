@@ -184,7 +184,7 @@ sub test_cleanups {
 sub test_new_zone {
 
     # nameservers not int
-    $res = $group1->new_zone(
+    my $res = $group1->new_zone(
         zone        => 'test.com',
         serial      => 0,
         ttl         => '86400',
