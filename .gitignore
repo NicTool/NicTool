@@ -1,6 +1,5 @@
 .DS_Store
 .cshrc
-.travis.yml
 .build
 blib
 pm_to_blib

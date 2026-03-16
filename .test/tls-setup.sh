@@ -18,7 +18,7 @@ openssl req \
     -days 2190 \
     -nodes \
     -x509 \
-    -subj "/C=US/ST=Washington/L=Seattle/O=TNPI/CN=travis.tnpi.net" \
+    -subj "/C=US/ST=Washington/L=Seattle/O=TNPI/CN=actions.github.com" \
     -keyout "$TLS_DIR/private/server.key" \
     -out "$TLS_DIR/certs/server.crt"
 

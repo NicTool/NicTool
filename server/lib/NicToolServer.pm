@@ -1622,7 +1622,7 @@ sub exec_query {
         return $dbix->query("SELECT ROW_COUNT()")->list;
     }
 
-    if ( $query !~ /^[\s+]?SELECT/ ) {
+    if ( $query !~ /^\s*SELECT/ ) {
         warn "no support for this query. I'll try anyway\n$err";
     };
 

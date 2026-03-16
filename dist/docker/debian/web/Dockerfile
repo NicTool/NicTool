@@ -28,9 +28,11 @@ RUN git clone https://github.com/nictool/NicTool.git /usr/local/nictool
 
 # install Perl dependencies
 RUN cd /usr/local/nictool/server \
-      && git checkout travis-more-testing; \
-      cd /usr/local/nictool/server; perl Makefile.PL; cpanm -n . \
-      && cd /usr/local/nictool/client; perl Makefile.PL; cpanm -n .
+      && perl Makefile.PL \
+      && cpanm -n . \
+      && cd /usr/local/nictool/client \
+      && perl Makefile.PL \
+      && cpanm -n .
 
 # set up/install any additional Perl dependencies
 RUN cd /usr/local/nictool/server \
