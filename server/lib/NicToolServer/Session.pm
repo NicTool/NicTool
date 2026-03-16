@@ -315,8 +315,7 @@ sub session_id {
 
     return $ENV{UNIQUE_ID} if $ENV{UNIQUE_ID};  # mod_uniqueid sets this
 
-    warn "mod_uniqueid not available - building my own unique ID.\n"
-        if $self->debug;
+    #warn "mod_uniqueid not available - building my own unique ID.\n";
 
     my ($seconds, $microseconds) = gettimeofday();
 

@@ -1551,8 +1551,6 @@ sub get_option {
 }
 
 sub dbh {
-
-    #warn Data::Dumper::Dumper(\@_);
     my ( $self, $dsn ) = @_;
     if ( !$dsn || $dsn !~ /^DBI/ ) {
         $dsn = $NicToolServer::dsn or die "missing DSN!";
