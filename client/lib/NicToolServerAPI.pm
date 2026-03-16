@@ -1,4 +1,5 @@
 package NicToolServerAPI;
+
 # ABSTRACT: manage the connection to the NicToolServer
 
 use strict;
@@ -10,15 +11,15 @@ use SOAP::Lite;
 use XML::Parser();
 use Data::Dumper;
 
-$NicToolServerAPI::VERSION          = '2.11';
-$NicToolServerAPI::protocol_version = "1.0";
+$NicToolServerAPI::VERSION                   = '2.11';
+$NicToolServerAPI::protocol_version          = "1.0";
 $NicToolServerAPI::default_transfer_protocol = 'http';
 
 sub new {
     my $class = shift;
 
     $NicToolServerAPI::transfer_protocol = $NicToolServerAPI::default_transfer_protocol
-        unless( $NicToolServerAPI::transfer_protocol );
+        unless ($NicToolServerAPI::transfer_protocol);
 
     bless {}, $class;
 }
@@ -28,14 +29,11 @@ sub check_setup {
 
     my $message = 'OK';
 
-    $message
-        = "ERROR: server_host not set in $NicToolClient::app_dir/lib/NicToolServerAPI.pm"
+    $message = "ERROR: server_host not set in $NicToolClient::app_dir/lib/NicToolServerAPI.pm"
         unless ($NicToolServerAPI::server_host);
-    $message
-        = "ERROR: server_port not set in $NicToolClient::app_dir/lib/NicToolServerAPI.pm"
+    $message = "ERROR: server_port not set in $NicToolClient::app_dir/lib/NicToolServerAPI.pm"
         unless ($NicToolServerAPI::server_port);
-    $message
-        = "ERROR: protocol_version not set in $NicToolClient::app_dir/lib/NicToolServerAPI.pm"
+    $message = "ERROR: protocol_version not set in $NicToolClient::app_dir/lib/NicToolServerAPI.pm"
         unless ($NicToolServerAPI::protocol_version);
 
     return $message;
@@ -43,16 +41,15 @@ sub check_setup {
 
 sub send_request {
     my $self = shift;
-    my $url = sprintf( '%s://%s:%d',
-                       $NicToolServerAPI::transfer_protocol,
-                       $NicToolServerAPI::server_host,
-                       $NicToolServerAPI::server_port );
+    my $url  = sprintf( '%s://%s:%d',
+        $NicToolServerAPI::transfer_protocol,
+        $NicToolServerAPI::server_host,
+        $NicToolServerAPI::server_port );
     my $func = 'send_' . $NicToolServerAPI::data_protocol . '_request';
-    if ( ! $self->can($func) ) {
+    if ( !$self->can($func) ) {
         return {
             'error_code' => 501,
-            'error_msg'  => 'Data protocol not supported: '
-                . $NicToolServerAPI::data_protocol
+            'error_msg'  => 'Data protocol not supported: ' . $NicToolServerAPI::data_protocol
         };
     }
     return $self->$func( $url, @_ );
@@ -77,9 +74,11 @@ sub send_soap_request {
         proxy => $url . '/soap',
 
         #URI is typically org name followed by module path
-        uri => sprintf( '%s://%s/NicToolServer/SOAP',
-                        $NicToolServerAPI::transfer_protocol,
-                        $NicToolServerAPI::server_host ),
+        uri => sprintf(
+            '%s://%s/NicToolServer/SOAP',
+            $NicToolServerAPI::transfer_protocol,
+            $NicToolServerAPI::server_host
+        ),
 
         #don't die on fault, just return result.
         on_fault => sub { my ( $soap, $res ) = @_; return $res; }
@@ -87,7 +86,7 @@ sub send_soap_request {
     if ($NicToolServerAPI::debug_soap_setup) {
         warn "URI: " . $soap->uri . ", proxy: " . $url . '/soap' . "\n";
         warn "Calling soap function \"$func\" with params:\n" . Dumper( \%vars ) . "\n";
-    };
+    }
 
     #make soap call and evaluate response.
     my $som = $soap->call( $func => \%vars );
@@ -101,7 +100,7 @@ sub send_soap_request {
             if $NicToolServerAPI::debug_soap_response;
         return {
             error_code => $soap->transport->code,
-            error_msg  => 'SOAP: transport error: ' 
+            error_msg  => 'SOAP: transport error: '
                 . $url . '/soap' . ': '
                 . $soap->transport->status
         };
@@ -139,18 +138,17 @@ sub send_xml_rpc_request {
     $vars{'nt_protocol_version'} = $NicToolServerAPI::protocol_version;
 
     #encode data into xml-rpc request obj and get xml string
-    my $xmlreq
-        = RPC::XML::request->new( $com, RPC::XML::smart_encode( \%vars ) );
+    my $xmlreq  = RPC::XML::request->new( $com, RPC::XML::smart_encode( \%vars ) );
     my $command = $xmlreq->as_string;
 
-    my $ua = new LWP::UserAgent;
+    my $ua  = new LWP::UserAgent;
     my $req = HTTP::Request->new( 'POST', $url );
 
     $ua->agent("NicToolClient v$NicToolServerAPI::VERSION");
     $req->content_type('text/xml');
     $req->content($command);
 
-    #$req->header("NicTool-protocol_version" => "$NicToolServerAPI::protocol_version");
+#$req->header("NicTool-protocol_version" => "$NicToolServerAPI::protocol_version");
 
     #send request, evaluate response
     my $response = $ua->request($req);
@@ -159,9 +157,7 @@ sub send_xml_rpc_request {
     if ( !$response->is_success ) {
         return (
             {   error_code => 508,
-                error_msg  => "XML-RPC: $url: "
-                    . $response->code . " "
-                    . $response->message
+                error_msg  => "XML-RPC: $url: " . $response->code . " " . $response->message
             }
         );
     }

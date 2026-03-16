@@ -162,13 +162,13 @@ sub start {
     $res = $user->new_group( name => 'test_delete_me1', %permsnone );
     die "Couldn't create test group1"
         unless noerrok($res)
-            and ok( $res->get('nt_group_id') => qr/^\d+$/ );
+        and ok( $res->get('nt_group_id') => qr/^\d+$/ );
     $gid1 = $res->get('nt_group_id');
 
     $group1 = $user->get_group( nt_group_id => $gid1 );
     die "Couldn't get test group1"
         unless noerrok($group1)
-            and ok( $group1->id, $gid1 );
+        and ok( $group1->id, $gid1 );
 
 =item make a new user in GROUP1  (USER1)
 
@@ -283,13 +283,13 @@ GROUP2 has full permissions.
     $res = $group1->new_group( name => 'testsubgroup', %permsfull );
     die "Couldn't create test subgroup"
         unless noerrok($res)
-            and ok( $res->get('nt_group_id') => qr/^\d+$/ );
+        and ok( $res->get('nt_group_id') => qr/^\d+$/ );
     $gid2 = $res->get('nt_group_id');
 
     $subg = $user->get_group( nt_group_id => $gid2 );
     die "Couldn't get test subgroup"
         unless noerrok($subg)
-            and ok( $subg->id, $gid2 );
+        and ok( $subg->id, $gid2 );
 
 =item new user in GROUP2 (USER2)
 
@@ -406,8 +406,7 @@ perm_write should be 0
 
     #warn Data::Dumper::Dumper($res);
     foreach ( keys %dpermsnone ) {
-        ok( $res->get( $dpermmap{$_} ),
-            0, "shouldn't have delegate $_ access" );
+        ok( $res->get( $dpermmap{$_} ), 0, "shouldn't have delegate $_ access" );
     }
 
 =item (remove delegation of ZONE1 to GROUP2)
@@ -418,7 +417,7 @@ perm_write should be 0
         $tuser->delete_zone_delegation(
             nt_zone_id  => $zid1,
             nt_group_id => $gid2
-            )
+        )
 
     );
 
@@ -445,8 +444,7 @@ perm_write should be 0
     $res = $tuser2->get_zone( nt_zone_id => $zid1 );
     noerrok($res);
     foreach ( keys %dpermsnone ) {
-        ok( $res->get( $dpermmap{$_} ),
-            0, "shouldn't have delegate $_ access" );
+        ok( $res->get( $dpermmap{$_} ), 0, "shouldn't have delegate $_ access" );
     }
 
 =item USER1 removes delegation of ZONE1 to GROUP2
@@ -457,7 +455,7 @@ perm_write should be 0
         $tuser->delete_zone_delegation(
             nt_zone_id  => $zid1,
             nt_group_id => $gid2
-            )
+        )
 
     );
 
@@ -485,8 +483,7 @@ perm_write should be 0
     $res = $tuser2->get_zone( nt_zone_id => $zid1 );
     noerrok($res);
     foreach ( keys %dpermsnone ) {
-        ok( $res->get( $dpermmap{$_} ),
-            0, "shouldn't have delegate $_ access" );
+        ok( $res->get( $dpermmap{$_} ), 0, "shouldn't have delegate $_ access" );
     }
 
 =item USER1 removes delegation ZONE1 -> GROUP2
@@ -497,7 +494,7 @@ perm_write should be 0
         $tuser->delete_zone_delegation(
             nt_zone_id  => $zid1,
             nt_group_id => $gid2
-            )
+        )
 
     );
 
@@ -537,8 +534,7 @@ perm_write should be 0
     $res              = $tuser2->get_zone( nt_zone_id => $zid1 );
     noerrok($res);
     foreach ( keys %dp ) {
-        ok( $res->get( $dpermmap{$_} ),
-            $dp{$_}, "$_ access should be '$dp{$_}'" );
+        ok( $res->get( $dpermmap{$_} ), $dp{$_}, "$_ access should be '$dp{$_}'" );
     }
 
 =item USER1 removes delegation ZONE1 -> GROUP2
@@ -549,7 +545,7 @@ perm_write should be 0
         $tuser->delete_zone_delegation(
             nt_zone_id  => $zid1,
             nt_group_id => $gid2
-            )
+        )
 
     );
 
@@ -589,8 +585,7 @@ perm_write should be 0
     $res                         = $tuser2->get_zone( nt_zone_id => $zid1 );
     noerrok($res);
     foreach ( keys %dp ) {
-        ok( $res->get( $dpermmap{$_} ),
-            $dp{$_}, "$_ access should be '$dp{$_}'" );
+        ok( $res->get( $dpermmap{$_} ), $dp{$_}, "$_ access should be '$dp{$_}'" );
     }
 
 =item USER1 removes delegation ZONE1 -> GROUP2
@@ -601,7 +596,7 @@ perm_write should be 0
         $tuser->delete_zone_delegation(
             nt_zone_id  => $zid1,
             nt_group_id => $gid2
-            )
+        )
 
     );
 
@@ -636,13 +631,12 @@ perm_write should be 0
 
 =cut
 
-    %dp = %dpermsnone;
+    %dp                             = %dpermsnone;
     $dp{'zone_perm_delete_records'} = 1;
-    $res = $tuser2->get_zone( nt_zone_id => $zid1 );
+    $res                            = $tuser2->get_zone( nt_zone_id => $zid1 );
     noerrok($res);
     foreach ( keys %dp ) {
-        ok( $res->get( $dpermmap{$_} ),
-            $dp{$_}, "$_ access should be '$dp{$_}'" );
+        ok( $res->get( $dpermmap{$_} ), $dp{$_}, "$_ access should be '$dp{$_}'" );
     }
 
 =item USER1 removes delegation ZONE1 -> GROUP2
@@ -653,7 +647,7 @@ perm_write should be 0
         $tuser->delete_zone_delegation(
             nt_zone_id  => $zid1,
             nt_group_id => $gid2
-            )
+        )
 
     );
 
@@ -688,8 +682,7 @@ Test Zone Records:
     $res = $tuser2->get_zone_record( nt_zone_record_id => $zrid1 );
     noerrok($res);
     foreach (qw(perm_write perm_delete perm_delegate)) {
-        ok( $res->get( $dpermmap{$_} ),
-            0, "shouldn't have delegate $_ access" );
+        ok( $res->get( $dpermmap{$_} ), 0, "shouldn't have delegate $_ access" );
     }
 
 =item USER1 removes delegation RECORD1 -> GROUP2
@@ -700,7 +693,7 @@ Test Zone Records:
         $tuser->delete_zone_record_delegation(
             nt_zone_record_id => $zrid1,
             nt_group_id       => $gid2
-            )
+        )
 
     );
 
@@ -735,13 +728,12 @@ Test Zone Records:
 
 =cut
 
-    %dp = %dpermsnone;
+    %dp               = %dpermsnone;
     $dp{'perm_write'} = 1;
-    $res = $tuser2->get_zone_record( nt_zone_record_id => $zrid1 );
+    $res              = $tuser2->get_zone_record( nt_zone_record_id => $zrid1 );
     noerrok($res);
     foreach (qw(perm_write perm_delete perm_delegate)) {
-        ok( $res->get( $dpermmap{$_} ),
-            $dp{$_}, "$_ access should be $dp{$_}" );
+        ok( $res->get( $dpermmap{$_} ), $dp{$_}, "$_ access should be $dp{$_}" );
     }
 
 =item USER1 removes delegation RECORD1 -> GROUP2
@@ -752,7 +744,7 @@ Test Zone Records:
         $tuser->delete_zone_record_delegation(
             nt_zone_record_id => $zrid1,
             nt_group_id       => $gid2
-            )
+        )
 
     );
 
@@ -803,8 +795,7 @@ perm_write should be 0
 
     #warn Data::Dumper::Dumper($res);
     foreach ( keys %dpermsnone ) {
-        ok( $res->get( $dpermmap{$_} ),
-            $dp{$_}, "shouldn't have delegate $_ access" );
+        ok( $res->get( $dpermmap{$_} ), $dp{$_}, "shouldn't have delegate $_ access" );
     }
 
 =item USER1 edits delegation, tries to set perm_write to 0
@@ -816,7 +807,7 @@ perm_write should be 0
             nt_zone_id  => $zid1,
             nt_group_id => $gid2,
             perm_write  => 0,
-            )
+        )
 
     );
 
@@ -831,8 +822,7 @@ perm_write should be 0
 
     #warn Data::Dumper::Dumper($res);
     foreach ( keys %dpermsnone ) {
-        ok( $res->get( $dpermmap{$_} ),
-            $dp{$_}, "shouldn't have delegate $_ access" );
+        ok( $res->get( $dpermmap{$_} ), $dp{$_}, "shouldn't have delegate $_ access" );
     }
 
 =item root changes GROUP1 set zone_write=1
@@ -855,7 +845,7 @@ perm_write should be 0
             nt_zone_id  => $zid1,
             nt_group_id => $gid2,
             perm_write  => 0,
-            )
+        )
 
     );
 
@@ -870,8 +860,7 @@ perm_write should be 0
 
     #warn Data::Dumper::Dumper($res);
     foreach ( keys %dpermsnone ) {
-        ok( $res->get( $dpermmap{$_} ),
-            0, "shouldn't have delegate $_ access" );
+        ok( $res->get( $dpermmap{$_} ), 0, "shouldn't have delegate $_ access" );
     }
 
 =item root removes delegation of ZONE1 to GROUP2
@@ -882,7 +871,7 @@ perm_write should be 0
         $user->delete_zone_delegation(
             nt_zone_id  => $zid1,
             nt_group_id => $gid2
-            )
+        )
 
     );
 
@@ -909,8 +898,7 @@ perm_write should be 0
     $res = $tuser2->get_zone( nt_zone_id => $zid1 );
     noerrok($res);
     foreach ( keys %dpermsnone ) {
-        ok( $res->get( $dpermmap{$_} ),
-            $dp{$_}, "shouldn't have delegate $_ access" );
+        ok( $res->get( $dpermmap{$_} ), $dp{$_}, "shouldn't have delegate $_ access" );
     }
 
 =item USER1 edits delegation, tries to set zone_perm_add_records to 0
@@ -922,7 +910,7 @@ perm_write should be 0
             nt_zone_id            => $zid1,
             nt_group_id           => $gid2,
             zone_perm_add_records => 0,
-            )
+        )
 
     );
 
@@ -935,8 +923,7 @@ perm_write should be 0
     $res = $tuser2->get_zone( nt_zone_id => $zid1 );
     noerrok($res);
     foreach ( keys %dpermsnone ) {
-        ok( $res->get( $dpermmap{$_} ),
-            $dp{$_}, "shouldn't have delegate $_ access" );
+        ok( $res->get( $dpermmap{$_} ), $dp{$_}, "shouldn't have delegate $_ access" );
     }
 
 =item root changes GROUP1 set zonerecord_create=1
@@ -959,7 +946,7 @@ perm_write should be 0
             nt_zone_id            => $zid1,
             nt_group_id           => $gid2,
             zone_perm_add_records => 0,
-            )
+        )
 
     );
 
@@ -972,8 +959,7 @@ perm_write should be 0
     $res = $tuser2->get_zone( nt_zone_id => $zid1 );
     noerrok($res);
     foreach ( keys %dpermsnone ) {
-        ok( $res->get( $dpermmap{$_} ),
-            0, "shouldn't have delegate $_ access" );
+        ok( $res->get( $dpermmap{$_} ), 0, "shouldn't have delegate $_ access" );
     }
 
 =item USER1 removes delegation of ZONE1 to GROUP2
@@ -984,7 +970,7 @@ perm_write should be 0
         $tuser->delete_zone_delegation(
             nt_zone_id  => $zid1,
             nt_group_id => $gid2
-            )
+        )
 
     );
 
@@ -1012,8 +998,7 @@ perm_write should be 0
     $res = $tuser2->get_zone( nt_zone_id => $zid1 );
     noerrok($res);
     foreach ( keys %dpermsnone ) {
-        ok( $res->get( $dpermmap{$_} ),
-            $dp{$_}, "shouldn't have delegate $_ access" );
+        ok( $res->get( $dpermmap{$_} ), $dp{$_}, "shouldn't have delegate $_ access" );
     }
 
 =item USER1 edits delegation, tries to set zone_perm_delete_records to 0
@@ -1025,7 +1010,7 @@ perm_write should be 0
             nt_zone_id               => $zid1,
             nt_group_id              => $gid2,
             zone_perm_delete_records => 0,
-            )
+        )
 
     );
 
@@ -1038,8 +1023,7 @@ perm_write should be 0
     $res = $tuser2->get_zone( nt_zone_id => $zid1 );
     noerrok($res);
     foreach ( keys %dpermsnone ) {
-        ok( $res->get( $dpermmap{$_} ),
-            $dp{$_}, "shouldn't have delegate $_ access" );
+        ok( $res->get( $dpermmap{$_} ), $dp{$_}, "shouldn't have delegate $_ access" );
     }
 
 =item root changes GROUP1 set zonerecord_delete=1
@@ -1062,7 +1046,7 @@ perm_write should be 0
             nt_zone_id               => $zid1,
             nt_group_id              => $gid2,
             zone_perm_delete_records => 0,
-            )
+        )
 
     );
 
@@ -1075,8 +1059,7 @@ perm_write should be 0
     $res = $tuser2->get_zone( nt_zone_id => $zid1 );
     noerrok($res);
     foreach ( keys %dpermsnone ) {
-        ok( $res->get( $dpermmap{$_} ),
-            0, "shouldn't have delegate $_ access" );
+        ok( $res->get( $dpermmap{$_} ), 0, "shouldn't have delegate $_ access" );
     }
 
 =item USER1 removes delegation ZONE1 -> GROUP2
@@ -1087,7 +1070,7 @@ perm_write should be 0
         $tuser->delete_zone_delegation(
             nt_zone_id  => $zid1,
             nt_group_id => $gid2
-            )
+        )
 
     );
 
@@ -1109,8 +1092,6 @@ Test editting of Zone Records:
             zonerecord_delegate => 1,
         )
     );
-
-=cut
 
 =item root delegates RECORD1 to GROUP2 with perm_write=1
 
@@ -1135,8 +1116,7 @@ Test editting of Zone Records:
     $res = $tuser2->get_zone_record( nt_zone_record_id => $zrid1 );
     noerrok($res);
     foreach (qw(perm_write perm_delete perm_delegate)) {
-        ok( $res->get( $dpermmap{$_} ),
-            $dp{$_}, "shouldn't have delegate $_ access" );
+        ok( $res->get( $dpermmap{$_} ), $dp{$_}, "shouldn't have delegate $_ access" );
     }
 
 =item USER1 edits delegation, tries to set perm_write to 0
@@ -1148,7 +1128,7 @@ Test editting of Zone Records:
             nt_zone_record_id => $zrid1,
             nt_group_id       => $gid2,
             perm_write        => 0,
-            )
+        )
 
     );
 
@@ -1161,8 +1141,7 @@ Test editting of Zone Records:
     $res = $tuser2->get_zone_record( nt_zone_record_id => $zrid1 );
     noerrok($res);
     foreach (qw(perm_write perm_delete perm_delegate)) {
-        ok( $res->get( $dpermmap{$_} ),
-            $dp{$_}, "shouldn't have delegate $_ access" );
+        ok( $res->get( $dpermmap{$_} ), $dp{$_}, "shouldn't have delegate $_ access" );
     }
 
 =item root changes GROUP1 set zonerecord_write=1
@@ -1185,7 +1164,7 @@ Test editting of Zone Records:
             nt_zone_record_id => $zrid1,
             nt_group_id       => $gid2,
             perm_write        => 0,
-            )
+        )
 
     );
 
@@ -1198,8 +1177,7 @@ Test editting of Zone Records:
     $res = $tuser2->get_zone_record( nt_zone_record_id => $zrid1 );
     noerrok($res);
     foreach (qw(perm_write perm_delete perm_delegate)) {
-        ok( $res->get( $dpermmap{$_} ),
-            0, "shouldn't have delegate $_ access" );
+        ok( $res->get( $dpermmap{$_} ), 0, "shouldn't have delegate $_ access" );
     }
 
 =item USER1 removes delegation RECORD1 -> GROUP2
@@ -1210,7 +1188,7 @@ Test editting of Zone Records:
         $tuser->delete_zone_record_delegation(
             nt_zone_record_id => $zrid1,
             nt_group_id       => $gid2
-            )
+        )
 
     );
 
@@ -1335,13 +1313,13 @@ sub security {
     $res = $user->new_group( name => 'test_delete_me2', %permsfull );
     die "Couldn't create test group1"
         unless noerrok($res)
-            and ok( $res->get('nt_group_id') => qr/^\d+$/ );
+        and ok( $res->get('nt_group_id') => qr/^\d+$/ );
     $gid2 = $res->get('nt_group_id');
 
     $group2 = $user->get_group( nt_group_id => $gid2 );
     die "Couldn't get test group1"
         unless noerrok($group2)
-            and ok( $group2->id, $gid2 );
+        and ok( $group2->id, $gid2 );
 
 =item root makes a new user in top level group (USER2)
 
@@ -1372,7 +1350,7 @@ sub security {
     );
     die "couldn't make test nameserver"
         unless noerrok($res)
-            and ok( $res->get('nt_nameserver_id') => qr/^\d+$/ );
+        and ok( $res->get('nt_nameserver_id') => qr/^\d+$/ );
     $nsid1 = $res->get('nt_nameserver_id');
 
 =item USER1 logs in

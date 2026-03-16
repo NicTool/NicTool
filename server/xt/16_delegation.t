@@ -37,9 +37,9 @@ use NicToolTest;
 use NicTool;
 use Test::More 'no_plan';
 
-my ($tuser, $tuser2);
-my ($gid1, $gid2, $gid3, $group1, $subg, $zid0, $zid1, $zid2, $uid1, $uid2);
-my (%z1, $zrid0, $zrid1, $zrid2);
+my ( $tuser, $tuser2 );
+my ( $gid1,  $gid2,  $gid3,  $group1, $subg, $zid0, $zid1, $zid2, $uid1, $uid2 );
+my ( %z1,    $zrid0, $zrid1, $zrid2 );
 
 # no group permissions
 my %permsnone = (
@@ -170,15 +170,13 @@ sub start {
 
     #make a new group
     my $res = $user->new_group( name => 'test_delete_me1', %permsfull );
-    noerrok($res)
-        && ok( $res->get('nt_group_id') =~ qr/^\d+$/ )
-            or die "Couldn't create test group1";
+    noerrok($res) && ok( $res->get('nt_group_id') =~ qr/^\d+$/ )
+        or die "Couldn't create test group1";
     $gid1 = $res->get('nt_group_id');
 
     $group1 = $user->get_group( nt_group_id => $gid1 );
-    noerrok($group1)
-        && is( $group1->id, $gid1 )
-            or die "Couldn't get test group1";
+    noerrok($group1) && is( $group1->id, $gid1 )
+        or die "Couldn't get test group1";
 
     # new user in group
     $res = $group1->new_user(
@@ -223,15 +221,13 @@ sub start {
 
     #subgroup
     $res = $group1->new_group( name => 'testsubgroup', %permsfull );
-    noerrok($res)
-        && ok( $res->get('nt_group_id') =~ qr/^\d+$/ )
-            or die "Couldn't create test subgroup";
+    noerrok($res) && ok( $res->get('nt_group_id') =~ qr/^\d+$/ )
+        or die "Couldn't create test subgroup";
     $gid2 = $res->get('nt_group_id');
 
     $subg = $user->get_group( nt_group_id => $gid2 );
-    noerrok($subg)
-        && is( $subg->id, $gid2 )
-            or die "Couldn't get test subgroup";
+    noerrok($subg) && is( $subg->id, $gid2 )
+        or die "Couldn't get test subgroup";
 
     $res = $subg->new_user(
         first_name                => 'test2',
@@ -247,12 +243,12 @@ sub start {
 
     #login as test user
     $tuser = new NicTool(
-        cache_users  => 0,
-        cache_groups => 0,
-        cache_zone   => 0,
+        cache_users   => 0,
+        cache_groups  => 0,
+        cache_zone    => 0,
         cache_records => 0,
-        server_host  => Config('server_host'),
-        server_port  => Config('server_port')
+        server_host   => Config('server_host'),
+        server_port   => Config('server_port')
     );
     isa_ok( $tuser, 'NicTool' );
 
@@ -264,9 +260,8 @@ sub start {
 
     # another subgroup
     $res = $group1->new_group( name => 'testsubgroup2', %permsfull );
-    noerrok($res)
-        && ok( $res->get('nt_group_id') =~ qr/^\d+$/ )
-            or die "Couldn't create test subgroup2";
+    noerrok($res) && ok( $res->get('nt_group_id') =~ qr/^\d+$/ )
+        or die "Couldn't create test subgroup2";
     $gid3 = $res->get('nt_group_id');
 
     #create test zones
@@ -412,8 +407,7 @@ sub test_api_funcs {
 
         # verify
         foreach ( keys %dpermmap ) {
-            is( $res->get($_), $perms{ $dpermmap{$_} },
-                "delegation perm $_" );
+            is( $res->get($_), $perms{ $dpermmap{$_} }, "delegation perm $_" );
         }
 
         #remove delegation
@@ -444,8 +438,7 @@ sub test_api_funcs {
 
         #verify
         foreach ( keys %dpermmap ) {
-            is( $res->get($_), $perms{ $dpermmap{$_} },
-                "delegation perm $_" );
+            is( $res->get($_), $perms{ $dpermmap{$_} }, "delegation perm $_" );
         }
 
         # remove delegation
@@ -463,7 +456,7 @@ sub test_api_funcs {
         nt_group_id => $gid1,
     );
     noerrok( $res, 300 );
-    ok( $res->error_msg =~  qr/Cannot delegate to your own group./ );
+    ok( $res->error_msg  =~ qr/Cannot delegate to your own group./ );
     ok( $res->error_desc =~ qr/Sanity error/ );
 
     #try to delegate to higher group
@@ -472,7 +465,7 @@ sub test_api_funcs {
         nt_group_id => 1,
     );
     noerrok( $res, 404 );
-    ok( $res->error_msg =~ qr/No Access Allowed to that object \(GROUP : 1\)/ );
+    ok( $res->error_msg  =~ qr/No Access Allowed to that object \(GROUP : 1\)/ );
     ok( $res->error_desc =~ qr/Access Permission denied/ );
 
     #try to delegate a zone you have no access to
@@ -481,8 +474,7 @@ sub test_api_funcs {
         nt_group_id => $gid2,
     );
     noerrok( $res, 404 );
-    ok( $res->error_msg =~
-        qr/No Access Allowed to that object \(ZONE : $zid0\)/ );
+    ok( $res->error_msg  =~ qr/No Access Allowed to that object \(ZONE : $zid0\)/ );
     ok( $res->error_desc =~ qr/Access Permission denied/ );
 
     ####################
@@ -571,8 +563,7 @@ sub test_api_funcs {
 
         #verify
         foreach ( keys %dpermmap ) {
-            is( $res->get($_), $perms{ $dpermmap{$_} },
-                "delegation perm $_" );
+            is( $res->get($_), $perms{ $dpermmap{$_} }, "delegation perm $_" );
         }
 
         #remove delegation
@@ -595,7 +586,7 @@ sub test_api_funcs {
         );
         noerrok($res);
 
-        my $del = $tuser->get_zone_record_delegates(nt_zone_record_id => $zrid1);
+        my $del = $tuser->get_zone_record_delegates( nt_zone_record_id => $zrid1 );
         noerrok($del);
         is( $del->size, 1, "only one delegate" );
         $res = $del->next;
@@ -603,8 +594,7 @@ sub test_api_funcs {
 
         #verify
         foreach ( keys %dpermmap ) {
-            is( $res->get($_), $perms{ $dpermmap{$_} },
-                "delegation perm $_" );
+            is( $res->get($_), $perms{ $dpermmap{$_} }, "delegation perm $_" );
         }
 
         #remove delegation
@@ -621,7 +611,7 @@ sub test_api_funcs {
         nt_group_id     => $gid1,
     );
     noerrok( $res, 300 );
-    ok( $res->error_msg =~  qr/Cannot delegate to your own group./ );
+    ok( $res->error_msg  =~ qr/Cannot delegate to your own group./ );
     ok( $res->error_desc =~ qr/Sanity error/ );
 
     #try to delegate to higher group
@@ -630,7 +620,7 @@ sub test_api_funcs {
         nt_group_id     => 1,
     );
     noerrok( $res, 404 );
-    ok( $res->error_msg =~ qr/No Access Allowed to that object \(GROUP : 1\)/ );
+    ok( $res->error_msg  =~ qr/No Access Allowed to that object \(GROUP : 1\)/ );
     ok( $res->error_desc =~ qr/Access Permission denied/ );
 
     #try to delegate a zone record you have no access to
@@ -640,8 +630,7 @@ sub test_api_funcs {
         nt_group_id     => $gid2,
     );
     noerrok( $res, 404 );
-    ok( $res->error_msg =~
-        qr/No Access Allowed to that object \(ZONERECORD : $zrid0\)/ );
+    ok( $res->error_msg  =~ qr/No Access Allowed to that object \(ZONERECORD : $zrid0\)/ );
     ok( $res->error_desc =~ qr/Access Permission denied/ );
 
     ####################
@@ -737,8 +726,7 @@ sub test_api_funcs {
 
         #verify
         foreach ( keys %dpermmap ) {
-            is( $res->get($_), $perms{ $dpermmap{$_} },
-                "delegation perm $_" );
+            is( $res->get($_), $perms{ $dpermmap{$_} }, "delegation perm $_" );
         }
 
     }
@@ -835,8 +823,7 @@ sub test_api_funcs {
         );
         noerrok($res);
 
-        my $del = $tuser->get_zone_record_delegates(
-            nt_zone_record_id => $zrid1 );
+        my $del = $tuser->get_zone_record_delegates( nt_zone_record_id => $zrid1 );
         noerrok($del);
         is( $del->size, 1, "only one delegate" );
         $res = $del->next;
@@ -844,8 +831,7 @@ sub test_api_funcs {
 
         #verify
         foreach ( keys %dpermmap ) {
-            is( $res->get($_), $perms{ $dpermmap{$_} },
-                "delegation perm $_" );
+            is( $res->get($_), $perms{ $dpermmap{$_} }, "delegation perm $_" );
         }
     }
 
@@ -881,7 +867,7 @@ sub test_api_funcs {
     is( $res->size, 1 );
     $res = $res->next;
     is( $res->get('nt_group_id'), $gid1 );    #group of the zone
-    is( $res->get('nt_zone_id') , $zid1 );
+    is( $res->get('nt_zone_id'),  $zid1 );
 
     $res = $tuser->delete_zone_delegation(
         nt_group_id => '',
@@ -972,7 +958,7 @@ sub test_api_funcs {
     is( $res->size, 1 );
     $res = $res->next;
     is( $res->get('nt_group_id'), $gid1 );    #group of the zone
-    is( $res->get('nt_zone_id') , $zid1 );
+    is( $res->get('nt_zone_id'),  $zid1 );
 
     $res = $tuser->delete_zone_delegation(
         nt_group_id => '',
@@ -1425,18 +1411,17 @@ sub test_zones {
         username => 'testuser2@testsubgroup',
         password => 'testpass2',
     );
-    noerrok( $tuser2->result )
-        && ok( $tuser2->nt_user_session )
-            or die "Couldn't log in";
+    noerrok( $tuser2->result ) && ok( $tuser2->nt_user_session )
+        or die "Couldn't log in";
 
     # should have no access to zid1
     my $res = $tuser2->get_zone( nt_zone_id => $zid1 );
     noerrok( $res, 404 );
-    ok( $res->error_msg =~
-        qr/No Access Allowed to that object \(ZONE : $zid1\)/, "get_zone, $zid1" );
+    ok( $res->error_msg =~ qr/No Access Allowed to that object \(ZONE : $zid1\)/,
+        "get_zone, $zid1" );
     ok( $res->error_desc =~ qr/Access Permission denied/, "get_zone, $zid1" );
 
-    $res  = $tuser2->get_group_zones;
+    $res = $tuser2->get_group_zones;
     my $saw1 = 0;
     while ( my $z = $res->next ) {
         $saw1 = 1 if $z->id eq $zid1;
@@ -1457,15 +1442,13 @@ sub test_zones {
         %dpermsnone,
     );
     noerrok( $res, 404 );
-    ok( $res->error_msg =~
-        qr/You have no 'delegate' permission for zone objects/ );
+    ok( $res->error_msg  =~ qr/You have no 'delegate' permission for zone objects/ );
     ok( $res->error_desc =~ qr/Access Permission denied/ );
 
     # again check no access to zone from test user 2
     $res = $tuser2->get_zone( nt_zone_id => $zid1 );
     noerrok( $res, 404 );
-    ok( $res->error_msg =~
-        qr/No Access Allowed to that object \(ZONE : $zid1\)/ );
+    ok( $res->error_msg  =~ qr/No Access Allowed to that object \(ZONE : $zid1\)/ );
     ok( $res->error_desc =~ qr/Access Permission denied/ );
 
     $res  = $tuser2->get_group_zones;
@@ -1547,8 +1530,7 @@ sub test_zones {
 
     $res = $tuser2->edit_zone( nt_zone_id => $zid1, %newz );
     noerrok( $res, 404 );
-    ok( $res->error_msg =~
-        qr/You have no 'write' permission for the delegated object/ );
+    ok( $res->error_msg  =~ qr/You have no 'write' permission for the delegated object/ );
     ok( $res->error_desc =~ qr/Access Permission denied/ );
 
     $res = $tuser2->get_zone( nt_zone_id => $zid1 );
@@ -1596,8 +1578,7 @@ sub test_zones {
         %dpermsnone
     );
     noerrok( $res, 404 );
-    ok( $res->error_msg =~
-        qr/You have no 'delegate' permission for the delegated object/ );
+    ok( $res->error_msg  =~ qr/You have no 'delegate' permission for the delegated object/ );
     ok( $res->error_desc =~ qr/Access Permission denied/ );
 
     #change perms to allow delegation
@@ -1632,8 +1613,7 @@ sub test_zones {
         nt_group_id => $gid2
     );
     noerrok( $res, 404 );
-    ok( $res->error_msg =~
-        qr/You have no 'delegate' permission for the delegated object/ );
+    ok( $res->error_msg  =~ qr/You have no 'delegate' permission for the delegated object/ );
     ok( $res->error_desc =~ qr/Access Permission denied/ );
 
     #change perms to allow removal of delegation
@@ -1652,8 +1632,7 @@ sub test_zones {
 
     $res = $tuser2->get_zone( nt_zone_id => $zid1 );
     noerrok( $res, 404 );
-    ok( $res->error_msg =~
-        qr/No Access Allowed to that object \(ZONE : $zid1\)/ );
+    ok( $res->error_msg  =~ qr/No Access Allowed to that object \(ZONE : $zid1\)/ );
     ok( $res->error_desc =~ qr/Access Permission denied/ );
 
     $res  = $tuser2->get_group_zones;
@@ -1686,8 +1665,7 @@ sub test_zones {
         weight      => 1,
     );
     noerrok( $res, 404 );
-    ok( $res->error_msg =~
-        qr/Not allowed to add records to the delegated zone./ );
+    ok( $res->error_msg  =~ qr/Not allowed to add records to the delegated zone./ );
     ok( $res->error_desc =~ qr/Access Permission denied/ );
 
     #change perms to allow adding sub records
@@ -1739,8 +1717,7 @@ sub test_zones {
     #try to delete record from delegated zone
     $res = $tuser2->delete_zone_record( nt_zone_record_id => $zrid3 );
     noerrok( $res, 404 );
-    ok( $res->error_msg =~
-        qr/You have no 'delete' permission for the delegated object/ );
+    ok( $res->error_msg  =~ qr/You have no 'delete' permission for the delegated object/ );
     ok( $res->error_desc =~ qr/Access Permission denied/ );
 
     $res = $tuser2->get_zone_records( nt_zone_id => $zid1 );
@@ -1835,21 +1812,18 @@ sub test_zone_records {
         username => 'testuser2@testsubgroup',
         password => 'testpass2',
     );
-    noerrok( $tuser2->result )
-        && ok( $tuser2->nt_user_session )
-            or die "Couldn't log in";
+    noerrok( $tuser2->result ) && ok( $tuser2->nt_user_session )
+        or die "Couldn't log in";
 
     #should have no access to zrid1
     my $res = $tuser2->get_zone_record( nt_zone_record_id => $zrid1 );
     noerrok( $res, 404 );
-    ok( $res->error_msg =~
-        qr/No Access Allowed to that object \(ZONERECORD : $zrid1\)/ );
+    ok( $res->error_msg  =~ qr/No Access Allowed to that object \(ZONERECORD : $zrid1\)/ );
     ok( $res->error_desc =~ qr/Access Permission denied/ );
 
     $res = $tuser2->get_zone_records( nt_zone_id => $zid1 );
     noerrok( $res, 404 );
-    ok( $res->error_msg =~
-        qr/No Access Allowed to that object \(ZONE : $zid1\)/ );
+    ok( $res->error_msg  =~ qr/No Access Allowed to that object \(ZONE : $zid1\)/ );
     ok( $res->error_desc =~ qr/Access Permission denied/ );
 
     #disallow delegation by test user 1
@@ -1868,22 +1842,19 @@ sub test_zone_records {
         %dpermsnone,
     );
     noerrok( $res, 404 );
-    ok( $res->error_msg =~
-        qr/You have no 'delegate' permission for zonerecord objects/ );
+    ok( $res->error_msg  =~ qr/You have no 'delegate' permission for zonerecord objects/ );
     ok( $res->error_desc =~ qr/Access Permission denied/ );
 
     #again check no access to zone record from test user 2
 
     $res = $tuser2->get_zone_record( nt_zone_record_id => $zrid1 );
     noerrok( $res, 404 );
-    ok( $res->error_msg =~
-        qr/No Access Allowed to that object \(ZONERECORD : $zrid1\)/ );
+    ok( $res->error_msg  =~ qr/No Access Allowed to that object \(ZONERECORD : $zrid1\)/ );
     ok( $res->error_desc =~ qr/Access Permission denied/ );
 
     $res = $tuser2->get_zone_records( nt_zone_id => $zid1 );
     noerrok( $res, 404 );
-    ok( $res->error_msg =~
-        qr/No Access Allowed to that object \(ZONE : $zid1\)/ );
+    ok( $res->error_msg  =~ qr/No Access Allowed to that object \(ZONE : $zid1\)/ );
     ok( $res->error_desc =~ qr/Access Permission denied/ );
 
     #allow test user 1 to delegate and edit records
@@ -1926,7 +1897,7 @@ sub test_zone_records {
         is( $res->get( $dpermmap{$_} ), 0, "access perm $_ for delegated zone" );
     }
 
-    $res  = $tuser2->get_group_zones;
+    $res = $tuser2->get_group_zones;
     my $saw1 = 0;
     while ( my $z = $res->next ) {
         $saw1 = 1 if $z->id eq $zid1;
@@ -1937,12 +1908,10 @@ sub test_zone_records {
 
     $res = $tuser2->get_zone( nt_zone_id => $zid1 );
     noerrok($res);
-    is( $res->get('pseudo'), 1,
-        "should have pseudo delegate access to zone" );
+    is( $res->get('pseudo'),  1, "should have pseudo delegate access to zone" );
     is( $res->get('deleted'), 0, "zone is not deleted" );
     foreach ( keys %dpermsfull ) {
-        is( $res->get( $dpermmap{$_} ), 0,
-            "access perms for pseudo-delegated zone" );
+        is( $res->get( $dpermmap{$_} ), 0, "access perms for pseudo-delegated zone" );
     }
     foreach ( keys %z1 ) {
         is( $res->get($_), $z1{$_}, "settings of pseudo delegated zone" );
@@ -1961,8 +1930,7 @@ sub test_zone_records {
 
     $res = $tuser2->get_zone_record( nt_zone_record_id => $zrid2 );
     noerrok( $res, 404 );
-    ok( $res->error_msg =~
-        qr/No Access Allowed to that object \(ZONERECORD : $zrid2\)/ );
+    ok( $res->error_msg  =~ qr/No Access Allowed to that object \(ZONERECORD : $zrid2\)/ );
     ok( $res->error_desc =~ qr/Access Permission denied/ );
 
     #check each access permission type
@@ -1983,15 +1951,13 @@ sub test_zone_records {
 
     $res = $tuser2->edit_zone_record( nt_zone_record_id => $zrid1, %newzr );
     noerrok( $res, 404 );
-    ok( $res->error_msg =~
-        qr/You have no 'write' permission for the delegated object/ );
+    ok( $res->error_msg  =~ qr/You have no 'write' permission for the delegated object/ );
     ok( $res->error_desc =~ qr/Access Permission denied/ );
 
     $res = $tuser2->get_zone_record( nt_zone_record_id => $zrid1 );
     noerrok($res);
     foreach ( keys %zr1 ) {
-        is( $res->get($_), $zr1{$_},
-            "un-modified delegated zone record perm $_" );
+        is( $res->get($_), $zr1{$_}, "un-modified delegated zone record perm $_" );
     }
 
     #check write perms for pseudo delegated zone perm_write
@@ -2008,15 +1974,13 @@ sub test_zone_records {
 
     $res = $tuser2->edit_zone( nt_zone_id => $zid1, %newz );
     noerrok( $res, 404 );
-    ok( $res->error_msg =~
-        qr/You have no 'write' permission for the delegated object/ );
+    ok( $res->error_msg  =~ qr/You have no 'write' permission for the delegated object/ );
     ok( $res->error_desc =~ qr/Access Permission denied/ );
 
     $res = $tuser2->get_zone( nt_zone_id => $zid1 );
     noerrok($res);
     foreach ( keys %z1 ) {
-        is( $res->get($_), $z1{$_},
-            "un-modified pseudo delegated zone perm $_" );
+        is( $res->get($_), $z1{$_}, "un-modified pseudo delegated zone perm $_" );
     }
 
     #change to allow write
@@ -2044,15 +2008,13 @@ sub test_zone_records {
     #still no write access to zone
     $res = $tuser2->edit_zone( nt_zone_id => $zid1, %newz );
     noerrok( $res, 404 );
-    ok( $res->error_msg =~
-        qr/You have no 'write' permission for the delegated object/ );
+    ok( $res->error_msg  =~ qr/You have no 'write' permission for the delegated object/ );
     ok( $res->error_desc =~ qr/Access Permission denied/ );
 
     $res = $tuser2->get_zone( nt_zone_id => $zid1 );
     noerrok($res);
     foreach ( keys %z1 ) {
-        is( $res->get($_), $z1{$_},
-            "un-modified pseudo delegated zone perm $_" );
+        is( $res->get($_), $z1{$_}, "un-modified pseudo delegated zone perm $_" );
     }
 
     #perm_delegate
@@ -2074,8 +2036,7 @@ sub test_zone_records {
         %dpermsnone
     );
     noerrok( $res, 404 );
-    ok( $res->error_msg =~
-        qr/You have no 'delegate' permission for the delegated object/ );
+    ok( $res->error_msg  =~ qr/You have no 'delegate' permission for the delegated object/ );
     ok( $res->error_desc =~ qr/Access Permission denied/ );
 
     #try to delegate pseudo-delegated zone
@@ -2085,8 +2046,7 @@ sub test_zone_records {
         %dpermsnone
     );
     noerrok( $res, 404 );
-    ok( $res->error_msg =~
-        qr/You have no 'delegate' permission for the delegated object/ );
+    ok( $res->error_msg  =~ qr/You have no 'delegate' permission for the delegated object/ );
     ok( $res->error_desc =~ qr/Access Permission denied/ );
 
     #change perms to allow delegation
@@ -2122,8 +2082,7 @@ sub test_zone_records {
         %dpermsnone
     );
     noerrok( $res, 404 );
-    ok( $res->error_msg =~
-        qr/You have no 'delegate' permission for the delegated object/ );
+    ok( $res->error_msg  =~ qr/You have no 'delegate' permission for the delegated object/ );
     ok( $res->error_desc =~ qr/Access Permission denied/ );
 
     $res = $user->delete_group( nt_group_id => $tgid );
@@ -2140,8 +2099,7 @@ sub test_zone_records {
         nt_group_id       => $gid2
     );
     noerrok( $res, 404 );
-    ok( $res->error_msg =~
-        qr/You have no 'delegate' permission for the delegated object/ );
+    ok( $res->error_msg  =~ qr/You have no 'delegate' permission for the delegated object/ );
     ok( $res->error_desc =~ qr/Access Permission denied/ );
 
     $res = $tuser2->delete_zone_delegation(
@@ -2149,8 +2107,7 @@ sub test_zone_records {
         nt_group_id => $gid2
     );
     noerrok( $res, 404 );
-    ok( $res->error_msg =~
-        qr/You have no 'delegate' permission for the delegated object/ );
+    ok( $res->error_msg  =~ qr/You have no 'delegate' permission for the delegated object/ );
     ok( $res->error_desc =~ qr/Access Permission denied/ );
 
     #change perms to allow removal of delegation
@@ -2174,17 +2131,15 @@ sub test_zone_records {
 
     $res = $tuser2->get_zone_record( nt_zone_record_id => $zrid1 );
     noerrok( $res, 404 );
-    ok( $res->error_msg =~
-        qr/No Access Allowed to that object \(ZONERECORD : $zrid1\)/ );
+    ok( $res->error_msg  =~ qr/No Access Allowed to that object \(ZONERECORD : $zrid1\)/ );
     ok( $res->error_desc =~ qr/Access Permission denied/ );
 
     $res = $tuser2->get_zone( nt_zone_id => $zid1 );
     noerrok( $res, 404 );
-    ok( $res->error_msg =~
-        qr/No Access Allowed to that object \(ZONE : $zid1\)/ );
+    ok( $res->error_msg  =~ qr/No Access Allowed to that object \(ZONE : $zid1\)/ );
     ok( $res->error_desc =~ qr/Access Permission denied/ );
 
-    $res  = $tuser2->get_group_zones;
+    $res = $tuser2->get_group_zones;
     my $saw1 = 0;
     while ( my $z = $res->next ) {
         $saw1 = 1 if $z->id eq $zid1;

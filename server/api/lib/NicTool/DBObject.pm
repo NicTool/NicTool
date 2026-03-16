@@ -18,8 +18,6 @@ use strict;
 #
 ###
 
-
-
 use Carp;
 
 use lib 'lib';
@@ -27,26 +25,21 @@ use NicTool::Result;
 
 our @ISA = 'NicTool::Result';
 
-
 sub _api {
     die "This method needs to be overridden in a subclass";
 }
-
 
 sub _id_name {
     die "This method needs to be overridden in a subclass";
 }
 
-
 sub id {
     return $_[0]->get( $_[0]->_id_name );
 }
 
-
 sub result {
     return $_[0]->{nt}->result;
 }
-
 
 sub nt_user_session {
     return $_[0]->{nt}->nt_user_session;
@@ -89,10 +82,8 @@ sub _call {
     #check cache for object
     my $obj;
     if ( $self->{nt}->_should_cache->{$method} ) {
-        $obj = $self->{nt}->_cache_get(
-            NicTool::API->result_type($apimethod),
-            $data{ $self->{nt}->_should_cache->{$method} }
-        );
+        $obj = $self->{nt}->_cache_get( NicTool::API->result_type($apimethod),
+            $data{ $self->{nt}->_should_cache->{$method} } );
         return $obj if $obj;
     }
     $obj = $self->{nt}->_dispatch( $apimethod, %data );
@@ -101,7 +92,6 @@ sub _call {
     }
     return $obj;
 }
-
 
 sub refresh {
     my $self = shift;
@@ -112,19 +102,16 @@ sub refresh {
     return $self;
 }
 
-
 sub delete {
     my $self = shift;
     my $res  = $self->_delete_self;
     return $res;
 }
 
-
 sub is_deleted {
     my $self = shift;
     return $self->get('deleted');
 }
-
 
 sub AUTOLOAD {
     my ($self) = shift;
@@ -140,7 +127,6 @@ sub AUTOLOAD {
     #warn "Can't call $NicTool::DBObject::AUTOLOAD : ".(caller);
     return;
 }
-
 
 1;
 

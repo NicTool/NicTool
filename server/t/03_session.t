@@ -16,7 +16,7 @@ is( $session->session_id, 'apache-unique-id', 'uses UNIQUE_ID when available' );
 local $ENV{UNIQUE_ID};
 my %seen;
 
-for (1 .. 1000) {
+for ( 1 .. 1000 ) {
     my $id = $session->session_id;
     ok( !$seen{$id}++, 'generated unique session id' );
 }

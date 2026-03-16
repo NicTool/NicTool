@@ -1,5 +1,6 @@
 package NicToolServer::SOAP;
-# ABSTRACT: SOAP implementation for NicToolServer 
+
+# ABSTRACT: SOAP implementation for NicToolServer
 
 use strict;
 use NicToolServer::Client::SOAP;
@@ -46,20 +47,17 @@ sub _dispatch {
         #return $error if $error;
         eval { $error = $self->verify_obj_usage( $cmd, $data, $action ); };
         return $self->error_response( 508, $@ ) if $@;
-        return $error if $error;
+        return $error                           if $error;
 
         #$@=undef;
-        my $class = 'NicToolServer::' . $cmd->{class};
-        my $obj   = $class->new( undef, undef, $dbh, $self->{meta},
-            $self->{user} );
+        my $class  = 'NicToolServer::' . $cmd->{class};
+        my $obj    = $class->new( undef, undef, $dbh, $self->{meta}, $self->{user} );
         my $method = $cmd->{method};
-        warn
-            "calling NicToolServer action: $cmd->{class}::$cmd->{method} ("
-            . lc($action) . ")\n"
+        warn "calling NicToolServer action: $cmd->{class}::$cmd->{method} (" . lc($action) . ")\n"
             if $self->debug;
         my $res;
         eval { $res = $obj->$method($data); };
-        return $self->error_response( 508, $@ ) if $@;
+        return $self->error_response( 508, $@ )      if $@;
         warn "result: " . Data::Dumper::Dumper($res) if $self->debug_result;
         return $res;
     }

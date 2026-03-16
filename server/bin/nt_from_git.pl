@@ -3,22 +3,21 @@
 use strict;
 use warnings;
 
-my $rsync = "rsync -av";
+my $rsync  = "rsync -av";
 my $gitdir = '/usr/local/nictool/git';
 my $ntdir  = '/usr/local/nictool';
 
-if ( ! -d $gitdir ) {
+if ( !-d $gitdir ) {
     die "git dir not found. Did you check out the NicTool repo to $gitdir?\n
 Try: git clone https://github.com/nictool/NicTool.git $gitdir\n";
 }
 
-
 my @exclude = qw/ NicToolTest.pm test.cfg nictoolclient.conf nictoolserver.conf /;
-my $exclude = '--exclude ' . join(' --exclude ', @exclude);
-my $server = "$rsync $exclude $gitdir/server/ $ntdir/server/";
-my $client = "$rsync $exclude $gitdir/client/ $ntdir/client/";
+my $exclude = '--exclude ' . join( ' --exclude ', @exclude );
+my $server  = "$rsync $exclude $gitdir/server/ $ntdir/server/";
+my $client  = "$rsync $exclude $gitdir/client/ $ntdir/client/";
 
-if ( ! -d "$ntdir/server" || ! -d "$ntdir/client" ) {
+if ( !-d "$ntdir/server" || !-d "$ntdir/client" ) {
     die "This script can only update an existing NicTool install. Install
 NicTool and/or edit this script to set ntdir.\n";
 }

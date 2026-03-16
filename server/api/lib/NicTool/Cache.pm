@@ -39,7 +39,7 @@ sub add {
     foreach (@path) {
         return if !defined $_;
         $cache->{$_} = {} if !exists $cache->{$_};
-        $cache = $cache->{$_};
+        $cache       = $cache->{$_};
     }
     $cache->{$id} = $obj;
 }
@@ -53,7 +53,7 @@ sub get {
     }
     if ( $id && $cache->{$id} ) {
         return $cache->{$id};
-    };
+    }
 }
 
 1;

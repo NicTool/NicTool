@@ -30,8 +30,8 @@ sub main {
 
     my $user = $nt_obj->verify_session();
 
-    if ($user && ref $user) {
-        print $q->header (-charset=>"utf-8");
+    if ( $user && ref $user ) {
+        print $q->header( -charset => "utf-8" );
         display( $nt_obj, $q, $user );
     }
 }
@@ -50,9 +50,9 @@ sub display {
     my $level = $nt_obj->display_group_tree(
         $user,
         $user->{'nt_group_id'},
-        scalar($q->param('nt_group_id')), 0
+        scalar( $q->param('nt_group_id') ), 0
     );
-    $nt_obj->display_zone_list_options( $user, scalar($q->param('nt_group_id')), $level, 0 );
+    $nt_obj->display_zone_list_options( $user, scalar( $q->param('nt_group_id') ), $level, 0 );
 
     print qq[<table class="fat">
     <tr class=light_grey_bg><td><table class="no_pad fat">
@@ -89,12 +89,11 @@ sub display {
         'group_zones_query_log.cgi', ['nt_group_id'] )
         if $q->param('edit_search');
 
-    my $gid = $q->param('nt_group_id');
+    my $gid    = $q->param('nt_group_id');
     my %params = ( nt_group_id => $gid );
     my %sort_fields;
 
-    $nt_obj->prepare_search_params( $q, \%labels, \%params, \%sort_fields,
-        20 );
+    $nt_obj->prepare_search_params( $q, \%labels, \%params, \%sort_fields, 20 );
 
     $sort_fields{'timestamp'} = { 'order' => 1, 'mod' => 'DESCENDING' }
         unless %sort_fields;
@@ -103,8 +102,7 @@ sub display {
 
     return $nt_obj->display_error($rv) if ( $rv->{'error_code'} != '200' );
 
-    $nt_obj->display_search_rows( $q, $rv, \%params,
-        'group_zones_query_log.cgi', ['nt_group_id'] );
+    $nt_obj->display_search_rows( $q, $rv, \%params, 'group_zones_query_log.cgi', ['nt_group_id'] );
 
     print qq[<table class="fat">
     <tr class=dark_grey_bg>];
@@ -118,7 +116,9 @@ sub display {
                 (
                 uc( $sort_fields{$_}->{'mod'} ) eq 'ASCENDING'
                 ? 'up.gif'
-                : 'down.gif' ), "></tD>";
+                : 'down.gif'
+                ),
+                "></tD>";
             print "</tr></table></td>";
 
         }
@@ -130,8 +130,7 @@ sub display {
 
     my $x = 0;
     foreach my $row ( @{ $rv->{'search_result'} } ) {
-        print "<tr class=",
-            ( $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' ), ">";
+        print "<tr class=", ( $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' ), ">";
         foreach (@columns) {
             if ( $_ eq 'timestamp' ) {
                 print "<td>", ( scalar localtime $row->{$_} ), "</td>";

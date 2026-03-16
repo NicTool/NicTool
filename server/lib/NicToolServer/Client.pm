@@ -1,4 +1,5 @@
 package NicToolServer::Client;
+
 # ABSTRACT: an RPC::XML implementation
 
 use strict;
@@ -23,7 +24,7 @@ sub new {
         $r->read( $content, $conlen ) if $conlen gt 0;
     }
 
-    $self->{data} = decode_data( $content, $contype );
+    $self->{data}             = decode_data( $content, $contype );
     $self->{protocol_version} = $self->{data}{nt_protocol_version};
 
     bless $self, $class;

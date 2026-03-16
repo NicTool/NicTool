@@ -1,4 +1,5 @@
 package NicToolServer::Session;
+
 # ABSTRACT: manage nictool login sessions
 
 use strict;
@@ -17,14 +18,15 @@ sub verify {
     my $self = shift;
 
     my $data = $self->{client}->data();
-    if ($data->{action}) {
+    if ( $data->{action} ) {
         $data->{action} = uc $data->{action};
     }
 
     my $vcheck = $self->ver_check;
     return $vcheck if $vcheck;
 
-    if ($data->{action}) {
+    if ( $data->{action} ) {
+
         #warn "action is ".$data->{action};
         return $self->verify_login if $data->{action} eq 'LOGIN';
     }
@@ -47,7 +49,7 @@ sub verify_login {
     return $self->auth_error('invalid group(s)')
         if !$self->populate_groups;    # sets $data->nt_group_id
 
-    my ($err, $user) = $self->_get_user($data->{username}, $data->{groups});
+    my ( $err, $user ) = $self->_get_user( $data->{username}, $data->{groups} );
     return $err if $err;
 
     my $pass_attempt = delete $data->{password};
@@ -55,8 +57,11 @@ sub verify_login {
     $data->{user} = $user;
 
     return $self->auth_error('invalid password')
-        if (! $self->valid_password( $pass_attempt, $user->{password},
-              $data->{username}, $user->{pass_salt} ));
+        if (
+        !$self->valid_password(
+            $pass_attempt, $user->{password}, $data->{username}, $user->{pass_salt}
+        )
+        );
 
     $self->clean_user_data;
 
@@ -64,10 +69,10 @@ sub verify_login {
 
     my $uid = $user->{nt_user_id};
 
-    my ($user_perm, $groupperm);
-    ($err, $user_perm) = $self->_get_user_perms($uid);
+    my ( $user_perm, $groupperm );
+    ( $err, $user_perm ) = $self->_get_user_perms($uid);
     return $err if $err;
-    ($err, $groupperm) = $self->_get_group_perms($uid);
+    ( $err, $groupperm ) = $self->_get_group_perms($uid);
     return $err if $err;
 
     if ( !$user_perm ) {
@@ -82,8 +87,7 @@ sub verify_login {
     }
 
     if ( !$user_perm ) {
-        return $self->error_response( 507,
-                  "Could not find permissions for user ($uid)" );
+        return $self->error_response( 507, "Could not find permissions for user ($uid)" );
     }
 
     $self->clean_perm_data($user_perm);
@@ -92,20 +96,20 @@ sub verify_login {
         $data->{user}{$_} = $user_perm->{$_};
     }
 
-    my $session = $user->{nt_user_session};
+    my $session    = $user->{nt_user_session};
     my $session_id = $self->exec_query(
         'INSERT INTO nt_user_session(nt_user_id, nt_user_session,
             last_access) VALUES (??)',
         [ $uid, $session, time() ]
     ) or return;
 
-    $self->_insert_session_log($session_id, $uid, $session, 'login');
+    $self->_insert_session_log( $session_id, $uid, $session, 'login' );
 
     return 0;
 }
 
 sub _get_user {
-    my ($self, $user, $groups) = @_;
+    my ( $self, $user, $groups ) = @_;
 
     # nt_user_id|nt_group_id|first_name|last_name|username|password|email      |is_admin|deleted|groupname|
     #         1 |         1 | Root     | User    | root   |50aaa...|user@domain|    NULL|      0|NicTool  |
@@ -120,22 +124,21 @@ sub _get_user {
         or return $self->error_response( 505, $self->{dbh}->errstr );
 
     return $self->auth_error('no such username') if scalar @$users == 0;
-    return $self->auth_error('invalid username') if scalar @$users  > 1;
-    return (undef, $users->[0]);
+    return $self->auth_error('invalid username') if scalar @$users > 1;
+    return ( undef, $users->[0] );
 }
 
 sub _get_user_perms {
-    my ($self, $nt_uid) = @_;
+    my ( $self, $nt_uid ) = @_;
 
-    my $perms = $self->exec_query(
-        "SELECT * FROM nt_perm WHERE deleted=0 AND nt_user_id = ?",
-        $nt_uid
-    ) or return $self->error_response( 505, $self->{dbh}->errstr );
-    return (undef, $perms->[0]);
+    my $perms =
+        $self->exec_query( "SELECT * FROM nt_perm WHERE deleted=0 AND nt_user_id = ?", $nt_uid )
+        or return $self->error_response( 505, $self->{dbh}->errstr );
+    return ( undef, $perms->[0] );
 }
 
 sub _get_group_perms {
-    my ($self, $nt_uid) = @_;
+    my ( $self, $nt_uid ) = @_;
 
     my $sql = "SELECT nt_perm.*
     FROM nt_perm
@@ -146,7 +149,7 @@ sub _get_group_perms {
            )";
     my $perms = $self->exec_query( $sql, $nt_uid )
         or return $self->error_response( 505, $self->{dbh}->errstr );
-    return (undef, $perms->[0]);
+    return ( undef, $perms->[0] );
 }
 
 sub verify_session {
@@ -155,11 +158,11 @@ sub verify_session {
     my $data = $self->{client}->data();
     my $dbh  = $self->{dbh};
 
-    my ($err, $user_perm, $groupperm, $session);
-    ($err, $session) = $self->_get_session($data->{nt_user_session});
+    my ( $err, $user_perm, $groupperm, $session );
+    ( $err, $session ) = $self->_get_session( $data->{nt_user_session} );
     return $err if $err;
 
-    return $self->auth_error('Your session has expired.') if ! $session;
+    return $self->auth_error('Your session has expired.') if !$session;
 
     $data->{user} = $session;
 
@@ -169,18 +172,18 @@ sub verify_session {
     # why is this sometimes not set?
     if ( $data->{user}{last_access} ) {
         my $minutes = $self->get_option('session_timeout') || 45;
-        my $max_age = time() - ($minutes * 60);
+        my $max_age = time() - ( $minutes * 60 );
         if ( $max_age >= $data->{user}{last_access} ) {
             $self->logout('timeout');
             return $self->auth_error('Your session expired.');
         }
-    };
+    }
 
     my $uid = $data->{user}{nt_user_id};
 
-    ($err, $user_perm) = $self->_get_user_perms($uid);
+    ( $err, $user_perm ) = $self->_get_user_perms($uid);
     return $err if $err;
-    ($err, $groupperm) = $self->_get_group_perms($uid);
+    ( $err, $groupperm ) = $self->_get_group_perms($uid);
     return $err if $err;
 
     if ( !$user_perm ) {
@@ -200,10 +203,8 @@ sub verify_session {
         $data->{user}{$_} = $user_perm->{$_};
     }
 
-    $self->exec_query(
-        "UPDATE nt_user_session SET last_access=? WHERE nt_user_session_id=?",
-        [ time(), $data->{user}{nt_user_session_id} ]
-    );
+    $self->exec_query( "UPDATE nt_user_session SET last_access=? WHERE nt_user_session_id=?",
+        [ time(), $data->{user}{nt_user_session_id} ] );
 
     $self->clean_user_data;
 
@@ -219,22 +220,18 @@ sub logout {
     #warn "calling Session::logout ... ".join(" ",caller);
     my $user = $self->{client}->data->{user};
 
-    $self->_delete_session($user->{nt_user_session_id});
+    $self->_delete_session( $user->{nt_user_session_id} );
 
-    if ( ! $user->{nt_user_id} ) {
-        warn "calling Session::logout ... ".join(' ',caller);
+    if ( !$user->{nt_user_id} ) {
+        warn "calling Session::logout ... " . join( ' ', caller );
     }
     else {
-        $self->_insert_session_log(
-            $user->{nt_user_session_id},
-            $user->{nt_user_id},
-            $user->{nt_user_session},
-            $msg
-        );
-    };
+        $self->_insert_session_log( $user->{nt_user_session_id},
+            $user->{nt_user_id}, $user->{nt_user_session}, $msg );
+    }
 
     my $data = $self->{client}->data();
-    foreach my $key ( keys %$data ) { delete( $data->{$key} ); };
+    foreach my $key ( keys %$data ) { delete( $data->{$key} ); }
 
     return { 'error_code' => 200, error_msg => 'OK', nt_user_session => '' };
 }
@@ -251,18 +248,15 @@ sub populate_groups {
 
     if ( $data->{username} =~ /(.+)\@(.+)/ ) {
         $data->{username} = $1;
-        $ids = $self->exec_query(
-            "SELECT nt_group_id FROM nt_group WHERE deleted=0 AND name=?",
-            $2
-        );
+        $ids =
+            $self->exec_query( "SELECT nt_group_id FROM nt_group WHERE deleted=0 AND name=?", $2 );
     }
     else {
         my $default_group = $self->get_option('default_group') || 'NicTool';
 
-        $ids = $self->exec_query(
-            "SELECT nt_group_id FROM nt_group WHERE deleted=0 AND name IN (?)",
-            [$default_group],
-        );
+        $ids =
+            $self->exec_query( "SELECT nt_group_id FROM nt_group WHERE deleted=0 AND name IN (?)",
+            [$default_group], );
     }
 
     foreach (@$ids) {
@@ -276,10 +270,11 @@ sub populate_groups {
 sub timeout_sessions {
     my $self = shift;
 
-    my $minutes = $self->get_option('session_timeout') || 45;
-    my $valid_until = time() - ($minutes * 60);
+    my $minutes     = $self->get_option('session_timeout') || 45;
+    my $valid_until = time() - ( $minutes * 60 );
 
-    my $sessions = $self->exec_query( "SELECT nt_user_id, last_access,
+    my $sessions = $self->exec_query(
+        "SELECT nt_user_id, last_access,
         nt_user_session_id, nt_user_session
         FROM nt_user_session WHERE last_access < ?", $valid_until
     );
@@ -287,11 +282,11 @@ sub timeout_sessions {
     foreach my $s (@$sessions) {
         my $sess_id = $s->{nt_user_session_id};
 
-        $self->_delete_session($sess_id);   # dead session
+        $self->_delete_session($sess_id);    # dead session
 
-        next if ! defined $s->{nt_user_id};
+        next if !defined $s->{nt_user_id};
 
-        $self->_insert_session_log($sess_id, $s->{nt_user_id}, $s->{nt_user_session}, 'timeout');
+        $self->_insert_session_log( $sess_id, $s->{nt_user_id}, $s->{nt_user_session}, 'timeout' );
     }
 }
 
@@ -299,8 +294,8 @@ sub clean_user_data {
     my $self = shift;
 
     # delete unused and password data from DB-returned user hash
-    foreach my $f ( qw/ password pass_salt deleted nt_user_session_id last_access / ) {
-        next if ! exists $self->{client}->data->{user}->{$f};
+    foreach my $f (qw/ password pass_salt deleted nt_user_session_id last_access /) {
+        next if !exists $self->{client}->data->{user}->{$f};
         delete $self->{client}->data->{user}->{$f};
     }
 }
@@ -313,33 +308,26 @@ sub auth_error {
 sub session_id {
     my $self = shift;
 
-    return $ENV{UNIQUE_ID} if $ENV{UNIQUE_ID};  # mod_uniqueid sets this
+    return $ENV{UNIQUE_ID} if $ENV{UNIQUE_ID};    # mod_uniqueid sets this
 
     #warn "mod_uniqueid not available - building my own unique ID.\n";
 
-    my ($seconds, $microseconds) = gettimeofday();
+    my ( $seconds, $microseconds ) = gettimeofday();
 
     # Multiple logins can occur within the same second and within the same
     # worker. Include microseconds and a per-process sequence to avoid reuse.
-    $SESSION_SEQUENCE = ($SESSION_SEQUENCE + 1) & 0xffffffff;
+    $SESSION_SEQUENCE = ( $SESSION_SEQUENCE + 1 ) & 0xffffffff;
 
-    return unpack(
-        'H*',
-        pack(
-            'NnnN',
-            $seconds,
-            $$ & 0xffff,
-            $microseconds & 0xffff,
-            $SESSION_SEQUENCE,
-        )
-    );
+    return
+        unpack( 'H*',
+        pack( 'NnnN', $seconds, $$ & 0xffff, $microseconds & 0xffff, $SESSION_SEQUENCE, ) );
 }
 
 sub _get_session {
-    my ($self, $id) = @_;
+    my ( $self, $id ) = @_;
 
     my $sessions = $self->exec_query(
-  "SELECT u.*, s.*, g.name AS groupname
+        "SELECT u.*, s.*, g.name AS groupname
     FROM nt_user_session s
       LEFT JOIN nt_user u ON s.nt_user_id = u.nt_user_id
       LEFT JOIN nt_group g ON u.nt_group_id = g.nt_group_id
@@ -348,24 +336,23 @@ sub _get_session {
       AND s.nt_user_session = ?",
         $id
     ) or return $self->error_response( 505, $self->{dbh}->errstr );
-    return (undef, $sessions->[0]);
+    return ( undef, $sessions->[0] );
 }
 
 sub _delete_session {
-    my ($self, $id) = @_;
-    if (! $id) {
+    my ( $self, $id ) = @_;
+    if ( !$id ) {
         warn "no session ID!\n";
         return;
-    };
-    $self->exec_query( "DELETE FROM nt_user_session WHERE nt_user_session_id = ?",
-        $id
-    );
+    }
+    $self->exec_query( "DELETE FROM nt_user_session WHERE nt_user_session_id = ?", $id );
 }
 
 sub _insert_session_log {
-    my ($self, $sess_id, $uid, $sess, $why) = @_;
+    my ( $self, $sess_id, $uid, $sess, $why ) = @_;
 
-    $self->exec_query( "INSERT INTO nt_user_session_log
+    $self->exec_query(
+        "INSERT INTO nt_user_session_log
         (nt_user_id, action, timestamp, nt_user_session, nt_user_session_id) VALUES (??)",
         [ $uid, $why, time(), $sess, $sess_id ]
     );

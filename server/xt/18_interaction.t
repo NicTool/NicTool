@@ -80,13 +80,13 @@ sub groups_with_children {
     $res = $user->new_group( name => 'test_delete_me1' );
     die "Couldn't create test group1"
         unless noerrok($res)
-            and ok( $res->get('nt_group_id') => qr/^\d+$/ );
+        and ok( $res->get('nt_group_id') => qr/^\d+$/ );
     $gid1 = $res->get('nt_group_id');
 
     $group1 = $user->get_group( nt_group_id => $gid1 );
     die "Couldn't get test group1"
         unless noerrok($group1)
-            and ok( $group1->id, $gid1 );
+        and ok( $group1->id, $gid1 );
 
     #
     # delete group with remaining children
@@ -111,8 +111,7 @@ sub groups_with_children {
         $res = $group1->delete;
         noerrok( $res, 600, 'has zone' );
         ok( $res->get('error_msg') =>
-                qr/You can't delete this group until you delete all of its zones/
-        );
+                qr/You can't delete this group until you delete all of its zones/ );
         ok( $res->get('error_desc') => qr/Failure/ );
 
         if ( $res->error_code eq 600 ) {
@@ -139,13 +138,13 @@ sub groups_with_children {
     $res = $user->new_group( name => 'test_delete_me1' );
     die "Couldn't create test group1"
         unless noerrok($res)
-            and ok( $res->get('nt_group_id') => qr/^\d+$/ );
+        and ok( $res->get('nt_group_id') => qr/^\d+$/ );
     $gid1 = $res->get('nt_group_id');
 
     $group1 = $user->get_group( nt_group_id => $gid1 );
     die "Couldn't get test group1"
         unless noerrok($group1)
-            and ok( $group1->id, $gid1 );
+        and ok( $group1->id, $gid1 );
 
     $res = $group1->new_user(
         first_name => 'test',
@@ -160,8 +159,7 @@ sub groups_with_children {
         $res = $group1->delete;
         noerrok( $res, 600, 'has user' );
         ok( $res->get('error_msg') =>
-                qr/You can't delete this group until you delete all of its users/
-        );
+                qr/You can't delete this group until you delete all of its users/ );
         ok( $res->get('error_desc') => qr/Failure/ );
 
         if ( $res->error_code eq 600 ) {
@@ -188,13 +186,13 @@ sub groups_with_children {
     $res = $user->new_group( name => 'test_delete_me1' );
     die "Couldn't create test group1"
         unless noerrok($res)
-            and ok( $res->get('nt_group_id') => qr/^\d+$/ );
+        and ok( $res->get('nt_group_id') => qr/^\d+$/ );
     $gid1 = $res->get('nt_group_id');
 
     $group1 = $user->get_group( nt_group_id => $gid1 );
     die "Couldn't get test group1"
         unless noerrok($group1)
-            and ok( $group1->id, $gid1 );
+        and ok( $group1->id, $gid1 );
 
     $res = $group1->new_group( name => 'sub_test1' );
     if ( noerrok($res) ) {
@@ -202,8 +200,7 @@ sub groups_with_children {
         $res = $group1->delete;
         noerrok( $res, 600, 'has group' );
         ok( $res->get('error_msg') =>
-                qr/You can't delete this group until you delete all of its sub-groups/
-        );
+                qr/You can't delete this group until you delete all of its sub-groups/ );
         ok( $res->get('error_desc') => qr/Failure/ );
 
         if ( $res->error_code eq 600 ) {
@@ -288,8 +285,7 @@ sub nameserver_with_zones {
     $res = $user->delete_nameserver( nt_nameserver_id => $nsid );
     noerrok( $res, 600, 'nameserver has zones' );
     ok( $res->get('error_msg') =>
-            qr/You can't delete this nameserver until you delete all of its zones/
-    );
+            qr/You can't delete this nameserver until you delete all of its zones/ );
     ok( $res->get('error_desc') => qr/Failure/ );
 
     #delete a zone
@@ -300,8 +296,7 @@ sub nameserver_with_zones {
     $res = $user->delete_nameserver( nt_nameserver_id => $nsid );
     noerrok( $res, 600, 'nameserver has zones' );
     ok( $res->get('error_msg') =>
-            qr/You can't delete this nameserver until you delete all of its zones/
-    );
+            qr/You can't delete this nameserver until you delete all of its zones/ );
     ok( $res->get('error_desc') => qr/Failure/ );
 
     #delete last zone
@@ -322,13 +317,13 @@ sub deleted_zones {
     $res = $user->new_group( name => 'test_delete_me1' );
     die "Couldn't create test group1"
         unless noerrok($res)
-            and ok( $res->get('nt_group_id') => qr/^\d+$/ );
+        and ok( $res->get('nt_group_id') => qr/^\d+$/ );
     $gid1 = $res->get('nt_group_id');
 
     $group1 = $user->get_group( nt_group_id => $gid1 );
     die "Couldn't get test group1"
         unless noerrok($group1)
-            and ok( $group1->id, $gid1 );
+        and ok( $group1->id, $gid1 );
 
     $res = $group1->new_zone(
         zone        => 'test.com',
@@ -364,8 +359,7 @@ sub deleted_zones {
         name              => 'b',
     );
     noerrok( $res, 300 );
-    ok( $res->error_msg,
-        qr/Cannot create\/edit records in a deleted zone\./ );
+    ok( $res->error_msg,  qr/Cannot create\/edit records in a deleted zone\./ );
     ok( $res->error_desc, qr/Sanity error/ );
 
     #try to create a new record
@@ -378,8 +372,7 @@ sub deleted_zones {
         ttl        => 86400,
     );
     noerrok( $res, 300 );
-    ok( $res->error_msg,
-        qr/Cannot create\/edit records in a deleted zone\./ );
+    ok( $res->error_msg,  qr/Cannot create\/edit records in a deleted zone\./ );
     ok( $res->error_desc, qr/Sanity error/ );
 
     #try to modify deleted zone
@@ -401,13 +394,13 @@ sub deleted_records {
     $res = $user->new_group( name => 'test_delete_me1' );
     die "Couldn't create test group1"
         unless noerrok($res)
-            and ok( $res->get('nt_group_id') => qr/^\d+$/ );
+        and ok( $res->get('nt_group_id') => qr/^\d+$/ );
     $gid1 = $res->get('nt_group_id');
 
     $group1 = $user->get_group( nt_group_id => $gid1 );
     die "Couldn't get test group1"
         unless noerrok($group1)
-            and ok( $group1->id, $gid1 );
+        and ok( $group1->id, $gid1 );
 
     $res = $group1->new_zone(
         zone        => 'test.com',
@@ -459,13 +452,13 @@ sub deleted_users {
     $res = $user->new_group( name => 'test_delete_me1' );
     die "Couldn't create test group1"
         unless noerrok($res)
-            and ok( $res->get('nt_group_id') => qr/^\d+$/ );
+        and ok( $res->get('nt_group_id') => qr/^\d+$/ );
     $gid1 = $res->get('nt_group_id');
 
     $group1 = $user->get_group( nt_group_id => $gid1 );
     die "Couldn't get test group1"
         unless noerrok($group1)
-            and ok( $group1->id, $gid1 );
+        and ok( $group1->id, $gid1 );
 
     $res = $group1->new_user(
         first_name => 'test',
@@ -499,13 +492,13 @@ sub deleted_nameservers {
     $res = $user->new_group( name => 'test_delete_me1' );
     die "Couldn't create test group1"
         unless noerrok($res)
-            and ok( $res->get('nt_group_id') => qr/^\d+$/ );
+        and ok( $res->get('nt_group_id') => qr/^\d+$/ );
     $gid1 = $res->get('nt_group_id');
 
     $group1 = $user->get_group( nt_group_id => $gid1 );
     die "Couldn't get test group1"
         unless noerrok($group1)
-            and ok( $group1->id, $gid1 );
+        and ok( $group1->id, $gid1 );
 
     $res = $group1->new_nameserver(
         name          => 'ns2.somewhere.com.',
@@ -537,13 +530,13 @@ sub deleted_groups {
     $res = $user->new_group( name => 'test_delete_me1' );
     die "Couldn't create test group1"
         unless noerrok($res)
-            and ok( $res->get('nt_group_id') => qr/^\d+$/ );
+        and ok( $res->get('nt_group_id') => qr/^\d+$/ );
     $gid1 = $res->get('nt_group_id');
 
     $group1 = $user->get_group( nt_group_id => $gid1 );
     die "Couldn't get test group1"
         unless noerrok($group1)
-            and ok( $group1->id, $gid1 );
+        and ok( $group1->id, $gid1 );
 
     $res = $group1->new_group( name => 'testsubgroup', );
     noerrok($res);
@@ -645,13 +638,13 @@ sub deleted_objects_delegation {
     $res = $user->new_group( name => 'test_delete_me1' );
     die "Couldn't create test group1"
         unless noerrok($res)
-            and ok( $res->get('nt_group_id') => qr/^\d+$/ );
+        and ok( $res->get('nt_group_id') => qr/^\d+$/ );
     $gid1 = $res->get('nt_group_id');
 
     $group1 = $user->get_group( nt_group_id => $gid1 );
     die "Couldn't get test group1"
         unless noerrok($group1)
-            and ok( $group1->id, $gid1 );
+        and ok( $group1->id, $gid1 );
 
     $res = $group1->new_group( name => 'testsubgroup', );
     noerrok($res);
@@ -775,13 +768,13 @@ sub self {
     );
     die "Couldn't create test group1"
         unless noerrok($res)
-            and ok( $res->get('nt_group_id') => qr/^\d+$/ );
+        and ok( $res->get('nt_group_id') => qr/^\d+$/ );
     $gid1 = $res->get('nt_group_id');
 
     $group1 = $user->get_group( nt_group_id => $gid1 );
     die "Couldn't get test group1"
         unless noerrok($group1)
-            and ok( $group1->id, $gid1 );
+        and ok( $group1->id, $gid1 );
 
     $res = $group1->new_group( name => 'testsubgroup', );
     noerrok($res);

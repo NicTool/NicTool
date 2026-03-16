@@ -30,9 +30,9 @@ sub main {
 
     my $user = $nt_obj->verify_session();
 
-    return if ! $user || ! ref $user;
+    return if !$user || !ref $user;
 
-    print $q->header (-charset=>"utf-8");
+    print $q->header( -charset => "utf-8" );
     display( $nt_obj, $q, $user );
 }
 
@@ -47,7 +47,8 @@ sub display {
         userid    => $user->{'nt_user_id'}
     );
 
-    my @fields = qw/ user_create user_delete user_write group_create group_delete group_write zone_create zone_delegate zone_delete zone_write zonerecord_create zonerecord_delegate zonerecord_delete zonerecord_write nameserver_create nameserver_delete nameserver_write self_write /;
+    my @fields =
+        qw/ user_create user_delete user_write group_create group_delete group_write zone_create zone_delegate zone_delete zone_write zonerecord_create zonerecord_delegate zonerecord_delete zonerecord_write nameserver_create nameserver_delete nameserver_write self_write /;
 
     my $error;
     if ( $q->param('new') && $q->param('Create') ) {
@@ -55,12 +56,12 @@ sub display {
     }
     elsif ( $q->param('edit') && $q->param('Save') ) {
         $error = _display_edit_group( $nt_obj, $q, \@fields );
-    };
+    }
 
     $nt_obj->display_group_tree(
         $user,
         $user->{'nt_group_id'},
-        scalar($q->param('nt_group_id')), 1
+        scalar( $q->param('nt_group_id') ), 1
     );
 
     if ( $q->param('edit') ) {
@@ -95,12 +96,13 @@ sub display {
     }
 
     if ( $q->param('delete') ) {
-        my $rv = $nt_obj->delete_group( nt_group_id => scalar($q->param('delete')) );
-        $nt_obj->display_nice_error( $rv, "Delete Group" ) if $rv->{'error_code'} != 200;
+        my $rv = $nt_obj->delete_group( nt_group_id => scalar( $q->param('delete') ) );
+        $nt_obj->display_nice_error( $rv, "Delete Group" )
+            if $rv->{'error_code'} != 200;
         $nt_obj->refresh_nav();
     }
 
-    my $group = $nt_obj->get_group( nt_group_id  => scalar($q->param('nt_group_id')) );
+    my $group = $nt_obj->get_group( nt_group_id => scalar( $q->param('nt_group_id') ) );
 
     display_group_list( $nt_obj, $q, $group, $user );
 
@@ -111,14 +113,14 @@ sub _display_new_group {
     my ( $nt_obj, $q, $fields ) = @_;
 
     my %params = (
-        nt_group_id => scalar($q->param('nt_group_id')),
-        name        => scalar($q->param('name'))
+        nt_group_id => scalar( $q->param('nt_group_id') ),
+        name        => scalar( $q->param('name') )
     );
     my @ns = $q->multi_param("usable_nameservers");
     $params{"usable_nameservers"} = join( ',', @ns );
     foreach (@$fields) {
         $params{$_} = $q->param($_) ? 1 : 0;
-    };
+    }
 
     return $nt_obj->new_group(%params);
 }
@@ -127,15 +129,15 @@ sub _display_edit_group {
     my ( $nt_obj, $q, $fields ) = @_;
 
     my %params = (
-        nt_group_id => scalar($q->param('nt_group_id')),
-        name        => scalar($q->param('name')),
+        nt_group_id => scalar( $q->param('nt_group_id') ),
+        name        => scalar( $q->param('name') ),
     );
 
     my @ns = $q->multi_param("usable_nameservers");
     $params{"usable_nameservers"} = join( ",", @ns );
     foreach (@$fields) {
         $params{$_} = $q->param($_) ? 1 : 0;
-    };
+    }
 
     return $nt_obj->edit_group(%params);
 }
@@ -147,16 +149,15 @@ sub display_zone_search {
 <table class="fat">
  <tr class=dark_grey_bg><td><table class="no_pad fat">
     <tr> ],
-    $q->start_form( -action => 'group.cgi', -method => 'POST' ),
-    $q->hidden( -name => 'nt_group_id' ),
-    qq[ <td> ],
-    $q->textfield( -name => 'search_value', -size => 30, -override => 1 ),
-    $q->hidden(
+        $q->start_form( -action => 'group.cgi', -method => 'POST' ),
+        $q->hidden( -name => 'nt_group_id' ),
+        qq[ <td> ], $q->textfield( -name => 'search_value', -size => 30, -override => 1 ),
+        $q->hidden(
         -name     => 'quick_search',
         -value    => 'Enter',
         -override => 1
-    ),
-    $q->submit( -name => 'quick_search', -value => 'Search Zones' );
+        ),
+        $q->submit( -name => 'quick_search', -value => 'Search Zones' );
     if ( $group->{'has_children'} ) {
         print " &nbsp; &nbsp;",
             $q->checkbox(
@@ -165,9 +166,8 @@ sub display_zone_search {
             -label    => 'include sub-groups',
             -override => 1
             );
-    };
-    print $q->end_form,
-    "</td>
+    }
+    print $q->end_form, "</td>
     </tr>
    </table>
   </td>
@@ -179,32 +179,33 @@ sub display_group_list {
     my ( $nt_obj, $q, $group, $user ) = @_;
 
     my @columns = qw/ group /;
-    my $cgi = 'group.cgi';
+    my $cgi     = 'group.cgi';
 
     my %labels = ( group => 'Group', sub_groups => '*Sub Groups' );
 
     my $include_subgroups = $group->{'has_children'} ? 'sub-groups' : undef;
 
     my %params = (
-        nt_group_id    => scalar($q->param('nt_group_id')),
-        start_group_id => scalar($q->param('nt_group_id')),
+        nt_group_id    => scalar( $q->param('nt_group_id') ),
+        start_group_id => scalar( $q->param('nt_group_id') ),
     );
     my %sort_fields;
     $nt_obj->prepare_search_params( $q, \%labels, \%params, \%sort_fields, 10 );
-    $sort_fields{'group'} = { 'order' => 1, 'mod' => 'Ascending' } if ! %sort_fields;
+    $sort_fields{'group'} = { 'order' => 1, 'mod' => 'Ascending' }
+        if !%sort_fields;
 
     my $rv = $nt_obj->get_group_subgroups(%params);
 
-    _display_group_create_link( $nt_obj, $q, $user);
+    _display_group_create_link( $nt_obj, $q, $user );
 
     if ( $q->param('edit_sortorder') ) {
         $nt_obj->display_sort_options( $q, \@columns, \%labels, $cgi,
             ['nt_group_id'], $include_subgroups );
-    };
+    }
     if ( $q->param('edit_search') ) {
         $nt_obj->display_advanced_search( $q, \@columns, \%labels, $cgi,
             ['nt_group_id'], $include_subgroups );
-    };
+    }
 
     return $nt_obj->display_nice_error( $rv, "Get List of Groups" )
         if $rv->{'error_code'} != 200;
@@ -215,11 +216,15 @@ sub display_group_list {
     $nt_obj->display_search_rows( $q, $rv, \%params, $cgi, ['nt_group_id'], $include_subgroups );
 
     if (@$groups) {
-        my $order = uc( $sort_fields{'group'}->{'mod'} ) eq 'ASCENDING' ? 'up' : 'down';
+        my $order =
+            uc( $sort_fields{'group'}->{'mod'} ) eq 'ASCENDING'
+            ? 'up'
+            : 'down';
         my $sort = '';
         if ( $sort_fields{'group'} ) {
-            $sort = qq[( $sort_fields{'group'}->{'order'} <img src=$NicToolClient::image_dir/$order.gif alt="$order"> )];
-        };
+            $sort =
+                qq[( $sort_fields{'group'}->{'order'} <img src=$NicToolClient::image_dir/$order.gif alt="$order"> )];
+        }
         print qq[
 <div id="groupListHeader" class="dark_bg center">Group $sort</div>
 <div id="groupListDiv">];
@@ -228,30 +233,36 @@ sub display_group_list {
 
         foreach my $group (@$groups) {
             my $bgcolor = $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg';
-            my $ggid = $group->{'nt_group_id'};
-            my $gname = $group->{'name'} . "'s";
-            my $dname = join( ' / ',
-                map(qq[<a href="group.cgi?nt_group_id=$_->{'nt_group_id'}">$_->{'name'}</a>],
-                    (   @{ $map->{ $ggid } },
+            my $ggid    = $group->{'nt_group_id'};
+            my $gname   = $group->{'name'} . "'s";
+            my $dname   = join(
+                ' / ',
+                map( qq[<a href="group.cgi?nt_group_id=$_->{'nt_group_id'}">$_->{'name'}</a>],
+                    (   @{ $map->{$ggid} },
                         {   nt_group_id => $ggid,
                             name        => $group->{'name'}
                         }
-                    ) ) );
+                    ) )
+            );
             print qq[
   <div class="$bgcolor"><img src=$NicToolClient::image_dir/group.gif alt="group">$dname
   <ul class="menu_r">];
 
             if ($user->{'group_delete'}
-                && ( !exists $group->{'delegate_delete'} || $group->{'delegate_delete'} )
-                ) {
-                my $gid = $q->param('nt_group_id');
-                my $hname = join( ' / ',
-                        map( $_->{'name'},
-                            (  @{ $map->{ $group->{'nt_group_id'} } },
+                && ( !exists $group->{'delegate_delete'}
+                    || $group->{'delegate_delete'} )
+                )
+            {
+                my $gid   = $q->param('nt_group_id');
+                my $hname = join(
+                    ' / ',
+                    map( $_->{'name'},
+                        (   @{ $map->{ $group->{'nt_group_id'} } },
                             {   nt_group_id => $group->{'nt_group_id'},
                                 name        => $group->{'name'}
                             }
-                            ) ) );
+                        ) )
+                );
                 print qq[
    <li class="center first">
     <a href="group.cgi?nt_group_id=$gid&amp;delete=$ggid" onClick="return confirm('Delete $hname and all associated data?');"><img src="$NicToolClient::image_dir/trash.gif" alt="trash"></a></li>];
@@ -279,22 +290,25 @@ sub display_group_list {
 }
 
 sub _display_group_create_link {
-    my ($nt_obj, $q, $user) = @_;
+    my ( $nt_obj, $q, $user ) = @_;
 
     print qq[
 <div class="dark_grey_bg margint4"><b>Sub-Group List</b><span class="float_r">];
 
-    if ( ! $user->{'group_create'} ) {
+    if ( !$user->{'group_create'} ) {
         print qq[<span class=disabled>New Sub-Group</span></span></div>];
         return;
-    };
+    }
 
-    my $state = 'nt_group_id=' . $q->param('nt_group_id')
-                . '&amp;parent_group_id=' . $q->param('nt_group_id');
+    my $state =
+          'nt_group_id='
+        . $q->param('nt_group_id')
+        . '&amp;parent_group_id='
+        . $q->param('nt_group_id');
 
     foreach ( @{ $nt_obj->paging_fields } ) {
-        next if ! $q->param($_);
-        $state .= "&amp;$_=" . $q->escape( scalar($q->param($_)) );
+        next if !$q->param($_);
+        $state .= "&amp;$_=" . $q->escape( scalar( $q->param($_) ) );
     }
     print qq[<a href="group.cgi?$state&amp;new=1">New Sub-Group</a></span></div>];
 }
@@ -303,10 +317,10 @@ sub display_edit {
     my ( $nt_obj, $user, $q, $edit ) = @_;
     my $showpermissions = 1;
     my $data            = {};
-    my %param = ();
+    my %param           = ();
 
     if ( $edit eq 'edit' ) {
-        my $rv = $nt_obj->get_group( nt_group_id => scalar($q->param('nt_group_id')) );
+        my $rv = $nt_obj->get_group( nt_group_id => scalar( $q->param('nt_group_id') ) );
 
         return $nt_obj->display_nice_error( $rv, "Get Group Details" )
             if $rv->{'error_code'} != 200;
@@ -314,12 +328,12 @@ sub display_edit {
 
         if ( $q->param('nt_group_id') eq $user->{'nt_group_id'} ) {
             %param = ( nt_group_id => $data->{'parent_group_id'} );
-        };
+        }
     }
     else {
         if ( $q->param('nt_group_id') eq $user->{'nt_group_id'} ) {
-            %param = ( nt_group_id => scalar($q->param('nt_group_id')) );
-        };
+            %param = ( nt_group_id => scalar( $q->param('nt_group_id') ) );
+        }
     }
 
     my $modifyperm = $user->{ 'group_' . ( $edit eq 'edit' ? 'write' : 'create' ) };
@@ -329,25 +343,29 @@ sub display_edit {
             -action => 'group.cgi',
             -method => 'POST',
             -name   => 'perms_form'
-        ),
-        $q->hidden( -name => $edit );
+            ),
+            $q->hidden( -name => $edit );
         if ( $edit eq 'new' ) {
             $q->hidden( -name => 'parent_group_id' );
-        };
+        }
         print $q->hidden( -name => 'nt_group_id' );
         foreach ( @{ $nt_obj->paging_fields } ) {
-            next if ! $q->param($_);
+            next if !$q->param($_);
             print $q->hidden( -name => $_ );
         }
     }
 
     my $action = 'View';
-    my $name = qq[<b>$data->{'name'}</b>];
+    my $name   = qq[<b>$data->{'name'}</b>];
 
-    if ( $modifyperm ) {
+    if ($modifyperm) {
         $action = ucfirst($edit);
-        $name = $q->textfield( -name => 'name', -size => '40', -default => $data->{'name'} );
-    };
+        $name   = $q->textfield(
+            -name    => 'name',
+            -size    => '40',
+            -default => $data->{'name'}
+        );
+    }
 
     print qq[
 <table class="fat">
@@ -358,7 +376,7 @@ sub display_edit {
  </tr>];
 
     my $ns_tree = $nt_obj->get_usable_nameservers(%param);
-    my %nsmap = map { $_ => 1 } split(',', $data->{'usable_ns'});
+    my %nsmap   = map { $_ => 1 } split( ',', $data->{'usable_ns'} );
 
     #show nameservers
     print qq[
@@ -421,8 +439,7 @@ sub display_edit {
             ? "By default, allow users of this group to have these permissions"
             : "Users of this group have these permissions"
             )
-            . $nt_obj->help_link('perms')
-            . ":</td>
+            . $nt_obj->help_link('perms') . ":</td>
  </tr>";
 
         print qq[
@@ -443,9 +460,9 @@ sub display_edit {
                     print qq[
      <td>];
                     print $q->checkbox(
-                        -name  => "select_all_$_",
-                        -label => '',
-                        -onClick => "selectAll$_(document.perms_form, this.checked);",
+                        -name     => "select_all_$_",
+                        -label    => '',
+                        -onClick  => "selectAll$_(document.perms_form, this.checked);",
                         -override => 1
                     );
                     print qq[</td>];
@@ -476,30 +493,37 @@ sub display_edit {
                             (
                             exists $labels{$type}->{$perm}
                             ? $labels{$type}->{$perm}
-                            : ucfirst($perm) ),
+                            : ucfirst($perm)
+                            ),
                             qq[</td> ];
                     }
                     else {
                         print qq[
      <td class="middle left $color"><img src="$NicToolClient::image_dir/perm-]
-                            . ( $data->{ $type . "_" . $perm } ? 'checked' : 'unchecked' )
+                            . (
+                            $data->{ $type . "_" . $perm } ? 'checked'
+                            : 'unchecked'
+                            )
                             . qq{.gif" alt="">}
-                            . ( $modifyperm ? "<span class=disabled>" : '') 
-                            . ( exists $labels{$type}->{$perm} ? $labels{$type}->{$perm} : ucfirst($perm) )
+                            . ( $modifyperm ? "<span class=disabled>" : '' )
+                            . (
+                            exists $labels{$type}->{$perm} ? $labels{$type}->{$perm}
+                            : ucfirst($perm)
+                            )
                             . ( $modifyperm ? '</span>' : '' )
                             . qq{</td> };
                     }
                 }
                 print qq[<td>],
                     $q->checkbox(
-                            -name    => "select_all_$type",
-                            -label   => '',
-                            -onClick => "selectAll"
-                            . ucfirst($type)
-                            . "(document.perms_form, this.checked);",
-                            -override => 1
-                        ),
-                        qq[</td>
+                    -name    => "select_all_$type",
+                    -label   => '',
+                    -onClick => "selectAll"
+                        . ucfirst($type)
+                        . "(document.perms_form, this.checked);",
+                    -override => 1
+                    ),
+                    qq[</td>
     </tr> ];
             }
         }

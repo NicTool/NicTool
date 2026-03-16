@@ -18,16 +18,14 @@
 
 package NicTool::Record;
 
-
 use NicTool::DBObject;
 our @ISA = 'NicTool::DBObject';
 
 sub _id_name {'nt_zone_record_id'}
 
 sub _api {
-    +{  _get_self => { 'function' => 'get_zone_record', 'includeid' => 1 },
-        _delete_self =>
-            { 'function' => 'delete_zone_record', 'includeid' => 1 },
+    +{  _get_self                     => { 'function'  => 'get_zone_record',    'includeid' => 1 },
+        _delete_self                  => { 'function'  => 'delete_zone_record', 'includeid' => 1 },
         edit_zone_record              => { 'includeid' => 1 },
         delete_zone_record            => { 'includeid' => 1 },
         get_zone_record               => { 'includeid' => 1 },

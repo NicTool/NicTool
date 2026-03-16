@@ -30,8 +30,8 @@ sub main {
 
     my $user = $nt_obj->verify_session();
 
-    if ($user && ref $user) {
-        print $q->header (-charset=>"utf-8");
+    if ( $user && ref $user ) {
+        print $q->header( -charset => "utf-8" );
         display( $nt_obj, $q, $user );
     }
 }
@@ -54,8 +54,8 @@ sub display {
     }
     elsif ( $q->param('Save') ) {
         my $rv = $nt_obj->move_zones(
-            nt_group_id => scalar($q->param('group_list')),
-            zone_list   => scalar($q->param('obj_list'))
+            nt_group_id => scalar( $q->param('group_list') ),
+            zone_list   => scalar( $q->param('obj_list') )
         );
         if ( $rv->{'error_code'} != 200 ) {
             move_zones( $nt_obj, $user, $q, $rv );
@@ -76,7 +76,7 @@ sub move_zones {
 
     $q->param( 'obj_list', join( ',', $q->multi_param('obj_list') ) );
 
-    my $rv = $nt_obj->get_zone_list( zone_list => scalar($q->param('obj_list')) );
+    my $rv = $nt_obj->get_zone_list( zone_list => scalar( $q->param('obj_list') ) );
 
     return $nt_obj->display_error($rv) if $rv->{'error_code'} != 200;
 
@@ -84,7 +84,11 @@ sub move_zones {
 
     $nt_obj->display_nice_error($message) if $message;
 
-    my $zlist = join( ', ', map(qq[<a href="zone.cgi?nt_group_id=$_->{'nt_group_id'}&amp;nt_zone_id=$_->{'nt_zone_id'}" target=_blank>$_->{'zone'}</a>], @$zones ) );
+    my $zlist = join(
+        ', ',
+        map(qq[<a href="zone.cgi?nt_group_id=$_->{'nt_group_id'}&amp;nt_zone_id=$_->{'nt_zone_id'}" target=_blank>$_->{'zone'}</a>],
+            @$zones )
+    );
 
     print qq[
 <div class="dark_bg bold">Move Zones</div>
@@ -93,11 +97,13 @@ sub move_zones {
     $nt_obj->display_group_list( $q, $user, 'move_zones.cgi' );
 
     print qq[
-<div class="dark_grey_bg center">],
-        $q->submit('Save'),
-        $q->submit( -name => 'cancel_move', -value => 'Cancel', -onClick => 'window.close(); return false;'),
+<div class="dark_grey_bg center">], $q->submit('Save'),
+        $q->submit(
+        -name    => 'cancel_move',
+        -value   => 'Cancel',
+        -onClick => 'window.close(); return false;'
+        ),
         qq[
-</div>],
-    $q->end_form;
+</div>], $q->end_form;
 }
 

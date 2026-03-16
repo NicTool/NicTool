@@ -22,19 +22,16 @@ use Test::More 'no_plan';
 use NicToolServer::Import::BIND;
 
 my $nt_api = nt_api_connect();
-my $bind = nt_import_connect();
+my $bind   = nt_import_connect();
 
 my $res = $nt_api->get_group->new_group( name => 'test_delete_group' );
-noerrok($res)
-    && ok( $res->get('nt_group_id') =~ qr/^\d+$/ )
-        or die "Couldn't create test group";
+noerrok($res) && ok( $res->get('nt_group_id') =~ qr/^\d+$/ )
+    or die "Couldn't create test group";
 my $gid1 = $res->get('nt_group_id');
 
-
 my $group1 = $nt_api->get_group( nt_group_id => $gid1 );
-noerrok($group1)
-    && is( $group1->id, $gid1 )
-        or die "Couldn't get test group1";
+noerrok($group1) && is( $group1->id, $gid1 )
+    or die "Couldn't get test group1";
 
 $bind->{group_id} = $group1;
 
@@ -59,7 +56,7 @@ sub do_cleanup {
             '1_option'        => 'equals',
             '1_value'         => $zone,
         );
-        isa_ok($r, 'NicTool::Result');
+        isa_ok( $r, 'NicTool::Result' );
         for my $z ( $r->list ) {
             ok( $nt_api->delete_zones( zone_list => $z->id ), "delete_zones" );
         }
@@ -71,11 +68,7 @@ sub do_cleanup {
 
 sub nt_import_connect {
     my $bind = NicToolServer::Import::BIND->new();
-    $bind->nt_connect(
-        Config('server_host'),
-        Config('server_port'),
-        Config('username'),
-        Config('password')
-        );
+    $bind->nt_connect( Config('server_host'), Config('server_port'),
+        Config('username'), Config('password') );
     return $bind;
 }

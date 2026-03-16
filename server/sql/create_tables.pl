@@ -25,20 +25,20 @@ use Getopt::Long qw/HelpMessage/;
 $|++;
 
 GetOptions(
-    'test'                          => \my $test_run,
-    'environment'                   => \my $environment,
-    'db-engine=s'                   => \my $db_engine,
-    'db-hostname=s'                 => \my $db_hostname,
-    'db-root-password=s'            => \my $db_root_password,
-    'nictool-db-name=s'             => \my $nictool_db_name,
-    'nictool-db-user=s'             => \my $nictool_db_user,
-    'nictool-db-user-password=s'    => \my $nictool_db_user_password,
-    'nictool-root-email=s'          => \my $nictool_root_email,
-    'nictool-root-password=s'       => \my $nictool_root_password,
-    'help' => sub { HelpMessage(0) },
+    'test'                       => \my $test_run,
+    'environment'                => \my $environment,
+    'db-engine=s'                => \my $db_engine,
+    'db-hostname=s'              => \my $db_hostname,
+    'db-root-password=s'         => \my $db_root_password,
+    'nictool-db-name=s'          => \my $nictool_db_name,
+    'nictool-db-user=s'          => \my $nictool_db_user,
+    'nictool-db-user-password=s' => \my $nictool_db_user_password,
+    'nictool-root-email=s'       => \my $nictool_root_email,
+    'nictool-root-password=s'    => \my $nictool_root_password,
+    'help'                       => sub { HelpMessage(0) },
 ) or HelpMessage(1);
 
-my ($dbh, $db_host, $db_engine) = get_dbh();
+my ( $dbh, $db_host, $db_engine ) = get_dbh();
 
 print "
 #########################################################################
@@ -52,13 +52,15 @@ if ($environment) {
     $nictool_db_name = undef;
     die "NICTOOL_DB_NAME not set!!!\n" unless $ENV{NICTOOL_DB_NAME};
     $db = $ENV{NICTOOL_DB_NAME};
-} elsif ($nictool_db_name) {
+}
+elsif ($nictool_db_name) {
     $db = $nictool_db_name;
-} else {
-    $db  = answer("the NicTool database name", 'nictool');
+}
+else {
+    $db = answer( "the NicTool database name", 'nictool' );
 }
 
-die "Sorry\n" if $db =~/^mysql$/i;
+die "Sorry\n" if $db =~ /^mysql$/i;
 
 my $db_user = undef;
 
@@ -66,21 +68,26 @@ if ($environment) {
     $nictool_db_user = undef;
     die "NICTOOL_DB_USER not set!!!\n" unless $ENV{NICTOOL_DB_USER};
     $db_user = $ENV{NICTOOL_DB_USER};
-} elsif ($nictool_db_user) {
+}
+elsif ($nictool_db_user) {
     $db_user = $nictool_db_user;
-} else {
-    $db_user = answer("the NicTool database user", 'nictool');
+}
+else {
+    $db_user = answer( "the NicTool database user", 'nictool' );
 }
 
 my $db_pass = undef;
 
 if ($environment) {
     $nictool_db_user_password = undef;
-    die "NICTOOL_DB_USER_PASSWORD not set!!!\n" unless $ENV{NICTOOL_DB_USER_PASSWORD};
+    die "NICTOOL_DB_USER_PASSWORD not set!!!\n"
+        unless $ENV{NICTOOL_DB_USER_PASSWORD};
     $db_pass = $ENV{NICTOOL_DB_USER_PASSWORD};
-} elsif ($nictool_db_user_password) {
+}
+elsif ($nictool_db_user_password) {
     $db_pass = $nictool_db_user_password;
-} else {
+}
+else {
     $db_pass = get_password("the DB user $db_user");
 }
 
@@ -95,11 +102,13 @@ if ($environment) {
     $nictool_root_email = undef;
     die "ROOT_USER_EMAIL not set!!!\n" unless $ENV{ROOT_USER_EMAIL};
     $nt_root_email = $ENV{ROOT_USER_EMAIL};
-} elsif ($nictool_root_email) {
+}
+elsif ($nictool_root_email) {
     $nt_root_email = $nictool_root_email;
-} else {
-    while(!$nt_root_email){
-        $nt_root_email = answer("the NicTool 'root' users email address", $nt_root_email);
+}
+else {
+    while ( !$nt_root_email ) {
+        $nt_root_email = answer( "the NicTool 'root' users email address", $nt_root_email );
     }
 }
 
@@ -109,14 +118,16 @@ if ($environment) {
     $nictool_root_password = undef;
     die "ROOT_USER_PASSWORD not set!!!\n" unless $ENV{ROOT_USER_PASSWORD};
     $clear_pass = $ENV{ROOT_USER_PASSWORD};
-} elsif ($nictool_root_password) {
+}
+elsif ($nictool_root_password) {
     $clear_pass = $nictool_root_password;
-} else {
+}
+else {
     $clear_pass = get_password("the NicTool user 'root'");
 }
 
-my $salt = _get_salt(16);
-my $pass_hash = unpack("H*", Crypt::KeyDerivation::pbkdf2($clear_pass, $salt, 5000, 'SHA512'));
+my $salt      = _get_salt(16);
+my $pass_hash = unpack( "H*", Crypt::KeyDerivation::pbkdf2( $clear_pass, $salt, 5000, 'SHA512' ) );
 
 print qq{\n
 Beginning table creation.
@@ -145,11 +156,12 @@ $dbh->do("DROP DATABASE IF EXISTS $db");
 $dbh->do("CREATE DATABASE $db");
 
 # remote sessions will never be recognized as 'db_user'@'db_hostname' as MySQL does
-# a reverse lookup of the initiating host's IP address and uses that as the 
+# a reverse lookup of the initiating host's IP address and uses that as the
 # connection string, eg 'db_user'@'x.x.x.x'
-if ($db_host eq 'localhost' || $db_host eq '127.0.0.1' || $db_host eq '::1') {
+if ( $db_host eq 'localhost' || $db_host eq '127.0.0.1' || $db_host eq '::1' ) {
     $dbh->do("GRANT ALL PRIVILEGES ON $db.* TO $db_user\@$db_host IDENTIFIED BY '$db_pass'");
-} else {
+}
+else {
     $dbh->do("GRANT ALL PRIVILEGES ON $db.* TO $db_user\@'%' IDENTIFIED BY '$db_pass'");
 }
 
@@ -157,26 +169,28 @@ $dbh->do("USE $db");
 
 my @sql_files = get_sql_files();
 foreach my $sql (@sql_files) {
-    open (my $fh, '<', $sql) or die "failed to open $sql for read: $!";
+    open( my $fh, '<', $sql ) or die "failed to open $sql for read: $!";
     print "\nopened $sql\n";
-    my $q_string = join(' ', grep {/^[^#]/} grep {/[\S]/} <$fh>);
-    foreach my $q (split(';', $q_string)) { # split string into queries
-        next if $q !~ /[\S]/;               # skip blank entries
-        print "$q;";                        # show the query
-        $dbh->do( $q ) or die $DBI::errstr; # run it!
-    };
+    my $q_string = join( ' ', grep {/^[^#]/} grep {/[\S]/} <$fh> );
+    foreach my $q ( split( ';', $q_string ) ) {    # split string into queries
+        next if $q !~ /[\S]/;                      # skip blank entries
+        print "$q;";                               # show the query
+        $dbh->do($q) or die $DBI::errstr;          # run it!
+    }
     close $fh;
     print "\n";
 }
 
-$dbh->do("
+$dbh->do( "
 INSERT INTO $db.nt_user(nt_group_id, first_name, last_name, username, password, pass_salt, email)
-VALUES (1, 'Root', 'User', 'root', '$pass_hash', '$salt', '$nt_root_email')");
-$dbh->do("
+VALUES (1, 'Root', 'User', 'root', '$pass_hash', '$salt', '$nt_root_email')"
+);
+$dbh->do( "
 INSERT INTO $db.nt_user_log(nt_group_id, nt_user_id, action, timestamp,
   modified_user_id, first_name, last_name, username, password, email)
-VALUES (1,1,'added', UNIX_TIMESTAMP(), 0, 'Root', 'User', 'root', '$pass_hash', '$nt_root_email')");
-$dbh->do("
+VALUES (1,1,'added', UNIX_TIMESTAMP(), 0, 'Root', 'User', 'root', '$pass_hash', '$nt_root_email')"
+);
+$dbh->do( "
 INSERT INTO $db.nt_user_global_log(nt_user_id, timestamp, action, object,
   object_id, log_entry_id, title, description)
 VALUES (1,UNIX_TIMESTAMP(),'added', 'user', 1, 1, 'root', 'user creation')"
@@ -197,20 +211,24 @@ sub get_dbh {
         $db_engine = undef;
         die "DB_ENGINE not set!!!\n" unless $ENV{DB_ENGINE};
         $db_engine = $ENV{DB_ENGINE};
-    } elsif ($db_engine) {
+    }
+    elsif ($db_engine) {
         $db_engine = $db_engine;
-    } else {
-        $db_engine = answer("database engine", 'mysql');
+    }
+    else {
+        $db_engine = answer( "database engine", 'mysql' );
     }
 
     if ($environment) {
         $db_hostname = undef;
         die "DB_HOSTNAME not set!!!\n" unless $ENV{DB_HOSTNAME};
         $db_host = $ENV{DB_HOSTNAME};
-    } elsif ($db_hostname) {
+    }
+    elsif ($db_hostname) {
         $db_host = $db_hostname;
-    } else {
-        $db_host = answer("database hostname", '127.0.0.1');
+    }
+    else {
+        $db_host = answer( "database hostname", '127.0.0.1' );
     }
 
     my $db_root_pw = undef;
@@ -219,9 +237,11 @@ sub get_dbh {
         $db_root_password = undef;
         die "DB_ROOT_PASSWORD not set!!!\n" unless $ENV{DB_ROOT_PASSWORD};
         $db_root_pw = $ENV{DB_ROOT_PASSWORD};
-    } elsif ($db_root_password) {
+    }
+    elsif ($db_root_password) {
         $db_root_pw = $db_root_password;
-    } else {
+    }
+    else {
         system "stty -echo";
         $db_root_pw = answer("mysql root password");
         system "stty echo";
@@ -229,17 +249,16 @@ sub get_dbh {
     print "\n";
 
     return if $test_run;
-    my $dbh = DBI->connect("dbi:$db_engine:host=$db_host", "root", $db_root_pw, {
-            ChopBlanks => 1,
-        })
+    my $dbh =
+        DBI->connect( "dbi:$db_engine:host=$db_host", "root", $db_root_pw, { ChopBlanks => 1, } )
         or die $DBI::errstr;
 
-    return ($dbh, $db_host, $db_engine);
+    return ( $dbh, $db_host, $db_engine );
 }
 
 sub answer {
 
-    my ( $question, $default, $timeout) = @_;
+    my ( $question, $default, $timeout ) = @_;
 
     # this sub is useless without a question.
     unless ($question) {
@@ -284,8 +303,8 @@ sub answer {
 sub get_password {
     my ($question) = @_;
 
-    my ($answer, $response, $response2);
-    while(!$answer){
+    my ( $answer, $response, $response2 );
+    while ( !$answer ) {
         system "stty -echo";
         $response = answer("a new password for $question");
         system "stty echo";
@@ -293,38 +312,38 @@ sub get_password {
         system "stty -echo";
         $response2 = answer("\nPlease verify password: ");
         system "stty echo";
-        $answer = $response if $response and ($response eq $response2);
-        if (!$answer) {
+        $answer = $response if $response and ( $response eq $response2 );
+        if ( !$answer ) {
             print "\nPasswords didn't match!\n";
-        };
+        }
     }
     return $answer;
 }
 
 sub get_sql_files {
     my @r;
-    opendir(DIR, '.') || die "unable to open dir: $!\n";
-    foreach my $file (sort readdir(DIR)) {
+    opendir( DIR, '.' ) || die "unable to open dir: $!\n";
+    foreach my $file ( sort readdir(DIR) ) {
         next if /^\./;
         next if -d "./$file";
         next if $file !~ /\.sql$/;
         push @r, $file;
-    };
+    }
     close DIR;
-    if (scalar @r < 8) {
+    if ( scalar @r < 8 ) {
         die "didn't find *.sql files. Are you running this in the sql dir?\n";
-    };
+    }
     return @r;
 }
 
 sub _get_salt {
-    my $self = shift;
+    my $self   = shift;
     my $length = shift || 16;
-    my $chars = join('', map chr, 40..126); # ASCII 40-126
+    my $chars  = join( '', map chr, 40 .. 126 );    # ASCII 40-126
     my $salt;
-    for ( 0..($length-1) ) {
-        $salt .= substr($chars, rand((length $chars) - 1),1);
-    };
+    for ( 0 .. ( $length - 1 ) ) {
+        $salt .= substr( $chars, rand( ( length $chars ) - 1 ), 1 );
+    }
     return $salt;
 }
 

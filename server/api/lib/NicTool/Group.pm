@@ -17,8 +17,6 @@ package NicTool::Group;
 #
 ###
 
-
-
 use strict;
 use lib 'lib';
 use NicTool::DBObject;
@@ -27,10 +25,10 @@ our @ISA = 'NicTool::DBObject';
 sub _id_name {'nt_group_id'}
 
 sub _api {
-    +{  _get_self    => { 'function'  => 'get_group',    'includeid' => 1 },
-        _delete_self => { 'function'  => 'delete_group', 'includeid' => 1 },
-        new_user     => { 'includeid' => 1 },
-        new_group    => { 'includeid' => 1 },
+    +{  _get_self                     => { 'function'  => 'get_group',    'includeid' => 1 },
+        _delete_self                  => { 'function'  => 'delete_group', 'includeid' => 1 },
+        new_user                      => { 'includeid' => 1 },
+        new_group                     => { 'includeid' => 1 },
         get_delegated_zones           => { 'includeid' => 1 },
         get_delegated_zone_records    => { 'includeid' => 1 },
         get_group                     => { 'includeid' => 1 },
@@ -58,7 +56,6 @@ sub _api {
         get_delegated_zone_records    => { 'includeid' => 1 },
     };
 }
-
 
 1;
 

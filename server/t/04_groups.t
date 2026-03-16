@@ -20,7 +20,6 @@
 
 =cut
 
-
 use lib '.';
 use lib 't';
 use lib 'lib';
@@ -30,11 +29,11 @@ use Test::More 'no_plan';
 
 my $user = nt_api_connect();
 
-eval { &do_tests };
+eval {&do_tests};
 warn $@ if $@;
 
 # delete objects even if other tests bail
-eval { &delete_test_groups };
+eval {&delete_test_groups};
 warn $@ if $@;
 
 sub do_tests {
@@ -124,8 +123,7 @@ sub test_group_new {
 
     $res = $user->new_group( name => 'test_delete_me1' );
     noerrok( $res, 300 );
-    ok( $res->get('error_msg') =~
-            qr/Group name is already taken at this level/ );
+    ok( $res->get('error_msg')  =~ qr/Group name is already taken at this level/ );
     ok( $res->get('error_desc') =~ qr/Sanity error/ );
     if ( !$res->is_error ) {
         $res = $user->delete_group( nt_group_id => $res->get('nt_group_id') );
@@ -147,7 +145,7 @@ sub test_get_group {
     ok( $group1->get('error_desc') =~ qr/Some parameters were invalid/ );
 
     #no nt_group_id
-    $group1 = $user->get_group( nt_group_id => 0 );      # not valid id
+    $group1 = $user->get_group( nt_group_id => 0 );    # not valid id
     noerrok( $group1, 302 );
     is( $group1->get('error_msg'), 'nt_group_id' );
     ok( $group1->get('error_desc') =~ qr/Some parameters were invalid/ );
@@ -158,8 +156,8 @@ sub test_get_group {
 
     $group1 = $user->get_group( nt_group_id => $gid1 );
     noerrok($group1) or die "Couldn't get test group1";
-    is( $group1->id, $gid1 ) or die "Couldn't get test group1";
-    is( $group1->get('name'), 'test_delete_me1' );
+    is( $group1->id,                     $gid1 ) or die "Couldn't get test group1";
+    is( $group1->get('name'),            'test_delete_me1' );
     is( $group1->get('parent_group_id'), $user->get('nt_group_id') );
 }
 
@@ -233,7 +231,7 @@ sub test_group_get_branch {
     ####################
     $res = $group1->get_group_branch;
     noerrok($res);
-    is( ref $res, 'NicTool::List' );
+    is( ref $res,   'NicTool::List' );
     is( $res->size, 2 );
     $saw1 = 0;
     $saw2 = 0;
@@ -266,7 +264,7 @@ sub test_group_edit {
     ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
 
     #no group id
-    $res = $group1->edit_group( nt_group_id => 0 );      #not valid id
+    $res = $group1->edit_group( nt_group_id => 0 );        #not valid id
     noerrok( $res, 302 );
     is( $res->get('error_msg'), 'nt_group_id' );
     ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
@@ -274,8 +272,7 @@ sub test_group_edit {
     #group name already taken
     $res = $group1->edit_group( name => 'test_delete_me2' );
     noerrok( $res, 300 );
-    ok( $res->get('error_msg') =~
-            qr/Group name is already taken at this level/ );
+    ok( $res->get('error_msg')  =~ qr/Group name is already taken at this level/ );
     ok( $res->get('error_desc') =~ qr/Sanity error/ );
 
     ####################
@@ -287,9 +284,9 @@ sub test_group_edit {
 
     $g1 = $user->get_group( nt_group_id => $gid1 );
     noerrok($g1);
-    is( $g1->get('name'), 'test_delete_me_again' );
+    is( $g1->get('name'),            'test_delete_me_again' );
     is( $g1->get('parent_group_id'), $user->get('nt_group_id') );
-    is( $g1->id, $gid1 );
+    is( $g1->id,                     $gid1 );
 }
 
 sub test_group_delete {
@@ -320,6 +317,5 @@ sub test_group_delete {
     $res = $group1->delete_group;
     noerrok( $res, 600 );
     ok( $res->get('error_msg'),
-        qr/You can't delete this group until you delete all of its sub-groups/
-    );
+        qr/You can't delete this group until you delete all of its sub-groups/ );
 }

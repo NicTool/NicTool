@@ -28,7 +28,8 @@ sub new {
 }
 
 sub api_commands {
-    {   'login' => {
+    {
+        'login' => {
             'parameters' => {
                 'username' => { required => 1 },
                 'password' => { required => 1 },
@@ -42,10 +43,8 @@ sub api_commands {
         'get_user' => {
             'class'      => 'User',
             'method'     => 'get_user',
-            'parameters' => {
-                'nt_user_id' =>
-                    { access => 'read', required => 1, type => 'USER' },
-            },
+            'parameters' =>
+                { 'nt_user_id' => { access => 'read', required => 1, type => 'USER' }, },
             'result-type' => 'User',
         },
         'new_user' => {
@@ -53,19 +52,16 @@ sub api_commands {
             'method'     => 'new_user',
             'creation'   => 'USER',
             'parameters' => {
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
-                'username' => { required => 1 },
-                'email'    => { required => 1 },
+                'nt_group_id' => { 'access' => 'read', required => 1, type => 'GROUP' },
+                'username'    => { required => 1 },
+                'email'       => { required => 1 },
             },
         },
         'edit_user' => {
             'class'      => 'User::Sanity',
             'method'     => 'edit_user',
-            'parameters' => {
-                'nt_user_id' =>
-                    { access => 'write', required => 1, type => 'USER' },
-            },
+            'parameters' =>
+                { 'nt_user_id' => { access => 'write', required => 1, type => 'USER' }, },
         },
         'delete_users' => {
             'class'      => 'User',
@@ -82,10 +78,8 @@ sub api_commands {
         'get_group_users' => {
             'class'      => 'User',
             'method'     => 'get_group_users',
-            'parameters' => {
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
-            },
+            'parameters' =>
+                { 'nt_group_id' => { 'access' => 'read', required => 1, type => 'GROUP' }, },
             'result-type'       => 'User',
             'result-list'       => 1,
             'result-list-param' => 'list',
@@ -115,17 +109,14 @@ sub api_commands {
                     type     => 'USER',
                     list     => 1
                 },
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
+                'nt_group_id' => { 'access' => 'read', required => 1, type => 'GROUP' },
             },
         },
         'get_user_global_log' => {
             'class'      => 'User',
             'method'     => 'get_user_global_log',
-            'parameters' => {
-                'nt_user_id' =>
-                    { access => 'read', required => 1, type => 'USER' },
-            },
+            'parameters' =>
+                { 'nt_user_id' => { access => 'read', required => 1, type => 'USER' }, },
             'result-type' => 'Log',
         },
 
@@ -134,10 +125,8 @@ sub api_commands {
         'get_group' => {
             'class'      => 'Group',
             'method'     => 'get_group',
-            'parameters' => {
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
-            },
+            'parameters' =>
+                { 'nt_group_id' => { 'access' => 'read', required => 1, type => 'GROUP' }, },
             'result-type' => 'Group',
         },
 
@@ -146,8 +135,7 @@ sub api_commands {
             'method'     => 'new_group',
             'creation'   => 'GROUP',
             'parameters' => {
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
+                'nt_group_id'        => { 'access' => 'read', required => 1, type => 'GROUP' },
                 'name'               => { required => 1 },
                 'usable_nameservers' => {
                     required => 0,
@@ -161,8 +149,7 @@ sub api_commands {
             'class'      => 'Group::Sanity',
             'method'     => 'edit_group',
             'parameters' => {
-                'nt_group_id' =>
-                    { 'access' => 'write', required => 1, type => 'GROUP' },
+                'nt_group_id'        => { 'access' => 'write', required => 1, type => 'GROUP' },
                 'usable_nameservers' => {
                     required => 0,
                     access   => 'read',
@@ -175,19 +162,15 @@ sub api_commands {
         'delete_group' => {
             'class'      => 'Group',
             'method'     => 'delete_group',
-            'parameters' => {
-                'nt_group_id' =>
-                    { 'access' => 'delete', required => 1, type => 'GROUP' },
-            },
+            'parameters' =>
+                { 'nt_group_id' => { 'access' => 'delete', required => 1, type => 'GROUP' }, },
 
         },
         'get_group_groups' => {
             'class'      => 'Group',
             'method'     => 'get_group_groups',
-            'parameters' => {
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
-            },
+            'parameters' =>
+                { 'nt_group_id' => { 'access' => 'read', required => 1, type => 'GROUP' }, },
             'result-type'       => 'Group',
             'result-list'       => 1,
             'result-list-param' => 'groups',
@@ -195,10 +178,8 @@ sub api_commands {
         'get_group_branch' => {
             'class'      => 'Group',
             'method'     => 'get_group_branch',
-            'parameters' => {
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
-            },
+            'parameters' =>
+                { 'nt_group_id' => { 'access' => 'read', required => 1, type => 'GROUP' }, },
             'result-type'       => 'Group',
             'result-list'       => 1,
             'result-list-param' => 'groups',
@@ -206,10 +187,8 @@ sub api_commands {
         'get_group_subgroups' => {
             'class'      => 'Group',
             'method'     => 'get_group_subgroups',
-            'parameters' => {
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
-            },
+            'parameters' =>
+                { 'nt_group_id' => { 'access' => 'read', required => 1, type => 'GROUP' }, },
             'result-type'       => 'Group',
             'result-list'       => 1,
             'result-list-param' => 'groups',
@@ -217,10 +196,8 @@ sub api_commands {
         'get_global_application_log' => {
             'class'      => 'Group',
             'method'     => 'get_global_application_log',
-            'parameters' => {
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
-            },
+            'parameters' =>
+                { 'nt_group_id' => { 'access' => 'read', required => 1, type => 'GROUP' }, },
             'result-type' => 'Log',
         },
 
@@ -228,20 +205,16 @@ sub api_commands {
         'get_zone' => {
             'class'      => 'Zone',
             'method'     => 'get_zone',
-            'parameters' => {
-                'nt_zone_id' =>
-                    { access => 'read', required => 1, type => 'ZONE' },
-            },
+            'parameters' =>
+                { 'nt_zone_id' => { access => 'read', required => 1, type => 'ZONE' }, },
             'result-type' => 'Zone',
         },
 
         'get_group_zones' => {
             'class'      => 'Zone',
             'method'     => 'get_group_zones',
-            'parameters' => {
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
-            },
+            'parameters' =>
+                { 'nt_group_id' => { 'access' => 'read', required => 1, type => 'GROUP' }, },
             'result-type'       => 'Zone',
             'result-list'       => 1,
             'result-list-param' => 'zones'
@@ -249,10 +222,8 @@ sub api_commands {
         'get_group_zones_log' => {
             'class'      => 'Zone',
             'method'     => 'get_group_zones_log',
-            'parameters' => {
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
-            },
+            'parameters' =>
+                { 'nt_group_id' => { 'access' => 'read', required => 1, type => 'GROUP' }, },
             'result-type' => 'Log'
         },
         'new_zone' => {
@@ -266,17 +237,15 @@ sub api_commands {
                     type     => 'NAMESERVER',
                     list     => 1
                 },
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
-                'zone' => { required => 1 },
+                'nt_group_id' => { 'access' => 'read', required => 1, type => 'GROUP' },
+                'zone'        => { required => 1 },
             },
         },
         'edit_zone' => {
             'class'      => 'Zone::Sanity',
             'method'     => 'edit_zone',
             'parameters' => {
-                'nt_zone_id' =>
-                    { 'access' => 'write', required => 1, type => 'ZONE' },
+                'nt_zone_id'  => { 'access' => 'write', required => 1, type => 'ZONE' },
                 'nameservers' => {
                     access   => 'read',
                     required => 0,
@@ -300,19 +269,15 @@ sub api_commands {
         'get_zone_log' => {
             'class'      => 'Zone',
             'method'     => 'get_zone_log',
-            'parameters' => {
-                'nt_zone_id' =>
-                    { 'access' => 'read', required => 1, type => 'ZONE' },
-            },
+            'parameters' =>
+                { 'nt_zone_id' => { 'access' => 'read', required => 1, type => 'ZONE' }, },
             'result-type' => 'Log',
         },
         'get_zone_records' => {
             'class'      => 'Zone',
             'method'     => 'get_zone_records',
-            'parameters' => {
-                'nt_zone_id' =>
-                    { 'access' => 'read', required => 1, type => 'ZONE' },
-            },
+            'parameters' =>
+                { 'nt_zone_id' => { 'access' => 'read', required => 1, type => 'ZONE' }, },
             'result-type'       => 'Record',
             'result-list'       => 1,
             'result-list-param' => 'records',
@@ -320,10 +285,8 @@ sub api_commands {
         'get_zone_application_log' => {
             'class'      => 'Zone',
             'method'     => 'get_zone_application_log',
-            'parameters' => {
-                'nt_zone_id' =>
-                    { access => 'read', required => 1, type => 'ZONE' },
-            },
+            'parameters' =>
+                { 'nt_zone_id' => { access => 'read', required => 1, type => 'ZONE' }, },
             'result-type' => 'Log',
         },
         'move_zones' => {
@@ -336,8 +299,7 @@ sub api_commands {
                     type     => 'ZONE',
                     list     => 1
                 },
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
+                'nt_group_id' => { 'access' => 'read', required => 1, type => 'GROUP' },
             },
         },
         'get_zone_list' => {
@@ -364,11 +326,10 @@ sub api_commands {
             'method'     => 'new_zone_record',
             'creation'   => 'ZONERECORD',
             'parameters' => {
-                'nt_zone_id' =>
-                    { access => 'read', required => 1, type => 'ZONE' },
-                'name'    => { required => 1 },
-                'ttl'     => { required => 0 },
-                'address' => { required => 1 },
+                'nt_zone_id' => { access   => 'read', required => 1, type => 'ZONE' },
+                'name'       => { required => 1 },
+                'ttl'        => { required => 0 },
+                'address'    => { required => 1 },
             },
         },
         'edit_zone_record' => {
@@ -397,33 +358,29 @@ sub api_commands {
             'class'      => 'Zone::Record',
             'method'     => 'get_zone_record',
             'parameters' => {
-                'nt_zone_record_id' =>
-                    { access => 'read', required => 1, type => 'ZONERECORD' },
+                'nt_zone_record_id' => { access => 'read', required => 1, type => 'ZONERECORD' },
             },
             'result-type' => 'Record',
         },
         'get_zone_record_log' => {
             'class'      => 'Zone::Record',
             'method'     => 'get_zone_record_log',
-            'parameters' => {
-                'nt_zone_id' =>
-                    { access => 'read', required => 1, type => 'ZONE' },
-            },
+            'parameters' =>
+                { 'nt_zone_id' => { access => 'read', required => 1, type => 'ZONE' }, },
             'result-type' => 'Log',
         },
         'get_zone_record_log_entry' => {
             'class'      => 'Zone::Record',
             'method'     => 'get_zone_record_log_entry',
             'parameters' => {
-                'nt_zone_record_id' =>
-                    { access => 'read', required => 1, type => 'ZONERECORD' },
+                'nt_zone_record_id' => { access => 'read', required => 1, type => 'ZONERECORD' },
             },
             'result-type' => 'Log',
         },
         'get_record_type' => {
-            'class'      => 'Zone::Record',
-            'method'     => 'get_record_type',
-            'parameters' => { 'type' => { required => 1 }, },
+            'class'             => 'Zone::Record',
+            'method'            => 'get_record_type',
+            'parameters'        => { 'type' => { required => 1 }, },
             'result-type'       => 'Record',
             'result-list'       => 1,
             'result-list-param' => 'types',
@@ -434,25 +391,23 @@ sub api_commands {
             'class'      => 'Nameserver',
             'method'     => 'get_nameserver',
             'parameters' => {
-                'nt_nameserver_id' =>
-                    { access => 'read', required => 1, type => 'NAMESERVER' },
+                'nt_nameserver_id' => { access => 'read', required => 1, type => 'NAMESERVER' },
             },
             'result-type' => 'Nameserver',
         },
         'get_usable_nameservers' => {
-            'class'  => 'Nameserver',
-            'method' => 'get_usable_nameservers',
-            'parameters' =>
-                { #'nt_group_id'=>{'access'=>'read',required=>1,type=>'GROUP'},
-                },
+            'class'      => 'Nameserver',
+            'method'     => 'get_usable_nameservers',
+            'parameters' => {    #'nt_group_id'=>{'access'=>'read',required=>1,type=>'GROUP'},
+            },
             'result-type'       => 'Nameserver',
             'result-list'       => 1,
             'result-list-param' => 'nameservers',
         },
         'get_nameserver_export_types' => {
-            'class'      => 'Nameserver',
-            'method'     => 'get_nameserver_export_types',
-            'parameters' => { 'type' => { required => 1 }, },
+            'class'             => 'Nameserver',
+            'method'            => 'get_nameserver_export_types',
+            'parameters'        => { 'type' => { required => 1 }, },
             'result-type'       => 'Nameserver',
             'result-list'       => 1,
             'result-list-param' => 'types',
@@ -462,8 +417,7 @@ sub api_commands {
             'method'     => 'new_nameserver',
             'creation'   => 'NAMESERVER',
             'parameters' => {
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
+                'nt_group_id'   => { 'access' => 'read', required => 1, type => 'GROUP' },
                 'address'       => { required => 1 },
                 'name'          => { required => 1 },
                 'export_format' => { required => 1 },
@@ -494,10 +448,8 @@ sub api_commands {
         'get_group_nameservers' => {
             'class'      => 'Nameserver',
             'method'     => 'get_group_nameservers',
-            'parameters' => {
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
-            },
+            'parameters' =>
+                { 'nt_group_id' => { 'access' => 'read', required => 1, type => 'GROUP' }, },
             'result-type'       => 'Nameserver',
             'result-list'       => 1,
             'result-list-param' => 'list',
@@ -527,8 +479,7 @@ sub api_commands {
                     type     => 'NAMESERVER',
                     list     => 1
                 },
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
+                'nt_group_id' => { 'access' => 'read', required => 1, type => 'GROUP' },
             },
         },
 
@@ -542,8 +493,7 @@ sub api_commands {
                     required => 1,
                     type     => 'ZONE'
                 },
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
+                'nt_group_id' => { 'access' => 'read', required => 1, type => 'GROUP' },
             },
         },
         'delegate_zone_records' => {
@@ -556,18 +506,15 @@ sub api_commands {
                     required => 1,
                     type     => 'ZONERECORD'
                 },
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
+                'nt_group_id' => { 'access' => 'read', required => 1, type => 'GROUP' },
             },
         },
         'edit_zone_delegation' => {
             'class'      => 'Permission',
             'method'     => 'edit_zone_delegation',
             'parameters' => {
-                'nt_zone_id' =>
-                    { access => 'delegate', required => 1, type => 'ZONE' },
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
+                'nt_zone_id'  => { access   => 'delegate', required => 1, type => 'ZONE' },
+                'nt_group_id' => { 'access' => 'read',     required => 1, type => 'GROUP' },
             },
         },
         'edit_zone_record_delegation' => {
@@ -579,18 +526,15 @@ sub api_commands {
                     required => 1,
                     type     => 'ZONERECORD'
                 },
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
+                'nt_group_id' => { 'access' => 'read', required => 1, type => 'GROUP' },
             },
         },
         'delete_zone_delegation' => {
             'class'      => 'Permission',
             'method'     => 'delete_zone_delegation',
             'parameters' => {
-                'nt_zone_id' =>
-                    { access => 'delete', required => 1, type => 'ZONE' },
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
+                'nt_zone_id'  => { access   => 'delete', required => 1, type => 'ZONE' },
+                'nt_group_id' => { 'access' => 'read',   required => 1, type => 'GROUP' },
             },
         },
         'delete_zone_record_delegation' => {
@@ -602,17 +546,14 @@ sub api_commands {
                     required => 1,
                     type     => 'ZONERECORD'
                 },
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
+                'nt_group_id' => { 'access' => 'read', required => 1, type => 'GROUP' },
             },
         },
         'get_delegated_zones' => {
             'class'      => 'Permission',
             'method'     => 'get_delegated_zones',
-            'parameters' => {
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
-            },
+            'parameters' =>
+                { 'nt_group_id' => { 'access' => 'read', required => 1, type => 'GROUP' }, },
             'result-type'       => 'Zone',
             'result-list'       => 1,
             'result-list-param' => 'ZONE',
@@ -620,10 +561,8 @@ sub api_commands {
         'get_delegated_zone_records' => {
             'class'      => 'Permission',
             'method'     => 'get_delegated_zone_records',
-            'parameters' => {
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
-            },
+            'parameters' =>
+                { 'nt_group_id' => { 'access' => 'read', required => 1, type => 'GROUP' }, },
             'result-type'       => 'Record',
             'result-list'       => 1,
             'result-list-param' => 'ZONERECORD',
@@ -631,10 +570,8 @@ sub api_commands {
         'get_zone_delegates' => {
             'class'      => 'Permission',
             'method'     => 'get_zone_delegates',
-            'parameters' => {
-                'nt_zone_id' =>
-                    { access => 'read', required => 1, type => 'ZONE' },
-            },
+            'parameters' =>
+                { 'nt_zone_id' => { access => 'read', required => 1, type => 'ZONE' }, },
             'result-type'       => 'Group',
             'result-list'       => 1,
             'result-list-param' => 'delegates',
@@ -643,8 +580,7 @@ sub api_commands {
             'class'      => 'Permission',
             'method'     => 'get_zone_record_delegates',
             'parameters' => {
-                'nt_zone_record_id' =>
-                    { access => 'read', required => 1, type => 'ZONERECORD' },
+                'nt_zone_record_id' => { access => 'read', required => 1, type => 'ZONERECORD' },
             },
             'result-type'       => 'Group',
             'result-list'       => 1,

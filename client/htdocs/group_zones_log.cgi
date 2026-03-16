@@ -30,13 +30,13 @@ sub main {
 
     my $user = $nt_obj->verify_session();
 
-    if ($user && ref $user) {
+    if ( $user && ref $user ) {
         my $message;
         if ( $q->param('redirect') ) {
             $message = $nt_obj->redirect_from_log($q);
         }
 
-        print $q->header (-charset=>"utf-8");
+        print $q->header( -charset => "utf-8" );
         display( $nt_obj, $q, $user, $message );
     }
 }
@@ -55,10 +55,10 @@ sub display {
     my $level = $nt_obj->display_group_tree(
         $user,
         $user->{'nt_group_id'},
-        scalar($q->param('nt_group_id')), 0
+        scalar( $q->param('nt_group_id') ), 0
     );
 
-    $nt_obj->display_zone_list_options( $user, scalar($q->param('nt_group_id')), $level, 0 );
+    $nt_obj->display_zone_list_options( $user, scalar( $q->param('nt_group_id') ), $level, 0 );
 
     print qq[<table class="fat">
  <tr class=light_grey_bg>
@@ -98,19 +98,18 @@ sub display_log {
     my $cgi        = 'group_zones_log.cgi';
     my @req_fields = qw(nt_group_id);
 
-    my $group = $nt_obj->get_group( nt_group_id  => scalar($q->param('nt_group_id')) );
+    my $group = $nt_obj->get_group( nt_group_id => scalar( $q->param('nt_group_id') ) );
 
     my $include_subgroups = $group->{'has_children'} ? 'sub-groups' : undef;
     push( @columns, 'group_name' ) if $include_subgroups;
 
-    $nt_obj->display_sort_options( $q, \@columns, \%labels, $cgi,
-        \@req_fields, $include_subgroups )
+    $nt_obj->display_sort_options( $q, \@columns, \%labels, $cgi, \@req_fields, $include_subgroups )
         if $q->param('edit_sortorder');
-    $nt_obj->display_advanced_search( $q, \@columns, \%labels, $cgi,
-        \@req_fields, $include_subgroups )
+    $nt_obj->display_advanced_search( $q, \@columns, \%labels, $cgi, \@req_fields,
+        $include_subgroups )
         if $q->param('edit_search');
 
-    my %params = ( map { $_, scalar($q->param($_)) } @req_fields );
+    my %params = ( map { $_, scalar( $q->param($_) ) } @req_fields );
     my %sort_fields;
     $nt_obj->prepare_search_params( $q, \%labels, \%params, \%sort_fields,
         $NicToolClient::page_length );
@@ -126,17 +125,16 @@ sub display_log {
 
     my @state_fields;
     foreach ( @{ $nt_obj->paging_fields } ) {
-        push( @state_fields, "$_=" . $q->escape( scalar($q->param($_)) ) )
+        push( @state_fields, "$_=" . $q->escape( scalar( $q->param($_) ) ) )
             if ( $q->param($_) );
     }
 
-    $nt_obj->display_search_rows( $q, $rv, \%params, $cgi, \@req_fields,
-        $include_subgroups );
+    $nt_obj->display_search_rows( $q, $rv, \%params, $cgi, \@req_fields, $include_subgroups );
 
     if ( !@$log ) {
         print "<center>", "No log data available</center>";
         return;
-    };
+    }
 
     print qq[<table class="fat">
     <tr class=dark_grey_bg>];
@@ -150,7 +148,9 @@ sub display_log {
                 (
                 uc( $sort_fields{$_}->{'mod'} ) eq 'ASCENDING'
                 ? 'up.gif'
-                : 'down.gif' ), "></td>";
+                : 'down.gif'
+                ),
+                "></td>";
             print "</tr></table></td>";
         }
         else {
@@ -169,12 +169,9 @@ sub display_log {
         foreach (@columns) {
             my $gid = $q->param('nt_group_id');
             if ( $_ eq 'zone' ) {
-                my $state_string = join( '&amp;', @state_fields, 
-                    'redirect=1',
-                    'object=zone',
-                    "obj_id=$row->{'nt_zone_id'}",
-                    "nt_group_id=$gid",
-                );
+                my $state_string = join( '&amp;',
+                    @state_fields, 'redirect=1', 'object=zone',
+                    "obj_id=$row->{'nt_zone_id'}", "nt_group_id=$gid", );
                 print qq[<td>
 <table class="no_pad">
  <tr>
@@ -196,22 +193,24 @@ sub display_log {
                 print qq[<td><table class="no_pad"><tr>
                 <td><img src="$NicToolClient::image_dir/group.gif"></td>
                 <td>],
-                join( ' / ',
-                    map(qq[<a href="group.cgi?nt_group_id=$_->{'nt_group_id'}">$_->{'name'}</a>],
+                    join(
+                    ' / ',
+                    map( qq[<a href="group.cgi?nt_group_id=$_->{'nt_group_id'}">$_->{'name'}</a>],
                         (   @{ $map->{ $row->{'nt_group_id'} } },
                             {   nt_group_id => $row->{'nt_group_id'},
                                 name        => $row->{'group_name'}
                             }
                         ) )
-                ),
-                "</td></tr></table></td>";
+                    ),
+                    "</td></tr></table></td>";
             }
             else {
                 print "<td>", ( $row->{$_} ? $row->{$_} : '&nbsp;' ), "</td>";
             }
         }
         if ( $row->{'action'} eq 'deleted' ) {
-            print qq[<td class=center><a href="zone.cgi?nt_group_id=$row->{'nt_group_id'}&amp;nt_zone_id=$row->{'nt_zone_id'}&amp;edit_zone=1&amp;undelete=1">undelete</a></td>];
+            print
+                qq[<td class=center><a href="zone.cgi?nt_group_id=$row->{'nt_group_id'}&amp;nt_zone_id=$row->{'nt_zone_id'}&amp;edit_zone=1&amp;undelete=1">undelete</a></td>];
         }
         else {
             print "<td class=center>&nbsp;</td>";

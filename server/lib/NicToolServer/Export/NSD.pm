@@ -1,4 +1,5 @@
 package NicToolServer::Export::NSD;
+
 # ABSTRACT: exporting DNS data to NSD
 
 use strict;
@@ -13,19 +14,19 @@ use File::Copy;
 use Params::Validate qw/ :all /;
 
 sub update_named_include {
-    my ($self, $dir) = @_;
+    my ( $self, $dir ) = @_;
 
     # full export, write a new include file
     my $datadir = $self->{nte}->get_export_data_dir || $dir;
-    my $fh = $self->get_export_file( 'nsd.nictool.conf', $dir );
+    my $fh      = $self->get_export_file( 'nsd.nictool.conf', $dir );
     foreach my $zone ( $self->{nte}->zones_exported ) {
-        print $fh <<EO_ZONE
+        print $fh <<EO_ZONE;
 zone:
     name: $zone
     zonefile: $datadir/$zone
 
 EO_ZONE
-    };
+    }
     close $fh;
     return 1;
 }
@@ -37,12 +38,12 @@ sub write_makefile {
         warn "no export dir!";
         return;
     };
-    return 1 if -e "$exportdir/Makefile";   # already exists
+    return 1 if -e "$exportdir/Makefile";    # already exists
 
-    my $address = $self->{nte}{ns_ref}{address} || '127.0.0.1';
-    my $datadir = $self->{nte}{ns_ref}{datadir} || getcwd . '/data-all';
+    my $address      = $self->{nte}{ns_ref}{address}      || '127.0.0.1';
+    my $datadir      = $self->{nte}{ns_ref}{datadir}      || getcwd . '/data-all';
     my $remote_login = $self->{nte}{ns_ref}{remote_login} || 'nsd';
-    $datadir =~ s/\/$//;  # strip off any trailing /
+    $datadir =~ s/\/$//;                     # strip off any trailing /
     open my $M, '>', "$exportdir/Makefile" or do {
         warn "unable to open ./Makefile: $!\n";
         return;
@@ -70,7 +71,7 @@ restart: $exportdir
 \tssh $remote_login\@$address "nsd-control reconfig && nsd-control reload"
 
 EO_MAKE
-;
+        ;
     close $M;
     return 1;
 }

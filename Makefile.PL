@@ -1,21 +1,19 @@
 use ExtUtils::MakeMaker;
 
 WriteMakefile(
-        NAME               => "NicTool::Bundle",
-        VERSION_FROM       => "server/lib/NicToolServer.pm",
-        AUTHOR             => 'Matt Simerson <msimerson@cpan.org>',
-        ABSTRACT           => 'NicTool DNS Management suite',
-        LICENSE            => 'open_source',
-        #dist               => { COMPRESS => 'gzip -9f', },
-        dist               => { COMPRESS => 'bzip2', SUFFIX => '.bz2' },
-        'MIN_PERL_VERSION' => 5.008001,
-        'BUILD_REQUIRES'   => {
-                              },
-         PREREQ_PM         => {
-                              },
-         TEST_REQUIRES     => {
-                              },
-    );
+    NAME         => "NicTool::Bundle",
+    VERSION_FROM => "server/lib/NicToolServer.pm",
+    AUTHOR       => 'Matt Simerson <msimerson@cpan.org>',
+    ABSTRACT     => 'NicTool DNS Management suite',
+    LICENSE      => 'open_source',
+
+    #dist               => { COMPRESS => 'gzip -9f', },
+    dist               => { COMPRESS => 'bzip2', SUFFIX => '.bz2' },
+    'MIN_PERL_VERSION' => 5.008001,
+    'BUILD_REQUIRES'   => {},
+    PREREQ_PM          => {},
+    TEST_REQUIRES      => {},
+);
 
 sub MY::postamble {
     return <<'MAKE_FRAG'
@@ -39,5 +37,5 @@ web : NicTool.tar.gz
 	scp NicTool.tar.gz jails:/data/matt/www/nictool.com/download/NicTool.tar.gz
 	scp NicTool.tar.gz jails:/data/matt/www/nictool.com/download/NicTool-$(VERSION).tar.gz
 MAKE_FRAG
-;
+        ;
 }

@@ -1,9 +1,11 @@
 package NicTool;
+
 # ABSTRACT: A client framework for interaction with a NicToolServer via SOAP or XML-RPC.
 
 use strict;
 use Carp;
 use SOAP::Lite;
+
 #use Data::Dumper;
 
 use lib 'lib';
@@ -15,8 +17,6 @@ use NicTool::Cache;
 our $AUTOLOAD;
 
 $NicTool::VERSION = '1.03';
-
-
 
 sub new {
     my $pkg  = shift;
@@ -85,9 +85,9 @@ sub _api {
 
 sub _should_cache {
     my $self = shift;
-    +{  get_group => $self->{cache_groups} ? 'nt_group_id' : '',
-        get_user  => $self->{cache_users}  ? 'nt_user_id'  : '',
-        get_zone  => $self->{cache_zones}  ? 'nt_zone_id'  : '',
+    +{  get_group       => $self->{cache_groups}  ? 'nt_group_id' : '',
+        get_user        => $self->{cache_users}   ? 'nt_user_id' : '',
+        get_zone        => $self->{cache_zones}   ? 'nt_zone_id' : '',
         get_zone_record => $self->{cache_records} ? 'nt_zone_record_id'
         : '',
         get_nameserver => $self->{cache_nameservers} ? 'nt_nameserver_id'
@@ -97,19 +97,19 @@ sub _should_cache {
 
 sub _conf {
     return {
-        'server_host'         => 'localhost',
-        'server_port'         => '8082',
-        'transfer_protocol'   => 'http',
-        'data_protocol'       => 'soap',
-        'nt_user_session'     => undef,
-        'use_protocol_version'=> 0,
-        'nt_protocol_version' => '1.0',
+        'server_host'          => 'localhost',
+        'server_port'          => '8082',
+        'transfer_protocol'    => 'http',
+        'data_protocol'        => 'soap',
+        'nt_user_session'      => undef,
+        'use_protocol_version' => 0,
+        'nt_protocol_version'  => '1.0',
 
-        'cache_groups'        => 1,
-        'cache_users'         => 1,
-        'cache_zones'         => 0,
-        'cache_records'       => 0,
-        'cache_nameservers'   => 1,
+        'cache_groups'      => 1,
+        'cache_users'       => 1,
+        'cache_zones'       => 0,
+        'cache_records'     => 0,
+        'cache_nameservers' => 1,
 
         'debug_soap_setup'    => 0,
         'debug_soap_request'  => 0,
@@ -122,7 +122,6 @@ sub _conf {
     };
 }
 
-
 sub config {
     my $self = shift;
     while ( @_ > 1 && @_ % 2 == 0 ) {
@@ -133,10 +132,8 @@ sub config {
 
 sub _send_request {
     my $self = shift;
-    $self->{transport}
-        = NicTool::Transport->get_transport_agent( $self->{data_protocol},
-        $self ) or
-    croak "No transport available! (data protocol is $self->{data_protocol} )";
+    $self->{transport} = NicTool::Transport->get_transport_agent( $self->{data_protocol}, $self )
+        or croak "No transport available! (data protocol is $self->{data_protocol} )";
     return $self->{transport}->_send_request(@_);
 }
 
@@ -144,7 +141,7 @@ sub _object_for_type {
     my ( $self, $type, @rest ) = @_;
     my $package = "NicTool::" . ucfirst( lc($type) );
     my $obj;
-    eval "use $package; \$obj= $package->new(\$self,\@rest)"; ## no critic
+    eval "use $package; \$obj= $package->new(\$self,\@rest)";    ## no critic
     if ($@) {
         carp $@;
         return '';
@@ -183,30 +180,25 @@ sub _cache_get {
     return $res;
 }
 
-
 sub nt_user_session {
     my $self = shift;
     return $self->{nt_user_session};
 }
-
 
 sub nt_protocol_version {
     my $self = shift;
     return $self->{nt_protocol_version};
 }
 
-
 sub use_protocol_version {
     my $self = shift;
     return $self->{use_protocol_version};
 }
 
-
 sub user {
     my $self = shift;
     return $self->{user};
 }
-
 
 sub result {
     my $self = shift;
@@ -229,7 +221,7 @@ sub _dispatch {
             && UNIVERSAL::isa( $args{$a}, 'NicTool::DBObject' ) )
         {
 
-#carp "setting arg $a to id for object ".(ref $args{$a})." ID is ".$args{$a}->id;
+            #carp "setting arg $a to id for object ".(ref $args{$a})." ID is ".$args{$a}->id;
 
             $args{$a} = $args{$a}->id;
         }
@@ -240,14 +232,12 @@ sub _dispatch {
                     $_ = $_->id;
                 }
                 elsif ( ref $_ ne 'HASH' or ref $_ ne 'ARRAY' ) {
-                    croak "Unknown object type for parameter $a : "
-                        . join( ":", ref $_, caller );
+                    croak "Unknown object type for parameter $a : " . join( ":", ref $_, caller );
                 }
             }
         }
         elsif ( ref $args{$a} ne 'HASH' ) {
-            croak "Unknown object type for parameter $a : "
-                . join( ":", ref $args{$a}, caller );
+            croak "Unknown object type for parameter $a : " . join( ":", ref $args{$a}, caller );
         }
     }
 
@@ -273,8 +263,8 @@ sub _dispatch {
         $obj = $self->_object_for_type( $type, $result );
     }
     else {
-        $obj = NicTool::List->new( $self, $type,
-            NicTool::API->result_list_param($method), $result );
+        $obj =
+            NicTool::List->new( $self, $type, NicTool::API->result_list_param($method), $result );
 
     }
     if ( $method eq 'login' and $type eq 'User' and $obj ) {
@@ -301,7 +291,6 @@ sub _api_call {
     return '';
 }
 
-
 sub AUTOLOAD {
     my ($self) = shift;
     return if $AUTOLOAD =~ /DESTROY/;
@@ -321,7 +310,6 @@ sub AUTOLOAD {
 
     croak "No such method '$AUTOLOAD'";
 }
-
 
 1;
 

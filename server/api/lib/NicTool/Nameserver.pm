@@ -24,9 +24,8 @@ our @ISA = 'NicTool::DBObject';
 sub _id_name {'nt_nameserver_id'}
 
 sub _api {
-    +{  _get_self => { 'function' => 'get_nameserver', 'includeid' => 1 },
-        _delete_self =>
-            { 'function' => 'delete_nameserver', 'includeid' => 1 },
+    +{  _get_self         => { 'function'  => 'get_nameserver',    'includeid' => 1 },
+        _delete_self      => { 'function'  => 'delete_nameserver', 'includeid' => 1 },
         get_nameserver    => { 'includeid' => 1 },
         edit_nameserver   => { 'includeid' => 1 },
         delete_nameserver => { 'includeid' => 1 },

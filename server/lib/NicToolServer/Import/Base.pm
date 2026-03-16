@@ -1,4 +1,5 @@
 package NicToolServer::Import::Base;
+
 # ABSTRACT: base class for NicTool import classes
 
 use strict;
@@ -15,52 +16,53 @@ use Params::Validate qw/ :all /;
 
 sub new {
     my $class = shift;
-    my $self = bless {
-            nt_user     => undef,
-            nt_pass     => undef,
-            group_id    => undef,
-            nameservers => undef,
-            nt_https    => 0,
-        }, $class;
+    my $self  = bless {
+        nt_user     => undef,
+        nt_pass     => undef,
+        group_id    => undef,
+        nameservers => undef,
+        nt_https    => 0,
+    }, $class;
     return $self;
 }
 
 sub get_zone {
-    my ($self, $fqdn) = @_;
-    chop $fqdn if ( substr($fqdn,-1,1) eq '.' );  # remove trailing dot
+    my ( $self, $fqdn ) = @_;
+    chop $fqdn if ( substr( $fqdn, -1, 1 ) eq '.' );    # remove trailing dot
     my @bits = split /\./, $fqdn;
     my $host = shift @bits;
     my $zone = join '.', @bits;
+
     #print "h: $host, z: $zone ($fqdn)\n";
-    return ($host, $zone);
+    return ( $host, $zone );
 }
 
 sub get_zone_id {
-    my ($self, $fqdn, $zone) = @_;
-    my ($host, $zone_id);
+    my ( $self, $fqdn, $zone ) = @_;
+    my ( $host, $zone_id );
 
     chop $fqdn if '.' eq substr $fqdn, -1, 1;
     $fqdn = lc $fqdn;
 
     if ($zone) {
         $zone_id = $self->nt_get_zone_id( zone => $zone );
-        return ($zone_id, "$fqdn.") if $fqdn eq $zone;
-        $host = substr($fqdn, 0, ((length $zone) * -1) -1);
-        return ($zone_id, $host);
-    };
+        return ( $zone_id, "$fqdn." ) if $fqdn eq $zone;
+        $host = substr( $fqdn, 0, ( ( length $zone ) * -1 ) - 1 );
+        return ( $zone_id, $host );
+    }
 
     # try most specific first
     $zone_id = $self->nt_get_zone_id( zone => $fqdn );
-    if ( $zone_id ) {
-        return ($zone_id, "$fqdn.");
-    };
+    if ($zone_id) {
+        return ( $zone_id, "$fqdn." );
+    }
 
     my @labels = split /\./, $fqdn;
-    for my $i (0 .. (scalar @labels - 3)) {
-        $zone = join('.', @labels[$i+1 .. scalar @labels-1]);
+    for my $i ( 0 .. ( scalar @labels - 3 ) ) {
+        $zone    = join( '.', @labels[ $i + 1 .. scalar @labels - 1 ] );
         $zone_id = $self->nt_get_zone_id( zone => $zone ) or next;
-        $host = join('.', @labels[0 .. $i]);
-        return ($zone_id, $host);
+        $host    = join( '.', @labels[ 0 .. $i ] );
+        return ( $zone_id, $host );
     }
 
     die "could not find zone for $fqdn\n";
@@ -69,30 +71,31 @@ sub get_zone_id {
 sub nt_create_zone {
     my $self = shift;
 
-    my %p = validate( @_, {
-            'zone'     => { type => SCALAR },
-            'group_id' => { type => SCALAR, optional => 1 },
+    my %p = validate(
+        @_,
+        {   'zone'        => { type => SCALAR },
+            'group_id'    => { type => SCALAR, optional => 1 },
             'description' => { type => SCALAR },
-            'contact' => { type => SCALAR, optional => 1 },
-            'ttl'     => { type => SCALAR, optional => 1, default => 86400 },
-            'refresh' => { type => SCALAR, optional => 1, default => 16384 },
-            'retry'   => { type => SCALAR, optional => 1, default => 2048 },
-            'expire'  => { type => SCALAR, optional => 1, default => 1048576},
-            'minimum' => { type => SCALAR, optional => 1, default => 2560 },
+            'contact'     => { type => SCALAR,   optional => 1 },
+            'ttl'         => { type => SCALAR,   optional => 1, default => 86400 },
+            'refresh'     => { type => SCALAR,   optional => 1, default => 16384 },
+            'retry'       => { type => SCALAR,   optional => 1, default => 2048 },
+            'expire'      => { type => SCALAR,   optional => 1, default => 1048576 },
+            'minimum'     => { type => SCALAR,   optional => 1, default => 2560 },
             'nameservers' => { type => ARRAYREF, optional => 1 },
-            'template' => { type => SCALAR, optional => 1, },
-            'ip'       => { type => SCALAR, optional => 1, },
-            'mailip'   => { type => SCALAR, optional => 1, },
-            'logger'   => { type => OBJECT, optional => 1 },
+            'template'    => { type => SCALAR,   optional => 1, },
+            'ip'          => { type => SCALAR,   optional => 1, },
+            'mailip'      => { type => SCALAR,   optional => 1, },
+            'logger'      => { type => OBJECT,   optional => 1 },
         }
     );
 
     print "creating zone $p{zone}\n";
     my $nt = $self->nt_connect();
 
-    $p{contact} =~ s/@/./g;  # clean up common format error in mailaddr string
+    $p{contact} =~ s/@/./g;    # clean up common format error in mailaddr string
 
-    my $group_id = $p{group_id} || $self->group_id or die "group ID unset!\n";
+    my $group_id    = $p{group_id} || $self->group_id or die "group ID unset!\n";
     my $nameservers = $p{nameservers};
     if ($nameservers) { $nameservers = join( ',', @{$nameservers} ); }
 
@@ -103,16 +106,16 @@ sub nt_create_zone {
         ttl         => $p{ttl},
         serial      => undef,
         description => $p{description},
-        ($nameservers ? ( nameservers => $nameservers ) : ()),
-        mailaddr    => $p{contact} || 'hostmaster.' . $p{zone},
-        refresh     => $p{refresh},
-        retry       => $p{retry},
-        expire      => $p{expire},
-        minimum     => $p{minimum},
+        ( $nameservers ? ( nameservers => $nameservers ) : () ),
+        mailaddr => $p{contact} || 'hostmaster.' . $p{zone},
+        refresh  => $p{refresh},
+        retry    => $p{retry},
+        expire   => $p{expire},
+        minimum  => $p{minimum},
     );
 
     if ( $r->{store}{error_code} != 200 ) {
-        warn "$r->{store}{error_desc} ( $r->{store}{error_msg} ), " . Dumper(\%p);
+        warn "$r->{store}{error_desc} ( $r->{store}{error_msg} ), " . Dumper( \%p );
         return;
     }
 
@@ -141,7 +144,7 @@ sub nt_create_record {
     );
 
     my $rr_address = $p{address};
-    if ($p{type} !~ /^(:?NAPTR|A|TXT)$/) {
+    if ( $p{type} !~ /^(:?NAPTR|A|TXT)$/ ) {
         $rr_address = lc $p{address};
     }
 
@@ -154,14 +157,14 @@ sub nt_create_record {
 
     $self->record_exists( \%request ) and return;
 
-    foreach ( qw/ ttl weight priority other description location timestamp / ) {
-        next if ! defined $p{$_};
+    foreach (qw/ ttl weight priority other description location timestamp /) {
+        next if !defined $p{$_};
         $request{$_} = $p{$_};
-    };
+    }
 
     #print "adding\n";
     my $nt = $self->nt_connect();
-    my $r = $nt->new_zone_record(%request);  # submit to NicToolServer
+    my $r  = $nt->new_zone_record(%request);    # submit to NicToolServer
 
     if ( $r->{store}{error_code} != 200 ) {
         die "$r->{store}{error_desc} ( $r->{store}{error_msg} )";
@@ -174,7 +177,8 @@ sub nt_create_record {
 sub nt_get_zone_id {
     my $self = shift;
 
-    my %p = validate( @_,
+    my %p = validate(
+        @_,
         {   'zone'  => { type => SCALAR },
             'fatal' => { type => BOOLEAN, optional => 1, default => 1 },
             'debug' => { type => BOOLEAN, optional => 1, default => 1 },
@@ -201,6 +205,7 @@ sub nt_get_zone_id {
     }
 
     if ( !$r->{store}{zones}[0]{store}{nt_zone_id} ) {
+
         #warn "\tzone $p{zone} not found!";
         return;
     }
@@ -212,11 +217,12 @@ sub nt_get_zone_id {
 sub nt_get_zone_records {
     my $self = shift;
 
-    my %p = validate( @_,
+    my %p = validate(
+        @_,
         {   'zone_id' => { type => SCALAR },
-            'name'    => { type => SCALAR, optional => 1 },
-            'type'    => { type => SCALAR, optional => 1 },
-            'address' => { type => SCALAR, optional => 1 },
+            'name'    => { type => SCALAR,  optional => 1 },
+            'type'    => { type => SCALAR,  optional => 1 },
+            'address' => { type => SCALAR,  optional => 1 },
             'fatal'   => { type => BOOLEAN, optional => 1, default => 1 },
             'debug'   => { type => BOOLEAN, optional => 1, default => 1 },
         }
@@ -250,7 +256,7 @@ sub nt_get_zone_records {
         $request{'3_field'}     = 'address';
         $request{'3_option'}    = 'equals';
         $request{'3_value'}     = $p{address};
-    };
+    }
 
     # warn Dumper(\%request);
     my $r = $nt->get_zone_records(%request);
@@ -285,13 +291,13 @@ sub nt_get_zone_records {
 }
 
 sub nt_connect {
-    my ($self, $nt_host, $nt_port, $nt_user, $nt_pass, $nt_https) = @_;
+    my ( $self, $nt_host, $nt_port, $nt_user, $nt_pass, $nt_https ) = @_;
 
     return $self->{nt} if $self->{nt};
 
     $nt_user ||= $self->{nt_user};
     $nt_pass ||= $self->{nt_pass};
-    die "no credentials!\n" if ! $nt_pass;
+    die "no credentials!\n" if !$nt_pass;
 
     eval { require NicTool; };
 
@@ -302,11 +308,12 @@ sub nt_connect {
     }
 
     my $nt = NicTool->new(
-            server_host => $nt_host || '127.0.0.1',
-            server_port => $nt_port || 8082,
-            transfer_protocol => $nt_https ? 'https' : 'http',
-            #protocol    => 'xml_rpc',  # or soap
-            );
+        server_host       => $nt_host || '127.0.0.1',
+        server_port       => $nt_port || 8082,
+        transfer_protocol => $nt_https ? 'https' : 'http',
+
+        #protocol    => 'xml_rpc',  # or soap
+    );
 
     my $r = $nt->login( username => $nt_user, password => $nt_pass );
 
@@ -314,19 +321,19 @@ sub nt_connect {
         die "error logging in to nictool: $r->{store}{error_msg}\n";
     }
 
-    $self->{nameservers} = join(',', grep { $_ > 0 } split /,/, $nt->result->{store}{usable_ns});
-    $self->{group_id} = $nt->result->{store}{nt_group_id};
+    $self->{nameservers} = join( ',', grep { $_ > 0 } split /,/, $nt->result->{store}{usable_ns} );
+    $self->{group_id}    = $nt->result->{store}{nt_group_id};
     return $self->{nt} = $nt;
 }
 
 sub fully_qualify {
-    my ($self, $host) = @_;
-    return $host if substr($host, -1, 1) eq '.';
+    my ( $self, $host ) = @_;
+    return $host if substr( $host, -1, 1 ) eq '.';
     return "$host.";
 }
 
 sub record_exists {
-    my ($self, $record) = @_;
+    my ( $self, $record ) = @_;
 
     my $recs = $self->nt_get_zone_records(
         zone_id => $record->{nt_zone_id},
@@ -339,9 +346,9 @@ sub record_exists {
     my @records = ref($recs) eq 'ARRAY' ? @$recs : ($recs);
     return 0 if !scalar @records;
 
-    my $incoming = $self->_normalized_record_address($record->{type}, $record->{address});
+    my $incoming = $self->_normalized_record_address( $record->{type}, $record->{address} );
     for my $rec (@records) {
-        my $existing = $self->_normalized_record_address($record->{type}, $rec->{address});
+        my $existing = $self->_normalized_record_address( $record->{type}, $rec->{address} );
         if ( $existing eq $incoming ) {
             print "record exists\n";
             return 1;
@@ -352,12 +359,12 @@ sub record_exists {
 }
 
 sub _normalized_record_address {
-    my ($self, $type, $address) = @_;
+    my ( $self, $type, $address ) = @_;
 
     $address //= '';
 
     if ( $type eq 'AAAA' ) {
-        my $expanded = Net::IP::ip_expand_address($address, 6);
+        my $expanded = Net::IP::ip_expand_address( $address, 6 );
         return defined $expanded ? lc $expanded : lc $address;
     }
 
@@ -372,8 +379,8 @@ sub _normalized_record_address {
 }
 
 sub group_id {
-    my ($self, $gid) = @_;
-    return $self->{group_id} if ! $gid;
+    my ( $self, $gid ) = @_;
+    return $self->{group_id} if !$gid;
     $self->{group_id} = $gid;
     return $gid;
 }

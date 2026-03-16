@@ -1,4 +1,5 @@
 package NicToolTest;
+
 # ABSTRACT: Functions for testing nictool
 
 use strict;
@@ -17,7 +18,7 @@ sub nowarn  { $warn = 0 }
 sub yeswarn { $warn = 1 }
 
 sub noerrok {
-    my ($obj, $code, $msg) = @_;
+    my ( $obj, $code, $msg ) = @_;
     $msg  ||= '';
     $code ||= 200;
     my $ec = my $em = my $ed = '';
@@ -50,7 +51,7 @@ sub noerrok {
     $ec ||= '';
     $ed ||= '';
     $msg .= "($ec :$em :$ed)";
-    if ($ec eq $code) {
+    if ( $ec eq $code ) {
         return is( $ec, $code, $em );
     }
     return is( $ec, $code, $msg . " " . join( ":", caller ) );
@@ -59,10 +60,7 @@ sub noerrok {
 sub errtext {
     my $err = shift;
     if ( ref $err and $err->isa('NicTool::Result') ) {
-        return
-              $err->error_code . ":"
-            . $err->error_desc . ":"
-            . $err->error_msg;
+        return $err->error_code . ":" . $err->error_desc . ":" . $err->error_msg;
     }
     return "$err->{'error_code'}:$err->{'error_desc'}:$err->{'error_msg'}";
 }
@@ -75,8 +73,7 @@ sub diffhtok {
         if ( $$expect{$_} ne $$ht{$_} ) {
             $ok = 0;
             if ($warn) {
-                warn "key $_ is not $$expect{$_} : $$ht{$_} "
-                    . join( ":", caller );
+                warn "key $_ is not $$expect{$_} : $$ht{$_} " . join( ":", caller );
             }
         }
     }
@@ -125,9 +122,11 @@ sub import {
 Please install the NicTool api library or edit 'test.cfg' to specify its location."
         if $@;
 
-    NicToolTest->export_to_level(1, qw/
-        diffhtok noerrok errtext nowarn yeswarn nt_api_connect
-    /);
+    NicToolTest->export_to_level(
+        1, qw/
+            diffhtok noerrok errtext nowarn yeswarn nt_api_connect
+            /
+    );
 }
 
 sub nt_api_connect () {
@@ -149,7 +148,7 @@ sub nt_api_connect () {
 
     noerrok( $user->result ) or die "Couldn't log in";
     ok( !$user->result->is_error, "login no error" );
-    ok( $user->nt_user_session, "login session" );
+    ok( $user->nt_user_session,   "login session" );
 
     return $user;
 }

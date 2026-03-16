@@ -1,4 +1,5 @@
 package NicTool::Transport;
+
 # ABSTRACT: support class and factory for different Transport types
 #
 # NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
@@ -35,8 +36,7 @@ sub get_transport_agent {
     my $trans;
     eval qq(use NicTool::Transport::$dp);
     if ($@) {
-        die
-            "Unable to use class NicTool::Transport::$dp for data protocol '$protocol' : $@";
+        die "Unable to use class NicTool::Transport::$dp for data protocol '$protocol' : $@";
     }
     eval qq( \$trans = NicTool::Transport::$dp->new(\$nt));
     if ($@) {
@@ -59,16 +59,16 @@ sub _check_setup {
 
 sub _send_request {
     my $self = shift;
-    my $msg = $self->_check_setup;
+    my $msg  = $self->_check_setup;
 
     if ( $msg ne 'OK' ) {
         return { 'error_code' => 'XXX', 'error_msg' => $msg };
     }
 
     my $url = sprintf( '%s://%s:%d',
-                       $self->_nt->{transfer_protocol},
-                       $self->_nt->{server_host},
-                       $self->_nt->{server_port} );
+        $self->_nt->{transfer_protocol},
+        $self->_nt->{server_host},
+        $self->_nt->{server_port} );
 
     #my $func = 'send_'.$self->_nt->{data_protocol}.'_request';
     if ( $self->can('send_request') ) {
@@ -77,8 +77,7 @@ sub _send_request {
     else {
         return {
             'error_code' => 501,
-            'error_msg'  => 'Data protocol not supported: '
-                . $self->_nt->{data_protocol}
+            'error_msg'  => 'Data protocol not supported: ' . $self->_nt->{data_protocol}
         };
     }
 }

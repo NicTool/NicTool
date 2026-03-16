@@ -21,9 +21,7 @@ $user->login(
 );
 ok( !$user->result->is_error );
 if ( $user->result->is_error ) {
-    die "Error logging in: ("
-        . $user->result->error_code . ") "
-        . $user->result->error_msg;
+    die "Error logging in: (" . $user->result->error_code . ") " . $user->result->error_msg;
 }
 
 ok( $user->nt_user_session );

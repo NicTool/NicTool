@@ -39,8 +39,8 @@ sub main {
     }
 
     my $cookie = $q->cookie('NicTool');
-    if ( ! $cookie ) {
-        $nt_obj->display_login( scalar($q->param('message')) );
+    if ( !$cookie ) {
+        $nt_obj->display_login( scalar( $q->param('message') ) );
         return;
     }
 
@@ -49,12 +49,13 @@ sub main {
         nt_user_session => $cookie,
     );
 
-    if ( ! ref $response ) {
-        $nt_obj->display_login( $response );
+    if ( !ref $response ) {
+        $nt_obj->display_login($response);
         return;
-    };
+    }
 
     if ( $response->{'error_code'} ) {
+
         #$nt_obj->expire_cookie( $q, $cookie );
         $nt_obj->display_login( $response->{'error_msg'} );
         return;
@@ -66,14 +67,12 @@ sub main {
 sub display_frameset {
     my ( $nt_obj, $data ) = @_;
 
-    $nt_obj->set_cookie( $data->{nt_user_session} ); 
+    $nt_obj->set_cookie( $data->{nt_user_session} );
 
-    print $nt_obj->{'CGI'}->header (-charset=>"utf-8");
- 
-    $nt_obj->parse_template(
-        $NicToolClient::frameset_template,
-        nt_group_id => $data->{'nt_group_id'}
-    );
+    print $nt_obj->{'CGI'}->header( -charset => "utf-8" );
+
+    $nt_obj->parse_template( $NicToolClient::frameset_template,
+        nt_group_id => $data->{'nt_group_id'} );
 }
 
 sub do_login {
@@ -83,13 +82,13 @@ sub do_login {
     if ( $q->param('username') eq '' or $q->param('password') eq '' ) {
         $nt_obj->display_login('Please enter your username and password!');
         return;
-    };
+    }
 
     my $data = $nt_obj->login_user();
-    if ( ! ref($data) ) {
+    if ( !ref($data) ) {
         $nt_obj->display_login($data);
         return;
-    };
+    }
 
     if ( $data->{'error_code'} ) {
         $nt_obj->display_login($data);

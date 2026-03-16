@@ -15,7 +15,6 @@
 # along with this program; if not, write to Affero Inc., 521 Third St,
 # Suite 225, San Francisco, CA 94107, USA
 
-
 use lib '.';
 use lib 't';
 use NicToolTest;
@@ -26,7 +25,7 @@ my $user = nt_api_connect();
 
 $user->logout;
 ok( !$user->result->is_error, "logout" );
-ok( !$user->nt_user_session, "no session" );
+ok( !$user->nt_user_session,  "no session" );
 
 $user = undef;
 $user = new NicTool(

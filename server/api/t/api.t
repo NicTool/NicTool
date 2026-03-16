@@ -26,19 +26,15 @@ ok( !$res );
 $res = NicTool::API->result_list_param('get_zone_record_delegates');
 ok( $res => 'delegates' );
 
-$res = NicTool::API->param_access( 'get_zone_record_delegates',
-    'nt_zone_record_id' );
+$res = NicTool::API->param_access( 'get_zone_record_delegates', 'nt_zone_record_id' );
 ok( $res => 'read' );
 
-$res = NicTool::API->param_list( 'get_zone_record_delegates',
-    'nt_zone_record_id' );
+$res = NicTool::API->param_list( 'get_zone_record_delegates', 'nt_zone_record_id' );
 ok( !$res );
 
-$res = NicTool::API->param_type( 'get_zone_record_delegates',
-    'nt_zone_record_id' );
+$res = NicTool::API->param_type( 'get_zone_record_delegates', 'nt_zone_record_id' );
 ok( $res => 'ZONERECORD' );
 
-$res = NicTool::API->param_required( 'get_zone_record_delegates',
-    'nt_zone_record_id' );
+$res = NicTool::API->param_required( 'get_zone_record_delegates', 'nt_zone_record_id' );
 ok($res);
 
