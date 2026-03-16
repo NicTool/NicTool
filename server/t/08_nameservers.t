@@ -143,7 +143,7 @@ sub test_new_nameserver {
     # make test nameserver
     ####################
 
-    $res = $group1->new_nameserver(
+    my $res = $group1->new_nameserver(
         name          => 'ns.somewhere.com.',
         address       => '1.2.3.4',
         export_format => 'bind',

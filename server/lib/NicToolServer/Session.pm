@@ -325,8 +325,8 @@ sub session_id {
 sub _get_session {
     my ($self, $id) = @_;
 
-    my $sessions = $self->exec_query( "
-  SELECT u.*, s.*, g.name AS groupname
+    my $sessions = $self->exec_query(
+  "SELECT u.*, s.*, g.name AS groupname
     FROM nt_user_session s
       LEFT JOIN nt_user u ON s.nt_user_id = u.nt_user_id
       LEFT JOIN nt_group g ON u.nt_group_id = g.nt_group_id

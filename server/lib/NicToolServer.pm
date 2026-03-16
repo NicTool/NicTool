@@ -436,6 +436,11 @@ sub api_commands {
             'method'     => 'new_zone_record',
             'creation'   => 'ZONERECORD',
             'parameters' => {
+                'nt_zone_record_id' => {
+                    access   => 'write',
+                    required => 0,
+                    type     => 'ZONERECORD'
+                },
                 'nt_zone_id' => {
                     access   => 'read',
                     pseudo   => 'none',
@@ -1617,7 +1622,7 @@ sub exec_query {
         return $dbix->query("SELECT ROW_COUNT()")->list;
     }
 
-    if ( $query !~ /^[\s+]?SELECT/ ) {
+    if ( $query !~ /^\s*SELECT/ ) {
         warn "no support for this query. I'll try anyway\n$err";
     };
 

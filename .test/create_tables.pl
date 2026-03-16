@@ -6,23 +6,25 @@ use DBI;
 use English;
 $|++;
 
-my ($dbh, $db_host) = get_dbh();
+my $db_name  = 'nictool';
+my $db_user  = 'nictool';
+my $db_pass  = 'lootcin!mysql';
+my $db_host  = 'localhost';
+my $db_root_pw = 'root';
 
-my $db  = 'nictool';
-my $db_user = 'nictool';
-my $db_pass = 'lootcin!mysql';
+my $dbh = get_dbh();
 
-my $nt_root_email = 'ci@travis-ci.com';
+my $nt_root_email = 'workflows@github.com';
 my $salt = _get_salt(16);
 my $pass_hash = unpack("H*", Crypt::KeyDerivation::pbkdf2($db_pass, $salt, 5000, 'SHA512'));
 
 print qq{\n
 Beginning table creation.
 -------------------------
-DATABASE DSN:  mysql://nictool\@$db_host/$db
+DATABASE DSN:  mysql://$db_user\@$db_host/$db_name
 host: $db_host
-db  : $db
-user: nictool
+db  : $db_name
+user: $db_user
    *** the DSN info must match the settings in nictoolserver.conf! ***
 
 NICTOOL LOGIN: https://$db_host/index.cgi
@@ -34,10 +36,28 @@ email:  $nt_root_email
 };
 
 # Create database and initial privileges
-$dbh->do("DROP DATABASE IF EXISTS $db");
-$dbh->do("CREATE DATABASE $db");
-$dbh->do("GRANT ALL PRIVILEGES ON $db.* TO nictool\@$db_host IDENTIFIED BY '$db_pass'");
-$dbh->do("USE $db");
+$dbh->do("DROP DATABASE IF EXISTS $db_name");
+$dbh->do("CREATE DATABASE $db_name");
+
+my %user_hosts = map { $_ => 1 } ($db_host, '127.0.0.1', '::1');
+
+for my $host ( sort keys %user_hosts ) {
+    my $db_user_host = "'$db_user'\@'$host'";
+    $dbh->do("DROP USER IF EXISTS $db_user_host");
+
+    my $created_user = eval {
+        $dbh->do("CREATE USER $db_user_host IDENTIFIED WITH mysql_native_password BY '$db_pass'");
+        1;
+    };
+
+    if ( !$created_user ) {
+        $dbh->do("CREATE USER $db_user_host IDENTIFIED BY '$db_pass'");
+    }
+
+    $dbh->do("GRANT ALL PRIVILEGES ON $db_name.* TO $db_user_host");
+}
+
+$dbh->do("USE $db_name");
 
 my @sql_files = get_sql_files();
 foreach my $sql (@sql_files) {
@@ -71,15 +91,14 @@ sub get_dbh {
 #########################################################################
              Administrator DSN (database connection settings)
 #########################################################################\n";
-    my $db_host = 'localhost';
-    my $db_root_pw = '';
 
     my $dbh = DBI->connect("dbi:mysql:host=$db_host", 'root', $db_root_pw, {
+            mysql_ssl => 1,
             ChopBlanks => 1,
         })
         or die $DBI::errstr;
 
-    return ($dbh, $db_host);
+    return $dbh;
 }
 
 sub get_sql_files {

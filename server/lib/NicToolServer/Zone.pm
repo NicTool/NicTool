@@ -343,18 +343,17 @@ sub get_group_zones {
     my %delegates;
 
     # get zones that are 'pseudo' delegates: some of their records are delegated.
-    $sql = "SELECT nt_zone.nt_zone_id,
-               COUNT(*) AS delegated_records,
-               nt_delegate.delegated_by_id,
-               nt_delegate.delegated_by_name,
-               1 AS pseudo
+        $sql = "SELECT nt_zone.nt_zone_id,
+                             COUNT(*) AS delegated_records,
+                             MIN(nt_delegate.delegated_by_id) AS delegated_by_id,
+                             MIN(nt_delegate.delegated_by_name) AS delegated_by_name,
+                             1 AS pseudo
          FROM nt_delegate
          INNER JOIN nt_zone_record ON nt_delegate.nt_object_id=nt_zone_record.nt_zone_record_id
          INNER JOIN nt_zone ON nt_zone.nt_zone_id=nt_zone_record.nt_zone_id
-       WHERE nt_delegate.nt_group_id=$data->{nt_group_id} AND nt_delegate.nt_object_type='ZONERECORD'
-         GROUP BY nt_zone.nt_zone_id";
-    $sql .= (
-        @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
+             WHERE nt_delegate.nt_group_id=$data->{nt_group_id} AND nt_delegate.nt_object_type='ZONERECORD'";
+        $sql .= (@$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '');
+        $sql .= " GROUP BY nt_zone.nt_zone_id";
 
     my $delegs = $self->exec_query($sql)
         or return $self->error_response( 505, $self->{dbh}->errstr );
@@ -436,7 +435,6 @@ sub get_group_zones {
         : ''
         ) . "         ) ";
     $sql .= 'AND (' . join( ' ', @$conditions ) . ') ' if @$conditions;
-    $sql .= "GROUP BY nt_zone.nt_zone_id ";
     $sql .= "ORDER BY " . join( ', ', @$sortby ) . " " if (@$sortby);
     $sql .= "LIMIT " . ( $r_data->{start} - 1 ) . ", $r_data->{limit}";
 
