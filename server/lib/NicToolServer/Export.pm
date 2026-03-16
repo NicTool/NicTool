@@ -242,12 +242,14 @@ sub exec_query {
     return $r;
 }
 
-# export() now returns state of an export. If no export occured, then
-# it will return 0. Otherwise it return 1 when an export does occur.
+# export() returns state of an export:
+#   0 = no export occurred
+#   1 = export occurred
+#   2 = export error
 sub export {
     my $self = shift;
 
-    $self->preflight or return 0;   # signal no export occurred
+    $self->preflight or return 0;
     $self->get_active_nameservers();
     $self->load_export_class();
 
@@ -257,7 +259,7 @@ sub export {
     elsif ( ! $self->export_required ) {
         $self->set_no_change();
         $self->cleanup_db();
-        return 0;                   # signal no export occurred
+        return 0;
     };
 
     my $before = time;
@@ -267,10 +269,14 @@ sub export {
         if ( (time - $before) > 5 ) { $elapsed = ' ('. (time - $before) . ' secs)' };
         $self->elog('exported'.$elapsed);
 
-        $self->postflight;
-        return 1;                   # signal export did occur
+        if ( ! $self->postflight ) {
+            $self->elog('postflight failed', success=>0);
+            return 2;               # export error
+        }
+        return 1;                   # export occurred
     }
-    return 0;                       # signal no export occurred
+    $self->elog('export failed', success=>0);
+    return 2;                       # export error
 }
 
 sub get_dbh {
