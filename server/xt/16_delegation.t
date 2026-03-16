@@ -1137,12 +1137,7 @@ sub test_api_funcs {
 
     $res = $tuser->get_delegated_zone_records( nt_group_id => $gid2 );
     noerrok($res);
-    is( $res->size, 1 ) or do {
-        warn "nt_group_id=$gid2, record_id: $zrid1";
-        diag Data::Dumper::Dumper($res);
-        print "sleeping for 20 seconds...\n";
-        sleep 20;
-    };
+    is( $res->size, 1 );
 
     $z = $res->next;
     is( $z->get('nt_zone_record_id'), $zrid1 );
@@ -1518,7 +1513,6 @@ sub test_zones {
 
     #perm_write
     my %newz = (
-        serial      => 2,
         ttl         => 86401,
         description => 'modified description',
         mailaddr    => 'nobody.nowhere.com',
