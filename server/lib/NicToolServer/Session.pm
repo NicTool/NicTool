@@ -37,8 +37,6 @@ sub verify {
 sub verify_login {
     my $self = shift;
 
-    # timeout_sessions could be called from a cron job every
-    # $NicToolServer::session_timeout. This is easier to setup
     $self->timeout_sessions;
 
     my $data = $self->{client}->data();
@@ -46,17 +44,17 @@ sub verify_login {
 
     my $error_msg = 'Invalid username and/or password.';
 
-    return $self->auth_error('invalid group(s)')
+    return $self->auth_error($error_msg)
         if !$self->populate_groups;    # sets $data->nt_group_id
 
-    my ( $err, $user ) = $self->_get_user( $data->{username}, $data->{groups} );
+    my ( $err, $user ) = $self->_get_user( $data->{username}, $data->{groups}, $error_msg );
     return $err if $err;
 
     my $pass_attempt = delete $data->{password};
 
     $data->{user} = $user;
 
-    return $self->auth_error('invalid password')
+    return $self->auth_error($error_msg)
         if (
         !$self->valid_password(
             $pass_attempt, $user->{password}, $data->{username}, $user->{pass_salt}
@@ -82,7 +80,7 @@ sub verify_login {
     else {
         $user_perm->{inherit_group_permissions} = 0;
 
-        # usable_ns settings are always inherited from the group
+        # usable_ns settings are inherited from the group
         $user_perm->{usable_ns} = $groupperm->{usable_ns};
     }
 
@@ -109,7 +107,8 @@ sub verify_login {
 }
 
 sub _get_user {
-    my ( $self, $user, $groups ) = @_;
+    my ( $self, $user, $groups, $error_msg ) = @_;
+    $error_msg ||= 'Invalid username and/or password.';
 
     # nt_user_id|nt_group_id|first_name|last_name|username|password|email      |is_admin|deleted|groupname|
     #         1 |         1 | Root     | User    | root   |50aaa...|user@domain|    NULL|      0|NicTool  |
@@ -123,8 +122,8 @@ sub _get_user {
     my $users = $self->exec_query( $sql, $user )
         or return $self->error_response( 505, $self->{dbh}->errstr );
 
-    return $self->auth_error('no such username') if scalar @$users == 0;
-    return $self->auth_error('invalid username') if scalar @$users > 1;
+    return $self->auth_error($error_msg) if scalar @$users == 0;
+    return $self->auth_error($error_msg) if scalar @$users > 1;
     return ( undef, $users->[0] );
 }
 
