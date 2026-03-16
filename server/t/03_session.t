@@ -5,6 +5,7 @@ use Test::More;
 
 use lib 'lib';
 
+use NicToolServer::User;
 use NicToolServer::Session;
 
 my $session = bless {}, 'NicToolServer::Session';
