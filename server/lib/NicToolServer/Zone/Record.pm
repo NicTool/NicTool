@@ -126,6 +126,19 @@ sub edit_zone_record {
     $self->_bump_and_update_serial($data->{nt_zone_id}, $z->{serial});
 
     my $prev_data = $self->find_zone_record( $data->{nt_zone_record_id} );
+    if ( $prev_data->{deleted} ) {
+        if ( my $del = $self->get_param_meta( 'nt_zone_record_id', 'delegate' ) ) {
+            return $self->error_response( 404,
+                'Not allowed to undelete delegated record.' )
+                unless $del->{pseudo} && $del->{zone_perm_delete_records};
+        }
+
+        return $self->error_response( 404, 'Not allowed to undelete record.' )
+            unless $self->get_access_permission(
+                'ZONERECORD', $data->{nt_zone_record_id}, 'delete',
+            );
+    }
+
     my $log_action = $prev_data->{deleted} ? 'recovered' : 'modified';
     $data->{deleted} = 0;
 

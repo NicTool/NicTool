@@ -668,6 +668,11 @@ sub edit_zone {
         if ( ! @columns && ! exists $data->{nameservers} );
 
     my $prev_data = $self->find_zone( $data->{nt_zone_id} );
+    if ( $prev_data->{deleted} && $data->{deleted} eq '0' ) {
+        return $self->error_response( 404, 'Not allowed to undelete zone.' )
+            unless $self->get_access_permission( 'ZONE', $data->{nt_zone_id}, 'delete' );
+    }
+
     my $log_action = 'modified';
     if ( $prev_data->{deleted} ) {
         $log_action = 'recovered' if $data->{deleted} eq '0';
