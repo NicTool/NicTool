@@ -10,7 +10,7 @@ my $db_name  = 'nictool';
 my $db_user  = 'nictool';
 my $db_pass  = 'lootcin!mysql';
 my $db_host  = 'localhost';
-my $db_root_pw = 'root';
+my $db_root_pw = $ENV{MYSQL_ROOT_PASSWORD} // 'root';
 
 my $dbh = get_dbh();
 

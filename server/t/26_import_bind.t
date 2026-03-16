@@ -21,7 +21,6 @@ use NicToolTest;
 use Test::More 'no_plan';
 use NicToolServer::Import::BIND;
 
-
 my $nt_api = nt_api_connect();
 my $bind = nt_import_connect();
 
@@ -66,7 +65,7 @@ sub do_cleanup {
     noerrok($r);
 }
 
-sub nt_import_connect () {
+sub nt_import_connect {
     my $bind = NicToolServer::Import::BIND->new();
     $bind->nt_connect(
         Config('server_host'),
@@ -76,4 +75,3 @@ sub nt_import_connect () {
         );
     return $bind;
 }
-
