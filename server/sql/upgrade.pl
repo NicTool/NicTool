@@ -99,7 +99,11 @@ EO_SOME_DAY
 }
 
 sub _sql_test_2_35 {
-    my $r = _get_db_version() or return 1;  # query failed
+    my $r = _get_db_version();
+    return 1 if ! defined $r;   # query failed
+
+    my $exists = $dbh->query("SHOW COLUMNS FROM `nt_zone_log` LIKE 'location'")->hashes;
+    return 0 unless scalar $exists && $exists->[0] && $exists->[0]{field};   # column missing
     return 0 if $r eq '2.34';   # update!
     return 1;                   # don't update
 }
@@ -185,7 +189,8 @@ EO_SQL_2_35
 }
 
 sub _sql_test_2_34 {
-    my $r = _get_db_version() or return 1;  # query failed
+    my $r = _get_db_version();
+    return 1 if ! defined $r;   # query failed
     return 0 if $r eq '2.32';   # update!
     return 1;                   # don't update
 }
@@ -198,13 +203,14 @@ VALUES
     (256,'URI','URI',0,1,0),
     (257,'CAA','Certification Authority Authorization',0,1,0);
 
-UPDATE nt_options SET option_value='2.35' WHERE option_name='db_version';
+UPDATE nt_options SET option_value='2.34' WHERE option_name='db_version';
 EO_SQL_2_34
 ;
 }
 
 sub _sql_test_2_32 {
-    my $r = _get_db_version() or return 1;  # query failed
+    my $r = _get_db_version();
+    return 1 if ! defined $r;   # query failed
     return 0 if $r eq '2.30';   # update!
     return 1;                   # don't update
 }
@@ -220,7 +226,8 @@ EO_SQL_2_32
 }
 
 sub _sql_test_2_30 {
-    my $r = _get_db_version() or return 1;  # query failed
+    my $r = _get_db_version();
+    return 1 if ! defined $r;   # query failed
     return 0 if $r eq '2.29';   # update!
     return 1;                   # don't update
 }
@@ -237,7 +244,9 @@ EO_SQL_2_30
 sub _sql_test_2_29 {
     my $r = _get_db_version();
     return 1 if ! defined $r;   # query failed
-    return 1 if $r eq '2.29';   # already up-to-date
+
+    my $exists = $dbh->query("SHOW COLUMNS FROM `nt_zone_record_log` LIKE 'location'")->hashes;
+    return 0 unless scalar $exists && $exists->[0] && $exists->[0]{field};   # column missing
     return 0 if $r eq '2.28';   # do it!
     return 1;                   # don't update
 }
@@ -253,7 +262,9 @@ EO_SQL_2_29
 sub _sql_test_2_28 {
     my $r = _get_db_version();
     return 1 if ! defined $r;   # query failed
-    return 1 if $r eq '2.28';   # already up-to-date
+
+    my $exists = $dbh->query("SHOW COLUMNS FROM `nt_zone` LIKE 'last_publish'")->hashes;
+    return 0 unless scalar $exists && $exists->[0] && $exists->[0]{field};   # column missing
     return 0 if $r eq '2.27';   # do it!
     return 1;                   # don't update
 }
@@ -271,10 +282,7 @@ sub _sql_test_2_27 {
     return 1 if ! defined $r;   # query failed
 
     my $exists = $dbh->query("SELECT option_value FROM nt_options WHERE option_name='session_timeout'")->hashes;
-    if (scalar $exists && $exists->[0] && $exists->[0]{option_value}) {
-        return 1;               # already updated
-    };
-
+    return 0 unless scalar $exists && $exists->[0] && $exists->[0]{option_value};   # option missing
     return 0 if $r eq '2.24';   # do it!
     return 1;                   # don't update
 }
@@ -296,10 +304,12 @@ sub _sql_test_2_24 {
     my $r = _get_db_version();
     return 1 if ! defined $r;   # query failed
 
-    my $exists = $dbh->query("SHOW COLUMNS FROM `nt_nameserver` LIKE 'export_type_id'")->hashes;
-    if (scalar $exists && $exists->[0] && $exists->[0]{field}) {
-        return 1;               # already updated
-    };
+    # handle schema drift by checking for missing schema objects
+    my $col = $dbh->query("SHOW COLUMNS FROM `nt_nameserver` LIKE 'export_type_id'")->hashes;
+    return 0 unless scalar $col && $col->[0] && $col->[0]{field};   # column missing
+
+    my $tbl = $dbh->query("SHOW TABLES LIKE 'nt_nameserver_export_type'")->hashes;
+    return 0 unless scalar $tbl && $tbl->[0];                       # table missing
 
     return 0 if $r eq '2.18';   # do it!
     return 1;                   # don't update
@@ -348,9 +358,7 @@ sub _sql_test_2_18 {
     return 1 if ! defined $r;   # query failed
 
     my $exists = $dbh->query("SHOW COLUMNS FROM `resource_record_type` LIKE 'obsolete'")->hashes;
-    if (scalar $exists && $exists->[0] && $exists->[0]{field}) {
-        return 1;               # already updated
-    };
+    return 0 unless scalar $exists && $exists->[0] && $exists->[0]{field};   # column missing
 
     return 0 if $r eq '2.17';   # do it!
     return 1;                   # don't update
@@ -384,10 +392,7 @@ sub _sql_test_2_17 {
     return 1 if ! defined $r;   # query failed
 
     my $exists = $dbh->query("SHOW COLUMNS FROM `nt_user` LIKE 'is_admin'")->hashes;
-    if (scalar $exists && $exists->[0] && $exists->[0]{field}) {
-        return 1;               # already updated
-    };
-
+    return 0 unless scalar $exists && $exists->[0] && $exists->[0]{field};   # column missing
     return 0 if $r eq '2.16';   # do it!
     return 1;                   # don't update
 }
@@ -404,10 +409,7 @@ sub _sql_test_2_16 {
     return 1 if ! defined $r;   # query failed
 
     my $exists = $dbh->query("SHOW COLUMNS FROM `nt_perm` LIKE 'usable_ns'")->hashes;
-    if (scalar $exists && $exists->[0] && $exists->[0]{field}) {
-        return 1;               # already updated
-    };
-
+    return 0 unless scalar $exists && $exists->[0] && $exists->[0]{field};   # column missing
     return 0 if $r eq '2.15';   # do it!
     return 1;                   # don't update
 }
