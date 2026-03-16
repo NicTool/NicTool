@@ -1073,10 +1073,10 @@ sub get_zonerecord_delegate_access {
         . " INNER JOIN nt_zone_record on nt_zone_record.nt_zone_record_id= nt_delegate.nt_object_id AND nt_delegate.nt_object_type='ZONERECORD'"
         . " INNER JOIN nt_zone on nt_zone.nt_zone_id=nt_zone_record.nt_zone_id"
         . " INNER JOIN nt_group on nt_zone.nt_group_id = nt_group.nt_group_id"
-                . " WHERE nt_delegate.nt_group_id=?"
-                . " AND nt_delegate.nt_object_id=?"
-                . " AND nt_delegate.nt_object_type='ZONERECORD'"
-                . " AND nt_delegate.deleted=0";
+        . " WHERE nt_delegate.nt_group_id=?"
+        . " AND nt_delegate.nt_object_id=?"
+        . " AND nt_delegate.nt_object_type='ZONERECORD'"
+        . " AND nt_delegate.deleted=0";
 
     my $r = $self->exec_query( $sql, [ $group_id, $id ] );
     return $r->[0] if $r->[0];
