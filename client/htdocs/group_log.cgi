@@ -30,12 +30,12 @@ sub main {
 
     my $user = $nt_obj->verify_session();
 
-    if ($user && ref $user) {
+    if ( $user && ref $user ) {
         my $message;
         if ( $q->param('redirect') ) {
             $message = $nt_obj->redirect_from_log($q);
         }
-        print $q->header (-charset=>"utf-8");
+        print $q->header( -charset => "utf-8" );
         display( $nt_obj, $q, $user, $message );
     }
 }
@@ -48,11 +48,13 @@ sub display {
         $NicToolClient::body_frame_start_template,
         username  => $user->{'username'},
         groupname => $user->{'groupname'},
-        userid    => $user->{'nt_user_id'}        
+        userid    => $user->{'nt_user_id'}
     );
 
     my $level = $nt_obj->display_group_tree(
-        $user, $user->{'nt_group_id'}, scalar($q->param('nt_group_id')), 0
+        $user,
+        $user->{'nt_group_id'},
+        scalar( $q->param('nt_group_id') ), 0
     );
 
     print qq[ 
@@ -61,8 +63,9 @@ sub display {
     my $pad = 0;
     for my $x ( 1 .. $level ) {
         if ( $x == $level ) {
-            print qq[<img src="$NicToolClient::image_dir/dirtree_elbow.gif" style="padding-left: ${pad}px" class="tee" alt="elbow">];
-        };
+            print
+                qq[<img src="$NicToolClient::image_dir/dirtree_elbow.gif" style="padding-left: ${pad}px" class="tee" alt="elbow">];
+        }
         $pad += 21;
     }
 
@@ -79,8 +82,7 @@ sub display {
 sub display_log {
     my ( $nt_obj, $q, $message ) = @_;
 
-    my @columns
-        = qw(timestamp group_name user action object title description);
+    my @columns = qw(timestamp group_name user action object title description);
 
     my %labels = (
         timestamp   => 'Date',
@@ -92,17 +94,17 @@ sub display_log {
         description => 'Description',
     );
 
-    my $group = $nt_obj->get_group( nt_group_id  => scalar($q->param('nt_group_id')) );
+    my $group             = $nt_obj->get_group( nt_group_id => scalar( $q->param('nt_group_id') ) );
     my $include_subgroups = $group->{'has_children'} ? 'sub-groups' : undef;
 
     $nt_obj->display_sort_options( $q, \@columns, \%labels, 'group_log.cgi',
         ['nt_group_id'], $include_subgroups )
-            if $q->param('edit_sortorder');
+        if $q->param('edit_sortorder');
     $nt_obj->display_advanced_search( $q, \@columns, \%labels,
         'group_log.cgi', ['nt_group_id'], $include_subgroups )
-            if $q->param('edit_search');
+        if $q->param('edit_search');
 
-    my %params = ( nt_group_id => scalar($q->param('nt_group_id')) );
+    my %params = ( nt_group_id => scalar( $q->param('nt_group_id') ) );
     my %sort_fields;
     $nt_obj->prepare_search_params( $q, \%labels, \%params, \%sort_fields, 50 );
 
@@ -118,20 +120,20 @@ sub display_log {
 
     my @state_fields;
     foreach ( @{ $nt_obj->paging_fields } ) {
-        next if ! $q->param($_);
-        push @state_fields, "$_=" . $q->escape( scalar($q->param($_)) );
+        next if !$q->param($_);
+        push @state_fields, "$_=" . $q->escape( scalar( $q->param($_) ) );
     }
-    my $state_string = @state_fields ? join('&amp;', @state_fields) : 'not_empty=1';
+    my $state_string = @state_fields ? join( '&amp;', @state_fields ) : 'not_empty=1';
 
     $nt_obj->display_nice_error($message) if $message;
 
     $nt_obj->display_search_rows( $q, $rv, \%params, 'group_log.cgi',
         ['nt_group_id'], $include_subgroups );
 
-    if (!@$log) {
+    if ( !@$log ) {
         print "<div class=center>No log data available</div>";
         return;
-    };
+    }
 
     print qq[
 <table class="fat">
@@ -145,7 +147,9 @@ sub display_log {
      <td>$labels{$_}</td>
      <td>&nbsp; &nbsp; $sort_fields{$_}->{'order'} </td>
      <td><img src="$NicToolClient::image_dir/],
-       uc( $sort_fields{$_}->{'mod'} ) eq 'ASCENDING' ? 'up.gif' : 'down.gif', qq["></td>
+                uc( $sort_fields{$_}->{'mod'} ) eq 'ASCENDING'
+                ? 'up.gif'
+                : 'down.gif', qq["></td>
     </tr>
    </table>
   </td>];
@@ -179,12 +183,12 @@ sub display_log {
      <td>],
                     join(
                     ' / ',
-                    map(qq[<a href="group.cgi?nt_group_id=$_->{'nt_group_id'}">$_->{'name'}</a>],
+                    map( qq[<a href="group.cgi?nt_group_id=$_->{'nt_group_id'}">$_->{'name'}</a>],
                         (   @{ $map->{ $row->{'nt_group_id'} } },
                             {   nt_group_id => $row->{'nt_group_id'},
                                 name        => $row->{'group_name'}
                             }
-                            ) )
+                        ) )
                     ),
                     qq[</td>
     </tr>
@@ -204,8 +208,11 @@ sub display_log {
             }
             elsif ( $_ eq 'title' ) {
                 my $gid = $q->param('nt_group_id');
-                my $url = "group_log.cgi?$state_string&amp;redirect=1&amp;nt_group_id=$gid&amp;object="
-                    . $q->escape( $row->{'object'} ) . "&amp;obj_id=" . $q->escape( $row->{'object_id'} );
+                my $url =
+                      "group_log.cgi?$state_string&amp;redirect=1&amp;nt_group_id=$gid&amp;object="
+                    . $q->escape( $row->{'object'} )
+                    . "&amp;obj_id="
+                    . $q->escape( $row->{'object_id'} );
 
                 print qq[
   <td>

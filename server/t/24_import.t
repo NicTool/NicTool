@@ -23,10 +23,10 @@ use NicToolTest;
 use Test::More;
 use_ok('NicToolServer::Import::Base');
 
-$Data::Dumper::Sortkeys=1;
+$Data::Dumper::Sortkeys = 1;
 
 my $base = NicToolServer::Import::Base->new();
-ok($base, "new");
+ok( $base, "new" );
 
 my $get_zone_tests = {
     'host.example.com'  => 'example.com',
@@ -36,7 +36,7 @@ my $get_zone_tests = {
 };
 
 foreach my $fqdn ( keys %$get_zone_tests ) {
-    cmp_ok($base->get_zone($fqdn), 'eq', $get_zone_tests->{$fqdn}, "$fqdn");
+    cmp_ok( $base->get_zone($fqdn), 'eq', $get_zone_tests->{$fqdn}, "$fqdn" );
 }
 
 done_testing();

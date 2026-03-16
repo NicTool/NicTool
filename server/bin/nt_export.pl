@@ -17,14 +17,15 @@ BEGIN {
 
     # is the executable path qualified? (starts with / or . (as in ./ or ../))
     if ( $0 =~ m|^[/\.]| ) {
+
         # is $0 is a symbolic link?
         $::PROG_LOCATION = -l $0 ? readlink $0 : $0;
     }
     else {
-        (my $prog = $0) =~ s%^.*/([^/]+)$%$1%;
-        my @PATH=split (':', $ENV{'PATH'});
+        ( my $prog = $0 ) =~ s%^.*/([^/]+)$%$1%;
+        my @PATH = split( ':', $ENV{'PATH'} );
         foreach my $dir (@PATH) {
-            if (-f "$dir/$prog") { # found it!
+            if ( -f "$dir/$prog" ) {    # found it!
                 $dir =~ s/\./`pwd`/eo;
                 chomp $dir;
                 $::PROG_LOCATION = -l $prog ? readlink $prog : $prog;
@@ -34,51 +35,51 @@ BEGIN {
     }
 
     # Set $LIB_DIR to point to the lib/NicToolServer dir in my parent dir
-    ($LIB_DIR = $::PROG_LOCATION) =~ s%/[^/]+$%/../lib/NicToolServer%;
+    ( $LIB_DIR = $::PROG_LOCATION ) =~ s%/[^/]+$%/../lib/NicToolServer%;
     unshift @INC, $LIB_DIR;
+
     # above probably eliminates the need of all the uses of the lib module
 }
 
-
-$|++;  # output autoflush (so log msgs aren't buffered)
+$|++;    # output autoflush (so log msgs aren't buffered)
 
 # process command line options
 Getopt::Long::GetOptions(
-    'daemon'    => \my $daemon,
-    'dsn=s'     => \my $dsn,
-    'conf=s'    => \my $conf,
-    'help'      => \my $usage,
-    'incremental'=>\my $incremental,
-    'force'     => \my $force,
-    'nsid=i'    => \my $nsid,
-    'user=s'    => \my $db_user,
-    'pass=s'    => \my $db_pass,
-    'pfextra'   => \my $postflight_extra,
-    'verbose'   => \my $verbose,
-) or do {
+    'daemon'      => \my $daemon,
+    'dsn=s'       => \my $dsn,
+    'conf=s'      => \my $conf,
+    'help'        => \my $usage,
+    'incremental' => \my $incremental,
+    'force'       => \my $force,
+    'nsid=i'      => \my $nsid,
+    'user=s'      => \my $db_user,
+    'pass=s'      => \my $db_pass,
+    'pfextra'     => \my $postflight_extra,
+    'verbose'     => \my $verbose,
+    )
+    or do {
     print STDERR "error parsing command line options";
     exit 2;
-};
+    };
 
 usage() and exit if $usage;
 
-if ( ! defined $dsn || ! defined $db_user || ! defined $db_pass ) {
+if ( !defined $dsn || !defined $db_user || !defined $db_pass ) {
     get_db_creds_from_nictoolserver_conf($conf);
 }
 
-$dsn     ||= ask( "database DSN",
-             default => 'DBI:mysql:database=nictool;host=127.0.0.1;port=3306');
-$db_user ||= ask( "database user", default => 'root' );
+$dsn ||= ask( "database DSN", default => 'DBI:mysql:database=nictool;host=127.0.0.1;port=3306' );
+$db_user ||= ask( "database user", default  => 'root' );
 $db_pass ||= ask( "database pass", password => 1 );
 
 my $export = NicToolServer::Export->new(
-    ns_id => $nsid || 0,
-    force => $force || 0,
+    ns_id   => $nsid  || 0,
+    force   => $force || 0,
     pfextra => $postflight_extra ? 1 : 0,
-    debug => $verbose || 0,
-    );
-$export->incremental( $incremental || 0);
-$export->get_dbh( dsn => $dsn, user => $db_user, pass => $db_pass,) or do {
+    debug   => $verbose || 0,
+);
+$export->incremental( $incremental || 0 );
+$export->get_dbh( dsn => $dsn, user => $db_user, pass => $db_pass, ) or do {
     print STDERR "database connection failed";
     exit 2;
 };
@@ -98,29 +99,29 @@ local $SIG{SEGV} = \&graceful_exit;
 local $SIG{ALRM} = \&graceful_exit;
 
 my $result;
-if ( $daemon ) { $result = $export->daemon(); }
-else           { $result = $export->export(); };
+if   ($daemon) { $result = $export->daemon(); }
+else           { $result = $export->export(); }
 
 exit $result;
 
-
 sub get_nsid {
-    my $export = shift || die "get_nsid() requires a NicToolServer::Export object";
+    my $export = shift
+        || die "get_nsid() requires a NicToolServer::Export object";
     my $nslist = $export->get_active_nameservers();
 
     # determine if the current hostname is a listed nameserver
     my $me = hostname();
     foreach my $nsentry (@$nslist) {
-        if ($nsentry->{name} =~ /^$me\./) {
+        if ( $nsentry->{name} =~ /^$me\./ ) {
             return $nsentry->{nt_nameserver_id};
         }
     }
 
     printf( "\n%5s   %25s   %9s\n", 'nsid', 'name', 'format' );
     my $format = "%5.0f   %25s   %9s\n";
-    foreach my $ns (sort @$nslist) {
+    foreach my $ns ( sort @$nslist ) {
         printf $format, $ns->{nt_nameserver_id}, $ns->{name}, $ns->{export_format};
-    };
+    }
     print STDERR "\nERROR: missing nsid. Try this:
 
     $0 -nsid N\n";
@@ -129,14 +130,15 @@ sub get_nsid {
 
 sub ask {
     my $question = shift;
-    my %p = validate( @_,
-        {   default  => { type => SCALAR, optional => 1 },
+    my %p        = validate(
+        @_,
+        {   default  => { type => SCALAR,  optional => 1 },
             password => { type => BOOLEAN, optional => 1 },
         }
     );
 
-    my $pass     = $p{password};
-    my $default  = $p{default};
+    my $pass    = $p{password};
+    my $default = $p{default};
     my $response;
 
 PROMPT:
@@ -148,22 +150,24 @@ PROMPT:
     system "stty echo" if $pass;
     chomp $response;
 
-    return $response if length $response  > 0; # they typed something, return it
-    return $default if defined $default;   # return the default, if available
-    return '';                             # return empty handed
+    return $response
+        if length $response > 0;    # they typed something, return it
+    return $default if defined $default;    # return the default, if available
+    return '';                              # return empty handed
 }
 
 sub get_db_creds_from_nictoolserver_conf {
 
     my $file = shift || '';
-    my $prog_dir; ($prog_dir = $::PROG_LOCATION) =~ s%^(.*)/[^/]+$%$1%;
+    my $prog_dir;
+    ( $prog_dir = $::PROG_LOCATION ) =~ s%^(.*)/[^/]+$%$1%;
 
-    if (! -r $file) {
+    if ( !-r $file ) {
+
         # try a number of locations to try to find the config file
-        my @dirs_to_try = ("$prog_dir/../lib", 'lib', '../server/lib',
-                           '../lib', '..', '.');
+        my @dirs_to_try = ( "$prog_dir/../lib", 'lib', '../server/lib', '../lib', '..', '.' );
         foreach my $dir (@dirs_to_try) {
-            if (-r "$dir/nictoolserver.conf") {
+            if ( -r "$dir/nictoolserver.conf" ) {
                 $file = "$dir/nictoolserver.conf";
                 last;
             }
@@ -173,7 +177,7 @@ sub get_db_creds_from_nictoolserver_conf {
         $file =~ s%/[^/]+/../%/%g;
 
         # Unable to locate the config file
-        return if ! $file;
+        return if !$file;
     }
 
     if ($verbose) {
@@ -182,22 +186,22 @@ sub get_db_creds_from_nictoolserver_conf {
     }
     my $contents = `cat $file`;
 
-    if ( ! $dsn ) {
+    if ( !$dsn ) {
         ($dsn) = $contents =~ m/['"](DBI:.*?)["']/;
-    };
+    }
 
-    if ( ! $db_user ) {
+    if ( !$db_user ) {
         ($db_user) = $contents =~ m/db_user\s+=\s+'(\w+)'/;
-    };
+    }
 
-    if ( ! $db_pass ) {
+    if ( !$db_pass ) {
         ($db_pass) = $contents =~ m/db_pass\s+=\s+'(.*)?'/;
-    };
+    }
 }
 
 sub graceful_exit {
     my $signal = shift;
-    $export->elog( "exiting: received signal ($signal)" );
+    $export->elog("exiting: received signal ($signal)");
     exit;
 }
 
@@ -226,5 +230,5 @@ occur and an exit status of 0 when the export did not occur (or no updates).
 If nt_export detects an error, then an exit status of 2 is returned.
 
 EOHELP
-;
+        ;
 }

@@ -42,23 +42,24 @@ sub send_request {
         proxy => $url,
 
         #URI is typically org name followed by module path
-        uri => sprintf( '%s://%s/NicToolServer/SOAP',
-                        $self->_nt->{transfer_protocol},
-                        $self->_nt->{server_host} ),
+        uri => sprintf(
+            '%s://%s/NicToolServer/SOAP',
+            $self->_nt->{transfer_protocol},
+            $self->_nt->{server_host}
+        ),
 
         #don't die on fault, just return result.
         on_fault => sub { my ( $soap, $res ) = @_; return $res; }
     );
     warn "URI: " . $soap->uri . ", proxy: " . $url . "\n"
         if $self->_nt->{debug_soap_setup};
-    warn "Calling soap function \"$func\" with params:\n"
-        . Dumper( \%vars ) . "\n"
+    warn "Calling soap function \"$func\" with params:\n" . Dumper( \%vars ) . "\n"
         if $self->_nt->{debug_soap_request};
 
     #make soap call and evaluate response.
     my $som = $soap->call( $func => \%vars );
 
-#result should be SOAP::SOM object if success or fault, or scalar for transport error
+    #result should be SOAP::SOM object if success or fault, or scalar for transport error
     if ( !ref $som ) {
 
         #scalar means transport error
@@ -66,17 +67,13 @@ sub send_request {
             if $self->_nt->{debug_soap_response};
         return {
             error_code => $soap->transport->code,
-            error_msg  => 'SOAP: transport error: ' 
-                . $url . ': '
-                . $soap->transport->status
+            error_msg  => 'SOAP: transport error: ' . $url . ': ' . $soap->transport->status
         };
     }
     elsif ( $som->isa('SOAP::SOM') && !$som->fault ) {
         warn "SOAP result: " . Dumper( $som->result ) . "\n"
             if $self->_nt->{debug_soap_response};
-        warn "function $func = \n params{"
-            . Dumper( \%vars ) . "}\n"
-            . Dumper( $som->result )
+        warn "function $func = \n params{" . Dumper( \%vars ) . "}\n" . Dumper( $som->result )
             if $self->_nt->{debug_soap_response};
 
         return $som->result;

@@ -67,8 +67,7 @@ while (<>) {
                 if $log;
         }
         if ( @arr < 6 ) {
-            print "LOG\tPowerDNS sent unparseable line: "
-                . join( ":", @arr ) . "\n";
+            print "LOG\tPowerDNS sent unparseable line: " . join( ":", @arr ) . "\n";
             print "FAIL\n";
             next;
         }
@@ -81,18 +80,18 @@ while (<>) {
             || $qtype eq 'CNAME' )
         {
             @res = &get_records(@arr);
-            $main::qcache{ $qname . ":" . $qtype }
-                = +{ response => [@res], expire => $default_ttl + time };
+            $main::qcache{ $qname . ":" . $qtype } =
+                +{ response => [@res], expire => $default_ttl + time };
         }
         elsif ( $qtype eq 'NS' ) {
             @res = &get_ns(@arr);
-            $main::qcache{ $qname . ":" . $qtype }
-                = +{ response => [@res], expire => $default_ttl + time };
+            $main::qcache{ $qname . ":" . $qtype } =
+                +{ response => [@res], expire => $default_ttl + time };
         }
         elsif ( $qtype eq 'SOA' ) {
             @res = &get_soa(@arr);
-            $main::qcache{ $qname . ":" . $qtype }
-                = +{ response => [@res], expire => $default_ttl + time };
+            $main::qcache{ $qname . ":" . $qtype } =
+                +{ response => [@res], expire => $default_ttl + time };
         }
         elsif ( $qtype eq "MBOXFW" ) {
         }
@@ -139,14 +138,10 @@ sub get_axfr {
         while ( $t = $sth->fetchrow_hashref ) {
             push @result,
                 [
-                "DATA",
-                $t->{name} =~ /\.$/
+                "DATA", $t->{name} =~ /\.$/
                 ? $t->{name}
                 : $t->{name} . "." . $t->{zone},
-                'IN',
-                $t->{type},
-                $t->{ttl},
-                ( $use_zone_id ? $t->{'nt_zone_id'} : 1 ),
+                'IN', $t->{type}, $t->{ttl}, ( $use_zone_id ? $t->{'nt_zone_id'} : 1 ),
                 $t->{address}
                 ];
             push @rows, $t;
@@ -166,14 +161,14 @@ sub get_records {
     for my $n ( 1 .. scalar(@zs) ) {
         push @order,
             +{
-            zone => join( ".", @zs ),
+            zone   => join( ".", @zs ),
             record => $t ? $t : $qname . "."
             };
 
         # get *.zone
         push @order,
             +{
-            zone   => join( ".",        @zs ),
+            zone   => join( ".", @zs ),
             record => "*." . join( ".", @zs ) . "."
             }
             if @order > 1;
@@ -190,13 +185,15 @@ sub get_records {
    LEFT JOIN nt_zone_record r ON z.nt_zone_id=r.nt_zone_id
    LEFT JOIN resource_record_type t ON r.type_id=t.id
    LEFT JOIN nt_zone_nameserver ns ON ns.nt_zone_id=z.nt_zone_id
-     WHERE ( " 
-        . join( " OR ",
-            map {
-                  " z.zone = " . $dbh->quote( $_->{'zone'} )
-                . " AND r.name = " . $dbh->quote( $_->{'record'} )
-                } @order
-            )
+     WHERE ( " . join(
+        " OR ",
+        map {
+                  " z.zone = "
+                . $dbh->quote( $_->{'zone'} )
+                . " AND r.name = "
+                . $dbh->quote( $_->{'record'} )
+        } @order
+        )
         . " ) 
          AND ( t.name = '$qtype' OR t.name ='CNAME' ) 
          AND ns.nt_nameserver_id=$main::nt_nameserver_id
@@ -223,9 +220,7 @@ sub get_records {
                 && !exists $main::seenrecid{ $t->{'nt_zone_record_id'} } )
             {
                 $t->{address} =~ s/\.$//;
-                push @result,
-                    &get_records( $type, $t->{address}, $qclass, $qtype, $id,
-                    $ip );
+                push @result, &get_records( $type, $t->{address}, $qclass, $qtype, $id, $ip );
             }
         }
 
@@ -257,8 +252,7 @@ sub get_ns {
         while ( $t = $sth->fetchrow_hashref ) {
             push @result,
                 [
-                "DATA", $qname, $qclass, $qtype, $t->{ttl},
-                $use_zone_id ? $t->{'nt_zone_id'} : 1,
+                "DATA", $qname, $qclass, $qtype, $t->{ttl}, $use_zone_id ? $t->{'nt_zone_id'} : 1,
                 $t->{name}
                 ];
             push @rows, $t;
@@ -281,8 +275,7 @@ SELECT ns.name, z.*
   FROM nt_zone z
 LEFT JOIN nt_zone_nameserver zns ON z.nt_zone_id=zns.nt_zone_id
 LEFT JOIN nt_nameserver ns ON zns.`nt_nameserver_id`=ns.`nt_nameserver_id`
- WHERE z.zone = " . $dbh->quote($qname)
-." AND z.deleted=0
+ WHERE z.zone = " . $dbh->quote($qname) . " AND z.deleted=0
    AND ns.deleted=0
  LIMIT 1";
 
@@ -298,9 +291,9 @@ LEFT JOIN nt_nameserver ns ON zns.`nt_nameserver_id`=ns.`nt_nameserver_id`
         $t->{mailaddr} =~ s/\./@/;
         push @result,
             [
-            "DATA",  $qname,
-            $qclass, $qtype,
-            $t->{ttl}, $use_zone_id ? $t->{'nt_zone_id'} : 1,
+            "DATA",       $qname,
+            $qclass,      $qtype,
+            $t->{ttl},    $use_zone_id ? $t->{'nt_zone_id'} : 1,
             $t->{name},   $t->{mailaddr},
             $t->{serial}, $t->{refresh},
             $t->{retry},  $t->{expire},

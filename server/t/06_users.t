@@ -40,8 +40,8 @@ use Test::More 'no_plan';
 
 my $nt_obj = nt_api_connect();
 
-my ($uid1, $uid2, $gid1, $gid2, $user1, $user2, $group1, $group2);
-my (%username, %first_name, %last_name, %email);
+my ( $uid1, $uid2, $gid1, $gid2, $user1, $user2, $group1, $group2 );
+my ( %username, %first_name, %last_name, %email );
 
 eval {&do_the_tests};
 warn $@ if $@;
@@ -124,7 +124,7 @@ sub test_new_group {
     noerrok($res) && ok( $res->get('nt_group_id') =~ qr/^\d+$/ )
         or die "Couldn't create test group1";
 
-    $gid1 = $res->get('nt_group_id');
+    $gid1   = $res->get('nt_group_id');
     $group1 = $nt_obj->get_group( nt_group_id => $gid1 );
     noerrok($group1) && is( $group1->id, $gid1 )
         or die "Couldn't get test group1";
@@ -133,7 +133,7 @@ sub test_new_group {
     $res = $nt_obj->get_group->new_group( name => 'test_delete_me2' );
     noerrok($res) && ok( $res->get('nt_group_id') =~ qr/^\d+$/ )
         or die "Couldn't create test group2";
-    $gid2 = $res->get('nt_group_id');
+    $gid2   = $res->get('nt_group_id');
     $group2 = $nt_obj->get_group( nt_group_id => $gid2 );
     noerrok($group2) && is( $group2->id, $gid2 )
         or die "Couldn't get test group2";
@@ -199,7 +199,6 @@ sub test_new_user {
         $res = $nt_obj->delete_users( user_list => $res->get('nt_user_id') );
     }
 
-
     #mismatched passwords
     $res = $group1->new_user(
         username  => 'blah',
@@ -244,7 +243,6 @@ sub test_new_user {
         or die "couldn't make test user2";
     $uid2 = $res->get('nt_user_id');
 
-
     ####################
     # tests for non unique username
     ####################
@@ -257,8 +255,7 @@ sub test_new_user {
         password2 => 'something'
     );
     noerrok( $res, 300 );
-    ok( $res->get('error_msg') =~
-            qr/is not unique. Please choose a different username/ );
+    ok( $res->get('error_msg')  =~ qr/is not unique. Please choose a different username/ );
     ok( $res->get('error_desc') =~ qr/Sanity error/ );
     if ( !$res->is_error ) {
         $res = $nt_obj->delete_users( user_list => $res->get('nt_user_id') );
@@ -291,12 +288,14 @@ sub test_get_user {
 
     #get_user 1
     $user1 = $nt_obj->get_user( nt_user_id => $uid1 );
-    noerrok($user1) && is( $user1->id, $uid1 ) or die "Couldn't get test user1";
+    noerrok($user1) && is( $user1->id, $uid1 )
+        or die "Couldn't get test user1";
     is( $user1->get('username'), 'testuser1' );
 
     #get_user 2
     $user2 = $nt_obj->get_user( nt_user_id => $uid2 );
-    noerrok($user2) && is( $user2->id, $uid2 ) or die "Couldn't get test user1";
+    noerrok($user2) && is( $user2->id, $uid2 )
+        or die "Couldn't get test user1";
     is( $user2->get('username'), 'testuser2' );
 }
 
@@ -327,23 +326,20 @@ sub test_edit_user {
     #username too small
     $res = $user1->edit_user( username => 'bl' );
     noerrok( $res, 300 );
-    ok( $res->get('error_msg') =~
-            qr/Username must be at least 3 characters/ );
+    ok( $res->get('error_msg')  =~ qr/Username must be at least 3 characters/ );
     ok( $res->get('error_desc') =~ qr/Sanity error/ );
 
     #username too small
     $res = $user1->edit_user( username => 'l' );
     noerrok( $res, 300 );
-    ok( $res->get('error_msg') =~
-            qr/Username must be at least 3 characters/ );
+    ok( $res->get('error_msg')  =~ qr/Username must be at least 3 characters/ );
     ok( $res->get('error_desc') =~ qr/Sanity error/ );
-
 
     #change password no old password
     $res = $user1->edit_user( password => 'another', password2 => 'another' );
     noerrok( $res, 300 );
-    ok( $res->get('error_msg') =~ qr/Current password/, "edit_user, no previous" );
-    ok( $res->get('error_desc') =~ qr/Sanity error/, "edit_user" );
+    ok( $res->get('error_msg')  =~ qr/Current password/, "edit_user, no previous" );
+    ok( $res->get('error_desc') =~ qr/Sanity error/,     "edit_user" );
 
     #change password bad old password
     $res = $user1->edit_user(
@@ -352,7 +348,7 @@ sub test_edit_user {
         password2        => 'another'
     );
     noerrok( $res, 300 );
-    ok( $res->get('error_msg') =~ qr/Current password/, "edit_user, wrong" );
+    ok( $res->get('error_msg')  =~ qr/Current password/, "edit_user, wrong" );
     ok( $res->get('error_desc') =~ qr/Sanity error/ );
 
     #change password blank old password
@@ -362,9 +358,8 @@ sub test_edit_user {
         password2        => 'another'
     );
     noerrok( $res, 300 );
-    ok( $res->get('error_msg') =~ qr/Current password/ );
+    ok( $res->get('error_msg')  =~ qr/Current password/ );
     ok( $res->get('error_desc') =~ qr/Sanity error/ );
-
 
     #change password mismatched
     $res = $user1->edit_user(
@@ -379,8 +374,7 @@ sub test_edit_user {
     #username already taken
     $res = $user1->edit_user( username => 'testuser2' );
     noerrok( $res, 300 );
-    ok( $res->get('error_msg') =~
-            qr/is not unique. Please choose a different username/ );
+    ok( $res->get('error_msg')  =~ qr/is not unique. Please choose a different username/ );
     ok( $res->get('error_desc') =~ qr/Sanity error/ );
 
     ####################
@@ -398,8 +392,8 @@ sub test_edit_user {
     $res = $nt_obj->get_user( 'nt_user_id' => $uid1 );
     noerrok($res);
     is( $res->get('first_name'), 'name1' );
-    is( $res->get('last_name') , '1name' );
-    is( $res->get('email')     , 'test1@blah.blah' );
+    is( $res->get('last_name'),  '1name' );
+    is( $res->get('email'),      'test1@blah.blah' );
 
     #edit_user 2
     $res = $user2->edit_user(
@@ -413,8 +407,8 @@ sub test_edit_user {
     $res = $nt_obj->get_user( 'nt_user_id' => $uid2 );
     noerrok($res);
     is( $res->get('first_name'), 'name2' );
-    is( $res->get('last_name') , '2name' );
-    is( $res->get('email')     , 'test2@blah.blah' );
+    is( $res->get('last_name'),  '2name' );
+    is( $res->get('email'),      'test2@blah.blah' );
 
     # test changing of password
     my $tuser = new NicTool(
@@ -450,9 +444,9 @@ sub test_edit_user {
     ok( !$tuser->result->is_error );
     ok( $tuser->nt_user_session );
 
-    if ( ! $tuser->result->is_error ) {
+    if ( !$tuser->result->is_error ) {
         noerrok( $tuser->logout );
-    };
+    }
 }
 
 sub test_get_group_users {
@@ -481,18 +475,18 @@ sub test_get_group_users {
 
     $res = $group1->get_group_users;
     noerrok($res);
-    is( ref $res, 'NicTool::List' );
+    is( ref $res,   'NicTool::List' );
     is( $res->size, 2 );
     if ( $res->size == 2 ) {
         my @u = $res->list;
-        is( $u[0]->get('username')  , $username{ $u[0]->id } );
-        is( $u[1]->get('username')  , $username{ $u[1]->id } );
+        is( $u[0]->get('username'),   $username{ $u[0]->id } );
+        is( $u[1]->get('username'),   $username{ $u[1]->id } );
         is( $u[0]->get('first_name'), $first_name{ $u[0]->id } );
         is( $u[1]->get('first_name'), $first_name{ $u[1]->id } );
-        is( $u[0]->get('last_name') , $last_name{ $u[0]->id } );
-        is( $u[1]->get('last_name') , $last_name{ $u[1]->id } );
-        is( $u[0]->get('email')     , $email{ $u[0]->id } );
-        is( $u[1]->get('email')     , $email{ $u[1]->id } );
+        is( $u[0]->get('last_name'),  $last_name{ $u[0]->id } );
+        is( $u[1]->get('last_name'),  $last_name{ $u[1]->id } );
+        is( $u[0]->get('email'),      $email{ $u[0]->id } );
+        is( $u[1]->get('email'),      $email{ $u[1]->id } );
     }
 }
 
@@ -517,7 +511,10 @@ sub test_move_users {
     ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
 
     # nt_group_id missing
-    $res = $group2->move_users( nt_group_id => '', user_list => "$uid1,$uid2" );
+    $res = $group2->move_users(
+        nt_group_id => '',
+        user_list   => "$uid1,$uid2"
+    );
     noerrok( $res, 301 );
     is( $res->get('error_msg'), 'nt_group_id' );
     ok( $res->get('error_desc') =~ qr/Required parameters missing/ );
@@ -532,12 +529,13 @@ sub test_move_users {
     ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
 
     # nt_group_id not valid
-    $res = $group2->move_users( nt_group_id => 0,
-        user_list => "$uid1,$uid2" );
+    $res = $group2->move_users(
+        nt_group_id => 0,
+        user_list   => "$uid1,$uid2"
+    );
     noerrok( $res, 302 );
     is( $res->get('error_msg'), 'nt_group_id' );
     ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
-
 
     $res = $group2->move_users( user_list => "$uid1,$uid2" );
     noerrok($res);
@@ -552,18 +550,18 @@ sub test_move_users {
 
     $res = $group2->get_group_users;
     noerrok($res);
-    is( ref $res, 'NicTool::List' );
+    is( ref $res,   'NicTool::List' );
     is( $res->size, 2 );
     if ( $res->size == 2 ) {
         my @u = $res->list;
-        is( $u[0]->get('username')  , $username{ $u[0]->id } );
-        is( $u[1]->get('username')  , $username{ $u[1]->id } );
+        is( $u[0]->get('username'),   $username{ $u[0]->id } );
+        is( $u[1]->get('username'),   $username{ $u[1]->id } );
         is( $u[0]->get('first_name'), $first_name{ $u[0]->id } );
         is( $u[1]->get('first_name'), $first_name{ $u[1]->id } );
-        is( $u[0]->get('last_name') , $last_name{ $u[0]->id } );
-        is( $u[1]->get('last_name') , $last_name{ $u[1]->id } );
-        is( $u[0]->get('email')     , $email{ $u[0]->id } );
-        is( $u[1]->get('email')     , $email{ $u[1]->id } );
+        is( $u[0]->get('last_name'),  $last_name{ $u[0]->id } );
+        is( $u[1]->get('last_name'),  $last_name{ $u[1]->id } );
+        is( $u[0]->get('email'),      $email{ $u[0]->id } );
+        is( $u[1]->get('email'),      $email{ $u[1]->id } );
     }
 }
 
@@ -593,46 +591,46 @@ sub test_get_user_list {
 
     $res = $nt_obj->get_user_list( user_list => "$uid1,$uid2" );
     noerrok($res);
-    is( ref $res, 'NicTool::List' );
+    is( ref $res,   'NicTool::List' );
     is( $res->size, 2 );
     if ( $res->size == 2 ) {
         my @u = $res->list;
-        is( $u[0]->get('username')  , $username{ $u[0]->id } );
-        is( $u[1]->get('username')  , $username{ $u[1]->id } );
+        is( $u[0]->get('username'),   $username{ $u[0]->id } );
+        is( $u[1]->get('username'),   $username{ $u[1]->id } );
         is( $u[0]->get('first_name'), $first_name{ $u[0]->id } );
         is( $u[1]->get('first_name'), $first_name{ $u[1]->id } );
-        is( $u[0]->get('last_name') , $last_name{ $u[0]->id } );
-        is( $u[1]->get('last_name') , $last_name{ $u[1]->id } );
-        is( $u[0]->get('email')     , $email{ $u[0]->id } );
-        is( $u[1]->get('email')     , $email{ $u[1]->id } );
+        is( $u[0]->get('last_name'),  $last_name{ $u[0]->id } );
+        is( $u[1]->get('last_name'),  $last_name{ $u[1]->id } );
+        is( $u[0]->get('email'),      $email{ $u[0]->id } );
+        is( $u[1]->get('email'),      $email{ $u[1]->id } );
     }
 
     #user 1
     $res = $nt_obj->get_user_list( user_list => "$uid1" );
     noerrok($res);
-    is( ref $res, 'NicTool::List' );
+    is( ref $res,   'NicTool::List' );
     is( $res->size, 1 );
     if ( $res->size == 1 ) {
         my @u = $res->list;
-        is( $u[0]->id, $uid1 );
-        is( $u[0]->get('username')  , $username{$uid1} );
+        is( $u[0]->id,                $uid1 );
+        is( $u[0]->get('username'),   $username{$uid1} );
         is( $u[0]->get('first_name'), $first_name{$uid1} );
-        is( $u[0]->get('last_name') , $last_name{$uid1} );
-        is( $u[0]->get('email')     , $email{$uid1} );
+        is( $u[0]->get('last_name'),  $last_name{$uid1} );
+        is( $u[0]->get('email'),      $email{$uid1} );
     }
 
     #user 2
     $res = $nt_obj->get_user_list( user_list => "$uid2" );
     noerrok($res);
-    is( ref $res, 'NicTool::List' );
+    is( ref $res,   'NicTool::List' );
     is( $res->size, 1 );
     if ( $res->size == 1 ) {
         my @u = $res->list;
-        is( $u[0]->id, $uid2 );
-        is( $u[0]->get('username')  , $username{$uid2} );
+        is( $u[0]->id,                $uid2 );
+        is( $u[0]->get('username'),   $username{$uid2} );
         is( $u[0]->get('first_name'), $first_name{$uid2} );
-        is( $u[0]->get('last_name') , $last_name{$uid2} );
-        is( $u[0]->get('email')     , $email{$uid2} );
+        is( $u[0]->get('last_name'),  $last_name{$uid2} );
+        is( $u[0]->get('email'),      $email{$uid2} );
     }
 }
 

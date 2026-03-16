@@ -1,4 +1,5 @@
 package NicToolServer;
+
 # ABSTRACT: NicTool API reference server
 
 use strict;
@@ -39,13 +40,12 @@ sub handler {
     my $dbh = &NicToolServer::dbh;
 
     # create & initialize required objects
-    my $client_obj = NicToolServer::Client->new( $r, $dbh );
-    my $self = NicToolServer->new( $r, $client_obj, $dbh, {} );
+    my $client_obj   = NicToolServer::Client->new( $r, $dbh );
+    my $self         = NicToolServer->new( $r, $client_obj, $dbh, {} );
     my $response_obj = NicToolServer::Response->new( $r, $client_obj );
 
     # process session verification, login or logouts by just responding with the user hash
-    my $error
-        = NicToolServer::Session->new( $r, $client_obj, $dbh )->verify();
+    my $error = NicToolServer::Session->new( $r, $client_obj, $dbh )->verify();
     warn "request: " . Data::Dumper::Dumper( $client_obj->data )
         if $self->debug_request;
     warn "request: error: " . Data::Dumper::Dumper($error)
@@ -55,13 +55,14 @@ sub handler {
     my $action = uc $client_obj->data()->{action};
 
     return $response_obj->respond( $client_obj->data()->{user} )
-        if (   $action eq 'LOGIN'
-            or $action eq 'VERIFY_SESSION'
-            or $action eq 'LOGOUT' );
+        if ( $action eq 'LOGIN'
+        or $action eq 'VERIFY_SESSION'
+        or $action eq 'LOGOUT' );
 
     $self->{user} = $client_obj->data()->{user};
 
     my $cmd = $self->api_commands->{$action} or do {
+
         # fart on unknown actions
         warn "unknown NicToolServer action: $action\n" if $self->debug;
         $response_obj->respond( $self->error_response( 500, $action ) );
@@ -73,13 +74,10 @@ sub handler {
 
     # create obj, call method, return response
     my $class = 'NicToolServer::' . $cmd->{class};
-    my $obj   = $class->new(
-        $self->{Apache}, $self->{client}, $self->{dbh},
-        $self->{meta},   $self->{user}
-    );
+    my $obj =
+        $class->new( $self->{Apache}, $self->{client}, $self->{dbh}, $self->{meta}, $self->{user} );
     my $method = $cmd->{method};
-    warn "calling NicToolServer action: $cmd->{class}::$cmd->{method} ("
-        . $action . ")\n"
+    warn "calling NicToolServer action: $cmd->{class}::$cmd->{method} (" . $action . ")\n"
         if $self->debug;
     my $res;
     eval { $res = $obj->$method( $client_obj->data() ) };
@@ -95,8 +93,9 @@ sub handler {
 
 sub ver_check {
     my $self = shift;
+
     #check the protocol version if included
-    my $pv   = $self->{client}->protocol_version;
+    my $pv = $self->{client}->protocol_version;
     return undef unless $pv;
     return $self->error_response( 510,
         "This server requires at least protocol version $NicToolServer::MIN_PROTOCOL_VERSION. You have specified protocol version $pv"
@@ -120,10 +119,13 @@ sub api_commands {
                 'method'     => 'new_user',
                 'creation'   => 'USER',
                 'parameters' => {
-                    'nt_group_id' =>
-                         { 'access' => 'read', required => 1, type => 'GROUP' },
-                    'username'  => { required => 1 },
-                    'email'     => { required => 1 },
+                    'nt_group_id' => {
+                        'access' => 'read',
+                        required => 1,
+                        type     => 'GROUP'
+                    },
+                    'username' => { required => 1 },
+                    'email'    => { required => 1 },
                 },
             },
 
@@ -138,8 +140,11 @@ sub api_commands {
                 'method'     => 'new_user',
                 'creation'   => 'USER',
                 'parameters' => {
-                    'nt_group_id' =>
-                         { 'access' => 'read', required => 1, type => 'GROUP' },
+                    'nt_group_id' => {
+                        'access' => 'read',
+                        required => 1,
+                        type     => 'GROUP'
+                    },
                     'username'  => { required => 1 },
                     'email'     => { required => 1 },
                     'password'  => { required => 1 },
@@ -157,17 +162,14 @@ sub api_commands {
         'get_user' => {
             'class'      => 'User',
             'method'     => 'get_user',
-            'parameters' => {
-                'nt_user_id' =>
-                    { access => 'read', required => 1, type => 'USER' },
-            },
+            'parameters' =>
+                { 'nt_user_id' => { access => 'read', required => 1, type => 'USER' }, },
         },
         'edit_user' => {
             'class'      => 'User::Sanity',
             'method'     => 'edit_user',
             'parameters' => {
-                'nt_user_id' =>
-                    { access => 'write', required => 1, type => 'USER' },
+                'nt_user_id'         => { access => 'write', required => 1, type => 'USER' },
                 'usable_nameservers' => {
                     access   => 'read',
                     type     => 'NAMESERVER',
@@ -193,10 +195,8 @@ sub api_commands {
         'get_group_users' => {
             'class'      => 'User::Sanity',
             'method'     => 'get_group_users',
-            'parameters' => {
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
-            },
+            'parameters' =>
+                { 'nt_group_id' => { 'access' => 'read', required => 1, type => 'GROUP' }, },
         },
         'get_user_list' => {
             'class'      => 'User::Sanity',
@@ -220,17 +220,14 @@ sub api_commands {
                     type     => 'USER',
                     list     => 1
                 },
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
+                'nt_group_id' => { 'access' => 'read', required => 1, type => 'GROUP' },
             },
         },
         'get_user_global_log' => {
             'class'      => 'User::Sanity',
             'method'     => 'get_user_global_log',
-            'parameters' => {
-                'nt_user_id' =>
-                    { access => 'read', required => 1, type => 'USER' },
-            },
+            'parameters' =>
+                { 'nt_user_id' => { access => 'read', required => 1, type => 'USER' }, },
         },
 
         # group API
@@ -238,18 +235,15 @@ sub api_commands {
         'get_group' => {
             'class'      => 'Group',
             'method'     => 'get_group',
-            'parameters' => {
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
-            },
+            'parameters' =>
+                { 'nt_group_id' => { 'access' => 'read', required => 1, type => 'GROUP' }, },
         },
         'new_group' => {
             'class'      => 'Group::Sanity',
             'method'     => 'new_group',
             'creation'   => 'GROUP',
             'parameters' => {
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
+                'nt_group_id'        => { 'access' => 'read', required => 1, type => 'GROUP' },
                 'name'               => { required => 1 },
                 'usable_nameservers' => {
                     required => 0,
@@ -263,8 +257,7 @@ sub api_commands {
             'class'      => 'Group::Sanity',
             'method'     => 'edit_group',
             'parameters' => {
-                'nt_group_id' =>
-                    { 'access' => 'write', required => 1, type => 'GROUP' },
+                'nt_group_id'        => { 'access' => 'write', required => 1, type => 'GROUP' },
                 'usable_nameservers' => {
                     required => 0,
                     access   => 'read',
@@ -277,69 +270,53 @@ sub api_commands {
         'delete_group' => {
             'class'      => 'Group',
             'method'     => 'delete_group',
-            'parameters' => {
-                'nt_group_id' =>
-                    { 'access' => 'delete', required => 1, type => 'GROUP' },
-            },
+            'parameters' =>
+                { 'nt_group_id' => { 'access' => 'delete', required => 1, type => 'GROUP' }, },
         },
         'get_group_groups' => {
             'class'      => 'Group',
             'method'     => 'get_group_groups',
-            'parameters' => {
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
-            },
+            'parameters' =>
+                { 'nt_group_id' => { 'access' => 'read', required => 1, type => 'GROUP' }, },
         },
         'get_group_branch' => {
             'class'      => 'Group',
             'method'     => 'get_group_branch',
-            'parameters' => {
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
-            },
+            'parameters' =>
+                { 'nt_group_id' => { 'access' => 'read', required => 1, type => 'GROUP' }, },
         },
         'get_group_subgroups' => {
             'class'      => 'Group::Sanity',
             'method'     => 'get_group_subgroups',
-            'parameters' => {
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
-            },
+            'parameters' =>
+                { 'nt_group_id' => { 'access' => 'read', required => 1, type => 'GROUP' }, },
         },
         'get_global_application_log' => {
             'class'      => 'Group::Sanity',
             'method'     => 'get_global_application_log',
-            'parameters' => {
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
-            },
+            'parameters' =>
+                { 'nt_group_id' => { 'access' => 'read', required => 1, type => 'GROUP' }, },
         },
 
         # zone API
         'get_zone' => {
             'class'      => 'Zone',
             'method'     => 'get_zone',
-            'parameters' => {
-                'nt_zone_id' =>
-                    { access => 'read', required => 1, type => 'ZONE' },
-            },
+            'parameters' =>
+                { 'nt_zone_id' => { access => 'read', required => 1, type => 'ZONE' }, },
         },
 
         'get_group_zones' => {
             'class'      => 'Zone::Sanity',
             'method'     => 'get_group_zones',
-            'parameters' => {
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
-            },
+            'parameters' =>
+                { 'nt_group_id' => { 'access' => 'read', required => 1, type => 'GROUP' }, },
         },
         'get_group_zones_log' => {
             'class'      => 'Zone::Sanity',
             'method'     => 'get_group_zones_log',
-            'parameters' => {
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
-            },
+            'parameters' =>
+                { 'nt_group_id' => { 'access' => 'read', required => 1, type => 'GROUP' }, },
         },
         'new_zone' => {
             'class'      => 'Zone::Sanity',
@@ -353,17 +330,15 @@ sub api_commands {
                     list     => 1,
                     empty    => 1
                 },
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
-                'zone' => { required => 1 },
+                'nt_group_id' => { 'access' => 'read', required => 1, type => 'GROUP' },
+                'zone'        => { required => 1 },
             },
         },
         'edit_zone' => {
             'class'      => 'Zone::Sanity',
             'method'     => 'edit_zone',
             'parameters' => {
-                'nt_zone_id' =>
-                    { 'access' => 'write', required => 1, type => 'ZONE' },
+                'nt_zone_id'  => { 'access' => 'write', required => 1, type => 'ZONE' },
                 'nameservers' => {
                     access   => 'read',
                     required => 0,
@@ -390,18 +365,14 @@ sub api_commands {
         'get_zone_log' => {
             'class'      => 'Zone',
             'method'     => 'get_zone_log',
-            'parameters' => {
-                'nt_zone_id' =>
-                    { 'access' => 'read', required => 1, type => 'ZONE' },
-            },
+            'parameters' =>
+                { 'nt_zone_id' => { 'access' => 'read', required => 1, type => 'ZONE' }, },
         },
         'get_zone_records' => {
             'class'      => 'Zone::Sanity',
             'method'     => 'get_zone_records',
-            'parameters' => {
-                'nt_zone_id' =>
-                    { 'access' => 'read', required => 1, type => 'ZONE' },
-            },
+            'parameters' =>
+                { 'nt_zone_id' => { 'access' => 'read', required => 1, type => 'ZONE' }, },
         },
         'move_zones' => {
             'class'      => 'Zone::Sanity',
@@ -413,8 +384,7 @@ sub api_commands {
                     type     => 'ZONE',
                     list     => 1
                 },
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
+                'nt_group_id' => { 'access' => 'read', required => 1, type => 'GROUP' },
             },
         },
         'get_zone_list' => {
@@ -483,33 +453,27 @@ sub api_commands {
             'class'      => 'Zone::Record',
             'method'     => 'get_zone_record',
             'parameters' => {
-                'nt_zone_record_id' =>
-                    { access => 'read', required => 1, type => 'ZONERECORD' },
+                'nt_zone_record_id' => { access => 'read', required => 1, type => 'ZONERECORD' },
             },
         },
         'get_zone_record_log' => {
             'class'      => 'Zone::Sanity',
             'method'     => 'get_zone_record_log',
-            'parameters' => {
-                'nt_zone_id' =>
-                    { access => 'read', required => 1, type => 'ZONE' },
-            },
+            'parameters' =>
+                { 'nt_zone_id' => { access => 'read', required => 1, type => 'ZONE' }, },
         },
         'get_zone_record_log_entry' => {
             'class'      => 'Zone::Record',
             'method'     => 'get_zone_record_log_entry',
             'parameters' => {
                 'nt_zone_record_log_id' => { required => 1, id => 1 },
-                'nt_zone_record_id' =>
-                    { access => 'read', required => 1, type => 'ZONERECORD' },
+                'nt_zone_record_id' => { access => 'read', required => 1, type => 'ZONERECORD' },
             },
         },
         'get_record_type' => {
             'class'      => 'Zone::Record',
             'method'     => 'get_record_type',
-            'parameters' => {
-                    'type' => { required => 1 },
-                },
+            'parameters' => { 'type' => { required => 1 }, },
         },
 
         # nameserver API
@@ -518,37 +482,31 @@ sub api_commands {
             'method'     => 'get_nameserver',
             'parameters' => {
 
-         #'nt_nameserver_id'=>{access=>'read',required=>1,type=>'NAMESERVER'},
+                #'nt_nameserver_id'=>{access=>'read',required=>1,type=>'NAMESERVER'},
                 'nt_nameserver_id' => { required => 1, type => 'NAMESERVER' },
             },
         },
         'get_nameserver_tree' => {
-            'result' => $self->error_response(
-                503, 'get_nameserver_tree.  Use get_usable_nameservers.'
-            ),
+            'result' =>
+                $self->error_response( 503, 'get_nameserver_tree.  Use get_usable_nameservers.' ),
         },
         'get_usable_nameservers' => {
             'class'      => 'Nameserver',
             'method'     => 'get_usable_nameservers',
-            'parameters' => {
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 0, type => 'GROUP' },
-            },
+            'parameters' =>
+                { 'nt_group_id' => { 'access' => 'read', required => 0, type => 'GROUP' }, },
         },
         'get_nameserver_export_types' => {
             'class'      => 'Nameserver',
             'method'     => 'get_nameserver_export_types',
-            'parameters' => {
-                    'type' => { required => 1 },
-                },
+            'parameters' => { 'type' => { required => 1 }, },
         },
         'new_nameserver' => {
             'class'      => 'Nameserver::Sanity',
             'method'     => 'new_nameserver',
             'creation'   => 'NAMESERVER',
             'parameters' => {
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
+                'nt_group_id'   => { 'access' => 'read', required => 1, type => 'GROUP' },
                 'address'       => { required => 1 },
                 'name'          => { required => 1 },
                 'export_format' => { required => 1 },
@@ -579,10 +537,8 @@ sub api_commands {
         'get_group_nameservers' => {
             'class'      => 'Nameserver::Sanity',
             'method'     => 'get_group_nameservers',
-            'parameters' => {
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
-            },
+            'parameters' =>
+                { 'nt_group_id' => { 'access' => 'read', required => 1, type => 'GROUP' }, },
         },
         'get_nameserver_list' => {
             'class'      => 'Nameserver',
@@ -606,8 +562,7 @@ sub api_commands {
                     type     => 'NAMESERVER',
                     list     => 1
                 },
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
+                'nt_group_id' => { 'access' => 'read', required => 1, type => 'GROUP' },
             },
         },
 
@@ -615,18 +570,14 @@ sub api_commands {
         'get_group_permissions' => {
             'class'      => 'Permission',
             'method'     => 'get_group_permissions',
-            'parameters' => {
-                'nt_group_id' =>
-                    { access => 'read', required => 1, type => 'GROUP' },
-            },
+            'parameters' =>
+                { 'nt_group_id' => { access => 'read', required => 1, type => 'GROUP' }, },
         },
         'get_user_permissions' => {
             'class'      => 'Permission',
             'method'     => 'get_user_permissions',
-            'parameters' => {
-                'nt_user_id' =>
-                    { access => 'read', required => 1, type => 'USER' },
-            },
+            'parameters' =>
+                { 'nt_user_id' => { access => 'read', required => 1, type => 'USER' }, },
         },
         'delegate_zones' => {
             class      => 'Permission',
@@ -640,8 +591,7 @@ sub api_commands {
                     required => 1,
                     type     => 'ZONE'
                 },
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
+                'nt_group_id' => { 'access' => 'read', required => 1, type => 'GROUP' },
             },
         },
         'delegate_zone_records' => {
@@ -656,8 +606,7 @@ sub api_commands {
                     required => 1,
                     type     => 'ZONERECORD'
                 },
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
+                'nt_group_id' => { 'access' => 'read', required => 1, type => 'GROUP' },
             },
         },
         'edit_zone_delegation' => {
@@ -671,8 +620,7 @@ sub api_commands {
                     required => 1,
                     type     => 'ZONE'
                 },
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
+                'nt_group_id' => { 'access' => 'read', required => 1, type => 'GROUP' },
             },
         },
         'edit_zone_record_delegation' => {
@@ -686,8 +634,7 @@ sub api_commands {
                     required => 1,
                     type     => 'ZONERECORD'
                 },
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
+                'nt_group_id' => { 'access' => 'read', required => 1, type => 'GROUP' },
             },
         },
         'delete_zone_delegation' => {
@@ -701,8 +648,7 @@ sub api_commands {
                     required => 1,
                     type     => 'ZONE'
                 },
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
+                'nt_group_id' => { 'access' => 'read', required => 1, type => 'GROUP' },
             },
         },
         'delete_zone_record_delegation' => {
@@ -716,40 +662,32 @@ sub api_commands {
                     required => 1,
                     type     => 'ZONERECORD'
                 },
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
+                'nt_group_id' => { 'access' => 'read', required => 1, type => 'GROUP' },
             },
         },
         'get_delegated_zones' => {
             'class'      => 'Permission',
             'method'     => 'get_delegated_zones',
-            'parameters' => {
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
-            },
+            'parameters' =>
+                { 'nt_group_id' => { 'access' => 'read', required => 1, type => 'GROUP' }, },
         },
         'get_delegated_zone_records' => {
             'class'      => 'Permission',
             'method'     => 'get_delegated_zone_records',
-            'parameters' => {
-                'nt_group_id' =>
-                    { 'access' => 'read', required => 1, type => 'GROUP' },
-            },
+            'parameters' =>
+                { 'nt_group_id' => { 'access' => 'read', required => 1, type => 'GROUP' }, },
         },
         'get_zone_delegates' => {
             'class'      => 'Permission',
             'method'     => 'get_zone_delegates',
-            'parameters' => {
-                'nt_zone_id' =>
-                    { access => 'read', required => 1, type => 'ZONE' },
-            },
+            'parameters' =>
+                { 'nt_zone_id' => { access => 'read', required => 1, type => 'ZONE' }, },
         },
         'get_zone_record_delegates' => {
             'class'      => 'Permission',
             'method'     => 'get_zone_record_delegates',
             'parameters' => {
-                'nt_zone_record_id' =>
-                    { access => 'read', required => 1, type => 'ZONERECORD' },
+                'nt_zone_record_id' => { access => 'read', required => 1, type => 'ZONERECORD' },
             },
         },
     };
@@ -814,7 +752,7 @@ sub is_error_response {
 }
 
 sub error {
-    my ($self, $type, $message) = @_;
+    my ( $self, $type, $message ) = @_;
     $self->{errors}{$type}++ if $type;
     push @{ $self->{error_messages} }, $message;
 }
@@ -853,16 +791,15 @@ sub get_group_id {
         $rid = $ids->[0]->{nt_group_id} if $ids;
     }
     elsif ( $key eq 'nt_zone_record_id' or uc($type) eq 'ZONERECORD' ) {
-        $sql
-            = "SELECT nt_zone.nt_group_id FROM nt_zone_record,nt_zone "
+        $sql =
+              "SELECT nt_zone.nt_group_id FROM nt_zone_record,nt_zone "
             . "WHERE nt_zone_record.nt_zone_record_id = ? "
             . "AND nt_zone.nt_zone_id=nt_zone_record.nt_zone_id";
         my $ids = $self->exec_query( $sql, $id );
         $rid = $ids->[0]->{nt_group_id} if $ids;
     }
     elsif ( $key eq 'nt_nameserver_id' or uc($type) eq 'NAMESERVER' ) {
-        $sql = "SELECT nt_group_id FROM nt_nameserver "
-            . "WHERE nt_nameserver_id = ?";
+        $sql = "SELECT nt_group_id FROM nt_nameserver " . "WHERE nt_nameserver_id = ?";
         my $ids = $self->exec_query( $sql, $id );
         $rid = $ids->[0]->{nt_group_id} if $ids;
     }
@@ -878,16 +815,14 @@ sub get_group_id {
 
 sub get_group_permissions {
     my ( $self, $groupid ) = @_;
-    my $sql
-        = "SELECT * FROM nt_perm WHERE nt_group_id=? AND nt_user_id=0 AND deleted!=1";
+    my $sql   = "SELECT * FROM nt_perm WHERE nt_group_id=? AND nt_user_id=0 AND deleted!=1";
     my $perms = $self->exec_query( $sql, $groupid );
     return $perms->[0];
 }
 
 sub get_user_permissions {
     my ( $self, $userid ) = @_;
-    my $sql
-        = "SELECT * FROM nt_perm WHERE nt_group_id=0 AND nt_user_id=? AND deleted!=1";
+    my $sql   = "SELECT * FROM nt_perm WHERE nt_group_id=0 AND nt_user_id=? AND deleted!=1";
     my $perms = $self->exec_query( $sql, $userid );
     return $perms->[0];
 }
@@ -909,24 +844,21 @@ sub get_access_permission {
 }
 
 sub check_permission {
-    my ($self,   $key,      $id,       $access, $type,
-        $islist, $creation, $delegate, $pseudo
-    ) = @_;
+    my ( $self, $key, $id, $access, $type, $islist, $creation, $delegate, $pseudo ) = @_;
 
     #my $access = $api->{parameters}{$key}{access};
     #my $creation = $api->{creation};
 
-    my $user_id  = $self->{user}{nt_user_id};
-    my $group_id = $self->{user}{nt_group_id};
-    my $obj_group_id
-        = $type =~ /group/i ? $id : $self->get_group_id( $key, $id, $type );
+    my $user_id      = $self->{user}{nt_user_id};
+    my $group_id     = $self->{user}{nt_group_id};
+    my $obj_group_id = $type =~ /group/i ? $id : $self->get_group_id( $key, $id, $type );
 
     my $group_ok = $self->group_usage_ok($obj_group_id);
 
     my $permissions = $self->{user};
 
-    my $debug
-        = "key:$key,id:$id,type:$type,access:$access,creation:$creation,obj_group_id:$obj_group_id,group_ok:$group_ok,delegate:$delegate,pseudo:$pseudo:("
+    my $debug =
+        "key:$key,id:$id,type:$type,access:$access,creation:$creation,obj_group_id:$obj_group_id,group_ok:$group_ok,delegate:$delegate,pseudo:$pseudo:("
         . join( ",", caller ) . ")";
 
     #check creation
@@ -993,10 +925,7 @@ sub check_permission {
             unless ( $permissions->{ lc $type . "_$access" } ) {
                 warn "NO $access access for $type. $debug"
                     if $self->debug_permissions;
-                return ( '404',
-                          "You have no '$access' permission for "
-                        . lc $type
-                        . " objects" );
+                return ( '404', "You have no '$access' permission for " . lc $type . " objects" );
             }
             else {
                 warn "YES $access access for $type. $debug"
@@ -1010,15 +939,12 @@ sub check_permission {
         #now we check access permissions for the delegated object
         my $del = $self->get_delegate_access( $id, $type );
         if ($del) {
-            $self->set_param_meta( $islist ? "$key:$id" : $key,
-                delegate => $del );
+            $self->set_param_meta( $islist ? "$key:$id" : $key, delegate => $del );
             if ( $del->{pseudo} and $pseudo ) {
                 if ( $pseudo eq 'none' ) {
                     warn "NO pseudo '$pseudo': $debug"
                         if $self->debug_permissions;
-                    return ( '404',
-                        "You have no '$access' permission for the delegated object"
-                    );
+                    return ( '404', "You have no '$access' permission for the delegated object" );
 
                 }
                 elsif ( $del->{$pseudo} ) {
@@ -1029,18 +955,14 @@ sub check_permission {
                 else {
                     warn "NO pseudo '$pseudo': $debug"
                         if $self->debug_permissions;
-                    return ( '404',
-                        "You have no '$access' permission for the delegated object"
-                    );
+                    return ( '404', "You have no '$access' permission for the delegated object" );
                 }
             }
             elsif ($delegate) {
                 if ( $delegate eq 'none' ) {
                     warn "NO delegate '$delegate' '$access': $debug"
                         if $self->debug_permissions;
-                    return ( '404',
-                        "You have no '$access' permission for the delegated object"
-                    );
+                    return ( '404', "You have no '$access' permission for the delegated object" );
                 }
                 elsif ( $del->{$delegate} ) {
                     warn "YES delegate '$delegate' '$access': $debug"
@@ -1050,9 +972,7 @@ sub check_permission {
                 else {
                     warn "NO delegate '$delegate' '$access': $debug"
                         if $self->debug_permissions;
-                    return ( '404',
-                        "You have no '$access' permission for the delegated object"
-                    );
+                    return ( '404', "You have no '$access' permission for the delegated object" );
 
                 }
             }
@@ -1062,9 +982,7 @@ sub check_permission {
                         if $self->debug_permissions;
 
                     #warn Data::Dumper::Dumper($del);
-                    return ( '404',
-                        "You have no '$access' permission for the delegated object"
-                    );
+                    return ( '404', "You have no '$access' permission for the delegated object" );
                 }
                 else {
 
@@ -1079,8 +997,7 @@ sub check_permission {
         }
         else {
             warn "NO access: $debug" if $self->debug_permissions;
-            return ( '404',
-                "No Access Allowed to that object ($type : $id)" );
+            return ( '404', "No Access Allowed to that object ($type : $id)" );
         }
     }
 
@@ -1106,26 +1023,26 @@ sub get_delegate_access {
         return $self->get_zonerecord_delegate_access( $id, $type );
     }
     else {
-        $sql
-            = "SELECT nt_delegate.*,nt_group.name AS group_name FROM nt_delegate "
+        $sql =
+              "SELECT nt_delegate.*,nt_group.name AS group_name FROM nt_delegate "
             . " INNER JOIN $tables{$type} on $tables{$type}.$fields{$type} = nt_delegate.nt_object_id AND nt_delegate.nt_object_type='$type'"
             . " INNER JOIN nt_group on $tables{$type}.nt_group_id = nt_group.nt_group_id"
             . " WHERE nt_delegate.nt_group_id=? AND nt_delegate.nt_object_id=? AND nt_delegate.nt_object_type=?";
-        my $r = $self->exec_query( $sql, [ $group_id, $id, $type ] );
+        my $r         = $self->exec_query( $sql, [ $group_id, $id, $type ] );
         my $auth_data = $r->[0];
 
-    #warn "Auth data: ".Data::Dumper::Dumper($auth_data) if $self->debug_permissions;
+        #warn "Auth data: ".Data::Dumper::Dumper($auth_data) if $self->debug_permissions;
         if ( !$auth_data && $type eq 'ZONE' ) {
 
-    #see if any records in the zone are delegated, if so then read access is allowed
-            $sql
-                = "SELECT count(*) AS count,nt_group.name AS group_name FROM nt_delegate "
+            #see if any records in the zone are delegated, if so then read access is allowed
+            $sql =
+                  "SELECT count(*) AS count,nt_group.name AS group_name FROM nt_delegate "
                 . " INNER JOIN nt_zone_record on nt_zone_record.nt_zone_record_id = nt_delegate.nt_object_id AND nt_delegate.nt_object_type='ZONERECORD'"
                 . " INNER JOIN nt_zone on nt_zone.nt_zone_id = nt_zone_record.nt_zone_id"
                 . " INNER JOIN nt_group on nt_delegate.nt_group_id = nt_group.nt_group_id"
                 . " WHERE nt_delegate.nt_group_id=? AND nt_zone.nt_zone_id=? "
                 . " GROUP BY nt_zone.zone";
-            my $r = $self->exec_query( $sql, [ $group_id, $id ] );
+            my $r      = $self->exec_query( $sql, [ $group_id, $id ] );
             my $result = $r->[0];
 
             if ( $result && $result->{count} gt 0 ) {
@@ -1151,8 +1068,8 @@ sub get_zonerecord_delegate_access {
     my $group_id = $self->{user}{nt_group_id};
 
     #check delegation
-    my $sql
-        = "SELECT nt_delegate.*,nt_group.name AS group_name FROM nt_delegate "
+    my $sql =
+          "SELECT nt_delegate.*,nt_group.name AS group_name FROM nt_delegate "
         . " INNER JOIN nt_zone_record on nt_zone_record.nt_zone_record_id= nt_delegate.nt_object_id AND nt_delegate.nt_object_type='ZONERECORD'"
         . " INNER JOIN nt_zone on nt_zone.nt_zone_id=nt_zone_record.nt_zone_id"
         . " INNER JOIN nt_group on nt_zone.nt_group_id = nt_group.nt_group_id"
@@ -1161,8 +1078,8 @@ sub get_zonerecord_delegate_access {
     my $r = $self->exec_query( $sql, [ $group_id, $id ] );
     return $r->[0] if $r->[0];
 
-    $sql
-        = "SELECT nt_delegate.*, 1 AS pseudo, nt_group.name AS group_name FROM nt_delegate "
+    $sql =
+          "SELECT nt_delegate.*, 1 AS pseudo, nt_group.name AS group_name FROM nt_delegate "
         . " INNER JOIN nt_zone on nt_zone.nt_zone_id=nt_delegate.nt_object_id AND nt_delegate.nt_object_type='ZONE'"
         . " INNER JOIN nt_zone_record on nt_zone_record.nt_zone_id= nt_zone.nt_zone_id"
         . " INNER JOIN nt_group on nt_zone.nt_group_id = nt_group.nt_group_id"
@@ -1178,7 +1095,8 @@ sub verify_obj_usage {
     return $api->{result} if exists $api->{result};
     my $params = $api->{parameters};
 
-    warn "##############################\n$cmd VERIFY OBJECT USAGE\n##############################\n"
+    warn
+        "##############################\n$cmd VERIFY OBJECT USAGE\n##############################\n"
 
         #"      params: ".Data::Dumper::Dumper($params).""
         if $self->debug_permissions;
@@ -1226,13 +1144,13 @@ sub verify_obj_usage {
     {
         next
             if $$params{$p}->{empty}
-                and ( !defined $data->{$p} or $data->{$p} eq '' );   #empty ok
+            and ( !defined $data->{$p} or $data->{$p} eq '' );    #empty ok
             #warn "data is ".Data::Dumper::Dumper($data->{$p});
             #warn "checking value of $p.  is list? ".$$params{$p}->{list};
         if ( $$params{$p}->{list} ) {
             if ( ref $data->{$p} eq 'ARRAY' ) {
 
-          #warn "got array ref $p in call ".Data::Dumper::Dumper($data->{$p});
+                #warn "got array ref $p in call ".Data::Dumper::Dumper($data->{$p});
                 foreach ( @{ $data->{$p} } ) {
                     if ( !$self->valid_id($_) ) {
                         push( @invalid, $p );
@@ -1282,12 +1200,8 @@ sub verify_obj_usage {
             my @items = split( /,/, $data->{$f} );
             foreach my $i (@items) {
                 @error = $self->check_permission(
-                    $f,
-                    $i,
-                    $api->{parameters}{$f}{access},
-                    $type,
-                    1,
-                    $api->{creation},
+                    $f,    $i, $api->{parameters}{$f}{access},
+                    $type, 1,  $api->{creation},
                     $$params{$f}->{delegate},
                     $$params{$f}->{pseudo}
                 );
@@ -1299,12 +1213,8 @@ sub verify_obj_usage {
         }
         else {
             @error = $self->check_permission(
-                $f,
-                $data->{$f},
-                $api->{parameters}{$f}{access},
-                $type,
-                0,
-                $api->{creation},
+                $f,    $data->{$f}, $api->{parameters}{$f}{access},
+                $type, 0,           $api->{creation},
                 $$params{$f}->{delegate},
                 $$params{$f}->{pseudo}
             );
@@ -1318,7 +1228,8 @@ sub verify_obj_usage {
 }
 
 sub get_param_meta {
-    my ($self, $param, $key) = @_;
+    my ( $self, $param, $key ) = @_;
+
     #gets keyed data for a certain parameter of the function call
 
     #warn Data::Dumper::Dumper($self->{meta});
@@ -1326,7 +1237,8 @@ sub get_param_meta {
 }
 
 sub set_param_meta {
-    my ($self, $param, $key, $value) = @_;
+    my ( $self, $param, $key, $value ) = @_;
+
     #Sets keyed info about a parameter for the function call
 
     #warn "setting param meta: param $param, key $key, value $value";
@@ -1391,12 +1303,12 @@ sub valid_ip_address {
 
     return 0 unless $x[0] > 0;
 
-    return 0 if 0 + $x[0] + $x[1] + $x[2] + $x[3] == 0; # 0.0.0.0 invalid
-    return 0 if grep( $_ eq '255', @x ) == 4;    #255.255.255.255 invalid
+    return 0 if 0 + $x[0] + $x[1] + $x[2] + $x[3] == 0;    # 0.0.0.0 invalid
+    return 0 if grep( $_ eq '255', @x ) == 4;              #255.255.255.255 invalid
 
     foreach (@x) {
         return 0 unless /^\d{1,3}$/ && $_ >= 0 && $_ <= 255;
-        $_ = 0 + $_;   # convert strings to integers
+        $_ = 0 + $_;                                       # convert strings to integers
     }
 
     return join '.', @x;
@@ -1404,18 +1316,19 @@ sub valid_ip_address {
 
 sub valid_ttl {
     my $self = shift;
-    my $ttl = shift;
+    my $ttl  = shift;
 
-    if ( ! defined $ttl ) {
+    if ( !defined $ttl ) {
         $self->error( 'ttl', "Invalid TTL -- required" );
         return;
-    };
+    }
     if ( $ttl =~ /\D/ ) {
         $self->error( 'ttl', "Invalid TTL -- must be numeric" );
         return;
-    };
+    }
 
     return 1 if ( $ttl >= 0 && $ttl <= 2147483647 );
+
     # Clarifications to the DNS specification: http://tools.ietf.org/html/rfc2181
     # valid TTL is unsigned number from 0 to 2147483647
 
@@ -1433,8 +1346,7 @@ sub group_usage_ok {
     {
         $res = 1;
     }
-    warn
-        "::::group_usage_ok: $id subgroup of group $user->{nt_group_id} ? : $res"
+    warn "::::group_usage_ok: $id subgroup of group $user->{nt_group_id} ? : $res"
         if $self->debug_permissions;
     return $res;
 }
@@ -1448,13 +1360,12 @@ sub get_group_map {
     if ( $#blah == -1 ) {
         warn
             "\n\nuhh, param passed, but nothing in it. get_group_map needs top_group_id + group list arrray for IN clause.\n";
-        warn
-            "this only happens when there are no groups within a zone? I think.. --ai\n\n\n";
+        warn "this only happens when there are no groups within a zone? I think.. --ai\n\n\n";
         return \%map;
     }
 
-    my $sql
-        = "SELECT nt_group.name, nt_group.nt_group_id, nt_group_subgroups.nt_subgroup_id "
+    my $sql =
+          "SELECT nt_group.name, nt_group.nt_group_id, nt_group_subgroups.nt_subgroup_id "
         . "FROM nt_group, nt_group_subgroups "
         . "WHERE nt_group_subgroups.nt_subgroup_id IN("
         . join( ',', @$groups ) . ") "
@@ -1494,8 +1405,7 @@ sub get_group_map {
 sub get_subgroup_ids {
     my ( $self, $nt_group_id ) = @_;
 
-    my $sql = "SELECT nt_subgroup_id FROM nt_group_subgroups "
-        . " WHERE nt_group_id = ?";
+    my $sql       = "SELECT nt_subgroup_id FROM nt_group_subgroups " . " WHERE nt_group_id = ?";
     my $subgroups = $self->exec_query( $sql, $nt_group_id );
 
     my @list;
@@ -1506,8 +1416,7 @@ sub get_subgroup_ids {
 sub get_parentgroup_ids {
     my ( $self, $nt_group_id ) = @_;
 
-    my $sql
-        = "SELECT nt_group_id FROM nt_group_subgroups WHERE nt_subgroup_id = ?";
+    my $sql       = "SELECT nt_group_id FROM nt_group_subgroups WHERE nt_subgroup_id = ?";
     my $subgroups = $self->exec_query( $sql, $nt_group_id );
 
     my @list;
@@ -1531,8 +1440,7 @@ sub get_group_branches {
     my @groups;
     my $nextgroup = $nt_group_id;
     while ($nextgroup) {
-        my $sql
-            = "SELECT parent_group_id FROM nt_group WHERE nt_group_id = ?";
+        my $sql = "SELECT parent_group_id FROM nt_group WHERE nt_group_id = ?";
         my $ids = $self->exec_query( $sql, $nextgroup );
         unshift @groups, $nextgroup if $ids->[0];
         $nextgroup = $ids->[0]->{parent_group_id};
@@ -1540,13 +1448,11 @@ sub get_group_branches {
 }
 
 sub get_option {
-    my ($self, $option) = @_;
+    my ( $self, $option ) = @_;
 
-    my $refs = $self->exec_query(
-        "SELECT option_value FROM nt_options WHERE option_name=?",
-        [$option],
-    );
-    return if ! scalar @$refs;
+    my $refs =
+        $self->exec_query( "SELECT option_value FROM nt_options WHERE option_name=?", [$option], );
+    return if !scalar @$refs;
     return $refs->[0]{option_value};
 }
 
@@ -1556,9 +1462,7 @@ sub dbh {
         $dsn = $NicToolServer::dsn or die "missing DSN!";
     }
 
-    my $dbh
-        = DBI->connect( $dsn, $NicToolServer::db_user,
-        $NicToolServer::db_pass )
+    my $dbh = DBI->connect( $dsn, $NicToolServer::db_user, $NicToolServer::db_pass )
         or die "unable to connect to database: " . $DBI::errstr . "\n";
 
     return $dbh;
@@ -1583,7 +1487,7 @@ sub exec_query {
     my ( $query, $params, $extra ) = @_;
 
     my @caller = caller;
-    my $err = sprintf( "exec_query called by %s, %s\n", $caller[0], $caller[2] );
+    my $err    = sprintf( "exec_query called by %s, %s\n", $caller[0], $caller[2] );
     $err .= "\t$query\n\t";
 
     die "invalid arguments to exec_query! ($err)" if $extra;
@@ -1603,7 +1507,7 @@ sub exec_query {
         my ($table) = $query =~ /(?:REPLACE|INSERT) INTO (\w+)[\s\(]/;
         eval { $dbix->query( $query, @params ); };
         if ( $@ or $dbix->error ne 'DBI error: ' ) {
-            warn $err . $dbix->error; # if $self->debug_sql;
+            warn $err . $dbix->error;    # if $self->debug_sql;
             return;
         }
         return $dbix->last_insert_id( undef, undef, $table, undef );
@@ -1614,7 +1518,7 @@ sub exec_query {
     elsif ( $query =~ /^DELETE|UPDATE/ ) {
         eval { $dbix->query( $query, @params ) };
         if ( $@ or $dbix->error ne 'DBI error: ' ) {
-            warn $err . $dbix->error; # if $self->debug_sql;
+            warn $err . $dbix->error;    # if $self->debug_sql;
             return;
         }
         return $dbix->query("SELECT ROW_COUNT()")->list;
@@ -1622,11 +1526,11 @@ sub exec_query {
 
     if ( $query !~ /^\s*SELECT/ ) {
         warn "no support for this query. I'll try anyway\n$err";
-    };
+    }
 
     my $r;
     eval { $r = $dbix->query( $query, @params )->hashes; };
-    warn "$err\t$@\n$query" if $@;    #&& $self->debug_sql );
+    warn "$err\t$@\n$query"  if $@;                              #&& $self->debug_sql );
     warn $err . $dbix->error if $dbix->error ne 'DBI error: ';
     return $r;
 }
@@ -1634,18 +1538,15 @@ sub exec_query {
 sub check_object_deleted {
     my ( $self, $otype, $oid ) = @_;
     my %map = (
-        zone => { table => 'nt_zone', field => 'nt_zone_id' },
-        zonerecord =>
-            { table => 'nt_zone_record', field => 'nt_zone_record_id' },
-        nameserver =>
-            { table => 'nt_nameserver', field => 'nt_nameserver_id' },
-        group => { table => 'nt_group', field => 'nt_group_id' },
-        user  => { table => 'nt_user',  field => 'nt_user_id' },
+        zone       => { table => 'nt_zone',        field => 'nt_zone_id' },
+        zonerecord => { table => 'nt_zone_record', field => 'nt_zone_record_id' },
+        nameserver => { table => 'nt_nameserver',  field => 'nt_nameserver_id' },
+        group      => { table => 'nt_group',       field => 'nt_group_id' },
+        user       => { table => 'nt_user',        field => 'nt_user_id' },
     );
 
     if ( my $dbst = $map{ lc($otype) } ) {
-        my $sql
-            = "SELECT deleted FROM $dbst->{table} WHERE $dbst->{field} = ?";
+        my $sql     = "SELECT deleted FROM $dbst->{table} WHERE $dbst->{field} = ?";
         my $deletes = $self->exec_query( $sql, $oid );
         return $deletes->[0]->{deleted} if $deletes->[0];
     }
@@ -1658,22 +1559,20 @@ sub get_title {
         $sql = "SELECT zone AS title FROM nt_zone WHERE nt_zone_id = ?";
     }
     elsif ( $otype =~ /^zonerecord$/i ) {
-        $sql
-            = "SELECT CONCAT(nt_zone_record.name,'.',nt_zone.zone) AS title FROM nt_zone_record"
+        $sql =
+              "SELECT CONCAT(nt_zone_record.name,'.',nt_zone.zone) AS title FROM nt_zone_record"
             . " INNER JOIN nt_zone on nt_zone_record.nt_zone_id=nt_zone.nt_zone_id"
             . " WHERE nt_zone_record.nt_zone_record_id = ?";
     }
     elsif ( $otype =~ /^nameserver$/i ) {
-        $sql
-            = "SELECT CONCAT(address,' (',name,')') AS title FROM nt_nameserver"
+        $sql = "SELECT CONCAT(address,' (',name,')') AS title FROM nt_nameserver"
             . " WHERE nt_nameserver_id = ?";
     }
     elsif ( $otype =~ /^group$/i ) {
         $sql = "SELECT name AS title FROM nt_group WHERE nt_group_id = ?";
     }
     elsif ( $otype =~ /^user$/i ) {
-        $sql
-            = "SELECT CONCAT(username,' (',first_name,' ',last_name,')') AS title FROM nt_user"
+        $sql = "SELECT CONCAT(username,' (',first_name,' ',last_name,')') AS title FROM nt_user"
             . " WHERE nt_user_id = ?";
     }
     else {
@@ -1691,7 +1590,7 @@ sub diff_changes {
 
     my %perms =
 
-    #map {$a=$_;local $_=$a; s/_/ /g;s/names/n s/g;s/zoner/z r/g;s/deleg/d g/g;s/(\S)\S+/$1/g;s/\s//g; ($a=>$_)} qw(user_create user_can_delegate user_delete user_write group_create group_delegate group_delete group_write zone_create zone_delegate zone_delete zone_write zonerecord_create zonerecord_delegate zonerecord_delete zonerecord_write nameserver_create nameserver_delegate nameserver_delete nameserver_write self_write);
+        #map {$a=$_;local $_=$a; s/_/ /g;s/names/n s/g;s/zoner/z r/g;s/deleg/d g/g;s/(\S)\S+/$1/g;s/\s//g; ($a=>$_)} qw(user_create user_can_delegate user_delete user_write group_create group_delegate group_delete group_write zone_create zone_delegate zone_delete zone_write zonerecord_create zonerecord_delegate zonerecord_delete zonerecord_write nameserver_create nameserver_delegate nameserver_delete nameserver_write self_write);
         (
         'zonerecord_create'   => 'ZRC',
         'group_write'         => 'GW',
@@ -1714,10 +1613,11 @@ sub diff_changes {
         );
 
     foreach my $f ( keys %$prev_data ) {
-        next if ! exists $data->{$f};
+        next if !exists $data->{$f};
         next if $data->{$f} eq $prev_data->{$f};
 
         if ( $f eq 'description' || $f eq 'password' ) {
+
             # description field is long & not critical
             push @changes, "changed $f";
         }
@@ -1728,7 +1628,7 @@ sub diff_changes {
             push @changes, "changed $f from '$prev_data->{$f}' to '$data->{$f}'";
         }
     }
-    if ( ! scalar @changes ) {
+    if ( !scalar @changes ) {
         push @changes, "nothing modified";
     }
     return join( ", ", @changes );
@@ -1736,8 +1636,7 @@ sub diff_changes {
 
 sub throw_sanity_error {
     my $self = shift;
-    my $res = $self->error_response( 300,
-        join( " AND ", @{ $self->{error_messages} } ) );
+    my $res  = $self->error_response( 300, join( " AND ", @{ $self->{error_messages} } ) );
     $res->{sanity_err} = $self->{errors};
     $res->{sanity_msg} = $self->{error_messages};
     return $res;
@@ -1752,17 +1651,17 @@ sub format_search_conditions {
 }
 
 sub get_quick_search_conditions {
-    my ($self, $data, $field_map ) = @_;
+    my ( $self, $data, $field_map ) = @_;
 
-    return if ! $data->{quick_search};
+    return if !$data->{quick_search};
 
-    my $dbh = $self->{dbh};
+    my $dbh   = $self->{dbh};
     my $value = $dbh->quote( $data->{search_value} );
 
     my @conditions;
     my $x = 1;
     foreach my $key ( keys %$field_map ) {
-        next if ! $field_map->{$key}->{quicksearch};
+        next if !$field_map->{$key}->{quicksearch};
         my $s = $x++ == 1 ? ' ' : ' OR ';
         $s .= $field_map->{$key}->{field};
 
@@ -1773,7 +1672,7 @@ sub get_quick_search_conditions {
             $s .= ' LIKE ';
             $value =~ s/^'/'%/;
             $value =~ s/'$/%'/;
-        };
+        }
 
         $s .= $value;
         push @conditions, $s;
@@ -1784,7 +1683,7 @@ sub get_quick_search_conditions {
 sub get_advanced_search_conditions {
     my ( $self, $data, $field_map ) = @_;
 
-    return if ! $data->{Search};
+    return if !$data->{Search};
     my $dbh = $self->{dbh};
     my @conditions;
 
@@ -1793,22 +1692,22 @@ sub get_advanced_search_conditions {
         my $option = $i . '_option';
         my $value  = $i . '_value';
 
-        next unless $data->{ $field };
-        $data->{ $option } = 'CONTAINS' if ! exists $data->{ $option };
+        next unless $data->{$field};
+        $data->{$option} = 'CONTAINS' if !exists $data->{$option};
 
         my $cond = $i == 1 ? '' : uc( $data->{ $i . '_inclusive' } ) . ' ';
-        $cond .= $field_map->{ $data->{ $field } }->{field};
+        $cond .= $field_map->{ $data->{$field} }->{field};
 
-        my $qv = $dbh->quote( $data->{ $value } );
-        my $ucopt = uc( $data->{ $option } );
+        my $qv    = $dbh->quote( $data->{$value} );
+        my $ucopt = uc( $data->{$option} );
 
-        if ( $field_map->{ $data->{ $field } }->{timefield} ) {
+        if ( $field_map->{ $data->{$field} }->{timefield} ) {
             if ( $ucopt =~ /^(?:EQUALS|CONTAINS|STARTS|ENDS)/ ) {
-                $cond .= $data->{ $option } . "UNIX_TIMESTAMP( $qv )";
+                $cond .= $data->{$option} . "UNIX_TIMESTAMP( $qv )";
             }
             else {
                 $cond .= "=UNIX_TIMESTAMP( $qv )";
-            };
+            }
         }
         elsif ( $ucopt eq 'EQUALS' ) {
             $cond .= "=$qv";
@@ -1830,7 +1729,7 @@ sub get_advanced_search_conditions {
             $cond .= " LIKE $val";
         }
         else {
-            $cond .= $data->{ $option } . $qv;
+            $cond .= $data->{$option} . $qv;
         }
 
         push @conditions, $cond;
@@ -1876,7 +1775,7 @@ sub set_paging_vars {
     }
     else {
         $r_data->{limit} = $data->{limit};
-        $r_data->{limit} = 255 if $data->{limit} > 255;  # why? (mps Jan 2012)
+        $r_data->{limit} = 255 if $data->{limit} > 255;    # why? (mps Jan 2012)
     }
 
     if ( $data->{page} && ( $data->{page} =~ /^\d+$/ ) ) {
@@ -1891,9 +1790,7 @@ sub set_paging_vars {
 
     if ( $r_data->{start} >= $r_data->{total} ) {
         if ( $r_data->{total} % $r_data->{limit} ) {
-            $r_data->{start}
-                = int( $r_data->{total} / $r_data->{limit} )
-                * $r_data->{limit} + 1;
+            $r_data->{start} = int( $r_data->{total} / $r_data->{limit} ) * $r_data->{limit} + 1;
         }
         else {
             $r_data->{start} = $r_data->{total} - $r_data->{limit} + 1;
@@ -1901,12 +1798,12 @@ sub set_paging_vars {
     }
 
     $r_data->{end} = ( $r_data->{start} + $r_data->{limit} ) - 1;
-    $r_data->{page}
-        = $r_data->{end} % $r_data->{limit}
+    $r_data->{page} =
+        $r_data->{end} % $r_data->{limit}
         ? int( $r_data->{end} / $r_data->{limit} ) + 1
         : $r_data->{end} / $r_data->{limit};
-    $r_data->{total_pages}
-        = $r_data->{total} % $r_data->{limit}
+    $r_data->{total_pages} =
+        $r_data->{total} % $r_data->{limit}
         ? int( $r_data->{total} / $r_data->{limit} ) + 1
         : $r_data->{total} / $r_data->{limit};
 }
@@ -1914,11 +1811,8 @@ sub set_paging_vars {
 sub search_params_sanity_check {
     my ( $self, $data, @fields ) = @_;
     my %f = map { $_ => 1 } @fields;
-    my %o = map { $_ => 1 } (
-        'contains', 'starts with', 'ends with', 'equals',
-        '>',        '>=',          '<',         '<=',
-        '='
-    );
+    my %o = map { $_ => 1 }
+        ( 'contains', 'starts with', 'ends with', 'equals', '>', '>=', '<', '<=', '=' );
     my %i = map { $_ => 1 } ( 'and', 'or' );
 
     #search stuff
@@ -1926,12 +1820,9 @@ sub search_params_sanity_check {
         foreach my $int ( 1 .. 5 ) {
             next unless exists $data->{ $int . "_field" };
             foreach (qw(option value)) {
-                $self->error(
-                    $int . "_$_",
-                    "Parameter $int"
-                        . "_$_ must be included with $int"
-                        . "_field ."
-                ) unless exists $data->{ $int . "_$_" };
+                $self->error( $int . "_$_",
+                    "Parameter $int" . "_$_ must be included with $int" . "_field ." )
+                    unless exists $data->{ $int . "_$_" };
             }
 
             $self->error(
@@ -1963,8 +1854,7 @@ sub search_params_sanity_check {
         }
     }
     elsif ( $data->{quick_search} ) {
-        $self->error( "search_value",
-            "Must include parameter 'search_value' with 'quick_search'." )
+        $self->error( "search_value", "Must include parameter 'search_value' with 'quick_search'." )
             unless exists $data->{search_value};
     }
 
@@ -1986,19 +1876,18 @@ sub search_params_sanity_check {
     #paging stuff
     #just make sure start,page,limit, are valid ints (or blank)
     foreach my $sort ( grep { $data->{$_} } qw(start page limit) ) {
-        $self->error( $sort,
-            "Paging field '$sort' must be an integer." )
+        $self->error( $sort, "Paging field '$sort' must be an integer." )
             unless $data->{$sort} =~ /^\d+$/;
     }
 
 }
 
 sub clean_perm_data {
-    my ($self, $obj) = @_;
+    my ( $self, $obj ) = @_;
 
-    foreach ( qw/ nt_user_id nt_group_id nt_perm_id perm_name / ) {
+    foreach (qw/ nt_user_id nt_group_id nt_perm_id perm_name /) {
         delete $obj->{$_};
-    };
+    }
 }
 
 1;

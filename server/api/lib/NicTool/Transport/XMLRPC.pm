@@ -36,11 +36,10 @@ sub send_request {
     delete $vars{action};
 
     #encode data into xml-rpc request obj and get xml string
-    my $xmlreq
-        = RPC::XML::request->new( $com, RPC::XML::smart_encode( \%vars ) );
+    my $xmlreq  = RPC::XML::request->new( $com, RPC::XML::smart_encode( \%vars ) );
     my $command = $xmlreq->as_string;
 
-    my $ua = new LWP::UserAgent;
+    my $ua  = new LWP::UserAgent;
     my $req = HTTP::Request->new( 'POST', $url );
 
     $ua->agent("NicTool Client Framework v$NicTool::VERSION");
@@ -55,9 +54,7 @@ sub send_request {
     if ( !$response->is_success ) {
         return (
             {   error_code => 508,
-                error_msg  => "XML-RPC: $url: "
-                    . $response->code . " "
-                    . $response->message
+                error_msg  => "XML-RPC: $url: " . $response->code . " " . $response->message
             }
         );
     }

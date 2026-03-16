@@ -1,4 +1,5 @@
 package NicToolServer::Group;
+
 # ABSTRACT: nictool groups (aka, permission realms)
 
 use strict;
@@ -43,43 +44,40 @@ sub new_group {
     my $sql = "SELECT COUNT(*) AS count FROM nt_group
         WHERE deleted=0 AND parent_group_id=? AND name=?";
 
-    my $groups
-        = $self->exec_query( $sql, [ $data->{nt_group_id}, $data->{name} ] );
+    my $groups = $self->exec_query( $sql, [ $data->{nt_group_id}, $data->{name} ] );
 
     if ( $groups->[0]{count} > 0 ) {
-        return $self->error_response( 600,
-            'A group with that name already exists.' );
+        return $self->error_response( 600, 'A group with that name already exists.' );
     }
 
     $data->{parent_group_id} = $data->{nt_group_id};
 
     $sql = "INSERT INTO nt_group (parent_group_id, name) VALUES(??)";
 
-    my $insertid = $error{nt_group_id} = $self->exec_query( $sql,
-        [ $data->{parent_group_id}, $data->{name} ] )
-            or return $self->error_response( 505, $self->{dbh}->errstr );
+    my $insertid = $error{nt_group_id} =
+        $self->exec_query( $sql, [ $data->{parent_group_id}, $data->{name} ] )
+        or return $self->error_response( 505, $self->{dbh}->errstr );
 
     $data->{modified_group_id} = $insertid;
 
-    my @permcols = grep { exists $data->{$_} }
-        qw/ group_create group_delete group_write
+    my @permcols = grep { exists $data->{$_} } qw/ group_create group_delete group_write
         zone_create zone_delegate zone_delete zone_write
         zonerecord_create zonerecord_delegate zonerecord_delete zonerecord_write
         user_create user_delete user_write self_write
         nameserver_create nameserver_delete nameserver_write /;
-
 
     #cannot change permissions unless you have those permissions
     foreach (@permcols) {
         $data->{$_} = 0 unless $data->{user}{$_};
     }
 
-    $sql = "INSERT INTO nt_perm("
+    $sql =
+          "INSERT INTO nt_perm("
         . join( ',', 'nt_group_id', @permcols, 'usable_ns' )
         . ") VALUES(??)";
 
     my @values = map( $data->{$_}, @permcols );
-    push @values, join(',', sort $data->{usable_nameservers} );
+    push @values, join( ',', sort $data->{usable_nameservers} );
     my $permid = $self->exec_query( $sql, [ $insertid, @values ] );
     warn "$sql\n" if $self->debug_sql;
 
@@ -98,7 +96,7 @@ sub new_group {
 
     $self->add_to_group_subgroups( $insertid, $data->{nt_group_id}, 1000 );
 
-    $self->log_group( $data, 'added', undef);
+    $self->log_group( $data, 'added', undef );
 
     return \%error;
 }
@@ -122,9 +120,9 @@ sub edit_group {
     $data->{modified_group_id} = $data->{nt_group_id};
 
     if (@columns) {
-        $sql = "UPDATE nt_group SET "
-            . join( ',',
-            map( "$_ = " . $dbh->quote( $data->{$_} ), @columns ) )
+        $sql =
+              "UPDATE nt_group SET "
+            . join( ',', map( "$_ = " . $dbh->quote( $data->{$_} ), @columns ) )
             . " WHERE nt_group_id=?";
 
         $self->exec_query( $sql, $data->{nt_group_id} )
@@ -148,21 +146,21 @@ sub edit_group {
     $sql = "SELECT * from nt_perm WHERE nt_group_id = ?";
     my $gperms = $self->exec_query( $sql, $data->{nt_group_id} )
         or return $self->error_response( 505, $dbh->errstr );
-    $gperms = $gperms->[0];
+    $gperms     = $gperms->[0];
     %$prev_data = ( %$prev_data, map { $_ => $gperms->{$_} } @perms );
 
-    if (!$gperms) {
+    if ( !$gperms ) {
         return $self->error_response( 507,
             "No permissions found for group ID $data->{nt_group_id}." );
     }
 
-    my %userns  = map { $_ => 1 } split(/,/, $data->{user}{usable_ns} );
-    my %groupns = map { $_ => 1 } split(/,/, $gperms->{usable_ns} );
+    my %userns  = map { $_ => 1 } split( /,/, $data->{user}{usable_ns} );
+    my %groupns = map { $_ => 1 } split( /,/, $gperms->{usable_ns} );
 
     foreach my $n ( keys %groupns ) {
         delete $groupns{$n} if !$usable{$n};
 
-        next if !$userns{$n};   # no access
+        next if !$userns{$n};                                                # no access
         next if !$self->get_access_permission( 'NAMESERVER', $n, 'read' );
 
         #delete it or set it to true according to presence in the data array
@@ -181,12 +179,11 @@ sub edit_group {
         push @newns, $_ if exists $groupns{$_};
         delete $groupns{$_};
     }
-    $data->{usable_ns} = scalar @newns ? join(',', sort @newns) : '';
+    $data->{usable_ns} = scalar @newns ? join( ',', sort @newns ) : '';
 
-
-    if ( @permcols ) {
+    if (@permcols) {
         my @s = map( "$_ = " . $dbh->quote( $data->{$_} ), @permcols );
-        $sql = "UPDATE nt_perm SET " . join(',', @s ) . " WHERE nt_group_id=?";
+        $sql = "UPDATE nt_perm SET " . join( ',', @s ) . " WHERE nt_group_id=?";
         $self->exec_query( $sql, $data->{nt_group_id} )
             or return $self->error_response( 505, $dbh->errstr );
 
@@ -194,12 +191,12 @@ sub edit_group {
         $action = 'modified';
     }
 
-    if (defined $data->{usable_ns}) {
+    if ( defined $data->{usable_ns} ) {
         $sql = "UPDATE nt_perm SET usable_ns=? WHERE nt_group_id=?";
-        $self->exec_query( $sql, [$data->{usable_ns}, $data->{nt_group_id}] )
+        $self->exec_query( $sql, [ $data->{usable_ns}, $data->{nt_group_id} ] )
             or return $self->error_response( 505, $dbh->errstr );
         $action = 'modified';
-    };
+    }
 
     $self->log_group( $data, $action, $prev_data ) if $action;
 
@@ -209,12 +206,11 @@ sub edit_group {
 sub add_to_group_subgroups {
     my ( $self, $gid, $parent_group_id, $rank ) = @_;
 
-    my $sql
-        = "INSERT INTO nt_group_subgroups(nt_group_id, nt_subgroup_id, `rank`) VALUES(??)";
+    my $sql = "INSERT INTO nt_group_subgroups(nt_group_id, nt_subgroup_id, `rank`) VALUES(??)";
     $self->exec_query( $sql, [ $parent_group_id, $gid, $rank ] );
 
     $sql = "SELECT parent_group_id FROM nt_group WHERE nt_group_id = ?";
-    my $ids = $self->exec_query( $sql, $parent_group_id );
+    my $ids  = $self->exec_query( $sql, $parent_group_id );
     my $pgid = $ids->[0]->{parent_group_id};
 
     if ( $pgid != 0 ) {
@@ -233,8 +229,7 @@ sub delete_group {
 
     if ( $c->[0]->{count} > 0 ) {
         return $self->error_response( 600,
-            'You can\'t delete this group until you delete all of its zones'
-        );
+            'You can\'t delete this group until you delete all of its zones' );
     }
 
     $sql = "SELECT COUNT(*) AS count FROM nt_user
@@ -242,17 +237,14 @@ sub delete_group {
     $c = $self->exec_query( $sql, $data->{nt_group_id} );
     if ( $c->[0]->{count} > 0 ) {
         return $self->error_response( 600,
-            'You can\'t delete this group until you delete all of its users'
-        );
+            'You can\'t delete this group until you delete all of its users' );
     }
 
-    $sql
-        = "SELECT COUNT(*) AS count FROM nt_group WHERE deleted=0 AND parent_group_id = ?";
-    $c = $self->exec_query( $sql, $data->{nt_group_id} );
+    $sql = "SELECT COUNT(*) AS count FROM nt_group WHERE deleted=0 AND parent_group_id = ?";
+    $c   = $self->exec_query( $sql, $data->{nt_group_id} );
     if ( $c->[0]->{count} > 0 ) {
         return $self->error_response( 600,
-            'You can\'t delete this group until you delete all of its sub-groups'
-        );
+            'You can\'t delete this group until you delete all of its sub-groups' );
     }
 
     my $group_data = $self->find_group( $data->{nt_group_id} );
@@ -270,8 +262,8 @@ sub delete_group {
 sub get_group {
     my ( $self, $data ) = @_;
 
-    my $sql
-        = "SELECT nt_group.*, "
+    my $sql =
+          "SELECT nt_group.*, "
         . $self->perm_fields_select
         . " FROM nt_group,nt_perm WHERE nt_group.nt_group_id = ?"
         . " AND nt_perm.nt_group_id = nt_group.nt_group_id";
@@ -282,7 +274,7 @@ sub get_group {
 
     my $ref = $perms->[0];
     if ($ref) {
-        %rv               = %$ref;
+        %rv             = %$ref;
         $rv{error_code} = 200;
         $rv{error_msg}  = 'OK';
     }
@@ -305,12 +297,12 @@ sub get_group {
 sub get_group_groups {
     my ( $self, $data ) = @_;
 
-    my $sql
-        = "SELECT nt_group.*, "
+    my $sql =
+          "SELECT nt_group.*, "
         . $self->perm_fields_select
         . " FROM nt_group,nt_perm WHERE nt_group.deleted=0 AND nt_perm.deleted=0 AND nt_group.parent_group_id = ?"
         . " AND nt_perm.nt_group_id = nt_group.nt_group_id ORDER BY nt_group.name";
-    my $rows = $self->exec_query( $sql, $data->{nt_group_id} );
+    my $rows   = $self->exec_query( $sql, $data->{nt_group_id} );
     my $r_data = { error_code => 200, error_msg => 'OK' };
     $r_data->{groups} = [];
 
@@ -340,8 +332,7 @@ sub get_group_subgroups {
     my ( $self, $data ) = @_;
 
     my %field_map = (
-        group =>
-            { timefield => 0, quicksearch => 1, field => 'nt_group.name' },
+        group           => { timefield => 0, quicksearch => 1, field => 'nt_group.name' },
         parent_group_id => {
             timefield   => 0,
             quicksearch => 0,
@@ -350,20 +341,18 @@ sub get_group_subgroups {
     );
 
     my $conditions = $self->format_search_conditions( $data, \%field_map );
-    my $sortby = $self->format_sort_conditions( $data, \%field_map,
-        "nt_group.name" );
+    my $sortby     = $self->format_sort_conditions( $data, \%field_map, "nt_group.name" );
 
     my @group_list = $data->{nt_group_id};
     if ( $data->{include_subgroups} ) {
-        push @group_list,
-            @{ $self->get_subgroup_ids( $data->{start_group_id} ) };
-    };
+        push @group_list, @{ $self->get_subgroup_ids( $data->{start_group_id} ) };
+    }
 
     my $r_data = { error_code => 200, error_msg => 'OK', groups => [] };
 
-    my $group_string = join(',', @group_list );
-    my $cond_string = join(' ', @$conditions );
-    my $sql = "SELECT COUNT(*) AS count FROM nt_group
+    my $group_string = join( ',', @group_list );
+    my $cond_string  = join( ' ', @$conditions );
+    my $sql          = "SELECT COUNT(*) AS count FROM nt_group
   WHERE deleted=0 AND parent_group_id IN ($group_string)";
     $sql .= " AND ($cond_string)" if scalar @$conditions;
 
@@ -376,10 +365,10 @@ sub get_group_subgroups {
 
     return $r_data if $r_data->{total} == 0;
 
-    my $sort_string = join( ', ', @$sortby);
+    my $sort_string = join( ', ', @$sortby );
     $sql = "SELECT nt_group.* FROM nt_group
   WHERE deleted=0 AND parent_group_id IN ($group_string)";
-    $sql .= " AND ($cond_string)" if scalar @$conditions;
+    $sql .= " AND ($cond_string)"    if scalar @$conditions;
     $sql .= " ORDER BY $sort_string" if (@$sortby);
     $sql .= " LIMIT " . ( $r_data->{start} - 1 ) . ", $r_data->{limit}";
     my $group_rows = $self->exec_query($sql);
@@ -390,7 +379,7 @@ sub get_group_subgroups {
     my %groups;
     foreach my $row (@$group_rows) {
         $sql = "SELECT COUNT(*) AS count FROM nt_group WHERE deleted=0 AND parent_group_id = ?";
-        $c = $self->exec_query( $sql, $row->{nt_group_id} )
+        $c   = $self->exec_query( $sql, $row->{nt_group_id} )
             or return $self->error_response( 505, $self->{dbh}->errstr );
         $row->{has_children} = $c->[0]->{count};
 
@@ -400,13 +389,10 @@ sub get_group_subgroups {
     }
 
     if ( $data->{include_parent} ) {
-        unshift @{ $r_data->{groups} },
-            $self->find_group( $data->{user}{nt_group_id} );
-    };
+        unshift @{ $r_data->{groups} }, $self->find_group( $data->{user}{nt_group_id} );
+    }
 
-    $r_data->{group_map}
-        = $self->get_group_map( $data->{start_group_id},
-        [ keys %groups ] );
+    $r_data->{group_map} = $self->get_group_map( $data->{start_group_id}, [ keys %groups ] );
 
     warn "get_group_subgroups: " . Data::Dumper::Dumper($r_data)
         if $self->debug_result;
@@ -423,8 +409,7 @@ sub get_global_application_log {
             quicksearch => 0,
             field       => 'nt_user_global_log.timestamp'
         },
-        user =>
-            { timefield => 0, quicksearch => 1, field => 'nt_user.username' },
+        user   => { timefield => 0, quicksearch => 1, field => 'nt_user.username' },
         action => {
             timefield   => 0,
             quicksearch => 1,
@@ -448,15 +433,13 @@ sub get_global_application_log {
     );
 
     my $conditions = $self->format_search_conditions( $data, \%field_map );
-    my $sortby = $self->format_sort_conditions( $data, \%field_map,
-        "nt_user_global_log.timestamp DESC" );
+    my $sortby =
+        $self->format_sort_conditions( $data, \%field_map, "nt_user_global_log.timestamp DESC" );
 
     my @group_list;
     if ( $data->{include_subgroups} ) {
-        @group_list = (
-            $data->{nt_group_id},
-            @{ $self->get_subgroup_ids( $data->{nt_group_id} ) }
-        );
+        @group_list =
+            ( $data->{nt_group_id}, @{ $self->get_subgroup_ids( $data->{nt_group_id} ) } );
     }
     else {
         @group_list = ( $data->{nt_group_id} );
@@ -464,8 +447,8 @@ sub get_global_application_log {
 
     my $r_data = { error_code => 200, error_msg => 'OK', log => [] };
 
-    my $sql
-        = "SELECT COUNT(*) AS count FROM nt_user_global_log, nt_user "
+    my $sql =
+          "SELECT COUNT(*) AS count FROM nt_user_global_log, nt_user "
         . "WHERE nt_user_global_log.nt_user_id = nt_user.nt_user_id "
         . "AND nt_user.nt_group_id IN("
         . join( ',', @group_list ) . ") "
@@ -477,8 +460,8 @@ sub get_global_application_log {
 
     return $r_data if $r_data->{total} == 0;
 
-    $sql
-        = "SELECT nt_user_global_log.*, "
+    $sql =
+          "SELECT nt_user_global_log.*, "
         . "       CONCAT(nt_user.first_name, \" \", nt_user.last_name, \" (\", nt_user.username, \")\") as user, "
         . "       nt_user.nt_group_id, "
         . "       nt_group.name as group_name "
@@ -503,8 +486,7 @@ sub get_global_application_log {
         $groups{ $row->{nt_group_id} } = 1;
     }
 
-    $r_data->{group_map}
-        = $self->get_group_map( $data->{start_group_id}, [ keys %groups ] );
+    $r_data->{group_map} = $self->get_group_map( $data->{start_group_id}, [ keys %groups ] );
 
     return $r_data;
 }
@@ -519,8 +501,7 @@ sub get_group_branch {
     my %rv = ( error_code => 200, error_msg => 'OK', groups => [] );
 
     while ( $last_group != $user_group ) {
-        my $sql
-            = "SELECT * FROM nt_group WHERE deleted=0 AND nt_group_id = ?";
+        my $sql    = "SELECT * FROM nt_group WHERE deleted=0 AND nt_group_id = ?";
         my $groups = $self->exec_query( $sql, $cur_group )
             or return {
             error_code => 600,
@@ -541,8 +522,8 @@ sub log_group {
     my ( $self, $data, $action, $prev_data ) = @_;
 
     my $dbh = $self->{dbh};
-    my @columns
-        = qw(nt_group_id parent_group_id nt_user_id action timestamp modified_group_id name);
+    my @columns =
+        qw(nt_group_id parent_group_id nt_user_id action timestamp modified_group_id name);
     my @values;
 
     my $user = $data->{user};
@@ -551,8 +532,8 @@ sub log_group {
     $data->{action}     = $action;
     $data->{timestamp}  = time();
 
-    my $sql
-        = "INSERT INTO nt_group_log("
+    my $sql =
+          "INSERT INTO nt_group_log("
         . join( ',', @columns )
         . ") VALUES("
         . join( ',', map( $dbh->quote( $data->{$_} ), @columns ) ) . ")";
@@ -565,12 +546,11 @@ sub log_group {
 
     $data->{object}       = 'group';
     $data->{log_entry_id} = $insertid;
-    $data->{title} = $data->{name} || $prev_data->{name} || '(group)';
-    $data->{object_id} = $data->{modified_group_id};
+    $data->{title}        = $data->{name} || $prev_data->{name} || '(group)';
+    $data->{object_id}    = $data->{modified_group_id};
 
     if ( $action eq 'modified' ) {    # modified
-        $prev_data->{modified_group_id}
-            = delete( $prev_data->{nt_group_id} );
+        $prev_data->{modified_group_id} = delete( $prev_data->{nt_group_id} );
 
         $data->{description} = $self->diff_changes( $data, $prev_data );
     }
@@ -581,7 +561,8 @@ sub log_group {
         $data->{description} = 'initial creation';
     }
 
-    $sql = "INSERT INTO nt_user_global_log("
+    $sql =
+          "INSERT INTO nt_user_global_log("
         . join( ',', @g_columns )
         . ") VALUES("
         . join( ',', map( $dbh->quote( $data->{$_} ), @g_columns ) ) . ")";
@@ -590,7 +571,7 @@ sub log_group {
 
 sub find_group {
     my ( $self, $nt_group_id ) = @_;
-    my $sql = "SELECT * FROM nt_group WHERE nt_group_id = ?";
+    my $sql    = "SELECT * FROM nt_group WHERE nt_group_id = ?";
     my $groups = $self->exec_query( $sql, $nt_group_id );
     return $groups->[0] || {};
 }

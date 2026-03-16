@@ -30,8 +30,8 @@ sub main {
 
     my $user = $nt_obj->verify_session();
 
-    if ($user && ref $user) {
-        print $q->header (-charset=>"utf-8");
+    if ( $user && ref $user ) {
+        print $q->header( -charset => "utf-8" );
         display( $nt_obj, $q, $user );
     }
 }
@@ -54,8 +54,8 @@ sub display {
     }
     elsif ( $q->param('Save') ) {
         my $rv = $nt_obj->move_users(
-            nt_group_id => scalar($q->param('group_list')),
-            user_list   => scalar($q->param('obj_list'))
+            nt_group_id => scalar( $q->param('group_list') ),
+            user_list   => scalar( $q->param('obj_list') )
         );
         if ( $rv->{'error_code'} != 200 ) {
 
@@ -81,7 +81,7 @@ sub move {
 
     #warn "obj_list = " . $q->param('obj_list') . " ..\n";
 
-    my $rv = $nt_obj->get_user_list( user_list => scalar($q->param('obj_list')) );
+    my $rv = $nt_obj->get_user_list( user_list => scalar( $q->param('obj_list') ) );
 
     return $nt_obj->display_error($rv) if ( $rv->{'error_code'} != 200 );
 
@@ -114,8 +114,7 @@ sub move {
     $nt_obj->display_group_list( $q, $user, 'move_users.cgi' );
 
     print qq[\n<table class="fat">\n
-    <tr class=dark_grey_bg><td colspan=2 class="center">],
-        $q->submit('Save'),
+    <tr class=dark_grey_bg><td colspan=2 class="center">], $q->submit('Save'),
         $q->submit(
         -name    => 'cancel_move',
         -value   => 'Cancel',

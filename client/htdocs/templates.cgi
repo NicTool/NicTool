@@ -15,8 +15,8 @@ sub main {
 
     my $user = $nt_obj->verify_session();
 
-    if ($user && ref $user ) {
-        print $q->header (-charset=>"utf-8");
+    if ( $user && ref $user ) {
+        print $q->header( -charset => "utf-8" );
         display( $nt_obj, $q, $user );
     }
 }
@@ -89,5 +89,4 @@ sub show_zone_records {
 
     print qq{ </table> <br> };
 }
-
 

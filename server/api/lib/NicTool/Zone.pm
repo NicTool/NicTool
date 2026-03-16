@@ -20,7 +20,6 @@
 
 package NicTool::Zone;
 
-
 use NicTool::DBObject;
 our @ISA = 'NicTool::DBObject';
 
@@ -71,7 +70,6 @@ sub _api {
         get_delegated_zone_records    => { 'include' => ['nt_group_id'] },
     };
 }
-
 
 1;
 

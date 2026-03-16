@@ -23,11 +23,11 @@ sub new {
     );
 
     my $self = {
-        'proj'      => $p{proj},
-        logger      => $p{'log'} || $p{proj},
-        nt          => undef,
-        ns_ips      => undef,
-        resolver    => undef,
+        'proj'   => $p{proj},
+        logger   => $p{'log'} || $p{proj},
+        nt       => undef,
+        ns_ips   => undef,
+        resolver => undef,
     };
     bless( $self, $class );
 
@@ -52,7 +52,7 @@ sub nt_connect {
     }
 
     my $cfg = $self->{proj}{config}{NicTool};
-    my $nt = NicTool->new(
+    my $nt  = NicTool->new(
         server_host => $cfg->{host},
         server_port => $cfg->{port} || 8082,
         protocol    => $cfg->{protocol},
@@ -117,32 +117,31 @@ sub nt_create_zone {
 
     my %p = validate(
         @_,
-        {   'zone'     => { type => SCALAR },
-            'group_id' => { type => SCALAR, optional => 1, default => 1 },
+        {   'zone'        => { type => SCALAR },
+            'group_id'    => { type => SCALAR, optional => 1, default => 1 },
             'description' => { type => SCALAR },
-            'contact' => { type => SCALAR, optional => 1 },
-            'ttl'     => { type => SCALAR, optional => 1, default => 86400 },
-            'refresh' => { type => SCALAR, optional => 1, default => 16384 },
-            'retry'   => { type => SCALAR, optional => 1, default => 2048 },
-            'expire' => { type => SCALAR, optional => 1, default => 1048576 },
-            'minimum' => { type => SCALAR, optional => 1, default => 2560 },
-            'nameservers' =>
-                { type => SCALAR, optional => 1, default => [ 3, 4 ] },
-            'template' => { type => SCALAR, optional => 1, },
-            'ip'       => { type => SCALAR, optional => 1, },
-            'mailip'   => { type => SCALAR, optional => 1, },
-            'logger'   => { type => OBJECT, optional => 1 },
+            'contact'     => { type => SCALAR, optional => 1 },
+            'ttl'         => { type => SCALAR, optional => 1, default => 86400 },
+            'refresh'     => { type => SCALAR, optional => 1, default => 16384 },
+            'retry'       => { type => SCALAR, optional => 1, default => 2048 },
+            'expire'      => { type => SCALAR, optional => 1, default => 1048576 },
+            'minimum'     => { type => SCALAR, optional => 1, default => 2560 },
+            'nameservers' => { type => SCALAR, optional => 1, default => [ 3, 4 ] },
+            'template'    => { type => SCALAR, optional => 1, },
+            'ip'          => { type => SCALAR, optional => 1, },
+            'mailip'      => { type => SCALAR, optional => 1, },
+            'logger'      => { type => OBJECT, optional => 1 },
         }
     );
 
-    my $nt = $self->nt_connect();
+    my $nt     = $self->nt_connect();
     my $logger = $p{logger} || $self->{logger};
 
     my $nameservers = $p{nameservers};
     my $config      = $self->{proj}{config};
     if ( !$nameservers && $config ) {
-        $nameservers
-            = scalar $config->{NicTool}{nameserver}
+        $nameservers =
+            scalar $config->{NicTool}{nameserver}
             ? [ $config->{NicTool}{nameserver} ]
             : $config->{NicTool}{nameserver};
     }
@@ -182,8 +181,7 @@ sub nt_delete_record {
 
     my $nt        = $self->nt_connect();
     my $record_id = $p{record_id};
-    my $r
-        = $self->{nt}->delete_zone_record( nt_zone_record_id => $record_id );
+    my $r         = $self->{nt}->delete_zone_record( nt_zone_record_id => $record_id );
 
     if ( $r->{store}{error_code} != 200 ) {
         die "$r->{store}{error_desc} ( $r->{store}{error_msg} )";
@@ -231,7 +229,7 @@ sub nt_get_reverse {
     #    warn "IP $ip\n";
 
     my @octets = split( '\.', $ip );
-    my $zone = "$octets[2].$octets[1].$octets[0].in-addr.arpa";
+    my $zone   = "$octets[2].$octets[1].$octets[0].in-addr.arpa";
 
     #    warn "reverse zone: $zone\n";
 
@@ -274,7 +272,7 @@ sub nt_get_reverses {
 
 sub nt_get_zones {
     my $self = shift;
-    my %p = validate(
+    my %p    = validate(
         @_,
         {   'zone'  => { type => SCALAR },
             'fatal' => { type => BOOLEAN, optional => 1, default => 1 },
@@ -283,7 +281,7 @@ sub nt_get_zones {
     );
 
     my $nt = $self->nt_connect();
-    my $r = $nt->get_group_zones(
+    my $r  = $nt->get_group_zones(
         nt_group_id       => $nt->{user}{store}{nt_group_id},
         include_subgroups => 1,
         Search            => 1,
@@ -314,8 +312,8 @@ sub nt_get_zones_by_client_id {
     my %p = validate(
         @_,
         {   'client_id' => { type => SCALAR },
-            'zone'      => { type => SCALAR, optional => 1 },
-            'sort'      => { type => SCALAR, optional => 1 },
+            'zone'      => { type => SCALAR,  optional => 1 },
+            'sort'      => { type => SCALAR,  optional => 1 },
             'fatal'     => { type => BOOLEAN, optional => 1, default => 1 },
             'debug'     => { type => BOOLEAN, optional => 1, default => 1 },
         }
@@ -373,7 +371,7 @@ sub nt_get_zone_info {
     my %p    = validate(
         @_,
         {   'zone_id' => { type => SCALAR },
-            'name'    => { type => SCALAR, optional => 1 },
+            'name'    => { type => SCALAR,  optional => 1 },
             'fatal'   => { type => BOOLEAN, optional => 1, default => 1 },
             'debug'   => { type => BOOLEAN, optional => 1, default => 1 },
         }
@@ -382,7 +380,7 @@ sub nt_get_zone_info {
     #warn "getting info for zone id $p{zone_id}\n";
 
     my $nt = $self->nt_connect();
-    my $r = $nt->get_zone( nt_zone_id => $p{zone_id} );
+    my $r  = $nt->get_zone( nt_zone_id => $p{zone_id} );
     return $r->{store};
 }
 
@@ -392,8 +390,8 @@ sub nt_get_zone_records {
     my %p = validate(
         @_,
         {   'zone_id' => { type => SCALAR },
-            'name'    => { type => SCALAR, optional => 1 },
-            'type'    => { type => SCALAR, optional => 1 },
+            'name'    => { type => SCALAR,  optional => 1 },
+            'type'    => { type => SCALAR,  optional => 1 },
             'fatal'   => { type => BOOLEAN, optional => 1, default => 1 },
             'debug'   => { type => BOOLEAN, optional => 1, default => 1 },
         }
@@ -464,7 +462,7 @@ sub nt_set_zone_record {
             'address'     => { type => SCALAR },
             'ttl'         => { type => SCALAR },
             'type'        => { type => SCALAR },
-            'description' => { type => SCALAR, optional => 1 },
+            'description' => { type => SCALAR,  optional => 1 },
             'fatal'       => { type => BOOLEAN, optional => 1, default => 1 },
             'debug'       => { type => BOOLEAN, optional => 1, default => 1 },
         }
@@ -478,8 +476,7 @@ sub nt_set_zone_record {
         debug   => 0,
     );
 
-    my $rec_id
-        = defined $r->{nt_zone_record_id} ? $r->{nt_zone_record_id} : undef;
+    my $rec_id = defined $r->{nt_zone_record_id} ? $r->{nt_zone_record_id} : undef;
 
     #warn "rec_id: " . Dumper ($rec_id);
 
@@ -560,11 +557,10 @@ sub get_a_records {
 
     # resolve host to its IP
     my $resolver = $self->get_resolver();
-    my $dns_q = $resolver->query( $p{host}, 'A' );
+    my $dns_q    = $resolver->query( $p{host}, 'A' );
 
     if ( !$dns_q ) {
-        $self->{logger}
-            ->log( "DNS query for $p{host} A records failed", severity => 2 );
+        $self->{logger}->log( "DNS query for $p{host} A records failed", severity => 2 );
         return;
     }
 
@@ -590,17 +586,16 @@ sub get_ns_records {
     }
     else {
 
-    # this method must be used for TLD queries. TLD queries fail with NXDOMAIN
-    # using the standard method above .
+        # this method must be used for TLD queries. TLD queries fail with NXDOMAIN
+        # using the standard method above .
         $dns_q = $resolver->send( $p{zone}, 'NS' );
     }
 
     if ( !$dns_q ) {
 
-   #        $self->{logger}
-   #            ->log( "NS record query for $p{zone} failed", severity => 2 );
-        warn "NS record query for '$p{zone}' failed: "
-            . $resolver->errorstring;
+        #        $self->{logger}
+        #            ->log( "NS record query for $p{zone} failed", severity => 2 );
+        warn "NS record query for '$p{zone}' failed: " . $resolver->errorstring;
         return;
     }
 
@@ -620,8 +615,7 @@ sub get_resolver {
 
     my $resolver = Net::DNS::Resolver->new();
     if ( !$resolver ) {
-        $self->{logger}
-            ->log( "Unable to get a DNS resolver object.", severity => 2 );
+        $self->{logger}->log( "Unable to get a DNS resolver object.", severity => 2 );
         warn "unable to get DNS resolver\n";
         return;
     }
@@ -650,7 +644,7 @@ sub get_proj_ns_ips {
 
 sub has_my_ns_records {
     my $self = shift;
-    my %p = validate( @_, { 'zone' => { type => SCALAR } } );
+    my %p    = validate( @_, { 'zone' => { type => SCALAR } } );
 
     my $domain   = $p{zone};
     my $logger   = $self->{logger};
@@ -660,8 +654,7 @@ sub has_my_ns_records {
 
     my $their_ns_records = $self->get_ns_records( zone => $domain );
     if ( !$their_ns_records || scalar @$their_ns_records < 1 ) {
-        $logger->log( "The DNS zone $domain has no NS records.",
-            severity => 2 );
+        $logger->log( "The DNS zone $domain has no NS records.", severity => 2 );
         return;
     }
 
@@ -674,10 +667,8 @@ sub has_my_ns_records {
     }
 
     if ( !$matches ) {
-        $logger->log(
-            "The DNS zone $domain has NS records that point to other DNS servers.",
-            severity => 3
-        );
+        $logger->log( "The DNS zone $domain has NS records that point to other DNS servers.",
+            severity => 3 );
         return;
     }
     return 1;
@@ -685,15 +676,16 @@ sub has_my_ns_records {
 
 sub reset_rdns {
     my $self = shift;
-    my %p = validate( @_, { ip => { type => SCALAR } } );
+    my %p    = validate( @_, { ip => { type => SCALAR } } );
 
-    my $ip = $self->{proj}->is_valid_ip( $p{ip} ) or die "invalid IP '$p{ip}'\n";
+    my $ip = $self->{proj}->is_valid_ip( $p{ip} )
+        or die "invalid IP '$p{ip}'\n";
     my @octets = split /\./, $ip;
 
     $self->{logger}->log( "setting DNS to defaults for $ip", severity => 1 );
 
     # update PTR record for 4.3.2.1.in-addr.arpa
-    my $r_zone = "$octets[2].$octets[1].$octets[0].in-addr.arpa";
+    my $r_zone  = "$octets[2].$octets[1].$octets[0].in-addr.arpa";
     my $zone_id = $self->nt_get_zones( zone => $r_zone );
     if ( !$zone_id ) {
         $self->nt_create_zone(
@@ -703,8 +695,7 @@ sub reset_rdns {
         );
         $zone_id = $self->nt_get_zones( zone => $r_zone );
         if ( !$zone_id ) {
-            $self->{logger}
-                ->log( "unable to create zone $r_zone", severity => 3 );
+            $self->{logger}->log( "unable to create zone $r_zone", severity => 3 );
             return;
         }
         $self->{logger}->log( "zone $r_zone created", severity => 1 );
@@ -751,7 +742,7 @@ sub resolve_ip_to_hostname {
 
     #print "node: $ip";
     my $resolver = Net::DNS::Resolver->new();
-    my $dns_q = $resolver->query( $ip, 'PTR' );
+    my $dns_q    = $resolver->query( $ip, 'PTR' );
     foreach my $rr ( $dns_q->answer ) {
         my $fqdn = $rr->ptrdname;
         if ($fqdn) {
@@ -765,6 +756,5 @@ sub resolve_ip_to_hostname {
     }
     die "unable to resolve $ip to a hostname\n";
 }
-
 
 1;

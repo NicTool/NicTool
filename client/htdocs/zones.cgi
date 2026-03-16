@@ -8,15 +8,15 @@ require 'nictoolclient.conf';
 main();
 
 sub main {
-    my $q = new CGI();
+    my $q      = new CGI();
     my $nt_obj = new NicToolClient($q);
 
     return if $nt_obj->check_setup ne 'OK';
 
     my $user = $nt_obj->verify_session();
 
-    if ($user && ref $user) {
-        print $q->header (-charset=>"utf-8");
+    if ( $user && ref $user ) {
+        print $q->header( -charset => "utf-8" );
         display( $nt_obj, $q, $user );
     }
 }
@@ -33,8 +33,8 @@ sub display {
         userid    => $user->{'nt_user_id'}
     );
 
-    my $gid = $q->param('nt_group_id');
-    my $level = $nt_obj->display_group_tree( $user, $user->{'nt_group_id'}, $gid, 0);
+    my $gid   = $q->param('nt_group_id');
+    my $level = $nt_obj->display_group_tree( $user, $user->{'nt_group_id'}, $gid, 0 );
 
     $nt_obj->display_zone_list_options( $user, $gid, $level, 1 );
 
@@ -52,7 +52,7 @@ sub display {
         print "form action:  $vars{'action'} <br>\n"
             if ( $vars{'action'} && $vars{'debug'} );
         %vars = verify_global_vars( $q, %vars );
-        if ( $vars{'message'} ) { print "$vars{'message'} <br>\n"; return 0; };
+        if ( $vars{'message'} ) { print "$vars{'message'} <br>\n"; return 0; }
 
         my $zones = $vars{'zones'};
 
@@ -80,8 +80,7 @@ sub print_zone_request_form {
     my @actions   = ("add");
 
     my $gid = $q->param('nt_group_id');
-    print $q->start_form,
-        $q->hidden( -name => 'nt_group_id', -default => $gid );
+    print $q->start_form, $q->hidden( -name => 'nt_group_id', -default => $gid );
 
     print qq{
 <table class="fat">
@@ -94,7 +93,7 @@ sub print_zone_request_form {
         $q->popup_menu(
         -name    => 'action',
         -values  => [@actions],
-        -default => scalar($q->param('action'))
+        -default => scalar( $q->param('action') )
         ),
         qq{   </td>
   <td class="right">New IP:</td>
@@ -102,25 +101,23 @@ sub print_zone_request_form {
         $q->textfield(
         -name  => 'newip',
         -size  => 15,
-        -value => scalar($q->param('newip'))
+        -value => scalar( $q->param('newip') )
         ),
         qq{
   </td>
  </tr>
  <tr class="light_grey_bg">
   <td><a href="javascript:void window.open('templates.cgi','templates_win','width=640,height=580,scrollbars,resizable=yes')"> Template:</a></td>
-  <td> },
-        $q->popup_menu( -name => 'template', -values => [@templates] ),
-        qq{
+  <td> }, $q->popup_menu( -name => 'template', -values => [@templates] ), qq{
   </td>
   <td class="right">Mail IP: </td>
   <td> },
         $q->textfield(
         -name  => 'mailip',
         -size  => 15,
-        -value => scalar($q->param('mailip'))
+        -value => scalar( $q->param('mailip') )
         ),
-  qq{<br>(if different than new) </td>
+        qq{<br>(if different than new) </td>
  </tr>
  <tr class="light_grey_bg">
   <td> Nameservers </td>
@@ -142,15 +139,11 @@ sub print_zone_request_form {
  </tr>
  <tr class="light_grey_bg">
   <td>Options:</td>
-  <td colspan="3"> }, $q->checkbox( -name => 'debug', -label => ' Debug' ), ' <br> ',
-        qq{
+  <td colspan="3"> }, $q->checkbox( -name => 'debug', -label => ' Debug' ), ' <br> ', qq{
   </td>
- </tr> },
-        $q->td( { -colspan => '4', -class => 'center' }, $q->submit, ),
-        qq{
+ </tr> }, $q->td( { -colspan => '4', -class => 'center' }, $q->submit, ), qq{
  </tr>
-</table> },
-        $q->end_form;
+</table> }, $q->end_form;
 }
 
 sub find_one_zone_id {
@@ -178,7 +171,6 @@ sub find_one_zone_id {
     }
 }
 
-
 sub zone_add {
     my ( $zone, $nt, $q, %vars ) = @_;
 
@@ -195,17 +187,16 @@ sub zone_add {
         zone        => $zone,
         nameservers => join( ',', $q->multi_param('nameservers') ),
     );
-    foreach my $s ( qw/ refresh retry expire minimum ttl serial nt_group_id / ) {
+    foreach my $s (qw/ refresh retry expire minimum ttl serial nt_group_id /) {
         $zone_vars{$s} = $vars{$s};
-    };
+    }
 
     print Data::Dumper::Dumper(%zone_vars) if $vars{'debug'};
 
     # create zone
     my $r = $nt->new_zone(%zone_vars);
     if ( $r->{'error_code'} != 200 ) {
-        print
-            "$r->{'error_code'}: $r->{'error_msg'} : $r->{'error_desc'} <br>";
+        print "$r->{'error_code'}: $r->{'error_msg'} : $r->{'error_desc'} <br>";
         print Data::Dumper::Dumper($r);
         return 0;
     }
@@ -216,15 +207,15 @@ sub zone_add {
         $nt->zone_record_template(
             {   zone       => $zone,
                 nt_zone_id => $r->{'nt_zone_id'},
-                template   => scalar($q->param('template')),
-                newip      => scalar($q->param('newip')),
-                mailip     => scalar($q->param('mailip')),
-                debug      => scalar($q->param('debug'))
+                template   => scalar( $q->param('template') ),
+                newip      => scalar( $q->param('newip') ),
+                mailip     => scalar( $q->param('mailip') ),
+                debug      => scalar( $q->param('debug') )
             }
         )
     );
 
-    print "success.<br>"; # return success
+    print "success.<br>";    # return success
 }
 
 sub add_zone_records {
@@ -245,6 +236,7 @@ sub add_zone_records {
         if ( $q->param('debug') ) {
             print "add_zone_records: $recs->[$i]->{'nt_zone_id'}, $recs->[$i]->{'name'}, ";
             print "$recs->[$i]->{'type'}, $recs->[$i]->{'address'}, $recs->[$i]->{'weight'}\n";
+
             #print Data::Dumper::Dumper(%zone_record);
         }
         my $r = $nt->new_zone_record(%zone_record);
@@ -268,16 +260,15 @@ sub setup_http_vars {
     my ( $q, $debug ) = @_;
 
     my %data;
-    my @fields
-        = qw(nt_group_id action newip nameservers mailip template do_reverse debug);
+    my @fields = qw(nt_group_id action newip nameservers mailip template do_reverse debug);
     foreach (@fields) { $data{$_} = $q->param($_) }
     $data{'nameservers'} = join( ',', $q->multi_param('nameservers') );
 
-    $data{'ttl'}     = $NicToolClient::default_zone_ttl     || 86400;
-    $data{'refresh'} = $NicToolClient::default_zone_refresh || 16384;
-    $data{'retry'}   = $NicToolClient::default_zone_retry   || 2048;
-    $data{'expire'}  = $NicToolClient::default_zone_expire  || 1048576;
-    $data{'minimum'} = $NicToolClient::default_zone_minimum || 2560;
+    $data{'ttl'}      = $NicToolClient::default_zone_ttl     || 86400;
+    $data{'refresh'}  = $NicToolClient::default_zone_refresh || 16384;
+    $data{'retry'}    = $NicToolClient::default_zone_retry   || 2048;
+    $data{'expire'}   = $NicToolClient::default_zone_expire  || 1048576;
+    $data{'minimum'}  = $NicToolClient::default_zone_minimum || 2560;
     $data{'mailaddr'} = $NicToolClient::default_zone_mailaddr
         || 'hostmaster.ZONE.TLD';
 
@@ -318,5 +309,4 @@ sub print_ns_tree {
     }
     return $string;
 }
-
 

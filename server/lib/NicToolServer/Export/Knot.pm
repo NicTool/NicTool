@@ -1,4 +1,5 @@
 package NicToolServer::Export::Knot;
+
 # ABSTRACT: exporting DNS data to Knot DNS
 
 use strict;
@@ -14,81 +15,81 @@ use Params::Validate qw/ :all /;
 
 sub postflight {
     my $self = shift;
-    my $dir = shift || $self->{nte}->get_export_dir or return;
+    my $dir  = shift || $self->{nte}->get_export_dir or return;
 
-    $self->update_knot_include( $dir ) or return;
+    $self->update_knot_include($dir) or return;
 
-    return 1 if ! $self->{nte}{postflight_extra};
+    return 1 if !$self->{nte}{postflight_extra};
 
     $self->write_makefile() or return;
-    $self->compile() or return;
-    $self->rsync()   or return;
-    $self->restart() or return;
+    $self->compile()        or return;
+    $self->rsync()          or return;
+    $self->restart()        or return;
 
     return 1;
 }
 
 sub update_knot_include {
-    my ($self, $dir) = @_;
+    my ( $self, $dir ) = @_;
 
     if ( $self->{nte}->incremental ) {
-        return $self->update_knot_include_incremental( $dir );
-    };
+        return $self->update_knot_include_incremental($dir);
+    }
 
     # full export, write a new include file
     my $datadir = $self->{nte}->get_export_data_dir || $dir;
-    my $fh = $self->get_export_file( 'knot.conf.nictool', $dir );
+    my $fh      = $self->get_export_file( 'knot.conf.nictool', $dir );
     foreach my $zone ( $self->{nte}->zones_exported() ) {
-        if ($ENV{'NT_EXPORT_KNOT_VERSION'} eq '1') {
+        if ( $ENV{'NT_EXPORT_KNOT_VERSION'} eq '1' ) {
             print $fh qq[$zone { file "$datadir/$zone"; }\n];
         }
         else {
             print $fh qq[zone: \n  - domain: $zone\n    file: $datadir/$zone\n];
         }
-    };
+    }
     close $fh;
     return 1;
 }
 
 sub update_knot_include_incremental {
-    my ($self, $dir) = @_;
+    my ( $self, $dir ) = @_;
 
     # check that the zone(s) modified since our last export are in the
     # include file, else append it.
     #
     # there's likely to be more lines in the include file than zones to append
     # build a lookup table of changed zones and pass through the file once
-    my $to_add = $self->get_changed_zones( $dir );
+    my $to_add = $self->get_changed_zones($dir);
     my $file   = "$dir/knot.conf.nictool";
 
-    my $in = IO::File->new($file, '<') or do {
-            warn "unable to read $file\n";
-            return;
-        };
+    my $in = IO::File->new( $file, '<' ) or do {
+        warn "unable to read $file\n";
+        return;
+    };
 
-    my $out = IO::File->new("$file.tmp", '>') or do {
-            warn "unable to append $file.tmp\n";
-            return;
-        };
+    my $out = IO::File->new( "$file.tmp", '>' ) or do {
+        warn "unable to append $file.tmp\n";
+        return;
+    };
 
     # simerson.net { file "/var/db/knot/simerson.net"; }
     while ( my $line = <$in> ) {
         my ($zone) = split /\s/, $line;
         if ( $to_add->{$zone} ) {
-            delete $to_add->{$zone};   # exists, remove from add list
-        };
-        if ( ! $self->{nte}{zones_deleted}{$zone} ) {
-            $out->print( $line );
-        };
-    };
+            delete $to_add->{$zone};    # exists, remove from add list
+        }
+        if ( !$self->{nte}{zones_deleted}{$zone} ) {
+            $out->print($line);
+        }
+    }
     $in->close;
 
     foreach my $key ( keys %$to_add ) {
         $out->print( $to_add->{$key} );
-    };
+    }
     $out->close;
     unlink $file;
-    File::Copy::move("$file.tmp", $file);
+    File::Copy::move( "$file.tmp", $file );
     return 1;
 }
 
@@ -99,11 +100,11 @@ sub write_makefile {
         warn "no export dir!";
         return;
     };
-    return 1 if -e "$exportdir/Makefile";   # already exists
+    return 1 if -e "$exportdir/Makefile";    # already exists
 
     my $address = $self->{nte}{ns_ref}{address} || '127.0.0.1';
     my $datadir = $self->{nte}{ns_ref}{datadir} || getcwd . '/data-all';
-    $datadir =~ s/\/$//;  # strip off any trailing /
+    $datadir =~ s/\/$//;                     # strip off any trailing /
     my $remote_login = $self->{nte}{ns_ref}{remote_login} || 'knot';
     open my $M, '>', "$exportdir/Makefile" or do {
         warn "unable to open ./Makefile: $!\n";
@@ -129,7 +130,7 @@ remote: $exportdir/knot.conf.nictool
 restart: $exportdir/knot.conf.nictool
 \tssh $remote_login\@$address knotc reload
 MAKE
-;
+        ;
     close $M;
     return 1;
 }

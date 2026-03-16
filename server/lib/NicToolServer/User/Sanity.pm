@@ -1,4 +1,5 @@
 package NicToolServer::User::Sanity;
+
 # ABSTRACT: sanity tests for nictool users
 
 use strict;
@@ -38,18 +39,20 @@ sub edit_user {
 
     if ( exists $data->{password} && $data->{password} ne '' ) {
 
-        if ( ! $data->{user}{is_admin} ) {  # logged in user (not form user)
-            if (! exists $data->{current_password} ) {
-                $self->error('current_password', "Current password is required.");
+        if ( !$data->{user}{is_admin} ) {    # logged in user (not form user)
+            if ( !exists $data->{current_password} ) {
+                $self->error( 'current_password', "Current password is required." );
             }
-            elsif ( $self->valid_password(
-                    $data->{current_password},
-                    $dataobj->{password},
-                    $dataobj->{username},
-                    $dataobj->{pass_salt})) {
-                $self->error('current_password', "Current password is incorrect.");
+            elsif (
+                $self->valid_password(
+                    $data->{current_password}, $dataobj->{password},
+                    $dataobj->{username},      $dataobj->{pass_salt}
+                )
+                )
+            {
+                $self->error( 'current_password', "Current password is incorrect." );
             }
-        };
+        }
 
         $self->_valid_password($data);
     }
@@ -83,8 +86,7 @@ sub get_user_list {
 sub get_group_users {
     my ( $self, $data ) = @_;
 
-    $self->search_params_sanity_check( $data,
-        qw(username first_name last_name email) );
+    $self->search_params_sanity_check( $data, qw(username first_name last_name email) );
     return $self->throw_sanity_error if $self->{errors};
     return $self->SUPER::get_group_users($data);
 }
@@ -92,8 +94,7 @@ sub get_group_users {
 sub get_user_global_log {
     my ( $self, $data ) = @_;
 
-    $self->search_params_sanity_check( $data,
-        qw(timestamp title action object description) );
+    $self->search_params_sanity_check( $data, qw(timestamp title action object description) );
     return $self->throw_sanity_error if $self->{errors};
     return $self->SUPER::get_user_global_log($data);
 }
@@ -111,13 +112,13 @@ sub _username_exists {
         $groups = $self->exec_query( $sql, $data->{nt_user_id} );
     }
     else {
-        $sql = "SELECT name FROM nt_group WHERE nt_group_id = ?";
+        $sql    = "SELECT name FROM nt_group WHERE nt_group_id = ?";
         $groups = $self->exec_query( $sql, $data->{nt_group_id} );
     }
 
     $data->{groupname} = $groups->[0]{name};
 
-    $sql = "SELECT nt_group_id FROM nt_group WHERE name = ? AND deleted=0";
+    $sql    = "SELECT nt_group_id FROM nt_group WHERE name = ? AND deleted=0";
     $groups = $self->exec_query( $sql, $groups->[0]{name} );
 
     my @groups;
@@ -125,16 +126,16 @@ sub _username_exists {
         push( @groups, $row->{nt_group_id} );
     }
 
-    return 0 if ! scalar @groups;
+    return 0 if !scalar @groups;
     if ( $data->{nt_user_id} ) {
-        $sql
-            = "SELECT nt_user_id FROM nt_user WHERE deleted=0 AND nt_group_id IN ("
+        $sql =
+              "SELECT nt_user_id FROM nt_user WHERE deleted=0 AND nt_group_id IN ("
             . join( ',', @groups )
             . ") AND nt_user_id != $data->{nt_user_id} AND username=?";
     }
     else {
-        $sql
-            = "SELECT nt_user_id FROM nt_user WHERE deleted=0 AND nt_group_id IN ("
+        $sql =
+              "SELECT nt_user_id FROM nt_user WHERE deleted=0 AND nt_group_id IN ("
             . join( ',', @groups )
             . ") AND username=?";
     }
@@ -174,7 +175,7 @@ sub _valid_email {
     my ( $self, $data ) = @_;
 
     if ( $data->{email} !~ /^[^@]+@[^@.]+\..+$/ ) {
-        $self->error( 'email', "Email must be a valid email address.");
+        $self->error( 'email', "Email must be a valid email address." );
     }
 }
 
@@ -182,20 +183,20 @@ sub _valid_password {
     my ( $self, $data ) = @_;
 
     if ( length( $data->{password} ) < 8 ) {
-        $self->error( 'password', "Password too short, must be 8-30 characters long.");
+        $self->error( 'password', "Password too short, must be 8-30 characters long." );
     }
 
     if ( length( $data->{password} ) > 30 ) {
-        $self->error( 'password', "Password too long, must be 8-30 characters long.");
+        $self->error( 'password', "Password too long, must be 8-30 characters long." );
     }
 
     my $username = $data->{username};
     if ( !$username ) {
-        $self->error( 'password', "Internal error. Missing username in password update request.");
+        $self->error( 'password', "Internal error. Missing username in password update request." );
     }
     else {
         if ( $data->{password} eq $username ) {
-            $self->error( 'password', "Password cannot be the same as username!");
+            $self->error( 'password', "Password cannot be the same as username!" );
         }
 
         if ( $data->{password} =~ m/$username/ ) {

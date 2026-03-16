@@ -41,8 +41,8 @@ use Test::More 'no_plan';
 
 my $user = nt_api_connect();
 
-my ($group1, $group2, $gid1, $gid2, $nsid1, $nsid2, $zid1, $zid2);
-my ($rzid1, $rzid2, %z1, %z2, $zone1, $zone2, $n1, $n2, $z, @z);
+my ( $group1, $group2, $gid1, $gid2, $nsid1, $nsid2, $zid1, $zid2 );
+my ( $rzid1, $rzid2, %z1, %z2, $zone1, $zone2, $n1, $n2, $z, @z );
 
 # try to do the tests
 eval {&all_the_tests};
@@ -60,27 +60,23 @@ sub all_the_tests {
 
     #make a new group
     my $res = $user->get_group->new_group( name => 'test_delete_me1' );
-    noerrok($res)
-        && ok( $res->get('nt_group_id') =~ qr/^\d+$/ ) or
-            die "Couldn't create test group1";
+    noerrok($res) && ok( $res->get('nt_group_id') =~ qr/^\d+$/ )
+        or die "Couldn't create test group1";
     $gid1 = $res->get('nt_group_id');
 
     $group1 = $user->get_group( nt_group_id => $gid1 );
-    noerrok($group1)
-        && is( $group1->id, $gid1 ) or
-            die "Couldn't get test group1";
+    noerrok($group1) && is( $group1->id, $gid1 )
+        or die "Couldn't get test group1";
 
     # make a new group
     $res = $user->get_group->new_group( name => 'test_delete_me2' );
-    noerrok($res)
-        && ok( $res->get('nt_group_id') =~ qr/^\d+$/ ) or
-            die "Couldn't create test group2";
+    noerrok($res) && ok( $res->get('nt_group_id') =~ qr/^\d+$/ )
+        or die "Couldn't create test group2";
     $gid2 = $res->get('nt_group_id');
 
     $group2 = $user->get_group( nt_group_id => $gid2 );
-    noerrok($group2)
-        && is( $group2->id, $gid2 ) or
-            die "Couldn't get test group2";
+    noerrok($group2) && is( $group2->id, $gid2 )
+        or die "Couldn't get test group2";
 
     #make test nameservers
     $res = $group1->new_nameserver(
@@ -89,9 +85,8 @@ sub all_the_tests {
         export_format => 'bind',
         ttl           => 86400
     );
-    noerrok($res)
-        && ok( $res->get('nt_nameserver_id') =~ qr/^\d+$/ ) or
-            die "couldn't make test nameserver";
+    noerrok($res) && ok( $res->get('nt_nameserver_id') =~ qr/^\d+$/ )
+        or die "couldn't make test nameserver";
     $nsid1 = $res->get('nt_nameserver_id');
 
     $res = $group1->new_nameserver(
@@ -100,9 +95,8 @@ sub all_the_tests {
         export_format => 'djbdns',
         ttl           => 86401
     );
-    noerrok($res)
-        && ok( $res->get('nt_nameserver_id') =~ qr/^\d+$/ ) or
-            die "couldn't make test nameserver";
+    noerrok($res) && ok( $res->get('nt_nameserver_id') =~ qr/^\d+$/ )
+        or die "couldn't make test nameserver";
     $nsid2 = $res->get('nt_nameserver_id');
 
     test_new_zone();
@@ -197,8 +191,8 @@ sub test_new_zone {
     ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
     if ( !$res->is_error ) {
         $res = $user->delete_zones( zone_list => $res->get('nt_zone_id') );
-        noerrok($res) or
-            die "Couldn't delete zone mistake " . $res->get('nt_zone_id');
+        noerrok($res)
+            or die "Couldn't delete zone mistake " . $res->get('nt_zone_id');
     }
 
     #nameservers not valid
@@ -214,8 +208,8 @@ sub test_new_zone {
     ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
     if ( !$res->is_error ) {
         $res = $user->delete_zones( zone_list => $res->get('nt_zone_id') );
-        noerrok($res) or
-            die "Couldn't delete zone mistake " . $res->get('nt_zone_id');
+        noerrok($res)
+            or die "Couldn't delete zone mistake " . $res->get('nt_zone_id');
     }
 
     #nameservers not valid
@@ -237,6 +231,7 @@ sub test_new_zone {
 
     # zone missing
     $res = $group1->new_zone(
+
         #zone       => 'test.com',
         serial      => 0,
         ttl         => 86400,
@@ -248,8 +243,8 @@ sub test_new_zone {
     ok( $res->get('error_desc') =~ qr/Required parameters missing/ );
     if ( !$res->is_error ) {
         $res = $user->delete_zones( zone_list => $res->get('nt_zone_id') );
-        noerrok($res) or
-            die "Couldn't delete zone mistake " . $res->get('nt_zone_id');
+        noerrok($res)
+            or die "Couldn't delete zone mistake " . $res->get('nt_zone_id');
     }
 
     ####################
@@ -269,9 +264,8 @@ sub test_new_zone {
         minimum     => 40,
     );
     $res = $group1->new_zone(%z1);
-    noerrok($res)
-        && ok( $res->get('nt_zone_id') =~ qr/^\d+$/ )
-            or die "couldn't make test zone1";
+    noerrok($res) && ok( $res->get('nt_zone_id') =~ qr/^\d+$/ )
+        or die "couldn't make test zone1";
 
     $zid1 = $res->get('nt_zone_id');
 
@@ -288,9 +282,8 @@ sub test_new_zone {
         minimum     => 400,
     );
     $res = $group1->new_zone(%z2);
-    noerrok($res)
-        && ok( $res->get('nt_zone_id') =~ qr/^\d+$/ )
-            or die "couldn't make test zone2";
+    noerrok($res) && ok( $res->get('nt_zone_id') =~ qr/^\d+$/ )
+        or die "couldn't make test zone2";
 
     $zid2 = $res->get('nt_zone_id');
 
@@ -310,8 +303,8 @@ sub test_new_zone {
     ok( $res->get('error_desc') =~ qr/Sanity error/ );
     if ( !$res->is_error ) {
         $res = $user->delete_zones( zone_list => $res->get('nt_zone_id') );
-        noerrok($res) or
-            die "Couldn't delete zone mistake " . $res->get('nt_zone_id');
+        noerrok($res)
+            or die "Couldn't delete zone mistake " . $res->get('nt_zone_id');
     }
 
     my %rz1 = (
@@ -327,9 +320,8 @@ sub test_new_zone {
         minimum     => 400,
     );
     $res = $group1->new_zone(%rz1);
-    noerrok($res)
-        && ok( $res->get('nt_zone_id') =~ qr/^\d+$/ )
-            or die "couldn't make test reverse zone 1";
+    noerrok($res) && ok( $res->get('nt_zone_id') =~ qr/^\d+$/ )
+        or die "couldn't make test reverse zone 1";
     $rzid1 = $res->get('nt_zone_id');
 
     my %rz2 = (
@@ -345,9 +337,8 @@ sub test_new_zone {
         minimum     => 400,
     );
     $res = $group1->new_zone(%rz2);
-    noerrok($res)
-        && ok( $res->get('nt_zone_id') =~ qr/^\d+$/ ) or
-            die "couldn't make test reverse zone 1";
+    noerrok($res) && ok( $res->get('nt_zone_id') =~ qr/^\d+$/ )
+        or die "couldn't make test reverse zone 1";
 
     $rzid2 = $res->get('nt_zone_id');
 }
@@ -374,13 +365,10 @@ sub test_get_zone {
     ####################
 
     $zone1 = $user->get_zone( nt_zone_id => $zid1 );
-    noerrok($zone1)
-        && is( $zone1->id, $zid1 ) or
-            die "Couldn't get test zone $zid1 : " . errtext($zone1);
+    noerrok($zone1) && is( $zone1->id, $zid1 )
+        or die "Couldn't get test zone $zid1 : " . errtext($zone1);
 
-    for (
-        qw(zone serial ttl description mailaddr refresh retry expire minimum))
-    {
+    for (qw(zone serial ttl description mailaddr refresh retry expire minimum)) {
         ok( $zone1->get($_) =~ $z1{$_} );
     }
     my $saw1 = 0;
@@ -397,13 +385,10 @@ sub test_get_zone {
     ok($saw2);
 
     $zone2 = $user->get_zone( nt_zone_id => $zid2 );
-    noerrok($zone2)
-        && is( $zone2->id, $zid2 ) or
-            die "Couldn't get test zone $zid2 : " . errtext($zone2);
+    noerrok($zone2) && is( $zone2->id, $zid2 )
+        or die "Couldn't get test zone $zid2 : " . errtext($zone2);
 
-    for (
-        qw(zone serial ttl description mailaddr refresh retry expire minimum))
-    {
+    for (qw(zone serial ttl description mailaddr refresh retry expire minimum)) {
         is( $zone2->get($_), $z2{$_} );
     }
     $saw1 = 0;
@@ -422,7 +407,7 @@ sub test_get_zone {
 
 sub test_subdomain_conflicts {
 
-    my $token = 'issue309' . time() . $$ . int(rand(1000));
+    my $token            = 'issue309' . time() . $$ . int( rand(1000) );
     my $parent_zone_name = "$token.parent.test.com";
 
     my %parent_zone_data = (
@@ -439,11 +424,13 @@ sub test_subdomain_conflicts {
     );
 
     my $res = $group1->new_zone(%parent_zone_data);
-    noerrok($res) or die "Couldn't create temporary parent zone $parent_zone_name";
+    noerrok($res)
+        or die "Couldn't create temporary parent zone $parent_zone_name";
     my $parent_zone_id = $res->get('nt_zone_id');
 
     $res = $user->get_zone( nt_zone_id => $parent_zone_id );
-    noerrok($res) or die "Couldn't load temporary parent zone for sub-domain tests";
+    noerrok($res)
+        or die "Couldn't load temporary parent zone for sub-domain tests";
 
     my $subzone = "$token.dev.$parent_zone_name";
 
@@ -527,7 +514,7 @@ sub test_get_zone_list {
 
     $res = $user->get_zone_list( zone_list => [ $zid1, $zid2 ] );
     noerrok($res);
-    isa_ok($res, 'NicTool::List' );
+    isa_ok( $res, 'NicTool::List' );
     is( $res->size, 2 );
     if ( $res->size >= 2 ) {
         @z  = $res->list;
@@ -541,20 +528,14 @@ sub test_get_zone_list {
         }
         if ( $n1 > -1 ) {
             is( $z[$n1]->id, $zid1 );
-            for (
-                qw/zone serial ttl description mailaddr refresh retry expire minimum/
-                )
-            {
+            for (qw/zone serial ttl description mailaddr refresh retry expire minimum/) {
                 is( $z[$n1]->get($_), $z1{$_} );
             }
         }
 
         if ( $n2 > -1 ) {
             is( $z[$n2]->id, $zid2 );
-            for (
-                qw/zone serial ttl description mailaddr refresh retry expire minimum/
-                )
-            {
+            for (qw/zone serial ttl description mailaddr refresh retry expire minimum/) {
                 is( $z[$n2]->get($_), $z2{$_} );
             }
         }
@@ -592,19 +573,19 @@ sub test_get_group_zones {
         for $z ( $res->list ) {
             if ( $z->id eq $zid1 ) {
                 $saw1 = 1;
-                is( $z->get('zone')       , $z1{zone} );
+                is( $z->get('zone'),        $z1{zone} );
                 is( $z->get('description'), $z1{description} );
-                is( $z->get('nt_zone_id') , $zid1 );
+                is( $z->get('nt_zone_id'),  $zid1 );
                 is( $z->get('nt_group_id'), $gid1 );
-                is( $z->get('group_name') , 'test_delete_me1' );
+                is( $z->get('group_name'),  'test_delete_me1' );
             }
             elsif ( $z->id eq $zid2 ) {
                 $saw2 = 1;
-                is( $z->get('zone')       , $z2{zone} );
+                is( $z->get('zone'),        $z2{zone} );
                 is( $z->get('description'), $z2{description} );
-                is( $z->get('nt_zone_id') , $zid2 );
+                is( $z->get('nt_zone_id'),  $zid2 );
                 is( $z->get('nt_group_id'), $gid1 );
-                is( $z->get('group_name') , 'test_delete_me1' );
+                is( $z->get('group_name'),  'test_delete_me1' );
             }
         }
     }
@@ -660,11 +641,10 @@ sub test_edit_zone {
     noerrok($res);
 
     $zone1 = $user->get_zone( nt_zone_id => $zid1 );
-    noerrok($zone1)
-        && is( $zone1->id, $zid1 ) or
-            die "Couldn't get test zone $zid1 : " . errtext($zone1);
+    noerrok($zone1) && is( $zone1->id, $zid1 )
+        or die "Couldn't get test zone $zid1 : " . errtext($zone1);
 
-    for ( qw/zone ttl description mailaddr refresh retry expire minimum/ ) {
+    for (qw/zone ttl description mailaddr refresh retry expire minimum/) {
         is( $zone1->get($_), $z1{$_} );
     }
     is( $zone1->get('serial'), '3' );

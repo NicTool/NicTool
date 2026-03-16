@@ -1,4 +1,5 @@
 package NicToolServer::Nameserver::Sanity;
+
 # ABSTRACT: sanity tests for nameservers
 
 use strict;
@@ -7,11 +8,11 @@ use parent 'NicToolServer::Nameserver';
 sub new_nameserver {
     my ( $self, $data ) = @_;
 
-    if ($self->check_object_deleted( 'group', $data->{nt_group_id} )) {
+    if ( $self->check_object_deleted( 'group', $data->{nt_group_id} ) ) {
         $self->error( 'nt_group_id', 'Cannot add nameserver to a deleted group!' );
-    };
+    }
 
-    defined $data->{ttl} or $data->{ttl} = 86400; # if unset, default
+    defined $data->{ttl} or $data->{ttl} = 86400;    # if unset, default
 
     $self->valid_ttl( $data->{ttl} );
 
@@ -20,7 +21,9 @@ sub new_nameserver {
     $self->_valid_nsname( $data->{name} );
     $self->_valid_export_type($data);
 
-    if (!$data->{address}) { $self->error( 'address', "Invalid IP address"); }
+    if ( !$data->{address} ) {
+        $self->error( 'address', "Invalid IP address" );
+    }
     $self->_valid_ip_addresses($data);
 
     return $self->throw_sanity_error if $self->{errors};
@@ -36,7 +39,7 @@ sub edit_nameserver {
     my $dataobj = $self->get_nameserver($data);
     return $dataobj if $self->is_error_response($dataobj);
 
-    $self->error('nt_nameserver_id','Cannot edit nameserver in a deleted group!')
+    $self->error( 'nt_nameserver_id', 'Cannot edit nameserver in a deleted group!' )
         if $self->check_object_deleted( 'group', $dataobj->{nt_group_id} );
 
     $self->valid_ttl( $data->{ttl} ) if defined $data->{ttl};
@@ -47,7 +50,7 @@ sub edit_nameserver {
         $self->_valid_nsname( $data->{name} );
     }
 
-    if ($data->{export_format} || $data->{export_type_id}) {
+    if ( $data->{export_format} || $data->{export_type_id} ) {
         $self->_valid_export_type($data);
     }
 
@@ -77,56 +80,57 @@ sub get_group_nameservers {
 }
 
 sub _valid_ip_addresses {
-    my ($self, $data) = @_;
+    my ( $self, $data ) = @_;
 
-    if ($data->{address}) {
-        if (!$self->valid_ip_address($data->{address})) {
-            $self->error( 'address', "Invalid IP address - $data->{address}");
+    if ( $data->{address} ) {
+        if ( !$self->valid_ip_address( $data->{address} ) ) {
+            $self->error( 'address', "Invalid IP address - $data->{address}" );
         }
-        if ($data->{address} =~ /\.(0|255)$/) {
-            $self->error( 'address', "Invalid IP address - $data->{address}");
+        if ( $data->{address} =~ /\.(0|255)$/ ) {
+            $self->error( 'address', "Invalid IP address - $data->{address}" );
         }
-    };
+    }
 
-    if ($data->{address6} && !$self->valid_ip_address($data->{address6})) {
-        $self->error( 'address6', "Invalid IPv6 address - $data->{address6}");
+    if ( $data->{address6} && !$self->valid_ip_address( $data->{address6} ) ) {
+        $self->error( 'address6', "Invalid IPv6 address - $data->{address6}" );
     }
 }
 
 sub _valid_chars {
-    my ($self, $name) = @_;
+    my ( $self, $name ) = @_;
 
     # check characters
-    if ($name =~ /([^a-zA-Z0-9\-\.])/) {
-        $self->error('name', "Nameserver name contains an invalid character - \"$1\". Only A-Z, 0-9, . and - are allowed.");
+    if ( $name =~ /([^a-zA-Z0-9\-\.])/ ) {
+        $self->error( 'name',
+            "Nameserver name contains an invalid character - \"$1\". Only A-Z, 0-9, . and - are allowed."
+        );
         return 0;
-    };
+    }
 
     return 1;
 }
 
 sub _valid_export_type {
-    my ($self, $data) = @_;
+    my ( $self, $data ) = @_;
 
-    if (!$self->{export_types}) {
-        $self->{export_types} =
-            $self->get_nameserver_export_types( { type=> 'ALL' } )->{types};
-    };
+    if ( !$self->{export_types} ) {
+        $self->{export_types} = $self->get_nameserver_export_types( { type => 'ALL' } )->{types};
+    }
 
     # request might arrive with export_format, or export_type_id
     my $type_id = $data->{export_type_id};
-    if ($data->{export_type_id}) {
-        my @r = grep { $_->{id} == $type_id } @{$self->{export_types}};
+    if ( $data->{export_type_id} ) {
+        my @r = grep { $_->{id} == $type_id } @{ $self->{export_types} };
         return $r[0] if $r[0];
     }
 
-    if ($data->{export_format}) {
+    if ( $data->{export_format} ) {
         my $type = $data->{export_format};
-        my @r = grep { $_->{name} eq $type } @{$self->{export_types}};
-        if ($r[0]) {
+        my @r    = grep { $_->{name} eq $type } @{ $self->{export_types} };
+        if ( $r[0] ) {
             $data->{export_type_id} = $r[0]->{id};
-            return $r[0]
-        };
+            return $r[0];
+        }
     }
 
     $self->error( 'export_format', 'Invalid export format.' );
@@ -134,7 +138,7 @@ sub _valid_export_type {
 }
 
 sub _valid_fqdn {
-    my ($self, $name) = @_;
+    my ( $self, $name ) = @_;
 
     return 1 if $name =~ /\.$/;
 
@@ -146,7 +150,7 @@ sub _valid_fqdn {
 }
 
 sub _valid_nsname {
-    my ($self, $name) = @_;
+    my ( $self, $name ) = @_;
 
     my $has_err;
 
@@ -154,11 +158,11 @@ sub _valid_nsname {
     my @parts = split( /\./, $name );
     foreach my $address (@parts) {
         if ( $address !~ /[a-zA-Z0-9\-]+/ ) {
-            $self->error('name', "Nameserver name must be a valid host.");
+            $self->error( 'name', "Nameserver name must be a valid host." );
             $has_err++;
         }
-        if ( $address =~ /^[\-]/ ) {   # can't start with a dash or a dot.
-            $self->error('name', "Parts of a nameserver name cannot start with a dash.");
+        if ( $address =~ /^[\-]/ ) {    # can't start with a dash or a dot.
+            $self->error( 'name', "Parts of a nameserver name cannot start with a dash." );
             $has_err++;
         }
     }

@@ -1,4 +1,5 @@
 package NicToolServer::Client::SOAP;
+
 # ABSTRACT: SOAP implementation for NicToolServer
 
 use strict;

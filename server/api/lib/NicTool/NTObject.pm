@@ -19,7 +19,6 @@
 
 package NicTool::NTObject;
 
-
 sub new {
     my $group = shift;
     my @rest  = @_;
@@ -34,7 +33,6 @@ sub new {
     return bless { store => $self, type => undef, parent => undef }, $group;
 }
 
-
 sub type {
     return $_[0]->{type};
 }
@@ -43,7 +41,6 @@ sub parent {
     return $_[0]->{parent};
 }
 
-
 sub get {
     my $self = shift;
 
@@ -51,15 +48,14 @@ sub get {
 
     if ( scalar @_ > 1 ) {
         my @r;
-        foreach ( @_ ) { push @r, $self->{store}{$_}; };
+        foreach (@_) { push @r, $self->{store}{$_}; }
         return @r;
-    };
+    }
 
     my ( $package, $filename, $line ) = caller;
     warn "package $package at line $line called NTObject::get with invalid parameters!\n";
     return;
 }
-
 
 sub set {
     my $self = shift;
@@ -70,7 +66,6 @@ sub set {
         pop @_;
     }
 }
-
 
 sub has {
     my $self = shift;
@@ -84,7 +79,6 @@ sub sob {
     }
 
 }
-
 
 1;
 

@@ -30,8 +30,8 @@ sub main {
 
     my $user = $nt_obj->verify_session();
 
-    if ($user && ref $user) {
-        print $q->header (-charset=>"utf-8");
+    if ( $user && ref $user ) {
+        print $q->header( -charset => "utf-8" );
         display( $nt_obj, $q, $user );
     }
 }
@@ -54,8 +54,8 @@ sub display {
     }
     elsif ( $q->param('Save') ) {
         my $rv = $nt_obj->move_nameservers(
-            nt_group_id     => scalar($q->param('group_list')),
-            nameserver_list => scalar($q->param('obj_list'))
+            nt_group_id     => scalar( $q->param('group_list') ),
+            nameserver_list => scalar( $q->param('obj_list') )
         );
         if ( $rv->{'error_code'} != 200 ) {
 
@@ -79,8 +79,7 @@ sub move {
 
     $q->param( 'obj_list', join( ',', $q->multi_param('obj_list') ) );
 
-    my $rv = $nt_obj->get_nameserver_list(
-        nameserver_list => scalar($q->param('obj_list')) );
+    my $rv = $nt_obj->get_nameserver_list( nameserver_list => scalar( $q->param('obj_list') ) );
 
     return $nt_obj->display_error($rv) if ( $rv->{'error_code'} != 200 );
 
@@ -91,8 +90,10 @@ sub move {
     print qq[
 <div class="side_pad dark_bg bold">Move Nameservers</div>
 <div class="side_pad light_grey_bg top"> Nameservers: ],
-        join( ', ', map(
-qq[<a href="group_nameservers.cgi?nt_group_id=$_->{'nt_group_id'}&amp;nt_nameserver_id=$_->{'nt_nameserver_id'}" target="_blank">$_->{'name'}</a>], @$list )
+        join(
+        ', ',
+        map(qq[<a href="group_nameservers.cgi?nt_group_id=$_->{'nt_group_id'}&amp;nt_nameserver_id=$_->{'nt_nameserver_id'}" target="_blank">$_->{'name'}</a>],
+            @$list )
         ),
         "
 </div>";
@@ -100,15 +101,13 @@ qq[<a href="group_nameservers.cgi?nt_group_id=$_->{'nt_group_id'}&amp;nt_nameser
     $nt_obj->display_group_list( $q, $user, 'move_nameservers.cgi' );
 
     print qq[
-<div class="dark_grey_bg center side_pad">],
-        $q->submit('Save'),
+<div class="dark_grey_bg center side_pad">], $q->submit('Save'),
         $q->submit(
         -name    => 'cancel_move',
         -value   => 'Cancel',
         -onClick => 'window.close(); return false;'
         ),
         "
-</div>\n",
-    $q->end_form;
+</div>\n", $q->end_form;
 }
 

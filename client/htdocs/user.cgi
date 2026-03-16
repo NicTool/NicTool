@@ -30,12 +30,12 @@ sub main {
 
     my $user = $nt_obj->verify_session();
 
-    if ($user && ref $user) {
+    if ( $user && ref $user ) {
         my $message;
         if ( $q->param('redirect') ) {
             $message = $nt_obj->redirect_from_log($q);
         }
-        print $q->header (-charset=>"utf-8");
+        print $q->header( -charset => "utf-8" );
         display( $nt_obj, $q, $user, $message );
     }
 }
@@ -51,7 +51,7 @@ sub display {
         userid    => $user->{'nt_user_id'}
     );
 
-    my $duser = $nt_obj->get_user( nt_user_id => scalar($q->param('nt_user_id')) );
+    my $duser = $nt_obj->get_user( nt_user_id => scalar( $q->param('nt_user_id') ) );
     if ( $duser->{'error_code'} ne 200 ) {
         print $nt_obj->display_error($duser);
     }
@@ -61,20 +61,24 @@ sub display {
 
 # send the request to NicToolServer and parse result
     if (   ( $q->param('edit') && $q->param('Save') )
-        || ( $q->param('new') && $q->param('Create') )   ) {
+        || ( $q->param('new') && $q->param('Create') ) )
+    {
 
         my ( $error, %data );
-        my @fields = qw/ user_create user_delete user_write group_create group_delete group_write zone_create zone_delegate zone_delete zone_write zonerecord_create zonerecord_delegate zonerecord_delete zonerecord_write nameserver_create nameserver_delete nameserver_write self_write /;
+        my @fields =
+            qw/ user_create user_delete user_write group_create group_delete group_write zone_create zone_delegate zone_delete zone_write zonerecord_create zonerecord_delegate zonerecord_delete zonerecord_write nameserver_create nameserver_delete nameserver_write self_write /;
         my @new_fields  = qw/ nt_group_id username first_name last_name email /;
         my @edit_fields = qw/ nt_user_id username first_name last_name email /;
 
-        if (! $user->{'ldap_only'} ) {
-            push @new_fields, qw/ password password2 /;
+        if ( !$user->{'ldap_only'} ) {
+            push @new_fields,  qw/ password password2 /;
             push @edit_fields, qw/ password password2 current_password /;
         }
 
         # Only modify permission mode when the permissions control was submitted.
-        if ( defined $q->param('group_defaults') && $q->param('group_defaults') eq '0' ) {
+        if ( defined $q->param('group_defaults')
+            && $q->param('group_defaults') eq '0' )
+        {
             foreach (@fields) {
                 $data{$_} = $q->param($_) ? 1 : 0;
             }
@@ -84,33 +88,34 @@ sub display {
         }
 
         if ( $q->param('edit') ) {
-            foreach ( @edit_fields ) { $data{$_} = $q->param($_); }
+            foreach (@edit_fields) { $data{$_} = $q->param($_); }
             $error = $nt_obj->edit_user(%data);
         }
         elsif ( $q->param('new') ) {
-            foreach ( @new_fields ) { $data{$_} = $q->param($_); }
+            foreach (@new_fields) { $data{$_} = $q->param($_); }
             $error = $nt_obj->new_user(%data);
         }
 
         if ( $error->{'error_code'} != 200 ) {
             $edit_message = $error;
+
             #warn "error = ".Data::Dumper::Dumper($error);
         }
 
         # refresh the user info displayed in form
         if ( $q->param('nt_user_id') ) {
-            $duser = $nt_obj->get_user( nt_user_id => scalar($q->param('nt_user_id')) );
-        };
-    };
+            $duser = $nt_obj->get_user( nt_user_id => scalar( $q->param('nt_user_id') ) );
+        }
+    }
 
     $q->param( 'nt_group_id', $duser->{'nt_group_id'} );
 
     my $level = $nt_obj->display_group_tree(
         $user,
         $user->{'nt_group_id'},
-        scalar($q->param('nt_group_id')), 0
+        scalar( $q->param('nt_group_id') ), 0
     );
-    $nt_obj->display_user_list_options( $user, scalar($q->param('nt_group_id')), $level, 0 );
+    $nt_obj->display_user_list_options( $user, scalar( $q->param('nt_group_id') ), $level, 0 );
 
     $level++;
 
@@ -120,7 +125,10 @@ sub display {
     if ( $user->{'user_delete'}
         && ( $user->{'nt_user_id'} ne $duser->{'nt_user_id'} ) )
     {
-        push @options, qq[<a href="group_users.cgi?nt_group_id=].$q->param('nt_group_id').qq[&amp;delete=1&amp;obj_list=$duser->{'nt_user_id'}" onClick="return confirm('Delete user $duser->{'username'}?');">Delete</a>];
+        push @options,
+              qq[<a href="group_users.cgi?nt_group_id=]
+            . $q->param('nt_group_id')
+            . qq[&amp;delete=1&amp;obj_list=$duser->{'nt_user_id'}" onClick="return confirm('Delete user $duser->{'username'}?');">Delete</a>];
     }
     else {
         push @options, "<span class=disabled>Delete</span>";
@@ -129,10 +137,13 @@ sub display {
     if (   $user->{'user_write'}
         && $user->{'nt_user_id'} ne $duser->{'nt_user_id'} )
     {
-        push @options, qq[<a href="javascript:void window.open('move_users.cgi?obj_list=$duser->{'nt_user_id'}', 'move_win', 'width=640,height=480,scrollbars,resizable=yes')">Move</a>] if $group->{'has_children'};
+        push @options,
+            qq[<a href="javascript:void window.open('move_users.cgi?obj_list=$duser->{'nt_user_id'}', 'move_win', 'width=640,height=480,scrollbars,resizable=yes')">Move</a>]
+            if $group->{'has_children'};
     }
     else {
-        push @options, '<span class="disabled">Move</span>' if $group->{'has_children'};
+        push @options, '<span class="disabled">Move</span>'
+            if $group->{'has_children'};
     }
 
     print qq[<table class="fat">
@@ -162,9 +173,8 @@ sub display {
 sub display_properties {
     my ( $nt_obj, $q, $user, $duser, $message ) = @_;
 
-    my $modifyperm
-        = ( $user->{'user_write'}
-            && ( $duser->{'nt_user_id'} ne $user->{'nt_user_id'} ) )
+    my $modifyperm =
+        ( $user->{'user_write'} && ( $duser->{'nt_user_id'} ne $user->{'nt_user_id'} ) )
         || ( $user->{'self_write'}
         && ( $duser->{'nt_user_id'} eq $user->{'nt_user_id'} ) );
     if ( $q->param('new') ) {
@@ -192,7 +202,7 @@ sub display_properties {
 
     my @state_fields;
     foreach ( @{ $nt_obj->paging_fields } ) {
-        push( @state_fields, "$_=" . $q->escape( scalar($q->param($_)) ) )
+        push( @state_fields, "$_=" . $q->escape( scalar( $q->param($_) ) ) )
             if ( $q->param($_) );
     }
 
@@ -209,7 +219,7 @@ sub display_properties {
 
     print qq[
         <td class=right><a href="user.cgi?], join( '&amp;', @state_fields ),
-qq[&amp;nt_group_id=$gid&amp;nt_user_id=$uid&amp;edit=1">$modname</a></td>
+        qq[&amp;nt_group_id=$gid&amp;nt_user_id=$uid&amp;edit=1">$modname</a></td>
        </tr>
       </table>
      </td>
@@ -262,17 +272,14 @@ sub display_global_log {
     my $cgi        = 'user.cgi';
     my @req_fields = qw(nt_group_id nt_user_id);
 
-    $nt_obj->display_sort_options( $q, \@columns, \%labels, $cgi,
-        \@req_fields )
+    $nt_obj->display_sort_options( $q, \@columns, \%labels, $cgi, \@req_fields )
         if $q->param('edit_sortorder');
-    $nt_obj->display_advanced_search( $q, \@columns, \%labels, $cgi,
-        \@req_fields )
+    $nt_obj->display_advanced_search( $q, \@columns, \%labels, $cgi, \@req_fields )
         if $q->param('edit_search');
 
-    my %params = ( map { $_ => scalar($q->param($_)) } @req_fields );
+    my %params = ( map { $_ => scalar( $q->param($_) ) } @req_fields );
     my %sort_fields;
-    $nt_obj->prepare_search_params( $q, \%labels, \%params, \%sort_fields,
-        20 );
+    $nt_obj->prepare_search_params( $q, \%labels, \%params, \%sort_fields, 20 );
 
     $sort_fields{'timestamp'} = { 'order' => 1, 'mod' => 'Descending' }
         unless %sort_fields;
@@ -284,7 +291,7 @@ sub display_global_log {
 
     my @state_fields;
     foreach ( @{ $nt_obj->paging_fields } ) {
-        push( @state_fields, "$_=" . $q->escape( scalar($q->param($_)) ) )
+        push( @state_fields, "$_=" . $q->escape( scalar( $q->param($_) ) ) )
             if ( $q->param($_) );
     }
 
@@ -301,15 +308,18 @@ sub display_global_log {
 
     $nt_obj->display_search_rows( $q, $rv, \%params, $cgi, \@req_fields );
 
-    if (!@$list) {
+    if ( !@$list ) {
         print "<center>No log data available</center>";
         return;
-    };
+    }
 
     print qq[<table class="fat"> <tr class=dark_grey_bg>];
     foreach (@columns) {
         if ( $sort_fields{$_} ) {
-            my $direc = uc( $sort_fields{$_}->{'mod'} ) eq 'ASCENDING' ? 'up' : 'down';
+            my $direc =
+                uc( $sort_fields{$_}->{'mod'} ) eq 'ASCENDING'
+                ? 'up'
+                : 'down';
             print qq[
  <td class="dark_bg center"><table class="no_pad">
   <tr>
@@ -335,7 +345,10 @@ sub display_global_log {
         my $bgcolor = ( $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' );
         print qq[<tr class="bgcolor">];
         foreach (@columns) {
-            my $state_string = @state_fields ? join( '&amp;', @state_fields ) : 'not_empty=1';
+            my $state_string =
+                @state_fields
+                ? join( '&amp;', @state_fields )
+                : 'not_empty=1';
             if ( $_ eq 'timestamp' ) {
                 print '<td>', scalar localtime( $row->{$_} ), '</td>';
             }
@@ -345,9 +358,10 @@ sub display_global_log {
                 print qq[<td>$txt</td>];
             }
             elsif ( $_ eq 'title' ) {
-                my $obj = $q->escape( $row->{'object'} );
+                my $obj    = $q->escape( $row->{'object'} );
                 my $obj_id = $q->escape( $row->{'object_id'} );
-                my $url = "user.cgi?$state_string&amp;redirect=1&amp;nt_group_id=$duser->{'nt_group_id'}&amp;nt_user_id=$duser->{'nt_user_id'}&amp;object=$obj&amp;obj_id=$obj_id";
+                my $url =
+                    "user.cgi?$state_string&amp;redirect=1&amp;nt_group_id=$duser->{'nt_group_id'}&amp;nt_user_id=$duser->{'nt_user_id'}&amp;object=$obj&amp;obj_id=$obj_id";
                 my $img = "$NicToolClient::image_dir/$map->{ $row->{'object'} }->{'image'}";
                 print qq[
 <td>
@@ -359,7 +373,8 @@ sub display_global_log {
             elsif ( $_ eq 'target' && $row->{'target_id'} ) {
                 my $target    = $q->escape( $row->{'target'} );
                 my $target_id = $q->escape( $row->{'target_id'} );
-                my $url = "user.cgi?$state_string&amp;redirect=1&amp;nt_group_id=$duser->{'nt_group_id'}&amp;nt_user_id=$duser->{'nt_user_id'}&amp;object=$target&amp;obj_id=$target_id";
+                my $url =
+                    "user.cgi?$state_string&amp;redirect=1&amp;nt_group_id=$duser->{'nt_group_id'}&amp;nt_user_id=$duser->{'nt_user_id'}&amp;object=$target&amp;obj_id=$target_id";
                 my $img = "$NicToolClient::image_dir/$map->{ $row->{'target'} }->{'image'}";
                 print qq[
 <td>
@@ -423,25 +438,57 @@ sub display_edit {
  <tr class="light_grey_bg">
   <td class="right nowrap">Username:</td>
   <td class="fat">],
-        ( $modifyperm ? $q->textfield( -name  => 'username', -value => $duser->{'username'}, -size  => 30) : $duser->{'username'} ),
+        (
+        $modifyperm
+        ? $q->textfield(
+            -name  => 'username',
+            -value => $duser->{'username'},
+            -size  => 30
+            )
+        : $duser->{'username'}
+        ),
         qq[</td>
 </tr>
 <tr class="light_grey_bg">
 <td class="nowrap right">First Name:</td>
 <td class="fat">],
-        ( $modifyperm ? $q->textfield( -name  => 'first_name', -value => $duser->{'first_name'}, -size  => 30) : $duser->{'first_name'} ),
+        (
+        $modifyperm
+        ? $q->textfield(
+            -name  => 'first_name',
+            -value => $duser->{'first_name'},
+            -size  => 30
+            )
+        : $duser->{'first_name'}
+        ),
         qq[</td>
 </tr>
 <tr class="light_grey_bg">
 <td class="right nowrap">Last Name:</td>
 <td class="fat">],
-        ( $modifyperm ? $q->textfield( -name => 'last_name', -value => $duser->{'last_name'}, -size  => 40) : $duser->{'last_name'} ),
+        (
+        $modifyperm
+        ? $q->textfield(
+            -name  => 'last_name',
+            -value => $duser->{'last_name'},
+            -size  => 40
+            )
+        : $duser->{'last_name'}
+        ),
         qq[</td>
 </tr>
 <tr class="light_grey_bg">
 <td class="right nowrap">Email:</td>
 <td class="fat">],
-        ( $modifyperm ? $q->textfield( -name  => 'email', -value => $duser->{'email'}, -size  => 60) : $duser->{'email'} ),
+        (
+        $modifyperm
+        ? $q->textfield(
+            -name  => 'email',
+            -value => $duser->{'email'},
+            -size  => 60
+            )
+        : $duser->{'email'}
+        ),
         "</td>
     </tr>";
 
@@ -449,31 +496,44 @@ sub display_edit {
 
         if ( $user->{ldap_only} ) {
 
-        	   print qq[<tr class="dark_grey_bg"><td colspan="2">Change Password</td></tr>
+            print qq[<tr class="dark_grey_bg"><td colspan="2">Change Password</td></tr>
         	   <tr class="light_grey_bg"><td colspan="2">All password in LDAP</td></tr>];
         }
         else {
 
-                if ( ! $user->{is_admin} ) {    # note that is_admin is global
-        	   print qq[<tr class="dark_grey_bg"><td colspan="2">Change Password</td></tr>
+            if ( !$user->{is_admin} ) {    # note that is_admin is global
+                print qq[<tr class="dark_grey_bg"><td colspan="2">Change Password</td></tr>
         <tr class="light_grey_bg">
             <td class="right nowrap">Current Password:</td>
             <td class="fat">],
-        	   $q->password_field( -name => 'current_password', -override => 1 ),
-        	   q[</td></tr>];
-        	};
+                    $q->password_field(
+                    -name     => 'current_password',
+                    -override => 1
+                    ),
+                    q[</td></tr>];
+            }
 
-        	print qq[<tr class="light_grey_bg"><td colspan="2">&nbsp;</td></tr>
+            print qq[<tr class="light_grey_bg"><td colspan="2">&nbsp;</td></tr>
         <tr class="light_grey_bg">
         	<td class="right nowrap">New Password:</td>
         	<td class="fat">],
-        	 $q->password_field( -name => 'password', -size=>15, -maxlength => 30, -override  => 1),
-                 qq[</td></tr>
+                $q->password_field(
+                -name      => 'password',
+                -size      => 15,
+                -maxlength => 30,
+                -override  => 1
+                ),
+                qq[</td></tr>
 <tr class="light_grey_bg">
 <td class="right nowrap">Confirm New Password:</td>
 <td class="fat">],
-        	  $q->password_field( -name => 'password2', -size=>15, -maxlength => 30, -override  => 1),
-        	  q[</td></tr>];
+                $q->password_field(
+                -name      => 'password2',
+                -size      => 15,
+                -maxlength => 30,
+                -override  => 1
+                ),
+                q[</td></tr>];
 
         }
 
@@ -507,9 +567,9 @@ sub display_edit {
             my %nsmap;
             my $ns_tree;
             if ($showusablens) {
-                %nsmap = map { $_ => 1 } split(',', $duser->{'usable_ns'});
-                $ns_tree = $nt_obj->get_nameserver_list(
-                    nameserver_list => join( ",", keys %nsmap ) );
+                %nsmap = map { $_ => 1 } split( ',', $duser->{'usable_ns'} );
+                $ns_tree =
+                    $nt_obj->get_nameserver_list( nameserver_list => join( ",", keys %nsmap ) );
             }
 
             #warn "user is ".Data::Dumper::Dumper($duser);
@@ -517,11 +577,11 @@ sub display_edit {
                 . (
                 $permmodify
                 ? qq[<input type="radio" value="1" name="group_defaults" ]
-                    . ( $duser->{'inherit_group_permissions'} ? 'CHECKED' : '')
-                    . ">"
+                    . ( $duser->{'inherit_group_permissions'} ? 'CHECKED' : '' ) . ">"
                 : ''
                 )
-                . ( $editself
+                . (
+                $editself
                 ? "Your permissions"
                 : "This user inherits the permissions defined for the parent group"
                 )
@@ -537,15 +597,14 @@ sub display_edit {
 
                 );
                 print qq( <tr class="light_grey_bg"> <td class="light_grey_bg top">);
-                my %order = map { $_->{'nt_nameserver_id'} => $_ }
-                    @{ $ns_tree->{'list'} };
+                my %order = map { $_->{'nt_nameserver_id'} => $_ } @{ $ns_tree->{'list'} };
                 foreach ( sort keys %order ) {
                     my $ns = $order{$_};
-                    print qq[<img src="$NicToolClient::image_dir/perm-checked.gif">&nbsp;$ns->{'description'} ($ns->{'name'})<br>];
+                    print
+                        qq[<img src="$NicToolClient::image_dir/perm-checked.gif">&nbsp;$ns->{'description'} ($ns->{'name'})<br>];
                 }
                 if ( @{ $ns_tree->{'list'} } == 0 ) {
-                    print "No available nameservers."
-                        . $nt_obj->help_link('nonsavail');
+                    print "No available nameservers." . $nt_obj->help_link('nonsavail');
                 }
                 print qq[</td>];
             }
@@ -570,7 +629,10 @@ sub display_edit {
    <td class=$color></td>];
                         next;
                     }
-                    my $pc = $group->{ $type . "_" . $perm } ? 'checked' : 'unchecked';
+                    my $pc =
+                        $group->{ $type . "_" . $perm }
+                        ? 'checked'
+                        : 'unchecked';
                     my $permc = $labels{$type}{$perm} || ucfirst $perm;
                     print qq[
     <td class="$color left middle">
@@ -592,9 +654,8 @@ sub display_edit {
             my %nsmap;
             my $ns_tree;
             if ($showusablens) {
-                %nsmap = map { $_ => 1 } split(',', $duser->{'usable_ns'});
-                $ns_tree = $nt_obj->get_usable_nameservers
-                    ;    #(nt_group_id=>$user->{'nt_group_id'});
+                %nsmap   = map { $_ => 1 } split( ',', $duser->{'usable_ns'} );
+                $ns_tree = $nt_obj->get_usable_nameservers;  #(nt_group_id=>$user->{'nt_group_id'});
             }
 
             print '<tr class="dark_grey_bg"><td colspan="2">'
@@ -603,15 +664,14 @@ sub display_edit {
                 . (
                 $permmodify
                 ? '<input type="radio" value="0" name="group_defaults" '
-                    . (
-                    $duser->{'inherit_group_permissions'} ? '' : 'CHECKED'
-                    )
-                    . ">"
+                    . ( $duser->{'inherit_group_permissions'} ? '' : 'CHECKED' ) . ">"
                 : ''
                 )
-                . ( $editself
+                . (
+                $editself
                 ? "Your permissions"
-                : "This user uses the permissions defined below" )
+                : "This user uses the permissions defined below"
+                )
                 . $nt_obj->help_link('perms')
                 . "</td></tr>";
 
@@ -627,8 +687,7 @@ sub display_edit {
                      <tr class="light_grey_bg">
                       <td class="light_grey_bg top">
                                   );
-                my %order = map { $_->{'nt_nameserver_id'} => $_ }
-                    @{ $ns_tree->{'nameservers'} };
+                my %order = map { $_->{'nt_nameserver_id'} => $_ } @{ $ns_tree->{'nameservers'} };
                 foreach ( sort keys %order ) {
                     my $ns = $order{$_};
                     print $q->checkbox(
@@ -642,8 +701,7 @@ sub display_edit {
                         "<BR>";
                 }
                 if ( @{ $ns_tree->{'nameservers'} } == 0 ) {
-                    print "No available nameservers."
-                        . $nt_obj->help_link('nonsavail');
+                    print "No available nameservers." . $nt_obj->help_link('nonsavail');
                 }
                 print qq( </td>);
             }
@@ -668,10 +726,9 @@ sub display_edit {
                         }
                         print "<td>";
                         print $q->checkbox(
-                            -name  => "select_all_$_",
-                            -label => '',
-                            -onClick =>
-                                "selectAll$_(document.perms_form, this.checked);",
+                            -name     => "select_all_$_",
+                            -label    => '',
+                            -onClick  => "selectAll$_(document.perms_form, this.checked);",
                             -override => 1
                         );
                         print "</td>";
@@ -680,8 +737,7 @@ sub display_edit {
                 }
                 else {
                     $color = ( $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg' );
-                    print qq{ <tr> <td class="right"><b>}
-                        . ( ucfirst($type) ) . qq{:</b></td>
+                    print qq{ <tr> <td class="right"><b>} . ( ucfirst($type) ) . qq{:</b></td>
                                     };
                     foreach my $perm ( @{ $perms{$type} } ) {
                         if ( $perm eq '.' ) {
@@ -696,28 +752,32 @@ sub display_edit {
                             print $q->checkbox(
                                 -name    => $type . "_" . $perm,
                                 -value   => '1',
-                                -checked => $duser->{ $type . "_" . $perm }
-                                ? 1
+                                -checked => $duser->{ $type . "_" . $perm } ? 1
                                 : 0,
                                 -label => ''
                                 )
                                 . (
-                                exists $labels{$type}->{$perm}
-                                ? $labels{$type}->{$perm}
-                                : ucfirst($perm) )
-                                . qq{</td> };
+                                exists $labels{$type}->{$perm} ? $labels{$type}->{$perm}
+                                : ucfirst($perm)
+                                ) . qq{</td> };
                         }
                         else {
                             print qq{
                                 <td class="$color center left"><img src="$NicToolClient::image_dir/perm-}
-                                . ( $duser->{ $type . "_" . $perm } ? 'checked.gif' : 'unchecked.gif' ) . qq{">}
-                                . ( $modifyperm && !$editself ? qq{<span class=disabled>} : '' )
                                 . (
-                                exists $labels{$type}->{$perm}
-                                ? $labels{$type}->{$perm}
-                                : ucfirst($perm) )
-                                . ( $modifyperm
-                                    && !$editself ? '</span>' : '' )
+                                $duser->{ $type . "_" . $perm } ? 'checked.gif'
+                                : 'unchecked.gif'
+                                )
+                                . qq{">}
+                                . (
+                                $modifyperm && !$editself ? qq{<span class=disabled>}
+                                : ''
+                                )
+                                . (
+                                exists $labels{$type}->{$perm} ? $labels{$type}->{$perm}
+                                : ucfirst($perm)
+                                )
+                                . ( $modifyperm && !$editself ? '</span>' : '' )
                                 . qq{</td>};
                         }
                     }
@@ -749,7 +809,6 @@ sub display_edit {
             $q->submit( $edit eq 'edit' ? 'Save' : 'Create' ),
             $q->submit('Cancel'), "</td></tr>";
     }
-    print "</table>",
-    $q->end_form;
+    print "</table>", $q->end_form;
 }
 

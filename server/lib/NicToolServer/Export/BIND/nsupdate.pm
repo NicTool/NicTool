@@ -15,7 +15,7 @@ use Params::Validate qw/ :all /;
 
 sub postflight {
     my $self = shift;
-    my $dir = shift || $self->{nte}->get_export_dir or return;
+    my $dir  = shift || $self->{nte}->get_export_dir or return;
 
     my $nsupdate = '';
 
@@ -30,40 +30,37 @@ sub postflight {
     #my $keyfile = "/etc/Knsupdate.+157+44682.key";
     #$nsupdate = `nsupdate -k $keyfile < $dir/nsupdate.log 2<&1`;
 
-    if ( $nsupdate =~ m/BADKEY/ )
-    {
+    if ( $nsupdate =~ m/BADKEY/ ) {
         $self->{nte}->set_status("last: FAILED, reason: BADKEY");
-        $self->{nte}->elog("nsupdate FAILED, reason: BADKEY", success=>0);
+        $self->{nte}->elog( "nsupdate FAILED, reason: BADKEY", success => 0 );
         exit 0;
     }
-    elsif ( $nsupdate =~ m/could\snot\sread\skey\*file\s\not\sfound/ )
-    {
+    elsif ( $nsupdate =~ m/could\snot\sread\skey\*file\s\not\sfound/ ) {
         $self->{nte}->set_status("last: FAILED, reason: Keyfile not found");
-        $self->{nte}->elog("nsupdate FAILED, reason: Keyfile not found", success=>0);
+        $self->{nte}->elog( "nsupdate FAILED, reason: Keyfile not found", success => 0 );
         exit 0;
     }
-    elsif ( $nsupdate =~ m/REFUSED/ )
-    {
+    elsif ( $nsupdate =~ m/REFUSED/ ) {
         $self->{nte}->set_status("last: FAILED, reason: REFUSED");
-        $self->{nte}->elog("nsupdate FAILED, reason: REFUSED", success=>0);
+        $self->{nte}->elog( "nsupdate FAILED, reason: REFUSED", success => 0 );
         exit 0;
     }
-    elsif ( $nsupdate =~ m/NOTZONE/ || $nsupdate =~ m/enclosing\szone/ )
-    {
+    elsif ( $nsupdate =~ m/NOTZONE/ || $nsupdate =~ m/enclosing\szone/ ) {
         $self->{nte}->set_status("last: FAILED, reason: NOTZONE");
-        $self->{nte}->elog("nsupdate FAILED, reason: NOTZONE", success=>0);
+        $self->{nte}->elog( "nsupdate FAILED, reason: NOTZONE", success => 0 );
         exit 0;
     }
-    elsif ( $nsupdate =~ m/Communication\swith.*failed/ || $nsupdate =~ m/timed\sout/ || $nsupdate =~ m/could\snot\stalk/ )
+    elsif ($nsupdate =~ m/Communication\swith.*failed/
+        || $nsupdate =~ m/timed\sout/
+        || $nsupdate =~ m/could\snot\stalk/ )
     {
         $self->{nte}->set_status("last: FAILED, reason: TIMEOUT");
-        $self->{nte}->elog("nsupdate FAILED, reason: TIMEOUT", success=>0);
+        $self->{nte}->elog( "nsupdate FAILED, reason: TIMEOUT", success => 0 );
         exit 0;
     }
-    elsif ( $nsupdate =~ m/NOTAUTH/ )
-    {
+    elsif ( $nsupdate =~ m/NOTAUTH/ ) {
         $self->{nte}->set_status("last: FAILED, reason: NOTAUTH");
-        $self->{nte}->elog("nsupdate FAILED, reason: NOTAUTH", success=>0);
+        $self->{nte}->elog( "nsupdate FAILED, reason: NOTAUTH", success => 0 );
         exit 0;
     }
 
@@ -74,12 +71,13 @@ sub build_nsupdate {
     my ( $self, $dir ) = @_;
 
     my @results = get_log( $self, $dir );
-    my $ns = "";
+    my $ns      = "";
 
     # open the nsupdate log file
     open FILE, "+>", "$dir/nsupdate.log" or die $!;
 
     foreach my $record (@results) {
+
         # Check if its a zone_record entry, otherwise skip
         next unless $record->{"object"} =~ m/zone_record/;
 
@@ -94,8 +92,7 @@ sub build_nsupdate {
 
         # check if its a modify on name or address
         # TODO - confirm nsupdate removal with full details doesnt remove any round robin entries with the same name but a different IP
-        if ( $record->{description} =~ m/changed\sname\sfrom\s\'((\w|\.|\:|\-)*)\'\s/ )
-        {
+        if ( $record->{description} =~ m/changed\sname\sfrom\s\'((\w|\.|\:|\-)*)\'\s/ ) {
 
             # Found a changed DNS name - pull delete name from desc
             my $old_name = $1;
@@ -110,7 +107,10 @@ sub build_nsupdate {
             # check if the IP has changed as well
             # If it hasnt, just use the address from given details in record that is already there
             # Make sure if its a TXT file to accept other characters we might not otherwise have allowed
-            if ( $record->{description} =~ m/changed\saddress\sfrom\s\'((\w|\:|\.|\-)*)\'\s/ || ($record->{description} =~ m/changed\saddress\sfrom\s\'(.*)\'\s/ && $r->{"type"} eq "TXT"))
+            if ($record->{description} =~ m/changed\saddress\sfrom\s\'((\w|\:|\.|\-)*)\'\s/
+                || (   $record->{description} =~ m/changed\saddress\sfrom\s\'(.*)\'\s/
+                    && $r->{"type"} eq "TXT" )
+                )
             {
 
                 #Found a changed address as well, pull old address to delete from desc
@@ -129,7 +129,11 @@ sub build_nsupdate {
 
             $mode = "add";
         }
-        elsif ( $record->{description} =~ m/changed\saddress\sfrom\s\'((\w|\:|\.|\-)*)\'\s/ || ($record->{description} =~ m/changed\saddress\sfrom\s\'(.*)\'\s/ && $r->{"type"} eq "TXT"))
+        elsif (
+            $record->{description} =~ m/changed\saddress\sfrom\s\'((\w|\:|\.|\-)*)\'\s/
+            || (   $record->{description} =~ m/changed\saddress\sfrom\s\'(.*)\'\s/
+                && $r->{"type"} eq "TXT" )
+            )
         {
 
             # Just found an IP change - need to remove the old IP entry
@@ -154,14 +158,16 @@ sub build_nsupdate {
 
             $mode = "add";
         }
-        elsif ( $record->{description} =~ m/changed\stimestamp/ || $record->{"description"} =~ m/nothing modified/) {
+        elsif ($record->{description} =~ m/changed\stimestamp/
+            || $record->{"description"} =~ m/nothing modified/ )
+        {
 
             # on just a timestamp change or blank update - dont bother generating any entries
             next;
         }
 
-# Now that we are done (potentially) cleaning up old changes, lets move onto the main change
-# If the current name server doesnt match last time, set a new server in the nsupdate file
+        # Now that we are done (potentially) cleaning up old changes, lets move onto the main change
+        # If the current name server doesnt match last time, set a new server in the nsupdate file
         if ( $ns !~ m/$self->{nte}->{ns_ref}->{name}/i ) {
             print FILE $self->zr_soa( $self, $r );
         }
@@ -181,10 +187,11 @@ sub get_log {
     my ( $self, $dir ) = @_;
 
     my $dbix_w = $self->{nte}->{dbix_w};
-    my $ns_id = $self->{nte}->{ns_ref}->{nt_nameserver_id};
+    my $ns_id  = $self->{nte}->{ns_ref}->{nt_nameserver_id};
     my $time   = time - 300;
 
-    my $sql = "SELECT * FROM nictool.nt_user_global_log WHERE timestamp > (SELECT UNIX_TIMESTAMP(date_start) FROM nt_nameserver_export_log WHERE success=1 AND nt_nameserver_id=$ns_id ORDER BY date_start DESC LIMIT 1) AND object IN ('zone_record')";
+    my $sql =
+        "SELECT * FROM nictool.nt_user_global_log WHERE timestamp > (SELECT UNIX_TIMESTAMP(date_start) FROM nt_nameserver_export_log WHERE success=1 AND nt_nameserver_id=$ns_id ORDER BY date_start DESC LIMIT 1) AND object IN ('zone_record')";
 
     return $dbix_w->query($sql)->hashes;
 }
@@ -214,51 +221,50 @@ sub get_changed_zones {
             $has_changes{$zone} = $tmpl;
             next;
         }
-        $has_changes{$zone}
-            = qq[zone "$zone"\t IN { type master; file "$datadir/$zone"; };\n];
+        $has_changes{$zone} = qq[zone "$zone"\t IN { type master; file "$datadir/$zone"; };\n];
     }
     return \%has_changes;
 }
 
 sub zr_a {
     my ( $self, $r, $mode ) = @_;
-    $mode = "add" unless defined $mode;
+    $mode      = "add"                     unless defined $mode;
     $r->{zone} = $self->{nte}->{zone_name} unless defined $r->{zone};
 
     return
           "update $mode "
         . $r->{name}
-        . (substr($r->{name}, -1, 1) eq '.' ? '' : '.' . $r->{zone})
+        . ( substr( $r->{name}, -1, 1 ) eq '.' ? '' : '.' . $r->{zone} )
         . " $r->{ttl} A $r->{address}\n";
 }
 
 sub zr_cname {
     my ( $self, $r, $mode ) = @_;
-    $mode = "add" unless defined $mode;
+    $mode      = "add"                     unless defined $mode;
     $r->{zone} = $self->{nte}->{zone_name} unless defined $r->{zone};
 
     return
           "update $mode "
         . $r->{name}
-        . (substr($r->{name}, -1, 1) eq '.' ? '' : '.' . $r->{zone})
+        . ( substr( $r->{name}, -1, 1 ) eq '.' ? '' : '.' . $r->{zone} )
         . " $r->{ttl} CNAME $r->{address}\n";
 }
 
 sub zr_mx {
     my ( $self, $r, $mode ) = @_;
-    $mode = "add" unless defined $mode;
+    $mode      = "add"                     unless defined $mode;
     $r->{zone} = $self->{nte}->{zone_name} unless defined $r->{zone};
 
     return
           "update $mode "
         . $r->{name}
-        . (substr($r->{name}, -1, 1) eq '.' ? '' : '.' . $r->{zone})
+        . ( substr( $r->{name}, -1, 1 ) eq '.' ? '' : '.' . $r->{zone} )
         . " $r->{ttl} MX $r->{weight} $r->{address}\n";
 }
 
 sub zr_txt {
     my ( $self, $r, $mode ) = @_;
-    $mode = "add" unless defined $mode;
+    $mode      = "add"                     unless defined $mode;
     $r->{zone} = $self->{nte}->{zone_name} unless defined $r->{zone};
 
     # BIND will croak if the length of the text record is longer than 255
@@ -270,31 +276,27 @@ sub zr_txt {
     return
           "update $mode "
         . $r->{name}
-        . (substr($r->{name}, -1, 1) eq '.' ? '' : '.' . $r->{zone})
+        . ( substr( $r->{name}, -1, 1 ) eq '.' ? '' : '.' . $r->{zone} )
         . " $r->{ttl} TXT \"$r->{address}\"\n";
 }
 
 sub zr_ns {
     my ( $self, $r, $mode ) = @_;
-    $mode = "add" unless defined $mode;
+    $mode      = "add"                     unless defined $mode;
     $r->{zone} = $self->{nte}->{zone_name} unless defined $r->{zone};
 
     my $name = $r->{name};
     $name .= '.' if '.' ne substr( $name, -1, 1 );
 
-    return "update $mode $name"."$r->{zone} $r->{ttl} NS $r->{address}\n";
+    return "update $mode $name" . "$r->{zone} $r->{ttl} NS $r->{address}\n";
 }
 
 sub zr_ptr {
     my ( $self, $r, $mode ) = @_;
-    $mode = "add" unless defined $mode;
+    $mode      = "add"                     unless defined $mode;
     $r->{zone} = $self->{nte}->{zone_name} unless defined $r->{zone};
 
-    return
-          "update $mode "
-        . $r->{name} . "."
-        . $r->{zone}
-        . " $r->{ttl} PTR $r->{address}\n";
+    return "update $mode " . $r->{name} . "." . $r->{zone} . " $r->{ttl} PTR $r->{address}\n";
 }
 
 sub zr_soa {
@@ -307,7 +309,7 @@ sub zr_soa {
 
 sub zr_spf {
     my ( $self, $r, $mode ) = @_;
-    $mode = "add" unless defined $mode;
+    $mode      = "add"                     unless defined $mode;
     $r->{zone} = $self->{nte}->{zone_name} unless defined $r->{zone};
 
     # SPF record support was added in BIND v9.4.0
@@ -316,13 +318,13 @@ sub zr_spf {
     return
           "update $mode "
         . $r->{name}
-        . (substr($r->{name}, -1, 1) eq '.' ? '' : '.' . $r->{zone})
+        . ( substr( $r->{name}, -1, 1 ) eq '.' ? '' : '.' . $r->{zone} )
         . " $r->{ttl} SPF \"$r->{address}\"\n";
 }
 
 sub zr_srv {
     my ( $self, $r, $mode ) = @_;
-    $mode = "add" unless defined $mode;
+    $mode      = "add"                     unless defined $mode;
     $r->{zone} = $self->{nte}->{zone_name} unless defined $r->{zone};
 
     my $priority = $self->{nte}->is_ip_port( $r->{priority} );
@@ -333,20 +335,20 @@ sub zr_srv {
     return
           "update $mode "
         . $r->{name}
-        . (substr($r->{name}, -1, 1) eq '.' ? '' : '.' . $r->{zone})
+        . ( substr( $r->{name}, -1, 1 ) eq '.' ? '' : '.' . $r->{zone} )
         . " $r->{ttl} SRV $priority $weight $port $r->{address}\n";
 }
 
 sub zr_aaaa {
     my ( $self, $r, $mode ) = @_;
-    $mode = "add" unless defined $mode;
+    $mode      = "add"                     unless defined $mode;
     $r->{zone} = $self->{nte}->{zone_name} unless defined $r->{zone};
 
     # name  ttl  class  type  type-specific-data
     return
           "update $mode "
         . $r->{name}
-        . (substr($r->{name}, -1, 1) eq '.' ? '' : '.' . $r->{zone})
+        . ( substr( $r->{name}, -1, 1 ) eq '.' ? '' : '.' . $r->{zone} )
         . " $r->{ttl} AAAA $r->{address}\n";
 }
 
@@ -366,8 +368,8 @@ sub zr_naptr {
     my $order = $self->{nte}->is_ip_port( $r->{weight} );
     my $pref  = $self->{nte}->is_ip_port( $r->{priority} );
     my ( $flags, $service, $regexp ) = split /" "/, $r->{address};
-    $regexp =~ s/"//g;    # strip off leading "
-    $flags  =~ s/"//g;    # strip off trailing "
+    $regexp =~ s/"//g;         # strip off leading "
+    $flags  =~ s/"//g;         # strip off trailing "
     my $replace = $r->{description};
     $regexp =~ s/\\/\\\\/g;    # escape any \ characters
 
@@ -390,8 +392,7 @@ sub zr_sshfp {
 
     my $algo = $r->{weight};      #  1=RSA,   2=DSS,     3=ECDSA
     my $type = $r->{priority};    #  1=SHA-1, 2=SHA-256
-    return
-        "update $mode $r->{name} $r->{ttl} SSHFP $algo $type $r->{address}\n";
+    return "update $mode $r->{name} $r->{ttl} SSHFP $algo $type $r->{address}\n";
 }
 
 sub zr_ipseckey {
@@ -418,20 +419,18 @@ sub zr_dnskey {
 
     # 1=RSA/MD5, 2=Diffie-Hellman, 3=DSA/SHA-1, 4=Elliptic Curve, 5=RSA/SHA-1
 
-    return
-        "update $mode $r->{name} $r->{ttl} DNSKEY $flags $protocol $algorithm $r->{address}\n";
+    return "update $mode $r->{name} $r->{ttl} DNSKEY $flags $protocol $algorithm $r->{address}\n";
 }
 
 sub zr_ds {
     my ( $self, $r, $mode ) = @_;
     $mode = "add" unless defined $mode;
 
-    my $key_tag   = $r->{weight};
-    my $algorithm = $r->{priority};    # same as DNSKEY algo -^
-    my $digest_type = $r->{other};  # 1=SHA-1 (RFC 4034), 2=SHA-256 (RFC 4509)
+    my $key_tag     = $r->{weight};
+    my $algorithm   = $r->{priority};    # same as DNSKEY algo -^
+    my $digest_type = $r->{other};       # 1=SHA-1 (RFC 4034), 2=SHA-256 (RFC 4509)
 
-    return
-        "update $mode $r->{name} $r->{ttl} DS $key_tag $algorithm $digest_type $r->{address}\n";
+    return "update $mode $r->{name} $r->{ttl} DS $key_tag $algorithm $digest_type $r->{address}\n";
 }
 
 sub zr_rrsig {
@@ -464,10 +463,12 @@ sub zr_hinfo {
     my ( $self, $r, $mode ) = @_;
 
     $r->{zone} = $self->{nte}->{zone_name} unless defined $r->{zone};
+
     # Name     ttl  class   rr  address
-    return "update $mode "
+    return
+          "update $mode "
         . $r->{name}
-        . (substr($r->{name}, -1, 1) eq '.' ? '' : '.' . $r->{zone})
+        . ( substr( $r->{name}, -1, 1 ) eq '.' ? '' : '.' . $r->{zone} )
         . " $r->{ttl} HINFO $r->{address}\n";
 }
 
@@ -480,9 +481,10 @@ sub zr_uri {
     my $weight   = $self->{nte}->is_ip_port( $r->{weight} );
 
     # Owner Name     ttl  class   rr  pri  weight target
-    return "update $mode "
+    return
+          "update $mode "
         . $r->{name}
-        . (substr($r->{name}, -1, 1) eq '.' ? '' : '.' . $r->{zone})
+        . ( substr( $r->{name}, -1, 1 ) eq '.' ? '' : '.' . $r->{zone} )
         . " $r->{ttl} URI $priority $weight \"$r->{address}\"\n";
 }
 
@@ -495,9 +497,10 @@ sub zr_caa {
     my $tag  = $r->{other};
 
     # Owner Name   TTL  CLASS   Type  Issue-Crit  Tag  Property
-    return "update $mode "
+    return
+          "update $mode "
         . $r->{name}
-        . (substr($r->{name}, -1, 1) eq '.' ? '' : '.' . $r->{zone})
+        . ( substr( $r->{name}, -1, 1 ) eq '.' ? '' : '.' . $r->{zone} )
         . " $r->{ttl} CAA $crit $tag \"$r->{address}\"\n";
 }
 

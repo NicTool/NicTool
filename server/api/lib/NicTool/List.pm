@@ -17,8 +17,6 @@ package NicTool::List;
 #
 ###
 
-
-
 use strict;
 
 use lib 'lib';
@@ -32,7 +30,6 @@ my $iterate = sub {
     $self->{iterator} = $i + 1 if $self->more;
     return $i;
 };
-
 
 sub new {
     my ( $pkg, $nt, $itype, $listparam, @rest ) = @_;
@@ -55,30 +52,25 @@ sub new {
     return bless $self, $pkg;
 }
 
-
 sub list_param {
     my $self = shift;
     return $self->{list_param};
 }
-
 
 sub item_type {
     my $self = shift;
     return $self->{item_type};
 }
 
-
 sub size {
     my $self = shift;
     return scalar @{ $self->get( $self->list_param ) };
 }
 
-
 sub more {
     my $self = shift;
     return ( $self->size gt 0 ) && ( $self->size gt( $self->{iterator} ) );
 }
-
 
 sub next {
     my $self = shift;
@@ -93,24 +85,20 @@ sub next {
     }
 }
 
-
 sub reset {
     my $self = shift;
     $self->{iterator} = 0;
 }
-
 
 sub list {
     my $self = shift;
     return @{ $self->get( $self->list_param ) };
 }
 
-
 sub list_as_ref {
     my $self = shift;
     return $self->get( $self->list_param );
 }
-
 
 1;
 

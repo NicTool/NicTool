@@ -1,6 +1,6 @@
 package NicToolServer::Export::PowerDNS;
-# ABSTRACT: exporting DNS data to PowerDNS servers
 
+# ABSTRACT: exporting DNS data to PowerDNS servers
 
 use strict;
 use warnings;
@@ -18,11 +18,11 @@ sub write_makefile {
         warn "no export dir!";
         return;
     };
-    return 1 if -e "$exportdir/Makefile";   # already exists
+    return 1 if -e "$exportdir/Makefile";    # already exists
 
     my $address = $self->{nte}{ns_ref}{address} || '127.0.0.1';
     my $datadir = $self->{nte}{ns_ref}{datadir} || getcwd . '/data-all';
-    $datadir =~ s/\/$//;  # strip off any trailing /
+    $datadir =~ s/\/$//;                     # strip off any trailing /
     my $remote_login = $self->{nte}{ns_ref}{remote_login} || 'powerdns';
     open my $M, '>', "$exportdir/Makefile" or do {
         warn "unable to open ./Makefile: $!\n";
@@ -46,7 +46,7 @@ remote: $exportdir/named.conf.nictool
 restart: $exportdir/named.conf.nictool
 \tssh $remote_login\@$address pdns_control cycle
 MAKE
-;
+        ;
     close $M;
     return 1;
 }

@@ -15,21 +15,15 @@ $user = new NicTool(
     server_host   => Config('server_host'),
     server_port   => Config('server_port')
 );
-eval {
-    $user->login( username => 'root', password => Config('rootpassword') );
-};
-ok( $@
-        =~ /Unable to use class NicTool::Transport::CROAP for data protocol 'croap'/
-);
+eval { $user->login( username => 'root', password => Config('rootpassword') ); };
+ok( $@ =~ /Unable to use class NicTool::Transport::CROAP for data protocol 'croap'/ );
 
 $user = new NicTool(
     data_protocol => Config('data_protocol'),
     server_host   => Config('server_host'),
     server_port   => Config('server_port')
 );
-eval {
-    $user->login( username => 'root', password => Config('rootpassword') );
-};
+eval { $user->login( username => 'root', password => Config('rootpassword') ); };
 ok( !$@ );
 ok( $user->{'transport'} );
 my $t = uc( Config('data_protocol') );

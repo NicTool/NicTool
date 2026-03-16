@@ -1,11 +1,9 @@
 package NicTool::Result;
 
-
 use strict;
 use NicTool::NTObject;
 
 our @ISA = 'NicTool::NTObject';
-
 
 sub new {
     my ( $pkg, $nt, @rest ) = @_;
@@ -17,36 +15,28 @@ sub new {
     $type =~ s/.*:://;
     $self->{type} = $type;
     $self->{nt}   = $nt;
-    $self = bless $self, $pkg;
+    $self         = bless $self, $pkg;
     $self->_init;
     return $self;
 }
 
 sub _init { }
 
-
 sub error_code {
     return $_[0]->get('error_code');
 }
-
 
 sub error_msg {
     return $_[0]->get('error_msg');
 }
 
-
 sub error_desc {
     return $_[0]->get('error_desc');
 }
 
-
 sub errstr {
-    return
-          $_[0]->error_code . ":("
-        . $_[0]->error_desc . ") "
-        . $_[0]->error_msg;
+    return $_[0]->error_code . ":(" . $_[0]->error_desc . ") " . $_[0]->error_msg;
 }
-
 
 sub warn_if_err {
 
@@ -59,7 +49,6 @@ sub warn_if_err {
     }
 }
 
-
 sub die_if_err {
 
     if ( $_[0]->is_error ) {
@@ -71,11 +60,9 @@ sub die_if_err {
     }
 }
 
-
 sub is_error {
     return ( $_[0]->error_code != 200 );
 }
-
 
 1;
 

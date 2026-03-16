@@ -30,24 +30,23 @@ sub main {
 
     my $user = $nt_obj->verify_session();
 
-    if ($user && ref $user) {
-        print $q->header (-charset=>"utf-8");
+    if ( $user && ref $user ) {
+        print $q->header( -charset => "utf-8" );
         display( $nt_obj, $q, $user );
     }
 }
 
 sub help_text {
-    {   perms => {
-            name     => 'User and Group Permissions',
-            template => "help_perms.html",
-            description =>
-                'What do the user and group permissions settings mean?',
+    {
+        perms => {
+            name        => 'User and Group Permissions',
+            template    => "help_perms.html",
+            description => 'What do the user and group permissions settings mean?',
         },
         delperms => {
-            name => 'Delegation Permissions',
-            description =>
-                'What do the delegation permissions settings mean?',
-            template => "help_delperms.html",
+            name        => 'Delegation Permissions',
+            description => 'What do the delegation permissions settings mean?',
+            template    => "help_delperms.html",
         },
         undeletezone => {
             name        => 'Undelete a Zone',
@@ -60,25 +59,24 @@ sub help_text {
             template    => "help_undeleterecord.html",
         },
         rraddress => {
-            name => 'Resouce Record Address Field',
-            description =>
-                'What can I put in the Address field of a Resource Record?',
-            template => "help_rraddress.html",
+            name        => 'Resouce Record Address Field',
+            description => 'What can I put in the Address field of a Resource Record?',
+            template    => "help_rraddress.html",
         },
         export_serials => {
-            name => 'Export Zone Serial Numbers',
+            name        => 'Export Zone Serial Numbers',
             description => 'Why disable serial numbers exports?',
-            template => "help_export_serials.html",
+            template    => "help_export_serials.html",
         },
         timestamp => {
-            name => 'Timestamps',
+            name        => 'Timestamps',
             description => 'Timestamps on Resource Records',
-            template => "help_timestamp.html",
+            template    => "help_timestamp.html",
         },
         location => {
-            name => 'Location',
+            name        => 'Location',
             description => 'Locations on Resource Records',
-            template => "help_location.html",
+            template    => "help_location.html",
         },
     }
 }
@@ -96,11 +94,11 @@ sub display {
 
     my $message;
     my $topics = help_text;
-    my $t      = $topics->{ scalar($q->param('topic')) };
+    my $t      = $topics->{ scalar( $q->param('topic') ) };
 
     if (   $q->param("topic")
         && $q->param('topic') ne 'all'
-        && !exists $topics->{ scalar($q->param('topic')) } )
+        && !exists $topics->{ scalar( $q->param('topic') ) } )
     {
         $message = {
             error_msg =>
@@ -109,23 +107,20 @@ sub display {
         };
     }
 
-    if ( $q->param("topic") && exists $topics->{ scalar($q->param('topic')) } ) {
+    if ( $q->param("topic")
+        && exists $topics->{ scalar( $q->param('topic') ) } )
+    {
         if ( $t->{'template'} ) {
-            $nt_obj->parse_template(
-                $NicToolClient::template_dir . "/help_start.html", %$t );
-            $nt_obj->parse_template(
-                $NicToolClient::template_dir . "/" . $t->{'template'}, %$t );
-            $nt_obj->parse_template(
-                $NicToolClient::template_dir . "/help_end.html" );
+            $nt_obj->parse_template( $NicToolClient::template_dir . "/help_start.html",     %$t );
+            $nt_obj->parse_template( $NicToolClient::template_dir . "/" . $t->{'template'}, %$t );
+            $nt_obj->parse_template( $NicToolClient::template_dir . "/help_end.html" );
         }
         else {
 
             $nt_obj->display_nice_error($message) if $message;
-            $nt_obj->parse_template(
-                $NicToolClient::template_dir . "/help_start.html", %$t );
+            $nt_obj->parse_template( $NicToolClient::template_dir . "/help_start.html", %$t );
             print " $t->{'text'}";
-            $nt_obj->parse_template(
-                $NicToolClient::template_dir . "/help_end.html" );
+            $nt_obj->parse_template( $NicToolClient::template_dir . "/help_end.html" );
         }
     }
     else {

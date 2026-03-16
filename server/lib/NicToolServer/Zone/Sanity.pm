@@ -1,4 +1,5 @@
 package NicToolServer::Zone::Sanity;
+
 # ABSTRACT: sanity tests for NicTool zones
 
 use strict;
@@ -17,18 +18,18 @@ sub new_zone {
         $self->error( 'zone', "invalid character in zone -- $1" );
     }
 
-    $data->{zone} =~ s/\.$//;  # remove any trailing dot
+    $data->{zone} =~ s/\.$//;    # remove any trailing dot
 
     if ( $data->{zone} =~ /(?:in-addr|ip6).arpa$/ ) {
-# TODO - any in-addr.arpa reverse DNS zone checks go here.
-# warn users if they try to make a PTR that points to an IP address rather
-# than a name. 2001.10.12, --aai
+
+        # TODO - any in-addr.arpa reverse DNS zone checks go here.
+        # warn users if they try to make a PTR that points to an IP address rather
+        # than a name. 2001.10.12, --aai
     }
     else {
         if ( $data->{zone} =~ /\// ) {
             $self->error( 'zone',
-                "invalid character in zone '/'. Only allowed in reverse-lookup zones"
-            );
+                "invalid character in zone '/'. Only allowed in reverse-lookup zones" );
         }
     }
 
@@ -43,7 +44,7 @@ sub new_zone {
     my $z = $data->{zone};
     $z =~ tr/A-Z/a-z/;
     my @zparts = split( /\./, $z );
-    if ( $z =~ /[a-z0-9\-\/]+\.[a-z0-9\-\/]+$/ ) {  # zone has at least one dot
+    if ( $z =~ /[a-z0-9\-\/]+\.[a-z0-9\-\/]+$/ ) {    # zone has at least one dot
         my $zstr = pop(@zparts);
         my @zonestocheck;
         while ( my $x = pop(@zparts) ) {
@@ -53,13 +54,17 @@ sub new_zone {
         foreach my $orig_zone (@zonestocheck) {
             if ( my $zref = $self->zone_exists( $orig_zone, 0 ) ) {
 
-#use permission-system to check for 'read' access to the zone...XXX 'read' access correct?
-                my @error = $self->check_permission( 'nt_zone_id', $zref->{nt_zone_id}, 'read', 'ZONE' );
+                #use permission-system to check for 'read' access to the zone...XXX 'read' access correct?
+                my @error =
+                    $self->check_permission( 'nt_zone_id', $zref->{nt_zone_id}, 'read', 'ZONE' );
                 if ( defined $error[0] ) {
-                    $self->error( 'zone', "Sub-domain creation not allowed: Access to zone $orig_zone denied: $error[1]");
+                    $self->error( 'zone',
+                        "Sub-domain creation not allowed: Access to zone $orig_zone denied: $error[1]"
+                    );
                 }
-                if ($self->record_exists_within_zone( $zref->{nt_zone_id}, $z, $orig_zone )) {
-                    $self->error( 'zone', "A record within $orig_zone named $z already exists. Delete or rename the record and then you can add $z as a sub-domain."
+                if ( $self->record_exists_within_zone( $zref->{nt_zone_id}, $z, $orig_zone ) ) {
+                    $self->error( 'zone',
+                        "A record within $orig_zone named $z already exists. Delete or rename the record and then you can add $z as a sub-domain."
                     );
                 }
 
@@ -68,7 +73,7 @@ sub new_zone {
         }
     }
 
-    if (!$data->{mailaddr}) {
+    if ( !$data->{mailaddr} ) {
         $data->{mailaddr} = 'hostmaster.' . $data->{zone};
     }
     else {
@@ -92,13 +97,12 @@ sub edit_zone {
 
     $self->error( 'nt_zone_id', 'Cannot edit deleted zone!' )
         if $self->check_object_deleted( 'zone', $data->{nt_zone_id} )
-            and $data->{deleted} ne '0';
+        and $data->{deleted} ne '0';
 
     my $dataobj = $self->get_zone($data);
     return $dataobj if $self->is_error_response($dataobj);
 
-    $self->error( 'nt_zone_id',
-        'Cannot edit zone in a deleted group!' )
+    $self->error( 'nt_zone_id', 'Cannot edit zone in a deleted group!' )
         if $self->check_object_deleted( 'group', $dataobj->{nt_group_id} );
 
     $self->valid_mailaddr( 'mailaddr', $data->{mailaddr} );
@@ -112,7 +116,8 @@ sub edit_zone {
     if (    $data->{deleted} eq '0'
         and $self->zone_exists( $zone->{zone}, $zone->{nt_zone_id} ) )
     {
-        $self->error( 'zone', "Can't undelete the zone '$zone->{zone}' because another zone called '$zone->{zone}' now exists"
+        $self->error( 'zone',
+            "Can't undelete the zone '$zone->{zone}' because another zone called '$zone->{zone}' now exists"
         );
     }
 
@@ -159,8 +164,9 @@ sub get_group_zones_log {
 sub get_group_zones {
     my ( $self, $data ) = @_;
 
-    $self->search_params_sanity_check( $data, qw/ zone group_name description
-         queries_successful queries_norecord records /
+    $self->search_params_sanity_check(
+        $data, qw/ zone group_name description
+            queries_successful queries_norecord records /
     );
     return $self->throw_sanity_error if $self->{errors};
     return $self->SUPER::get_group_zones($data);
@@ -169,8 +175,7 @@ sub get_group_zones {
 sub get_zone_records {
     my ( $self, $data ) = @_;
 
-    $self->search_params_sanity_check( $data,
-        qw/name description type address weight queries/ );
+    $self->search_params_sanity_check( $data, qw/name description type address weight queries/ );
     return $self->throw_sanity_error if $self->{errors};
     return $self->SUPER::get_zone_records($data);
 }
@@ -192,8 +197,8 @@ sub record_exists_within_zone {
 
         my $matches_suffix = @name_labels > @zone_labels;
         if ($matches_suffix) {
-            for (my $i = 1; $i <= @zone_labels; $i++) {
-                if ($name_labels[-$i] ne $zone_labels[-$i]) {
+            for ( my $i = 1; $i <= @zone_labels; $i++ ) {
+                if ( $name_labels[ -$i ] ne $zone_labels[ -$i ] ) {
                     $matches_suffix = 0;
                     last;
                 }
@@ -202,7 +207,7 @@ sub record_exists_within_zone {
 
         if ($matches_suffix) {
             my $relative_len = @name_labels - @zone_labels;
-            $relative_name = join('.', @name_labels[0 .. $relative_len - 1]);
+            $relative_name = join( '.', @name_labels[ 0 .. $relative_len - 1 ] );
         }
     }
 

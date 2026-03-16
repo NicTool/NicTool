@@ -14,12 +14,12 @@ use NicTool;
 
 my $user = new NicTool(
     data_protocol => 'soap',
-    server_host   => '127.0.0.1',       # you may need to edit these
+    server_host   => '127.0.0.1',    # you may need to edit these
     server_port   => '8082',
 );
-$user->login( 
+$user->login(
     username => ask("your nictool username"),
-    password => ask("your nictool password",1),
+    password => ask( "your nictool password", 1 ),
 );
 die $user->error_msg if $user->is_error;
 print "\n";
@@ -44,7 +44,7 @@ foreach my $group_ref ( $sublist->list ) {
     print "gid: $sub_gid\n";
 
     # get a list of the nameservers in the subgroup
-    my $nslist = $user->get_group->get_group_nameservers(nt_group_id => $sub_gid );
+    my $nslist = $user->get_group->get_group_nameservers( nt_group_id => $sub_gid );
     die $nslist->error_msg if $nslist->is_error;
 
     # concatenate the nameserver IDs into a string. ex: 1,3,5
@@ -52,28 +52,28 @@ foreach my $group_ref ( $sublist->list ) {
     if ( scalar @nsids == 0 ) {
         print "no nameservers inside group $sub_gid. Skipping NS update\n";
         next;
-    };
-    my $ns_string = join(',', @nsids );
+    }
+    my $ns_string = join( ',', @nsids );
     print "\tnss: $ns_string\n";
 
     # get a list of zones in the subgroup
-    my $zonelist = $user->get_group->get_group_zones(nt_group_id => $sub_gid );
+    my $zonelist = $user->get_group->get_group_zones( nt_group_id => $sub_gid );
     die $zonelist->error_msg if $zonelist->is_error;
-    
+
     # update the nameservers for each zone
     foreach my $zone_ref ( $zonelist->list ) {
-        $zone_ref->edit_zone( 
-             nt_zone_id  => $zone_ref->get('nt_zone_id'), 
-             nameservers => $ns_string,
+        $zone_ref->edit_zone(
+            nt_zone_id  => $zone_ref->get('nt_zone_id'),
+            nameservers => $ns_string,
         );
         if ( $zone_ref->is_error ) {
             warn $zone_ref->error_msg;
             warn $zone_ref->error_desc;
         }
         else {
-            print "\tzid: ".$zone_ref->get('nt_zone_id')." ok.\n";
-        };
-    };
+            print "\tzid: " . $zone_ref->get('nt_zone_id') . " ok.\n";
+        }
+    }
 }
 
 $user->logout;
@@ -93,7 +93,8 @@ PROMPT:
     system "stty echo" if $pass;
     chomp $response;
 
-    return $response if length $response  > 0; # they typed something, return it
-    return '';                             # return empty handed
+    return $response
+        if length $response > 0;    # they typed something, return it
+    return '';                      # return empty handed
 }
 

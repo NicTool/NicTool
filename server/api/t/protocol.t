@@ -24,9 +24,7 @@ $user->login(
 );
 ok( !$user->result->is_error );
 if ( $user->result->is_error ) {
-    die "Error logging in: ("
-        . $user->result->error_code . ") "
-        . $user->result->error_msg;
+    die "Error logging in: (" . $user->result->error_code . ") " . $user->result->error_msg;
 }
 
 ok( $user->nt_user_session );
@@ -59,7 +57,7 @@ ok( $user->result->error_msg =~ /at most protocol version/ );
 #print "Error logging in: (".$user->result->error_code.") ".$user->result->error_msg;
 
 #now give some bogus protocol version
-$user->config( nt_protocol_version => '-' );      #smaller than any number
+$user->config( nt_protocol_version => '-' );    #smaller than any number
 $user->login(
     username => Config('username'),
     password => Config('password')

@@ -1,5 +1,6 @@
 package NicToolServer::Permission;
-# ABSTRACT: 
+
+# ABSTRACT:
 
 use strict;
 
@@ -45,13 +46,13 @@ sub delegate_fields_full {
 }
 
 sub delegate_fields_select {
-    "nt_delegate.delegated_by_id, " 
-    . "nt_delegate.delegated_by_name, "
-    . "nt_delegate.perm_write, "
-    . "nt_delegate.perm_delete, "
-    . "nt_delegate.perm_delegate, "
-    . "nt_delegate.zone_perm_add_records, "
-    . "nt_delegate.zone_perm_delete_records, "
+    "nt_delegate.delegated_by_id, "
+        . "nt_delegate.delegated_by_name, "
+        . "nt_delegate.perm_write, "
+        . "nt_delegate.perm_delete, "
+        . "nt_delegate.perm_delegate, "
+        . "nt_delegate.zone_perm_add_records, "
+        . "nt_delegate.zone_perm_delete_records, ";
 }
 
 sub delegate_fields_select_as {
@@ -67,17 +68,14 @@ sub delegate_fields_select_as {
 sub get_group_permissions {
     my ( $self, $data ) = @_;
 
-
-    my $gid = $data->{nt_group_id};
-    my $sql
-        = "SELECT * FROM nt_perm WHERE deleted != 1 " . "AND nt_group_id = ?";
+    my $gid   = $data->{nt_group_id};
+    my $sql   = "SELECT * FROM nt_perm WHERE deleted != 1 " . "AND nt_group_id = ?";
     my $perms = $self->exec_query( $sql, $gid )
         or return $self->error_response( 505, $self->{dbh}->errstr );
 
     my $perm = $perms->[0];
     if ( !$perm ) {
-        return $self->error_response( 507,
-            "Could not find permissions for group ($gid)" );
+        return $self->error_response( 507, "Could not find permissions for group ($gid)" );
     }
 
     $perm->{error_code} = 200;
@@ -88,7 +86,6 @@ sub get_group_permissions {
 sub get_user_permissions {
     my ( $self, $data ) = @_;
 
-
     my $uid   = $data->{nt_user_id};
     my $sql   = "SELECT * FROM nt_perm WHERE deleted != 1 AND nt_user_id = ?";
     my $perms = $self->exec_query( $sql, $uid )
@@ -96,8 +93,8 @@ sub get_user_permissions {
 
     my $perm = $perms->[0];
     if ( !$perm ) {
-        $sql
-            = "SELECT nt_perm.* FROM nt_perm,nt_user WHERE nt_perm.deleted != 1 "
+        $sql =
+              "SELECT nt_perm.* FROM nt_perm,nt_user WHERE nt_perm.deleted != 1 "
             . "AND nt_user.deleted != 1 "
             . "AND nt_user.nt_user_id = ?"
             . "AND nt_perm.nt_group_id = nt_user.nt_group_id";
@@ -106,8 +103,7 @@ sub get_user_permissions {
         $perm = $perms->[0];
     }
     if ( !$perm ) {
-        return $self->error_response( 507,
-            "Could not find permissions for user ($uid)" );
+        return $self->error_response( 507, "Could not find permissions for user ($uid)" );
     }
 
     $perm->{error_code} = 200;
@@ -119,8 +115,8 @@ sub log_delegate {
     my ( $self, $data, $action, $prev_data ) = @_;
 
     my $dbh = $self->{dbh};
-    my @columns
-        = qw(nt_user_id nt_user_name action nt_object_type nt_object_id nt_group_id timestamp perm_write perm_delete perm_delegate zone_perm_add_records zone_perm_delete_records zone_perm_modify_zone zone_perm_modify_mailaddr zone_perm_modify_desc zone_perm_modify_minimum zone_perm_modify_serial zone_perm_modify_refresh zone_perm_modify_retry zone_perm_modify_expire zone_perm_modify_ttl zone_perm_modify_nameservers);
+    my @columns =
+        qw(nt_user_id nt_user_name action nt_object_type nt_object_id nt_group_id timestamp perm_write perm_delete perm_delegate zone_perm_add_records zone_perm_delete_records zone_perm_modify_zone zone_perm_modify_mailaddr zone_perm_modify_desc zone_perm_modify_minimum zone_perm_modify_serial zone_perm_modify_refresh zone_perm_modify_retry zone_perm_modify_expire zone_perm_modify_ttl zone_perm_modify_nameservers);
     my @values;
 
     my $user = $data->{user};
@@ -135,29 +131,27 @@ sub log_delegate {
         $data->{$_} = $prev_data->{$_} unless exists $data->{$_};
     }
 
-    my $sql
-        = "INSERT INTO nt_delegate_log("
+    my $sql =
+          "INSERT INTO nt_delegate_log("
         . join( ',', @columns )
         . ") VALUES("
         . join( ',', map( $dbh->quote( $data->{$_} ), @columns ) ) . ")";
     my $insertid = $self->exec_query($sql);
 
-    my @g_columns
-        = qw(nt_user_id timestamp action object object_id target target_id target_name log_entry_id title description);
+    my @g_columns =
+        qw(nt_user_id timestamp action object object_id target target_id target_name log_entry_id title description);
 
-    $data->{object} = lc( $data->{nt_object_type} );
-    $data->{object} = 'zone_record' if $data->{object} eq 'zonerecord';
+    $data->{object}       = lc( $data->{nt_object_type} );
+    $data->{object}       = 'zone_record' if $data->{object} eq 'zonerecord';
     $data->{log_entry_id} = $insertid;
-    $data->{title}        = $self->get_title( $data->{nt_object_type},
-        $data->{nt_object_id} );
-    $data->{object_id} = $data->{nt_object_id};
-    $data->{target_id} = $data->{nt_group_id};
-    $data->{target}    = 'group';
-    $data->{target_name}
-        = $self->get_title( 'group', $data->{target_id} );
+    $data->{title}        = $self->get_title( $data->{nt_object_type}, $data->{nt_object_id} );
+    $data->{object_id}    = $data->{nt_object_id};
+    $data->{target_id}    = $data->{nt_group_id};
+    $data->{target}       = 'group';
+    $data->{target_name}  = $self->get_title( 'group', $data->{target_id} );
 
     if ( $action eq 'modified' ) {
-        $data->{action} = 'modified delegation';
+        $data->{action}      = 'modified delegation';
         $data->{description} = $self->diff_changes( $data, $prev_data );
     }
     elsif ( $action eq 'deleted' ) {
@@ -169,8 +163,8 @@ sub log_delegate {
         $data->{description} = 'initial delegation';
     }
 
-    $sql
-        = "INSERT INTO nt_user_global_log("
+    $sql =
+          "INSERT INTO nt_user_global_log("
         . join( ',', @g_columns )
         . ") VALUES("
         . join( ',', map( $dbh->quote( $data->{$_} ), @g_columns ) ) . ")";
@@ -192,8 +186,7 @@ sub delegate_objects {
 
     foreach my $id ( split( /,/, $data->{nt_object_id_list} ) ) {
         $self->error( 'nt_object_id_list', 'Cannot delegate deleted objects!' )
-            if $self->check_object_deleted( lc( $data->{nt_object_type} ),
-                    $id );
+            if $self->check_object_deleted( lc( $data->{nt_object_type} ), $id );
     }
 
     return $self->throw_sanity_error if ( $self->{errors} );
@@ -205,15 +198,13 @@ sub delegate_objects {
     }
 
     my %objs = map { $_ => 0 } split( /,/, $data->{nt_object_id_list} );
-    my $sql = "SELECT * FROM nt_delegate
+    my $sql  = "SELECT * FROM nt_delegate
         WHERE deleted=0
          AND nt_group_id = ?
          AND nt_object_type = ?
          AND nt_object_id IN (" . $data->{nt_object_id_list} . ") ";
 
-    my $delegates
-        = $self->exec_query( $sql,
-        [ $data->{nt_group_id}, $data->{nt_object_type} ] )
+    my $delegates = $self->exec_query( $sql, [ $data->{nt_group_id}, $data->{nt_object_type} ] )
         or return $self->error_response( 505, $self->{dbh}->errstr );
 
     my @already;
@@ -221,18 +212,14 @@ sub delegate_objects {
 
     if (@already) {
         return $self->error_response( 600,
-                  "Some objects were already delegated to that group: "
-                . join( ",", @already )
-                . "." );
+            "Some objects were already delegated to that group: " . join( ",", @already ) . "." );
     }
     if ( $self->check_object_deleted( 'group', $data->{nt_group_id} ) ) {
-        return $self->error_response( 600,
-            "Cannot delegate to a deleted group!" );
+        return $self->error_response( 600, "Cannot delegate to a deleted group!" );
     }
     foreach ( split( /,/, $data->{nt_object_id_list} ) ) {
         if ( $self->check_object_deleted( $data->{nt_object_type}, $_ ) ) {
-            return $self->error_response( 600,
-                "Cannot delegate a deleted object!" );
+            return $self->error_response( 600, "Cannot delegate a deleted object!" );
         }
     }
 
@@ -242,16 +229,9 @@ sub delegate_objects {
         foreach (@fields) {
             $data->{$_} = 0 unless exists $data->{$_};
         }
-        my @columns = (
-            qw/nt_group_id nt_object_type delegated_by_id delegated_by_name/,
-            @fields
-        );
-        $sql
-            = "INSERT INTO nt_delegate ("
-            . join( ",", 'nt_object_id', @columns )
-            . ") VALUES(??)";
-        my $insertid = $self->exec_query( $sql,
-            [ $id, map( $data->{$_}, @columns ) ] );
+        my @columns = ( qw/nt_group_id nt_object_type delegated_by_id delegated_by_name/, @fields );
+        $sql = "INSERT INTO nt_delegate (" . join( ",", 'nt_object_id', @columns ) . ") VALUES(??)";
+        my $insertid = $self->exec_query( $sql, [ $id, map( $data->{$_}, @columns ) ] );
         return $self->error_response( 505, $self->{dbh}->errstr )
             if !defined $insertid;
         my %pdata;
@@ -309,18 +289,16 @@ sub delete_object_delegation {
 
     my $dbh = $self->{dbh};
 
-    my $sql
-        = "SELECT * FROM nt_delegate WHERE deleted=0 "
+    my $sql =
+          "SELECT * FROM nt_delegate WHERE deleted=0 "
         . "AND nt_object_id = ?"
         . " AND nt_object_type = ?"
         . " AND nt_group_id = ?";
 
-    my $delegates = $self->exec_query(
-        $sql,
-        [   $data->{nt_object_id}, $data->{nt_object_type},
-            $data->{nt_group_id}
-        ]
-    ) or return $self->error_response( 505, $dbh->errstr );
+    my $delegates =
+        $self->exec_query( $sql,
+        [ $data->{nt_object_id}, $data->{nt_object_type}, $data->{nt_group_id} ] )
+        or return $self->error_response( 505, $dbh->errstr );
     my $prev_data;
     unless ( $prev_data = $delegates->[0] ) {
         return $self->error_response( 601,
@@ -329,24 +307,15 @@ sub delete_object_delegation {
     }
     else {
 
-        if ($self->check_object_deleted(
-                $data->{nt_object_type},
-                $data->{nt_object_id}
-            )
-            )
-        {
-            return $self->error_response( 600,
-                "Cannot delete delegation for a deleted object!" );
+        if ( $self->check_object_deleted( $data->{nt_object_type}, $data->{nt_object_id} ) ) {
+            return $self->error_response( 600, "Cannot delete delegation for a deleted object!" );
         }
-        if ( $self->check_object_deleted( 'group', $data->{nt_group_id} ) )
-        {
-            return $self->error_response( 600,
-                "Cannot delete delegation to a deleted group!" );
+        if ( $self->check_object_deleted( 'group', $data->{nt_group_id} ) ) {
+            return $self->error_response( 600, "Cannot delete delegation to a deleted group!" );
         }
         my @fields = qw(nt_group_id nt_object_id nt_object_type);
         $sql = "DELETE FROM nt_delegate WHERE "
-            . join( " AND ",
-            map( "$_ = " . $dbh->quote( $data->{$_} ), @fields ) );
+            . join( " AND ", map( "$_ = " . $dbh->quote( $data->{$_} ), @fields ) );
         $self->exec_query($sql)
             or return $self->error_response( 505, $dbh->errstr );
     }
@@ -390,12 +359,10 @@ sub delegated_objects_from_group {
     my @params = qw(nt_group_id delegator_nt_group_id);
 
     my $vals = {
-        'GROUP' => { 'table' => 'nt_group', 'id' => 'nt_group_id' },
-        'ZONE'  => { 'table' => 'nt_zone',  'id' => 'nt_zone_id' },
-        'ZONERECORD' =>
-            { 'table' => 'nt_zone_record', 'id' => 'nt_zone_record_id' },
-        'NAMESERVER' =>
-            { 'table' => 'nt_nameserver', 'id' => 'nt_nameserver_id' },
+        'GROUP'      => { 'table' => 'nt_group',       'id' => 'nt_group_id' },
+        'ZONE'       => { 'table' => 'nt_zone',        'id' => 'nt_zone_id' },
+        'ZONERECORD' => { 'table' => 'nt_zone_record', 'id' => 'nt_zone_record_id' },
+        'NAMESERVER' => { 'table' => 'nt_nameserver',  'id' => 'nt_nameserver_id' },
     };
 
     #my $table = $vals->{$type}->{table};
@@ -405,8 +372,8 @@ sub delegated_objects_from_group {
         my $table  = $vals->{$type}->{table};
         my $idname = $vals->{$type}->{id};
 
-        my $sql
-            = "SELECT $table.*, "
+        my $sql =
+              "SELECT $table.*, "
             . $self->delegate_fields_select_as
             . "nt_group.name as group_name 
             FROM $table 
@@ -416,8 +383,7 @@ sub delegated_objects_from_group {
               WHERE nt_delegate.deleted=0 
                 AND $table.deleted=0 
                 AND nt_delegate.nt_group_id = "
-             . $data->{nt_group_id}
-            . " AND nt_delegate.nt_object_id = $table.$idname ";
+            . $data->{nt_group_id} . " AND nt_delegate.nt_object_id = $table.$idname ";
 
         my $objects = $self->exec_query($sql);
         if ($objects) {
@@ -427,8 +393,7 @@ sub delegated_objects_from_group {
             }
         }
         else {
-            warn "WARN: delegated_objects_from_group: "
-                . $self->{dbh}->errstr;
+            warn "WARN: delegated_objects_from_group: " . $self->{dbh}->errstr;
         }
 
     }
@@ -444,18 +409,17 @@ sub delegated_objects_by_type {
     my $type   = $data->{nt_object_type};
 
     my $vals = {
-        'GROUP' => { 'table' => 'nt_group', 'id' => 'nt_group_id' },
-        'ZONE'  => { 'table' => 'nt_zone',  'id' => 'nt_zone_id' },
-        'ZONERECORD' =>
-            { 'table' => 'nt_zone_record', 'id' => 'nt_zone_record_id' },
-        'NAMESERVER' =>
-            { 'table' => 'nt_nameserver', 'id' => 'nt_nameserver_id' },
+        'GROUP'      => { 'table' => 'nt_group',       'id' => 'nt_group_id' },
+        'ZONE'       => { 'table' => 'nt_zone',        'id' => 'nt_zone_id' },
+        'ZONERECORD' => { 'table' => 'nt_zone_record', 'id' => 'nt_zone_record_id' },
+        'NAMESERVER' => { 'table' => 'nt_nameserver',  'id' => 'nt_nameserver_id' },
     };
 
     my $table  = $vals->{$type}->{table};
     my $idname = $vals->{$type}->{id};
 
-    my $sql = "SELECT $table.*, "
+    my $sql =
+          "SELECT $table.*, "
         . $self->delegate_fields_select_as
         . " nt_group.name AS group_name 
 FROM $table 
@@ -472,8 +436,7 @@ FROM $table
         AND nt_delegate.nt_group_id=?";
 
     my $objects = $self->exec_query( $sql, $data->{nt_group_id} )
-        or return $self->error_response( 505,
-        $self->{dbh}->errstr . " : sql : $sql" );
+        or return $self->error_response( 505, $self->{dbh}->errstr . " : sql : $sql" );
     my $response = $self->error_response(200);
     $response->{$type} = [];
     foreach my $row (@$objects) {
@@ -510,10 +473,7 @@ sub get_delegated_nameservers {
 sub get_object_delegates {
     my ( $self, $data ) = @_;
 
-    my $sql
-        = "SELECT "
-        . $self->delegate_fields_select_as
-        . " nt_group.nt_group_id,
+    my $sql = "SELECT " . $self->delegate_fields_select_as . " nt_group.nt_group_id,
             nt_group.name AS group_name
          FROM nt_delegate
          INNER JOIN nt_group
@@ -523,9 +483,7 @@ sub get_object_delegates {
            AND nt_object_id = ?
            AND nt_object_type = ?";
 
-    my $rows
-        = $self->exec_query( $sql,
-        [ $data->{nt_object_id}, $data->{nt_object_type} ] )
+    my $rows = $self->exec_query( $sql, [ $data->{nt_object_id}, $data->{nt_object_type} ] )
         or return $self->error_response( 505, $self->{dbh}->errstr );
     my $response = $self->error_response(200);
     $response->{delegates} = [];
@@ -573,20 +531,17 @@ sub edit_object_delegation {
     $self->error( 'nt_group_id', 'Cannot edit delegation to a deleted group!' )
         if $self->check_object_deleted( 'group', $data->{nt_group_id} );
 
-    $self->error( 'nt_object_id', 'Cannot edit delegation of a deleted object!')
-        if $self->check_object_deleted( lc( $data->{nt_object_type} ),
-        $data->{nt_object_id} );
+    $self->error( 'nt_object_id', 'Cannot edit delegation of a deleted object!' )
+        if $self->check_object_deleted( lc( $data->{nt_object_type} ), $data->{nt_object_id} );
     ##end sanity checks
 
     my $sql = "SELECT * FROM nt_delegate WHERE deleted=0
         AND nt_group_id=? AND nt_object_id=? AND nt_object_type=?";
 
-    my $delegates = $self->exec_query(
-        $sql,
-        [   $data->{nt_group_id}, $data->{nt_object_id},
-            $data->{nt_object_type}
-        ]
-    ) or return $self->error_response( 505, $self->{dbh}->errstr );
+    my $delegates =
+        $self->exec_query( $sql,
+        [ $data->{nt_group_id}, $data->{nt_object_id}, $data->{nt_object_type} ] )
+        or return $self->error_response( 505, $self->{dbh}->errstr );
     my $prev_data;
     unless ( $prev_data = $delegates->[0] ) {
         return $self->error_response( 601,
@@ -594,18 +549,11 @@ sub edit_object_delegation {
         );
     }
 
-    if ($self->check_object_deleted(
-            $data->{nt_object_type},
-            $data->{nt_object_id}
-        )
-        )
-    {
-        return $self->error_response( 600,
-            "Cannot edit delegation for a deleted object!" );
+    if ( $self->check_object_deleted( $data->{nt_object_type}, $data->{nt_object_id} ) ) {
+        return $self->error_response( 600, "Cannot edit delegation for a deleted object!" );
     }
     if ( $self->check_object_deleted( 'group', $data->{nt_group_id} ) ) {
-        return $self->error_response( 600,
-            "Cannot edit delegation to a deleted group!" );
+        return $self->error_response( 600, "Cannot edit delegation to a deleted group!" );
     }
 
     my %params = map { $_ => $data->{$_} ? 1 : 0 }
@@ -613,21 +561,16 @@ sub edit_object_delegation {
 
     return $self->error_response(200) unless ( keys %params );
 
-    $sql
-        = "UPDATE nt_delegate set "
-        . join( ",",
-        map { "$_ = " . $dbh->quote( $params{$_} ) } keys %params )
+    $sql =
+          "UPDATE nt_delegate set "
+        . join( ",", map { "$_ = " . $dbh->quote( $params{$_} ) } keys %params )
         . " WHERE deleted=0
               AND nt_group_id=?
               AND nt_object_id=?
               AND nt_object_type=?";
 
-    $self->exec_query(
-        $sql,
-        [   $data->{nt_group_id}, $data->{nt_object_id},
-            $data->{nt_object_type},
-        ]
-        )
+    $self->exec_query( $sql,
+        [ $data->{nt_group_id}, $data->{nt_object_id}, $data->{nt_object_type}, ] )
         or return $self->error_response( 505, $dbh->errstr . ": sql :$sql" );
 
     $self->log_delegate( $data, 'modified', $prev_data );
@@ -707,8 +650,7 @@ sub diff_changes {
                 if ( $data->{$f} != $prev_data->{$f} );
         }
         else {
-            push( @changes,
-                "changed $f from '$prev_data->{$f}' to '$data->{$f}'" )
+            push( @changes, "changed $f from '$prev_data->{$f}' to '$data->{$f}'" )
                 if ( $data->{$f} ne $prev_data->{$f} );
         }
     }

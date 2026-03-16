@@ -1,4 +1,5 @@
 package NicToolServer::Zone::Record;
+
 # ABSTRACT: manage DNS zone records
 
 use strict;
@@ -12,24 +13,25 @@ sub new_zone_record {
 
     my $z = $self->find_zone( $data->{nt_zone_id} );
     if ( my $del = $self->get_param_meta( 'nt_zone_id', 'delegate' ) ) {
-        return $self->error_response( 404,
-            "Not allowed to add records to the delegated zone." )
+        return $self->error_response( 404, "Not allowed to add records to the delegated zone." )
             unless $del->{zone_perm_add_records};
     }
 
     if ( $data->{type} eq 'NS' && "$z->{zone}." eq $data->{name} ) {
+
         # TODO: this doesn't work for .arpa zones. :-(
-        return $self->_add_zone_nameserver($z, $data);
+        return $self->_add_zone_nameserver( $z, $data );
     }
 
     # bump the zone's serial number
-    $self->_bump_and_update_serial($data->{nt_zone_id}, $z->{serial});
+    $self->_bump_and_update_serial( $data->{nt_zone_id}, $z->{serial} );
 
     # build insert query
     my $col_string = 'nt_zone_id';
-    my @values = $data->{nt_zone_id};
-    foreach my $c ( qw/name ttl description type address weight priority other location timestamp /) {
-        next if ! defined $data->{$c};
+    my @values     = $data->{nt_zone_id};
+    foreach my $c (qw/name ttl description type address weight priority other location timestamp /)
+    {
+        next if !defined $data->{$c};
         next if '' eq $data->{$c};
         if ( $c eq 'type' ) {
             $col_string .= ", type_id";
@@ -39,15 +41,15 @@ sub new_zone_record {
         else {
             $col_string .= ", $c";
             push @values, $data->{$c};
-        };
-    };
+        }
+    }
 
-    my $insertid = $self->exec_query(
-        "INSERT INTO nt_zone_record($col_string) VALUES(??)", \@values)
-            or return {
-                error_code => 600,
-                error_msg  => $self->{dbh}->errstr,
-            };
+    my $insertid =
+        $self->exec_query( "INSERT INTO nt_zone_record($col_string) VALUES(??)", \@values )
+        or return {
+        error_code => 600,
+        error_msg  => $self->{dbh}->errstr,
+        };
 
     $data->{nt_zone_record_id} = $insertid;
     $self->log_zone_record( $data, 'added', undef, $z );
@@ -55,64 +57,63 @@ sub new_zone_record {
     $self->_add_matching_spf_record( $data, $col_string, \@values );
 
     return {
-        error_code => 200,
-        error_msg => 'OK',
+        error_code        => 200,
+        error_msg         => 'OK',
         nt_zone_record_id => $insertid,
     };
 }
 
 sub _add_zone_nameserver {
-    my ($self, $zone, $data) = @_;
+    my ( $self, $zone, $data ) = @_;
 
     # get NS by looking up $data->{address}
     my $ns_name = lc $data->{address};
-    if ('.' ne substr($ns_name, -1, 1)) {
+    if ( '.' ne substr( $ns_name, -1, 1 ) ) {
         $ns_name = $ns_name . '.';
     }
 
-    my $nslist = $self->get_usable_nameservers( $data )->{nameservers};
+    my $nslist = $self->get_usable_nameservers($data)->{nameservers};
     my ($ns) = grep { $_->{name} =~ /^$ns_name$/i } @$nslist;
-    if (!$ns) {
+    if ( !$ns ) {
         return $self->error_response( 404, "Nameserver not defined in NicTool." );
     }
 
     my $ns_id = $ns->{nt_nameserver_id};
-    if (!$self->get_access_permission( 'NAMESERVER', $ns_id, 'read' ) ) {
+    if ( !$self->get_access_permission( 'NAMESERVER', $ns_id, 'read' ) ) {
         return $self->error_response( 404, "Not allowed to add records to that Nameserver." );
     }
 
     # save the NS record
-    $self->add_zone_nameserver($zone->{nt_zone_id}, $ns_id);
+    $self->add_zone_nameserver( $zone->{nt_zone_id}, $ns_id );
 
     return {
         error_code => 200,
-        error_msg => 'OK',
-        ns_id => $ns_id,
+        error_msg  => 'OK',
+        ns_id      => $ns_id,
     };
 }
 
 sub _add_matching_spf_record {
     my ( $self, $data, $col_string, $values ) = @_;
 
-    return if $data->{type} ne 'SPF';  # only try for type SPF
+    return if $data->{type} ne 'SPF';    # only try for type SPF
 
     # see if matching TXT record exists
     my $zrs = $self->exec_query(
-    "SELECT nt_zone_record_id FROM nt_zone_record
+        "SELECT nt_zone_record_id FROM nt_zone_record
      WHERE  nt_zone_id=?
        AND  type_id=16
        AND  name=?
        AND address=?",
-       [ $data->{nt_zone_id}, $data->{name}, $data->{address}, ],
+        [ $data->{nt_zone_id}, $data->{name}, $data->{address}, ],
     );
-    return if scalar @$zrs; # already exists
+    return if scalar @$zrs;              # already exists
 
     # make sure the position of type_id column didn't move
     return if $values->[4] != 99;
 
-    $values->[4] = 16;  # switch SPF rec type to TXT type
-    $self->exec_query(
-        "INSERT INTO nt_zone_record($col_string) VALUES(??)", $values);
+    $values->[4] = 16;                   # switch SPF rec type to TXT type
+    $self->exec_query( "INSERT INTO nt_zone_record($col_string) VALUES(??)", $values );
 }
 
 sub edit_zone_record {
@@ -123,20 +124,18 @@ sub edit_zone_record {
     my $z = $self->find_zone( $data->{nt_zone_id} );
 
     # bump the zone's serial number
-    $self->_bump_and_update_serial($data->{nt_zone_id}, $z->{serial});
+    $self->_bump_and_update_serial( $data->{nt_zone_id}, $z->{serial} );
 
     my $prev_data = $self->find_zone_record( $data->{nt_zone_record_id} );
     if ( $prev_data->{deleted} ) {
         if ( my $del = $self->get_param_meta( 'nt_zone_record_id', 'delegate' ) ) {
-            return $self->error_response( 404,
-                'Not allowed to undelete delegated record.' )
+            return $self->error_response( 404, 'Not allowed to undelete delegated record.' )
                 unless $del->{pseudo} && $del->{zone_perm_delete_records};
         }
 
         return $self->error_response( 404, 'Not allowed to undelete record.' )
-            unless $self->get_access_permission(
-                'ZONERECORD', $data->{nt_zone_record_id}, 'delete',
-            );
+            unless $self->get_access_permission( 'ZONERECORD',
+            $data->{nt_zone_record_id}, 'delete', );
     }
 
     my $log_action = $prev_data->{deleted} ? 'recovered' : 'modified';
@@ -145,18 +144,18 @@ sub edit_zone_record {
     my $sql = "UPDATE nt_zone_record SET ";
     my @values;
     my @columns = qw/ name ttl description type address weight priority other
-                      location timestamp deleted /;
+        location timestamp deleted /;
 
     my $i = 0;
-    foreach my $c ( @columns ) {
-        next if ! defined $data->{$c};
+    foreach my $c (@columns) {
+        next        if !defined $data->{$c};
         $sql .= "," if $i > 0;
         if ( $c eq 'type' ) {
             $sql .= "type_id = ?";
-            push @values, $self->get_record_type({ type=> $data->{$c} });
+            push @values, $self->get_record_type( { type => $data->{$c} } );
         }
         elsif ( $c eq 'timestamp' || $c eq 'weight' || $c eq 'priority' ) {
-            if( $data->{$c} == '') {
+            if ( $data->{$c} == '' ) {
                 $sql =~ s/,$//;
                 next;
             }
@@ -166,9 +165,9 @@ sub edit_zone_record {
         else {
             $sql .= "$c = ?";
             push @values, $data->{$c};
-        };
+        }
         $i++;
-    };
+    }
 
     $sql .= " WHERE nt_zone_record_id = ?";
     push @values, $data->{nt_zone_record_id};
@@ -180,7 +179,7 @@ sub edit_zone_record {
         return {
             error_code => 600,
             error_msg  => $self->{dbh}->errstr,
-        }
+        };
     }
 
     $self->log_zone_record( $data, $log_action, $prev_data, $z );
@@ -191,17 +190,15 @@ sub edit_zone_record {
 sub delete_zone_record {
     my ( $self, $data, $zone ) = @_;
 
-    if ( my $del = $self->get_param_meta( 'nt_zone_record_id', 'delegate' ) )
-    {
-        return $self->error_response( 404,
-            "Not allowed to delete delegated record." )
+    if ( my $del = $self->get_param_meta( 'nt_zone_record_id', 'delegate' ) ) {
+        return $self->error_response( 404, "Not allowed to delete delegated record." )
             unless $del->{pseudo} && $del->{zone_perm_delete_records};
     }
 
     my $sql = "SELECT nt_zone_id FROM nt_zone_record WHERE nt_zone_record_id=?";
     my $zrs = $self->exec_query( $sql, $data->{nt_zone_record_id} );
 
-    $self->_bump_and_update_serial($zrs->[0]{nt_zone_id});
+    $self->_bump_and_update_serial( $zrs->[0]{nt_zone_id} );
 
     my %error = ( 'error_code' => 200, 'error_msg' => 'OK' );
     $sql = "UPDATE nt_zone_record set deleted=1 WHERE nt_zone_record_id = ?";
@@ -237,11 +234,11 @@ sub log_zone_record {
     }
 
     if ( !$data->{type_id} ) {
-        if ($data->{type}) {
+        if ( $data->{type} ) {
             $data->{type_id} = $self->get_record_type( { type => $data->{type} } );
         }
         else {
-            if (!$db_data) {
+            if ( !$db_data ) {
                 $db_data = $self->find_zone_record( $data->{nt_zone_record_id} );
             }
             $data->{type_id} = $db_data->{type_id};
@@ -249,25 +246,27 @@ sub log_zone_record {
     }
 
     my $col_string = 'nt_zone_id';
-    my @values = $data->{nt_zone_id};
-    foreach my $c ( qw/ nt_zone_record_id nt_user_id action timestamp name
-        ttl description type_id address weight priority other location / )
+    my @values     = $data->{nt_zone_id};
+    foreach my $c (
+        qw/ nt_zone_record_id nt_user_id action timestamp name
+        ttl description type_id address weight priority other location /
+        )
     {
-        next if ! defined $data->{$c};
+        next if !defined $data->{$c};
         next if '' eq $data->{$c};
 
         $col_string .= ", $c";
         push @values, $data->{$c};
-    };
+    }
 
-    my $insertid = $self->exec_query(
-        "INSERT INTO nt_zone_record_log($col_string) VALUES(??)", \@values);
+    my $insertid =
+        $self->exec_query( "INSERT INTO nt_zone_record_log($col_string) VALUES(??)", \@values );
 
     $data->{object}       = 'zone_record';
     $data->{log_entry_id} = $insertid;
     $data->{object_id}    = $data->{nt_zone_record_id};
 
-    if ( uc( $data->{type} ) !~ /^MX|SRV$/ ) {   # match MX or SRV
+    if ( uc( $data->{type} ) !~ /^MX|SRV$/ ) {    # match MX or SRV
         delete $data->{weight};
     }
     if ( uc( $data->{type} ) ne 'SRV' ) {
@@ -292,13 +291,14 @@ sub log_zone_record {
         $data->{description} = 'initial creation';
     }
     elsif ( $action eq 'recovered' ) {
-        $data->{description}
-            = "recovered previous settings ($data->{type} $data->{weight} $data->{address})";
+        $data->{description} =
+            "recovered previous settings ($data->{type} $data->{weight} $data->{address})";
     }
 
-    my @g_columns = qw/ nt_user_id timestamp action object object_id log_entry_id title description /;
-    $col_string = join(',', @g_columns);
-    @values = map { $data->{$_} } @g_columns;
+    my @g_columns =
+        qw/ nt_user_id timestamp action object object_id log_entry_id title description /;
+    $col_string = join( ',', @g_columns );
+    @values     = map { $data->{$_} } @g_columns;
     $self->exec_query( "INSERT INTO nt_user_global_log($col_string) VALUES(??)", \@values );
 }
 
@@ -338,6 +338,7 @@ sub get_zone_record {
         perm_delegate     => 'delegate_delegate',
         group_name        => 'group_name'
     );
+
     foreach my $key ( keys %mapping ) {
         $rv{ $mapping{$key} } = $del->{$key};
     }
@@ -354,9 +355,8 @@ sub get_zone_record_log_entry {
           WHERE zrl.nt_zone_record_log_id = ?
             AND zr.nt_zone_record_id=?";
 
-    my $zr_logs
-        = $self->exec_query( $sql,
-        [ $data->{nt_zone_record_log_id}, $data->{nt_zone_record_id} ] )
+    my $zr_logs =
+           $self->exec_query( $sql, [ $data->{nt_zone_record_log_id}, $data->{nt_zone_record_id} ] )
         or $self->error_response( 600, $self->{dbh}->errstr );
 
     $self->error_response( 600, 'No such log entry exists' )
@@ -380,35 +380,37 @@ sub get_record_type {
     my ( $self, $data ) = @_;
     my $lookup = $data->{type};
 
-    if ( ! $self->{record_types} ) {
+    if ( !$self->{record_types} ) {
         my $sql = "SELECT id,name,description,reverse,forward
             FROM resource_record_type WHERE description IS NOT NULL";
         my $types = $self->exec_query($sql);
-        foreach my $t ( @$types ) {
-            $self->{record_types}{$t->{id}} = $t;   # index by IETF code #
-            $self->{record_types}{$t->{name}} = $t; # index by name (A,MX, )
+        foreach my $t (@$types) {
+            $self->{record_types}{ $t->{id} }   = $t;    # index by IETF code #
+            $self->{record_types}{ $t->{name} } = $t;    # index by name (A,MX, )
         }
         $self->{record_types}{'ALL'} = $types;
-    };
+    }
 
-    if ( $lookup =~ /^\d+$/ ) {   # all numeric
-        return $self->{record_types}{$lookup}{name}; # return type name
+    if ( $lookup =~ /^\d+$/ ) {    # all numeric
+        return $self->{record_types}{$lookup}{name};    # return type name
     }
     elsif ( $lookup eq 'ALL' ) {
         return {
             types      => $self->{record_types}{'ALL'},
             error_code => 200,
-            error_msg => 'OK',
+            error_msg  => 'OK',
         };
-    };
+    }
 
-    return $self->{record_types}{$lookup}{id};  # got a type, return ID
+    return $self->{record_types}{$lookup}{id};    # got a type, return ID
 }
 
 sub _bump_and_update_serial {
     my ( $self, $nt_zone_id, $z_serial ) = @_;
-    $self->exec_query( "UPDATE nt_zone SET serial = ? WHERE nt_zone_id = ?",
-        [ $self->bump_serial( $nt_zone_id, $z_serial ), $nt_zone_id ] );
+    $self->exec_query(
+        "UPDATE nt_zone SET serial = ? WHERE nt_zone_id = ?",
+        [ $self->bump_serial( $nt_zone_id, $z_serial ), $nt_zone_id ]
+    );
 }
 
 1;

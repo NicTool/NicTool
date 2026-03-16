@@ -1,4 +1,5 @@
 package NicToolServer::Zone;
+
 # ABSTRACT: manage (add,delete,move,find) DNS zones
 
 use strict;
@@ -8,14 +9,15 @@ use parent 'NicToolServer';
 sub get_zone {
     my ( $self, $data ) = @_;
 
-    my $sql = "SELECT * FROM nt_zone WHERE nt_zone_id = ?";
+    my $sql   = "SELECT * FROM nt_zone WHERE nt_zone_id = ?";
     my $zones = $self->exec_query( $sql, $data->{nt_zone_id} )
         or return {
         error_code => 600,
         error_msg  => $self->{dbh}->errstr,
         };
 
-    my %rv = ( %{ $zones->[0] },
+    my %rv = (
+        %{ $zones->[0] },
         'nameservers' => $self->pack_nameservers( $zones->[0] ),
         'error_code'  => 200,
         'error_msg'   => 'OK',
@@ -23,7 +25,7 @@ sub get_zone {
 
     if ( my $del = $self->get_param_meta( 'nt_zone_id', 'delegate' ) ) {
 
-    # this comes from NicToolServer.pm when it checks for access perms to the objects
+        # this comes from NicToolServer.pm when it checks for access perms to the objects
         my %mapping = (
             delegated_by_id   => 'delegated_by_id',
             delegated_by_name => 'delegated_by_name',
@@ -51,28 +53,25 @@ sub pack_nameservers {
     my ( $self, $data ) = @_;
 
     # $data = { ns0=>?, ns1=>?, ns2....};
-    my $query
-        = "SELECT nt_nameserver_id FROM nt_zone_nameserver WHERE nt_zone_id=?";
+    my $query = "SELECT nt_nameserver_id FROM nt_zone_nameserver WHERE nt_zone_id=?";
     my @nsids = $self->dbix->query( $query, $data->{nt_zone_id} )->flat;
     return [] if scalar @nsids == 0;
 
-    my $sql
-        = "SELECT nt_nameserver.*,nt_zone.nt_zone_id FROM nt_nameserver,nt_zone
+    my $sql = "SELECT nt_nameserver.*,nt_zone.nt_zone_id FROM nt_nameserver,nt_zone
         WHERE nt_nameserver.nt_nameserver_id IN ("
-        . join( ',', @nsids )
-        . ") AND nt_zone.nt_zone_id = ?";
+        . join( ',', @nsids ) . ") AND nt_zone.nt_zone_id = ?";
     $data->{nameservers} = $self->exec_query( $sql, $data->{nt_zone_id} );
 }
 
 sub get_zone_log {
     my ( $self, $data ) = @_;
 
-    my $sql
-        = "SELECT nt_zone_log.*, nt_group.name AS group_name, nt_zone_log.action AS action, CONCAT(nt_user.first_name, \" \", nt_user.last_name) as user "
+    my $sql =
+        "SELECT nt_zone_log.*, nt_group.name AS group_name, nt_zone_log.action AS action, CONCAT(nt_user.first_name, \" \", nt_user.last_name) as user "
         . "FROM nt_zone_log, nt_group, nt_user "
         . "WHERE nt_zone_log.nt_group_id = nt_group.nt_group_id "
 
-       #. "AND nt_zone_log.nt_log_action_id = nt_log_action.nt_log_action_id "
+        #. "AND nt_zone_log.nt_log_action_id = nt_log_action.nt_log_action_id "
         . "AND nt_zone_log.nt_user_id = nt_user.nt_user_id "
         . "AND nt_zone_log.nt_zone_id = $data->{nt_zone_id} "
         . "ORDER BY timestamp DESC";
@@ -106,8 +105,7 @@ sub get_zone_record_log {
             quicksearch => 0,
             field       => 'nt_zone_record_log.action'
         },
-        user =>
-            { timefield => 0, quicksearch => 0, field => 'nt_user.username' },
+        user      => { timefield => 0, quicksearch => 0, field => 'nt_user.username' },
         timestamp => {
             timefield   => 1,
             quicksearch => 0,
@@ -151,8 +149,8 @@ sub get_zone_record_log {
     );
 
     my $conditions = $self->format_search_conditions( $data, \%field_map );
-    my $sortby = $self->format_sort_conditions( $data, \%field_map,
-        "nt_zone_record_log.timestamp DESC" );
+    my $sortby =
+        $self->format_sort_conditions( $data, \%field_map, "nt_zone_record_log.timestamp DESC" );
 
     my $r_data = { error_code => 200, error_msg => 'OK', log => [] };
 
@@ -162,7 +160,7 @@ sub get_zone_record_log {
         nt_zone_record_log, nt_zone_record, nt_user
         WHERE nt_zone_record_log.nt_zone_record_id = nt_zone_record.nt_zone_record_id "
 
-#       . "AND nt_zone_record_log.nt_log_action_id = nt_log_action.nt_log_action_id "
+        #       . "AND nt_zone_record_log.nt_log_action_id = nt_log_action.nt_log_action_id "
         . "AND nt_zone_record_log.nt_user_id = nt_user.nt_user_id "
         . "AND nt_zone_record_log.nt_zone_id = "
         . $dbh->quote( $data->{nt_zone_id} )
@@ -180,7 +178,7 @@ sub get_zone_record_log {
         FROM nt_zone_record_log, nt_zone_record, nt_user
           WHERE nt_zone_record_log.nt_zone_record_id = nt_zone_record.nt_zone_record_id "
 
-#          AND nt_zone_record_log.nt_log_action_id = nt_log_action.nt_log_action_id "
+        #          AND nt_zone_record_log.nt_log_action_id = nt_log_action.nt_log_action_id "
         . "AND nt_zone_record_log.nt_user_id = nt_user.nt_user_id
            AND nt_zone_record_log.nt_zone_id = "
         . $dbh->quote( $data->{nt_zone_id} )
@@ -210,38 +208,31 @@ sub get_group_zones_log {
             quicksearch => 0,
             field       => 'nt_zone_log.action'
         },
-        user =>
-            { timefield => 0, quicksearch => 0, field => 'nt_user.username' },
+        user      => { timefield => 0, quicksearch => 0, field => 'nt_user.username' },
         timestamp => {
             timefield   => 1,
             quicksearch => 0,
             field       => 'nt_zone_log.timestamp'
         },
-        zone =>
-            { timefield => 0, quicksearch => 1, field => 'nt_zone_log.zone' },
+        zone        => { timefield => 0, quicksearch => 1, field => 'nt_zone_log.zone' },
         description => {
             timefield   => 0,
             quicksearch => 0,
             field       => 'nt_zone_log.description'
         },
-        ttl =>
-            { timefield => 0, quicksearch => 0, field => 'nt_zone_log.ttl' },
-        group_name =>
-            { timefield => 0, quicksearch => 0, field => 'nt_group.name' },
+        ttl        => { timefield => 0, quicksearch => 0, field => 'nt_zone_log.ttl' },
+        group_name => { timefield => 0, quicksearch => 0, field => 'nt_group.name' },
     );
 
     my $conditions = $self->format_search_conditions( $data, \%field_map );
-    my $sortby = $self->format_sort_conditions( $data, \%field_map,
-        "nt_zone_log.timestamp DESC" );
+    my $sortby = $self->format_sort_conditions( $data, \%field_map, "nt_zone_log.timestamp DESC" );
 
     my $r_data = { error_code => 200, error_msg => 'OK', log => [] };
 
     my @group_list;
     if ( $data->{include_subgroups} ) {
-        @group_list = (
-            $data->{nt_group_id},
-            @{ $self->get_subgroup_ids( $data->{nt_group_id} ) }
-        );
+        @group_list =
+            ( $data->{nt_group_id}, @{ $self->get_subgroup_ids( $data->{nt_group_id} ) } );
     }
     else {
         @group_list = ( $data->{nt_group_id} );
@@ -287,8 +278,7 @@ sub get_group_zones_log {
         $groups{ $row->{nt_group_id} } = 1;
     }
 
-    $r_data->{group_map}
-        = $self->get_group_map( $data->{nt_group_id}, [ keys %groups ] );
+    $r_data->{group_map} = $self->get_group_map( $data->{nt_group_id}, [ keys %groups ] );
 
     return $r_data;
 }
@@ -297,7 +287,7 @@ sub get_group_zones {
     my ( $self, $data ) = @_;
 
     my %field_map = (
-        zone => { timefield => 0, quicksearch => 1, field => 'nt_zone.zone' },
+        zone       => { timefield => 0, quicksearch => 1, field => 'nt_zone.zone' },
         group_name => {
             timefield   => 0,
             quicksearch => 0,
@@ -310,8 +300,7 @@ sub get_group_zones {
         },
     );
 
-    $field_map{group_name}
-        = { timefield => 0, quicksearch => 0, field => 'nt_group.name' }
+    $field_map{group_name} = { timefield => 0, quicksearch => 0, field => 'nt_group.name' }
         if $data->{include_subgroups};
 
     my $conditions = $self->format_search_conditions( $data, \%field_map );
@@ -319,22 +308,20 @@ sub get_group_zones {
     #warn "conditions: ".Data::Dumper::Dumper($conditions);
     my @group_list = $data->{nt_group_id};
     if ( $data->{include_subgroups} ) {
-        push @group_list,
-            @{ $self->get_subgroup_ids( $data->{nt_group_id} ) };
+        push @group_list, @{ $self->get_subgroup_ids( $data->{nt_group_id} ) };
     }
 
     my $r_data = { 'error_code' => 200, 'error_msg' => 'OK', zones => [] };
 
     #count total number of zones inside the groups
-    my $sql
-        = "SELECT COUNT(*) AS count FROM nt_zone "
+    my $sql =
+          "SELECT COUNT(*) AS count FROM nt_zone "
         . " WHERE nt_zone.nt_group_id IN ("
         . join( ",", @group_list ) . ") "
         . " AND nt_zone.deleted='"
         . ( $data->{search_deleted} ? '1' : '0' ) . "' ";
 
-    $sql .= (
-        @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
+    $sql .= ( @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
 
     my $c = $self->exec_query($sql)
         or return $self->error_response( 508, $self->{dbh}->errstr );
@@ -343,7 +330,7 @@ sub get_group_zones {
     my %delegates;
 
     # get zones that are 'pseudo' delegates: some of their records are delegated.
-        $sql = "SELECT nt_zone.nt_zone_id,
+    $sql = "SELECT nt_zone.nt_zone_id,
                              COUNT(*) AS delegated_records,
                              MIN(nt_delegate.delegated_by_id) AS delegated_by_id,
                              MIN(nt_delegate.delegated_by_name) AS delegated_by_name,
@@ -352,8 +339,8 @@ sub get_group_zones {
          INNER JOIN nt_zone_record ON nt_delegate.nt_object_id=nt_zone_record.nt_zone_record_id
          INNER JOIN nt_zone ON nt_zone.nt_zone_id=nt_zone_record.nt_zone_id
              WHERE nt_delegate.nt_group_id=$data->{nt_group_id} AND nt_delegate.nt_object_type='ZONERECORD'";
-        $sql .= (@$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '');
-        $sql .= " GROUP BY nt_zone.nt_zone_id";
+    $sql .= ( @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
+    $sql .= " GROUP BY nt_zone.nt_zone_id";
 
     my $delegs = $self->exec_query($sql)
         or return $self->error_response( 505, $self->{dbh}->errstr );
@@ -374,8 +361,7 @@ sub get_group_zones {
          FROM  nt_delegate as d
          INNER JOIN nt_zone ON nt_zone.nt_zone_id=d.nt_object_id
          WHERE d.nt_group_id=$data->{nt_group_id} AND d.nt_object_type='ZONE'";
-    $sql .= (
-        @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
+    $sql .= ( @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
 
     $delegs = $self->exec_query($sql)
         or return $self->error_response( 505, $self->{dbh}->errstr );
@@ -394,22 +380,21 @@ sub get_group_zones {
     if ( $r_data->{total} > 10000 ) {
         $sortby = $self->format_sort_conditions( $data, \%field_map, "" );
 
-# if > than 10,000 zones, don't explicity ORDER BY -- mysql takes too long. --ai
+        # if > than 10,000 zones, don't explicity ORDER BY -- mysql takes too long. --ai
     }
     else {
 
         # get the name of the group
         $sql = "SELECT name from nt_group where nt_group_id=?";
-        my $g = $self->exec_query( $sql, $data->{nt_group_id} );
+        my $g          = $self->exec_query( $sql, $data->{nt_group_id} );
         my $group_name = $g->[0]{name};
 
         if ( $group_name =~ /reverse/ ) {
-            $sortby = $self->format_sort_conditions( $data, \%field_map,
-                "cast(nt_zone.zone as signed)" );
+            $sortby =
+                $self->format_sort_conditions( $data, \%field_map, "cast(nt_zone.zone as signed)" );
         }
         else {
-            $sortby = $self->format_sort_conditions( $data, \%field_map,
-                "nt_zone.zone" );
+            $sortby = $self->format_sort_conditions( $data, \%field_map, "nt_zone.zone" );
         }
     }
 
@@ -457,8 +442,7 @@ sub get_group_zones {
         $groups{ $row->{nt_group_id} } = 1;
     }
 
-    $r_data->{group_map}
-        = $self->get_group_map( $data->{nt_group_id}, [ keys %groups ] );
+    $r_data->{group_map} = $self->get_group_map( $data->{nt_group_id}, [ keys %groups ] );
 
     return $r_data;
 }
@@ -512,16 +496,14 @@ sub get_zone_records {
     my $sql;
     my $del = $self->get_param_meta( "nt_zone_id", "delegate" );
     if ( $del && $del->{pseudo} ) {
-        $sql
-            = "SELECT COUNT(*) AS count
+        $sql = "SELECT COUNT(*) AS count
  FROM nt_zone_record
    LEFT JOIN nt_delegate ON (nt_delegate.nt_group_id=$group_id AND nt_delegate.nt_object_id=nt_zone_record.nt_zone_record_id AND nt_delegate.nt_object_type='ZONERECORD' )
    LEFT JOIN resource_record_type rrt ON nt_zone_record.type_id=rrt.id
      WHERE nt_zone_record.nt_zone_id = $data->{nt_zone_id}
        AND nt_zone_record.deleted=0
        AND nt_delegate.deleted=0 "
-            . (
-            @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
+            . ( @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
     }
     else {
         $sql = "SELECT COUNT(*) AS count
@@ -529,8 +511,7 @@ sub get_zone_records {
         LEFT JOIN resource_record_type rrt ON nt_zone_record.type_id=rrt.id
           WHERE nt_zone_record.deleted=0
             AND nt_zone_record.nt_zone_id = $data->{nt_zone_id}"
-            . (
-            @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
+            . ( @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
     }
     my $c = $self->exec_query($sql);
     $r_data->{total} = $c->[0]{count};
@@ -549,7 +530,7 @@ sub get_zone_records {
 
         # get the name of the zone
         $sql = "SELECT zone from nt_zone where nt_zone_id=?";
-        my $znames = $self->exec_query( $sql, $data->{nt_zone_id} );
+        my $znames    = $self->exec_query( $sql, $data->{nt_zone_id} );
         my $zone_name = $znames->[0]{zone};
 
         if ( $zone_name =~ /in-addr.arpa/ ) {
@@ -559,8 +540,7 @@ sub get_zone_records {
                 "cast(nt_zone_record.name as signed)" );
         }
         else {
-            $sortby = $self->format_sort_conditions( $data, \%field_map,
-                "nt_zone_record.name" );
+            $sortby = $self->format_sort_conditions( $data, \%field_map, "nt_zone_record.name" );
         }
     }
     my $join;
@@ -597,9 +577,11 @@ sub get_zone_records {
         };
 
     foreach my $row (@$zrecords) {
-        foreach ( qw/ delegated_by_id delegated_by_name delegate_read
+        foreach (
+            qw/ delegated_by_id delegated_by_name delegate_read
             delegate_write delegate_move delegate_delete delegate_delegate
-            delegate_full / )
+            delegate_full /
+            )
         {
             delete $row->{$_} if $row->{$_} eq '';
         }
@@ -615,18 +597,17 @@ sub new_zone {
     my %error = ( 'error_code' => 200, 'error_msg' => 'OK' );
 
     my @columns = qw/ mailaddr description refresh retry expire minimum
-                      ttl serial nt_group_id zone/;
+        ttl serial nt_group_id zone/;
 
     if ( $data->{serial} eq '' ) {
         $data->{serial} = $self->bump_serial('new');
     }
 
-    my $sql
-        = "INSERT INTO nt_zone("
+    my $sql =
+          "INSERT INTO nt_zone("
         . join( ',', @columns )
         . ") VALUES("
-        . join( ',', map( $self->{dbh}->quote( $data->{$_} ), @columns ) )
-        . ")";
+        . join( ',', map( $self->{dbh}->quote( $data->{$_} ), @columns ) ) . ")";
 
     my $insertid = $self->exec_query($sql)
         or return {
@@ -653,19 +634,17 @@ sub edit_zone {
 
     if ( my $del = $self->get_param_meta( "nt_zone_id", "delegate" ) ) {
         delete $data->{nt_group_id};
-        return $self->error_response( 404,
-            'Not allowed to undelete delegated zones.' )
+        return $self->error_response( 404, 'Not allowed to undelete delegated zones.' )
             if $data->{deleted} eq '0';
     }
     if ( exists $data->{deleted} && $data->{deleted} != '0' ) {
         delete $data->{deleted};
     }
-    my @columns = grep { exists $data->{$_} }
-            qw/ nt_group_id mailaddr description refresh
-                retry expire minimum ttl serial deleted /;
+    my @columns = grep { exists $data->{$_} } qw/ nt_group_id mailaddr description refresh
+        retry expire minimum ttl serial deleted /;
 
     return $self->error_response(200)
-        if ( ! @columns && ! exists $data->{nameservers} );
+        if ( !@columns && !exists $data->{nameservers} );
 
     my $prev_data = $self->find_zone( $data->{nt_zone_id} );
     if ( $prev_data->{deleted} && $data->{deleted} eq '0' ) {
@@ -676,32 +655,33 @@ sub edit_zone {
     my $log_action = 'modified';
     if ( $prev_data->{deleted} ) {
         $log_action = 'recovered' if $data->{deleted} eq '0';
-    };
+    }
 
     $self->edit_zone_nameservers( $data, $prev_data );
 
-    if ( ! defined $data->{serial} ) {   # requests won't normally include it
+    if ( !defined $data->{serial} ) {    # requests won't normally include it
         $data->{serial} = $prev_data->{serial};
         push @columns, 'serial';
-    };
+    }
     $data->{serial} = $self->bump_serial( $data->{nt_zone_id}, $data->{serial} );
 
     my $dbh = $self->{dbh};
-    my $sql = "UPDATE nt_zone SET " . join( ',',
-        map( "$_=" . $dbh->quote( $data->{$_} ), @columns ),
-    ) . " WHERE nt_zone_id = ?";
+    my $sql =
+          "UPDATE nt_zone SET "
+        . join( ',', map( "$_=" . $dbh->quote( $data->{$_} ), @columns ), )
+        . " WHERE nt_zone_id = ?";
 
-    if ( ! $data->{nt_group_id} ) {
+    if ( !$data->{nt_group_id} ) {
         $data->{nt_group_id} = $prev_data->{nt_group_id};
-    };
+    }
 
     my %error = ( 'error_code' => 200, 'error_msg' => 'OK' );
 
-    if ($self->exec_query( $sql, $data->{nt_zone_id} )) {
+    if ( $self->exec_query( $sql, $data->{nt_zone_id} ) ) {
         $error{nt_zone_id} = $data->{nt_zone_id};
     }
     else {
-        return { error_code => 600, error_msg => $self->{dbh}->errstr }
+        return { error_code => 600, error_msg => $self->{dbh}->errstr };
     }
 
     $self->log_zone( $data, $log_action, $prev_data );
@@ -710,9 +690,9 @@ sub edit_zone {
 }
 
 sub edit_zone_nameservers {
-    my ($self, $data, $prev_data) = @_;
+    my ( $self, $data, $prev_data ) = @_;
 
-    return if ! exists $data->{nameservers};
+    return if !exists $data->{nameservers};
 
     my %datans = map { $_ => 1 } split /,/, $data->{nameservers};
 
@@ -743,37 +723,37 @@ sub edit_zone_nameservers {
     %newns = map { $_ => 1 } grep { $newns{$_} } keys %newns;
 
     my @newns = keys %newns;
-    if ( join(',', sort @oldns ) ne join(',', sort @newns ) ) {
+    if ( join( ',', sort @oldns ) ne join( ',', sort @newns ) ) {
         $self->set_zone_nameservers( $data->{nt_zone_id}, \@newns );
-        $data->{nameservers} = join(',', sort @newns );
-    };
+        $data->{nameservers} = join( ',', sort @newns );
+    }
 }
 
 sub log_zone {
     my ( $self, $data, $action, $prev_data ) = @_;
 
     my @columns = qw/ nt_group_id nt_zone_id nt_user_id action timestamp zone
-                         mailaddr description refresh retry expire ttl minimum
-                         serial /;
+        mailaddr description refresh retry expire ttl minimum
+        serial /;
 
     my $user = $data->{user};
     $data->{nt_user_id} = $user->{nt_user_id};
     $data->{action}     = $action;
     $data->{timestamp}  = time();
 
-    if ( $prev_data ) {
-        if ( ! $data->{zone} && $prev_data->{zone} ) {
-            $data->{zone} = $prev_data->{zone}
-        };
+    if ($prev_data) {
+        if ( !$data->{zone} && $prev_data->{zone} ) {
+            $data->{zone} = $prev_data->{zone};
+        }
         foreach ( keys %$prev_data ) {
-            next if $data->{$_};    # prefer new data
-            $data->{$_} = $prev_data->{$_};  # fall back to old
+            next if $data->{$_};               # prefer new data
+            $data->{$_} = $prev_data->{$_};    # fall back to old
         }
     }
 
     my $dbh = $self->{dbh};
-    my $sql
-        = "INSERT INTO nt_zone_log("
+    my $sql =
+          "INSERT INTO nt_zone_log("
         . join( ',', @columns )
         . ") VALUES("
         . join( ',', map( $dbh->quote( $data->{$_} ), @columns ) ) . ")";
@@ -781,7 +761,7 @@ sub log_zone {
     my $insertid = $self->exec_query($sql) or warn $dbh->errstr;
 
     my @g_columns = qw/ nt_user_id timestamp action object object_id
-                        log_entry_id title description /;
+        log_entry_id title description /;
 
     $data->{object}       = 'zone';
     $data->{log_entry_id} = $insertid;
@@ -798,15 +778,14 @@ sub log_zone {
         $data->{description} = 'creation';
     }
     elsif ( $action eq 'moved' ) {
-        $data->{description}
-            = "moved from $data->{old_group_name} to $data->{group_name}";
+        $data->{description} = "moved from $data->{old_group_name} to $data->{group_name}";
     }
     elsif ( $action eq 'recovered' ) {
         $data->{description} = "recovered zone";
     }
 
-    $sql
-        = "INSERT INTO nt_user_global_log("
+    $sql =
+          "INSERT INTO nt_user_global_log("
         . join( ',', @g_columns )
         . ") VALUES("
         . join( ',', map( $dbh->quote( $data->{$_} ), @g_columns ) ) . ")";
@@ -818,17 +797,14 @@ sub delete_zones {
 
     my %error = ( 'error_code' => 200, 'error_msg' => 'OK' );
 
-    my %groups = map { $_, 1 } (
-        $data->{user}{nt_group_id},
-        @{ $self->get_subgroup_ids( $data->{user}{nt_group_id} ) }
-    );
+    my %groups = map { $_, 1 }
+        ( $data->{user}{nt_group_id}, @{ $self->get_subgroup_ids( $data->{user}{nt_group_id} ) } );
 
-    my $sql = "SELECT * FROM nt_zone WHERE nt_zone.nt_zone_id IN("
-        . $data->{zone_list} . ')';
+    my $sql = "SELECT * FROM nt_zone WHERE nt_zone.nt_zone_id IN(" . $data->{zone_list} . ')';
     my $zones_data = $self->exec_query($sql);
 
-    my $record_obj = NicToolServer::Zone::Record->new( $self->{Apache},
-        $self->{client}, $self->{dbh} );
+    my $record_obj =
+        NicToolServer::Zone::Record->new( $self->{Apache}, $self->{client}, $self->{dbh} );
 
     foreach my $zone_data (@$zones_data) {
         next if !( $groups{ $zone_data->{nt_group_id} } );
@@ -852,13 +828,10 @@ sub move_zones {
 
     my %rv = ( 'error_code' => 200, 'error_msg' => 'OK' );
 
-    my %groups = map { $_, 1 } (
-        $data->{user}{nt_group_id},
-        @{ $self->get_subgroup_ids( $data->{user}{nt_group_id} ) }
-    );
+    my %groups = map { $_, 1 }
+        ( $data->{user}{nt_group_id}, @{ $self->get_subgroup_ids( $data->{user}{nt_group_id} ) } );
 
-    my $new_group
-        = $self->NicToolServer::Group::find_group( $data->{nt_group_id} );
+    my $new_group = $self->NicToolServer::Group::find_group( $data->{nt_group_id} );
 
     my $sql = "SELECT nt_zone.*, nt_group.name as old_group_name
         FROM nt_zone, nt_group
@@ -876,11 +849,7 @@ sub move_zones {
 
         $sql = "UPDATE nt_zone SET nt_group_id = ?" . " WHERE nt_zone_id = ?";
 
-        if ($self->exec_query(
-                $sql, [ $data->{nt_group_id}, $row->{nt_zone_id}, ]
-            )
-            )
-        {
+        if ( $self->exec_query( $sql, [ $data->{nt_group_id}, $row->{nt_zone_id}, ] ) ) {
             my %zone = ( %$row, user => $data->{user} );
             $zone{nt_group_id} = $data->{nt_group_id};
             $zone{group_name}  = $new_group->{name};
@@ -897,7 +866,7 @@ sub get_zone_list {
 
     my %rv = ( 'error_code' => 200, 'error_msg' => 'OK' );
 
-#my %groups = map { $_, 1 } ($data->{user}{nt_group_id}, @{ $self->get_subgroup_ids($data->{user}{nt_group_id}) });
+    #my %groups = map { $_, 1 } ($data->{user}{nt_group_id}, @{ $self->get_subgroup_ids($data->{user}{nt_group_id}) });
 
     my $sql = "SELECT * FROM nt_zone WHERE deleted=0
         AND nt_zone_id IN(" . $data->{zone_list} . ") ORDER BY zone";
@@ -927,11 +896,7 @@ sub get_zone_list {
 
     foreach my $row (@$ntzones) {
 
-        if (my $del = $self->get_param_meta(
-                "zone_list:$row->{nt_zone_id}", 'delegate'
-            )
-            )
-        {
+        if ( my $del = $self->get_param_meta( "zone_list:$row->{nt_zone_id}", 'delegate' ) ) {
             foreach my $key ( keys %delegatemapping ) {
                 $row->{ $delegatemapping{$key} } = $del->{$key};
 
@@ -947,8 +912,7 @@ sub get_zone_list {
 sub find_zone {
     my ( $self, $nt_zone_id ) = @_;
 
-    my $zones = $self->exec_query(
-        "SELECT * FROM nt_zone WHERE nt_zone_id = ?", $nt_zone_id );
+    my $zones = $self->exec_query( "SELECT * FROM nt_zone WHERE nt_zone_id = ?", $nt_zone_id );
     return $zones->[0] || {};
 }
 
@@ -964,11 +928,10 @@ sub add_zone_nameserver {
 sub set_zone_nameservers {
     my ( $self, $zone_id, $nsids ) = @_;
 
-    $self->exec_query( "DELETE FROM nt_zone_nameserver WHERE nt_zone_id=?",
-        $zone_id );
+    $self->exec_query( "DELETE FROM nt_zone_nameserver WHERE nt_zone_id=?", $zone_id );
 
     foreach my $nsid (@$nsids) {
-        $self->add_zone_nameserver($zone_id, $nsid);
+        $self->add_zone_nameserver( $zone_id, $nsid );
     }
 }
 
@@ -979,7 +942,7 @@ sub zone_exists {
         AND nt_zone_id != ? AND zone = ?";
 
     my $zones = $self->exec_query( $sql, [ $zid, $zone ] );
-    my $href = $zones->[0];
+    my $href  = $zones->[0];
 
     return ref $href ? $href : 0;
 }
@@ -989,9 +952,9 @@ sub valid_mailaddr {
 
     my $has_error++;
     if ( $mailaddr =~ /@/ ) {
-        $self->error($field, "The mailaddr format replaces the @ with a . (dot).");
+        $self->error( $field, "The mailaddr format replaces the @ with a . (dot)." );
         $has_error++;
-    };
+    }
 
     return $has_error == 0 ? 1 : 0;
 }
@@ -999,33 +962,37 @@ sub valid_mailaddr {
 sub valid_label {
     my ( $self, $field, $name ) = @_;
 
-    $self->error($field, "missing label") if ! defined $name;
+    $self->error( $field, "missing label" ) if !defined $name;
 
     my $has_error = 0;
     if ( length $name < 1 ) {
-        $self->error($field, "A domain name must have at least 1 octets (character): RFC 2181");
+        $self->error( $field, "A domain name must have at least 1 octets (character): RFC 2181" );
         $has_error++;
-    };
+    }
 
     if ( length $name > 255 ) {
-        $self->error($field, "A full domain name is limited to 255 octets (characters): RFC 2181");
+        $self->error( $field,
+            "A full domain name is limited to 255 octets (characters): RFC 2181" );
         $has_error++;
-    };
+    }
 
     my $label_explain = "(the bits of a name between the dots)";
-    foreach my $label ( split(/\./, $name) ) {
+    foreach my $label ( split( /\./, $name ) ) {
 
         # domain labels can be any binary characters: RFC 2181
         if ( length $label > 63 ) {
-            $self->error($field, "Max length of a $field label $label_explain is 63 octets (characters): RFC 2181");
+            $self->error( $field,
+                "Max length of a $field label $label_explain is 63 octets (characters): RFC 2181" );
             $has_error++;
-        };
+        }
 
         if ( length $label < 1 ) {
-            $self->error($field, "Minimum length of a $field label $label_explain is 1 octet (character): RFC 2181");
+            $self->error( $field,
+                "Minimum length of a $field label $label_explain is 1 octet (character): RFC 2181"
+            );
             $has_error++;
-        };
-    };
+        }
+    }
 
     return $has_error == 0 ? 1 : 0;
 }
@@ -1034,13 +1001,13 @@ sub valid_label {
 sub bump_serial {
     my ( $self, $nt_zone_id, $current_serial ) = @_;
 
-    return ($self->serial_date_str .'00') if $nt_zone_id eq 'new';
+    return ( $self->serial_date_str . '00' ) if $nt_zone_id eq 'new';
 
-    if ( ! defined $current_serial || $current_serial eq '' ) {
-        my $serials = $self->exec_query(
-            "SELECT serial FROM nt_zone WHERE nt_zone_id=?", $nt_zone_id );
+    if ( !defined $current_serial || $current_serial eq '' ) {
+        my $serials =
+            $self->exec_query( "SELECT serial FROM nt_zone WHERE nt_zone_id=?", $nt_zone_id );
         $current_serial = $serials->[0]{serial};
-    };
+    }
     return $self->serial_increment($current_serial);
 }
 
@@ -1082,23 +1049,23 @@ sub serial_increment {
             $month += 1;
             if ( $month > 99 ) {
                 $month = '01';
-                $year = sprintf( "%04d", $year + 1 );
-            };
+                $year  = sprintf( "%04d", $year + 1 );
+            }
             $month = sprintf( "%02d", $month );
-        };
+        }
         $day = sprintf( "%02d", $day );
-    };
+    }
     $digit = sprintf( "%02d", $digit );
 
     return $year . $month . $day . $digit;
 }
 
 sub serial_date_str {
-    my $self = shift;
+    my $self    = shift;
     my @datestr = localtime(time);
-    my $year  = $datestr[5] + 1900;
-    my $month = sprintf( "%02d", $datestr[4] + 1 );
-    my $day   = sprintf( "%02d", $datestr[3] );
+    my $year    = $datestr[5] + 1900;
+    my $month   = sprintf( "%02d", $datestr[4] + 1 );
+    my $day     = sprintf( "%02d", $datestr[3] );
     return $year . $month . $day;
 }
 
