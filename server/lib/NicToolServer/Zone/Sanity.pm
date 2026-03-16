@@ -53,12 +53,12 @@ sub new_zone {
         foreach my $orig_zone (@zonestocheck) {
             if ( my $zref = $self->zone_exists( $orig_zone, 0 ) ) {
 
-#use new permission-system to check for 'read' access to the zone...XXX 'read' access correct?
+#use permission-system to check for 'read' access to the zone...XXX 'read' access correct?
                 my @error = $self->check_permission( 'nt_zone_id', $zref->{nt_zone_id}, 'read', 'ZONE' );
                 if ( defined $error[0] ) {
                     $self->error( 'zone', "Sub-domain creation not allowed: Access to zone $orig_zone denied: $error[1]");
                 }
-                if ($self->record_exists_within_zone( $zref->{nt_zone_id}, $z )) {
+                if ($self->record_exists_within_zone( $zref->{nt_zone_id}, $z, $orig_zone )) {
                     $self->error( 'zone', "A record within $orig_zone named $z already exists. Delete or rename the record and then you can add $z as a sub-domain."
                     );
                 }
@@ -176,17 +176,45 @@ sub get_zone_records {
 }
 
 sub record_exists_within_zone {
-    my ( $self, $zid, $name ) = @_;
+    my ( $self, $zid, $name, $zone_name ) = @_;
 
-    my $base_name = $name;
-    $base_name =~ s/\..*$//;
-    $name .= '.' if $name !~ /\.$/;
-    my $sql = "SELECT nt_zone_record_id, nt_zone_id FROM nt_zone_record
+    $name = lc $name;
+    $name =~ s/\.$//;
+
+    $zone_name ||= '';
+    $zone_name = lc $zone_name;
+    $zone_name =~ s/\.$//;
+
+    my $relative_name = $name;
+    if ($zone_name) {
+        my @name_labels = split /\./, $name;
+        my @zone_labels = split /\./, $zone_name;
+
+        my $matches_suffix = @name_labels > @zone_labels;
+        if ($matches_suffix) {
+            for (my $i = 1; $i <= @zone_labels; $i++) {
+                if ($name_labels[-$i] ne $zone_labels[-$i]) {
+                    $matches_suffix = 0;
+                    last;
+                }
+            }
+        }
+
+        if ($matches_suffix) {
+            my $relative_len = @name_labels - @zone_labels;
+            $relative_name = join('.', @name_labels[0 .. $relative_len - 1]);
+        }
+    }
+
+    my $relative_name_dot = $relative_name . '.';
+
+    my $sql = "SELECT nt_zone_record_id, nt_zone_id, name FROM nt_zone_record
       WHERE deleted=0
         AND nt_zone_id = ?
-        AND ( name = ? OR name = ? )
+        AND ( BINARY name = BINARY ? OR BINARY name = BINARY ? )
         AND type_id NOT IN (2)";  # ignore NS records, they're delegations
-    my $zrs = $self->exec_query( $sql, [ $zid, $name, $base_name ] );
+    my $zrs = $self->exec_query( $sql, [ $zid, $relative_name, $relative_name_dot ] );
+
     return ref $zrs->[0] ? 1 : 0;
 }
 
