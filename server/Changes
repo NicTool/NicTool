@@ -6,6 +6,7 @@ Revision history for NicToolServer
     * zr: treat new_zone_record requests with id as updates, #313
         * API: new_zone_record now accepts optional nt_zone_record_id
         * tests: add regressions in t/12_records.t to verify
+  * permissions: require delete permission to undelete zones/records, #46
     * zone: make delegated-zone queries compatible with sql_mode=ONLY_FULL_GROUP_BY.
     * zone/record: fix CAA iodef validation
     * zr: don't require TTL, defaults to 0, exports as empty #319
