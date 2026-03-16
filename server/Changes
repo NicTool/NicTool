@@ -11,6 +11,7 @@ Revision history for NicToolServer
     * ci: replace dead Travis CI with Github Actions workflow
     * session: provide a better fallback for mod_unique_id, #314
     * import: improve resume with better duplicate detection, #316
+    * sql: add schema object checks to better detect SQL version
 
 2.35    2025.10.02
 
