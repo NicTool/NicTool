@@ -106,6 +106,7 @@ sub all_the_tests {
     $nsid2 = $res->get('nt_nameserver_id');
 
     test_new_zone();
+    test_subdomain_conflicts();
     test_get_zone();
     test_get_zone_list();
     test_get_group_zones();
@@ -417,6 +418,90 @@ sub test_get_zone {
     }
     ok($saw1);
     ok($saw2);
+}
+
+sub test_subdomain_conflicts {
+
+    my $token = 'issue309' . time() . $$ . int(rand(1000));
+    my $parent_zone_name = "$token.parent.test.com";
+
+    my %parent_zone_data = (
+        zone        => $parent_zone_name,
+        serial      => 0,
+        ttl         => 86400,
+        nameservers => "$nsid1,$nsid2",
+        description => "issue309 temporary parent zone",
+        mailaddr    => "hostmaster.$parent_zone_name",
+        refresh     => 10,
+        retry       => 20,
+        expire      => 30,
+        minimum     => 40,
+    );
+
+    my $res = $group1->new_zone(%parent_zone_data);
+    noerrok($res) or die "Couldn't create temporary parent zone $parent_zone_name";
+    my $parent_zone_id = $res->get('nt_zone_id');
+
+    $res = $user->get_zone( nt_zone_id => $parent_zone_id );
+    noerrok($res) or die "Couldn't load temporary parent zone for sub-domain tests";
+
+    my $subzone = "$token.dev.$parent_zone_name";
+
+    # A first-label record in the parent zone should not block a deeper sub-domain.
+    $res = $res->new_zone_record(
+        name    => $token,
+        type    => 'A',
+        address => '192.0.2.30',
+        ttl     => 300,
+    );
+    noerrok($res) or die "Couldn't create test record $token";
+    my $first_label_id = $res->get('nt_zone_record_id');
+
+    my %subzone_data = (
+        zone        => $subzone,
+        serial      => 0,
+        ttl         => 86400,
+        nameservers => "$nsid1,$nsid2",
+        description => "issue309 allow deeper sub-domain",
+        mailaddr    => "hostmaster.$subzone",
+        refresh     => 10,
+        retry       => 20,
+        expire      => 30,
+        minimum     => 40,
+    );
+
+    $res = $group1->new_zone(%subzone_data);
+    noerrok($res) or die "Creating deeper sub-domain was incorrectly blocked";
+    my $subzone_id = $res->get('nt_zone_id');
+
+    $res = $user->delete_zones( zone_list => $subzone_id );
+    noerrok($res) or die "Couldn't delete test sub-domain zone";
+
+    $res = $user->delete_zone_record( nt_zone_record_id => $first_label_id );
+    noerrok($res) or die "Couldn't delete first-label test record";
+
+    # A matching relative record in the parent zone must still block creation.
+    $res = $user->get_zone( nt_zone_id => $parent_zone_id );
+    noerrok($res) or die "Couldn't reload parent zone for conflict test";
+
+    $res = $res->new_zone_record(
+        name    => "$token.dev",
+        type    => 'A',
+        address => '192.0.2.31',
+        ttl     => 300,
+    );
+    noerrok($res) or die "Couldn't create blocking test record $token.dev";
+    my $relative_label_id = $res->get('nt_zone_record_id');
+
+    $res = $group1->new_zone(%subzone_data);
+    noerrok( $res, 300 );
+    like( $res->get('error_msg'), qr/already exists/ );
+
+    $res = $user->delete_zone_record( nt_zone_record_id => $relative_label_id );
+    noerrok($res) or die "Couldn't delete relative-label test record";
+
+    $res = $user->delete_zones( zone_list => $parent_zone_id );
+    noerrok($res) or die "Couldn't delete temporary parent zone";
 }
 
 sub test_get_zone_list {
