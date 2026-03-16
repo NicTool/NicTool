@@ -35,3 +35,8 @@ $user = new NicTool(
 
 $user->login( username => Config('username'), password => 'WRONG' );
 ok( $user->result->is_error, "login fail" );
+is( $user->result->error_msg, 'Invalid username and/or password.', 'wrong password returns generic auth error' );
+
+$user->login( username => 'definitely-not-a-user', password => 'WRONG' );
+ok( $user->result->is_error, "login fail for unknown user" );
+is( $user->result->error_msg, 'Invalid username and/or password.', 'unknown user returns same generic auth error' );
