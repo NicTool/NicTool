@@ -922,7 +922,7 @@ sub display_edit_record {
  <tr id=submit class="dark_grey_bg">
   <td colspan="2" class="center">],
         $modifyperm ? $q->submit( $edit eq 'edit' ? 'Save' : 'Create' )
-        . $q->submit('Cancel')
+      . $q->submit( -name => 'Cancel', -value => 'Cancel', -formnovalidate => 'formnovalidate' )
         : '&nbsp;', qq[
   </td>
  </tr>
