@@ -1,5 +1,6 @@
 
   * permit empty form to cancel
+  * only modify permission when submitted
 
 2.35    2025.10.02
 

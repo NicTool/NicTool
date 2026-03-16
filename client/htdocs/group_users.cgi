@@ -102,12 +102,12 @@ sub display_save {
         $data{$_} = $q->param($_);
     }
 
-    if ( $q->param('group_defaults') eq '0' ) {
+    if ( defined $q->param('group_defaults') && $q->param('group_defaults') eq '0' ) {
         foreach (@$fields) {
             $data{$_} = $q->param($_) ? 1 : 0;
         }
     }
-    else {
+    elsif ( defined $q->param('group_defaults') ) {
         $data{'inherit_group_permissions'} = 1;
     }
     my $error = $e_or_s eq 'edit' 

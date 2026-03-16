@@ -73,13 +73,13 @@ sub display {
             push @edit_fields, qw/ password password2 current_password /;
         }
 
-        #warn "group_defaults is ".$q->param('group_defaults');
-        if ( $q->param('group_defaults') eq '0' ) {
+        # Only modify permission mode when the permissions control was submitted.
+        if ( defined $q->param('group_defaults') && $q->param('group_defaults') eq '0' ) {
             foreach (@fields) {
                 $data{$_} = $q->param($_) ? 1 : 0;
             }
         }
-        else {
+        elsif ( defined $q->param('group_defaults') ) {
             $data{'inherit_group_permissions'} = 1;
         }
 
