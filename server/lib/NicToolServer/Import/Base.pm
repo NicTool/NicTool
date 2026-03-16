@@ -10,6 +10,7 @@ use Cwd;
 use Data::Dumper;
 use English;
 use File::Copy;
+use Net::IP;
 use Params::Validate qw/ :all /;
 
 sub new {
@@ -268,17 +269,18 @@ sub nt_get_zone_records {
         }
     }
 
-    if ( defined $p{name} ) {
-        if ( $r->{store}{records}[1]{store} ) {
-            warn "yikes, more than one record matched?!\n";
-        }
-        return $r->{store}{records}[0]{store};
-    }
-
     my @records;
     foreach ( @{ $r->{store}{records} } ) {
         push @records, $_->{store};
     }
+
+    if ( defined $p{name} ) {
+        if ( scalar @records > 1 ) {
+            return \@records;
+        }
+        return $records[0];
+    }
+
     return \@records;
 }
 
@@ -330,14 +332,43 @@ sub record_exists {
         zone_id => $record->{nt_zone_id},
         name    => $record->{name},
         type    => $record->{type},
-        address => $record->{address},
     );
-    if ( scalar $recs ) {
-        print "record exists\n";
-        #print Dumper($recs);
-        return 1;
-    };
+
+    return 0 if !$recs;
+
+    my @records = ref($recs) eq 'ARRAY' ? @$recs : ($recs);
+    return 0 if !scalar @records;
+
+    my $incoming = $self->_normalized_record_address($record->{type}, $record->{address});
+    for my $rec (@records) {
+        my $existing = $self->_normalized_record_address($record->{type}, $rec->{address});
+        if ( $existing eq $incoming ) {
+            print "record exists\n";
+            return 1;
+        }
+    }
+
     return 0;
+}
+
+sub _normalized_record_address {
+    my ($self, $type, $address) = @_;
+
+    $address //= '';
+
+    if ( $type eq 'AAAA' ) {
+        my $expanded = Net::IP::ip_expand_address($address, 6);
+        return defined $expanded ? lc $expanded : lc $address;
+    }
+
+    # Hostname-like targets can differ by case/trailing dot only.
+    if ( $type =~ /^(?:CNAME|NS|PTR)$/ ) {
+        $address = lc $address;
+        $address =~ s/\.$//;
+        return $address;
+    }
+
+    return $address;
 }
 
 sub group_id {

@@ -3,14 +3,14 @@ Revision history for NicToolServer
 2.36    202_.__.__
 
 * Fixes
-    * zone/record: fix #310 by treating new_zone_record requests with
-      nt_zone_record_id as updates (delegate to edit_zone_record)
+    * zr: treat new_zone_record requests with id as updates, #313
         * API: new_zone_record now accepts optional nt_zone_record_id
         * tests: add regressions in t/12_records.t to verify
     * zone: make delegated-zone queries compatible with sql_mode=ONLY_FULL_GROUP_BY.
     * zone/record: fix CAA iodef validation
     * ci: replace dead Travis CI with Github Actions workflow
-    * session: provide a better fallback for mod_unique_id, fixes #308
+    * session: provide a better fallback for mod_unique_id, #314
+    * import: improve resume with better duplicate detection, #316
 
 2.35    2025.10.02
 

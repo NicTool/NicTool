@@ -38,7 +38,11 @@ noerrok($group1)
 
 $bind->{group_id} = $group1;
 
-$bind->import_records('t/fixtures/named.conf');
+eval { $bind->import_records('t/fixtures/named.conf'); 1 };
+ok( !$@, 'initial import succeeds' );
+
+eval { $bind->import_records('t/fixtures/named.conf'); 1 };
+ok( !$@, 'rerun import succeeds with existing records' );
 
 do_cleanup();
 
