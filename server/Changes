@@ -20,6 +20,7 @@ Revision history for NicToolServer
     * sql: add schema object checks to better detect SQL version, #317
     * sql: lowercase NSD in the nameserver table, #319
     * user: don't leak valid usernames, #325
+    * powerdns: updated coprocess backend, #328
 * Updates & Changes
     * perltidy, #324
 

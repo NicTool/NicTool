@@ -26,7 +26,7 @@ $main::nt_nameserver_id = 1;
 %main::seenrecid = ();
 chomp($line);
 
-unless ( $line eq "HELO\t1" ) {
+unless ( $line =~ /^HELO\t(\d+)$/ && $1 >= 1 ) {
     print "FAIL\n";
     print STDERR "Recevied '$line'\n";
 
@@ -35,8 +35,13 @@ unless ( $line eq "HELO\t1" ) {
 }
 print "OK\tNicTool Backend firing up\n";    # print our banner
 
-my $dsn = "DBI:mysql:database=nictool;host=127.0.0.1";
-my $dbh = DBI->connect( $dsn, 'nictool', 'lootcin205' )
+my $db_name = $ENV{NT_PDNS_DB_NAME} // 'nictool';
+my $db_host = $ENV{NT_PDNS_DB_HOST} // '127.0.0.1';
+my $db_user = $ENV{NT_PDNS_DB_USER} // 'nictool';
+my $db_pass = $ENV{NT_PDNS_DB_PASS} // 'lootcin!mysql';
+
+my $dsn = "DBI:mysql:database=$db_name;host=$db_host;mysql_ssl=1";
+my $dbh = DBI->connect( $dsn, $db_user, $db_pass )
     or die "LOG\tUnable to connect to database: $!\nFAIL\n";
 
 print "LOG\tPID $$\n" if $log;
@@ -74,10 +79,13 @@ while (<>) {
         elsif ($cache) {
             @res = @{ $cache->{response} };
         }
-        elsif ($qtype eq "A"
+        elsif ($qtype eq 'A'
+            || $qtype eq 'AAAA'
             || $qtype eq 'MX'
             || $qtype eq 'PTR'
-            || $qtype eq 'CNAME' )
+            || $qtype eq 'CNAME'
+            || $qtype eq 'TXT'
+            || $qtype eq 'SRV' )
         {
             @res = &get_records(@arr);
             $main::qcache{ $qname . ":" . $qtype } =
@@ -108,6 +116,8 @@ while (<>) {
             print join( "\t", @$_ ) . "\n";
         }
     }
+    elsif ( $type eq 'PING' ) {
+    }
 
     #print join("\t", @res) if @res;
     #	print STDERR "$$ End of data\n";
@@ -136,13 +146,14 @@ sub get_axfr {
     if ( $sth->execute ) {
         my @rows;
         while ( $t = $sth->fetchrow_hashref ) {
+            my $content = rr_content($t);
             push @result,
                 [
                 "DATA", $t->{name} =~ /\.$/
                 ? $t->{name}
                 : $t->{name} . "." . $t->{zone},
                 'IN', $t->{type}, $t->{ttl}, ( $use_zone_id ? $t->{'nt_zone_id'} : 1 ),
-                $t->{address}
+                $content
                 ];
             push @rows, $t;
         }
@@ -207,12 +218,12 @@ sub get_records {
         my @rows;
         while ( $t = $sth->fetchrow_hashref ) {
             print Dumper($t) if $warnsql;
-            $t->{address} =~ s/\.$//;
+            my $content = rr_content($t);
             push @result,
                 [
                 "DATA", $qname, $qclass, $t->{type}, $t->{ttl},
                 ( $use_zone_id ? $t->{'nt_zone_id'} : 1 ),
-                $t->{address}
+                $content
                 ];
             push @rows, $t;
             $main::seenrecid{ $t->{'nt_zone_record_id'} } = 1;
@@ -226,6 +237,27 @@ sub get_records {
 
     }
     return @result;
+}
+
+sub rr_content {
+    my ($rr) = @_;
+
+    my $address = defined $rr->{address} ? $rr->{address} : '';
+    $address =~ s/\.$//;
+
+    if ( $rr->{type} eq 'MX' ) {
+        my $pref = defined $rr->{weight} ? $rr->{weight} : 0;
+        return $pref . ' ' . $address;
+    }
+
+    if ( $rr->{type} eq 'SRV' ) {
+        my $priority = defined $rr->{priority} ? $rr->{priority} : 0;
+        my $weight   = defined $rr->{weight}   ? $rr->{weight}   : 0;
+        my $port     = defined $rr->{other}    ? $rr->{other}    : 0;
+        return join( ' ', $priority, $weight, $port, $address );
+    }
+
+    return $address;
 }
 
 sub get_ns {
@@ -299,7 +331,6 @@ LEFT JOIN nt_nameserver ns ON zns.`nt_nameserver_id`=ns.`nt_nameserver_id`
             $t->{retry},  $t->{expire},
             $t->{ttl}
             ];
-
     }
 
     return @result;
