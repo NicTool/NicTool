@@ -18,7 +18,7 @@ my $line        = <>;
 my $warnsql     = @ARGV;
 my $use_zone_id = 1;
 my $default_ttl = 20;
-my $log         = 0;
+my $log         = 1;
 %main::qcache           = ();
 $main::nt_nameserver_id = 1;
 
@@ -48,7 +48,7 @@ print "LOG\tPID $$\n" if $log;
 
 while (<>) {
 
-    #	print STDERR "$$ Received: $_";
+    # print STDERR "$$ Received: $_";
     chomp();
     my @arr = split(/\t/);
     my @res;
@@ -91,8 +91,19 @@ while (<>) {
             $main::qcache{ $qname . ":" . $qtype } =
                 +{ response => [@res], expire => $default_ttl + time };
         }
+        elsif ( $qtype eq 'ANY' ) {
+            # PDNS commonly asks ANY for lookups that were originally NS/A/etc.
+            # Include both explicit RR data and nameserver table data.
+            @res = ( &get_records(@arr), &get_ns(@arr) );
+            @res = _uniq_rows(@res);
+            $main::qcache{ $qname . ":" . $qtype } =
+                +{ response => [@res], expire => $default_ttl + time };
+        }
         elsif ( $qtype eq 'NS' ) {
-            @res = &get_ns(@arr);
+            # Return zone apex NS from nt_zone_nameserver and any explicit NS RRs.
+            # This helps modern PDNS clients that ask NS in multiple contexts.
+            @res = ( &get_ns(@arr), &get_records(@arr) );
+            @res = _uniq_rows(@res);
             $main::qcache{ $qname . ":" . $qtype } =
                 +{ response => [@res], expire => $default_ttl + time };
         }
@@ -129,31 +140,31 @@ sub get_axfr {
     my ( $type, $zoneid ) = @_;
     my $t = '';
 
-    my $sql = qq[
- SELECT z.nt_zone_id, z.zone, t.name AS type, 
-        r.name, r.ttl, r.address, r.weight, r.priority, r.other
+        my $sql = qq[
+ SELECT z.nt_zone_id, z.zone, t.name AS type,
+                r.name, r.ttl, r.address, r.weight, r.priority, r.other
  FROM nt_zone z
-   LEFT JOIN nt_zone_record r ON z.nt_zone_id=r.nt_zone_id 
-   LEFT JOIN resource_record_type t ON r.type_id=t.id
-    WHERE z.nt_zone_id=$zoneid 
-      AND z.deleted=0
-      AND r.deleted=0 
+     INNER JOIN nt_zone_record r ON z.nt_zone_id=r.nt_zone_id
+     LEFT JOIN resource_record_type t ON r.type_id=t.id
+ WHERE z.nt_zone_id=?
+     AND z.deleted=0
+     AND r.deleted=0
 ];
 
     print STDERR "\t" . $sql . "\n" if $warnsql;
     my $sth = $dbh->prepare($sql);
     my @result;
-    if ( $sth->execute ) {
+        if ( $sth->execute($zoneid) ) {
         my @rows;
         while ( $t = $sth->fetchrow_hashref ) {
-            my $content = rr_content($t);
+            my @content = rr_content_fields($t);
             push @result,
                 [
                 "DATA", $t->{name} =~ /\.$/
                 ? $t->{name}
                 : $t->{name} . "." . $t->{zone},
                 'IN', $t->{type}, $t->{ttl}, ( $use_zone_id ? $t->{'nt_zone_id'} : 1 ),
-                $content
+                @content
                 ];
             push @rows, $t;
         }
@@ -188,42 +199,79 @@ sub get_records {
 
     }
 
+    my %wanted_zones = map { $_->{zone} => 1 } @order;
+    my @zone_names   = keys %wanted_zones;
+    return () if !@zone_names;
+
+    my $zone_name_placeholders = join( ',', ('?') x @zone_names );
+    my $zone_lookup_sql        = "
+ SELECT z.nt_zone_id, z.zone
+   FROM nt_zone z
+   INNER JOIN nt_zone_nameserver ns
+           ON ns.nt_zone_id = z.nt_zone_id
+          AND ns.nt_nameserver_id = ?
+  WHERE z.deleted=0
+    AND z.zone IN ($zone_name_placeholders)
+";
+
+    print STDERR "\t" . $zone_lookup_sql . "\n" if $warnsql;
+    my $zsth = $dbh->prepare($zone_lookup_sql);
+    my @zone_lookup_params = ( $main::nt_nameserver_id, @zone_names );
+    return () if !$zsth->execute(@zone_lookup_params);
+
+    my %zone_id_for;
+    while ( my $z = $zsth->fetchrow_hashref ) {
+        $zone_id_for{ $z->{zone} } = $z->{nt_zone_id};
+    }
+
+    my @zone_name_pairs;
+    foreach my $entry (@order) {
+        my $zid = $zone_id_for{ $entry->{zone} };
+        next if !$zid;
+        push @zone_name_pairs, [ $zid, $entry->{record} ];
+    }
+    return () if !@zone_name_pairs;
+
+    my $pair_placeholders = join( ',', ('(?,?)') x @zone_name_pairs );
+    my @pair_params       = map { @$_ } @zone_name_pairs;
+    my @query_params      = (@pair_params);
+
+    my $type_clause = '';
+    if ( $qtype ne 'ANY' ) {
+        $type_clause = " AND (t.name = ? OR t.name = 'CNAME') ";
+        push @query_params, $qtype;
+    }
+
     my $sql = "
- SELECT z.nt_zone_id, z.zone, t.name AS type, 
+ SELECT r.nt_zone_id, t.name AS type,
         r.name, r.ttl, r.address, r.weight, r.priority, r.other,
         r.nt_zone_record_id
-   FROM nt_zone z
-   LEFT JOIN nt_zone_record r ON z.nt_zone_id=r.nt_zone_id
+   FROM nt_zone_record r
+   INNER JOIN nt_zone z
+           ON z.nt_zone_id = r.nt_zone_id
+          AND z.deleted=0
+   INNER JOIN nt_zone_nameserver ns
+           ON ns.nt_zone_id = z.nt_zone_id
+          AND ns.nt_nameserver_id = $main::nt_nameserver_id
    LEFT JOIN resource_record_type t ON r.type_id=t.id
-   LEFT JOIN nt_zone_nameserver ns ON ns.nt_zone_id=z.nt_zone_id
-     WHERE ( " . join(
-        " OR ",
-        map {
-                  " z.zone = "
-                . $dbh->quote( $_->{'zone'} )
-                . " AND r.name = "
-                . $dbh->quote( $_->{'record'} )
-        } @order
-        )
-        . " ) 
-         AND ( t.name = '$qtype' OR t.name ='CNAME' ) 
-         AND ns.nt_nameserver_id=$main::nt_nameserver_id
-         AND z.deleted=0
-         AND r.deleted=0 ";
+  WHERE (r.nt_zone_id, r.name) IN ($pair_placeholders)
+    AND r.deleted=0
+    $type_clause
+";
 
     print STDERR "\t" . $sql . "\n" if $warnsql;
     my $sth = $dbh->prepare($sql);
     my @result;
-    if ( $sth->execute ) {
+    if ( $sth->execute(@query_params) ) {
         my @rows;
         while ( $t = $sth->fetchrow_hashref ) {
             print Dumper($t) if $warnsql;
-            my $content = rr_content($t);
+            my @content = rr_content_fields($t);
             push @result,
                 [
                 "DATA", $qname, $qclass, $t->{type}, $t->{ttl},
                 ( $use_zone_id ? $t->{'nt_zone_id'} : 1 ),
-                $content
+                @content
                 ];
             push @rows, $t;
             $main::seenrecid{ $t->{'nt_zone_record_id'} } = 1;
@@ -234,12 +282,11 @@ sub get_records {
                 push @result, &get_records( $type, $t->{address}, $qclass, $qtype, $id, $ip );
             }
         }
-
     }
     return @result;
 }
 
-sub rr_content {
+sub rr_content_fields {
     my ($rr) = @_;
 
     my $address = defined $rr->{address} ? $rr->{address} : '';
@@ -247,17 +294,17 @@ sub rr_content {
 
     if ( $rr->{type} eq 'MX' ) {
         my $pref = defined $rr->{weight} ? $rr->{weight} : 0;
-        return $pref . ' ' . $address;
+        return ( $pref, $address );
     }
 
     if ( $rr->{type} eq 'SRV' ) {
         my $priority = defined $rr->{priority} ? $rr->{priority} : 0;
         my $weight   = defined $rr->{weight}   ? $rr->{weight}   : 0;
         my $port     = defined $rr->{other}    ? $rr->{other}    : 0;
-        return join( ' ', $priority, $weight, $port, $address );
+        return ( $priority, join( ' ', $weight, $port, $address ) );
     }
 
-    return $address;
+    return ($address);
 }
 
 sub get_ns {
@@ -266,12 +313,12 @@ sub get_ns {
     my @order;
     my $t = '';
 
-    my $sql = "
+        my $sql = "
   SELECT z.nt_zone_id,
          ns.ttl, ns.name, ns.address
   FROM nt_zone z
-    LEFT JOIN nt_zone_nameserver zns ON z.nt_zone_id=zns.nt_zone_id
-    LEFT JOIN nt_nameserver ns ON zns.nt_nameserver_id=ns.nt_nameserver_id
+        INNER JOIN nt_zone_nameserver zns ON z.nt_zone_id=zns.nt_zone_id
+        INNER JOIN nt_nameserver ns ON zns.nt_nameserver_id=ns.nt_nameserver_id
     WHERE z.zone = " . $dbh->quote($qname) . "
       AND z.deleted=0 
       AND ns.deleted=0 ";
@@ -284,7 +331,7 @@ sub get_ns {
         while ( $t = $sth->fetchrow_hashref ) {
             push @result,
                 [
-                "DATA", $qname, $qclass, $qtype, $t->{ttl}, $use_zone_id ? $t->{'nt_zone_id'} : 1,
+                "DATA", $qname, $qclass, 'NS', $t->{ttl}, $use_zone_id ? $t->{'nt_zone_id'} : 1,
                 $t->{name}
                 ];
             push @rows, $t;
@@ -302,11 +349,11 @@ sub get_soa {
     my @order;
     my $t = '';
 
-    my $sql = "
+        my $sql = "
 SELECT ns.name, z.* 
   FROM nt_zone z
-LEFT JOIN nt_zone_nameserver zns ON z.nt_zone_id=zns.nt_zone_id
-LEFT JOIN nt_nameserver ns ON zns.`nt_nameserver_id`=ns.`nt_nameserver_id`
+INNER JOIN nt_zone_nameserver zns ON z.nt_zone_id=zns.nt_zone_id
+INNER JOIN nt_nameserver ns ON zns.`nt_nameserver_id`=ns.`nt_nameserver_id`
  WHERE z.zone = " . $dbh->quote($qname) . " AND z.deleted=0
    AND ns.deleted=0
  LIMIT 1";
@@ -334,6 +381,12 @@ LEFT JOIN nt_nameserver ns ON zns.`nt_nameserver_id`=ns.`nt_nameserver_id`
     }
 
     return @result;
+}
+
+sub _uniq_rows {
+    my @rows = @_;
+    my %seen;
+    return grep { !$seen{ join( "\t", @$_ ) }++ } @rows;
 }
 
 $dbh->disconnect;
