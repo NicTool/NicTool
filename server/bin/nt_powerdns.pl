@@ -18,7 +18,7 @@ my $line        = <>;
 my $warnsql     = @ARGV;
 my $use_zone_id = 1;
 my $default_ttl = 20;
-my $log         = 1;
+my $log         = 0;
 %main::qcache           = ();
 $main::nt_nameserver_id = 1;
 
@@ -367,7 +367,6 @@ INNER JOIN nt_nameserver ns ON zns.`nt_nameserver_id`=ns.`nt_nameserver_id`
         $t = $sth->fetchrow_hashref;
         return unless $t;
         print Dumper($t) if $warnsql;
-        $t->{mailaddr} =~ s/\./@/;
         push @result,
             [
             "DATA",       $qname,
