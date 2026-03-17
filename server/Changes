@@ -1,6 +1,6 @@
 Revision history for NicToolServer
 
-2.36    202_.__.__
+2.36    2026.__.__
 
 * Fixes
     * zr: treat new_zone_record requests with id as updates, #313
@@ -20,7 +20,8 @@ Revision history for NicToolServer
     * sql: add schema object checks to better detect SQL version, #317
     * sql: lowercase NSD in the nameserver table, #319
     * user: don't leak valid usernames, #325
-    * powerdns: updated coprocess backend, #328
+    * powerdns: updated and enhanced coprocess backend, #328
+    * powerdns: add ANY query support, optimize queries, #330
 * Updates & Changes
     * perltidy, #324
 
