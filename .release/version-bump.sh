@@ -10,7 +10,7 @@ if [ -z "$2" ]; then
 	exit 2
 fi
 
-alias gfind='find . -type d -name node_modules -prune     -o -type d -name .git -prune     -o -type d -name .build -prune     -o -type d -name bower_components -prune     -o -type f -print'
+alias gfind='find . -type d -name node_modules -prune -o -type d -name .git -prune -o -type d -name .build -prune -o -type d -name bower_components -prune -o -type f -print'
 
 grep $VERSION `gfind` | cut -f1 -d':' | sort -u > versions.txt
 sed -i '' \

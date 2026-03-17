@@ -237,7 +237,7 @@ NicToolServer::Zone::Sanity - sanity tests for NicTool zones
 
 =head1 VERSION
 
-version 2.35
+version 2.40
 
 =head1 SYNOPSIS
 

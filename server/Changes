@@ -1,6 +1,6 @@
 Revision history for NicToolServer
 
-2.36    2026.__.__
+2.40    2026.03.16
 
 * Fixes
     * zr: treat new_zone_record requests with id as updates, #313
