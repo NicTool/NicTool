@@ -18,6 +18,8 @@
 
 use strict;
 
+use warnings;
+
 require 'nictoolclient.conf';
 
 main();

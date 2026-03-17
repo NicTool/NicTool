@@ -1,6 +1,8 @@
 #!/usr/bin/perl
 use strict;
 
+use warnings;
+
 require 'nictoolclient.conf';
 
 main();

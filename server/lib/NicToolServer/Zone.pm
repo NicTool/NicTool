@@ -800,8 +800,13 @@ sub delete_zones {
     my %groups = map { $_, 1 }
         ( $data->{user}{nt_group_id}, @{ $self->get_subgroup_ids( $data->{user}{nt_group_id} ) } );
 
-    my $sql = "SELECT * FROM nt_zone WHERE nt_zone.nt_zone_id IN(" . $data->{zone_list} . ')';
-    my $zones_data = $self->exec_query($sql);
+    my @zone_ids = grep { /^\d+$/ } split( /\s*,\s*/, ( $data->{zone_list} || q{} ) );
+    return { error_code => 503, error_msg => 'invalid zone list' } if !@zone_ids;
+
+    my $placeholders = join( ',', ('?') x @zone_ids );
+    my $sql          = "SELECT * FROM nt_zone WHERE nt_zone.nt_zone_id IN($placeholders)";
+    my $zones_data   = $self->exec_query( $sql, \@zone_ids )
+        or return { error_code => 600, error_msg => $self->{dbh}->errstr };
 
     my $record_obj =
         NicToolServer::Zone::Record->new( $self->{Apache}, $self->{client}, $self->{dbh} );
@@ -833,12 +838,16 @@ sub move_zones {
 
     my $new_group = $self->NicToolServer::Group::find_group( $data->{nt_group_id} );
 
+    my @zone_ids = grep { /^\d+$/ } split( /\s*,\s*/, ( $data->{zone_list} || q{} ) );
+    return { error_code => 503, error_msg => 'invalid zone list' } if !@zone_ids;
+
+    my $placeholders = join( ',', ('?') x @zone_ids );
     my $sql = "SELECT nt_zone.*, nt_group.name as old_group_name
         FROM nt_zone, nt_group
        WHERE nt_zone.nt_group_id = nt_group.nt_group_id
-         AND nt_zone_id IN(" . $data->{zone_list} . ")";
+         AND nt_zone_id IN($placeholders)";
 
-    my $zrecs = $self->exec_query($sql)
+    my $zrecs = $self->exec_query( $sql, \@zone_ids )
         or return {
         error_code => 600,
         error_msg  => $self->{dbh}->errstr,

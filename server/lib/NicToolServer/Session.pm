@@ -311,6 +311,13 @@ sub session_id {
 
     #warn "mod_uniqueid not available - building my own unique ID.\n";
 
+    if ( open my $urand, '<:raw', '/dev/urandom' ) {
+        my $bytes = q{};
+        my $read  = read( $urand, $bytes, 12 );
+        close $urand;
+        return unpack( 'H*', $bytes ) if defined $read && $read == 12;
+    }
+
     my ( $seconds, $microseconds ) = gettimeofday();
 
     # Multiple logins can occur within the same second and within the same

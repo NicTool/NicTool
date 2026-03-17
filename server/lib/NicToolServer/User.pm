@@ -609,7 +609,7 @@ sub valid_password {
         }
 
         # Check for HMAC SHA-1 password
-        if ( $db_pass =~ /[0-9a-f]{40}/ ) {    # DB has HMAC SHA-1 hash
+        if ( $db_pass =~ /\A[0-9a-f]{40}\z/ ) {    # DB has HMAC SHA-1 hash
             my $hashed = $self->get_sha1_hash( $attempt, $user );
             return 1 if $hashed eq $db_pass;
         }

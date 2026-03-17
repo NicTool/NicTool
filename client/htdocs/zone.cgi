@@ -18,7 +18,7 @@
 
 use strict;
 
-#use warnings;
+use warnings;
 
 require 'nictoolclient.conf';
 
