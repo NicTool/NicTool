@@ -1,6 +1,7 @@
 
   * permit empty form to cancel
   * only modify permission when submitted
+  * fixed edit_after_new_zone to avoid HTTP 301
 
 2.35    2025.10.02
 
