@@ -877,10 +877,14 @@ sub get_zone_list {
 
     #my %groups = map { $_, 1 } ($data->{user}{nt_group_id}, @{ $self->get_subgroup_ids($data->{user}{nt_group_id}) });
 
-    my $sql = "SELECT * FROM nt_zone WHERE deleted=0
-        AND nt_zone_id IN(" . $data->{zone_list} . ") ORDER BY zone";
+    my @zone_ids = @{ $self->sanitize_int_list( $data->{zone_list} ) };
+    return $self->error_response( 503, 'invalid zone list' ) if !@zone_ids;
 
-    my $ntzones = $self->exec_query($sql)
+    my ( $zone_in_sql, $zone_in_params ) = $self->sql_in_clause( 'nt_zone_id', \@zone_ids );
+    my $sql = "SELECT * FROM nt_zone WHERE deleted=0
+        AND $zone_in_sql ORDER BY zone";
+
+    my $ntzones = $self->exec_query( $sql, $zone_in_params )
         or return {
         error_code => 600,
         error_msg  => $self->{dbh}->errstr,

@@ -98,6 +98,16 @@ sub ver_check {
     my $pv = $self->{client}->protocol_version;
     return undef unless $pv;
 
+    if ( $pv !~ /^-?\d+(?:\.\d+)?$/ ) {
+        return $self->error_response( 510,
+            "This server requires at least protocol version $NicToolServer::MIN_PROTOCOL_VERSION. You have specified protocol version $pv"
+        ) if $pv =~ /^-/;
+
+        return $self->error_response( 510,
+            "This server allows at most protocol version $NicToolServer::MAX_PROTOCOL_VERSION. You have specified protocol version $pv"
+        );
+    }
+
     my $pv_num  = $pv + 0;
     my $min_num = $NicToolServer::MIN_PROTOCOL_VERSION + 0;
     my $max_num = $NicToolServer::MAX_PROTOCOL_VERSION + 0;
@@ -1816,6 +1826,34 @@ sub set_paging_vars {
         $r_data->{total} % $r_data->{limit}
         ? int( $r_data->{total} / $r_data->{limit} ) + 1
         : $r_data->{total} / $r_data->{limit};
+}
+
+sub sanitize_int_list {
+    my ( $self, $input ) = @_;
+
+    my @raw = ref $input eq 'ARRAY' ? @$input : split( /\s*,\s*/, ( $input // q{} ) );
+    my @ids = grep { defined $_ && /^\d+$/ } @raw;
+
+    return \@ids;
+}
+
+sub sql_in_clause {
+    my ( $self, $field, $ids_ref ) = @_;
+
+    return ( '1=0', [] ) if !$ids_ref || ref $ids_ref ne 'ARRAY' || !@$ids_ref;
+
+    my $placeholders = join( ',', ('?') x @$ids_ref );
+    return ( "$field IN($placeholders)", [@$ids_ref] );
+}
+
+sub sql_limit_clause {
+    my ( $self, $r_data ) = @_;
+
+    my $offset = ( $r_data->{start} || 1 ) - 1;
+    $offset = 0 if $offset < 0;
+
+    my $limit = $r_data->{limit} || 20;
+    return ( ' LIMIT ?, ?', [ $offset, $limit ] );
 }
 
 sub search_params_sanity_check {

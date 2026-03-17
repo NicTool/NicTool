@@ -348,17 +348,21 @@ sub get_group_users {
     else {
         @group_list = ( $data->{nt_group_id} );
     }
+    @group_list = @{ $self->sanitize_int_list(\@group_list) };
+    return $self->error_response( 503, 'invalid group list' ) if !@group_list;
+
+    my ( $group_in_sql, $group_in_params ) =
+        $self->sql_in_clause( 'nt_user.nt_group_id', \@group_list );
 
     my $r_data = { 'error_code' => 200, 'error_msg' => 'OK', list => [] };
 
-    my $sql = "SELECT COUNT(*) AS count FROM nt_user
+        my $sql = "SELECT COUNT(*) AS count FROM nt_user
     INNER JOIN nt_group ON nt_user.nt_group_id = nt_group.nt_group_id
     WHERE nt_user.deleted=0
-      AND nt_user.nt_group_id IN("
-        . join( ',', @group_list ) . ")"
+            AND $group_in_sql"
         . ( @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
 
-    my $c = $self->exec_query($sql)
+        my $c = $self->exec_query( $sql, $group_in_params )
         or return $self->error_response( 600, $self->{dbh}->errstr );
 
     $r_data->{total} = $c->[0]->{count};
@@ -366,6 +370,8 @@ sub get_group_users {
     $self->set_paging_vars( $data, $r_data );
 
     return $r_data if $r_data->{total} == 0;
+
+    my ( $limit_sql, $limit_params ) = $self->sql_limit_clause($r_data);
 
     $sql = "SELECT nt_user.nt_user_id,
                nt_user.username,
@@ -377,13 +383,12 @@ sub get_group_users {
         FROM nt_user
         INNER JOIN nt_group ON nt_user.nt_group_id = nt_group.nt_group_id
         WHERE nt_user.deleted=0
-        AND nt_group.nt_group_id IN("
-        . join( ',', @group_list ) . ") ";
+        AND $group_in_sql ";
     $sql .= 'AND (' . join( ' ', @$conditions ) . ') ' if @$conditions;
     $sql .= "ORDER BY " . join( ', ', @$sortby ) . " " if (@$sortby);
-    $sql .= "LIMIT " . ( $r_data->{start} - 1 ) . ", $r_data->{limit}";
+    $sql .= $limit_sql;
 
-    my $group_users = $self->exec_query($sql);
+    my $group_users = $self->exec_query( $sql, [ @$group_in_params, @$limit_params ] );
     if ($group_users) {
         my %groups;
         foreach my $u (@$group_users) {
@@ -447,12 +452,14 @@ sub get_user_list {
     my %groups = map { $_, 1 }
         ( $data->{user}{nt_group_id}, @{ $self->get_subgroup_ids( $data->{user}{nt_group_id} ) } );
 
-    my $sql =
-          "SELECT * FROM nt_user WHERE deleted=0 AND nt_user_id IN("
-        . $data->{user_list}
-        . ") ORDER BY username";
+    my @user_ids = @{ $self->sanitize_int_list( $data->{user_list} ) };
+    return $self->error_response( 503, 'invalid user list' ) if !@user_ids;
 
-    my $users = $self->exec_query($sql)
+    my ( $user_in_sql, $user_in_params ) = $self->sql_in_clause( 'nt_user_id', \@user_ids );
+
+    my $sql = "SELECT * FROM nt_user WHERE deleted=0 AND $user_in_sql ORDER BY username";
+
+    my $users = $self->exec_query( $sql, $user_in_params )
         or return {
         error_code => 600,
         error_msg  => $self->{dbh}->errstr,

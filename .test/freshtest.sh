@@ -1,7 +1,7 @@
 #!/bin/sh
 
-#perl .test/create_tables.pl \
-cd client \
+perl .test/create_tables.pl \
+  && cd client \
   && perl Makefile.PL \
   && sudo make install \
   && cd ../server \

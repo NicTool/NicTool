@@ -38,7 +38,7 @@ sub get_transport_agent {
         XMLRPC => 'NicTool::Transport::XMLRPC',
     );
     my $class = $transport_class_for{$dp}
-        or die "Unsupported data protocol '$protocol'";
+        or die "Unable to use class NicTool::Transport::$dp for data protocol '$protocol'";
 
     ( my $module_path = $class ) =~ s{::}{/}g;
     $module_path .= '.pm';
