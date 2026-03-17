@@ -40,7 +40,10 @@ sub get_transport_agent {
     my $class = $transport_class_for{$dp}
         or die "Unsupported data protocol '$protocol'";
 
-    eval "require $class; 1"
+    ( my $module_path = $class ) =~ s{::}{/}g;
+    $module_path .= '.pm';
+
+    eval { require $module_path; 1 }
         or die "Unable to use class $class for data protocol '$protocol' : $@";
 
     my $trans = eval { $class->new($nt) };

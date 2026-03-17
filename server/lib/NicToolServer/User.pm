@@ -627,6 +627,30 @@ sub valid_password {
     return 0;    # No match
 }
 
+sub maybe_upgrade_password_hash {
+    my ( $self, $uid, $username, $attempt, $db_pass, $salt ) = @_;
+
+    return if !$uid || !$username || !defined $attempt;
+    return if $NicToolServer::ldap_only;
+    return if defined $salt && length $salt && $salt ne 'ldap_only';
+
+    my $is_sha1_legacy  = defined $db_pass && $db_pass =~ /\A[0-9a-f]{40}\z/;
+    my $is_plain_legacy = ( !defined $salt || $salt eq q{} ) && defined $db_pass && $attempt eq $db_pass;
+    return if !( $is_sha1_legacy || $is_plain_legacy );
+
+    my $new_salt = $self->_get_salt();
+    my $new_hash = $self->get_pbkdf2_hash( $attempt, $new_salt );
+
+    my $ok = $self->exec_query(
+        'UPDATE nt_user SET password=?, pass_salt=? WHERE nt_user_id=?',
+        [ $new_hash, $new_salt, $uid ],
+    );
+
+    warn "failed to upgrade password hash for user '$username' (uid=$uid): " . $self->{dbh}->errstr
+        if !$ok;
+    return;
+}
+
 sub select_user {
     my ( $self, $uid ) = @_;
 

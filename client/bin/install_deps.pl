@@ -7,6 +7,32 @@ use warnings;
 use CPAN;
 use English qw( -no_match_vars );
 
+sub _run {
+    my (@cmd) = @_;
+    return system(@cmd);
+}
+
+sub _cmd_output {
+    my (@cmd) = @_;
+    open my $fh, '-|', @cmd or return q{};
+    local $/;
+    my $output = <$fh> // q{};
+    close $fh;
+    return $output;
+}
+
+sub _cmd_has_output {
+    my (@cmd) = @_;
+    return _cmd_output(@cmd) ne q{};
+}
+
+sub _find_cmd {
+    my ($name) = @_;
+    my $path = _cmd_output( 'which', $name );
+    chomp $path;
+    return $path;
+}
+
 my $apps = [
     {   app  => 'cpanm',
         info => { port => 'App-cpanminus', apt => 'cpanminus' },
@@ -141,7 +167,7 @@ sub install_app_darwin {
         return;
     }
 
-    system "/opt/local/bin/port install $port"
+    _run( '/opt/local/bin/port', 'install', $port )
         and warn "install failed for Darwin port $port";    ## no critic (Carp)
     return;
 }
@@ -150,7 +176,7 @@ sub install_app_freebsd {
     my ( $app, $info ) = @_;
 
     if ( -x '/usr/sbin/pkg' ) {
-        if (`/usr/sbin/pkg info -x $app`) {    ## no critic (Backtick)
+        if ( _cmd_has_output( '/usr/sbin/pkg', 'info', '-x', $app ) ) {
             return print "$app is installed.\n";
         }
         return if install_app_freebsd_pkg( $info, $app );
@@ -159,7 +185,7 @@ sub install_app_freebsd {
     print " from ports...";
 
     if ( -x '/usr/sbin/pkg_info' ) {
-        if (`/usr/sbin/pkg_info | /usr/bin/grep $app`) {    ## no critic (Backtick)
+        if ( _cmd_output('/usr/sbin/pkg_info') =~ /\Q$app\E/ ) {
             return print "$app is installed.\n";
         }
     }
@@ -177,7 +203,7 @@ sub install_app_freebsd_port {
 
     if ( $portdir && -d $portdir ) {
         print " from ports ($portdir)\n";
-        system "make -C $portdir install clean" and do {
+        _run( 'make', '-C', $portdir, 'install', 'clean' ) and do {
             warn "'make install clean' failed for port $app\n";    ## no critic (Carp)
         };
     }
@@ -194,13 +220,13 @@ sub install_app_freebsd_pkg {
 
     my $name = $info->{port} || $app;
     print "installing $name\n";
-    system "$pkg install -y $name";
-    return 1 if `/usr/sbin/pkg info -x $name`;
+    _run( $pkg, 'install', '-y', $name );
+    return 1 if _cmd_has_output( '/usr/sbin/pkg', 'info', '-x', $name );
 
     return 0 if ( $app eq $name );
 
-    system "$pkg install -y $app";
-    return 1 if `/usr/sbin/pkg info -x $app`;
+    _run( $pkg, 'install', '-y', $app );
+    return 1 if _cmd_has_output( '/usr/sbin/pkg', 'info', '-x', $app );
 
     return 0;
 }
@@ -210,11 +236,11 @@ sub install_app_linux {
 
     if ( -x '/usr/bin/yum' ) {
         my $rpm = $info->{yum} || $app;
-        system "/usr/bin/yum -y install $rpm";
+        _run( '/usr/bin/yum', '-y', 'install', $rpm );
     }
     elsif ( -x '/usr/bin/apt-get' ) {
         my $package = $info->{apt} || $app;
-        system "/usr/bin/apt-get -y install $package";
+        _run( '/usr/bin/apt-get', '-y', 'install', $package );
     }
     else {
         warn "no Linux package manager detected\n";    ## no critic (Carp)
@@ -247,7 +273,7 @@ sub install_module_cpan {
 
     my ( $module, $version ) = @_;
 
-    system "cpanm $module --notest";
+    _run( 'cpanm', $module, '--notest' );
     eval "require $module" or print '';    ## no critic (Stringy)
 }
 
@@ -261,7 +287,7 @@ sub install_module_darwin {
     }
 
     ( my $port = "p5-$module" ) =~ s/::/-/g;
-    system "$dport install $port"
+    _run( $dport, 'install', $port )
         and warn "install failed for Darwin port $module";    ## no critic (Carp)
     return;
 }
@@ -273,7 +299,7 @@ sub install_module_freebsd {
     ( my $portname = substr( $name, 0, 3 ) eq 'p5-' ? $name : "p5-$name" ) =~ s/::/-/g;
 
     if ( -x '/usr/sbin/pkg' ) {
-        if (`/usr/sbin/pkg info -x $portname`) {    ## no critic (Backtick)
+        if ( _cmd_has_output( '/usr/sbin/pkg', 'info', '-x', $portname ) ) {
             return print "$module is installed.\n";
         }
         return 1 if install_module_freebsd_pkg($portname);
@@ -287,7 +313,7 @@ sub install_module_freebsd_port {
     print " from ports...$portname...";
 
     if ( -x '/usr/sbin/pkg_info' ) {
-        if (`/usr/sbin/pkg_info | /usr/bin/grep $portname`) {    ## no critic (Backtick)
+        if ( _cmd_output('/usr/sbin/pkg_info') =~ /\Q$portname\E/ ) {
             return print "$module is installed.\n";
         }
     }
@@ -303,7 +329,7 @@ sub install_module_freebsd_port {
     }
 
     print " from ports ($portdir)\n";
-    system "make -C $portdir install clean"
+    _run( 'make', '-C', $portdir, 'install', 'clean' )
         and warn "'make install clean' failed for port $module\n";    ## no critic (Carp)
     return;
 }
@@ -317,8 +343,8 @@ sub install_module_freebsd_pkg {
     }
 
     print "installing $module\n";
-    system "$pkg install -y $module";
-    return 1 if `/usr/sbin/pkg info -x $module`;
+    _run( $pkg, 'install', '-y', $module );
+    return 1 if _cmd_has_output( '/usr/sbin/pkg', 'info', '-x', $module );
     return 0;
 }
 
@@ -344,7 +370,7 @@ sub install_module_linux_yum {
     else {
         ( $package = "perl-$module" ) =~ s/::/-/g;
     }
-    system "/usr/bin/yum -y install $package";
+    _run( '/usr/bin/yum', '-y', 'install', $package );
     return;
 }
 
@@ -357,24 +383,18 @@ sub install_module_linux_apt {
     else {
         ( $package = 'lib' . $module . '-perl' ) =~ s/::/-/g;
     }
-    system "/usr/bin/apt-get -y install $package";
+    _run( '/usr/bin/apt-get', '-y', 'install', $package );
     return;
 }
 
 sub get_cpan_config {
 
-    my $ftp = `which ftp`;
-    chomp $ftp;      ## no critic (Backtick)
-    my $gzip = `which gzip`;
-    chomp $gzip;     ## no critic (Backtick)
-    my $unzip = `which unzip`;
-    chomp $unzip;    ## no critic (Backtick)
-    my $tar = `which tar`;
-    chomp $tar;      ## no critic (Backtick)
-    my $make = `which make`;
-    chomp $make;     ## no critic (Backtick)
-    my $wget = `which wget`;
-    chomp $wget;     ## no critic (Backtick)
+    my $ftp   = _find_cmd('ftp');
+    my $gzip  = _find_cmd('gzip');
+    my $unzip = _find_cmd('unzip');
+    my $tar   = _find_cmd('tar');
+    my $make  = _find_cmd('make');
+    my $wget  = _find_cmd('wget');
 
     return {
         'build_cache'             => q[10],

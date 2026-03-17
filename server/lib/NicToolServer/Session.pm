@@ -61,6 +61,14 @@ sub verify_login {
         )
         );
 
+    $self->maybe_upgrade_password_hash(
+        $user->{nt_user_id},
+        $data->{username},
+        $pass_attempt,
+        $user->{password},
+        $user->{pass_salt},
+    );
+
     $self->clean_user_data;
 
     $user->{nt_user_session} = $self->session_id;

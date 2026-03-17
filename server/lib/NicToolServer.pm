@@ -97,12 +97,17 @@ sub ver_check {
     #check the protocol version if included
     my $pv = $self->{client}->protocol_version;
     return undef unless $pv;
+
+    my $pv_num  = $pv + 0;
+    my $min_num = $NicToolServer::MIN_PROTOCOL_VERSION + 0;
+    my $max_num = $NicToolServer::MAX_PROTOCOL_VERSION + 0;
+
     return $self->error_response( 510,
         "This server requires at least protocol version $NicToolServer::MIN_PROTOCOL_VERSION. You have specified protocol version $pv"
-    ) if $pv lt $NicToolServer::MIN_PROTOCOL_VERSION;
+    ) if $pv_num < $min_num;
     return $self->error_response( 510,
-        "This server allows at most protocol version $NicToolServer::MIN_PROTOCOL_VERSION. You have specified protocol version $pv"
-    ) if $pv gt $NicToolServer::MAX_PROTOCOL_VERSION;
+        "This server allows at most protocol version $NicToolServer::MAX_PROTOCOL_VERSION. You have specified protocol version $pv"
+    ) if $pv_num > $max_num;
 }
 
 sub api_commands {
