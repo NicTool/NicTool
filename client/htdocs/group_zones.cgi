@@ -49,6 +49,14 @@ sub display {
         userid    => $user->{'nt_user_id'}
     );
 
+    if ( $NicToolClient::edit_after_new_zone && $q->param('new_zone_id') ) {
+        my $gid = scalar( $q->param('nt_group_id') );
+        my $zid = scalar( $q->param('new_zone_id') );
+        print qq[<script>window.location='zone.cgi?nt_group_id=$gid&nt_zone_id=$zid';</script>];
+        $nt_obj->parse_template($NicToolClient::end_html_template);
+        return;
+    }
+
     my $level = $nt_obj->display_group_tree(
         $user,
         $user->{'nt_group_id'},
@@ -630,13 +638,6 @@ sub add_zone {
     # end template additions
 
     my $nice = "The Zone '$data{'zone'}' was successfully created.";
-    if ($NicToolClient::edit_after_new_zone) {
-        $q->param( -name => 'object', -value => 'zone' );
-        $q->param( -name => 'obj_id', -value => $error->{'nt_zone_id'} );
-        $nt_obj->redirect_from_log($q);
-        return;
-    }
-
     $q->param( -name => 'new_zone_id', -value => $error->{'nt_zone_id'} );
     return { nicemessage => [ $nice, "Zone Created" ] };
 }

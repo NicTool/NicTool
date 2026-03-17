@@ -188,11 +188,6 @@ sub do_new_zone {
     }
 
     my $zid = $error->{'nt_zone_id'};
-    if ($NicToolClient::edit_after_new_zone) {
-        $q->param( -name => 'object', -value => 'zone' );
-        $q->param( -name => 'obj_id', -value => $zid );
-        return $nt_obj->redirect_from_log($q);
-    }
     $zone = $nt_obj->get_zone(
         nt_group_id => scalar( $q->param('nt_group_id') ),
         nt_zone_id  => $zid,
