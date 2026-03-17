@@ -25,7 +25,7 @@ warn $@ if $@;
 eval {&del};
 warn $@ if $@;
 
-my ( $res, $gid1, $group1, %z1, $zid1, $zone1 );
+my ( $res, $gid1, $group1, %z1, $zid1, $zone1, $ptr_id );
 
 done_testing();
 exit;
@@ -84,6 +84,49 @@ sub doit {
 
     #warn @r;
     ok( $r[0] );
+
+    #############################
+    # issue #140 regression     #
+    #############################
+
+    $res = $zone1->new_zone_record(
+        name        => '1',
+        ttl         => 86400,
+        description => 'ptr before',
+        type        => 'PTR',
+        address     => 'host1.example.com.',
+    );
+    noerrok($res) or die "Couldn't create reverse PTR record";
+    $ptr_id = $res->get('nt_zone_record_id');
+    ok( $ptr_id =~ /^\d+$/ );
+
+    $res = $zone1->new_zone_record(
+        nt_zone_record_id => $ptr_id,
+        nt_zone_id        => $zid1,
+        name              => '1',
+        ttl               => 300,
+        description       => 'ptr after',
+        type              => 'PTR',
+        address           => 'host1.example.com.',
+    );
+    noerrok( $res, 200, 'new_zone_record updates existing PTR record' )
+        or die errtext($res);
+    is( $res->get('nt_zone_record_id'),
+        $ptr_id, 'new_zone_record returns existing PTR record id when updating' );
+
+    my $ptr = $user->get_zone_record( nt_zone_record_id => $ptr_id );
+    noerrok($ptr);
+    is( $ptr->get('ttl'), 300, 'PTR ttl changed in place' );
+    is( $ptr->get('description'), 'ptr after', 'PTR description changed in place' );
+
+    my $zone_records = $zone1->get_zone_records;
+    noerrok($zone_records);
+    my @ptr_matches = grep {
+           $_->get('name') eq '1'
+        && $_->get('type') eq 'PTR'
+        && $_->get('address') eq 'host1.example.com.'
+    } $zone_records->list;
+    is( scalar @ptr_matches, 1, 'update via new_zone_record does not duplicate PTR record' );
 }
 
 sub del {
@@ -93,6 +136,11 @@ sub del {
     ####################
 
     if ( defined $zid1 ) {
+        if ( defined $ptr_id ) {
+            $res = $user->delete_zone_record( nt_zone_record_id => $ptr_id );
+            noerrok($res) or warn Data::Dumper::Dumper($res);
+        }
+
         $res = $user->delete_zones( zone_list => $zid1 );
         noerrok($res) or warn Data::Dumper::Dumper($res);
     }
