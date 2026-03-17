@@ -209,6 +209,12 @@ foreach my $zone (@zones) {
 
         # Get the SOA
         my $soa = ( $dns->query( $zone, "SOA" )->answer )[0];
+        my $mailaddr = $soa->rname;
+
+        # Normalize SOA rname to NicTool's dotted mailaddr format.
+        # Some parser versions can return an RFC822-style value with '@'.
+        $mailaddr =~ s/@/./;
+        $mailaddr =~ s/\.$//;
         my $zoneid;
 
         # Start doing the work
@@ -269,7 +275,7 @@ foreach my $zone (@zones) {
             ttl             => ( $soa->ttl < 300 ? 300 : $soa->ttl ),
             serial          => $soa->serial,
             nameservers     => $servers,
-            mailaddr        => $soa->rname,
+            mailaddr        => $mailaddr,
             refresh         => $soa->refresh,
             retry           => $soa->retry,
             expire          => $soa->expire,
