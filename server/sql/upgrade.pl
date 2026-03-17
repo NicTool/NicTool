@@ -112,7 +112,7 @@ sub _sql_test_2_40 {
         $dbh->query("SELECT id FROM nt_nameserver_export_type WHERE id=6 AND name='nsd'")->hashes;
     return 0 unless scalar $normalized && $normalized->[0];
 
-    return 0 if $r eq '2.40';                    # do it! bump db_version
+    return 0 if $r eq '2.35';                    # do it! bump db_version
     return 1;                                    # don't update
 }
 
@@ -1109,7 +1109,7 @@ You made a backup already, right?
   # gzip nictool-2011-11-16.sql
 
 Hit return to continue...
-}
+};
 
         my $r = <STDIN>;
 }
