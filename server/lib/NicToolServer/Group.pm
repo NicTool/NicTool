@@ -347,16 +347,19 @@ sub get_group_subgroups {
     if ( $data->{include_subgroups} ) {
         push @group_list, @{ $self->get_subgroup_ids( $data->{start_group_id} ) };
     }
+        @group_list = @{ $self->sanitize_int_list(\@group_list) };
+        return $self->error_response( 503, 'invalid group list' ) if !@group_list;
 
     my $r_data = { error_code => 200, error_msg => 'OK', groups => [] };
 
-    my $group_string = join( ',', @group_list );
+        my ( $group_in_sql, $group_in_params ) =
+                $self->sql_in_clause( 'parent_group_id', \@group_list );
     my $cond_string  = join( ' ', @$conditions );
     my $sql          = "SELECT COUNT(*) AS count FROM nt_group
-  WHERE deleted=0 AND parent_group_id IN ($group_string)";
+    WHERE deleted=0 AND $group_in_sql";
     $sql .= " AND ($cond_string)" if scalar @$conditions;
 
-    my $c = $self->exec_query($sql);
+        my $c = $self->exec_query( $sql, $group_in_params );
     $r_data->{total} = $c->[0]->{count};
 
     $self->set_paging_vars( $data, $r_data );
@@ -365,13 +368,14 @@ sub get_group_subgroups {
 
     return $r_data if $r_data->{total} == 0;
 
-    my $sort_string = join( ', ', @$sortby );
+        my ( $limit_sql, $limit_params ) = $self->sql_limit_clause($r_data);
+        my $sort_string = join( ', ', @$sortby );
     $sql = "SELECT nt_group.* FROM nt_group
-  WHERE deleted=0 AND parent_group_id IN ($group_string)";
+    WHERE deleted=0 AND $group_in_sql";
     $sql .= " AND ($cond_string)"    if scalar @$conditions;
     $sql .= " ORDER BY $sort_string" if (@$sortby);
-    $sql .= " LIMIT " . ( $r_data->{start} - 1 ) . ", $r_data->{limit}";
-    my $group_rows = $self->exec_query($sql);
+        $sql .= $limit_sql;
+        my $group_rows = $self->exec_query( $sql, [ @$group_in_params, @$limit_params ] );
 
     return { error_code => '600', error_msg => $self->{dbh}->errstr }
         if !$group_rows;

@@ -136,9 +136,10 @@ sub verify_session {
 
     $self->expire_cookie($q);
 
+    my $redirect = 'index.cgi?message=' . $q->escape( $error_msg // q{} );
     print qq[<html>
  <script>
-  parent.location = 'index.cgi?message=] . $q->escape($error_msg) . qq[';
+  parent.location = "] . $redirect . qq[";
  </script>
 </html>];
 

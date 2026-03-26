@@ -191,9 +191,9 @@ sub get_log {
     my $time   = time - 300;
 
     my $sql =
-        "SELECT * FROM nictool.nt_user_global_log WHERE timestamp > (SELECT UNIX_TIMESTAMP(date_start) FROM nt_nameserver_export_log WHERE success=1 AND nt_nameserver_id=$ns_id ORDER BY date_start DESC LIMIT 1) AND object IN ('zone_record')";
+        "SELECT * FROM nictool.nt_user_global_log WHERE timestamp > (SELECT UNIX_TIMESTAMP(date_start) FROM nt_nameserver_export_log WHERE success=1 AND nt_nameserver_id=? ORDER BY date_start DESC LIMIT 1) AND object IN ('zone_record')";
 
-    return $dbix_w->query($sql)->hashes;
+    return $dbix_w->query( $sql, $ns_id )->hashes;
 }
 
 sub get_zone_record {
@@ -206,9 +206,9 @@ sub get_zone_record {
     from nt_zone_record r
     LEFT JOIN resource_record_type t ON t.id=r.type_id
     LEFT JOIN nt_zone z ON r.nt_zone_id=z.nt_zone_id
-    where r.nt_zone_record_id = $id";
+    where r.nt_zone_record_id = ?";
 
-    return $dbix_w->query($sql)->hashes;
+    return $dbix_w->query( $sql, $id )->hashes;
 }
 
 sub get_changed_zones {

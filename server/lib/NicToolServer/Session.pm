@@ -61,6 +61,14 @@ sub verify_login {
         )
         );
 
+    $self->maybe_upgrade_password_hash(
+        $user->{nt_user_id},
+        $data->{username},
+        $pass_attempt,
+        $user->{password},
+        $user->{pass_salt},
+    );
+
     $self->clean_user_data;
 
     $user->{nt_user_session} = $self->session_id;
@@ -310,6 +318,13 @@ sub session_id {
     return $ENV{UNIQUE_ID} if $ENV{UNIQUE_ID};    # mod_uniqueid sets this
 
     #warn "mod_uniqueid not available - building my own unique ID.\n";
+
+    if ( open my $urand, '<:raw', '/dev/urandom' ) {
+        my $bytes = q{};
+        my $read  = read( $urand, $bytes, 12 );
+        close $urand;
+        return unpack( 'H*', $bytes ) if defined $read && $read == 12;
+    }
 
     my ( $seconds, $microseconds ) = gettimeofday();
 

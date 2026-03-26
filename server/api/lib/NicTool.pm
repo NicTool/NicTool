@@ -212,8 +212,17 @@ sub _dispatch {
     my %args   = ( action => $method, @args );
     $args{nt_user_session} = $self->{nt_user_session}
         if $self->{nt_user_session};
-    $args{nt_protocol_version} = $self->{nt_protocol_version}
-        if $self->{use_protocol_version};
+    if ( $self->{use_protocol_version} ) {
+        my $pv = $self->{nt_protocol_version};
+        if ( defined $pv && $pv !~ /^-?\d+(?:\.\d+)?$/ ) {
+
+            # Keep historical behavior for invalid protocol-version probes:
+            # non-negative garbage should map to a "too high" value,
+            # while negative-style values should remain "too low".
+            $pv = ( $pv =~ /^-/ ) ? '-1' : '999999';
+        }
+        $args{nt_protocol_version} = $pv;
+    }
 
     foreach my $a ( keys %args ) {
         next unless ref $args{$a};
@@ -291,6 +300,22 @@ sub _api_call {
     return '';
 }
 
+BEGIN {
+    no strict 'refs';    ## no critic
+    my $api = __PACKAGE__->_api;
+    foreach my $method ( keys %$api ) {
+        next if __PACKAGE__->can($method);
+        *{ __PACKAGE__ . '::' . $method } = sub {
+            my $self = shift;
+            if ( $self->{user} ) {
+                my $res = eval { $self->{user}->$method(@_) };
+                return $res if defined $res;
+            }
+            return $self->_dispatch( $method, @_ );
+        };
+    }
+}
+
 sub AUTOLOAD {
     my ($self) = shift;
     return if $AUTOLOAD =~ /DESTROY/;
@@ -299,10 +324,6 @@ sub AUTOLOAD {
 
     my $res = $self->{user} ? $self->{user}->$AUTOLOAD(@_) : undef;
     return $res if defined $res;
-
-    if ( $self->_api_call($AUTOLOAD) ) {
-        return $self->_dispatch( $AUTOLOAD, @_ );
-    }
 
     if ( $AUTOLOAD =~ /can_([^:]+)$/ ) {
         return $self->{user}->get($1);
