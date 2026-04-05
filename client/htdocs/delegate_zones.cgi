@@ -33,7 +33,11 @@ sub main {
     my $user = $nt_obj->verify_session();
 
     if ( $user && ref $user ) {
-        print $q->header( -charset => "utf-8" );
+        print $q->header(
+            -charset => "utf-8",
+            -cookie  => $nt_obj->csrf_cookie( $nt_obj->get_csrf_token() ),
+            %{ $nt_obj->security_headers() }
+        );
         display( $nt_obj, $q, $user );
     }
 }
@@ -52,9 +56,18 @@ sub display {
     if ( $q->param('cancel_delegate') ) {    # do nothing
         print qq[<script> window.close(); </script>];
     }
-    elsif ( $q->param('Save') )   { do_save( $nt_obj, $q, $user ); }
-    elsif ( $q->param('Modify') ) { do_modify( $nt_obj, $q, $user ); }
-    elsif ( $q->param('Remove') ) { do_remove( $nt_obj, $q, $user ); }
+    elsif ( $q->param('Save') ) {
+        return $nt_obj->csrf_error_page() if !$nt_obj->verify_csrf();
+        do_save( $nt_obj, $q, $user );
+    }
+    elsif ( $q->param('Modify') ) {
+        return $nt_obj->csrf_error_page() if !$nt_obj->verify_csrf();
+        do_modify( $nt_obj, $q, $user );
+    }
+    elsif ( $q->param('Remove') ) {
+        return $nt_obj->csrf_error_page() if !$nt_obj->verify_csrf();
+        do_remove( $nt_obj, $q, $user );
+    }
     else {
         my $d = $q->param("delete") ? "delete" : '';
         my $e = $q->param("edit")   ? "edit"   : $d;
@@ -65,11 +78,12 @@ sub display {
 }
 
 sub display_record {
-    my ( $title, $zone, $zr ) = @_;
+    my ( $nt_obj, $title, $zone, $zr ) = @_;
     print qq[
 <div id="delegateRecordHeadline" class="dark_bg bold">$title</div>
-<div id="delegateZoneList" class="light_grey_bg"> Record(s): 
- <a href="zone.cgi?nt_group_id=$zone->{'nt_group_id'}&amp;nt_zone_id=$zone->{'nt_zone_id'}" target=body><img src="$NicToolClient::image_dir/zone.gif" > $zone->{'zone'}</a>
+<div id="delegateZoneList" class="light_grey_bg"> Record(s):
+ <a href="zone.cgi?nt_group_id=$zone->{'nt_group_id'}&amp;nt_zone_id=$zone->{'nt_zone_id'}" target=body><img src="$NicToolClient::image_dir/zone.gif" > ]
+        . $nt_obj->esc( $zone->{'zone'} ) . qq[</a>
 </div>
 
 <table id="delegateRecordHeader" class="fat">
@@ -84,13 +98,15 @@ sub display_record {
  </tr>
  <tr class=light_grey_bg>
   <td class="middle" style="width:25%;">
-   <a href="zone.cgi?nt_group_id=$zone->{'nt_group_id'}&amp;nt_zone_id=$zone->{'nt_zone_id'}&amp;nt_zone_record_id=$zr->{'nt_zone_record_id'}&amp;edit_record=1" target=body><img src="$NicToolClient::image_dir/r_record.gif" alt="record"> $zr->{'name'} </a>
+   <a href="zone.cgi?nt_group_id=$zone->{'nt_group_id'}&amp;nt_zone_id=$zone->{'nt_zone_id'}&amp;nt_zone_record_id=$zr->{'nt_zone_record_id'}&amp;edit_record=1" target=body><img src="$NicToolClient::image_dir/r_record.gif" alt="record"> ]
+        . $nt_obj->esc( $zr->{'name'} )
+        . qq[ </a>
   </td>
-  <td> $zr->{'type'}</td>
-  <td> $zr->{'address'}</td>
-  <td> $zr->{'ttl'}</td>
-  <td> $zr->{'weight'}</td>
-  <td class="fat"> $zr->{'description'} </td>
+  <td> ] . $nt_obj->esc( $zr->{'type'} ) . qq[</td>
+  <td> ] . $nt_obj->esc( $zr->{'address'} ) . qq[</td>
+  <td> ] . $nt_obj->esc( $zr->{'ttl'} ) . qq[</td>
+  <td> ] . $nt_obj->esc( $zr->{'weight'} ) . qq[</td>
+  <td class="fat"> ] . $nt_obj->esc( $zr->{'description'} ) . qq[ </td>
  </tr>
 </table>
 ];
@@ -131,7 +147,9 @@ sub delegate_zones {
         #TODO handle 600 error where object is already delegated
         my $dzone = join(
             ', ',
-            map(qq[<a href="zone.cgi?nt_group_id=$_->{'nt_group_id'}&amp;nt_zone_id=$_->{'nt_zone_id'}" target=body> <img src="$NicToolClient::image_dir/zone.gif" alt="zone"> $_->{'zone'} </a>],
+            map(qq[<a href="zone.cgi?nt_group_id=$_->{'nt_group_id'}&amp;nt_zone_id=$_->{'nt_zone_id'}" target=body> <img src="$NicToolClient::image_dir/zone.gif" alt="zone"> ]
+                    . $nt_obj->esc( $_->{'zone'} )
+                    . qq[ </a>],
                 @$zones )
         );
 
@@ -150,7 +168,7 @@ sub delegate_zones {
 
         $nt_obj->display_nice_error( $message, "Delegate Zone Records" )
             if $message;
-        display_record( $title, $zone, $zr );
+        display_record( $nt_obj, $title, $zone, $zr );
     }
 
     if ( !$edit ) {
@@ -182,7 +200,7 @@ sub delegate_zones {
             -method => 'POST',
             -name   => $edit
             ),
-            "\n",
+            $nt_obj->csrf_hidden_field(), "\n",
             $q->hidden(
             -name     => 'obj_list',
             -value    => join( ',', $q->multi_param('obj_list') ),
@@ -214,10 +232,12 @@ sub delegate_zones {
  <tr class="light_grey_bg"><td>Group</td><td>Delegated By</td></tr>
  <tr class="light_grey_bg">
   <td class="nowrap middle">
-     <a href="group.cgi?nt_group_id=$del->{'nt_group_id'}"><img src="$NicToolClient::image_dir/group.gif">$del->{'group_name'}</a>
+     <a href="group.cgi?nt_group_id=$del->{'nt_group_id'}"><img src="$NicToolClient::image_dir/group.gif">]
+                . $nt_obj->esc( $del->{'group_name'} ) . qq[</a>
   </td>
   <td class="nowrap middle">
-   <a href="user.cgi?nt_user_id=$del->{'delegated_by_id'}"><img src="$NicToolClient::image_dir/user.gif"> $del->{'delegated_by_name'}</a>
+   <a href="user.cgi?nt_user_id=$del->{'delegated_by_id'}"><img src="$NicToolClient::image_dir/user.gif"> ]
+                . $nt_obj->esc( $del->{'delegated_by_name'} ) . qq[</a>
   </td>
  </tr>
 </table>

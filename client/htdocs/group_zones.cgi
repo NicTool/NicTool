@@ -42,7 +42,11 @@ sub display {
 
     my ( $newzone, $nicemessage ) = _display_new( $nt_obj, $q, $user );
 
-    print $q->header( -charset => "utf-8" );
+    print $q->header(
+        -charset => "utf-8",
+        -cookie  => $nt_obj->csrf_cookie( $nt_obj->get_csrf_token() ),
+        %{ $nt_obj->security_headers() }
+    );
     $nt_obj->parse_template($NicToolClient::start_html_template);
     $nt_obj->parse_template(
         $NicToolClient::body_frame_start_template,
@@ -86,8 +90,9 @@ sub display {
 sub _display_delete {
     my ( $nt_obj, $q ) = @_;
 
-    return if !$q->param('delete');
-    return if !$q->param('zone_list');
+    return                            if !$q->param('delete');
+    return                            if !$q->param('zone_list');
+    return $nt_obj->csrf_error_page() if !$nt_obj->verify_csrf();
 
     my @zl    = $q->multi_param('zone_list');
     my $error = $nt_obj->delete_zones( zone_list => join( ',', @zl ) );
@@ -107,9 +112,10 @@ sub _display_delete {
 sub _display_delete_delegate {
     my ( $nt_obj, $q ) = @_;
 
-    return if !$q->param('deletedelegate');
-    return if !$q->param('nt_zone_id');
-    return if !$q->param('nt_group_id');
+    return                            if !$q->param('deletedelegate');
+    return                            if !$q->param('nt_zone_id');
+    return                            if !$q->param('nt_group_id');
+    return $nt_obj->csrf_error_page() if !$nt_obj->verify_csrf();
 
     my $error = $nt_obj->delete_zone_delegation(
         nt_zone_id  => scalar( $q->param('nt_zone_id') ),
@@ -131,6 +137,8 @@ sub _display_edit {
     return if $q->param('Cancel');    # do nothing
 
     if ( $q->param('Save') ) {
+        return $nt_obj->csrf_error_page() if !$nt_obj->verify_csrf();
+
         my @fields = qw/ nt_zone_id nt_group_id zone nameservers
             description serial refresh retry expire minimum mailaddr ttl /;
 
@@ -157,6 +165,8 @@ sub _display_new {
     if ( !$q->param('Create') ) {
         return [ $nt_obj, $q, '', 'new' ];
     }
+
+    return if !$nt_obj->verify_csrf();
 
     my $r = add_zone( $nt_obj, $q, $user ) or return;
     return ( $r->{newzone}, $r->{nicemessage} );
@@ -225,7 +235,8 @@ sub display_list {
     $nt_obj->display_delegate_javascript( 'delegate_zones.cgi', 'zone' );
 
     print qq[
-<form method="post" action="move_zones.cgi" target="move_win" name="list_form">
+<form method="post" action="move_zones.cgi" target="move_win" name="list_form">]
+        . $nt_obj->csrf_hidden_field() . qq[
 <table id="zoneList" class="fat">];
 
     display_list_header( \@columns, \%labels, \%sort_fields, $user_group, $rv );
@@ -247,9 +258,10 @@ sub display_list {
         display_list_zone_name( $zone, $width, $bgcolor, $gid );
         display_list_group_name( $zone, $width, $map ) if $include_subgroups;
         print qq[
-  <td style="width:$width;" title="Description">$zone->{'description'}</td>];
+  <td style="width:$width;" title="Description">]
+            . $nt_obj->esc( $zone->{'description'} ) . qq[</td>];
         display_list_delegate_icon( $zone, $user, $user_group );
-        display_list_delete_icon( $zone, $user, $gid, $state_string );
+        display_list_delete_icon( $nt_obj, $zone, $user, $gid, $state_string );
         print qq[
  </tr>];
     }
@@ -323,16 +335,17 @@ sub display_list_zone_name {
     print qq[
   <td style="width:$width;" class="$bgcolor" title="Zone Name">
    <div class="no_pad margin0">];
+    my $esc_zone = NicToolClient::html_escape( undef, $zone->{'zone'} );
     if ( !$isdelegate ) {
         print qq[
-    <a href="zone.cgi?nt_zone_id=$zone->{'nt_zone_id'}&amp;nt_group_id=$zone->{'nt_group_id'}"><img src="$NicToolClient::image_dir/zone.gif" alt="zone">$zone->{'zone'}</a>];
+    <a href="zone.cgi?nt_zone_id=$zone->{'nt_zone_id'}&amp;nt_group_id=$zone->{'nt_group_id'}"><img src="$NicToolClient::image_dir/zone.gif" alt="zone">$esc_zone</a>];
     }
     else {
         my $img = "zone" . ( $zone->{'pseudo'} ? '-pseudo' : '-delegated' );
         print qq[
     <a href="zone.cgi?nt_zone_id=$zone->{'nt_zone_id'}&amp;nt_group_id=$gid">
     <img src="$NicToolClient::image_dir/$img.gif" alt="">
-    $zone->{'zone'}</a>];
+    $esc_zone</a>];
         if ( $zone->{'pseudo'} ) {
             print qq[&nbsp; <span class=disabled>($zone->{'delegated_records'} record];
             print 's' if $zone->{'delegated_records'} gt 1;
@@ -363,8 +376,13 @@ sub display_list_group_name {
     );
     if ( $map && $map->{$gid} ) { unshift @list, @{ $map->{$gid} }; }
 
-    my $url          = qq[<a href="group.cgi?nt_group_id=];
-    my $group_string = join( ' / ', map( qq[${url}$_->{'nt_group_id'}">$_->{'name'}</a>], @list ) );
+    my $group_string = join(
+        ' / ',
+        map( qq[<a href="group.cgi?nt_group_id=$_->{'nt_group_id'}">]
+                . NicToolClient::html_escape( undef, $_->{'name'} )
+                . qq[</a>],
+            @list )
+    );
 
     print qq[ $group_string
   </div>
@@ -392,19 +410,24 @@ sub display_list_delegate_icon {
 }
 
 sub display_list_delete_icon {
-    my ( $zone, $user, $gid, $state_string ) = @_;
+    my ( $nt_obj, $zone, $user, $gid, $state_string ) = @_;
     my $isdelegate = exists $zone->{'delegated_by_id'};
+    my $csrf       = $nt_obj->get_csrf_token();
     print qq[
 <td class="width1" title="Delete">];
     if ( $user->{'zone_delete'} && !$isdelegate ) {
+        my $js_zone =
+            NicToolClient::html_escape( undef, NicToolClient::js_escape( undef, $zone->{'zone'} ) );
         print
-            qq[<a href="group_zones.cgi?$state_string&amp;nt_group_id=$gid&amp;delete=1&amp;zone_list=$zone->{'nt_zone_id'}" onClick="return confirm('Delete $zone->{'zone'} and associated resource records?');"><img src="$NicToolClient::image_dir/trash.gif" alt="trash"></a></td>];
+            qq[<a href="group_zones.cgi?$state_string&amp;nt_group_id=$gid&amp;delete=1&amp;zone_list=$zone->{'nt_zone_id'}&amp;csrf_token=$csrf" onClick="return confirm('Delete $js_zone and associated resource records?');"><img src="$NicToolClient::image_dir/trash.gif" alt="trash"></a></td>];
     }
     elsif ( $isdelegate
         && ( $user->{'zone_delegate'} && $zone->{'delegate_delete'} ) )
     {
+        my $js_zone =
+            NicToolClient::html_escape( undef, NicToolClient::js_escape( undef, $zone->{'zone'} ) );
         print
-            qq[<a href="group_zones.cgi?$state_string&amp;nt_group_id=$gid&amp;deletedelegate=1&amp;nt_zone_id=$zone->{'nt_zone_id'}" onClick="return confirm('Remove delegation of $zone->{'zone'}?');"><img src=$NicToolClient::image_dir/trash-delegate.gif alt="Remove Zone Delegation"></a></td>];
+            qq[<a href="group_zones.cgi?$state_string&amp;nt_group_id=$gid&amp;deletedelegate=1&amp;nt_zone_id=$zone->{'nt_zone_id'}&amp;csrf_token=$csrf" onClick="return confirm('Remove delegation of $js_zone?');"><img src=$NicToolClient::image_dir/trash-delegate.gif alt="Remove Zone Delegation"></a></td>];
     }
     elsif ($isdelegate) {
         print
@@ -424,6 +447,7 @@ sub display_new_zone {
         -method => 'POST',
         -name   => 'new_zone'
         ),
+        $nt_obj->csrf_hidden_field(),
         $q->hidden( -name => 'nt_group_id' ),
         $q->hidden( -name => $edit );
 

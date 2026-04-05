@@ -18,7 +18,11 @@ sub main {
     my $user = $nt_obj->verify_session();
 
     if ( $user && ref $user ) {
-        print $q->header( -charset => "utf-8" );
+        print $q->header(
+            -charset => "utf-8",
+            -cookie  => $nt_obj->csrf_cookie( $nt_obj->get_csrf_token() ),
+            %{ $nt_obj->security_headers() }
+        );
         display( $nt_obj, $q, $user );
     }
 }
@@ -47,7 +51,7 @@ sub display {
 
     print_zone_request_form( $nt_obj, $q, %vars );
 
-    if ( $q->param('action') ) {
+    if ( $q->param('action') && $nt_obj->verify_csrf() ) {
 
         # Process form inputs
         print "processing form inputs <br>\n" if $vars{'debug'};
@@ -82,7 +86,9 @@ sub print_zone_request_form {
     my @actions   = ("add");
 
     my $gid = $q->param('nt_group_id');
-    print $q->start_form, $q->hidden( -name => 'nt_group_id', -default => $gid );
+    print $q->start_form,
+        $nt_obj->csrf_hidden_field(),
+        $q->hidden( -name => 'nt_group_id', -default => $gid );
 
     print qq{
 <table class="fat">

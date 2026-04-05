@@ -38,7 +38,11 @@ sub main {
             $message = $nt_obj->redirect_from_log($q);
         }
 
-        print $q->header( -charset => "utf-8" );
+        print $q->header(
+            -charset => "utf-8",
+            -cookie  => $nt_obj->csrf_cookie( $nt_obj->get_csrf_token() ),
+            %{ $nt_obj->security_headers() }
+        );
         display( $nt_obj, $q, $user, $message );
     }
 }
@@ -178,7 +182,9 @@ sub display_log {
 <table class="no_pad">
  <tr>
   <td><a href="$cgi?$state_string"><img src="$NicToolClient::image_dir/zone.gif" alt=""></a></td>
-  <td><a href="$cgi?$state_string">$row->{$_}</a></td>
+  <td><a href="$cgi?$state_string">]
+                    . NicToolClient::html_escape( undef, $row->{$_} )
+                    . qq[</a></td>
  </tr>
 </table></td>];
             }
@@ -189,7 +195,9 @@ sub display_log {
                 my $url = "user.cgi?nt_group_id=$gid&amp;nt_user_id=$row->{'nt_user_id'}";
                 print qq[<td><table class="no_pad"><tr>
 <td><a href="$url"><img src="$NicToolClient::image_dir/user.gif" alt="user"></a></td>
-<td><a href="$url">$row->{'user'}</a></td> </tr></table></td>];
+<td><a href="$url">]
+                    . NicToolClient::html_escape( undef, $row->{'user'} )
+                    . qq[</a></td> </tr></table></td>];
             }
             elsif ( $_ eq 'group' ) {
                 print qq[<td><table class="no_pad"><tr>
@@ -197,8 +205,10 @@ sub display_log {
                 <td>],
                     join(
                     ' / ',
-                    map( qq[<a href="group.cgi?nt_group_id=$_->{'nt_group_id'}">$_->{'name'}</a>],
-                        (   @{ $map->{ $row->{'nt_group_id'} } },
+                    map( qq[<a href="group.cgi?nt_group_id=$_->{'nt_group_id'}">]
+                            . NicToolClient::html_escape( undef, $_->{'name'} )
+                            . qq[</a>],
+                        (   @{ $map->{ $row->{'nt_group_id'} } || [] },
                             {   nt_group_id => $row->{'nt_group_id'},
                                 name        => $row->{'group_name'}
                             }
@@ -207,7 +217,9 @@ sub display_log {
                     "</td></tr></table></td>";
             }
             else {
-                print "<td>", ( $row->{$_} ? $row->{$_} : '&nbsp;' ), "</td>";
+                print "<td>",
+                    ( $row->{$_} ? NicToolClient::html_escape( undef, $row->{$_} ) : '&nbsp;' ),
+                    "</td>";
             }
         }
         if ( $row->{'action'} eq 'deleted' ) {

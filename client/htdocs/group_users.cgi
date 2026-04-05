@@ -33,7 +33,11 @@ sub main {
     my $user = $nt_obj->verify_session();
 
     if ( $user && ref $user ) {
-        print $q->header( -charset => "utf-8" );
+        print $q->header(
+            -charset => "utf-8",
+            -cookie  => $nt_obj->csrf_cookie( $nt_obj->get_csrf_token() ),
+            %{ $nt_obj->security_headers() }
+        );
         display( $nt_obj, $q, $user );
     }
 }
@@ -63,6 +67,7 @@ sub display {
 
     if ( $q->param('new') ) {
         if ( $q->param('Create') ) {
+            return $nt_obj->csrf_error_page() if !$nt_obj->verify_csrf();
             display_save( $nt_obj, $q, $user, $group, \@fields, 'new' );
         }
         elsif ( $q->param('Cancel') ) { }    # do nothing
@@ -72,6 +77,7 @@ sub display {
     }
     elsif ( $q->param('edit') ) {
         if ( $q->param('Save') ) {
+            return $nt_obj->csrf_error_page() if !$nt_obj->verify_csrf();
             display_save( $nt_obj, $q, $user, $group, \@fields, 'edit' );
         }
         elsif ( $q->param('Cancel') ) { }    # do nothing
@@ -80,7 +86,7 @@ sub display {
         }
     }
 
-    if ( $q->param('delete') ) {
+    if ( $q->param('delete') && $nt_obj->verify_csrf() ) {
         my $error = $nt_obj->delete_users( user_list => scalar( $q->param('obj_list') ) );
         if ( $error->{'error_code'} != 200 ) {
             $nt_obj->display_nice_error( $error, "Delete Users" );
@@ -136,6 +142,7 @@ sub display_edit_user {
             -method => 'POST',
             -name   => 'perms_form'
         );
+        print $nt_obj->csrf_hidden_field();
         print $q->hidden( -name => $edit );
         print $q->hidden( -name => 'nt_group_id' );
         if ( $edit eq 'edit' ) {
@@ -299,7 +306,8 @@ sub display_list {
             -method => 'POST',
             -name   => 'list_form',
             -target => 'move_win'
-        );
+            ),
+            $nt_obj->csrf_hidden_field();
     }
 
     print qq[
@@ -386,9 +394,13 @@ sub display_list {
             );
             if ($map) { unshift @list, @{ $map->{ $obj->{'nt_group_id'} } }; }
 
-            my $url = qq[<a href="group.cgi?nt_group_id=];
-            my $group_string =
-                join( ' / ', map( qq[${url}$_->{'nt_group_id'}">$_->{'name'}</a>], @list ) );
+            my $group_string = join(
+                ' / ',
+                map( qq[<a href="group.cgi?nt_group_id=$_->{'nt_group_id'}">]
+                        . NicToolClient::html_escape( undef, $_->{'name'} )
+                        . qq[</a>],
+                    @list )
+            );
 
             print qq[ $group_string
      </td>
@@ -403,20 +415,26 @@ sub display_list {
    <table class="no_pad">
     <tr>
      <td><a href="$url"><img src="$NicToolClient::image_dir/user.gif" alt="user"></a></td>
-     <td><a href="$url">$obj->{'username'}</a></td>
+     <td><a href="$url">] . NicToolClient::html_escape( undef, $obj->{'username'} ) . qq[</a></td>
     </tr>
    </table>
   </td>
-  <td style="width:$width;">$obj->{'first_name'}</td>
-  <td style="width:$width;">$obj->{'last_name'}</td>
-  <td style="width:$width;"><a href="mailto:$obj->{'email'}">$obj->{'email'}</a></td>];
+  <td style="width:$width;">] . NicToolClient::html_escape( undef, $obj->{'first_name'} ) . qq[</td>
+  <td style="width:$width;">] . NicToolClient::html_escape( undef, $obj->{'last_name'} ) . qq[</td>
+  <td style="width:$width;"><a href="mailto:$obj->{'email'}">]
+            . NicToolClient::html_escape( undef, $obj->{'email'} ) . qq[</a></td>];
 
         if (   $user->{'user_delete'}
             && $obj->{'nt_user_id'} != $user->{'nt_user_id'} )
         {
             print qq[
   <td class="width1">
- <a href="$cgi?$state_string&amp;delete=1&amp;obj_list=$obj->{'nt_user_id'}" onClick="return confirm('Delete user $obj->{'username'}?');"><img src="$NicToolClient::image_dir/trash.gif" alt="trash"></a></td>];
+ <a href="$cgi?$state_string&amp;delete=1&amp;obj_list=$obj->{'nt_user_id'}&amp;csrf_token=]
+                . $nt_obj->get_csrf_token()
+                . qq[" onClick="return confirm(']
+                . NicToolClient::html_escape( undef,
+                NicToolClient::js_escape( undef, "Delete user $obj->{'username'}?" ) )
+                . qq[');"><img src="$NicToolClient::image_dir/trash.gif" alt="trash"></a></td>];
         }
         else {
             print qq[

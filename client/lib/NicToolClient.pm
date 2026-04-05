@@ -8,8 +8,8 @@ use NicToolServerAPI();
 
 $NicToolClient::VERSION = '2.40';
 $NicToolClient::NTURL   = 'http://www.nictool.com/';
-$NicToolClient::LICENSE = 'http://www.affero.org/oagpl.html';
-$NicToolClient::SRCURL  = 'http://www.nictool.com/download/NicTool.tar.gz';
+$NicToolClient::LICENSE = 'https://www.gnu.org/licenses/agpl-3.0.html';
+$NicToolClient::SRCURL  = 'https://github.com/NicTool/NicTool';
 
 sub new {
     my $class = shift;
@@ -64,8 +64,9 @@ sub check_setup {
     my $message = $server_obj->check_setup();
 
     if ( $message ne 'OK' ) {
-        print $q->header;
-        $self->parse_template( $NicToolClient::setup_error_template, message => $message );
+        print $q->header( -charset => 'utf-8', %{ $self->security_headers() } );
+        $self->parse_template( $NicToolClient::setup_error_template,
+            message => $self->html_escape($message) );
     }
 
     return $message;
@@ -99,7 +100,7 @@ sub logout_user {
 sub display_login {
     my ( $self, $error ) = @_;
 
-    $self->expire_cookie();
+    my $q = $self->{'CGI'};
 
     my $message = '';
     if ( ref $error ) {
@@ -111,9 +112,28 @@ sub display_login {
         $message = $error;
     }
 
-    print $self->{'CGI'}->header( -charset => "utf-8" );
+    my $expire_session = $q->cookie(
+        -name     => 'NicTool',
+        -value    => '',
+        -expires  => '-1d',
+        -path     => '/',
+        -secure   => 1,
+        -httponly => 1,
+        -samesite => 'Strict',
+    );
 
-    $self->parse_template( $NicToolClient::login_template, 'message' => $message );
+    # set a fresh CSRF token for the login form
+    $self->{'csrf_token'} = $self->generate_csrf_token();
+    my $csrf = $self->csrf_cookie( $self->{'csrf_token'} );
+
+    print $q->header(
+        -charset => 'utf-8',
+        -cookie  => [ $expire_session, $csrf ],
+        %{ $self->security_headers() },
+    );
+
+    $self->parse_template( $NicToolClient::login_template,
+        'message' => $self->html_escape($message) );
 }
 
 sub verify_session {
@@ -136,14 +156,15 @@ sub verify_session {
 
     $self->expire_cookie($q);
 
-    my $redirect = 'index.cgi?message=' . $q->escape( $error_msg // q{} );
+    my $escaped_msg = $q->escape($error_msg);
+    $escaped_msg =~ s/[^a-zA-Z0-9%._~\-]//g;    # strip anything not URL-safe
     print qq[<html>
- <script>
-  parent.location = "] . $redirect . qq[";
- </script>
+ <head><meta http-equiv="refresh" content="0;url=index.cgi?message=$escaped_msg"></head>
+ <body></body>
 </html>];
 
-    $self->parse_template( $NicToolClient::login_template, 'message' => $error_msg );
+    $self->parse_template( $NicToolClient::login_template,
+        'message' => $self->html_escape($error_msg) );
 }
 
 sub set_cookie {
@@ -151,29 +172,146 @@ sub set_cookie {
 
     my $q = $self->{'CGI'};
 
-    my $cookie = $q->cookie(
-        -path    => '/',
-        -name    => 'NicTool',
-        -value   => $value,
-        -expires => '+1M',
-        -secure  => 1,
+    my $session_cookie = $q->cookie(
+        -path     => '/',
+        -name     => 'NicTool',
+        -value    => $value,
+        -expires  => '+1M',
+        -secure   => 1,
+        -httponly => 1,
+        -samesite => 'Strict',
     );
 
-    print $q->header( -cookie => $cookie );
+    my $csrf = $self->csrf_cookie( $self->get_csrf_token() );
+
+    print $q->header(
+        -cookie  => [ $session_cookie, $csrf ],
+        -charset => 'utf-8',
+        %{ $self->security_headers() },
+    );
 }
 
 sub expire_cookie {
     my $self = shift;
     my $q    = shift || $self->{'CGI'};
 
-    my $cookie = $q->cookie(
-        -name    => 'NicTool',
-        -value   => '',
-        -expires => '-1d',
-        -path    => '/',
-        -secure  => 1,
+    my $session_cookie = $q->cookie(
+        -name     => 'NicTool',
+        -value    => '',
+        -expires  => '-1d',
+        -path     => '/',
+        -secure   => 1,
+        -httponly => 1,
+        -samesite => 'Strict',
     );
-    print $q->header( -cookie => $cookie );
+    my $csrf_cookie = $q->cookie(
+        -name     => 'NicTool_csrf',
+        -value    => '',
+        -expires  => '-1d',
+        -path     => '/',
+        -secure   => 1,
+        -samesite => 'Strict',
+    );
+    print $q->header(
+        -cookie  => [ $session_cookie, $csrf_cookie ],
+        -charset => 'utf-8',
+        %{ $self->security_headers() },
+    );
+}
+
+sub security_headers {
+    return {
+        '-X-Content-Type-Options'  => 'nosniff',
+        '-X-Frame-Options'         => 'SAMEORIGIN',
+        '-X-XSS-Protection'        => '1; mode=block',
+        '-Referrer-Policy'         => 'strict-origin-when-cross-origin',
+        '-Content-Security-Policy' =>
+            "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self'; frame-src 'self'; form-action 'self'; frame-ancestors 'self'",
+    };
+}
+
+sub generate_csrf_token {
+    my @chars = ( 'a' .. 'f', '0' .. '9' );
+    my $token = '';
+    for ( 1 .. 40 ) {
+        $token .= $chars[ rand @chars ];
+    }
+    return $token;
+}
+
+sub csrf_cookie {
+    my ( $self, $token ) = @_;
+    my $q = $self->{'CGI'};
+    return $q->cookie(
+        -name     => 'NicTool_csrf',
+        -value    => $token,
+        -path     => '/',
+        -secure   => 1,
+        -httponly => 0,
+        -samesite => 'Strict',
+    );
+}
+
+sub get_csrf_token {
+    my $self = shift;
+    return $self->{'csrf_token'} if $self->{'csrf_token'};
+
+    my $q     = $self->{'CGI'};
+    my $token = $q->cookie('NicTool_csrf') || $self->generate_csrf_token();
+    $self->{'csrf_token'} = $token;
+    return $token;
+}
+
+sub csrf_hidden_field {
+    my $self  = shift;
+    my $token = $self->get_csrf_token();
+    return qq[<input type="hidden" name="csrf_token" value="$token">];
+}
+
+sub verify_csrf {
+    my $self = shift;
+    my $q    = $self->{'CGI'};
+
+    my $cookie_token = $q->cookie('NicTool_csrf');
+    my $form_token   = scalar( $q->param('csrf_token') );
+
+    if ( !$cookie_token || !$form_token || $cookie_token ne $form_token ) {
+        return 0;
+    }
+    return 1;
+}
+
+sub csrf_error_page {
+    my $self = shift;
+    print
+        qq[<div class="center error"><b>CSRF validation failed. Please go back and try again.</b></div>];
+    return 0;
+}
+
+sub html_escape {
+    my ( $self, $str ) = @_;
+    return '' if !defined $str;
+    $str =~ s/&/&amp;/g;
+    $str =~ s/</&lt;/g;
+    $str =~ s/>/&gt;/g;
+    $str =~ s/"/&quot;/g;
+    $str =~ s/'/&#39;/g;
+    return $str;
+}
+
+sub esc { goto &html_escape }
+
+sub js_escape {
+    my ( $self, $str ) = @_;
+    return '' if !defined $str;
+    $str =~ s/\\/\\\\/g;
+    $str =~ s/'/\\'/g;
+    $str =~ s/"/\\"/g;
+    $str =~ s/\n/\\n/g;
+    $str =~ s/\r/\\r/g;
+    $str =~ s/\x{2028}/\\u2028/g;
+    $str =~ s/\x{2029}/\\u2029/g;
+    return $str;
 }
 
 sub parse_template {
@@ -182,6 +320,11 @@ sub parse_template {
 
     my %temp = @_;
     my $vars = \%temp;
+
+    # escape user-controlled values before template substitution
+    foreach my $k (qw(username groupname)) {
+        $vars->{$k} = $self->html_escape( $vars->{$k} ) if defined $vars->{$k};
+    }
 
     # only for stuff defined in the $NicToolClient:: namespace
     $self->fill_template_vars($vars);    # TODO - cache # unless ($self->{'fill_vars'});
@@ -210,6 +353,9 @@ sub fill_template_vars {
         eval "\$temp = \$NicToolClient::$f";
         $vars->{$f} = $temp;
     }
+
+    $vars->{'CSRF_TOKEN_FIELD'} = $self->csrf_hidden_field();
+    $vars->{'CSRF_TOKEN'}       = $self->get_csrf_token();
 }
 
 sub display_group_menu {
@@ -223,7 +369,8 @@ sub display_group_menu {
         my $group = $rv->{'groups'}->[$navG];
         my $gid   = $group->{'nt_group_id'};
 
-        $menu{$gid} = qq[<a href="group.cgi?nt_group_id=$gid">$group->{name}</a>];
+        $menu{$gid} =
+            qq[<a href="group.cgi?nt_group_id=$gid">] . $self->esc( $group->{name} ) . qq[</a>];
     }
 
     print qq[<ul id=group_menu>\n];
@@ -272,8 +419,8 @@ sub display_group_tree {
 
             if ( _can_group_delete( $user, $group ) ) {
                 push @options,
-                    qq[<a href="group.cgi?nt_group_id=$group->{'parent_group_id'}&amp;delete=$group->{'nt_group_id'}" onClick="return confirm('Delete ]
-                    . join( ' / ', @list )
+                    qq[<a href="group.cgi?nt_group_id=$group->{'parent_group_id'}&amp;delete=$group->{'nt_group_id'}" onClick="return confirm(']
+                    . $self->esc( $self->js_escape( join( ' / ', @list ) ) )
                     . qq[ and all associated data?');">Delete</a>];
             }
             else {
@@ -300,10 +447,10 @@ sub display_group_tree {
         print qq[\n  $dir/group.gif" alt="group">];
 
         if ( $in_summary && $navG == $count ) {
-            print qq[<strong>$group->{'name'}</strong>];
+            print qq[<strong>] . $self->esc( $group->{'name'} ) . qq[</strong>];
         }
         else {
-            print qq[<a href="group.$state">$group->{'name'}</a>];
+            print qq[<a href="group.$state">] . $self->esc( $group->{'name'} ) . qq[</a>];
         }
 
         print qq[
@@ -427,7 +574,7 @@ sub display_zone_options {
     if ( $group->{'has_children'} ) {
         my $win_opts = qq['width=640,height=480,scrollbars,resizable=yes'];
 
-# Move
+        # Move
         if ( $user->{'zone_write'} && !$isdelegate && !$zone->{'deleted'} ) {
             push @options,
                 qq[<a href="javascript:void window.open('move_zones.cgi?obj_list=$zone->{'nt_zone_id'}', 'move_win', $win_opts)">Move</a>];
@@ -436,7 +583,7 @@ sub display_zone_options {
             push @options, '<span class="disabled">Move</span>';
         }
 
-# Delegate, Re-Delegate
+        # Delegate, Re-Delegate
         if ( $user->{'zone_delegate'} && !$isdelegate && !$zone->{'deleted'} ) {
             push @options,
                 qq[<a href="javascript:void window.open('delegate_zones.cgi?obj_list=$zone->{'nt_zone_id'}', 'delegate_win', $win_opts)">Delegate</a>];
@@ -456,10 +603,13 @@ sub display_zone_options {
         }
     }
 
-# Delete options
+    # Delete options
     if ( $user->{'zone_delete'} && !$isdelegate && !$zone->{'deleted'} ) {
         push @options,
-            qq[<a href="group_zones.cgi?nt_group_id=$gid&amp;zone_list=$zone->{'nt_zone_id'}&amp;delete=1" onClick="return confirm('Delete $zone->{'zone'} and all associated resource records?');">Delete</a>];
+            qq[<a href="group_zones.cgi?nt_group_id=$gid&amp;zone_list=$zone->{'nt_zone_id'}&amp;delete=1" onClick="return confirm(']
+            . $self->esc(
+            $self->js_escape("Delete $zone->{'zone'} and all associated resource records?") )
+            . qq[');">Delete</a>];
     }
     elsif ( $zone->{'deleted'} ) {
         push @options,
@@ -474,7 +624,9 @@ sub display_zone_options {
         && $zone->{'delegate_delete'} )
     {
         push @options,
-            qq[<a href="group_zones.cgi?nt_group_id=$gid&amp;nt_zone_id=$zone->{'nt_zone_id'}&amp;deletedelegate=1" onClick="return confirm('Remove delegation of $zone->{'zone'}?');">Remove Delegation</a>];
+            qq[<a href="group_zones.cgi?nt_group_id=$gid&amp;nt_zone_id=$zone->{'nt_zone_id'}&amp;deletedelegate=1" onClick="return confirm(']
+            . $self->esc( $self->js_escape("Remove delegation of $zone->{'zone'}?") )
+            . qq[');">Remove Delegation</a>];
     }
     elsif ($isdelegate) {
         push @options, '<span class="disabled">Remove Delegation</span>';
@@ -500,11 +652,11 @@ sub display_zone_options {
  $zone_img];
 
     if ($in_zone) {
-        print qq[<b>$zone->{'zone'}</b>$tag];
+        print qq[<b>] . $self->esc( $zone->{'zone'} ) . qq[</b>$tag];
     }
     else {
         my $url = "zone.cgi?nt_group_id=$gid&amp;nt_zone_id=$zone->{'nt_zone_id'}";
-        print qq[<a href="$url">$zone->{'zone'}</a>$tag];
+        print qq[<a href="$url">] . $self->esc( $zone->{'zone'} ) . qq[</a>$tag];
     }
 
     print qq[
@@ -623,6 +775,7 @@ sub display_search_rows {
  <tr class="dark_grey_bg">
   <td>
    <form method="post" action="$cgi_name">
+    ] . $self->csrf_hidden_field() . qq[
     <input type="hidden" name="quick_search" value="Edit">
     <input type="text" name="search_value" size="30">
     <input type="submit" name="quick_search" value="Search">
@@ -658,7 +811,7 @@ sub display_search_rows {
  </td>
  <td class="right">
   <form method="post" action="$cgi_name">
-];
+] . $self->csrf_hidden_field();
 
     foreach ( @{ $self->paging_fields }, @$state_fields ) {
         next                            if $_ eq 'page';
@@ -746,7 +899,7 @@ sub display_sort_options {
 
     print qq[
 <div id="changeSortOrder">
- <form method="post" action="$cgi_name">];
+ <form method="post" action="$cgi_name">] . $self->csrf_hidden_field();
 
     foreach ( @{ $self->paging_fields }, @$state_fields ) {
         next if $_ =~ /sort/i;
@@ -794,7 +947,7 @@ sub display_sort_options {
 </table>
  <input type="submit" name="change_sortorder" value="Change">
  </form>
- <form method="post" action="$cgi_name">];
+ <form method="post" action="$cgi_name">] . $self->csrf_hidden_field();
 
     foreach ( @{ $self->paging_fields }, @$state_fields ) {
         next if $_ eq 'edit_sortorder';
@@ -815,7 +968,7 @@ sub display_advanced_search {
 
     my @options = ( 'equals', 'contains', 'starts with', 'ends with', '<', '<=', '>', '>=' );
 
-    print $q->start_form( -action => $cgi_name, -method => 'POST' );
+    print $q->start_form( -action => $cgi_name, -method => 'POST' ), $self->csrf_hidden_field();
 
     foreach (@$state_fields) {
         print $q->hidden( -name => $_ );
@@ -914,7 +1067,8 @@ sub display_advanced_search {
    <input type="submit" name="Search" value="Search" />
 </div>], $q->end_form, qq[
 <div id="advancedSearchCancel" class="dark_grey_bg center">],
-        $q->start_form( -action => $cgi_name, -method => 'POST' );
+        $q->start_form( -action => $cgi_name, -method => 'POST' ),
+        $self->csrf_hidden_field();
 
     foreach ( @{ $self->paging_fields }, @$state_fields ) {
         next if $_ eq 'edit_search';
@@ -942,8 +1096,9 @@ sub display_group_list {
     my $group = $self->get_group( nt_group_id => scalar( $q->param('nt_group_id') ) );
 
     if ( !$group->{'has_children'} ) {
-        print
-            qq[<span class="center" style="color:red;"><strong>Group $group->{'name'} has no sub-groups!</strong></span>];
+        print qq[<span class="center" style="color:red;"><strong>Group ]
+            . $self->esc( $group->{'name'} )
+            . qq[ has no sub-groups!</strong></span>];
         $q->param( 'nt_group_id', $group->{'parent_group_id'} );
         $group = $self->get_group( nt_group_id => scalar( $q->param('nt_group_id') ) );
     }
@@ -1001,6 +1156,7 @@ sub display_group_list {
         -method => 'POST',
         -name   => 'new'
         ),
+        $self->csrf_hidden_field(),
         $q->hidden(
         -name     => 'obj_list',
         -value    => join( ',', $q->multi_param('obj_list') ),
@@ -1066,7 +1222,9 @@ sub display_group_list {
                     ? "&amp;" . join( "&amp;", map {"$_=$moreparams->{$_}"} keys %$moreparams )
                     : ''
                     )
-                    . qq[">$_->{'name'}</a>],
+                    . qq[">]
+                    . $self->esc( $_->{'name'} )
+                    . qq[</a>],
                 (   @{ $map->{ $group->{'nt_group_id'} } },
                     {   nt_group_id => $group->{'nt_group_id'},
                         name        => $group->{'name'}
@@ -1285,15 +1443,15 @@ sub display_nice_message {
     my ( $self, $message, $title, $explain ) = @_;
     my @msgs = split( /\bAND\b/, $message );
     $message = qq( <li style="color: blue;"> )
-        . join( qq(<br>\n<li style="color: blue;"> ), @msgs ) . '<br>';
+        . join( qq(<br>\n<li style="color: blue;"> ), map { $self->esc($_) } @msgs ) . '<br>';
 
     print qq[
 <div id="niceMessage" class="left">
- <div class="dark_bg bold">$title</div>
+ <div class="dark_bg bold">] . $self->esc($title) . qq[</div>
  <div class="light_grey_bg">$message</div>];
     if ($explain) {
         print qq[
- <div class="light_grey_bg">$explain</div>];
+ <div class="light_grey_bg">] . $self->esc($explain) . qq[</div>];
     }
     print qq[
 </div>];
@@ -1304,13 +1462,13 @@ sub display_nice_error {
     my ( $self, $error, $actionmsg, $back ) = @_;
     my ( $message, $explain ) = @{ $self->error_message( $error->{'error_code'} ) };
     my $err = $error->{'error_desc'} || 'Error';
-    $actionmsg = ": " . $actionmsg if $actionmsg;
+    $actionmsg = ": " . $self->esc($actionmsg) if $actionmsg;
 
     my $errmsg = $error->{'error_msg'};
     my @msgs   = split( /\bAND\b/, $errmsg );
     $errmsg = "<div class=error><ul>\n";
     foreach (@msgs) {
-        $errmsg .= qq[<li>$_</li>\n];
+        $errmsg .= qq[<li>] . $self->esc($_) . qq[</li>\n];
     }
     $errmsg .= qq[</ul>\n</div>];
 
@@ -1321,8 +1479,8 @@ sub display_nice_error {
 
     print qq[<br>\n
 <table id="errorMessage" class="fat center">
- <tr><td class="left error_bg"><strong>$message</strong>$actionmsg</td></tr>
- <tr><td class="left light_grey_bg">$errmsg<p>$explain</p></td></tr>
+ <tr><td class="left error_bg"><strong>] . $self->esc($message) . qq[</strong>$actionmsg</td></tr>
+ <tr><td class="left light_grey_bg">$errmsg<p>] . $self->esc($explain) . qq[</p></td></tr>
  <tr><td class="right dark_grey_bg dark">$bb ($error->{'error_code'})</td></tr>
 </table>];
 
@@ -1333,7 +1491,7 @@ sub display_nice_error {
 sub display_error {
     my ( $self, $error ) = @_;
 
-    print qq[ <center class="error"><b>$error->{'error_msg'}</b></center> ];
+    print qq[ <center class="error"><b>] . $self->esc( $error->{'error_msg'} ) . qq[</b></center> ];
 
     warn "Client error: $error->{'error_code'}: $error->{'error_msg'}: $error->{'error_desc'} "
         . join( ":", caller );

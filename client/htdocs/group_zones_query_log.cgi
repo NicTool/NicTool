@@ -33,7 +33,11 @@ sub main {
     my $user = $nt_obj->verify_session();
 
     if ( $user && ref $user ) {
-        print $q->header( -charset => "utf-8" );
+        print $q->header(
+            -charset => "utf-8",
+            -cookie  => $nt_obj->csrf_cookie( $nt_obj->get_csrf_token() ),
+            %{ $nt_obj->security_headers() }
+        );
         display( $nt_obj, $q, $user );
     }
 }
@@ -139,23 +143,27 @@ sub display {
             }
             elsif ( $_ eq 'nameserver' ) {
                 print qq[<td><table class="no_pad"><tr>
-                <td>$row->{$_}</td>
+                <td>] . NicToolClient::html_escape( undef, $row->{$_} ) . qq[</td>
                 </tr></table></td>];
             }
             elsif ( $_ eq 'zone' ) {
                 print qq[<td><table class="no_pad"><tr>
                 <td><a href="zone.cgi?nt_group_id=$gid&amp;nt_zone_id=$row->{'nt_zone_id'}"><img src="$NicToolClient::image_dir/zone.gif"></a></td>
-                <td><a href="zone.cgi?nt_group_id=$gid&amp;nt_zone_id=$row->{'nt_zone_id'}">$row->{$_}</a></td>
+                <td><a href="zone.cgi?nt_group_id=$gid&amp;nt_zone_id=$row->{'nt_zone_id'}">]
+                    . NicToolClient::html_escape( undef, $row->{$_} )
+                    . qq[</a></td>
                 </tr></table></td>];
             }
             elsif ( $_ eq 'query' ) {
                 print qq[<td><table class="no_pad"><tr>
                 <td><a href="zone.cgi?nt_group_id=$gid&amp;nt_zone_id=$row->{'nt_zone_id'}&amp;nt_zone_record_id=$row->{'nt_zone_record_id'}&amp;edit_record=1"><img src="$NicToolClient::image_dir/r_record.gif"></a></td>
-                <td><a href="zone.cgi?nt_group_id=$gid&amp;nt_zone_id=$row->{'nt_zone_id'}&amp;nt_zone_record_id=$row->{'nt_zone_record_id'}&amp;edit_record=1">$row->{$_}</a></td>
+                <td><a href="zone.cgi?nt_group_id=$gid&amp;nt_zone_id=$row->{'nt_zone_id'}&amp;nt_zone_record_id=$row->{'nt_zone_record_id'}&amp;edit_record=1">]
+                    . NicToolClient::html_escape( undef, $row->{$_} )
+                    . qq[</a></td>
                 </tr></table></td>];
             }
             else {
-                print "<td>", $row->{$_}, "</td>";
+                print "<td>", NicToolClient::html_escape( undef, $row->{$_} ), "</td>";
             }
         }
         print "</tr>";

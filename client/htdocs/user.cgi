@@ -37,7 +37,11 @@ sub main {
         if ( $q->param('redirect') ) {
             $message = $nt_obj->redirect_from_log($q);
         }
-        print $q->header( -charset => "utf-8" );
+        print $q->header(
+            -charset => "utf-8",
+            -cookie  => $nt_obj->csrf_cookie( $nt_obj->get_csrf_token() ),
+            %{ $nt_obj->security_headers() }
+        );
         display( $nt_obj, $q, $user, $message );
     }
 }
@@ -61,10 +65,12 @@ sub display {
     #warn "user info: ".Data::Dumper::Dumper($user);
     my $edit_message;
 
-# send the request to NicToolServer and parse result
+    # send the request to NicToolServer and parse result
     if (   ( $q->param('edit') && $q->param('Save') )
         || ( $q->param('new') && $q->param('Create') ) )
     {
+
+        return $nt_obj->csrf_error_page() if !$nt_obj->verify_csrf();
 
         my ( $error, %data );
         my @fields =
@@ -130,7 +136,9 @@ sub display {
         push @options,
               qq[<a href="group_users.cgi?nt_group_id=]
             . $q->param('nt_group_id')
-            . qq[&amp;delete=1&amp;obj_list=$duser->{'nt_user_id'}" onClick="return confirm('Delete user $duser->{'username'}?');">Delete</a>];
+            . qq[&amp;delete=1&amp;obj_list=$duser->{'nt_user_id'}" onClick="return confirm(']
+            . $nt_obj->esc( $nt_obj->js_escape("Delete user $duser->{'username'}?") )
+            . qq[');">Delete</a>];
     }
     else {
         push @options, "<span class=disabled>Delete</span>";
@@ -161,7 +169,7 @@ sub display {
     }
 
     print qq[<td><img src="$NicToolClient::image_dir/user.gif"></td>
-<td class="nowrap"><b>$duser->{'username'}</b></td>
+<td class="nowrap"><b>] . $nt_obj->esc( $duser->{'username'} ) . qq[</b></td>
 <td class="right fat">], join( ' | ', @options ), qq[</td>
 </tr></table>
 </td></tr></table>];
@@ -234,20 +242,28 @@ sub display_properties {
   <td class="width50">
    <table class="fat">
     <tr class="light_grey_bg">
-     <td class="nowrap">Username: </td> <td class="fat">$duser->{'username'}</td>
+     <td class="nowrap">Username: </td> <td class="fat">]
+        . $nt_obj->esc( $duser->{'username'} )
+        . qq[</td>
     </tr>
     <tr class="light_grey_bg">
-     <td class="nowrap">Email: </td> <td class="fat">$duser->{'email'}</td>
+     <td class="nowrap">Email: </td> <td class="fat">]
+        . $nt_obj->esc( $duser->{'email'} )
+        . qq[</td>
     </tr>
    </table>
   </td>
   <td class="width50">
    <table class="fat">
     <tr class="light_grey_bg">
-     <td class="nowrap">First Name: </td> <td class="fat">$duser->{'first_name'}</td>
+     <td class="nowrap">First Name: </td> <td class="fat">]
+        . $nt_obj->esc( $duser->{'first_name'} )
+        . qq[</td>
     </tr>
     <tr class="light_grey_bg">
-     <td class="nowrap">Last Name: </td> <td class="fat">$duser->{'last_name'}</td>
+     <td class="nowrap">Last Name: </td> <td class="fat">]
+        . $nt_obj->esc( $duser->{'last_name'} )
+        . qq[</td>
     </tr>
    </table>
   </td>
@@ -369,7 +385,7 @@ sub display_global_log {
 <td>
  <table class="no_pad"><tr>
     <td><a href="$url"><img src="$img" alt="image"></a></td>
-    <td><a href="$url">$row->{'title'}</a></td>
+    <td><a href="$url">] . $nt_obj->esc( $row->{'title'} ) . qq[</a></td>
  </tr></table></td>];
             }
             elsif ( $_ eq 'target' && $row->{'target_id'} ) {
@@ -383,13 +399,13 @@ sub display_global_log {
  <table class="no_pad">
   <tr>
    <td><a href="$url"><img src="$img"></a></td>
-   <td><a href="$url">$row->{'target_name'}</a></td>
+   <td><a href="$url">] . $nt_obj->esc( $row->{'target_name'} ) . qq[</a></td>
   </tr>
  </table>
 </td>];
             }
             else {
-                print "<td>", ( $row->{$_} ? $row->{$_} : '&nbsp;' ), "</td>";
+                print "<td>", ( $row->{$_} ? $nt_obj->esc( $row->{$_} ) : '&nbsp;' ), "</td>";
             }
         }
         print "</tr>";
@@ -421,6 +437,7 @@ sub display_edit {
             -method => 'POST',
             -name   => 'perms_form'
         );
+        print $nt_obj->csrf_hidden_field();
         print $q->hidden( -name => 'nt_group_id' );
         print $q->hidden( -name => 'nt_user_id' ) if $edit eq 'edit';
         print $q->hidden( -name => $edit );
@@ -447,7 +464,7 @@ sub display_edit {
             -value => $duser->{'username'},
             -size  => 30
             )
-        : $duser->{'username'}
+        : $nt_obj->esc( $duser->{'username'} )
         ),
         qq[</td>
 </tr>
@@ -461,7 +478,7 @@ sub display_edit {
             -value => $duser->{'first_name'},
             -size  => 30
             )
-        : $duser->{'first_name'}
+        : $nt_obj->esc( $duser->{'first_name'} )
         ),
         qq[</td>
 </tr>
@@ -475,7 +492,7 @@ sub display_edit {
             -value => $duser->{'last_name'},
             -size  => 40
             )
-        : $duser->{'last_name'}
+        : $nt_obj->esc( $duser->{'last_name'} )
         ),
         qq[</td>
 </tr>
@@ -489,7 +506,7 @@ sub display_edit {
             -value => $duser->{'email'},
             -size  => 60
             )
-        : $duser->{'email'}
+        : $nt_obj->esc( $duser->{'email'} )
         ),
         "</td>
     </tr>";
