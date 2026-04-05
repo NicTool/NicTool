@@ -37,8 +37,10 @@ BEGIN {
         or die "Set NICTOOL_DB_USER_PASSWORD (the database password for NicTool)\n";
 
     my $db_port = $ENV{DB_PORT} || '3306';
+    my $dsn     = "DBI:$db_engine:database=$db_name;host=$db_host;port=$db_port";
+    $dsn .= ";mysql_ssl=1" if $ENV{DB_SSL};
 
-    $NicToolServer::dsn     = "DBI:$db_engine:database=$db_name;host=$db_host;port=$db_port";
+    $NicToolServer::dsn     = $dsn;
     $NicToolServer::db_user = $db_user;
     $NicToolServer::db_pass = $db_pass;
 

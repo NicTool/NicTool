@@ -32,7 +32,7 @@ sed "s|%%NT_DIR%%|${NT_DIR}|g" "$SCRIPT_DIR/apache.conf.in" \
 echo "==> Injecting NicTool env vars into Apache envvars"
 ENVVARS="/etc/apache2/envvars"
 if [ -f "$ENVVARS" ]; then
-    for var in DB_ENGINE DB_HOSTNAME DB_PORT \
+    for var in DB_ENGINE DB_HOSTNAME DB_PORT DB_SSL \
                NICTOOL_DB_NAME NICTOOL_DB_USER NICTOOL_DB_USER_PASSWORD \
                NICTOOL_CLIENT_DIR NICTOOL_SERVER_HOST NICTOOL_SERVER_PORT \
                NICTOOL_SERVER_PROTOCOL NICTOOL_DATA_PROTOCOL; do

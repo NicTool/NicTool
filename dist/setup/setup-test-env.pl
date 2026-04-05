@@ -21,7 +21,10 @@ my $salt      = _get_salt(16);
 my $pass_hash = unpack( "H*", Crypt::KeyDerivation::pbkdf2( $test_pass, $salt, 5000, 'SHA512' ) );
 
 my $dsn = "DBI:$db_engine:database=$db_name;host=$db_host;port=3306";
-my $dbh = DBI->connect( $dsn, $db_user, $db_pass, { RaiseError => 1 } )
+$dsn .= ";mysql_ssl=1" if $ENV{DB_SSL};
+my %opts = ( RaiseError => 1 );
+$opts{mysql_ssl} = 1 if $ENV{DB_SSL};
+my $dbh = DBI->connect( $dsn, $db_user, $db_pass, \%opts )
     or die "Cannot connect to $dsn: $DBI::errstr\n";
 
 # Check if test group already exists
