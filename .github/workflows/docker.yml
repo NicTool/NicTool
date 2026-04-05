@@ -1,0 +1,62 @@
+name: Docker
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/docker.yml'
+      - 'client/**'
+      - 'server/**'
+      - 'dist/**'
+
+permissions:
+  contents: read
+
+jobs:
+  docker-test:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Generate credentials
+        run: |
+          dist/docker/generate-env.sh
+          # Extract the root password for E2E tests
+          ROOT_PW=$(grep ROOT_USER_PASSWORD dist/docker/.env | cut -d= -f2)
+          echo "NICTOOL_TEST_PASSWORD=$ROOT_PW" >> "$GITHUB_ENV"
+
+      - name: Build and start containers
+        working-directory: dist/docker
+        run: docker compose up -d --build --wait
+        timeout-minutes: 10
+
+      - name: Run server tests
+        run: docker compose -f dist/docker/docker-compose.yml exec -T web make -C /usr/local/nictool/server test
+
+      - name: Run client tests
+        run: docker compose -f dist/docker/docker-compose.yml exec -T web make -C /usr/local/nictool/client test
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install E2E dependencies
+        working-directory: client/t/e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Run E2E tests
+        working-directory: client/t/e2e
+        env:
+          NICTOOL_URL: http://localhost:8080
+          NICTOOL_TEST_PASSWORD: ${{ env.NICTOOL_TEST_PASSWORD }}
+        run: npx playwright test
+
+      - name: Failure diagnostics
+        if: failure()
+        run: |
+          docker compose -f dist/docker/docker-compose.yml logs web || true
+          docker compose -f dist/docker/docker-compose.yml logs db || true

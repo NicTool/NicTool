@@ -1,6 +1,9 @@
 #!/bin/sh
 
-perl .test/create_tables.pl \
+cd server/sql \
+  && echo "" | perl create_tables.pl --environment \
+  && cd ../.. \
+  && perl dist/setup/setup-test-env.pl \
   && cd client \
   && perl Makefile.PL \
   && sudo make install \

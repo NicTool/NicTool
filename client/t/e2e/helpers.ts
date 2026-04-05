@@ -5,8 +5,8 @@ import type { Page, Frame } from '@playwright/test';
 // Constants
 // ---------------------------------------------------------------------------
 export const BASE = process.env.NICTOOL_URL || 'https://localhost:8443';
-export const USERNAME = 'root';
-export const PASSWORD = 'nictool';
+export const USERNAME = process.env.NICTOOL_TEST_USER || 'root';
+export const PASSWORD = process.env.NICTOOL_TEST_PASSWORD || 'nictool';
 
 export const GROUP_DEFAULTS = [
   'user_create=1', 'user_delete=1', 'user_write=1',
