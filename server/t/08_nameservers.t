@@ -40,7 +40,7 @@ use Test::More 'no_plan';
 use DBI;
 use NicToolServer::Nameserver::Sanity;
 
-my ( $gid1, $gid2, $group1, $group2, $nsid1, $nsid2, $ns1, $ns2, @u );
+my ( $gid1, $gid2, $group1, $group2, $nsid1, $nsid2, $ns1, $ns2, @u, $res );
 my ( %name, %address, %ttl, %export_format );
 
 my $user = nt_api_connect();

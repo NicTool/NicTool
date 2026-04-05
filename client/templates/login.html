@@ -20,10 +20,11 @@
     </tr>
     <tr class="light_grey_bg">
      <td class=right>Password:</td>
-     <td><input type=password name=password size=25></td>
+     <td><input type="password" name="password" size="25" autocomplete="current-password"></td>
     </tr>
     <tr class="dark_grey_bg">
      <td class="dark center" colspan=2>
+      {{CSRF_TOKEN_FIELD}}
       <input type=hidden name=login value=Enter>
       <input type=submit name=login value=Login>
      </td>

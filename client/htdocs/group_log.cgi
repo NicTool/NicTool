@@ -37,7 +37,11 @@ sub main {
         if ( $q->param('redirect') ) {
             $message = $nt_obj->redirect_from_log($q);
         }
-        print $q->header( -charset => "utf-8" );
+        print $q->header(
+            -charset => "utf-8",
+            -cookie  => $nt_obj->csrf_cookie( $nt_obj->get_csrf_token() ),
+            %{ $nt_obj->security_headers() }
+        );
         display( $nt_obj, $q, $user, $message );
     }
 }
@@ -185,8 +189,10 @@ sub display_log {
      <td>],
                     join(
                     ' / ',
-                    map( qq[<a href="group.cgi?nt_group_id=$_->{'nt_group_id'}">$_->{'name'}</a>],
-                        (   @{ $map->{ $row->{'nt_group_id'} } },
+                    map( qq[<a href="group.cgi?nt_group_id=$_->{'nt_group_id'}">]
+                            . $nt_obj->esc( $_->{'name'} )
+                            . qq[</a>],
+                        (   @{ $map->{ $row->{'nt_group_id'} } || [] },
                             {   nt_group_id => $row->{'nt_group_id'},
                                 name        => $row->{'group_name'}
                             }
@@ -203,7 +209,9 @@ sub display_log {
    <table class="no_pad">
     <tr>
      <td><img src="$NicToolClient::image_dir/user.gif"></td>
-     <td><a href="user.cgi?nt_group_id=$row->{'nt_group_id'}&amp;nt_user_id=$row->{'nt_user_id'}">$row->{'user'}</a></td>
+     <td><a href="user.cgi?nt_group_id=$row->{'nt_group_id'}&amp;nt_user_id=$row->{'nt_user_id'}">]
+                    . $nt_obj->esc( $row->{'user'} )
+                    . qq[</a></td>
     </tr>
    </table>
   </td>];
@@ -221,13 +229,13 @@ sub display_log {
    <table class="no_pad">
     <tr>
      <td><a href="$url"><img src="$NicToolClient::image_dir/$map->{ $row->{'object'} }->{'image'}" alt=""></a></td>
-     <td><a href="$url">$row->{'title'}</a></td>
+     <td><a href="$url">] . $nt_obj->esc( $row->{'title'} ) . qq[</a></td>
     </tr>
    </table>
   </td>];
             }
             else {
-                print "\n  <td>$row->{$_}</td>";
+                print "\n  <td>" . $nt_obj->esc( $row->{$_} ) . "</td>";
             }
         }
         print "\n </tr>";

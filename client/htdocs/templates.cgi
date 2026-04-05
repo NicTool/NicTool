@@ -18,7 +18,11 @@ sub main {
     my $user = $nt_obj->verify_session();
 
     if ( $user && ref $user ) {
-        print $q->header( -charset => "utf-8" );
+        print $q->header(
+            -charset => "utf-8",
+            -cookie  => $nt_obj->csrf_cookie( $nt_obj->get_csrf_token() ),
+            %{ $nt_obj->security_headers() }
+        );
         display( $nt_obj, $q, $user );
     }
 }

@@ -34,7 +34,11 @@ sub main {
 
     return if !$user || !ref $user;
 
-    print $q->header( -charset => "utf-8" );
+    print $q->header(
+        -charset => "utf-8",
+        -cookie  => $nt_obj->csrf_cookie( $nt_obj->get_csrf_token() ),
+        %{ $nt_obj->security_headers() }
+    );
     display( $nt_obj, $q, $user );
 }
 
@@ -54,9 +58,11 @@ sub display {
 
     my $error;
     if ( $q->param('new') && $q->param('Create') ) {
+        return $nt_obj->csrf_error_page() if !$nt_obj->verify_csrf();
         $error = _display_new_group( $nt_obj, $q, \@fields );
     }
     elsif ( $q->param('edit') && $q->param('Save') ) {
+        return $nt_obj->csrf_error_page() if !$nt_obj->verify_csrf();
         $error = _display_edit_group( $nt_obj, $q, \@fields );
     }
 
@@ -97,7 +103,7 @@ sub display {
         }
     }
 
-    if ( $q->param('delete') ) {
+    if ( $q->param('delete') && $nt_obj->verify_csrf() ) {
         my $rv = $nt_obj->delete_group( nt_group_id => scalar( $q->param('delete') ) );
         $nt_obj->display_nice_error( $rv, "Delete Group" )
             if $rv->{'error_code'} != 200;
@@ -150,9 +156,8 @@ sub display_zone_search {
     print qq[ 
 <table class="fat">
  <tr class=dark_grey_bg><td><table class="no_pad fat">
-    <tr> ],
-        $q->start_form( -action => 'group.cgi', -method => 'POST' ),
-        $q->hidden( -name => 'nt_group_id' ),
+    <tr> ], $q->start_form( -action => 'group.cgi', -method => 'POST' ),
+        $nt_obj->csrf_hidden_field(), $q->hidden( -name => 'nt_group_id' ),
         qq[ <td> ], $q->textfield( -name => 'search_value', -size => 30, -override => 1 ),
         $q->hidden(
         -name     => 'quick_search',
@@ -213,7 +218,7 @@ sub display_group_list {
         if $rv->{'error_code'} != 200;
 
     my $groups = $rv->{'groups'};
-    my $map    = $rv->{'group_map'};
+    my $map    = ref $rv->{'group_map'} eq 'HASH' ? $rv->{'group_map'} : {};
 
     $nt_obj->display_search_rows( $q, $rv, \%params, $cgi, ['nt_group_id'], $include_subgroups );
 
@@ -239,8 +244,10 @@ sub display_group_list {
             my $gname   = $group->{'name'} . "'s";
             my $dname   = join(
                 ' / ',
-                map( qq[<a href="group.cgi?nt_group_id=$_->{'nt_group_id'}">$_->{'name'}</a>],
-                    (   @{ $map->{$ggid} },
+                map( qq[<a href="group.cgi?nt_group_id=$_->{'nt_group_id'}">]
+                        . $nt_obj->esc( $_->{'name'} )
+                        . qq[</a>],
+                    (   @{ $map->{$ggid} || [] },
                         {   nt_group_id => $ggid,
                             name        => $group->{'name'}
                         }
@@ -259,15 +266,16 @@ sub display_group_list {
                 my $hname = join(
                     ' / ',
                     map( $_->{'name'},
-                        (   @{ $map->{ $group->{'nt_group_id'} } },
+                        (   @{ $map->{ $group->{'nt_group_id'} } || [] },
                             {   nt_group_id => $group->{'nt_group_id'},
                                 name        => $group->{'name'}
                             }
                         ) )
                 );
+                my $js_hname = $nt_obj->esc( $nt_obj->js_escape($hname) );
                 print qq[
    <li class="center first">
-    <a href="group.cgi?nt_group_id=$gid&amp;delete=$ggid" onClick="return confirm('Delete $hname and all associated data?');"><img src="$NicToolClient::image_dir/trash.gif" alt="trash"></a></li>];
+    <a href="group.cgi?nt_group_id=$gid&amp;delete=$ggid&amp;csrf_token=] . $nt_obj->get_csrf_token() . qq[" onClick="return confirm('Delete $js_hname and all associated data?');"><img src="$NicToolClient::image_dir/trash.gif" alt="trash"></a></li>];
             }
             else {
                 print qq[
@@ -346,6 +354,7 @@ sub display_edit {
             -method => 'POST',
             -name   => 'perms_form'
             ),
+            $nt_obj->csrf_hidden_field(),
             $q->hidden( -name => $edit );
         if ( $edit eq 'new' ) {
             $q->hidden( -name => 'parent_group_id' );
@@ -358,7 +367,7 @@ sub display_edit {
     }
 
     my $action = 'View';
-    my $name   = qq[<b>$data->{'name'}</b>];
+    my $name   = qq[<b>] . $nt_obj->esc( $data->{'name'} ) . qq[</b>];
 
     if ($modifyperm) {
         $action = ucfirst($edit);
@@ -407,7 +416,9 @@ sub display_edit {
 
     foreach ( keys %nsmap ) {
         my $ns = $nt_obj->get_nameserver( nt_nameserver_id => $_ );
-        print "<li>$ns->{'description'} ($ns->{'name'})<BR>";
+        print "<li>"
+            . $nt_obj->esc( $ns->{'description'} ) . " ("
+            . $nt_obj->esc( $ns->{'name'} ) . ")<BR>";
     }
 
     print qq[

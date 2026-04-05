@@ -33,7 +33,11 @@ sub main {
     my $user = $nt_obj->verify_session();
 
     if ( $user && ref $user ) {
-        print $q->header( -charset => "utf-8" );
+        print $q->header(
+            -charset => "utf-8",
+            -cookie  => $nt_obj->csrf_cookie( $nt_obj->get_csrf_token() ),
+            %{ $nt_obj->security_headers() }
+        );
         display( $nt_obj, $q, $user );
     }
 }
@@ -54,7 +58,7 @@ sub display {
 
         # do nothing
     }
-    elsif ( $q->param('Save') ) {
+    elsif ( $q->param('Save') && $nt_obj->verify_csrf() ) {
         my $rv = $nt_obj->move_nameservers(
             nt_group_id     => scalar( $q->param('group_list') ),
             nameserver_list => scalar( $q->param('obj_list') )

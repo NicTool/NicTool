@@ -42,7 +42,9 @@ sub main {
 
     my $cookie = $q->cookie('NicTool');
     if ( !$cookie ) {
-        $nt_obj->display_login( scalar( $q->param('message') ) );
+        my $msg = scalar( $q->param('message') ) || '';
+        $msg =~ s/[^a-zA-Z0-9 .,!?:;\-]//g;    # allow only safe characters
+        $nt_obj->display_login($msg);
         return;
     }
 
@@ -71,14 +73,17 @@ sub display_frameset {
 
     $nt_obj->set_cookie( $data->{nt_user_session} );
 
-    print $nt_obj->{'CGI'}->header( -charset => "utf-8" );
-
     $nt_obj->parse_template( $NicToolClient::frameset_template,
         nt_group_id => $data->{'nt_group_id'} );
 }
 
 sub do_login {
     my ( $nt_obj, $q ) = @_;
+
+    if ( !$nt_obj->verify_csrf() ) {
+        $nt_obj->display_login('Session expired. Please try again.');
+        return;
+    }
 
     # login form was submitted, make sure user/pass was too
     if ( $q->param('username') eq '' or $q->param('password') eq '' ) {

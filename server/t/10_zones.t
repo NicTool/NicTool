@@ -41,7 +41,7 @@ use Test::More 'no_plan';
 
 my $user = nt_api_connect();
 
-my ( $group1, $group2, $gid1, $gid2, $nsid1, $nsid2, $zid1, $zid2 );
+my ( $group1, $group2, $gid1, $gid2, $nsid1, $nsid2, $zid1, $zid2, $res );
 my ( $rzid1, $rzid2, %z1, %z2, $zone1, $zone2, $n1, $n2, $z, @z );
 
 # try to do the tests

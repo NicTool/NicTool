@@ -38,7 +38,11 @@ sub main {
             $message = $nt_obj->redirect_from_log($q);
         }
 
-        print $q->header( -charset => "utf-8" );
+        print $q->header(
+            -charset => "utf-8",
+            -cookie  => $nt_obj->csrf_cookie( $nt_obj->get_csrf_token() ),
+            %{ $nt_obj->security_headers() }
+        );
         display( $nt_obj, $q, $user, $message );
     }
 }
@@ -187,10 +191,12 @@ sub display_log {
                     if ( !$zone->{'deleted'} ) {
                         print qq[<a href="$cgi?],
                             join( '&amp;', @state_fields ),
-                            qq[&amp;redirect=1&amp;object=zone_record&amp;obj_id=$row->{'nt_zone_record_id'}&amp;nt_zone_id=$row->{'nt_zone_id'}&amp;nt_group_id=$gid"> $row->{$_} </a>];
+                            qq[&amp;redirect=1&amp;object=zone_record&amp;obj_id=$row->{'nt_zone_record_id'}&amp;nt_zone_id=$row->{'nt_zone_id'}&amp;nt_group_id=$gid"> ]
+                            . NicToolClient::html_escape( undef, $row->{$_} )
+                            . qq[ </a>];
                     }
                     else {
-                        print $row->{$_};
+                        print NicToolClient::html_escape( undef, $row->{$_} );
                     }
                     print "</td></tr></table></td>";
                 }
@@ -200,11 +206,15 @@ sub display_log {
                 elsif ( $_ eq 'user' ) {
                     print qq[<td><table class="no_pad"><tr>
 <td><a href="user.cgi?nt_group_id=$gid&amp;nt_user_id=$row->{'nt_user_id'}"><img src="$NicToolClient::image_dir/user.gif"></a></td>
-<td><a href="user.cgi?nt_group_id=$gid&amp;nt_user_id=$row->{'nt_user_id'}">$row->{'user'}</a></td>
+<td><a href="user.cgi?nt_group_id=$gid&amp;nt_user_id=$row->{'nt_user_id'}">]
+                        . NicToolClient::html_escape( undef, $row->{'user'} )
+                        . qq[</a></td>
 		</tr></table></td>];
                 }
                 else {
-                    print "<td>", ( $row->{$_} ? $row->{$_} : '&nbsp;' ), "</td>";
+                    print "<td>",
+                        ( $row->{$_} ? NicToolClient::html_escape( undef, $row->{$_} ) : '&nbsp;' ),
+                        "</td>";
                 }
             }
             if ( !$zone->{'deleted'} ) {

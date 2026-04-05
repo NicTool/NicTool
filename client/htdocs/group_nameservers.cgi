@@ -33,7 +33,11 @@ sub main {
     my $user = $nt_obj->verify_session();
 
     if ( $user && ref $user ) {
-        print $q->header( -charset => "utf-8" );
+        print $q->header(
+            -charset => "utf-8",
+            -cookie  => $nt_obj->csrf_cookie( $nt_obj->get_csrf_token() ),
+            %{ $nt_obj->security_headers() }
+        );
         display( $nt_obj, $q, $user );
     }
 }
@@ -78,6 +82,8 @@ sub do_new {
         return;
     }
 
+    return $nt_obj->csrf_error_page() if !$nt_obj->verify_csrf();
+
     my @fields = qw/ nt_group_id name ttl description address address6 logdir
         datadir remote_login export_format export_interval export_serials /;
     my %data;
@@ -93,7 +99,8 @@ sub do_new {
 sub do_delete {
     my ( $nt_obj, $q ) = @_;
 
-    return if !$q->param('delete');
+    return                            if !$q->param('delete');
+    return $nt_obj->csrf_error_page() if !$nt_obj->verify_csrf();
 
     my $error = $nt_obj->delete_nameserver(
         nt_group_id      => scalar( $q->param('nt_group_id') ),
@@ -114,6 +121,8 @@ sub do_edit {
         display_edit_nameserver( $nt_obj, $user, $q, '', 'edit' );
         return;
     }
+
+    return $nt_obj->csrf_error_page() if !$nt_obj->verify_csrf();
 
     # user clicked the 'Save' button
     my @fields = qw/ nt_group_id nt_nameserver_id name ttl description
@@ -196,7 +205,8 @@ sub display_list {
     $nt_obj->display_move_javascript( 'move_nameservers.cgi', 'nameserver' );
 
     print qq[
-<form method="post" action="move_nameservers.cgi" target="move_win" name="list_form">];
+<form method="post" action="move_nameservers.cgi" target="move_win" name="list_form">]
+        . $nt_obj->csrf_hidden_field();
     display_list_header( $nt_obj, $q, $rv, \@columns, \%labels, $user_group, \%sort_fields );
 
     print qq[\n <tbody>];
@@ -214,10 +224,10 @@ sub display_list {
         display_list_name( $obj, $width );
 
         foreach (qw/ description address status /) {
-            print qq[\n  <td style="width: $width;"> $obj->{$_} </td>];
+            print qq[\n  <td style="width: $width;"> ] . $nt_obj->esc( $obj->{$_} ) . qq[ </td>];
         }
 
-        display_list_delete( $q, $user, $obj, $state );
+        display_list_delete( $nt_obj, $q, $user, $obj, $state );
 
         print qq[
  </tr>];
@@ -345,8 +355,13 @@ sub display_list_subgroups {
     );
     if ($map) { unshift @list, @{ $map->{ $obj->{'nt_group_id'} } }; }
 
-    my $url          = qq[<a href="group.cgi?nt_group_id=];
-    my $group_string = join( ' / ', map( qq[${url}$_->{'nt_group_id'}">$_->{'name'}</a>], @list ) );
+    my $group_string = join(
+        ' / ',
+        map( qq[<a href="group.cgi?nt_group_id=$_->{'nt_group_id'}">]
+                . NicToolClient::html_escape( undef, $_->{'name'} )
+                . qq[</a>],
+            @list )
+    );
 
     print qq[ $group_string
   </td>];
@@ -358,7 +373,8 @@ sub display_list_name {
     print qq[
   <td class="nowrap side_pad" style="width:$width;">
      <a href="group_nameservers.cgi?nt_nameserver_id=$obj->{'nt_nameserver_id'}&amp;nt_group_id=$obj->{'nt_group_id'}&amp;edit=1">
-      <img src="$NicToolClient::image_dir/nameserver.gif" alt="nameserver"> $obj->{'name'} </a>
+      <img src="$NicToolClient::image_dir/nameserver.gif" alt="nameserver"> ]
+        . NicToolClient::html_escape( undef, $obj->{'name'} ) . qq[ </a>
   </td>];
 }
 
@@ -405,16 +421,20 @@ sub display_list_options {
 }
 
 sub display_list_delete {
-    my ( $q, $user, $obj, $state ) = @_;
+    my ( $nt_obj, $q, $user, $obj, $state ) = @_;
 
     if ( $user->{'nameserver_delete'}
         && ( !exists $obj->{'delegate_delete'} || $obj->{'delegate_delete'} ) )
     {
 
-        my $gid = $q->param('nt_group_id');
+        my $gid  = $q->param('nt_group_id');
+        my $csrf = $nt_obj->get_csrf_token();
         print qq[
   <td class="width1">
-   <a href="group_nameservers.cgi?$state&amp;nt_group_id=$gid&amp;delete=1&amp;nt_nameserver_id=$obj->{'nt_nameserver_id'}" onClick="return confirm('Delete nameserver $obj->{'name'}?');">
+   <a href="group_nameservers.cgi?$state&amp;nt_group_id=$gid&amp;delete=1&amp;nt_nameserver_id=$obj->{'nt_nameserver_id'}&amp;csrf_token=$csrf" onClick="return confirm(']
+            . NicToolClient::html_escape( undef,
+            NicToolClient::js_escape( undef, "Delete nameserver $obj->{'name'}?" ) )
+            . qq[');">
    <img src="$NicToolClient::image_dir/trash.gif" alt="trash"></a></td>];
     }
     else {
@@ -427,7 +447,7 @@ sub display_list_delete {
 sub display_edit_nameserver {
     my ( $nt_obj, $user, $q, $message, $edit ) = @_;
 
-# logdir
+    # logdir
     my @fields = qw/ name address address6 export_format datadir remote_login
         ttl export_interval export_serials description /;
 
@@ -457,6 +477,7 @@ sub display_edit_nameserver {
         my $gid = $q->param('nt_group_id');
         print qq[
 <form method="post" action="group_nameservers.cgi">
+ ] . $nt_obj->csrf_hidden_field() . qq[
  <input type="hidden" name="$edit" value="] . $q->param($edit) . qq["  />
  <input type="hidden" name="nt_group_id" value="$gid"  />
  ];
@@ -523,7 +544,7 @@ sub display_edit_nameserver_fields {
                 -size      => 45,
                 -maxlength => 127
                 )
-            : $nameserver->{'name'},
+            : NicToolClient::html_escape( undef, $nameserver->{'name'} ),
         },
         ttl => {
             label => 'TTL',
@@ -534,7 +555,7 @@ sub display_edit_nameserver_fields {
                 -maxlength => 10,
                 -default   => $ttl
                 )
-            : $nameserver->{'ttl'},
+            : NicToolClient::html_escape( undef, $nameserver->{'ttl'} ),
         },
         description => {
             label => 'Description',
@@ -545,7 +566,7 @@ sub display_edit_nameserver_fields {
                 -rows      => 4,
                 -maxlength => 255
                 )
-            : $nameserver->{'description'},
+            : NicToolClient::html_escape( undef, $nameserver->{'description'} ),
         },
         address => {
             label => 'IPv4 Address',
@@ -555,7 +576,7 @@ sub display_edit_nameserver_fields {
                 -size      => 20,
                 -maxlength => 15
                 )
-            : $nameserver->{'address'},
+            : NicToolClient::html_escape( undef, $nameserver->{'address'} ),
         },
         address6 => {
             label => 'IPv6 Address',
@@ -565,7 +586,7 @@ sub display_edit_nameserver_fields {
                 -size      => 45,
                 -maxlength => 39
                 )
-            : $nameserver->{'address6'},
+            : NicToolClient::html_escape( undef, $nameserver->{'address6'} ),
         },
         remote_login => {
             label => 'Remote Login',
@@ -609,7 +630,7 @@ sub display_edit_nameserver_fields {
                 -size      => 60,
                 -maxlength => 255
                 )
-            : $nameserver->{logdir},
+            : NicToolClient::html_escape( undef, $nameserver->{logdir} ),
         },
         datadir => {
             label => 'Data Directory',
@@ -619,7 +640,7 @@ sub display_edit_nameserver_fields {
                 -size      => 45,
                 -maxlength => 255
                 )
-            : $nameserver->{datadir},
+            : NicToolClient::html_escape( undef, $nameserver->{datadir} ),
         },
         export_interval => {
             label => 'Export Interval (seconds)',
@@ -630,7 +651,7 @@ sub display_edit_nameserver_fields {
                 -maxlength => 10,
                 -default   => 120,
                 )
-            : $nameserver->{export_interval},
+            : NicToolClient::html_escape( undef, $nameserver->{export_interval} ),
         },
     );
 }

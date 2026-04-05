@@ -24,6 +24,8 @@ require 'nictoolclient.conf';
 
 main();
 
+sub _esc { NicToolClient::html_escape( undef, $_[0] ) }
+
 sub main {
     my $q      = new CGI();
     my $nt_obj = new NicToolClient($q);
@@ -33,7 +35,11 @@ sub main {
     my $user = $nt_obj->verify_session();
 
     if ( $user && ref $user ) {
-        print $q->header( -charset => "utf-8" );
+        print $q->header(
+            -charset => "utf-8",
+            -cookie  => $nt_obj->csrf_cookie( $nt_obj->get_csrf_token() ),
+            %{ $nt_obj->security_headers() }
+        );
         display( $nt_obj, $q, $user );
     }
 }
@@ -99,8 +105,9 @@ sub display_zone {
 sub do_delete_delegation {
     my ( $nt_obj, $q ) = @_;
 
-    return if !$q->param('deletedelegate');
-    return if !$q->param('delegate_group_id');
+    return                            if !$q->param('deletedelegate');
+    return                            if !$q->param('delegate_group_id');
+    return $nt_obj->csrf_error_page() if !$nt_obj->verify_csrf();
 
     if ( $q->param('type') ne 'record' && $q->param('nt_zone_id') ) {
         my $error = $nt_obj->delete_zone_delegation(
@@ -142,6 +149,8 @@ sub do_edit_zone {
         return;
     }
 
+    return $nt_obj->csrf_error_page() if !$nt_obj->verify_csrf();
+
     my @fields = qw/ nt_zone_id nt_group_id zone description mailaddr serial
         refresh retry expire ttl minimum /;
     my %data;
@@ -175,6 +184,8 @@ sub do_new_zone {
         display_edit_zone( $nt_obj, $user, $q, '', $zone, 'new' );
         return;
     }
+
+    return $nt_obj->csrf_error_page() if !$nt_obj->verify_csrf();
 
     my @fields = qw/ nt_group_id zone nameservers description mailaddr
         serial refresh retry expire ttl minimum/;
@@ -228,7 +239,8 @@ sub display_zone_delegate {
     <tr class="light_grey_bg">
      <td class="nowrap"> Delegated by: </td>
      <td class="fat middle">
-       <img src="$NicToolClient::image_dir/user.gif" alt="user"> $zone->{'delegated_by_name'}
+       <img src="$NicToolClient::image_dir/user.gif" alt="user"> ]
+            . _esc( $zone->{'delegated_by_name'} ) . qq[
      </td>
     </tr>];
     }
@@ -247,7 +259,7 @@ sub display_zone_delegate {
        <table>
         <tr>
          <td class=middle><img src="$NicToolClient::image_dir/group.gif" alt="group"></td>
-         <td class=middle> $zone->{'group_name'}</td>
+         <td class=middle> ] . _esc( $zone->{'group_name'} ) . qq[</td>
         </tr>
        </table>
       </td>
@@ -313,8 +325,10 @@ sub display_zone_delegation {
     foreach my $del ( @{ $delegates->{'delegates'} } ) {
         print qq[
  <tr class=light_grey_bg>
-  <td class="nowrap middle side_pad"><a href="group.cgi?nt_group_id=$del->{'nt_group_id'}"> <img src="$NicToolClient::image_dir/group.gif" alt="group">$del->{'group_name'}</a> </td>
-  <td class="nowrap middle side_pad"><a href="user.cgi?nt_user_id=$del->{'delegated_by_id'}"> <img src="$NicToolClient::image_dir/user.gif" alt="user"> $del->{'delegated_by_name'} </a> </td>
+  <td class="nowrap middle side_pad"><a href="group.cgi?nt_group_id=$del->{'nt_group_id'}"> <img src="$NicToolClient::image_dir/group.gif" alt="group">]
+            . _esc( $del->{'group_name'} ) . qq[</a> </td>
+  <td class="nowrap middle side_pad"><a href="user.cgi?nt_user_id=$del->{'delegated_by_id'}"> <img src="$NicToolClient::image_dir/user.gif" alt="user"> ]
+            . _esc( $del->{'delegated_by_name'} ) . qq[ </a> </td>
   <td class="nowrap side_pad">
     <img src="$NicToolClient::image_dir/perm-]
             . ( $del->{delegate_write} ? 'checked' : 'unchecked' )
@@ -343,7 +357,15 @@ sub display_zone_delegation {
 
         if ( !$zone->{'deleted'} && $user->{zone_delegate} ) {
             print
-                qq[<a href="zone.cgi?nt_zone_id=$zone->{'nt_zone_id'}&amp;nt_group_id=$gid&amp;delegate_group_id=$del->{'nt_group_id'}&amp;deletedelegate=1" onClick="return confirm('Are you sure you want to remove the delegation of zone $zone->{'zone'} to group $del->{'group_name'}?');"><img src="$NicToolClient::image_dir/trash-delegate.gif" alt="Remove Delegation"></a>];
+                qq[<a href="zone.cgi?nt_zone_id=$zone->{'nt_zone_id'}&amp;nt_group_id=$gid&amp;delegate_group_id=$del->{'nt_group_id'}&amp;deletedelegate=1&amp;csrf_token=]
+                . $nt_obj->get_csrf_token()
+                . qq[" onClick="return confirm(']
+                . $nt_obj->esc(
+                $nt_obj->js_escape(
+                    "Are you sure you want to remove the delegation of zone $zone->{'zone'} to group $del->{'group_name'}?"
+                )
+                )
+                . qq[');"><img src="$NicToolClient::image_dir/trash-delegate.gif" alt="Remove Delegation"></a>];
         }
         else {
             print
@@ -396,7 +418,7 @@ sub display_zone_properties {
         print qq[
     <tr class=light_grey_bg>
      <td class="nowrap pad2">$_:</td>
-     <td class="fat pad2">$zone->{$_}</td>
+     <td class="fat pad2">] . _esc( $zone->{$_} ) . qq[</td>
     </tr>],;
     }
     print qq[
@@ -408,7 +430,7 @@ sub display_zone_properties {
         print qq[
      <tr class=light_grey_bg>
       <td class="nowrap pad2">$_:</td>
-      <td class="fat pad2">$zone->{$_}</td>
+      <td class="fat pad2">] . _esc( $zone->{$_} ) . qq[</td>
      </tr>];
     }
 
@@ -466,9 +488,10 @@ sub display_nameservers {
         my $bgcolor = $x++ % 2 == 0 ? 'light_grey_bg' : 'white_bg';
         print qq[
   <tr class="$bgcolor">
-   <td><img class="no_pad" src="$NicToolClient::image_dir/nameserver.gif" alt="nameserver">$ns->{name}</td>
-   <td>$ns->{address}</td>
-   <td>$ns->{description}</td>
+   <td><img class="no_pad" src="$NicToolClient::image_dir/nameserver.gif" alt="nameserver">]
+            . _esc( $ns->{name} ) . qq[</td>
+   <td>] . _esc( $ns->{address} ) . qq[</td>
+   <td>] . _esc( $ns->{description} ) . qq[</td>
   </tr>];
     }
 
@@ -521,7 +544,7 @@ sub display_zone_records {
     }
     my $state_string = join( '&amp;', @state_fields );
 
-# Display the RR header: Resource Records  New Resource Record | View Resource Record Log
+    # Display the RR header: Resource Records  New Resource Record | View Resource Record Log
     my $gid          = $q->param('nt_group_id');
     my $zonedelegate = exists $zone->{'delegated_by_id'};
 
@@ -551,38 +574,52 @@ sub display_zone_records {
 
         $r_record->{name} = "@ ($zone->{'zone'})" if $r_record->{name} eq "@";
 
+        # save raw values for confirm dialog before any display mutations
+        my $raw_name    = $r_record->{name};
+        my $raw_address = $r_record->{address};
+
         # shorten the max width of the address field (workaround for
         # display formatting problem with DomainKey entries.
         if ( length $r_record->{address} > 45 ) {
             if ( $r_record->{type} =~ /^(?:DNSKEY|RRSIG)$/ ) {
-                $r_record->{title} = $r_record->{address};
+                $r_record->{title} = _esc( $r_record->{address} );
                 $r_record->{address} =
-                    substr( $r_record->{address}, 0, 35 ) . ' ...<br>(tip: hover over address)';
+                    _esc( substr( $r_record->{address}, 0, 35 ) )
+                    . ' ...<br>(tip: hover over address)';
             }
             elsif ( $r_record->{type} =~ /^(?:TXT)$/
                 && length $r_record->{address} > 100 )
             {
-                $r_record->{title} = $r_record->{address};
+                $r_record->{title} = _esc( $r_record->{address} );
                 $r_record->{address} =
-                    substr( $r_record->{address}, 0, 35 ) . ' ...<br>(tip: hover over address)';
+                    _esc( substr( $r_record->{address}, 0, 35 ) )
+                    . ' ...<br>(tip: hover over address)';
             }
             else {
                 my $max   = 0;
                 my @lines = ();
                 while ( $max < length $r_record->{address} ) {
-                    push @lines, substr( $r_record->{address}, $max, 40 );
+                    push @lines, _esc( substr( $r_record->{address}, $max, 40 ) );
                     $max += 40;
                 }
                 $r_record->{address} = join "<br>", @lines;
             }
         }
+        else {
+            $r_record->{address} = _esc( $r_record->{address} );
+        }
         if ( $r_record->{type} eq 'IPSECKEY' ) {
-            $r_record->{description} = substr( $r_record->{description}, 0, 10 ) . ' ...';
+            $r_record->{description} = _esc( substr( $r_record->{description}, 0, 10 ) ) . ' ...';
+        }
+        else {
+            $r_record->{description} = _esc( $r_record->{description} );
         }
 
         if ( $r_record->{type} eq 'AAAA' ) {
             $r_record->{address} =~ s/:[0]+/:/g;    # compress leading zeros
         }
+
+        $r_record->{name} = _esc( $r_record->{name} );
 
         foreach (@columns) {
             if ( $_ eq 'name' ) {
@@ -610,8 +647,10 @@ sub display_zone_records {
   </td>];
             }
             elsif ( $_ =~ /address|ttl|weight|priority|other/i ) {
+                my $title_attr = $r_record->{title} ? $r_record->{title} : '';
+                my $val        = $_ eq 'address'    ? $r_record->{$_}    : _esc( $r_record->{$_} );
                 print qq[
-  <td class="right" title="$r_record->{title}"> $r_record->{$_} </td>];
+  <td class="right" title="$title_attr"> $val </td>];
             }
             else {
                 print qq[
@@ -643,13 +682,22 @@ sub display_zone_records {
             && !$isdelegate
             && ( $zonedelegate ? $zone->{'delegate_delete_records'} : 1 ) )
         {
-            my $quoted_address = $r_record->{'address'};
-            $quoted_address =~ s/["']//g;    # remove " or ' from TXT/SPF records
-            $quoted_address =~ s/<br>//g;    # remove <br> inserted 64 lines above
+            my $confirm_msg = $nt_obj->esc(
+                $nt_obj->js_escape(
+                    "Are you sure you want to delete $zone->{'zone'} $r_record->{'type'} record $raw_name that points to $raw_address ?"
+                )
+            );
             print qq[
    <td class=center>
-    <a href="zone.cgi?$state_string&amp;nt_zone_id=$zone->{'nt_zone_id'}&amp;nt_group_id=$gid&amp;nt_zone_record_id=$r_record->{'nt_zone_record_id'}&amp;delete_record=$r_record->{'nt_zone_record_id'}" onClick=\"return confirm('Are you sure you want to delete $zone->{'zone'} $r_record->{'type'} record $r_record->{'name'} that points to $quoted_address ?')">
-    <img src="$NicToolClient::image_dir/trash.gif" alt="trash"></a></td>];
+    <form method="post" action="zone.cgi" style="display:inline;margin:0">
+    ] . $nt_obj->csrf_hidden_field() . qq[
+    <input type="hidden" name="nt_zone_id" value="$zone->{'nt_zone_id'}">
+    <input type="hidden" name="nt_group_id" value="$gid">
+    <input type="hidden" name="nt_zone_record_id" value="$r_record->{'nt_zone_record_id'}">
+    <input type="hidden" name="delete_record" value="$r_record->{'nt_zone_record_id'}">
+    <button type="submit" style="border:none;background:none;cursor:pointer;padding:0" onClick="return confirm('$confirm_msg')">
+    <img src="$NicToolClient::image_dir/trash.gif" alt="trash"></button>
+    </form></td>];
 
         }
         else {
@@ -671,6 +719,8 @@ sub display_zone_records_new {
 
     return display_edit_record( $nt_obj, $user, $q, '', $zone, 'new' )
         if !$q->param('Create');
+
+    return $nt_obj->csrf_error_page() if !$nt_obj->verify_csrf();
 
     my @fields = qw/ nt_group_id nt_zone_id name type address
         weight priority other ttl location description /;
@@ -699,6 +749,8 @@ sub display_zone_records_edit {
     return display_edit_record( $nt_obj, $user, $q, '', $zone, 'edit' )
         if !$q->param('Save');
 
+    return $nt_obj->csrf_error_page() if !$nt_obj->verify_csrf();
+
     my @fields = qw( nt_group_id nt_zone_id nt_zone_record_id name type
         address weight priority other ttl description deleted location timestamp);
     my %data;
@@ -716,7 +768,8 @@ sub display_zone_records_edit {
 sub display_zone_records_delete {
     my ( $nt_obj, $q ) = @_;
 
-    return if !$q->param('delete_record');
+    return                            if !$q->param('delete_record');
+    return $nt_obj->csrf_error_page() if !$nt_obj->verify_csrf();
 
     my $error = $nt_obj->delete_zone_record(
         nt_group_id       => scalar( $q->param('nt_group_id') ),
@@ -834,6 +887,7 @@ sub display_edit_record {
     if ($modifyperm) {
         print qq[
 <form method="post" action="zone.cgi" name="rr_edit">],
+            $nt_obj->csrf_hidden_field(),
             $q->hidden( -name => $edit . '_record' ), "\n",
             $q->hidden( -name => 'nt_group_id' ), "\n",
             $q->hidden( -name => 'nt_zone_id' ),  "\n";
@@ -998,10 +1052,10 @@ sub _build_rr_name {
     my ( $q, $zone_record, $zone, $modifyperm ) = @_;
 
     my $suffix = '';
-    $suffix = "<strong>.$zone->{'zone'}.</strong>"
+    $suffix = "<strong>." . _esc( $zone->{'zone'} ) . ".</strong>"
         if $zone_record->{'name'} ne "$zone->{'zone'}.";
 
-    return $zone_record->{'name'} . $suffix if !$modifyperm;
+    return _esc( $zone_record->{'name'} ) . $suffix if !$modifyperm;
 
     return $q->textfield(
         -id        => 'name',
@@ -1011,7 +1065,7 @@ sub _build_rr_name {
         -default   => $zone_record->{'name'},
         -required  => 'required',
 
-#       -pattern   => 'TODO: apply label rules here',
+        #       -pattern   => 'TODO: apply label rules here',
     ) . $suffix;
 }
 
@@ -1107,7 +1161,7 @@ sub _build_rr_type {
 sub _build_rr_address {
     my ( $q, $zone_record, $modifyperm ) = @_;
 
-    return $zone_record->{'address'} if !$modifyperm;
+    return _esc( $zone_record->{'address'} ) if !$modifyperm;
 
     return $q->textfield(
         -id        => 'address',
@@ -1122,7 +1176,7 @@ sub _build_rr_address {
 sub _build_rr_ttl {
     my ( $q, $zone_record, $modifyperm ) = @_;
 
-    return $zone_record->{'ttl'} if !$modifyperm;
+    return _esc( $zone_record->{'ttl'} ) if !$modifyperm;
 
     return $q->textfield(
         -id        => 'ttl',
@@ -1151,7 +1205,7 @@ if ( $('select#ttl').val() == '' && $('input#ttl').val() != '' )
 sub _build_rr_weight {
     my ( $q, $zone_record, $modifyperm ) = @_;
 
-    return $zone_record->{'weight'} if !$modifyperm;
+    return _esc( $zone_record->{'weight'} ) if !$modifyperm;
     return $q->textfield(
         -id        => 'weight',
         -name      => 'weight',
@@ -1167,7 +1221,7 @@ sub _build_rr_weight {
 sub _build_rr_priority {
     my ( $q, $zone_record, $modifyperm ) = @_;
 
-    return $zone_record->{'priority'} if !$modifyperm;
+    return _esc( $zone_record->{'priority'} ) if !$modifyperm;
     return $q->textfield(
         -id        => 'priority',
         -name      => 'priority',
@@ -1183,7 +1237,7 @@ sub _build_rr_priority {
 sub _build_rr_other {
     my ( $q, $zone_record, $modifyperm ) = @_;
 
-    return $zone_record->{'other'} if !$modifyperm;
+    return _esc( $zone_record->{'other'} ) if !$modifyperm;
     return $q->textfield(
         -id        => 'other',
         -name      => 'other',
@@ -1199,7 +1253,7 @@ sub _build_rr_other {
 sub _build_rr_description {
     my ( $q, $zone_record, $modifyperm ) = @_;
 
-    return $zone_record->{'description'} || '&nbsp;' if !$modifyperm;
+    return _esc( $zone_record->{'description'} ) || '&nbsp;' if !$modifyperm;
     return $q->textfield(
         -id        => 'description',
         -name      => 'description',
@@ -1212,7 +1266,7 @@ sub _build_rr_description {
 sub _build_rr_timestamp {
     my ( $q, $zone_record, $modifyperm ) = @_;
 
-    return $zone_record->{'timestamp'} if !$modifyperm;
+    return _esc( $zone_record->{'timestamp'} ) if !$modifyperm;
     return $q->textfield(
         -id        => 'timestamp',
         -name      => 'timestamp',
@@ -1225,7 +1279,7 @@ sub _build_rr_timestamp {
 sub _build_rr_location {
     my ( $q, $zone_record, $modifyperm ) = @_;
 
-    return $zone_record->{'location'} if !$modifyperm;
+    return _esc( $zone_record->{'location'} ) if !$modifyperm;
     return $q->textfield(
         -id        => 'location',
         -name      => 'location',
@@ -1260,7 +1314,8 @@ sub display_edit_record_delegates {
       <table>
        <tr>
         <td class="middle"><a href="group.cgi?nt_group_id=$del->{'nt_group_id'}"><img src="$NicToolClient::image_dir/group.gif" alt="group"></a></td>
-        <td class="middle"><a href="group.cgi?nt_group_id=$del->{'nt_group_id'}">$del->{'group_name'}</a></td>
+        <td class="middle"><a href="group.cgi?nt_group_id=$del->{'nt_group_id'}">]
+            . _esc( $del->{'group_name'} ) . qq[</a></td>
        </tr>
       </table>
      </td>
@@ -1269,7 +1324,8 @@ sub display_edit_record_delegates {
        <tr>
         <td class="middle"><a href="user.cgi?nt_user_id=$del->{'delegated_by_id'}">
         <img src="$NicToolClient::image_dir/user.gif" alt=""></a></td>
-        <td class="middle"><a href="user.cgi?nt_user_id=$del->{'delegated_by_id'}">$del->{'delegated_by_name'}</a></td>
+        <td class="middle"><a href="user.cgi?nt_user_id=$del->{'delegated_by_id'}">]
+            . _esc( $del->{'delegated_by_name'} ) . qq[</a></td>
        </tr>
       </table>
      </td>
@@ -1302,7 +1358,15 @@ sub display_edit_record_delegates {
         if ( $user->{zonerecord_delegate} ) {
             my $gid = $q->param('nt_group_id');
             print
-                qq[<a href="zone.cgi?type=record&amp;nt_zone_record_id=$zone_record->{'nt_zone_record_id'}&amp;nt_zone_id=$zone_record->{'nt_zone_id'}&amp;nt_group_id=$gid&amp;delegate_group_id=$del->{'nt_group_id'}&amp;deletedelegate=1" onClick="return confirm('Are you sure you want to remove the delegation of resource record $zone_record->{'name'} to group $del->{'group_name'}?');"><img src="$NicToolClient::image_dir/trash-delegate.gif" alt="Remove Delegation"></a>];
+                qq[<a href="zone.cgi?type=record&amp;nt_zone_record_id=$zone_record->{'nt_zone_record_id'}&amp;nt_zone_id=$zone_record->{'nt_zone_id'}&amp;nt_group_id=$gid&amp;delegate_group_id=$del->{'nt_group_id'}&amp;deletedelegate=1&amp;csrf_token=]
+                . $nt_obj->get_csrf_token()
+                . qq[" onClick="return confirm(']
+                . $nt_obj->esc(
+                $nt_obj->js_escape(
+                    "Are you sure you want to remove the delegation of resource record $zone_record->{'name'} to group $del->{'group_name'}?"
+                )
+                )
+                . qq[');"><img src="$NicToolClient::image_dir/trash-delegate.gif" alt="Remove Delegation"></a>];
         }
         else {
             print
@@ -1337,7 +1401,7 @@ sub display_new_record_delegates {
       <table>
        <tr>
         <td class=middle><img src="$NicToolClient::image_dir/user.gif" alt="user"></td>
-        <td class=middle> $zone_record->{'delegated_by_name'}</td>
+        <td class=middle> ] . _esc( $zone_record->{'delegated_by_name'} ) . qq[</td>
        </tr>
       </table>
      </td>
@@ -1348,7 +1412,7 @@ sub display_new_record_delegates {
       <table>
        <tr>
         <td class=middle><img src="$NicToolClient::image_dir/group.gif" alt="group"></td>
-        <td class=middle> $zone_record->{'group_name'}</td>
+        <td class=middle> ] . _esc( $zone_record->{'group_name'} ) . qq[</td>
        </tr>
       </table>
      </td>
@@ -1389,7 +1453,13 @@ sub display_new_record_delegates {
         && $zone_record->{'delegate_delete'} )
     {
         print
-            qq[<a href="zone.cgi?type=record&amp;nt_zone_record_id=$zone_record->{'nt_zone_record_id'}&amp;nt_zone_id=$zone_record->{'nt_zone_id'}&amp;nt_group_id=$gid&amp;delegate_group_id=$gid&amp;deletedelegate=1" onClick="return confirm('Are you sure you want to remove the delegation of resource record $zone_record->{'name'} to group $zone_record->{'group_name'}?');">Remove Delegation</a>];
+            qq[<a href="zone.cgi?type=record&amp;nt_zone_record_id=$zone_record->{'nt_zone_record_id'}&amp;nt_zone_id=$zone_record->{'nt_zone_id'}&amp;nt_group_id=$gid&amp;delegate_group_id=$gid&amp;deletedelegate=1" onClick="return confirm(']
+            . _esc(
+            NicToolClient::js_escape(
+                undef,
+                "Are you sure you want to remove the delegation of resource record $zone_record->{'name'} to group $zone_record->{'group_name'}?"
+            )
+            ) . qq[');">Remove Delegation</a>];
     }
     else {
         print "<span class=disabled>Remove Delegation</span>";
@@ -1418,7 +1488,7 @@ sub display_edit_zone {
     my $action = 'Edit';
 
     print qq[
-<form method="post" action="zone.cgi" name="new_zone">];
+<form method="post" action="zone.cgi" name="new_zone">] . $nt_obj->csrf_hidden_field();
 
     my @hiddens = 'nt_group_id';
     push @hiddens, 'nt_zone_id' if $edit eq 'edit';
@@ -1443,7 +1513,8 @@ sub display_edit_zone {
     print qq[
 <a name="ZONE"></a>
 <table class="fat">
- <tr class=dark_bg><td colspan=2 class="bold">$action Zone: $zone->{zone}</td></tr>
+ <tr class=dark_bg><td colspan=2 class="bold">$action Zone: ]
+        . _esc( $zone->{zone} ) . qq[</td></tr>
  <tr class=light_grey_bg>
   <td class="right top">Nameservers:</td>
   <td class="width80">\n];
