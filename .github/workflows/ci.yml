@@ -85,7 +85,7 @@ jobs:
           echo "NICTOOL_DB_USER=nictool" >> "$GITHUB_ENV"
           echo "NICTOOL_DB_NAME=nictool" >> "$GITHUB_ENV"
           echo "DB_ENGINE=mysql" >> "$GITHUB_ENV"
-          echo "DB_HOSTNAME=127.0.0.1" >> "$GITHUB_ENV"
+          echo "DB_HOSTNAME=localhost" >> "$GITHUB_ENV"
           echo "ROOT_USER_EMAIL=ci@nictool.test" >> "$GITHUB_ENV"
           echo "ROOT_USER_PASSWORD=$ROOT_PW" >> "$GITHUB_ENV"
           echo "NICTOOL_CLIENT_DIR=$GITHUB_WORKSPACE/client" >> "$GITHUB_ENV"
