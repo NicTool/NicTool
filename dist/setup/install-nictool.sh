@@ -23,6 +23,14 @@ for conf in server/lib/nictoolserver client/lib/nictoolclient; do
     fi
 done
 
+# mod_perl requires prefork MPM (not event/worker)
+echo "==> Configuring Apache MPM"
+if command -v a2dismod >/dev/null 2>&1; then
+    a2dismod mpm_event 2>/dev/null || true
+    a2dismod mpm_worker 2>/dev/null || true
+    a2enmod mpm_prefork 2>/dev/null || true
+fi
+
 # Generate Apache config from template
 echo "==> Generating Apache config"
 sed "s|%%NT_DIR%%|${NT_DIR}|g" "$SCRIPT_DIR/apache.conf.in" \
