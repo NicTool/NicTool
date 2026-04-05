@@ -51,7 +51,7 @@ jobs:
       - name: Generate credentials
         run: |
           dist/docker/generate-env.sh
-          echo "NICTOOL_TEST_PASSWORD=$(grep ROOT_USER_PASSWORD dist/docker/.env | cut -d= -f2)" >> "$GITHUB_ENV"
+          echo "NICTOOL_TEST_PASSWORD=$(sed -n 's/^ROOT_USER_PASSWORD=//p' dist/docker/.env)" >> "$GITHUB_ENV"
 
       - name: Start containers
         working-directory: dist/docker
@@ -91,7 +91,7 @@ jobs:
       - name: Generate credentials
         run: |
           dist/docker/generate-env.sh
-          echo "NICTOOL_TEST_PASSWORD=$(grep ROOT_USER_PASSWORD dist/docker/.env | cut -d= -f2)" >> "$GITHUB_ENV"
+          echo "NICTOOL_TEST_PASSWORD=$(sed -n 's/^ROOT_USER_PASSWORD=//p' dist/docker/.env)" >> "$GITHUB_ENV"
 
       - name: Start containers
         working-directory: dist/docker
@@ -123,10 +123,12 @@ jobs:
         env:
           NICTOOL_URL: http://localhost:8080
           NICTOOL_TEST_PASSWORD: ${{ env.NICTOOL_TEST_PASSWORD }}
-        run: npx playwright test
+          DEBUG: pw:api
+        run: npx playwright test --reporter=list
 
       - name: Failure diagnostics
         if: failure()
         run: |
           docker compose -f dist/docker/docker-compose.yml logs web || true
           docker compose -f dist/docker/docker-compose.yml logs db || true
+          docker compose -f dist/docker/docker-compose.yml exec -T web cat /var/log/apache2/error.log 2>/dev/null || true

@@ -88,11 +88,14 @@ jobs:
           echo "DB_HOSTNAME=localhost" >> "$GITHUB_ENV"
           echo "ROOT_USER_EMAIL=ci@nictool.test" >> "$GITHUB_ENV"
           echo "ROOT_USER_PASSWORD=$ROOT_PW" >> "$GITHUB_ENV"
-          echo "NICTOOL_CLIENT_DIR=$GITHUB_WORKSPACE/client" >> "$GITHUB_ENV"
+          echo "NICTOOL_CLIENT_DIR=/var/www/nictool/client" >> "$GITHUB_ENV"
           echo "DB_SSL=1" >> "$GITHUB_ENV"
 
+      - name: Symlink workspace into AppArmor-safe path
+        run: sudo ln -s "$GITHUB_WORKSPACE" /var/www/nictool
+
       - name: Set up NicTool configs, Apache, and TLS
-        run: sudo -E dist/setup/install-nictool.sh --nt-dir="$GITHUB_WORKSPACE"
+        run: sudo -E dist/setup/install-nictool.sh --nt-dir=/var/www/nictool
 
       - name: Install Perl modules for Apache/mod_perl
         run: |
@@ -109,9 +112,6 @@ jobs:
           cd "$GITHUB_WORKSPACE/server"
           perl Makefile.PL
           sudo cpanm -n .
-
-      - name: Disable AppArmor for Apache
-        run: sudo aa-disable /etc/apparmor.d/usr.sbin.apache2 2>/dev/null || true
 
       - name: Restart Apache
         run: sudo service apache2 restart || sudo cat /var/log/apache2/error.log
