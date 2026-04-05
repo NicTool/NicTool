@@ -13,16 +13,33 @@ permissions:
   contents: read
 
 jobs:
-  docker-test:
+  build:
     runs-on: ubuntu-22.04
-
     steps:
       - uses: actions/checkout@v6
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build Docker image with layer cache
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: dist/docker/Dockerfile
+          tags: docker-web:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  docker-tests:
+    needs: build
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Load Docker image from cache
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -30,13 +47,11 @@ jobs:
           tags: docker-web:latest
           load: true
           cache-from: type=gha
-          cache-to: type=gha,mode=max
 
       - name: Generate credentials
         run: |
           dist/docker/generate-env.sh
-          ROOT_PW=$(grep ROOT_USER_PASSWORD dist/docker/.env | cut -d= -f2)
-          echo "NICTOOL_TEST_PASSWORD=$ROOT_PW" >> "$GITHUB_ENV"
+          echo "NICTOOL_TEST_PASSWORD=$(grep ROOT_USER_PASSWORD dist/docker/.env | cut -d= -f2)" >> "$GITHUB_ENV"
 
       - name: Start containers
         working-directory: dist/docker
@@ -49,10 +64,44 @@ jobs:
       - name: Run client tests
         run: docker compose -f dist/docker/docker-compose.yml exec -T web make -C /usr/local/nictool/client test
 
+      - name: Failure diagnostics
+        if: failure()
+        run: |
+          docker compose -f dist/docker/docker-compose.yml logs web || true
+          docker compose -f dist/docker/docker-compose.yml logs db || true
+
+  e2e-tests:
+    needs: build
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Load Docker image from cache
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: dist/docker/Dockerfile
+          tags: docker-web:latest
+          load: true
+          cache-from: type=gha
+
+      - name: Generate credentials
+        run: |
+          dist/docker/generate-env.sh
+          echo "NICTOOL_TEST_PASSWORD=$(grep ROOT_USER_PASSWORD dist/docker/.env | cut -d= -f2)" >> "$GITHUB_ENV"
+
+      - name: Start containers
+        working-directory: dist/docker
+        run: docker compose up -d --wait
+        timeout-minutes: 5
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 22
           cache: npm
           cache-dependency-path: client/t/e2e/package-lock.json
 
