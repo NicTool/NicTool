@@ -110,18 +110,8 @@ jobs:
           perl Makefile.PL
           sudo cpanm -n .
 
-      - name: Fix workspace permissions for Apache
-        run: |
-          echo "=== client/lib contents ==="
-          find "$GITHUB_WORKSPACE/client/lib" -type d | head -20
-          ls -la "$GITHUB_WORKSPACE/client/lib/"
-          echo "=== checking for URI dir ==="
-          ls -la "$GITHUB_WORKSPACE/client/lib/URI/" 2>&1 || echo "No URI dir"
-          stat "$GITHUB_WORKSPACE/client/lib/URI" 2>&1 || echo "No URI entry"
-          echo "=== fixing permissions ==="
-          sudo chmod -R a+rX "$GITHUB_WORKSPACE"
-          echo "=== after fix ==="
-          ls -la "$GITHUB_WORKSPACE/client/lib/URI/" 2>&1 || echo "No URI dir"
+      - name: Disable AppArmor for Apache
+        run: sudo aa-disable /etc/apparmor.d/usr.sbin.apache2 2>/dev/null || true
 
       - name: Restart Apache
         run: sudo service apache2 restart || sudo cat /var/log/apache2/error.log
