@@ -155,15 +155,24 @@ exit if $test_run;
 $dbh->do("DROP DATABASE IF EXISTS $db");
 $dbh->do("CREATE DATABASE $db");
 
-# remote sessions will never be recognized as 'db_user'@'db_hostname' as MySQL does
-# a reverse lookup of the initiating host's IP address and uses that as the
-# connection string, eg 'db_user'@'x.x.x.x'
-if ( $db_host eq 'localhost' || $db_host eq '127.0.0.1' || $db_host eq '::1' ) {
-    $dbh->do("GRANT ALL PRIVILEGES ON $db.* TO $db_user\@$db_host IDENTIFIED BY '$db_pass'");
+# Create the NicTool database user. MySQL 8.0+ removed GRANT ... IDENTIFIED BY,
+# so we CREATE USER first, then GRANT separately.
+my $user_host =
+    ( $db_host eq 'localhost' || $db_host eq '127.0.0.1' || $db_host eq '::1' ) ? $db_host : '%';
+
+$dbh->do("DROP USER IF EXISTS '$db_user'\@'$user_host'");
+
+# Try mysql_native_password first (works everywhere), fall back to default plugin
+my $created = eval {
+    $dbh->do(
+        "CREATE USER '$db_user'\@'$user_host' IDENTIFIED WITH mysql_native_password BY '$db_pass'");
+    1;
+};
+if ( !$created ) {
+    $dbh->do("CREATE USER '$db_user'\@'$user_host' IDENTIFIED BY '$db_pass'");
 }
-else {
-    $dbh->do("GRANT ALL PRIVILEGES ON $db.* TO $db_user\@'%' IDENTIFIED BY '$db_pass'");
-}
+
+$dbh->do("GRANT ALL PRIVILEGES ON $db.* TO '$db_user'\@'$user_host'");
 
 $dbh->do("USE $db");
 
