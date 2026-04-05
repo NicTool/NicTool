@@ -162,12 +162,9 @@ my $user_host =
 
 $dbh->do("DROP USER IF EXISTS '$db_user'\@'$user_host'");
 
-# Try mysql_native_password first (works everywhere), fall back to default plugin
-my $created = eval {
-    $dbh->do(
-        "CREATE USER '$db_user'\@'$user_host' IDENTIFIED WITH mysql_native_password BY '$db_pass'");
-    1;
-};
+# Try mysql_native_password first (MySQL 8.0+), fall back for MariaDB
+my $created = $dbh->do(
+    "CREATE USER '$db_user'\@'$user_host' IDENTIFIED WITH mysql_native_password BY '$db_pass'");
 if ( !$created ) {
     $dbh->do("CREATE USER '$db_user'\@'$user_host' IDENTIFIED BY '$db_pass'");
 }

@@ -110,6 +110,9 @@ jobs:
           perl Makefile.PL
           sudo cpanm -n .
 
+      - name: Fix workspace permissions for Apache
+        run: sudo chmod -R a+rX "$GITHUB_WORKSPACE"
+
       - name: Restart Apache
         run: sudo service apache2 restart || sudo cat /var/log/apache2/error.log
 
