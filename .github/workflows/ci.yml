@@ -111,7 +111,17 @@ jobs:
           sudo cpanm -n .
 
       - name: Fix workspace permissions for Apache
-        run: sudo chmod -R a+rX "$GITHUB_WORKSPACE"
+        run: |
+          echo "=== client/lib contents ==="
+          find "$GITHUB_WORKSPACE/client/lib" -type d | head -20
+          ls -la "$GITHUB_WORKSPACE/client/lib/"
+          echo "=== checking for URI dir ==="
+          ls -la "$GITHUB_WORKSPACE/client/lib/URI/" 2>&1 || echo "No URI dir"
+          stat "$GITHUB_WORKSPACE/client/lib/URI" 2>&1 || echo "No URI entry"
+          echo "=== fixing permissions ==="
+          sudo chmod -R a+rX "$GITHUB_WORKSPACE"
+          echo "=== after fix ==="
+          ls -la "$GITHUB_WORKSPACE/client/lib/URI/" 2>&1 || echo "No URI dir"
 
       - name: Restart Apache
         run: sudo service apache2 restart || sudo cat /var/log/apache2/error.log
