@@ -19,17 +19,29 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image with layer cache
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: dist/docker/Dockerfile
+          tags: docker-web:latest
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
       - name: Generate credentials
         run: |
           dist/docker/generate-env.sh
-          # Extract the root password for E2E tests
           ROOT_PW=$(grep ROOT_USER_PASSWORD dist/docker/.env | cut -d= -f2)
           echo "NICTOOL_TEST_PASSWORD=$ROOT_PW" >> "$GITHUB_ENV"
 
-      - name: Build and start containers
+      - name: Start containers
         working-directory: dist/docker
-        run: docker compose up -d --build --wait
-        timeout-minutes: 10
+        run: docker compose up -d --wait
+        timeout-minutes: 5
 
       - name: Run server tests
         run: docker compose -f dist/docker/docker-compose.yml exec -T web make -C /usr/local/nictool/server test
