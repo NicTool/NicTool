@@ -34,7 +34,7 @@ my $dbh = DBIx::Simple->connect( $dsn, $db_user, $db_pass )
 
 # NOTE: when making schema changes, update db_version in 12_nt_options.sql
 my @versions = qw/ 2.00 2.05 2.08 2.09 2.10 2.11 2.14 2.15 2.16 2.17 2.18
-    2.24 2.27 2.28 2.29 2.30 2.32 2.34 2.35 2.40 /;
+    2.24 2.27 2.28 2.29 2.30 2.32 2.34 2.35 2.40 2.44 /;
 
 foreach my $version (@versions) {
 
@@ -121,6 +121,57 @@ sub _sql_2_40 {
 UPDATE nt_nameserver_export_type SET name='nsd' WHERE id=6 AND LOWER(name)='nsd';
 UPDATE nt_options SET option_value='2.40' WHERE option_name='db_version';
 EO_SQL_2_40
+}
+
+sub _sql_test_2_44 {
+    my $r = _get_db_version();
+    return 1 if !defined $r;    # query failed
+
+    my $t1 = $dbh->query("SHOW TABLES LIKE 'nt_user_webauthn_credential'")->hashes;
+    return 0 unless scalar $t1 && $t1->[0];    # table missing
+
+    my $t2 = $dbh->query("SHOW TABLES LIKE 'nt_user_webauthn_challenge'")->hashes;
+    return 0 unless scalar $t2 && $t2->[0];    # table missing
+
+    return 0 if $r eq '2.43';                  # do it! bump db_version
+    return 1;                                  # don't update
+}
+
+sub _sql_2_44 {
+    <<EO_SQL_2_44;
+CREATE TABLE IF NOT EXISTS nt_user_webauthn_credential (
+    nt_webauthn_credential_id  INT UNSIGNED AUTO_INCREMENT NOT NULL,
+    nt_user_id                 INT UNSIGNED NOT NULL,
+    credential_id              VARCHAR(512) NOT NULL,
+    credential_pubkey          TEXT NOT NULL,
+    signature_count            INT UNSIGNED NOT NULL DEFAULT 0,
+    friendly_name              VARCHAR(255) DEFAULT NULL,
+    transports                 VARCHAR(255) DEFAULT NULL,
+    created_at                 INT UNSIGNED NOT NULL,
+    last_used_at               INT UNSIGNED DEFAULT NULL,
+    revoked                    TINYINT(1) UNSIGNED NOT NULL DEFAULT 0,
+    PRIMARY KEY (nt_webauthn_credential_id),
+    UNIQUE KEY uk_credential_id (credential_id),
+    KEY idx_user_id (nt_user_id)
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+CREATE TABLE IF NOT EXISTS nt_user_webauthn_challenge (
+    nt_webauthn_challenge_id   INT UNSIGNED AUTO_INCREMENT NOT NULL,
+    nt_user_id                 INT UNSIGNED DEFAULT NULL,
+    challenge                  VARCHAR(128) NOT NULL,
+    ceremony_type              ENUM('registration','authentication') NOT NULL,
+    created_at                 INT UNSIGNED NOT NULL,
+    expires_at                 INT UNSIGNED NOT NULL,
+    consumed                   TINYINT(1) UNSIGNED NOT NULL DEFAULT 0,
+    PRIMARY KEY (nt_webauthn_challenge_id),
+    UNIQUE KEY uk_challenge (challenge),
+    KEY idx_expires (expires_at)
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+ALTER TABLE nt_user_session_log MODIFY action ENUM('login','logout','timeout','passkey_login') NOT NULL;
+
+UPDATE nt_options SET option_value='2.44' WHERE option_name='db_version'
+EO_SQL_2_44
 }
 
 sub _sql_test_2_35 {

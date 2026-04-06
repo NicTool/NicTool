@@ -66,7 +66,7 @@ DROP TABLE IF EXISTS nt_user_session_log;
 CREATE TABLE nt_user_session_log(
     nt_user_session_log_id   INT UNSIGNED AUTO_INCREMENT NOT NULL,
     nt_user_id               INT UNSIGNED NOT NULL,
-    action                   ENUM('login','logout','timeout') NOT NULL,
+    action                   ENUM('login','logout','timeout','passkey_login') NOT NULL,
     timestamp                INT UNSIGNED NOT NULL,
     nt_user_session_id       INT UNSIGNED,
     nt_user_session	     VARCHAR(100),

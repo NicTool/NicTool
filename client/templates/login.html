@@ -4,6 +4,8 @@
   <title>{{app_title}}</title>
 	<meta http-equiv="Content-Type" content="text/html;charset=utf-8">
   <link rel="stylesheet" href="nt-style.css" type="text/css" media="screen" />
+  <script src="jquery-1.11.1.min.js"></script>
+  <script src="nt-webauthn.js"></script>
 </head>
 
 <body class="center">
@@ -27,6 +29,9 @@
       {{CSRF_TOKEN_FIELD}}
       <input type=hidden name=login value=Enter>
       <input type=submit name=login value=Login>
+      <button type="button" id="nt-passkey-login"
+              style="display:none; margin-left:8px;"
+              onclick="ntPasskeyLogin()">Sign in with Passkey</button>
      </td>
     </tr>
     <tr>
@@ -38,5 +43,31 @@
    </table>
   </form>
  </div>
+<script>
+(function() {
+    if (window.NtWebAuthn && NtWebAuthn.isSupported()) {
+        var btn = document.getElementById('nt-passkey-login');
+        if (btn) btn.style.display = '';
+    }
+
+    window.ntPasskeyLogin = function() {
+        var csrfField = document.querySelector('input[name="csrf_token"]');
+        var csrfToken = csrfField ? csrfField.value : '';
+        var username = document.querySelector('input[name="username"]').value;
+
+        NtWebAuthn.authenticate(csrfToken, username || undefined)
+            .done(function(resp) {
+                if (resp.nt_user_session) {
+                    window.location.href = 'index.cgi';
+                } else {
+                    alert('Authentication succeeded but no session returned.');
+                }
+            })
+            .fail(function(err) {
+                alert('Passkey login failed: ' + err);
+            });
+    };
+})();
+</script>
 </body>
 </html>

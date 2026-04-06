@@ -24,6 +24,7 @@ use NicToolServer::User;
 use NicToolServer::User::Sanity;
 use NicToolServer::Nameserver;
 use NicToolServer::Nameserver::Sanity;
+use NicToolServer::WebAuthn;
 
 BEGIN {
     # Database configuration — credentials are required env vars

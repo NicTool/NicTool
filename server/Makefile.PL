@@ -14,6 +14,7 @@ my %WriteMakefileArgs = (
     "NAME"               => "NicToolServer",
     "PREREQ_PM"          => {
         "Apache::DBI"          => 0,
+        "Authen::WebAuthn"     => 0,
         "BIND::Conf_Parser"    => 0,
         "CGI"                  => "4.21",
         "Crypt::KeyDerivation" => 0,
@@ -57,13 +58,14 @@ my %WriteMakefileArgs = (
         "Test::More"   => 0,
         "Test::Output" => 0
     },
-    "VERSION" => "2.40",
+    "VERSION" => "2.44",
     "test"    => { "TESTS" => "t/*.t" }
 );
 
 my %FallbackPrereqs = (
     "APR::Table"           => 0,
     "Apache::DBI"          => 0,
+    "Authen::WebAuthn"     => 0,
     "BIND::Conf_Parser"    => 0,
     "CGI"                  => 3,
     "Crypt::KeyDerivation" => 0,

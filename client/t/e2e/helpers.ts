@@ -291,6 +291,88 @@ export async function deleteNameserver(playwright: any, cookies: string, gid: st
 }
 
 // ---------------------------------------------------------------------------
+// WebAuthn Helpers
+// ---------------------------------------------------------------------------
+
+export async function webauthnPost(
+  playwright: any, action: string, data: Record<string, any>,
+  csrfCookie: string, sessionCookie?: string
+): Promise<{ res: any; json: any }> {
+  const ctx = await freshCtx(playwright);
+  let cookie = `NicTool_csrf=${csrfCookie}`;
+  if (sessionCookie) cookie = `NicTool=${sessionCookie}; ${cookie}`;
+
+  const res = await ctx.post(`${BASE}/webauthn.cgi`, {
+    headers: { 'Content-Type': 'application/json', Cookie: cookie },
+    data: JSON.stringify({ action, csrf_token: csrfCookie, data }),
+  });
+
+  const text = await res.text();
+  let json: any;
+  try { json = JSON.parse(text); } catch { json = { error_code: 500, error_msg: text }; }
+  await ctx.dispose();
+  return { res, json };
+}
+
+export async function listPasskeys(
+  playwright: any, cookies: string, ntUserId: string | number
+): Promise<any[]> {
+  const csrf = extractCsrf(cookies);
+  const session = cookies.match(/NicTool=([^;]+)/)?.[1] || '';
+  const { json } = await webauthnPost(
+    playwright, 'webauthn_get_user_credentials',
+    { nt_user_id: ntUserId }, csrf, session
+  );
+  return json.credentials || [];
+}
+
+export async function revokePasskey(
+  playwright: any, cookies: string,
+  ntUserId: string | number, credentialDbId: string | number
+): Promise<void> {
+  const csrf = extractCsrf(cookies);
+  const session = cookies.match(/NicTool=([^;]+)/)?.[1] || '';
+  await webauthnPost(
+    playwright, 'webauthn_revoke_credential',
+    { nt_user_id: ntUserId, nt_webauthn_credential_id: credentialDbId },
+    csrf, session
+  );
+}
+
+export async function revokeAllPasskeys(
+  playwright: any, cookies: string, ntUserId: string | number
+): Promise<void> {
+  const creds = await listPasskeys(playwright, cookies, ntUserId);
+  for (const c of creds) {
+    await revokePasskey(playwright, cookies, ntUserId, c.nt_webauthn_credential_id);
+  }
+}
+
+export async function setupVirtualAuthenticator(page: Page) {
+  const cdpSession = await page.context().newCDPSession(page);
+  await cdpSession.send('WebAuthn.enable');
+  const result = await cdpSession.send('WebAuthn.addVirtualAuthenticator', {
+    options: {
+      protocol: 'ctap2',
+      transport: 'internal',
+      hasResidentKey: true,
+      hasUserVerification: true,
+      isUserVerified: true,
+    },
+  });
+  return { cdpSession, authenticatorId: result.authenticatorId };
+}
+
+export async function teardownVirtualAuthenticator(
+  cdpSession: any, authenticatorId: string
+): Promise<void> {
+  try {
+    await cdpSession.send('WebAuthn.removeVirtualAuthenticator', { authenticatorId });
+    await cdpSession.send('WebAuthn.disable');
+  } catch { /* page may already be closed */ }
+}
+
+// ---------------------------------------------------------------------------
 // Internal Utilities
 // ---------------------------------------------------------------------------
 
