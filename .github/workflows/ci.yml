@@ -16,93 +16,117 @@ permissions:
   packages: read
 
 jobs:
-  image-name:
-    runs-on: ubuntu-24.04
-    outputs:
-      ci: ${{ steps.set.outputs.ci }}
-    steps:
-      - id: set
-        run: echo "ci=ghcr.io/${GITHUB_REPOSITORY,,}/build:latest" >> "$GITHUB_OUTPUT"
-
   test:
-    needs: image-name
     runs-on: ubuntu-24.04
-    container:
-      image: ${{ needs.image-name.outputs.ci }}
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-
-    services:
-      mysql:
-        image: mysql:8
-        env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: nictool
-        options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1"
-          --health-interval=5s
-          --health-timeout=3s
-          --health-retries=10
-
     steps:
       - uses: actions/checkout@v6
 
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute GHCR cache ref
+        id: meta
+        run: echo "ref=ghcr.io/${GITHUB_REPOSITORY,,}/build:latest" >> "$GITHUB_OUTPUT"
+
+      - name: Build CI base image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: dist/docker/Dockerfile
+          target: base
+          tags: nictool-ci:latest
+          load: true
+          cache-from: |
+            type=registry,ref=${{ steps.meta.outputs.ref }}
+            type=gha,scope=ci
+          cache-to: type=gha,mode=max,scope=ci
+
       - name: Generate test credentials
         run: |
-          DB_PW=$(openssl rand -base64 24)
-          ROOT_PW=$(openssl rand -base64 24)
-          echo "NICTOOL_DB_USER_PASSWORD=$DB_PW" >> "$GITHUB_ENV"
-          echo "DB_ROOT_PASSWORD=root" >> "$GITHUB_ENV"
-          echo "NICTOOL_DB_USER=nictool" >> "$GITHUB_ENV"
-          echo "NICTOOL_DB_NAME=nictool" >> "$GITHUB_ENV"
-          echo "DB_ENGINE=mysql" >> "$GITHUB_ENV"
-          echo "DB_HOSTNAME=mysql" >> "$GITHUB_ENV"
-          echo "ROOT_USER_EMAIL=ci@nictool.test" >> "$GITHUB_ENV"
-          echo "ROOT_USER_PASSWORD=$ROOT_PW" >> "$GITHUB_ENV"
-          echo "NICTOOL_CLIENT_DIR=$GITHUB_WORKSPACE/client" >> "$GITHUB_ENV"
+          echo "DB_PW=$(openssl rand -base64 24)" >> "$GITHUB_ENV"
+          echo "ROOT_PW=$(openssl rand -base64 24)" >> "$GITHUB_ENV"
+
+      - name: Create test network and start MySQL
+        run: |
+          docker network create ci
+          docker run -d --name mysql --network ci \
+            -e MYSQL_ROOT_PASSWORD=root \
+            -e MYSQL_DATABASE=nictool \
+            --health-cmd="mysqladmin ping -h 127.0.0.1" \
+            --health-interval=5s \
+            --health-timeout=3s \
+            --health-retries=10 \
+            mysql:8
+
+      - name: Start CI container
+        run: |
+          docker run -d --name ci --network ci \
+            -v "$GITHUB_WORKSPACE:/workspace" \
+            -w /workspace \
+            -e NICTOOL_DB_USER_PASSWORD="$DB_PW" \
+            -e DB_ROOT_PASSWORD=root \
+            -e NICTOOL_DB_USER=nictool \
+            -e NICTOOL_DB_NAME=nictool \
+            -e DB_ENGINE=mysql \
+            -e DB_HOSTNAME=mysql \
+            -e ROOT_USER_EMAIL=ci@nictool.test \
+            -e ROOT_USER_PASSWORD="$ROOT_PW" \
+            -e NICTOOL_CLIENT_DIR=/workspace/client \
+            nictool-ci:latest sleep infinity
+
+      - name: Wait for MySQL
+        run: |
+          for i in $(seq 1 60); do
+            if docker inspect --format='{{.State.Health.Status}}' mysql 2>/dev/null | grep -q healthy; then
+              echo "MySQL is healthy"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "MySQL failed to become healthy" && exit 1
 
       - name: Install NicTool client and server
         run: |
-          cd "$GITHUB_WORKSPACE/client"
-          perl Makefile.PL
-          cpanm -n .
-
-          cd "$GITHUB_WORKSPACE/server"
-          perl Makefile.PL
-          cpanm -n .
+          docker exec ci bash -c '
+            cd /workspace/client && perl Makefile.PL && cpanm -n .
+            cd /workspace/server && perl Makefile.PL && cpanm -n .
+          '
 
       - name: Allow Apache to traverse workspace path
         run: |
-          dir="$GITHUB_WORKSPACE"
-          while [ "$dir" != "/" ]; do
-            chmod o+x "$dir"
-            dir="$(dirname "$dir")"
-          done
+          docker exec ci bash -c '
+            dir="/workspace"
+            while [ "$dir" != "/" ]; do
+              chmod o+x "$dir"
+              dir="$(dirname "$dir")"
+            done
+          '
 
       - name: Set up NicTool configs, Apache, and TLS
-        run: dist/setup/install-nictool.sh --nt-dir="$GITHUB_WORKSPACE"
+        run: docker exec ci dist/setup/install-nictool.sh --nt-dir=/workspace
 
       - name: Start Apache
-        run: apachectl start
+        run: docker exec ci apachectl start
 
       - name: Create NicTool test database
-        run: |
-          cd "$GITHUB_WORKSPACE/server/sql"
-          echo "" | perl create_tables.pl --environment
+        run: docker exec ci bash -c 'cd /workspace/server/sql && echo "" | perl create_tables.pl --environment'
 
       - name: Create test user and test.cfg
-        run: perl dist/setup/setup-test-env.pl
+        run: docker exec ci perl dist/setup/setup-test-env.pl
 
       - name: Run client tests
-        run: make -C "$GITHUB_WORKSPACE/client" test
+        run: docker exec ci make -C /workspace/client test
 
       - name: Run server tests
-        run: make -C "$GITHUB_WORKSPACE/server" test
+        run: docker exec ci make -C /workspace/server test
 
       - name: Failure diagnostics
         if: failure()
         run: |
-          mysql --version
-          apache2 -version
-          cat /var/log/apache2/error.log || true
+          docker exec ci cat /var/log/apache2/error.log 2>/dev/null || true
+          docker logs mysql 2>&1 | tail -50 || true
