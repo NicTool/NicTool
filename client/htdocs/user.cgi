@@ -364,7 +364,7 @@ sub display_passkeys {
 
     window.ntRevokePasskey = function(credId) {
         if (!confirm('Revoke this passkey?')) return;
-        NtWebAuthn.revokeCredential('] . $nt_obj->js_escape($csrf_token) . qq[', ] . int($uid) . qq[, credId)
+        NtWebAuthn.revokeCredential('] . $nt_obj->esc($csrf_token) . qq[', ] . int($uid) . qq[, credId)
             .done(function() { loadPasskeys(); })
             .fail(function() { alert('Failed to revoke passkey.'); });
     };

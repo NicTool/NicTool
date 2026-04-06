@@ -23,7 +23,7 @@ sub main {
 
     # Only accept POST with JSON content
     if ( $q->request_method() ne 'POST' ) {
-        send_json( 405, { error_code => 405, error_msg => 'Method not allowed' } );
+        send_json( $q, 405, { error_code => 405, error_msg => 'Method not allowed' } );
         return;
     }
 
@@ -38,7 +38,7 @@ sub main {
     my $request;
     eval { $request = decode_json($body); };
     if ( $@ || !$request ) {
-        send_json( 400, { error_code => 400, error_msg => 'Invalid JSON' } );
+        send_json( $q, 400, { error_code => 400, error_msg => 'Invalid JSON' } );
         return;
     }
 
@@ -49,7 +49,7 @@ sub main {
     my $csrf_token  = $request->{csrf_token}     || '';
     my $cookie_csrf = $q->cookie('NicTool_csrf') || '';
     if ( !$csrf_token || !$cookie_csrf || $csrf_token ne $cookie_csrf ) {
-        send_json( 403, { error_code => 403, error_msg => 'CSRF validation failed' } );
+        send_json( $q, 403, { error_code => 403, error_msg => 'CSRF validation failed' } );
         return;
     }
 
@@ -65,7 +65,7 @@ sub main {
     );
 
     if ( !$allowed{$action} ) {
-        send_json( 400, { error_code => 400, error_msg => 'Unknown action' } );
+        send_json( $q, 400, { error_code => 400, error_msg => 'Unknown action' } );
         return;
     }
 
@@ -82,7 +82,7 @@ sub main {
         # Authenticated actions need session cookie
         my $cookie = $q->cookie('NicTool');
         if ( !$cookie ) {
-            send_json( 403, { error_code => 403, error_msg => 'Not authenticated' } );
+            send_json( $q, 403, { error_code => 403, error_msg => 'Not authenticated' } );
             return;
         }
         $params{nt_user_session} = $cookie;
@@ -97,7 +97,7 @@ sub main {
     my $response = $nt_obj->{nt_server_obj}->send_request(%params);
 
     if ( !ref $response ) {
-        send_json( 500, { error_code => 500, error_msg => $response || 'Server error' } );
+        send_json( $q, 500, { error_code => 500, error_msg => $response || 'Server error' } );
         return;
     }
 
@@ -124,12 +124,12 @@ sub main {
         return;
     }
 
-    send_json( 200, $response );
+    send_json( $q, 200, $response );
 }
 
 sub send_json {
-    my ( $status, $data ) = @_;
-    print CGI->new->header(
+    my ( $q, $status, $data ) = @_;
+    print $q->header(
         -type   => 'application/json',
         -status => $status,
     );
