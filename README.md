@@ -54,7 +54,6 @@ See [AUTHORS.md](https://github.com/nictool/NicTool/blob/master/AUTHORS.md)
 ### Support
 
 * [Commercial Support](https://www.tnpi.net/cart/index.php/categories/nictool)
-* [Forums](https://www.tnpi.net/support/forums/)
 * [Email](mailto:support@nictool.com) - Requests not accompanied by payments are handled on a "best effort" basis.
 * [GitHub Issues](https://github.com/NicTool/NicTool/issues)
 * [Wiki](https://github.com/nictool/NicTool/wiki)
