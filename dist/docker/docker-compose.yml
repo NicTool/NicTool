@@ -1,0 +1,36 @@
+services:
+  db:
+    image: mariadb:11
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_ROOT_HOST: '%'
+      MYSQL_DATABASE: ${NICTOOL_DB_NAME:-nictool}
+      MYSQL_USER: ${NICTOOL_DB_USER:-nictool}
+      MYSQL_PASSWORD: ${NICTOOL_DB_USER_PASSWORD}
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    image: docker-web:latest
+    build:
+      context: ../..
+      dockerfile: dist/docker/Dockerfile
+    ports:
+      - "8080:80"
+      - "8443:443"
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      DB_ENGINE: mysql
+      DB_HOSTNAME: db
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost/index.cgi"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s

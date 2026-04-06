@@ -12,3 +12,6 @@ client/bin/do_build_test.sh
 server/bin/do_build_test.sh
 client/lib/nictoolclient.conf
 server/lib/nictoolserver.conf
+dist/docker/.env
+server/t/test.cfg
+server/api/t/test.cfg

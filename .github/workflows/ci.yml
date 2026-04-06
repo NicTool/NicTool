@@ -8,6 +8,7 @@ on:
       - '.test/**'
       - 'client/**'
       - 'server/**'
+      - 'dist/**'
       - 'Makefile.PL'
 
 permissions:
@@ -75,15 +76,39 @@ jobs:
           done
           exit 1
 
-      - name: Set up TLS certificates
-        run: sudo .test/tls-setup.sh
+      - name: Generate test credentials
+        run: |
+          DB_PW=$(openssl rand -base64 24)
+          ROOT_PW=$(openssl rand -base64 24)
+          echo "NICTOOL_DB_USER_PASSWORD=$DB_PW" >> "$GITHUB_ENV"
+          echo "DB_ROOT_PASSWORD=root" >> "$GITHUB_ENV"
+          echo "NICTOOL_DB_USER=nictool" >> "$GITHUB_ENV"
+          echo "NICTOOL_DB_NAME=nictool" >> "$GITHUB_ENV"
+          echo "DB_ENGINE=mysql" >> "$GITHUB_ENV"
+          echo "DB_HOSTNAME=localhost" >> "$GITHUB_ENV"
+          echo "ROOT_USER_EMAIL=ci@nictool.test" >> "$GITHUB_ENV"
+          echo "ROOT_USER_PASSWORD=$ROOT_PW" >> "$GITHUB_ENV"
+          echo "NICTOOL_CLIENT_DIR=$GITHUB_WORKSPACE/client" >> "$GITHUB_ENV"
+          echo "DB_SSL=1" >> "$GITHUB_ENV"
+
+      - name: Allow Apache to traverse workspace path
+        run: |
+          # Ubuntu 21.04+ defaults home dirs to 750; www-data needs o+x to traverse
+          dir="$GITHUB_WORKSPACE"
+          while [ "$dir" != "/" ]; do
+            sudo chmod o+x "$dir"
+            dir="$(dirname "$dir")"
+          done
+
+      - name: Set up NicTool configs, Apache, and TLS
+        run: sudo -E dist/setup/install-nictool.sh --nt-dir="$GITHUB_WORKSPACE"
 
       - name: Install Perl modules for Apache/mod_perl
         run: |
-          # Install modules not available as apt packages
           sudo cpanm --notest \
             CryptX Crypt::Mac::HMAC Crypt::KeyDerivation \
             Test::HTML::Lint Time::TAI64 DBD::MariaDB
+
       - name: Install NicTool client and server
         run: |
           cd "$GITHUB_WORKSPACE/client"
@@ -94,25 +119,16 @@ jobs:
           perl Makefile.PL
           sudo cpanm -n .
 
-      - name: Configure Apache for NicTool
-        run: |
-          client_conf="$RUNNER_TEMP/nictoolclient.conf"
-          server_conf="$RUNNER_TEMP/nictoolserver.conf"
-
-          sed "s|/home/NicTool|$GITHUB_WORKSPACE|g" .test/nictoolclient.conf > "$client_conf"
-          sed "s|/home/NicTool|$GITHUB_WORKSPACE|g" .test/nictoolserver.conf > "$server_conf"
-
-          sed \
-            -e "s|/home/NicTool/.test/nictoolclient.conf|$client_conf|g" \
-            -e "s|/home/NicTool/.test/nictoolserver.conf|$server_conf|g" \
-            -e "s|/home/NicTool|$GITHUB_WORKSPACE|g" \
-            .test/apache-ci.conf | sudo tee /etc/apache2/sites-enabled/nictool.conf > /dev/null
-
       - name: Restart Apache
         run: sudo service apache2 restart || sudo cat /var/log/apache2/error.log
 
       - name: Create NicTool test database
-        run: perl .test/create_tables.pl
+        run: |
+          cd "$GITHUB_WORKSPACE/server/sql"
+          echo "" | perl create_tables.pl --environment
+
+      - name: Create test user and test.cfg
+        run: perl dist/setup/setup-test-env.pl
 
       - name: Run client tests
         run: make -C "$GITHUB_WORKSPACE/client" test

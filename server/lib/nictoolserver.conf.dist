@@ -26,10 +26,23 @@ use NicToolServer::Nameserver;
 use NicToolServer::Nameserver::Sanity;
 
 BEGIN {
-    # Database configuration
-    $NicToolServer::dsn     = "DBI:mysql:database=nictool;host=127.0.0.1;port=3306";
-    $NicToolServer::db_user = 'nictool';
-    $NicToolServer::db_pass = 'lootcin205';
+    # Database configuration — credentials are required env vars
+    my $db_engine = $ENV{DB_ENGINE}       || 'mysql';
+    my $db_host   = $ENV{DB_HOSTNAME}     || '127.0.0.1';
+    my $db_name   = $ENV{NICTOOL_DB_NAME} || 'nictool';
+
+    my $db_user = $ENV{NICTOOL_DB_USER}
+        or die "Set NICTOOL_DB_USER (the database user for NicTool)\n";
+    my $db_pass = $ENV{NICTOOL_DB_USER_PASSWORD}
+        or die "Set NICTOOL_DB_USER_PASSWORD (the database password for NicTool)\n";
+
+    my $db_port = $ENV{DB_PORT} || '3306';
+    my $dsn     = "DBI:$db_engine:database=$db_name;host=$db_host;port=$db_port";
+    $dsn .= ";mysql_ssl=1" if $ENV{DB_SSL};
+
+    $NicToolServer::dsn     = $dsn;
+    $NicToolServer::db_user = $db_user;
+    $NicToolServer::db_pass = $db_pass;
 
     # LDAP configuration
     # $NicToolServer::ldap_servers  = 'ldap1.example.com,ldap2.example.com'; # Comma-separated list
@@ -46,7 +59,8 @@ BEGIN {
     # $NicToolServer::ldap_binddn = 'cn=Admin,dc=example,dc=com';
     # $NicToolServer::ldap_bindpw = 'the_admin_password';
 
-    Apache::DBI->connect_on_init($NicToolServer::dsn, $NicToolServer::db_user, $NicToolServer::db_pass);
+    Apache::DBI->connect_on_init( $NicToolServer::dsn, $NicToolServer::db_user,
+        $NicToolServer::db_pass );
 }
 
 1;

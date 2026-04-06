@@ -38,7 +38,7 @@ print "OK\tNicTool Backend firing up\n";    # print our banner
 my $db_name = $ENV{NT_PDNS_DB_NAME} // 'nictool';
 my $db_host = $ENV{NT_PDNS_DB_HOST} // '127.0.0.1';
 my $db_user = $ENV{NT_PDNS_DB_USER} // 'nictool';
-my $db_pass = $ENV{NT_PDNS_DB_PASS} // 'lootcin!mysql';
+my $db_pass = $ENV{NT_PDNS_DB_PASS} or die "Set NT_PDNS_DB_PASS\n";
 
 my $dsn = "DBI:mysql:database=$db_name;host=$db_host;mysql_ssl=1";
 my $dbh = DBI->connect( $dsn, $db_user, $db_pass )
@@ -92,6 +92,7 @@ while (<>) {
                 +{ response => [@res], expire => $default_ttl + time };
         }
         elsif ( $qtype eq 'ANY' ) {
+
             # PDNS commonly asks ANY for lookups that were originally NS/A/etc.
             # Include both explicit RR data and nameserver table data.
             @res = ( &get_records(@arr), &get_ns(@arr) );
@@ -100,6 +101,7 @@ while (<>) {
                 +{ response => [@res], expire => $default_ttl + time };
         }
         elsif ( $qtype eq 'NS' ) {
+
             # Return zone apex NS from nt_zone_nameserver and any explicit NS RRs.
             # This helps modern PDNS clients that ask NS in multiple contexts.
             @res = ( &get_ns(@arr), &get_records(@arr) );
@@ -140,7 +142,7 @@ sub get_axfr {
     my ( $type, $zoneid ) = @_;
     my $t = '';
 
-        my $sql = qq[
+    my $sql = qq[
  SELECT z.nt_zone_id, z.zone, t.name AS type,
                 r.name, r.ttl, r.address, r.weight, r.priority, r.other
  FROM nt_zone z
@@ -154,7 +156,7 @@ sub get_axfr {
     print STDERR "\t" . $sql . "\n" if $warnsql;
     my $sth = $dbh->prepare($sql);
     my @result;
-        if ( $sth->execute($zoneid) ) {
+    if ( $sth->execute($zoneid) ) {
         my @rows;
         while ( $t = $sth->fetchrow_hashref ) {
             my @content = rr_content_fields($t);
@@ -163,8 +165,7 @@ sub get_axfr {
                 "DATA", $t->{name} =~ /\.$/
                 ? $t->{name}
                 : $t->{name} . "." . $t->{zone},
-                'IN', $t->{type}, $t->{ttl}, ( $use_zone_id ? $t->{'nt_zone_id'} : 1 ),
-                @content
+                'IN', $t->{type}, $t->{ttl}, ( $use_zone_id ? $t->{'nt_zone_id'} : 1 ), @content
                 ];
             push @rows, $t;
         }
@@ -215,7 +216,7 @@ sub get_records {
 ";
 
     print STDERR "\t" . $zone_lookup_sql . "\n" if $warnsql;
-    my $zsth = $dbh->prepare($zone_lookup_sql);
+    my $zsth               = $dbh->prepare($zone_lookup_sql);
     my @zone_lookup_params = ( $main::nt_nameserver_id, @zone_names );
     return () if !$zsth->execute(@zone_lookup_params);
 
@@ -233,7 +234,7 @@ sub get_records {
     return () if !@zone_name_pairs;
 
     my $pair_placeholders = join( ',', ('(?,?)') x @zone_name_pairs );
-    my @pair_params       = map { @$_ } @zone_name_pairs;
+    my @pair_params       = map {@$_} @zone_name_pairs;
     my @query_params      = (@pair_params);
 
     my $type_clause = '';
@@ -270,8 +271,7 @@ sub get_records {
             push @result,
                 [
                 "DATA", $qname, $qclass, $t->{type}, $t->{ttl},
-                ( $use_zone_id ? $t->{'nt_zone_id'} : 1 ),
-                @content
+                ( $use_zone_id ? $t->{'nt_zone_id'} : 1 ), @content
                 ];
             push @rows, $t;
             $main::seenrecid{ $t->{'nt_zone_record_id'} } = 1;
@@ -313,7 +313,7 @@ sub get_ns {
     my @order;
     my $t = '';
 
-        my $sql = "
+    my $sql = "
   SELECT z.nt_zone_id,
          ns.ttl, ns.name, ns.address
   FROM nt_zone z
@@ -349,7 +349,7 @@ sub get_soa {
     my @order;
     my $t = '';
 
-        my $sql = "
+    my $sql = "
 SELECT ns.name, z.* 
   FROM nt_zone z
 INNER JOIN nt_zone_nameserver zns ON z.nt_zone_id=zns.nt_zone_id

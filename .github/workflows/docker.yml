@@ -1,0 +1,134 @@
+name: Docker
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/docker.yml'
+      - 'client/**'
+      - 'server/**'
+      - 'dist/**'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: dist/docker/Dockerfile
+          tags: docker-web:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  docker-tests:
+    needs: build
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Load Docker image from cache
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: dist/docker/Dockerfile
+          tags: docker-web:latest
+          load: true
+          cache-from: type=gha
+
+      - name: Generate credentials
+        run: |
+          dist/docker/generate-env.sh
+          echo "NICTOOL_TEST_PASSWORD=$(sed -n 's/^ROOT_USER_PASSWORD=//p' dist/docker/.env)" >> "$GITHUB_ENV"
+
+      - name: Start containers
+        working-directory: dist/docker
+        run: docker compose up -d --wait
+        timeout-minutes: 5
+
+      - name: Run server tests
+        run: docker compose -f dist/docker/docker-compose.yml exec -T web make -C /usr/local/nictool/server test
+
+      - name: Run client tests
+        run: docker compose -f dist/docker/docker-compose.yml exec -T web make -C /usr/local/nictool/client test
+
+      - name: Failure diagnostics
+        if: failure()
+        run: |
+          docker compose -f dist/docker/docker-compose.yml logs web || true
+          docker compose -f dist/docker/docker-compose.yml logs db || true
+
+  e2e-tests:
+    needs: build
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Load Docker image from cache
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: dist/docker/Dockerfile
+          tags: docker-web:latest
+          load: true
+          cache-from: type=gha
+
+      - name: Generate credentials
+        run: |
+          dist/docker/generate-env.sh
+          echo "NICTOOL_TEST_PASSWORD=$(sed -n 's/^ROOT_USER_PASSWORD=//p' dist/docker/.env)" >> "$GITHUB_ENV"
+
+      - name: Start containers
+        working-directory: dist/docker
+        run: docker compose up -d --wait
+        timeout-minutes: 5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: client/t/e2e/package-lock.json
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ hashFiles('client/t/e2e/package-lock.json') }}
+
+      - name: Install E2E dependencies
+        working-directory: client/t/e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Run E2E tests
+        working-directory: client/t/e2e
+        env:
+          NICTOOL_URL: http://localhost:8080
+          NICTOOL_TEST_PASSWORD: ${{ env.NICTOOL_TEST_PASSWORD }}
+          DEBUG: pw:api
+        run: npx playwright test --reporter=list
+
+      - name: Failure diagnostics
+        if: failure()
+        run: |
+          docker compose -f dist/docker/docker-compose.yml logs web || true
+          docker compose -f dist/docker/docker-compose.yml logs db || true
+          docker compose -f dist/docker/docker-compose.yml exec -T web cat /var/log/apache2/error.log 2>/dev/null || true

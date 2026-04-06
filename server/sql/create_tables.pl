@@ -155,15 +155,21 @@ exit if $test_run;
 $dbh->do("DROP DATABASE IF EXISTS $db");
 $dbh->do("CREATE DATABASE $db");
 
-# remote sessions will never be recognized as 'db_user'@'db_hostname' as MySQL does
-# a reverse lookup of the initiating host's IP address and uses that as the
-# connection string, eg 'db_user'@'x.x.x.x'
-if ( $db_host eq 'localhost' || $db_host eq '127.0.0.1' || $db_host eq '::1' ) {
-    $dbh->do("GRANT ALL PRIVILEGES ON $db.* TO $db_user\@$db_host IDENTIFIED BY '$db_pass'");
+# Create the NicTool database user. MySQL 8.0+ removed GRANT ... IDENTIFIED BY,
+# so we CREATE USER first, then GRANT separately.
+my $user_host =
+    ( $db_host eq 'localhost' || $db_host eq '127.0.0.1' || $db_host eq '::1' ) ? $db_host : '%';
+
+$dbh->do("DROP USER IF EXISTS '$db_user'\@'$user_host'");
+
+# Try mysql_native_password first (MySQL 8.0+), fall back for MariaDB
+my $created = $dbh->do(
+    "CREATE USER '$db_user'\@'$user_host' IDENTIFIED WITH mysql_native_password BY '$db_pass'");
+if ( !$created ) {
+    $dbh->do("CREATE USER '$db_user'\@'$user_host' IDENTIFIED BY '$db_pass'");
 }
-else {
-    $dbh->do("GRANT ALL PRIVILEGES ON $db.* TO $db_user\@'%' IDENTIFIED BY '$db_pass'");
-}
+
+$dbh->do("GRANT ALL PRIVILEGES ON $db.* TO '$db_user'\@'$user_host'");
 
 $dbh->do("USE $db");
 
@@ -249,8 +255,9 @@ sub get_dbh {
     print "\n";
 
     return if $test_run;
-    my $dbh =
-        DBI->connect( "dbi:$db_engine:host=$db_host", "root", $db_root_pw, { ChopBlanks => 1, } )
+    my %opts = ( ChopBlanks => 1 );
+    $opts{mysql_ssl} = 1 if $ENV{DB_SSL};
+    my $dbh = DBI->connect( "dbi:$db_engine:host=$db_host", "root", $db_root_pw, \%opts )
         or die $DBI::errstr;
 
     return ( $dbh, $db_host, $db_engine );
