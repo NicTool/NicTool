@@ -72,7 +72,13 @@ test.describe('W1: WebAuthn CSRF protection', () => {
       }),
     });
 
-    const json = JSON.parse(await res.text());
+    const text = await res.text();
+    let json: any;
+    try { json = JSON.parse(text); }
+    catch (e) {
+      console.error(`W1a response (${text.length} chars): ${JSON.stringify(text)}`);
+      throw e;
+    }
     expect(json.error_code).toBe(403);
     expect(json.error_msg).toContain('CSRF');
     await ctx.dispose();
@@ -93,7 +99,13 @@ test.describe('W1: WebAuthn CSRF protection', () => {
       }),
     });
 
-    const json = JSON.parse(await res.text());
+    const text = await res.text();
+    let json: any;
+    try { json = JSON.parse(text); }
+    catch (e) {
+      console.error(`W1b response (${text.length} chars): ${JSON.stringify(text)}`);
+      throw e;
+    }
     expect(json.error_code).toBe(403);
     await ctx.dispose();
   });
@@ -101,7 +113,13 @@ test.describe('W1: WebAuthn CSRF protection', () => {
   test('GET request rejected with 405', async ({ playwright }) => {
     const ctx = await freshCtx(playwright);
     const res = await ctx.get(`${BASE}/webauthn.cgi`);
-    const json = JSON.parse(await res.text());
+    const text = await res.text();
+    let json: any;
+    try { json = JSON.parse(text); }
+    catch (e) {
+      console.error(`W1c response (${text.length} chars): ${JSON.stringify(text)}`);
+      throw e;
+    }
     expect(json.error_code).toBe(405);
     await ctx.dispose();
   });

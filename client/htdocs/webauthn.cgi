@@ -130,10 +130,8 @@ sub main {
 sub send_json {
     my ( $q, $status, $data ) = @_;
     print $q->header(
-        -type   => 'application/json',
-        -status => $status,
+        -type    => 'application/json',
+        -charset => 'utf-8',
     );
     print encode_json($data);
 }
-
-1;
