@@ -91,13 +91,14 @@ jobs:
           echo "NICTOOL_CLIENT_DIR=$GITHUB_WORKSPACE/client" >> "$GITHUB_ENV"
           echo "DB_SSL=1" >> "$GITHUB_ENV"
 
-      - name: Allow Apache to read NicTool paths (AppArmor)
+      - name: Allow Apache to traverse workspace path
         run: |
-          cat <<RULES | sudo tee -a /etc/apparmor.d/local/usr.sbin.apache2
-          $GITHUB_WORKSPACE/client/** r,
-          $GITHUB_WORKSPACE/server/** r,
-          RULES
-          sudo apparmor_parser -r /etc/apparmor.d/usr.sbin.apache2
+          # Ubuntu 21.04+ defaults home dirs to 750; www-data needs o+x to traverse
+          dir="$GITHUB_WORKSPACE"
+          while [ "$dir" != "/" ]; do
+            sudo chmod o+x "$dir"
+            dir="$(dirname "$dir")"
+          done
 
       - name: Set up NicTool configs, Apache, and TLS
         run: sudo -E dist/setup/install-nictool.sh --nt-dir="$GITHUB_WORKSPACE"
