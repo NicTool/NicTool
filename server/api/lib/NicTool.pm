@@ -537,7 +537,7 @@ Damon Edwards
 
 =item *
 
-Abe Shelton
+Abraham Ingersoll
 
 =item *
 
@@ -547,7 +547,7 @@ Greg Schueler
 
 =head1 COPYRIGHT AND LICENSE
 
-This software is Copyright (c) 2011 by The Network People, Inc. This software is Copyright (c) 2001 by Damon Edwards, Abe Shelton, Greg Schueler.
+This software is Copyright (c) 2011 by The Network People, Inc. This software is Copyright (c) 2001 by Damon Edwards, Abraham Ingersoll, Greg Schueler.
 
 This is free software, licensed under:
 
@@ -613,7 +613,7 @@ Damon Edwards
 
 =item *
 
-Abe Shelton
+Abraham Ingersoll
 
 =item *
 
@@ -623,7 +623,7 @@ Greg Schueler
 
 =head1 COPYRIGHT AND LICENSE
 
-This software is Copyright (c) 2017 by The Network People, Inc. This software is Copyright (c) 2001 by Damon Edwards, Abe Shelton, Greg Schueler.
+This software is Copyright (c) 2017 by The Network People, Inc. This software is Copyright (c) 2001 by Damon Edwards, Abraham Ingersoll, Greg Schueler.
 
 This is free software, licensed under:
 

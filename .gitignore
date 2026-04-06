@@ -4,6 +4,7 @@
 blib
 pm_to_blib
 MYMETA.*
+META.yml
 Makefile
 MANIFEST.bak
 *~

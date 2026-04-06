@@ -13,68 +13,40 @@ on:
 
 permissions:
   contents: read
+  packages: read
 
 jobs:
+  image-name:
+    runs-on: ubuntu-24.04
+    outputs:
+      ci: ${{ steps.set.outputs.ci }}
+    steps:
+      - id: set
+        run: echo "ci=ghcr.io/${GITHUB_REPOSITORY,,}/build:latest" >> "$GITHUB_OUTPUT"
+
   test:
-    runs-on: ubuntu-22.04
+    needs: image-name
+    runs-on: ubuntu-24.04
+    container:
+      image: ${{ needs.image-name.outputs.ci }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: nictool
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=10
 
     steps:
       - uses: actions/checkout@v6
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
-            expat \
-            cpanminus \
-            libdbix-simple-perl \
-            libdbd-mysql-perl \
-            apache2 \
-            libapache2-mod-perl2 \
-            libapache2-mod-perl2-dev \
-            libapache-dbi-perl \
-            gettext \
-            libxml2 \
-            libnet-ip-perl \
-            libxml-libxml-perl \
-            libxml-parser-perl \
-            libdigest-hmac-perl \
-            libjson-perl \
-            librpc-xml-perl \
-            libsoap-lite-perl \
-            libmodule-build-perl \
-            libmime-base32-perl \
-            libmime-base64-perl \
-            libbind-confparser-perl \
-            libssl-dev \
-            libcrypt-openssl-rsa-perl \
-            libcrypt-openssl-dsa-perl \
-            libnet-dns-perl \
-            libyaml-perl \
-            bind9utils \
-            libwww-perl \
-            liburi-perl \
-            libmime-tools-perl \
-            libmailtools-perl \
-            libfile-sharedir-perl \
-            libperl-prereqscanner-perl \
-            libdbi-perl \
-            libcgi-pm-perl \
-            libtest-pod-perl \
-            libtest-output-perl \
-            libtest-simple-perl \
-            default-mysql-client
-
-      - name: Wait for MySQL service
-        run: |
-          sudo /etc/init.d/mysql start
-          for attempt in $(seq 1 10); do
-            if mysqladmin ping -h 127.0.0.1 --silent; then
-              exit 0
-            fi
-            sleep 2
-          done
-          exit 1
 
       - name: Generate test credentials
         run: |
@@ -85,42 +57,34 @@ jobs:
           echo "NICTOOL_DB_USER=nictool" >> "$GITHUB_ENV"
           echo "NICTOOL_DB_NAME=nictool" >> "$GITHUB_ENV"
           echo "DB_ENGINE=mysql" >> "$GITHUB_ENV"
-          echo "DB_HOSTNAME=localhost" >> "$GITHUB_ENV"
+          echo "DB_HOSTNAME=mysql" >> "$GITHUB_ENV"
           echo "ROOT_USER_EMAIL=ci@nictool.test" >> "$GITHUB_ENV"
           echo "ROOT_USER_PASSWORD=$ROOT_PW" >> "$GITHUB_ENV"
           echo "NICTOOL_CLIENT_DIR=$GITHUB_WORKSPACE/client" >> "$GITHUB_ENV"
-          echo "DB_SSL=1" >> "$GITHUB_ENV"
-
-      - name: Allow Apache to traverse workspace path
-        run: |
-          # Ubuntu 21.04+ defaults home dirs to 750; www-data needs o+x to traverse
-          dir="$GITHUB_WORKSPACE"
-          while [ "$dir" != "/" ]; do
-            sudo chmod o+x "$dir"
-            dir="$(dirname "$dir")"
-          done
-
-      - name: Set up NicTool configs, Apache, and TLS
-        run: sudo -E dist/setup/install-nictool.sh --nt-dir="$GITHUB_WORKSPACE"
-
-      - name: Install Perl modules for Apache/mod_perl
-        run: |
-          sudo cpanm --notest \
-            CryptX Crypt::Mac::HMAC Crypt::KeyDerivation \
-            Test::HTML::Lint Time::TAI64 DBD::MariaDB
 
       - name: Install NicTool client and server
         run: |
           cd "$GITHUB_WORKSPACE/client"
           perl Makefile.PL
-          sudo cpanm -n .
+          cpanm -n .
 
           cd "$GITHUB_WORKSPACE/server"
           perl Makefile.PL
-          sudo cpanm -n .
+          cpanm -n .
 
-      - name: Restart Apache
-        run: sudo service apache2 restart || sudo cat /var/log/apache2/error.log
+      - name: Allow Apache to traverse workspace path
+        run: |
+          dir="$GITHUB_WORKSPACE"
+          while [ "$dir" != "/" ]; do
+            chmod o+x "$dir"
+            dir="$(dirname "$dir")"
+          done
+
+      - name: Set up NicTool configs, Apache, and TLS
+        run: dist/setup/install-nictool.sh --nt-dir="$GITHUB_WORKSPACE"
+
+      - name: Start Apache
+        run: apachectl start
 
       - name: Create NicTool test database
         run: |
@@ -139,9 +103,6 @@ jobs:
       - name: Failure diagnostics
         if: failure()
         run: |
-          pwd
           mysql --version
           apache2 -version
-          sudo cat /var/log/apache2/error.log || true
-          cat /etc/apache2/apache2.conf || true
-          ls /usr/lib/apache2/modules/ || true
+          cat /var/log/apache2/error.log || true

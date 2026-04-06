@@ -5,7 +5,6 @@ INSTALL
 LICENSE
 MANIFEST
 MANIFEST.SKIP
-META.yml
 Makefile.PL
 TODO.md
 bin/install_deps.pl
