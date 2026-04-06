@@ -4,7 +4,6 @@ Makefile.PL
 README
 contrib/update_group_nameservers.pl
 LICENSE
-META.yml
 contrib/addserver.pl
 contrib/DNS.pm
 contrib/zone2nic.pl

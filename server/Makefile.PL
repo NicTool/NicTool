@@ -5,11 +5,12 @@ use ExtUtils::MakeMaker;
 
 my %WriteMakefileArgs = (
     "ABSTRACT" => "NicTool API reference server",
-    "AUTHOR"   => "Matt Simerson <msimerson\@cpan.org>, Damon Edwards, Abe Shelton, Greg Schueler",
+    "AUTHOR"   => "Matt Simerson <msimerson\@cpan.org>, Damon Edwards, Abraham Ingersoll, Greg Schueler",
     "CONFIGURE_REQUIRES" => { "ExtUtils::MakeMaker" => 0 },
     "DISTNAME"           => "NicToolServer",
     "EXE_FILES"          => [],
-    "LICENSE"            => "open_source",
+    "LICENSE"            => "agpl_3",
+    "MIN_PERL_VERSION"   => "5.010",
     "NAME"               => "NicToolServer",
     "PREREQ_PM"          => {
         "Apache::DBI"          => 0,

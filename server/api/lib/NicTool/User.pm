@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 ###
-# NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abe Shelton & Greg Schueler
+# NicTool v2.00-rc1 Copyright 2001 Damon Edwards, Abraham Ingersoll & Greg Schueler
 # NicTool v2.01 Copyright 2004 The Network People, Inc.
 #
 # NicTool is free software; you can redistribute it and/or modify it under
@@ -149,7 +149,7 @@ Damon Edwards
 
 =item *
 
-Abe Shelton
+Abraham Ingersoll
 
 =item *
 
@@ -159,7 +159,7 @@ Greg Schueler
 
 =head1 COPYRIGHT AND LICENSE
 
-This software is Copyright (c) 2017 by The Network People, Inc. This software is Copyright (c) 2001 by Damon Edwards, Abe Shelton, Greg Schueler.
+This software is Copyright (c) 2017 by The Network People, Inc. This software is Copyright (c) 2001 by Damon Edwards, Abraham Ingersoll, Greg Schueler.
 
 This is free software, licensed under:
 

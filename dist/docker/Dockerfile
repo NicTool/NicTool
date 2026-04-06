@@ -1,4 +1,6 @@
-FROM debian:bookworm
+# ---- base: all system + CPAN deps, Apache configured, no app source ----
+# CI builds stop here (--target base).  Production builds continue below.
+FROM debian:bookworm AS base
 
 ENV DEBIAN_FRONTEND=noninteractive LANG=en_US.UTF-8 LC_ALL=C.UTF-8
 
@@ -16,7 +18,7 @@ RUN apt-get -q update && apt-get install -qy \
       libexpat-dev \
       gettext \
       bind9utils \
-      mariadb-client \
+      default-mysql-client \
       openssl \
       libdbix-simple-perl \
       libdbd-mysql-perl \
@@ -49,13 +51,14 @@ RUN apt-get -q update && apt-get install -qy \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Copy only Makefile.PL files first for dependency caching
-COPY server/Makefile.PL /usr/local/nictool/server/Makefile.PL
-COPY client/Makefile.PL /usr/local/nictool/client/Makefile.PL
+# Copy only Makefile.PL files for dependency caching
+COPY server/Makefile.PL /tmp/nictool/server/Makefile.PL
+COPY client/Makefile.PL /tmp/nictool/client/Makefile.PL
 
 # Install Perl dependencies (cached unless Makefile.PL changes)
-RUN cd /usr/local/nictool/server && perl Makefile.PL && cpanm -n . \
-    && cd /usr/local/nictool/client && perl Makefile.PL && cpanm -n .
+RUN cd /tmp/nictool/server && perl Makefile.PL && cpanm -n . \
+    && cd /tmp/nictool/client && perl Makefile.PL && cpanm -n . \
+    && rm -rf /tmp/nictool
 
 # Additional Perl modules not in Makefile.PL
 RUN cpanm --notest \
@@ -67,12 +70,15 @@ RUN cpanm --notest \
 RUN a2dismod mpm_event && a2enmod mpm_prefork && a2enmod ssl \
     && rm -rf /etc/apache2/sites-enabled/* /etc/apache2/sites-available/*
 
+# ---- production: install app source and entrypoint ----
+FROM base AS production
+
 # Now copy the full source (only this layer invalidates on code changes)
 COPY server/ /usr/local/nictool/server/
 COPY client/ /usr/local/nictool/client/
 COPY dist/   /usr/local/nictool/dist/
 
-# Install the actual NicTool modules (deps are cached above)
+# Install the actual NicTool modules (deps are cached in base)
 RUN cd /usr/local/nictool/server && perl Makefile.PL && make install \
     && cd /usr/local/nictool/client && perl Makefile.PL && make install
 

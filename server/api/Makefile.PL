@@ -6,7 +6,7 @@ use ExtUtils::MakeMaker 6.30;
 
 my %WriteMakefileArgs = (
     "ABSTRACT" => "A client framework for interaction with a NicToolServer via SOAP or XML-RPC.",
-    "AUTHOR"   => "Matt Simerson <msimerson\@cpan.org>, Damon Edwards, Abe Shelton, Greg Schueler",
+    "AUTHOR"   => "Matt Simerson <msimerson\@cpan.org>, Damon Edwards, Abraham Ingersoll, Greg Schueler",
     "BUILD_REQUIRES" => {
         "English"    => 0,
         "Test"       => 0,
@@ -17,7 +17,8 @@ my %WriteMakefileArgs = (
     "CONFIGURE_REQUIRES" => { "ExtUtils::MakeMaker" => "6.30" },
     "DISTNAME"           => "NicTool",
     "EXE_FILES"          => [],
-    "LICENSE"            => "open_source",
+    "LICENSE"            => "agpl_3",
+    "MIN_PERL_VERSION"   => "5.010",
     "NAME"               => "NicTool",
     "PREREQ_PM"          => {
         "Carp"             => 0,

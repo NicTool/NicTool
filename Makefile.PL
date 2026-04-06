@@ -5,11 +5,11 @@ WriteMakefile(
     VERSION_FROM => "server/lib/NicToolServer.pm",
     AUTHOR       => 'Matt Simerson <msimerson@cpan.org>',
     ABSTRACT     => 'NicTool DNS Management suite',
-    LICENSE      => 'open_source',
+    LICENSE      => 'agpl_3',
 
     #dist               => { COMPRESS => 'gzip -9f', },
     dist               => { COMPRESS => 'bzip2', SUFFIX => '.bz2' },
-    'MIN_PERL_VERSION' => 5.008001,
+    'MIN_PERL_VERSION' => 5.010,
     'BUILD_REQUIRES'   => {},
     PREREQ_PM          => {},
     TEST_REQUIRES      => {},
