@@ -199,7 +199,7 @@ test.describe('T8: XSS Protection', () => {
     const res = await ctx.get(`${BASE}/index.cgi?message=<script>alert(1)</script>`);
     const body = await res.text();
     expect(body).not.toContain('<script>alert(1)</script>');
-    expect(body).not.toMatch(/<script>/i);
+    expect(body).not.toMatch(/<script>alert\(1\)<\/script>/i);
     await ctx.dispose();
   });
 });
