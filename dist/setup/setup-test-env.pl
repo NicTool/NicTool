@@ -57,6 +57,20 @@ else {
     print "Created test user 'nictest'.\n";
 }
 
+# Enable WebAuthn for E2E testing (virtual authenticator)
+for my $opt (
+    [ 'webauthn_enabled', '1' ],
+    [ 'webauthn_rp_id',   'localhost' ],
+    [ 'webauthn_origin',  'http://localhost:8080' ],
+) {
+    $dbh->do(
+        "INSERT INTO nt_options (option_name, option_value) VALUES (?, ?)
+         ON DUPLICATE KEY UPDATE option_value = VALUES(option_value)",
+        undef, @$opt
+    );
+}
+print "Enabled WebAuthn for testing.\n";
+
 $dbh->disconnect;
 
 # Determine project root (two levels up from this script: dist/setup/ -> project root)

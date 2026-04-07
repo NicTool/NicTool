@@ -64,7 +64,7 @@ RUN cd /tmp/nictool/server && perl Makefile.PL && cpanm -n . \
 RUN cpanm --notest \
     CryptX Crypt::Mac::HMAC Crypt::KeyDerivation \
     Test::HTML::Lint Time::TAI64 DBD::MariaDB \
-    Net::LDAP Test::Output
+    Net::LDAP Test::Output Authen::WebAuthn
 
 # Set up Apache modules
 RUN a2dismod mpm_event && a2enmod mpm_prefork && a2enmod ssl \

@@ -9,7 +9,7 @@ use RPC::XML;
 use Data::Dumper;
 use Net::IP;
 
-$NicToolServer::VERSION = '2.40';
+$NicToolServer::VERSION = '2.44';
 
 $NicToolServer::MIN_PROTOCOL_VERSION = '1.0';
 $NicToolServer::MAX_PROTOCOL_VERSION = '1.0';
@@ -57,7 +57,9 @@ sub handler {
     return $response_obj->respond( $client_obj->data()->{user} )
         if ( $action eq 'LOGIN'
         or $action eq 'VERIFY_SESSION'
-        or $action eq 'LOGOUT' );
+        or $action eq 'LOGOUT'
+        or $action eq 'WEBAUTHN_GET_AUTH_OPTIONS'
+        or $action eq 'WEBAUTHN_VERIFY_AUTH' );
 
     $self->{user} = $client_obj->data()->{user};
 
@@ -703,6 +705,43 @@ sub api_commands {
             'method'     => 'get_zone_record_delegates',
             'parameters' => {
                 'nt_zone_record_id' => { access => 'read', required => 1, type => 'ZONERECORD' },
+            },
+        },
+
+        # WebAuthn API
+        'webauthn_get_registration_options' => {
+            'class'      => 'WebAuthn',
+            'method'     => 'generate_registration_options',
+            'parameters' => {
+                'nt_user_id' => { access => 'read', required => 1, type => 'USER' },
+            },
+        },
+        'webauthn_verify_registration' => {
+            'class'      => 'WebAuthn',
+            'method'     => 'verify_registration',
+            'parameters' => {
+                'nt_user_id' => { access => 'write', required => 1, type => 'USER' },
+            },
+        },
+        'webauthn_get_user_credentials' => {
+            'class'      => 'WebAuthn',
+            'method'     => 'get_user_credentials',
+            'parameters' => {
+                'nt_user_id' => { access => 'read', required => 1, type => 'USER' },
+            },
+        },
+        'webauthn_revoke_credential' => {
+            'class'      => 'WebAuthn',
+            'method'     => 'revoke_credential',
+            'parameters' => {
+                'nt_user_id' => { access => 'write', required => 1, type => 'USER' },
+            },
+        },
+        'webauthn_rename_credential' => {
+            'class'      => 'WebAuthn',
+            'method'     => 'rename_credential',
+            'parameters' => {
+                'nt_user_id' => { access => 'write', required => 1, type => 'USER' },
             },
         },
     };

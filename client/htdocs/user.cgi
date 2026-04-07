@@ -175,6 +175,7 @@ sub display {
 </td></tr></table>];
 
     display_properties( $nt_obj, $q, $user, $duser, $edit_message );
+    display_passkeys( $nt_obj, $q, $user, $duser );
     display_global_log( $nt_obj, $q, $user, $duser, $message );
 
     $nt_obj->parse_template($NicToolClient::end_html_template);
@@ -271,6 +272,106 @@ sub display_properties {
 </table>];
 
     return $duser;
+}
+
+sub display_passkeys {
+    my ( $nt_obj, $q, $user, $duser ) = @_;
+
+    # Only show passkeys section when viewing own profile or as admin
+    my $is_self = $user->{'nt_user_id'} eq $duser->{'nt_user_id'};
+    return unless $is_self || $user->{'user_write'};
+
+    my $uid        = $duser->{'nt_user_id'};
+    my $csrf_token = $nt_obj->get_csrf_token();
+
+    print qq[
+<script src="nt-webauthn.js"></script>
+<table class="fat"><tr><td><hr></td></tr>
+ <tr class="dark_grey_bg"><td>
+  <table class="no_pad fat"><tr>
+   <td class="bold">Passkeys</td>
+   <td class="right">
+    <a href="#" id="nt-add-passkey" style="display:none"
+       onclick="ntAddPasskey(); return false;">Add Passkey</a>
+   </td>
+  </tr></table>
+ </td></tr>
+</table>
+<div id="nt-passkeys-list">
+ <table class="fat">
+  <tr class="light_grey_bg">
+   <td colspan="4" class="center">Loading...</td>
+  </tr>
+ </table>
+</div>
+<script>
+(function() {
+    if (!window.NtWebAuthn || !NtWebAuthn.isSupported()) {
+        document.getElementById('nt-passkeys-list').innerHTML =
+            '<p class="center">Your browser does not support passkeys.</p>';
+        return;
+    }
+    document.getElementById('nt-add-passkey').style.display = '';
+
+    function loadPasskeys() {
+        NtWebAuthn.listCredentials('] . $nt_obj->js_escape($csrf_token) . qq[', ] . int($uid) . qq[)
+            .done(function(resp) {
+                var creds = resp.credentials || [];
+                if (creds.length === 0) {
+                    document.getElementById('nt-passkeys-list').innerHTML =
+                        '<p class="center">No passkeys registered.</p>';
+                    return;
+                }
+                var html = '<table class="fat">'
+                    + '<tr class="dark_grey_bg">'
+                    + '<td>Name</td><td>Created</td>'
+                    + '<td>Last Used</td><td>Actions</td></tr>';
+                for (var i = 0; i < creds.length; i++) {
+                    var c = creds[i];
+                    var created = c.created_at
+                        ? new Date(c.created_at * 1000).toLocaleDateString()
+                        : '-';
+                    var lastUsed = c.last_used_at
+                        ? new Date(c.last_used_at * 1000).toLocaleDateString()
+                        : 'Never';
+                    var bg = (i % 2 === 0) ? 'light_grey_bg' : 'white_bg';
+                    var name = c.friendly_name || 'Passkey ' + (i + 1);
+                    html += '<tr class="' + bg + '">'
+                        + '<td>' + \$('<span>').text(name).html() + '</td>'
+                        + '<td>' + created + '</td>'
+                        + '<td>' + lastUsed + '</td>'
+                        + '<td><a href="#" onclick="ntRevokePasskey('
+                        + c.nt_webauthn_credential_id
+                        + '); return false;">Revoke</a></td>'
+                        + '</tr>';
+                }
+                html += '</table>';
+                document.getElementById('nt-passkeys-list').innerHTML = html;
+            })
+            .fail(function() {
+                document.getElementById('nt-passkeys-list').innerHTML =
+                    '<p class="center">Failed to load passkeys.</p>';
+            });
+    }
+
+    window.ntAddPasskey = function() {
+        var name = prompt('Enter a name for this passkey:', 'My Passkey');
+        if (!name) return;
+        NtWebAuthn.register('] . $nt_obj->js_escape($csrf_token) . qq[', ] . int($uid) . qq[, name)
+            .done(function() { loadPasskeys(); })
+            .fail(function(err) { alert('Passkey registration failed: ' + err); });
+    };
+
+    window.ntRevokePasskey = function(credId) {
+        if (!confirm('Revoke this passkey?')) return;
+        NtWebAuthn.revokeCredential('] . $nt_obj->esc($csrf_token) . qq[', ] . int($uid) . qq[, credId)
+            .done(function() { loadPasskeys(); })
+            .fail(function() { alert('Failed to revoke passkey.'); });
+    };
+
+    loadPasskeys();
+})();
+</script>];
 }
 
 sub display_global_log {

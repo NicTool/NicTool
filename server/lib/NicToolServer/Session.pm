@@ -29,6 +29,10 @@ sub verify {
 
         #warn "action is ".$data->{action};
         return $self->verify_login if $data->{action} eq 'LOGIN';
+        return $self->webauthn_get_auth_options
+            if $data->{action} eq 'WEBAUTHN_GET_AUTH_OPTIONS';
+        return $self->webauthn_verify_auth
+            if $data->{action} eq 'WEBAUTHN_VERIFY_AUTH';
     }
     return $self->verify_session;    # just verify the session
 }
@@ -62,12 +66,65 @@ sub verify_login {
         );
 
     $self->maybe_upgrade_password_hash(
-        $user->{nt_user_id},
-        $data->{username},
-        $pass_attempt,
-        $user->{password},
-        $user->{pass_salt},
+        $user->{nt_user_id}, $data->{username}, $pass_attempt,
+        $user->{password},   $user->{pass_salt},
     );
+
+    return $self->_create_session_for_user( $user, 'login' );
+}
+
+sub webauthn_get_auth_options {
+    my $self = shift;
+
+    my $data = $self->{client}->data();
+
+    require NicToolServer::WebAuthn;
+    my $wa = NicToolServer::WebAuthn->new( $self->{Apache}, $self->{client}, $self->{dbh} );
+
+    my $result = $wa->generate_authentication_options($data);
+
+    # Store result in user hash so the dispatcher can return it
+    $data->{user} = $result;
+    return 0;
+}
+
+sub webauthn_verify_auth {
+    my $self = shift;
+
+    $self->timeout_sessions;
+
+    my $data      = $self->{client}->data();
+    my $error_msg = 'Authentication failed.';
+
+    require NicToolServer::WebAuthn;
+    my $wa = NicToolServer::WebAuthn->new( $self->{Apache}, $self->{client}, $self->{dbh} );
+
+    my $result = $wa->verify_authentication($data);
+
+    if ( !$result || $result->{error_code} != 200 ) {
+        return $result || $self->auth_error($error_msg);
+    }
+
+    # Authentication succeeded — use the verified username for session
+    $data->{username} = $result->{username};
+
+    return $self->auth_error($error_msg)
+        if !$self->populate_groups;
+
+    my ( $err, $user ) = $self->_get_user( $data->{username}, $data->{groups}, $error_msg );
+    return $err if $err;
+
+    # Remove password from data hash (not used for passkey auth)
+    delete $data->{password};
+    $data->{user} = $user;
+
+    return $self->_create_session_for_user( $user, 'passkey_login' );
+}
+
+sub _create_session_for_user {
+    my ( $self, $user, $auth_method ) = @_;
+
+    my $data = $self->{client}->data();
 
     $self->clean_user_data;
 
@@ -75,7 +132,7 @@ sub verify_login {
 
     my $uid = $user->{nt_user_id};
 
-    my ( $user_perm, $groupperm );
+    my ( $err, $user_perm, $groupperm );
     ( $err, $user_perm ) = $self->_get_user_perms($uid);
     return $err if $err;
     ( $err, $groupperm ) = $self->_get_group_perms($uid);
@@ -109,7 +166,7 @@ sub verify_login {
         [ $uid, $session, time() ]
     ) or return;
 
-    $self->_insert_session_log( $session_id, $uid, $session, 'login' );
+    $self->_insert_session_log( $session_id, $uid, $session, $auth_method );
 
     return 0;
 }

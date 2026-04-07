@@ -26,7 +26,9 @@ sub _dispatch {
     #warn "action is ".uc($action);
     if (   uc($action) eq 'LOGIN'
         or uc($action) eq 'VERIFY_SESSION'
-        or uc($action) eq 'LOGOUT' )
+        or uc($action) eq 'LOGOUT'
+        or uc($action) eq 'WEBAUTHN_GET_AUTH_OPTIONS'
+        or uc($action) eq 'WEBAUTHN_VERIFY_AUTH' )
     {
         my $h = $data->{user};
         $h->{password} = '' if exists $h->{password};
