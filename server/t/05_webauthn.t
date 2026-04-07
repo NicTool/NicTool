@@ -28,9 +28,11 @@ my $test_uid    = 1;              # root user, always exists
 my $test_prefix = "test_wa_$$";
 
 # Save and clear WebAuthn options for clean test state
-my $orig_rp_id  = $wa->get_option('webauthn_rp_id');
-my $orig_origin = $wa->get_option('webauthn_origin');
+my $orig_enabled = $wa->get_option('webauthn_enabled');
+my $orig_rp_id   = $wa->get_option('webauthn_rp_id');
+my $orig_origin  = $wa->get_option('webauthn_origin');
 
+$wa->exec_query( 'DELETE FROM nt_options WHERE option_name = ?', 'webauthn_enabled' );
 $wa->exec_query( 'DELETE FROM nt_options WHERE option_name = ?', 'webauthn_rp_id' );
 $wa->exec_query( 'DELETE FROM nt_options WHERE option_name = ?', 'webauthn_origin' );
 
@@ -59,7 +61,9 @@ subtest 'T1: default disabled' => sub {
 subtest 'T1b: enable toggle + unconfigured' => sub {
 
     # Enable, but rp_id/origin not yet set — should get "not configured"
-    $wa->exec_query( 'INSERT INTO nt_options (option_name, option_value) VALUES (?, ?)',
+    $wa->exec_query(
+        'INSERT INTO nt_options (option_name, option_value) VALUES (?, ?)
+         ON DUPLICATE KEY UPDATE option_value = VALUES(option_value)',
         [ 'webauthn_enabled', '1' ] );
 
     my $r1 = $wa->generate_registration_options( { nt_user_id => $test_uid } );
@@ -610,6 +614,13 @@ END {
         $wa->exec_query( 'DELETE FROM nt_options WHERE option_name = ?', 'webauthn_enabled' );
         $wa->exec_query( 'DELETE FROM nt_options WHERE option_name = ?', 'webauthn_rp_id' );
         $wa->exec_query( 'DELETE FROM nt_options WHERE option_name = ?', 'webauthn_origin' );
+        if ($orig_enabled) {
+            $wa->exec_query(
+                'INSERT INTO nt_options
+                    (option_name, option_value) VALUES (?, ?)',
+                [ 'webauthn_enabled', $orig_enabled ]
+            );
+        }
         if ($orig_rp_id) {
             $wa->exec_query(
                 'INSERT INTO nt_options
