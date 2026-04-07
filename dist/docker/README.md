@@ -25,6 +25,14 @@ docker compose -f dist/docker/docker-compose.yml ps
 
 Once `web` shows `healthy`, NicTool is running at http://localhost:8080.
 
+## Logging In
+
+The default admin account is username `root` with the password from `ROOT_USER_PASSWORD` in your `.env` file. To look it up:
+
+```bash
+grep ROOT_USER_PASSWORD dist/docker/.env
+```
+
 ## Running Tests
 
 Single test file (verbose output):

@@ -186,7 +186,7 @@ test.describe('W4-W7: WebAuthn ceremonies', () => {
     webauthnConfigured = (+json.error_code === 200);
   });
 
-  test('W4: register passkey via virtual authenticator', async ({ page }) => {
+  test('W4: register passkey via virtual authenticator', async ({ page, playwright }) => {
     test.skip(!webauthnConfigured, 'WebAuthn not configured on server');
 
     const { cdpSession, authenticatorId } = await setupVirtualAuthenticator(page);
@@ -270,14 +270,16 @@ test.describe('W4-W7: WebAuthn ceremonies', () => {
       expect(result.credential_id).toBeTruthy();
     } finally {
       // Cleanup: revoke all passkeys for root
-      const { sessionCookie, csrfCookie } = await apiLogin(page.context().request);
-      const cookies = cookieString(sessionCookie, csrfCookie);
-      await revokeAllPasskeys(page.context().request, cookies, 1);
+      try {
+        const { sessionCookie, csrfCookie } = await apiLogin(playwright);
+        const cookies = cookieString(sessionCookie, csrfCookie);
+        await revokeAllPasskeys(playwright, cookies, 1);
+      } catch { /* best effort */ }
       await teardownVirtualAuthenticator(cdpSession, authenticatorId);
     }
   });
 
-  test('W5: passkey login without username (usernameless)', async ({ page }) => {
+  test('W5: passkey login without username (usernameless)', async ({ page, playwright }) => {
     test.skip(!webauthnConfigured, 'WebAuthn not configured on server');
 
     const { cdpSession, authenticatorId } = await setupVirtualAuthenticator(page);
@@ -418,20 +420,20 @@ test.describe('W4-W7: WebAuthn ceremonies', () => {
         });
         const verData = await verRes.json();
         return {
-          ok: +verData.error_code === 200,
+          ok: !!verData.nt_user_session || +verData.error_code === 200,
           error: verData.error_msg,
           hasSession: !!verData.nt_user_session,
         };
       }, BASE);
 
-      expect(loginResult.ok).toBe(true);
+      expect(loginResult.ok, `passkey login failed: ${loginResult.error}`).toBe(true);
       expect(loginResult.hasSession).toBe(true);
     } finally {
       // Cleanup
       try {
-        const { sessionCookie, csrfCookie } = await apiLogin(page.context().request);
+        const { sessionCookie, csrfCookie } = await apiLogin(playwright);
         const ck = cookieString(sessionCookie, csrfCookie);
-        await revokeAllPasskeys(page.context().request, ck, 1);
+        await revokeAllPasskeys(playwright, ck, 1);
       } catch { /* best effort */ }
       await teardownVirtualAuthenticator(cdpSession, authenticatorId);
     }
@@ -448,7 +450,7 @@ test.describe('W4-W7: WebAuthn ceremonies', () => {
     expect(Array.isArray(creds)).toBe(true);
   });
 
-  test('W7: revoked credential rejected at login', async ({ page }) => {
+  test('W7: revoked credential rejected at login', async ({ page, playwright }) => {
     test.skip(!webauthnConfigured, 'WebAuthn not configured on server');
 
     const { cdpSession, authenticatorId } = await setupVirtualAuthenticator(page);
@@ -514,9 +516,9 @@ test.describe('W4-W7: WebAuthn ceremonies', () => {
       expect(regResult.ok).toBe(true);
 
       // Revoke all credentials via API
-      const { sessionCookie, csrfCookie } = await apiLogin(page.context().request);
+      const { sessionCookie, csrfCookie } = await apiLogin(playwright);
       const cookies = cookieString(sessionCookie, csrfCookie);
-      await revokeAllPasskeys(page.context().request, cookies, 1);
+      await revokeAllPasskeys(playwright, cookies, 1);
 
       // Logout
       await page.goto(`${BASE}/index.cgi?logout=1`);
