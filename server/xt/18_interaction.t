@@ -149,10 +149,10 @@ sub groups_with_children {
     $res = $group1->new_user(
         first_name => 'test',
         last_name  => '1',
-        email      => 'test@blah.blah',
+        email      => 'test@example.com',
         username   => 'testuser1',
-        password   => 'testpass',
-        password2  => 'testpass'
+        password   => 'T3st!P@ss99',
+        password2  => 'T3st!P@ss99'
     );
     if ( noerrok($res) ) {
         $uid = $res->get('nt_user_id');
@@ -463,10 +463,10 @@ sub deleted_users {
     $res = $group1->new_user(
         first_name => 'test',
         last_name  => '1',
-        email      => 'test@blah.blah',
+        email      => 'test@example.com',
         username   => 'testuser1',
-        password   => 'testpass',
-        password2  => 'testpass'
+        password   => 'T3st!P@ss99',
+        password2  => 'T3st!P@ss99'
     );
     noerrok($res);
     $uid1 = $res->get('nt_user_id');
@@ -604,10 +604,10 @@ sub deleted_groups {
         nt_group_id => $gid2,
         first_name  => 'test',
         last_name   => '1',
-        email       => 'test@blah.blah',
+        email       => 'test@example.com',
         username    => 'testuser1',
-        password    => 'testpass',
-        password2   => 'testpass'
+        password    => 'T3st!P@ss99',
+        password2   => 'T3st!P@ss99'
     );
     noerrok( $res, 300 );
     ok( $res->error_msg,  qr/Cannot add user to a deleted group!/ );
@@ -784,10 +784,10 @@ sub self {
         nt_group_id               => $gid1,
         first_name                => 'test',
         last_name                 => '1',
-        email                     => 'test@blah.blah',
+        email                     => 'test@example.com',
         username                  => 'testuser1',
-        password                  => 'testpass',
-        password2                 => 'testpass',
+        password                  => 'T3st!P@ss99',
+        password2                 => 'T3st!P@ss99',
         inherit_group_permissions => 1,
     );
     noerrok($res);
@@ -805,7 +805,7 @@ sub self {
 
     $tuser->login(
         username => 'testuser1@test_delete_me1',
-        password => 'testpass'
+        password => 'T3st!P@ss99'
     );
     die "Couldn't log in" unless noerrok( $tuser->result );
     die "Couldn't log in" unless ok( $tuser->nt_user_session );
