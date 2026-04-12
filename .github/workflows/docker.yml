@@ -1,6 +1,8 @@
 name: Docker
 
 on:
+  schedule:
+    - cron: '0 6 1 * *'  # 6 AM UTC on the 1st of each month
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
@@ -63,6 +65,9 @@ jobs:
 
       - name: Run client tests
         run: docker compose -f dist/docker/docker-compose.yml exec -T web make -C /usr/local/nictool/client test
+
+      - name: Run extended permission & delegation tests
+        run: docker compose -f dist/docker/docker-compose.yml exec -T web bash -c 'cd /usr/local/nictool/server && prove -v xt/*.t'
 
       - name: Failure diagnostics
         if: failure()
