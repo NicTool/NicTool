@@ -137,10 +137,12 @@ sub start {
 =cut
 
     $user = new NicTool(
-        cache_users  => 0,
-        cache_groups => 0,
-        server_host  => Config('server_host'),
-        server_port  => Config('server_port')
+        cache_users       => 0,
+        cache_groups      => 0,
+        server_host       => Config('server_host'),
+        server_port       => Config('server_port'),
+        data_protocol     => Config('data_protocol'),
+        transfer_protocol => (Config('transfer_protocol') || 'http'),
     );
     die "Couldn't create NicTool Object" unless is( ref $user, 'NicTool' );
 
@@ -313,10 +315,12 @@ USER2 inherits permissions from GROUP2.
 =cut
 
     $tuser = new NicTool(
-        cache_users  => 0,
-        cache_groups => 0,
-        server_host  => Config('server_host'),
-        server_port  => Config('server_port')
+        cache_users       => 0,
+        cache_groups      => 0,
+        server_host       => Config('server_host'),
+        server_port       => Config('server_port'),
+        data_protocol     => Config('data_protocol'),
+        transfer_protocol => (Config('transfer_protocol') || 'http'),
     );
 
     $tuser->login(
@@ -330,10 +334,12 @@ USER2 inherits permissions from GROUP2.
 =cut
 
     $tuser2 = new NicTool(
-        cache_users  => 0,
-        cache_groups => 0,
-        server_host  => Config('server_host'),
-        server_port  => Config('server_port')
+        cache_users       => 0,
+        cache_groups      => 0,
+        server_host       => Config('server_host'),
+        server_port       => Config('server_port'),
+        data_protocol     => Config('data_protocol'),
+        transfer_protocol => (Config('transfer_protocol') || 'http'),
     );
 
     $tuser2->login(
@@ -1356,10 +1362,12 @@ sub security {
 =cut
 
     $tuser = new NicTool(
-        cache_users  => 0,
-        cache_groups => 0,
-        server_host  => Config('server_host'),
-        server_port  => Config('server_port')
+        cache_users       => 0,
+        cache_groups      => 0,
+        server_host       => Config('server_host'),
+        server_port       => Config('server_port'),
+        data_protocol     => Config('data_protocol'),
+        transfer_protocol => (Config('transfer_protocol') || 'http'),
     );
 
     $tuser->login(

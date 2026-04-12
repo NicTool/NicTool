@@ -87,10 +87,12 @@ sub test_new_user {
 
     #login as test user
     my $tuser = new NicTool(
-        cache_users  => 0,
-        cache_groups => 0,
-        server_host  => Config('server_host'),
-        server_port  => Config('server_port')
+        cache_users       => 0,
+        cache_groups      => 0,
+        server_host       => Config('server_host'),
+        server_port       => Config('server_port'),
+        data_protocol     => Config('data_protocol'),
+        transfer_protocol => (Config('transfer_protocol') || 'http'),
     );
     isa_ok( $tuser, 'NicTool' );
 
@@ -1284,8 +1286,8 @@ sub test_bounds {
         last_name                 => 'me',
         username                  => 'deleteme',
         email                     => 'blah@example.com',
-        password                  => 'T3st!Ng12AB',
-        password2                 => 'T3st!Ng12AB',
+        password                  => 'T3st!@Ng12AB',
+        password2                 => 'T3st!@Ng12AB',
         inherit_group_permissions => 0,
 
     );
