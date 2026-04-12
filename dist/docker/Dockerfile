@@ -4,7 +4,7 @@ FROM debian:bookworm AS base
 
 ENV DEBIAN_FRONTEND=noninteractive LANG=en_US.UTF-8 LC_ALL=C.UTF-8
 
-RUN apt-get -q update && apt-get install -qy \
+RUN apt-get -q update && apt-get upgrade -qy && apt-get install -qy \
       perl \
       cpanminus \
       build-essential \
