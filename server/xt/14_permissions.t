@@ -77,10 +77,10 @@ sub test_new_user {
     my $res = $group1->new_user(
         first_name                => 'test',
         last_name                 => '1',
-        email                     => 'test@blah.blah',
+        email                     => 'test@example.com',
         username                  => 'testuser1',
-        password                  => 'testpass',
-        password2                 => 'testpass',
+        password                  => 'T3st!P@ss99',
+        password2                 => 'T3st!P@ss99',
         inherit_group_permissions => 1,
     );
     noerrok($res) or die "Couldn't create test user";
@@ -96,7 +96,7 @@ sub test_new_user {
 
     $tuser->login(
         username => 'testuser1@test_delete_me1',
-        password => 'testpass',
+        password => 'T3st!P@ss99',
     );
     ok( $tuser->result );
 
@@ -369,10 +369,10 @@ sub test_create_user_no_perms {
     $res = $tuser->new_user(
         first_name => 'test',
         last_name  => '1',
-        email      => 'test@blah.blah',
+        email      => 'test@example.com',
         username   => 'testuser2',
-        password   => 'testpass',
-        password2  => 'testpass',
+        password   => 'T3st!P@ss99',
+        password2  => 'T3st!P@ss99',
     );
 
     noerrok( $res, 404, "create user" );
@@ -389,10 +389,10 @@ sub test_create_user_perms {
     $res = $tuser->new_user(
         first_name => 'test',
         last_name  => '1',
-        email      => 'test@blah.blah',
+        email      => 'test@example.com',
         username   => 'testuser2',
-        password   => 'testpass',
-        password2  => 'testpass',
+        password   => 'T3st!P@ss99',
+        password2  => 'T3st!P@ss99',
     );
 
     noerrok($res);
@@ -722,8 +722,8 @@ sub test_edit_user {
     );
 
     my $res = $tuser->new_user(
-        password  => 'testpass',
-        password2 => 'testpass',
+        password  => 'T3st!P@ss99',
+        password2 => 'T3st!P@ss99',
         %usert
     );
     noerrok($res);
@@ -936,7 +936,7 @@ sub test_self_write {
     my %self = (
         first_name => 'tester',
         last_name  => '234',
-        email      => 'testchange@blah.blah',
+        email      => 'testchange@example.com',
         username   => 'testuser1changed',
     );
 
@@ -1106,8 +1106,8 @@ sub test_delete {
     );
 
     $res = $tuser->new_user(
-        password  => 'testpass',
-        password2 => 'testpass',
+        password  => 'T3st!P@ss99',
+        password2 => 'T3st!P@ss99',
         %usert
     );
     noerrok($res);
@@ -1283,9 +1283,9 @@ sub test_bounds {
         first_name                => 'delete',
         last_name                 => 'me',
         username                  => 'deleteme',
-        email                     => 'blah@blog.ug',
-        password                  => 'testing123',
-        password2                 => 'testing123',
+        email                     => 'blah@example.com',
+        password                  => 'T3st!Ng12AB',
+        password2                 => 'T3st!Ng12AB',
         inherit_group_permissions => 0,
 
     );
