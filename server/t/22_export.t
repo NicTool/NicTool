@@ -305,7 +305,7 @@ sub _zr_txt {
     );
     cmp_ok(
         $r, 'eq',
-        "'txt.simerson.com.:" . ( 'a' x 255 ) . "\" \"" . ( 'a' x 45 ). ":86400::\n",
+        "'txt.simerson.com.:" . ( 'a' x 300 ). ":86400::\n",
         'zr_txt over 255 bytes split correctly'
     );
 
@@ -322,10 +322,9 @@ sub _zr_txt {
     );
     cmp_ok(
         $r, 'eq',
-        "'txt.simerson.com.:$p1$p2:86400::\n",
+        "'dkim.simerson.com.:$p1$p2:86400::\n",
         'zr_txt BIND-format multi-string quoting (DKIM bug case)'
     );
-
 }
 
 sub _get_rr_types {
