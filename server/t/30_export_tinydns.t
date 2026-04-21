@@ -36,6 +36,7 @@ test_escape();
 test_escapeNumber();
 test_characterCount();
 test_zr_spf();
+test_zr_txt();
 
 done_testing();
 exit;
@@ -107,6 +108,57 @@ sub test_zr_spf {
         ':example.net:99:\377v=spf1 mx ip4\072195.69.128.111 ip4\07264.106.174.60 ip4\07264.106.174.62 ip4\07294.231.108.35 ip4\07294.231.109.44 ip4\072158.36.191.0\05725 ip4\07218 8.180.92.15 ip4\072188.180.92.200 ip4\072193.111.162.0\05724 include\072spf.example.net include\072spf.protection.outlook.com include\072spf.come\377ndosystems.com ip4\07294.231.107.21 ip4\07294.231.107.22 ip4\07294.231.107.23 ip4\07294.231.107.24 ip4\07294.231.107.25 ip4\07294.231.107.26 ip4\07294.231.107.28 ip4\07294.231.107.29 ip4\07294.231.107.220 ip4\07294.231.107.221 ip4\07285.191.122.238 ip4\07285.191.122.249 ip4\07285.191.122.250 i\377p4\07293.191.155.22 ip4\07293.191.155.203 ip4\07293.191.155.224 ip4\072158.69.117.38 ip4\072158.69.117.37 ip4\07289.234.13.177 ip4\07293.91.20.9 ip 4\07293.91.20.10 ip4\072140.78.3.65 ip4\072132.212.11.48 ip4\072132.205.7.81 ip4\072132.205.1.11 ip4\072132.205.122.20 ip4\072140.77.51.2 include\072mai\022l.example.com -all:::
 ',
         'multi-string (longer than 255 bytes) SPF'
+    );
+}
+
+sub test_zr_txt {
+    # plain short TXT
+    cmp_ok(
+        $tinydns->zr_txt(
+            {   name      => 'txt.example.net',
+                address   => 'v=spf1 mx ~all',
+                ttl       => 86400,
+                timestamp => '',
+                location  => '',
+            }
+        ),
+        'eq',
+        "'txt.example.net:v=spf1 mx ~all:86400::\n",
+        'zr_txt short'
+    );
+
+    # TXT stored with outer quotes (user error)
+    cmp_ok(
+        $tinydns->zr_txt(
+            {   name      => 'txt.example.net',
+                address   => '"v=spf1 mx ~all"',
+                ttl       => 86400,
+                timestamp => '',
+                location  => '',
+            }
+        ),
+        'eq',
+        "'txt.example.net:v=spf1 mx ~all:86400::\n",
+        'zr_txt with outer quotes stripped'
+    );
+
+    # TXT with embedded BIND separator (DKIM bug case):
+    # DB holds: "255-char-key" "127-char-key" — the literal " " must be stripped,
+    # leaving the concatenated content for tinydns to encode.
+    my $p1 = 'B' x 255;
+    my $p2 = 'C' x 127;
+    cmp_ok(
+        $tinydns->zr_txt(
+            {   name      => 'dkim.example.net',
+                address   => "\"$p1\" \"$p2\"",
+                ttl       => 86400,
+                timestamp => '',
+                location  => '',
+            }
+        ),
+        'eq',
+        "'dkim.example.net:${p1}${p2}:86400::\n",
+        'zr_txt BIND-format multi-string quoting (DKIM bug case)'
     );
 }
 

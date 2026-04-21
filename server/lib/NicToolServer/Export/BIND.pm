@@ -261,9 +261,11 @@ sub zr_mx {
 sub zr_txt {
     my ( $self, $r ) = @_;
 
-    # fixup for quotes around DKIM in the DB (user error)
-    $r->{address} =~ s/^"//g;    # strip off any leading quotes
-    $r->{address} =~ s/"$//g;    # strip off any trailing quotes
+    # Normalize address: strip BIND-format quoting that may have been stored
+    # in the DB (user error, or from a previous BIND export being re-imported).
+    $r->{address} =~ s/^"//;      # strip leading quote
+    $r->{address} =~ s/"$//;      # strip trailing quote
+    $r->{address} =~ s/" "//g;    # strip embedded BIND TXT separators
 
     # BIND croaks when any string in the TXT RR address is longer than 255
     if ( length $r->{address} > 255 ) {
