@@ -259,8 +259,8 @@ sub zr_txt {
         . $self->qualify( $r->{name} )             # fqdn
         . ':' . $self->escape( $r->{address} )     # s
         . ':' . $r->{ttl}                          # ttl
-        . ':' . $r->{timestamp}                    # timestamp
-        . ':' . $r->{location}                     # lo
+        . ':' . ($r->{timestamp} // '')            # timestamp
+        . ':' . ($r->{location} // '')             # lo
         . "\n";
 }
 

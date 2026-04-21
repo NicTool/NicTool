@@ -280,7 +280,7 @@ sub _zr_txt {
             ttl     => '86400',
         }
     );
-    cmp_ok( $r, 'eq', "txt.simerson.com.\t86400\tIN  TXT\t\"v=spf1 mx ~all\"\n", 'zr_txt short' );
+    cmp_ok( $r, 'eq', "'txt.simerson.com.:v=spf1 mx ~all:86400::\n", 'zr_txt short' );
 
     # TXT stored with outer quotes (user error)
     $r = $export->{export_class}->zr_txt(
@@ -291,7 +291,7 @@ sub _zr_txt {
     );
     cmp_ok(
         $r, 'eq',
-        "txt.simerson.com.\t86400\tIN  TXT\t\"v=spf1 mx ~all\"\n",
+        "'txt.simerson.com.:v=spf1 mx ~all:86400::\n",
         'zr_txt with outer quotes stripped'
     );
 
@@ -305,7 +305,7 @@ sub _zr_txt {
     );
     cmp_ok(
         $r, 'eq',
-        "txt.simerson.com.\t86400\tIN  TXT\t\"" . ( 'a' x 255 ) . "\" \"" . ( 'a' x 45 ) . "\"\n",
+        "'txt.simerson.com.:" . ( 'a' x 255 ) . "\" \"" . ( 'a' x 45 ). ":86400::\n",
         'zr_txt over 255 bytes split correctly'
     );
 
@@ -322,7 +322,7 @@ sub _zr_txt {
     );
     cmp_ok(
         $r, 'eq',
-        "dkim.simerson.com.\t86400\tIN  TXT\t\"$p1\" \"$p2\"\n",
+        "'txt.simerson.com.:$p1$p2:86400::\n",
         'zr_txt BIND-format multi-string quoting (DKIM bug case)'
     );
 
