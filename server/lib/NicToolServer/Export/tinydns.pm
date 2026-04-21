@@ -249,12 +249,18 @@ sub zr_txt {
     my $self = shift;
     my $r    = shift or die;
 
+    # Normalize address: strip BIND-format quoting that may have been stored
+    # in the DB (user error, or from a previous BIND export being re-imported).
+    $r->{address} =~ s/^"//;      # strip leading quote
+    $r->{address} =~ s/"$//;      # strip trailing quote
+    $r->{address} =~ s/" "//g;    # strip embedded BIND TXT separators
+
     return "'"                                     # special char '
         . $self->qualify( $r->{name} )             # fqdn
         . ':' . $self->escape( $r->{address} )     # s
         . ':' . $r->{ttl}                          # ttl
-        . ':' . $r->{timestamp}                    # timestamp
-        . ':' . $r->{location}                     # lo
+        . ':' . ($r->{timestamp} // '')            # timestamp
+        . ':' . ($r->{location} // '')             # lo
         . "\n";
 }
 

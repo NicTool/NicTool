@@ -814,7 +814,7 @@ sub get_group_id {
         $rid = $ids->[0]->{nt_group_id} if $ids;
     }
     elsif ( $key eq 'nt_nameserver_id' or uc($type) eq 'NAMESERVER' ) {
-        $sql = "SELECT nt_group_id FROM nt_nameserver " . "WHERE nt_nameserver_id = ?";
+        $sql = "SELECT nt_group_id FROM nt_nameserver WHERE nt_nameserver_id = ?";
         my $ids = $self->exec_query( $sql, $id );
         $rid = $ids->[0]->{nt_group_id} if $ids;
     }

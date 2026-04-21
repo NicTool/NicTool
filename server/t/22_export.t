@@ -51,6 +51,7 @@ _datestamp_to_int();
 _zr_nsec3();
 _zr_nsec3param();
 _zr_ipseckey();
+_zr_txt();
 _get_export_data_dir();
 
 $export->get_dbh(
@@ -269,6 +270,61 @@ sub _zr_nsec3param {
 ', 'zr_nsec3param'
     );
 
+}
+
+sub _zr_txt {
+    # plain short TXT
+    $r = $export->{export_class}->zr_txt(
+        {   name    => 'txt.simerson.com.',
+            address => 'v=spf1 mx ~all',
+            ttl     => '86400',
+        }
+    );
+    cmp_ok( $r, 'eq', "'txt.simerson.com.:v=spf1 mx ~all:86400::\n", 'zr_txt short' );
+
+    # TXT stored with outer quotes (user error)
+    $r = $export->{export_class}->zr_txt(
+        {   name    => 'txt.simerson.com.',
+            address => '"v=spf1 mx ~all"',
+            ttl     => '86400',
+        }
+    );
+    cmp_ok(
+        $r, 'eq',
+        "'txt.simerson.com.:v=spf1 mx ~all:86400::\n",
+        'zr_txt with outer quotes stripped'
+    );
+
+    # TXT over 255 bytes (splits into two strings)
+    my $long = 'a' x 300;
+    $r = $export->{export_class}->zr_txt(
+        {   name    => 'txt.simerson.com.',
+            address => $long,
+            ttl     => '86400',
+        }
+    );
+    cmp_ok(
+        $r, 'eq',
+        "'txt.simerson.com.:" . ( 'a' x 300 ). ":86400::\n",
+        'zr_txt over 255 bytes split correctly'
+    );
+
+    # TXT stored with BIND-format quoting and embedded separator (DKIM bug case):
+    # DB holds: "255-char-key" "127-char-key" — the embedded " " must not create an
+    # empty middle string after the 255-byte split.
+    my $p1 = 'B' x 255;
+    my $p2 = 'C' x 127;
+    $r = $export->{export_class}->zr_txt(
+        {   name    => 'dkim.simerson.com.',
+            address => "\"$p1\" \"$p2\"",
+            ttl     => '86400',
+        }
+    );
+    cmp_ok(
+        $r, 'eq',
+        "'dkim.simerson.com.:$p1$p2:86400::\n",
+        'zr_txt BIND-format multi-string quoting (DKIM bug case)'
+    );
 }
 
 sub _get_rr_types {
