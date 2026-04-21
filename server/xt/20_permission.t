@@ -137,10 +137,12 @@ sub start {
 =cut
 
     $user = new NicTool(
-        cache_users  => 0,
-        cache_groups => 0,
-        server_host  => Config('server_host'),
-        server_port  => Config('server_port')
+        cache_users       => 0,
+        cache_groups      => 0,
+        server_host       => Config('server_host'),
+        server_port       => Config('server_port'),
+        data_protocol     => Config('data_protocol'),
+        transfer_protocol => (Config('transfer_protocol') || 'http'),
     );
     die "Couldn't create NicTool Object" unless is( ref $user, 'NicTool' );
 
@@ -177,10 +179,10 @@ sub start {
     $res = $group1->new_user(
         first_name                => 'test',
         last_name                 => '1',
-        email                     => 'test@blah.blah',
+        email                     => 'test@example.com',
         username                  => 'testuser1',
-        password                  => 'testpass',
-        password2                 => 'testpass',
+        password                  => 'T3st!P@ss99',
+        password2                 => 'T3st!P@ss99',
         inherit_group_permissions => 1,
     );
     die "Couldn't create test user"
@@ -298,10 +300,10 @@ USER2 inherits permissions from GROUP2.
     $res = $subg->new_user(
         first_name                => 'test2',
         last_name                 => '2',
-        email                     => 'test2@blah.blah',
+        email                     => 'test2@example.com',
         username                  => 'testuser2',
-        password                  => 'testpass2',
-        password2                 => 'testpass2',
+        password                  => 'T3st!P@ss88',
+        password2                 => 'T3st!P@ss88',
         inherit_group_permissions => 1,
     );
     die "Couldn't create test user"
@@ -313,15 +315,17 @@ USER2 inherits permissions from GROUP2.
 =cut
 
     $tuser = new NicTool(
-        cache_users  => 0,
-        cache_groups => 0,
-        server_host  => Config('server_host'),
-        server_port  => Config('server_port')
+        cache_users       => 0,
+        cache_groups      => 0,
+        server_host       => Config('server_host'),
+        server_port       => Config('server_port'),
+        data_protocol     => Config('data_protocol'),
+        transfer_protocol => (Config('transfer_protocol') || 'http'),
     );
 
     $tuser->login(
         username => 'testuser1@test_delete_me1',
-        password => 'testpass'
+        password => 'T3st!P@ss99'
     );
     die "couldn't log in as test user 1" unless noerrok( $tuser->result );
 
@@ -330,15 +334,17 @@ USER2 inherits permissions from GROUP2.
 =cut
 
     $tuser2 = new NicTool(
-        cache_users  => 0,
-        cache_groups => 0,
-        server_host  => Config('server_host'),
-        server_port  => Config('server_port')
+        cache_users       => 0,
+        cache_groups      => 0,
+        server_host       => Config('server_host'),
+        server_port       => Config('server_port'),
+        data_protocol     => Config('data_protocol'),
+        transfer_protocol => (Config('transfer_protocol') || 'http'),
     );
 
     $tuser2->login(
         username => 'testuser2@testsubgroup',
-        password => 'testpass2'
+        password => 'T3st!P@ss88'
     );
     die "couldn't log in as test user 2" unless noerrok( $tuser2->result );
 
@@ -1326,10 +1332,10 @@ sub security {
     $res = $user->new_user(
         first_name                => 'test',
         last_name                 => '1',
-        email                     => 'test@blah.blah',
+        email                     => 'test@example.com',
         username                  => 'testuser1',
-        password                  => 'testpass',
-        password2                 => 'testpass',
+        password                  => 'T3st!P@ss99',
+        password2                 => 'T3st!P@ss99',
         inherit_group_permissions => 1,
     );
     die "Couldn't create test user"
@@ -1356,15 +1362,17 @@ sub security {
 =cut
 
     $tuser = new NicTool(
-        cache_users  => 0,
-        cache_groups => 0,
-        server_host  => Config('server_host'),
-        server_port  => Config('server_port')
+        cache_users       => 0,
+        cache_groups      => 0,
+        server_host       => Config('server_host'),
+        server_port       => Config('server_port'),
+        data_protocol     => Config('data_protocol'),
+        transfer_protocol => (Config('transfer_protocol') || 'http'),
     );
 
     $tuser->login(
         username => 'testuser1@test_delete_me1',
-        password => 'testpass'
+        password => 'T3st!P@ss99'
     );
     die "couldn't log in as test user 1" unless noerrok( $tuser->result );
 
@@ -1401,10 +1409,10 @@ sub security {
         nt_group_id               => $user->get('nt_group_id'),
         first_name                => 'test',
         last_name                 => '1',
-        email                     => 'test@blah.blah',
+        email                     => 'test@example.com',
         username                  => 'highertestuser',
-        password                  => 'testpass',
-        password2                 => 'testpass',
+        password                  => 'T3st!P@ss99',
+        password2                 => 'T3st!P@ss99',
         inherit_group_permissions => 1,
     );
 
@@ -1693,10 +1701,10 @@ sub security {
         nt_group_id               => $gid2,
         first_name                => 'test',
         last_name                 => '1',
-        email                     => 'test@blah.blah',
+        email                     => 'test@example.com',
         username                  => 'highertestuser',
-        password                  => 'testpass',
-        password2                 => 'testpass',
+        password                  => 'T3st!P@ss99',
+        password2                 => 'T3st!P@ss99',
         inherit_group_permissions => 1,
     );
 
