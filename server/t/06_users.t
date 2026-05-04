@@ -36,6 +36,7 @@ use lib 't';
 use lib 'lib';
 use NicToolTest;
 use NicTool;
+use NicToolServer::User;
 use Test::More 'no_plan';
 
 my $nt_obj = nt_api_connect();
@@ -54,6 +55,12 @@ done_testing();
 exit;
 
 sub do_the_tests {
+
+    ####################
+    # unit tests       #
+    ####################
+
+    test_secure_compare();
 
     ####################
     # setup            #
@@ -653,4 +660,29 @@ sub test_delete_users {
     noerrok( $res, 302 );
     is( $res->get('error_msg'), 'user_list' );
     ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
+}
+
+sub test_secure_compare {
+
+    # equal strings
+    ok( NicToolServer::User::_secure_compare( 'abc',         'abc' ),         'equal short' );
+    ok( NicToolServer::User::_secure_compare( 'a' x 64,      'a' x 64 ),      'equal long' );
+    ok( NicToolServer::User::_secure_compare( '',            '' ),            'equal empty' );
+
+    # unequal same length
+    ok( !NicToolServer::User::_secure_compare( 'abc',        'abd' ),         'differ last byte' );
+    ok( !NicToolServer::User::_secure_compare( 'xbc',        'abc' ),         'differ first byte' );
+
+    # different length must not match
+    ok( !NicToolServer::User::_secure_compare( 'abc',        'abcd' ),        'shorter vs longer' );
+    ok( !NicToolServer::User::_secure_compare( '',           'a' ),           'empty vs non-empty' );
+
+    # undef inputs return false, never die
+    ok( !NicToolServer::User::_secure_compare( undef,        'abc' ),         'undef a' );
+    ok( !NicToolServer::User::_secure_compare( 'abc',        undef ),         'undef b' );
+    ok( !NicToolServer::User::_secure_compare( undef,        undef ),         'undef both' );
+
+    # high-byte / unicode-ish bytes
+    ok( NicToolServer::User::_secure_compare( "\xff\x00\xff", "\xff\x00\xff" ), 'binary equal' );
+    ok( !NicToolServer::User::_secure_compare( "\xff\x00\xff", "\xff\x01\xff" ), 'binary differ' );
 }
