@@ -205,14 +205,23 @@ foreach my $sql (@sql_files) {
     print "\n";
 }
 
-$dbh->do( "
-INSERT INTO $db.nt_user(nt_group_id, first_name, last_name, username, password, pass_salt, email)
-VALUES (1, 'Root', 'User', 'root', '$pass_hash', '$salt', '$nt_root_email')"
+# pass_salt is 16 random bytes drawn from ASCII 40-126, which includes '\'.
+# Interpolating it into the SQL string lets MySQL/MariaDB swallow the backslash
+# as the start of an escape sequence (\b, \=, \h, ...), which corrupts ~17% of
+# salts on insert and silently locks the root account out at login.
+# Bind every untrusted value, including $pass_hash and $nt_root_email.
+$dbh->do(
+    "INSERT INTO $db.nt_user
+       (nt_group_id, first_name, last_name, username, password, pass_salt, email)
+     VALUES (1, 'Root', 'User', 'root', ?, ?, ?)",
+    undef, $pass_hash, $salt, $nt_root_email
 );
-$dbh->do( "
-INSERT INTO $db.nt_user_log(nt_group_id, nt_user_id, action, timestamp,
-  modified_user_id, first_name, last_name, username, password, email)
-VALUES (1,1,'added', UNIX_TIMESTAMP(), 0, 'Root', 'User', 'root', '$pass_hash', '$nt_root_email')"
+$dbh->do(
+    "INSERT INTO $db.nt_user_log
+       (nt_group_id, nt_user_id, action, timestamp,
+        modified_user_id, first_name, last_name, username, password, email)
+     VALUES (1, 1, 'added', UNIX_TIMESTAMP(), 0, 'Root', 'User', 'root', ?, ?)",
+    undef, $pass_hash, $nt_root_email
 );
 $dbh->do( "
 INSERT INTO $db.nt_user_global_log(nt_user_id, timestamp, action, object,
