@@ -612,17 +612,20 @@ sub valid_password {
         # Check for PBKDF2 password
         if ($salt) {
             my $hashed = $self->get_pbkdf2_hash( $attempt, $salt );
-            return 1 if $hashed eq $db_pass;
+            return 1 if _secure_compare( $hashed, $db_pass );
         }
 
         # Check for HMAC SHA-1 password
         if ( $db_pass =~ /\A[0-9a-f]{40}\z/ ) {    # DB has HMAC SHA-1 hash
             my $hashed = $self->get_sha1_hash( $attempt, $user );
-            return 1 if $hashed eq $db_pass;
+            return 1 if _secure_compare( $hashed, $db_pass );
         }
 
-        # Check for Plain password
-        return 1 if ( !$salt && $attempt eq $db_pass );    # plain password
+        # Check for Plain password (legacy; auto-upgraded by maybe_upgrade_password_hash)
+        return 1
+            if ( !$salt
+            && defined $db_pass
+            && _secure_compare( $attempt, $db_pass ) );
 
     }
 
@@ -723,6 +726,20 @@ sub _get_salt {
         $salt .= substr( $chars, rand( ( length $chars ) - 1 ), 1 );
     }
     return $salt;
+}
+
+# Constant-time string comparison to defeat timing attacks on password
+# verification. `eq` short-circuits on the first differing byte, leaking the
+# length of the matching prefix through response time.
+sub _secure_compare {
+    my ( $a, $b ) = @_;
+    return 0 if !defined $a || !defined $b;
+    return 0 if length($a) != length($b);
+    my $diff = 0;
+    for my $i ( 0 .. length($a) - 1 ) {
+        $diff |= ord( substr( $a, $i, 1 ) ) ^ ord( substr( $b, $i, 1 ) );
+    }
+    return $diff == 0;
 }
 
 sub verify_ldap_user {
