@@ -44,9 +44,12 @@ if [ -f "$ENVVARS" ]; then
                NICTOOL_DB_NAME NICTOOL_DB_USER NICTOOL_DB_USER_PASSWORD \
                NICTOOL_CLIENT_DIR NICTOOL_SERVER_HOST NICTOOL_SERVER_PORT \
                NICTOOL_SERVER_PROTOCOL NICTOOL_DATA_PROTOCOL; do
-        val=$(eval echo "\${$var:-}")
+        val=$(eval printf %s "\"\${$var:-}\"")
         if [ -n "$val" ]; then
-            echo "export ${var}='${val}'" >> "$ENVVARS"
+            # Escape single quotes for safe inclusion in single-quoted shell:
+            # close-quote, escaped quote, re-open-quote.
+            esc=$(printf %s "$val" | sed "s/'/'\\\\''/g")
+            printf "export %s='%s'\n" "$var" "$esc" >> "$ENVVARS"
         fi
     done
 fi
