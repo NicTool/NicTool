@@ -45,8 +45,9 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Build and push by digest only — no tag yet. The merge job below
-      # combines per-platform digests into a single multi-arch manifest list.
+      # On master: build and push by digest, then merge job tags :latest.
+      # On any other ref (workflow_dispatch from a feature branch): build only,
+      # to validate the Dockerfile without writing to GHCR.
       - id: build
         uses: docker/build-push-action@v7
         with:
@@ -55,17 +56,19 @@ jobs:
           target: base
           platforms: ${{ matrix.platform }}
           tags: ${{ steps.meta.outputs.image }}
-          outputs: type=image,push-by-digest=true,name-canonical=true,push=true
+          outputs: type=image,push-by-digest=true,name-canonical=true,push=${{ github.ref == 'refs/heads/master' }}
           cache-from: type=gha,scope=${{ steps.meta.outputs.platform_pair }}
           cache-to:   type=gha,scope=${{ steps.meta.outputs.platform_pair }},mode=max
 
       - name: Export digest
+        if: github.ref == 'refs/heads/master'
         run: |
           mkdir -p /tmp/digests
           digest="${{ steps.build.outputs.digest }}"
           touch "/tmp/digests/${digest#sha256:}"
 
       - uses: actions/upload-artifact@v4
+        if: github.ref == 'refs/heads/master'
         with:
           name: digest-${{ steps.meta.outputs.platform_pair }}
           path: /tmp/digests/*
@@ -73,6 +76,7 @@ jobs:
           retention-days: 1
 
   merge:
+    if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-24.04
     needs: build
     steps:
