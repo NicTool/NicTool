@@ -7,6 +7,8 @@ services:
       MYSQL_DATABASE: ${NICTOOL_DB_NAME:-nictool}
       MYSQL_USER: ${NICTOOL_DB_USER:-nictool}
       MYSQL_PASSWORD: ${NICTOOL_DB_USER_PASSWORD}
+    volumes:
+      - db-data:/var/lib/mysql
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 5s
@@ -34,3 +36,6 @@ services:
       timeout: 5s
       retries: 30
       start_period: 30s
+
+volumes:
+  db-data:
