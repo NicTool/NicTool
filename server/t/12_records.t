@@ -408,6 +408,28 @@ sub doit {
     is( $res->get('error_msg'), 'nt_zone_record_id' );
     ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
 
+    # Regression: sortby was previously interpolated straight into ORDER BY in
+    # get_zone_record, letting any authenticated user append SQL. The fix drops
+    # ORDER BY entirely (PK lookup, at most one row), so any sortby value -- even
+    # a SQL-injection payload -- must be ignored and the record returned cleanly.
+    for my $payload (
+        "name; DROP TABLE nt_user --",
+        "name) UNION SELECT password FROM nt_user --",
+        "name/**/UNION/**/SELECT/**/1",
+        "1=1",
+        "name'",
+        "",
+    )
+    {
+        $res = $user->get_zone_record(
+            nt_zone_record_id => $zrid1,
+            sortby            => $payload,
+        );
+        noerrok($res);
+        is( $res->get('nt_zone_record_id'), $zrid1,
+            "sortby payload ignored: " . substr( $payload, 0, 30 ) );
+    }
+
     ####################
     # get_zone_records
     ####################
