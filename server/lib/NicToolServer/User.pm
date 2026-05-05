@@ -612,17 +612,20 @@ sub valid_password {
         # Check for PBKDF2 password
         if ($salt) {
             my $hashed = $self->get_pbkdf2_hash( $attempt, $salt );
-            return 1 if $hashed eq $db_pass;
+            return 1 if _secure_compare( $hashed, $db_pass );
         }
 
         # Check for HMAC SHA-1 password
         if ( $db_pass =~ /\A[0-9a-f]{40}\z/ ) {    # DB has HMAC SHA-1 hash
             my $hashed = $self->get_sha1_hash( $attempt, $user );
-            return 1 if $hashed eq $db_pass;
+            return 1 if _secure_compare( $hashed, $db_pass );
         }
 
-        # Check for Plain password
-        return 1 if ( !$salt && $attempt eq $db_pass );    # plain password
+        # Check for Plain password (legacy; auto-upgraded by maybe_upgrade_password_hash)
+        return 1
+            if ( !$salt
+            && defined $db_pass
+            && _secure_compare( $attempt, $db_pass ) );
 
     }
 
@@ -725,6 +728,20 @@ sub _get_salt {
     return $salt;
 }
 
+# Constant-time string comparison to defeat timing attacks on password
+# verification. `eq` short-circuits on the first differing byte, leaking the
+# length of the matching prefix through response time.
+sub _secure_compare {
+    my ( $a, $b ) = @_;
+    return 0 if !defined $a || !defined $b;
+    return 0 if length($a) != length($b);
+    my $diff = 0;
+    for my $i ( 0 .. length($a) - 1 ) {
+        $diff |= ord( substr( $a, $i, 1 ) ) ^ ord( substr( $b, $i, 1 ) );
+    }
+    return $diff == 0;
+}
+
 sub verify_ldap_user {
     my ( $self, $user, $attempt ) = @_;
 
@@ -732,6 +749,10 @@ sub verify_ldap_user {
 
     eval "require Net::LDAP" or do {
         warn 'LDAP: could not load Net::LDAP module. Skipping LDAP authentication step';
+        return 0;
+    };
+    eval "require Net::LDAP::Util" or do {
+        warn 'LDAP: could not load Net::LDAP::Util. Skipping LDAP authentication step';
         return 0;
     };
 
@@ -752,8 +773,9 @@ sub verify_ldap_user {
     }
     else {
 
-        # try to bind directly as the user using the base_dn for base and $user_mapping as relative
-        $user_dn = sprintf( '%s=%s,%s', $user_mapping, $user, $base_dn );
+        # Direct bind: escape username as a DN value to prevent LDAP DN injection.
+        my $escaped_user = Net::LDAP::Util::escape_dn_value($user);
+        $user_dn = sprintf( '%s=%s,%s', $user_mapping, $escaped_user, $base_dn );
     }
 
     # Check $attempt
@@ -781,6 +803,15 @@ sub verify_ldap_user {
 
 sub locate_ldap_user {
     my ( $self, $user ) = @_;
+
+    eval "require Net::LDAP" or do {
+        warn 'LDAP: could not load Net::LDAP module. Skipping LDAP authentication step';
+        return '';
+    };
+    eval "require Net::LDAP::Util" or do {
+        warn 'LDAP: could not load Net::LDAP::Util. Skipping LDAP authentication step';
+        return '';
+    };
 
     my $user_dn           = '';
     my @servers           = split( ',', $NicToolServer::ldap_servers );
@@ -820,7 +851,9 @@ sub locate_ldap_user {
 
     # Search for user
     # Update filter to be more specific, in order to avoid returning too many users.
-    $filter = "(&(" . $user_mapping . "=" . $user . ")" . $filter . ")";
+    # Escape user input to prevent LDAP filter injection (e.g. "*)(uid=*").
+    my $escaped_user = Net::LDAP::Util::escape_filter_value($user);
+    $filter = "(&(" . $user_mapping . "=" . $escaped_user . ")" . $filter . ")";
 
     # warn "LDAP: updated filter " . $filter . "\n";
     my $ldap_result = $ldap->search(

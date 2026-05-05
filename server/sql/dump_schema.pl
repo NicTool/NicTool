@@ -10,16 +10,24 @@ my $db      = 'nictool';
 my $db_dsn  = "DBI:mysql:database=$db;host=$db_host";
 my $db_user = 'nictool';
 my $db_pass = $ENV{NICTOOL_DB_USER_PASSWORD} or die "Set NICTOOL_DB_USER_PASSWORD\n";
-my $root_pw = '';
 
-my $dbh = DBI->connect( $db_dsn, 'root', $root_pw );
+my $dbh = DBI->connect( $db_dsn, $db_user, $db_pass,
+    { RaiseError => 1, PrintError => 0 } );
 
-my @tables = map { $_ =~ s/.*\.//; $_ } $dbh->tables();
+my @tables = map { $_ =~ s/.*\.//r } $dbh->tables();
 foreach my $table (@tables) {
-    my $cmd = "mysql -v -u $db_user -p$db_pass -h $db_host $db -e 'DESC $table'";
-
-    #print "cmd: $cmd\n";
-    system($cmd);
+    # Use DBI directly rather than spawning `mysql -p<pass>`, which would leak
+    # the password via /proc/<pid>/cmdline and (if the password contained
+    # shell metacharacters) allow command injection through system().
+    print "DESC $table;\n";
+    my $rows = $dbh->selectall_arrayref( "DESC $table", { Slice => {} } );
+    for my $r (@$rows) {
+        print join( "\t",
+            map { defined $_ ? $_ : '' }
+                @{$r}{qw(Field Type Null Key Default Extra)} ),
+            "\n";
+    }
+    print "\n";
 }
 
 $dbh->disconnect;
