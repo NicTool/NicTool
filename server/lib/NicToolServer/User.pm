@@ -804,6 +804,15 @@ sub verify_ldap_user {
 sub locate_ldap_user {
     my ( $self, $user ) = @_;
 
+    eval "require Net::LDAP" or do {
+        warn 'LDAP: could not load Net::LDAP module. Skipping LDAP authentication step';
+        return '';
+    };
+    eval "require Net::LDAP::Util" or do {
+        warn 'LDAP: could not load Net::LDAP::Util. Skipping LDAP authentication step';
+        return '';
+    };
+
     my $user_dn           = '';
     my @servers           = split( ',', $NicToolServer::ldap_servers );
     my $bind_dn           = $NicToolServer::ldap_binddn;
@@ -843,7 +852,6 @@ sub locate_ldap_user {
     # Search for user
     # Update filter to be more specific, in order to avoid returning too many users.
     # Escape user input to prevent LDAP filter injection (e.g. "*)(uid=*").
-    require Net::LDAP::Util;
     my $escaped_user = Net::LDAP::Util::escape_filter_value($user);
     $filter = "(&(" . $user_mapping . "=" . $escaped_user . ")" . $filter . ")";
 
