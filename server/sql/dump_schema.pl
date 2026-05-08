@@ -14,7 +14,7 @@ my $db_pass = $ENV{NICTOOL_DB_USER_PASSWORD} or die "Set NICTOOL_DB_USER_PASSWOR
 my $dbh = DBI->connect( $db_dsn, $db_user, $db_pass,
     { RaiseError => 1, PrintError => 0 } );
 
-my @tables = map { $_ =~ s/.*\.//r } $dbh->tables();
+my @tables = map { $_ =~ s/.*\.//; $_ } $dbh->tables();
 foreach my $table (@tables) {
     # Use DBI directly rather than spawning `mysql -p<pass>`, which would leak
     # the password via /proc/<pid>/cmdline and (if the password contained
