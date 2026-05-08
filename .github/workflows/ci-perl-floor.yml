@@ -1,0 +1,54 @@
+name: CI (Perl floor)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/ci-perl-floor.yml'
+      - 'client/**'
+      - 'server/**'
+      - 'Makefile.PL'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        # Floor + intermediates + latest. The floor cell tracks $min in
+        # server/xt/minimum_version.t and MIN_PERL_VERSION in the four
+        # Makefile.PL files; they all move together when the floor bumps.
+        perl-version: ['5.22', '5.30', '5.36', 'latest']
+    container:
+      image: perldocker/perl-tester:${{ matrix.perl-version }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Test::MinimumVersion
+        run: cpanm -n Test::MinimumVersion
+
+      - name: Build server (with deps)
+        run: |
+          cd server
+          perl Makefile.PL
+          cpanm -n --installdeps .
+          make
+
+      - name: Build client (with deps)
+        run: |
+          cd client
+          perl Makefile.PL
+          cpanm -n --installdeps .
+          make
+
+      - name: Run server unit tests
+        run: cd server && make test
+
+      - name: Run client unit tests
+        run: cd client && make test
+
+      - name: Run minimum-Perl static check
+        run: cd server && prove -v xt/minimum_version.t
