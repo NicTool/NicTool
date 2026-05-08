@@ -1,0 +1,51 @@
+name: CI (Perl floor)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/ci-perl-floor.yml'
+      - 'client/**'
+      - 'server/**'
+      - 'Makefile.PL'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        # Floor + intermediates + latest. See PR #349.
+        perl-version: ['5.22', '5.30', '5.36', 'latest']
+    container:
+      image: perldocker/perl-tester:${{ matrix.perl-version }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Test::MinimumVersion
+        run: cpanm -n Test::MinimumVersion
+
+      - name: Build server (with deps)
+        run: |
+          cd server
+          perl Makefile.PL
+          cpanm -n --installdeps .
+          make
+
+      - name: Build client (with deps)
+        run: |
+          cd client
+          perl Makefile.PL
+          cpanm -n --installdeps .
+          make
+
+      # See PR #349 for the rationale on the targeted prove vs. `make test`.
+      - name: Run syntax + minimum-Perl checks
+        run: |
+          cd server
+          prove -v t/00-syntax.t api/t/00-syntax.t xt/minimum_version.t
+          cd ../client
+          prove -v t/01-syntax.t
