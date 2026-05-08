@@ -62,6 +62,16 @@ else {
 
 die "Sorry\n" if $db =~ /^mysql$/i;
 
+# MySQL identifiers cannot be parameterized, so validate them strictly before
+# interpolation into DDL below. Reject anything outside a safe charset.
+sub _validate_ident {
+    my ( $name, $what ) = @_;
+    die "invalid $what: must match /^[A-Za-z0-9_]+\$/\n"
+        unless defined $name && $name =~ /\A[A-Za-z0-9_]+\z/;
+    return $name;
+}
+_validate_ident( $db, 'database name' );
+
 my $db_user = undef;
 
 if ($environment) {
@@ -152,21 +162,29 @@ my $read = <STDIN>;
 exit if $test_run;
 
 # Create database and initial privileges
+_validate_ident( $db_user, 'db user name' );
+
+my $user_host =
+    ( $db_host eq 'localhost' || $db_host eq '127.0.0.1' || $db_host eq '::1' ) ? $db_host : '%';
+die "invalid host pattern: $user_host\n"
+    unless $user_host =~ /\A[A-Za-z0-9_.:%-]+\z/;
+
+# $db, $db_user, and $user_host have been validated against strict whitelists
+# above. The password is escaped with $dbh->quote() rather than interpolated.
+my $q_pass = $dbh->quote($db_pass);
+
 $dbh->do("DROP DATABASE IF EXISTS $db");
 $dbh->do("CREATE DATABASE $db");
 
 # Create the NicTool database user. MySQL 8.0+ removed GRANT ... IDENTIFIED BY,
 # so we CREATE USER first, then GRANT separately.
-my $user_host =
-    ( $db_host eq 'localhost' || $db_host eq '127.0.0.1' || $db_host eq '::1' ) ? $db_host : '%';
-
 $dbh->do("DROP USER IF EXISTS '$db_user'\@'$user_host'");
 
 # Try mysql_native_password first (MySQL 8.0+), fall back for MariaDB
 my $created = $dbh->do(
-    "CREATE USER '$db_user'\@'$user_host' IDENTIFIED WITH mysql_native_password BY '$db_pass'");
+    "CREATE USER '$db_user'\@'$user_host' IDENTIFIED WITH mysql_native_password BY $q_pass");
 if ( !$created ) {
-    $dbh->do("CREATE USER '$db_user'\@'$user_host' IDENTIFIED BY '$db_pass'");
+    $dbh->do("CREATE USER '$db_user'\@'$user_host' IDENTIFIED BY $q_pass");
 }
 
 $dbh->do("GRANT ALL PRIVILEGES ON $db.* TO '$db_user'\@'$user_host'");
@@ -187,14 +205,23 @@ foreach my $sql (@sql_files) {
     print "\n";
 }
 
-$dbh->do( "
-INSERT INTO $db.nt_user(nt_group_id, first_name, last_name, username, password, pass_salt, email)
-VALUES (1, 'Root', 'User', 'root', '$pass_hash', '$salt', '$nt_root_email')"
+# pass_salt is 16 random bytes drawn from ASCII 40-126, which includes '\'.
+# Interpolating it into the SQL string lets MySQL/MariaDB swallow the backslash
+# as the start of an escape sequence (\b, \=, \h, ...), which corrupts ~17% of
+# salts on insert and silently locks the root account out at login.
+# Bind every untrusted value, including $pass_hash and $nt_root_email.
+$dbh->do(
+    "INSERT INTO $db.nt_user
+       (nt_group_id, first_name, last_name, username, password, pass_salt, email)
+     VALUES (1, 'Root', 'User', 'root', ?, ?, ?)",
+    undef, $pass_hash, $salt, $nt_root_email
 );
-$dbh->do( "
-INSERT INTO $db.nt_user_log(nt_group_id, nt_user_id, action, timestamp,
-  modified_user_id, first_name, last_name, username, password, email)
-VALUES (1,1,'added', UNIX_TIMESTAMP(), 0, 'Root', 'User', 'root', '$pass_hash', '$nt_root_email')"
+$dbh->do(
+    "INSERT INTO $db.nt_user_log
+       (nt_group_id, nt_user_id, action, timestamp,
+        modified_user_id, first_name, last_name, username, password, email)
+     VALUES (1, 1, 'added', UNIX_TIMESTAMP(), 0, 'Root', 'User', 'root', ?, ?)",
+    undef, $pass_hash, $nt_root_email
 );
 $dbh->do( "
 INSERT INTO $db.nt_user_global_log(nt_user_id, timestamp, action, object,

@@ -140,7 +140,8 @@ sub compile {
     $self->{nte}->set_status("compile");
     my $exportdir = $self->{nte}->get_export_dir;
     my $before    = time;
-    system("make -C $exportdir compile") == 0 or do {
+    # List form prevents shell interpretation of $exportdir.
+    system( 'make', '-C', $exportdir, 'compile' ) == 0 or do {
         $self->{nte}->set_status("last: FAILED compile: $?");
         $self->{nte}->elog("unable to compile: $?");
         return;
@@ -160,7 +161,7 @@ sub restart {
 
     my $before = time;
     $self->{nte}->set_status("remote restart");
-    system("make -C $exportdir restart") == 0 or do {
+    system( 'make', '-C', $exportdir, 'restart' ) == 0 or do {
         $self->{nte}->set_status("last: FAILED restart: $?");
         $self->{nte}->elog("unable to restart: $?");
         return;
@@ -180,7 +181,7 @@ sub rsync {
 
     $self->{nte}->set_status("remote rsync");
     my $before = time;
-    system("make -C $exportdir remote") == 0 or do {
+    system( 'make', '-C', $exportdir, 'remote' ) == 0 or do {
         $self->{nte}->set_status("last: FAILED rsync: $?");
         $self->{nte}->elog("unable to rsync: $?");
         return;

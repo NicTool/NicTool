@@ -338,3 +338,43 @@ test.describe('T11: Browser Enforcement', () => {
     expect(violations).toEqual([]);
   });
 });
+
+// ---------------------------------------------------------------------------
+// T12: Apache denies dotfiles and source/config artifacts
+// ---------------------------------------------------------------------------
+test.describe('T12: Docroot Hardening', () => {
+  const denied = [
+    '/.git/config',
+    '/.env',
+    '/.htaccess',
+    '/index.pm',
+    '/nictoolclient.conf',
+    '/nictoolclient.conf.dist',
+    '/setup.pl',
+    '/schema.sql',
+    '/config.yaml',
+    '/config.yml',
+    '/notes.md',
+    '/Makefile.PL.bak',
+    '/index.cgi.swp',
+    '/server.orig',
+  ];
+
+  for (const path of denied) {
+    test(`denies ${path}`, async ({ playwright }) => {
+      const ctx = await freshCtx(playwright);
+      const res = await ctx.get(`${BASE}${path}`);
+      // Apache returns 403 from the FilesMatch / DirectoryMatch deny rules,
+      // regardless of whether the file actually exists in the docroot.
+      expect(res.status()).toBe(403);
+      await ctx.dispose();
+    });
+  }
+
+  test('still serves index.cgi normally', async ({ playwright }) => {
+    const ctx = await freshCtx(playwright);
+    const res = await ctx.get(`${BASE}/index.cgi`);
+    expect(res.status()).toBe(200);
+    await ctx.dispose();
+  });
+});

@@ -6,9 +6,14 @@ NT_DIR="${NT_DIR:-/usr/local/nictool}"
 echo "==> Running NicTool setup"
 "$NT_DIR/dist/setup/install-nictool.sh" --nt-dir="$NT_DIR"
 
+# Pass the password via MYSQL_PWD instead of --password=... so it doesn't show
+# up in `ps`/`/proc/<pid>/cmdline`. (Still readable via /proc/<pid>/environ,
+# but only by the same UID — much narrower exposure.)
+export MYSQL_PWD="${NICTOOL_DB_USER_PASSWORD}"
+
 echo "==> Waiting for database"
 for attempt in $(seq 1 30); do
-    if mysqladmin ping -h "${DB_HOSTNAME:-127.0.0.1}" -u "${NICTOOL_DB_USER}" --password="${NICTOOL_DB_USER_PASSWORD}" --silent 2>/dev/null; then
+    if mysqladmin ping -h "${DB_HOSTNAME:-127.0.0.1}" -u "${NICTOOL_DB_USER}" --silent 2>/dev/null; then
         echo "    Database is ready."
         break
     fi
@@ -20,7 +25,7 @@ for attempt in $(seq 1 30); do
 done
 
 echo "==> Checking database schema"
-SQL_OUT=$(mysql -h "${DB_HOSTNAME:-127.0.0.1}" -u "${NICTOOL_DB_USER}" --password="${NICTOOL_DB_USER_PASSWORD}" \
+SQL_OUT=$(mysql -h "${DB_HOSTNAME:-127.0.0.1}" -u "${NICTOOL_DB_USER}" \
     -e "SELECT option_value FROM ${NICTOOL_DB_NAME:-nictool}.nt_options WHERE option_name='db_version';" 2>&1 | head -n 1) || true
 
 if [ "$SQL_OUT" != "option_value" ]; then
@@ -31,6 +36,8 @@ fi
 
 echo "==> Setting up test environment"
 perl "$NT_DIR/dist/setup/setup-test-env.pl"
+
+unset MYSQL_PWD
 
 echo "==> Starting Apache"
 . /etc/apache2/envvars && exec /usr/sbin/apache2 -DFOREGROUND

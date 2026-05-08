@@ -25,6 +25,7 @@ sub new_nameserver {
         $self->error( 'address', "Invalid IP address" );
     }
     $self->_valid_ip_addresses($data);
+    $self->_valid_export_paths($data);
 
     return $self->throw_sanity_error if $self->{errors};
     $self->SUPER::new_nameserver($data);
@@ -55,6 +56,7 @@ sub edit_nameserver {
     }
 
     $self->_valid_ip_addresses($data);
+    $self->_valid_export_paths($data);
 
     return $self->throw_sanity_error if $self->{errors};
     $self->SUPER::edit_nameserver($data);
@@ -77,6 +79,45 @@ sub get_group_nameservers {
 
     return $self->throw_sanity_error if $self->{errors};
     return $self->SUPER::get_group_nameservers($data);
+}
+
+sub _valid_export_paths {
+    my ( $self, $data ) = @_;
+
+    # datadir and logdir are interpolated into shell commands and Makefiles by
+    # the Export modules. Forbid shell metacharacters and require an absolute,
+    # well-formed path. Also reject `..` path components and `//` runs to
+    # prevent traversal outside the intended export tree (rsync follows the
+    # path verbatim, so `/srv/exports/../etc` would escape the export root).
+    for my $field (qw(datadir logdir)) {
+        next unless defined $data->{$field} && length $data->{$field};
+        my $val = $data->{$field};
+        if ( $val !~ m{^/[A-Za-z0-9_./-]*$} ) {
+            $self->error( $field,
+                "Invalid $field: must be an absolute path containing only "
+                . "letters, digits, _ . / -" );
+            next;
+        }
+        # Reject `..` as a whole path component; bare dots in filenames are fine.
+        if ( grep { $_ eq '..' } split m{/}, $val ) {
+            $self->error( $field,
+                "Invalid $field: path traversal components ('..') are not allowed" );
+        }
+        if ( $val =~ m{//} ) {
+            $self->error( $field,
+                "Invalid $field: empty path components ('//') are not allowed" );
+        }
+    }
+
+    # remote_login is interpolated into ssh/rsync targets ("user\@host"). Allow
+    # only POSIX-portable username characters.
+    if ( defined $data->{remote_login} && length $data->{remote_login} ) {
+        if ( $data->{remote_login} !~ /^[A-Za-z_][A-Za-z0-9_-]{0,31}$/ ) {
+            $self->error( 'remote_login',
+                "Invalid remote_login: must match POSIX username "
+                . "(letters, digits, underscore, dash; 1-32 chars)" );
+        }
+    }
 }
 
 sub _valid_ip_addresses {

@@ -305,13 +305,13 @@ sub log_zone_record {
 sub get_zone_record {
     my ( $self, $data ) = @_;
 
-    $data->{sortby} ||= 'name';
-
+    # nt_zone_record_id is a primary key — query returns at most one row.
+    # No ORDER BY (any client-supplied sort would be meaningless and was
+    # previously interpolated unsafely into the SQL).
     my $sql = "SELECT r.*, t.name AS type
     FROM nt_zone_record r
       LEFT JOIN resource_record_type t ON r.type_id=t.id
-        WHERE r.nt_zone_record_id=?
-         ORDER BY r.$data->{sortby}";
+        WHERE r.nt_zone_record_id=?";
 
     my $zrs = $self->exec_query( $sql, $data->{nt_zone_record_id} )
         or return {

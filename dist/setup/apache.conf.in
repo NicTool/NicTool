@@ -32,6 +32,15 @@ PerlRequire "%%NT_DIR%%/client/lib/nictoolclient.conf"
         AllowOverride None
         Require all granted
     </Directory>
+
+    # Defense-in-depth: refuse to serve dotfiles and source/config artifacts,
+    # in case any are ever placed inside the docroot (backups, .git, .env, etc.)
+    <FilesMatch "(^\.|\.(conf|dist|pl|pm|sql|t|md|ini|env|ya?ml|bak|swp|orig)$)">
+        Require all denied
+    </FilesMatch>
+    <DirectoryMatch "/\.">
+        Require all denied
+    </DirectoryMatch>
 </VirtualHost>
 
 <VirtualHost _default_:443>
@@ -54,6 +63,15 @@ PerlRequire "%%NT_DIR%%/client/lib/nictoolclient.conf"
         AllowOverride None
         Require all granted
     </Directory>
+
+    # Defense-in-depth: refuse to serve dotfiles and source/config artifacts,
+    # in case any are ever placed inside the docroot (backups, .git, .env, etc.)
+    <FilesMatch "(^\.|\.(conf|dist|pl|pm|sql|t|md|ini|env|ya?ml|bak|swp|orig)$)">
+        Require all denied
+    </FilesMatch>
+    <DirectoryMatch "/\.">
+        Require all denied
+    </DirectoryMatch>
 </VirtualHost>
 
 <IfDefine !MODPERL2>

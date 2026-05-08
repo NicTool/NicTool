@@ -61,6 +61,7 @@ sub object_tests {
     test_new_group();    # setup
     test_new_nameserver();
     test_get_nameserver();
+    test_invalid_export_paths();
     test_get_nameserver_list();
     test_get_group_nameservers();
     test_move_nameserver();
@@ -158,6 +159,103 @@ sub test_new_nameserver {
     noerrok($res) && ok( $res->get('nt_nameserver_id') =~ qr/^\d+$/ )
         or die "couldn't make test nameserver";
     $nsid2 = $res->get('nt_nameserver_id');
+}
+
+sub test_invalid_export_paths {
+
+    # path traversal in datadir
+    my $res = $group1->new_nameserver(
+        name          => 'badns1.somewhere.com.',
+        address       => '1.2.3.99',
+        export_format => 'bind',
+        datadir       => '/srv/exports/../etc',
+    );
+    noerrok( $res, 300 );
+    like( $res->get('error_msg'), qr/datadir.*traversal/ );
+
+    # double-slash in datadir
+    $res = $group1->new_nameserver(
+        name          => 'badns1.somewhere.com.',
+        address       => '1.2.3.99',
+        export_format => 'bind',
+        datadir       => '/srv//exports',
+    );
+    noerrok( $res, 300 );
+    like( $res->get('error_msg'), qr/datadir.*empty path/ );
+
+    # relative path is rejected
+    $res = $group1->new_nameserver(
+        name          => 'badns1.somewhere.com.',
+        address       => '1.2.3.99',
+        export_format => 'bind',
+        datadir       => 'relative/path',
+    );
+    noerrok( $res, 300 );
+    like( $res->get('error_msg'), qr/datadir.*absolute/ );
+
+    # shell metacharacters in datadir
+    $res = $group1->new_nameserver(
+        name          => 'badns1.somewhere.com.',
+        address       => '1.2.3.99',
+        export_format => 'bind',
+        datadir       => '/srv/exports;rm -rf /',
+    );
+    noerrok( $res, 300 );
+    like( $res->get('error_msg'), qr/datadir/ );
+
+    # path traversal in logdir
+    $res = $group1->new_nameserver(
+        name          => 'badns1.somewhere.com.',
+        address       => '1.2.3.99',
+        export_format => 'bind',
+        logdir        => '/var/log/../etc',
+    );
+    noerrok( $res, 300 );
+    like( $res->get('error_msg'), qr/logdir.*traversal/ );
+
+    # bad remote_login (shell meta)
+    $res = $group1->new_nameserver(
+        name          => 'badns1.somewhere.com.',
+        address       => '1.2.3.99',
+        export_format => 'bind',
+        remote_login  => 'user; rm -rf /',
+    );
+    noerrok( $res, 300 );
+    like( $res->get('error_msg'), qr/remote_login/ );
+
+    # bad remote_login (leading digit)
+    $res = $group1->new_nameserver(
+        name          => 'badns1.somewhere.com.',
+        address       => '1.2.3.99',
+        export_format => 'bind',
+        remote_login  => '1baduser',
+    );
+    noerrok( $res, 300 );
+    like( $res->get('error_msg'), qr/remote_login/ );
+
+    # valid paths and remote_login pass
+    $res = $group1->new_nameserver(
+        name          => 'goodns.somewhere.com.',
+        address       => '1.2.3.98',
+        export_format => 'bind',
+        datadir       => '/srv/exports/zones',
+        logdir        => '/var/log/nictool',
+        remote_login  => 'nictool_export',
+    );
+    noerrok($res);
+    if ( !$res->is_error ) {
+        my $good_id = $res->get('nt_nameserver_id');
+        $user->delete_nameserver( nt_nameserver_id => $good_id );
+    }
+
+    # edit_nameserver also rejects bad input
+    $res = $ns1->edit_nameserver( datadir => '/srv/../etc' );
+    noerrok( $res, 300 );
+    like( $res->get('error_msg'), qr/datadir.*traversal/ );
+
+    $res = $ns1->edit_nameserver( remote_login => 'user$(whoami)' );
+    noerrok( $res, 300 );
+    like( $res->get('error_msg'), qr/remote_login/ );
 }
 
 sub test_get_nameserver {
