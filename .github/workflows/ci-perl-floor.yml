@@ -44,11 +44,20 @@ jobs:
           cpanm -n --installdeps .
           make
 
-      - name: Run server unit tests
-        run: cd server && make test
-
-      - name: Run client unit tests
-        run: cd client && make test
-
-      - name: Run minimum-Perl static check
-        run: cd server && prove -v xt/minimum_version.t
+      # The full `make test` recurses into integration tests that need a
+      # running NicToolServer + MySQL + a test.cfg created by
+      # dist/setup/setup-test-env.pl. That whole stack runs in ci.yml
+      # against bookworm; reproducing it across the Perl matrix is more
+      # cost than value. Here we only need the things `make test` would
+      # catch that are *actually Perl-version-sensitive*:
+      #   - syntax/compile (the existing 00-/01-syntax.t do `perl -c`)
+      #   - the new minimum-version PPI scan
+      # The earlier `make` step already exercises the build harness; the
+      # `cpanm --installdeps` step already gates CPAN deps that pin a
+      # too-new Perl.
+      - name: Run syntax + minimum-Perl checks
+        run: |
+          cd server
+          prove -v t/00-syntax.t api/t/00-syntax.t xt/minimum_version.t
+          cd ../client
+          prove -v t/01-syntax.t
