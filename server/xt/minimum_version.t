@@ -6,15 +6,9 @@ use warnings;
 use Test::More;
 use Test::MinimumVersion;
 
-# MUST stay in sync with MIN_PERL_VERSION in:
-#   Makefile.PL              (top-level)
-#   server/Makefile.PL
-#   server/api/Makefile.PL
-#   client/Makefile.PL
-# And with the floor cell of .github/workflows/ci-perl-floor.yml.
-my $min = '5.022';   # placeholder — set to actual floor when bump PR lands
-
-# Run from server/ cwd (matches ci.yml `prove -v xt/*.t` step).
+# Sync this floor with MIN_PERL_VERSION in the four Makefile.PLs and the
+# floor cell of ci-perl-floor.yml. See PR #349.
+my $min = '5.022';
 all_minimum_version_ok($min, {
     paths => [
         'lib', 'bin', 't',                                 # server

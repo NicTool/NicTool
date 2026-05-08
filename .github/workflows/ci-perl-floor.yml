@@ -18,9 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Floor + intermediates + latest. The floor cell tracks $min in
-        # server/xt/minimum_version.t and MIN_PERL_VERSION in the four
-        # Makefile.PL files; they all move together when the floor bumps.
+        # Floor + intermediates + latest. See PR #349.
         perl-version: ['5.22', '5.30', '5.36', 'latest']
     container:
       image: perldocker/perl-tester:${{ matrix.perl-version }}
@@ -44,17 +42,7 @@ jobs:
           cpanm -n --installdeps .
           make
 
-      # The full `make test` recurses into integration tests that need a
-      # running NicToolServer + MySQL + a test.cfg created by
-      # dist/setup/setup-test-env.pl. That whole stack runs in ci.yml
-      # against bookworm; reproducing it across the Perl matrix is more
-      # cost than value. Here we only need the things `make test` would
-      # catch that are *actually Perl-version-sensitive*:
-      #   - syntax/compile (the existing 00-/01-syntax.t do `perl -c`)
-      #   - the new minimum-version PPI scan
-      # The earlier `make` step already exercises the build harness; the
-      # `cpanm --installdeps` step already gates CPAN deps that pin a
-      # too-new Perl.
+      # See PR #349 for the rationale on the targeted prove vs. `make test`.
       - name: Run syntax + minimum-Perl checks
         run: |
           cd server
