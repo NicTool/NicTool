@@ -30,6 +30,5 @@ t/nictool.t
 t/object.t
 t/protocol.t
 t/result.t
-t/test.cfg
 t/transport.t
 t/cleanup.pl

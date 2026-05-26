@@ -6,7 +6,7 @@ use strict;
 use vars qw/ $AUTOLOAD /;
 use NicToolServerAPI();
 
-$NicToolClient::VERSION = '2.40';
+$NicToolClient::VERSION = '2.41';
 $NicToolClient::NTURL   = 'http://www.nictool.com/';
 $NicToolClient::LICENSE = 'https://www.gnu.org/licenses/agpl-3.0.html';
 $NicToolClient::SRCURL  = 'https://github.com/NicTool/NicTool';
@@ -1612,7 +1612,7 @@ NicToolClient - CGI Interface to NicToolServer
 
 =head1 VERSION
 
-version 2.40
+version 2.41
 
 =head1 SYNOPSIS
 

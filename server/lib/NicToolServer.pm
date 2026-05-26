@@ -9,7 +9,7 @@ use RPC::XML;
 use Data::Dumper;
 use Net::IP;
 
-$NicToolServer::VERSION = '2.40';
+$NicToolServer::VERSION = '2.41';
 
 $NicToolServer::MIN_PROTOCOL_VERSION = '1.0';
 $NicToolServer::MAX_PROTOCOL_VERSION = '1.0';
@@ -1952,7 +1952,7 @@ NicToolServer - NicTool API reference server
 
 =head1 VERSION
 
-version 2.40
+version 2.41
 
 =head1 SYNOPSIS
 

@@ -1,9 +1,13 @@
 .perltidyrc
 AUTHORS.md
-dist/docker/debian/web/conf/nictool.conf
-dist/docker/debian/web/conf/nt_vars
-dist/docker/debian/web/Dockerfile
-dist/docker/debian/web/startup.sh
+dist/docker/.env.example
+dist/docker/docker-compose.yml
+dist/docker/Dockerfile
+dist/docker/entrypoint.sh
+dist/docker/generate-env.sh
+dist/setup/apache.conf.in
+dist/setup/install-nictool.sh
+dist/setup/tls-setup.sh
 docs/api.htm
 docs/apiindex.htm
 docs/apinotes.htm
@@ -25,9 +29,9 @@ docs/usersfuncs.htm
 docs/zonerecordsfuncs.htm
 docs/zonesfuncs.htm
 Makefile.PL
+LICENSE
 MANIFEST			This list of files
 MANIFEST.SKIP
-LICENSE
 README
 README.md
 TESTIMONIALS.md

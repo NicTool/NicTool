@@ -2,8 +2,12 @@
 .git
 .gitignore
 .travis.yml
-Makefile
+Makefile$
 blib
 client
 server
 MANIFEST.bak
+MYMETA.json
+MYMETA.yml
+api/MYMETA.json
+api/MYMETA.yml
