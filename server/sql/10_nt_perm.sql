@@ -97,8 +97,8 @@ CREATE TABLE nt_delegate(
 
     deleted             TINYINT(1) UNSIGNED DEFAULT 0 NOT NULL,
     KEY `nt_delegate_idx1` (`nt_group_id`,`nt_object_id`,`nt_object_type`),
-    KEY `nt_delegate_idx2` (`nt_object_id`,`nt_object_type`)
-    /* CONSTRAINT `nt_delegate_ibfk_1` FOREIGN KEY (`nt_group_id`) REFERENCES `nt_group` (`nt_group_id`) ON DELETE CASCADE ON UPDATE CASCADE */
+    KEY `nt_delegate_idx2` (`nt_object_id`,`nt_object_type`),
+    CONSTRAINT `nt_delegate_ibfk_1` FOREIGN KEY (`nt_group_id`) REFERENCES `nt_group` (`nt_group_id`) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 

@@ -58,8 +58,8 @@ CREATE TABLE nt_user_session(
     nt_user_session	     VARCHAR(100) NOT NULL,
     last_access              INT UNSIGNED NOT NULL,
     PRIMARY KEY (`nt_user_session_id`),
-    KEY `nt_user_session_idx1` (`nt_user_id`,`nt_user_session`)
-    /* CONSTRAINT `nt_user_session_ibfk_1` FOREIGN KEY (`nt_user_id`) REFERENCES `nt_user` (`nt_user_id`) ON DELETE CASCADE ON UPDATE CASCADE */
+    KEY `nt_user_session_idx1` (`nt_user_id`,`nt_user_session`),
+    CONSTRAINT `nt_user_session_ibfk_1` FOREIGN KEY (`nt_user_id`) REFERENCES `nt_user` (`nt_user_id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 
 DROP TABLE IF EXISTS nt_user_session_log;
@@ -71,8 +71,8 @@ CREATE TABLE nt_user_session_log(
     nt_user_session_id       INT UNSIGNED,
     nt_user_session	     VARCHAR(100),
     PRIMARY KEY (`nt_user_session_log_id`),
-    KEY `nt_user_id` (`nt_user_id`)
-    /* CONSTRAINT `nt_user_session_log_ibfk_1` FOREIGN KEY (`nt_user_id`) REFERENCES `nt_user` (`nt_user_id`) ON DELETE CASCADE ON UPDATE CASCADE */
+    KEY `nt_user_id` (`nt_user_id`),
+    CONSTRAINT `nt_user_session_log_ibfk_1` FOREIGN KEY (`nt_user_id`) REFERENCES `nt_user` (`nt_user_id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin ROW_FORMAT=COMPRESSED;
 
 DROP TABLE IF EXISTS nt_user_global_log;
@@ -90,6 +90,6 @@ CREATE TABLE nt_user_global_log(
     title                   VARCHAR(255),
     description             VARCHAR(255),
     PRIMARY KEY (`nt_user_global_log_id`),
-    KEY `nt_user_global_log_idx1` (`nt_user_id`)
-    /* CONSTRAINT `nt_user_global_log_ibfk_1` FOREIGN KEY (`nt_user_id`) REFERENCES `nt_user` (`nt_user_id`) ON DELETE CASCADE ON UPDATE CASCADE */
+    KEY `nt_user_global_log_idx1` (`nt_user_id`),
+    CONSTRAINT `nt_user_global_log_ibfk_1` FOREIGN KEY (`nt_user_id`) REFERENCES `nt_user` (`nt_user_id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin ROW_FORMAT=COMPRESSED;
