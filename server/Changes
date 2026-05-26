@@ -20,6 +20,7 @@ Revision history for NicToolServer
     * export: strip mid-string quotes from TXT records, #345
 * Updates & Changes
     * sql: add InnoDB conversion and FK constraints to upgrade script
+      * dumps/restores and big migrations might need SET FOREIGN_KEY_CHECKS=0
     * bump minimum Perl version to 5.022, #349
     * Docker image hardening, monthly rebuilds, xt tests in CI, #342
     * consolidate Docker/CI, remove hardcoded passwords, #334
