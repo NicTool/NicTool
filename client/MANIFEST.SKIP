@@ -1,1 +1,8 @@
-lib/nictoolclient.conf
+lib/nictoolclient.conf$
+t/e2e
+.eslintrc.yaml
+MYMETA.json
+MYMETA.yml
+Makefile$
+MANIFEST.bak
+blib/

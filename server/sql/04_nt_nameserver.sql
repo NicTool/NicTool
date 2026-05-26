@@ -21,8 +21,8 @@ CREATE TABLE nt_nameserver(
     PRIMARY KEY (`nt_nameserver_id`),
     KEY `nt_nameserver_idx1` (`name`),
     KEY `nt_nameserver_idx2` (`deleted`),
-    KEY `nt_group_id` (`nt_group_id`)
-    /* CONSTRAINT `nt_nameserver_ibfk_1` FOREIGN KEY (`nt_group_id`) REFERENCES `nt_group` (`nt_group_id`) ON DELETE CASCADE ON UPDATE CASCADE */
+    KEY `nt_group_id` (`nt_group_id`),
+    CONSTRAINT `nt_nameserver_ibfk_1` FOREIGN KEY (`nt_group_id`) REFERENCES `nt_group` (`nt_group_id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 
 

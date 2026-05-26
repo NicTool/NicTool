@@ -15,6 +15,7 @@ Getopt::Long::GetOptions(
     'user=s' => \my $db_user,
     'pass=s' => \my $db_pass,
     'host=s' => \my $db_host,
+    'prune' => \my $prune,
 ) or die "error parsing command line options";
 
 if ( !defined $dsn || !defined $db_user || !defined $db_pass ) {
@@ -34,7 +35,7 @@ my $dbh = DBIx::Simple->connect( $dsn, $db_user, $db_pass )
 
 # NOTE: when making schema changes, update db_version in 12_nt_options.sql
 my @versions = qw/ 2.00 2.05 2.08 2.09 2.10 2.11 2.14 2.15 2.16 2.17 2.18
-    2.24 2.27 2.28 2.29 2.30 2.32 2.34 2.35 2.40 /;
+    2.24 2.27 2.28 2.29 2.30 2.32 2.34 2.35 2.40 2.41 /;
 
 foreach my $version (@versions) {
 
@@ -67,37 +68,114 @@ foreach my $version (@versions) {
     print "\n";
 }
 
-sub _sql_2_some_fine_day {
+sub _fks_2_41 {
+    return (
+        # [ table, constraint_name, column, ref_table, ref_column ]
+        [ 'nt_zone_log',         'nt_zone_log_ibfk_1',         'nt_zone_id',        'nt_zone',        'nt_zone_id' ],
+        [ 'nt_zone_log',         'nt_zone_log_ibfk_2',         'nt_group_id',       'nt_group',       'nt_group_id' ],
+        [ 'nt_zone_log',         'nt_zone_log_ibfk_3',         'nt_user_id',        'nt_user',        'nt_user_id' ],
+        [ 'nt_zone_record',      'nt_zone_record_ibfk_1',      'nt_zone_id',        'nt_zone',        'nt_zone_id' ],
+        [ 'nt_zone_record_log',  'nt_zone_record_log_ibfk_1', 'nt_zone_id',         'nt_zone',        'nt_zone_id' ],
+        [ 'nt_zone_record_log',  'nt_zone_record_log_ibfk_2', 'nt_user_id',         'nt_user',        'nt_user_id' ],
+        [ 'nt_zone_record_log',  'nt_zone_record_log_ibfk_3', 'nt_zone_record_id',  'nt_zone_record', 'nt_zone_record_id' ],
+        [ 'nt_user_session_log', 'nt_user_session_log_ibfk_1', 'nt_user_id',        'nt_user',        'nt_user_id' ],
+        [ 'nt_user_session',     'nt_user_session_ibfk_1',     'nt_user_id',        'nt_user',        'nt_user_id' ],
+        [ 'nt_user_global_log',  'nt_user_global_log_ibfk_1',  'nt_user_id',        'nt_user',        'nt_user_id' ],
+        [ 'nt_nameserver',       'nt_nameserver_ibfk_1',       'nt_group_id',       'nt_group',       'nt_group_id' ],
+        [ 'nt_group_subgroups',  'nt_group_subgroups_ibfk_1',  'nt_group_id',       'nt_group',       'nt_group_id' ],
+        [ 'nt_group_log',        'nt_group_log_ibfk_1',        'nt_group_id',       'nt_group',       'nt_group_id' ],
+        [ 'nt_delegate',         'nt_delegate_ibfk_1',         'nt_group_id',       'nt_group',       'nt_group_id' ],
+    );
+}
+
+sub _existing_fks {
+    my $rows;
+    eval {
+        $rows = $dbh->query(
+            "SELECT TABLE_NAME AS t, CONSTRAINT_NAME AS c FROM information_schema.TABLE_CONSTRAINTS " .
+                "WHERE TABLE_SCHEMA = DATABASE() AND CONSTRAINT_TYPE = 'FOREIGN KEY'"
+        )->hashes;
+    };
+    my %existing;
+    return \%existing if !$rows;
+    for my $row (@$rows) {
+        $existing{ $row->{t} }{ $row->{c} } = 1;
+    }
+    return \%existing;
+}
+
+sub _sql_test_2_41 {
+    my $r = _get_db_version();
+    return 1 if !defined $r;    # query failed
+
+    my $existing = _existing_fks();
+    for my $fk ( _fks_2_41() ) {
+        my ( $table, $name ) = @$fk;
+        return 0 if !$existing->{$table}{$name};    # any expected FK missing -> apply
+    }
+
+    return 0 if $r eq '2.40';                       # FKs present but db_version still 2.40
+    return 1;
+}
+
+sub _sql_2_41 {
     my @tables            = $dbh->query("SHOW TABLES")->flat;
     my $convert_to_innodb = engine_innodb(@tables);
-    return <<EO_SOME_DAY
-/* InnoDB is the default database format in mysql 5.5. You want to upgrade
-** MySQL to 5.5 due to significant InnoDB performance gains. Don't forget to
-** adjust my.cnf for optimal performance. */
+    my $existing          = _existing_fks();
+
+    my @pending;       # FKs still to add
+    my @orphan_sql;    # DELETE statements for tables with orphans
+    my @orphan_info;   # ($table, $count) for the abort report
+    for my $fk ( _fks_2_41() ) {
+        my ( $table, $name, $col, $ref_table, $ref_col ) = @$fk;
+        next if $existing->{$table}{$name};         # skip already-applied FKs (resumable)
+        push @pending, $fk;
+
+        my $delete_sql =
+              "DELETE l FROM `$table` l LEFT JOIN `$ref_table` p "
+            . "ON l.`$col` = p.`$ref_col` WHERE p.`$ref_col` IS NULL;";
+        my ($count) = $dbh->query(
+            "SELECT COUNT(*) FROM `$table` l LEFT JOIN `$ref_table` p "
+            . "ON l.`$col` = p.`$ref_col` WHERE p.`$ref_col` IS NULL"
+        )->list;
+        next if !$count;
+        push @orphan_sql, $delete_sql;
+        push @orphan_info, [ $table, $col, $ref_table, $count ];
+    }
+
+    if ( @orphan_info && !$prune ) {
+        print STDERR "\n\nThe v2.41 FK constraints cannot be applied because orphan rows exist:\n\n";
+        for my $row (@orphan_info) {
+            printf STDERR "  %d orphan row(s): %s.%s -> %s\n", $row->[3], $row->[0], $row->[1], $row->[2];
+        }
+        print STDERR "\nRun the following SQL to remove the orphans, then re-run upgrade.pl:\n\n";
+        print STDERR "$_\n" for @orphan_sql;
+        print STDERR "\nAlternatively, re-run with --prune to delete these rows automatically.\n\n";
+        die "Aborting upgrade.\n";
+    }
+
+    my $statements = '';
+    for my $fk (@pending) {
+        my ( $table, $name, $col, $ref_table, $ref_col ) = @$fk;
+        if ($prune) {
+            $statements .=
+                  "DELETE l FROM `$table` l LEFT JOIN `$ref_table` p "
+                . "ON l.`$col` = p.`$ref_col` WHERE p.`$ref_col` IS NULL;\n";
+        }
+        $statements .=
+              "ALTER TABLE `$table` ADD CONSTRAINT `$name` "
+            . "FOREIGN KEY (`$col`) REFERENCES `$ref_table` (`$ref_col`) "
+            . "ON DELETE CASCADE ON UPDATE CASCADE;\n";
+    }
+
+    return <<EO_SQL_2_41
+/* Ensure all tables use InnoDB (default since MySQL 5.5) */
 
 $convert_to_innodb
 
-/* When switched to InnoDB, these constraints can be added */
-
-ALTER TABLE `nt_zone_log` ADD FOREIGN KEY (`nt_zone_id`) REFERENCES `nt_zone` (`nt_zone_id`) ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE `nt_zone_log` ADD FOREIGN KEY (`nt_group_id`) REFERENCES `nt_group` (`nt_group_id`) ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE `nt_zone_log` ADD FOREIGN KEY (`nt_user_id`) REFERENCES `nt_user` (`nt_user_id`) ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE `nt_zone_record` ADD FOREIGN KEY (`nt_zone_id`) REFERENCES `nt_zone` (`nt_zone_id`) ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE `nt_zone_record_log` ADD FOREIGN KEY (`nt_zone_id`) REFERENCES `nt_zone` (`nt_zone_id`) ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE `nt_zone_record_log` ADD FOREIGN KEY (`nt_user_id`) REFERENCES `nt_user` (`nt_user_id`) ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE `nt_zone_record_log` ADD FOREIGN KEY (`nt_zone_record_id`) REFERENCES `nt_zone_record` (`nt_zone_record_id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
-ALTER TABLE `nt_user_session_log` ADD FOREIGN KEY (`nt_user_id`) REFERENCES `nt_user` (`nt_user_id`) ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE `nt_user_session` ADD FOREIGN KEY (`nt_user_id`) REFERENCES `nt_user` (`nt_user_id`) ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE `nt_user_global_log` ADD FOREIGN KEY (`nt_user_id`) REFERENCES `nt_user` (`nt_user_id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
-ALTER TABLE `nt_nameserver` ADD FOREIGN KEY (`nt_group_id`) REFERENCES `nt_group` (`nt_group_id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
-ALTER TABLE `nt_group_subgroups` ADD FOREIGN KEY (`nt_group_id`) REFERENCES `nt_group` (`nt_group_id`) ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE `nt_group_log` ADD FOREIGN KEY (`nt_group_id`) REFERENCES `nt_group` (`nt_group_id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
-ALTER TABLE `nt_delegate` ADD FOREIGN KEY (`nt_group_id`) REFERENCES `nt_group` (`nt_group_id`) ON DELETE CASCADE ON UPDATE CASCADE;
-EO_SOME_DAY
+$statements
+UPDATE nt_options SET option_value='2.41' WHERE option_name='db_version';
+EO_SQL_2_41
         ;
 }
 
@@ -1052,13 +1130,21 @@ sub encode_utf8mb4 {
 sub engine_innodb {
     my @table_names = @_;
 
+    my %engines;
+    eval {
+        my $rows = $dbh->query(
+            "SELECT TABLE_NAME AS t, ENGINE AS e FROM information_schema.TABLES " .
+                "WHERE TABLE_SCHEMA = DATABASE()"
+        )->hashes;
+        for my $row ( @{ $rows || [] } ) {
+            $engines{ $row->{t} } = $row->{e};
+        }
+    };
+
     my $string = '';
-    foreach my $table_name (@_) {
-
-        # MySQL 4.1 and prior
-        #$string .= "ALTER TABLE $table_name TYPE = InnoDB;\n";
-
-        # MySQL 4.1+
+    foreach my $table_name (@table_names) {
+        my $engine = $engines{$table_name} || '';
+        next if uc($engine) eq 'INNODB';            # skip tables already on InnoDB
         $string .= "ALTER TABLE $table_name ENGINE = InnoDB;\n";
     }
     return $string;

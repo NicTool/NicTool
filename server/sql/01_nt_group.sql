@@ -26,8 +26,8 @@ CREATE TABLE nt_group_log(
     name                VARCHAR(255),
     PRIMARY KEY (`nt_group_log_id`),
     KEY `nt_group_log_idx1` (`nt_group_id`),
-    KEY `nt_group_log_idx2` (`timestamp`)
-    /* CONSTRAINT `nt_group_log_ibfk_1` FOREIGN KEY (`nt_group_id`) REFERENCES `nt_group` (`nt_group_id`) ON DELETE CASCADE ON UPDATE CASCADE */
+    KEY `nt_group_log_idx2` (`timestamp`),
+    CONSTRAINT `nt_group_log_ibfk_1` FOREIGN KEY (`nt_group_id`) REFERENCES `nt_group` (`nt_group_id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin ROW_FORMAT=COMPRESSED;
 
 
@@ -37,8 +37,8 @@ CREATE TABLE nt_group_subgroups(
     nt_subgroup_id      INT UNSIGNED NOT NULL,
     `rank`              INT UNSIGNED NOT NULL,
     KEY `nt_group_subgroups_idx1` (`nt_group_id`),
-    KEY `nt_group_subgroups_idx2` (`nt_subgroup_id`)
-    /* CONSTRAINT `nt_group_subgroups_ibfk_1` FOREIGN KEY (`nt_group_id`) REFERENCES `nt_group` (`nt_group_id`) ON DELETE CASCADE ON UPDATE CASCADE */
+    KEY `nt_group_subgroups_idx2` (`nt_subgroup_id`),
+    CONSTRAINT `nt_group_subgroups_ibfk_1` FOREIGN KEY (`nt_group_id`) REFERENCES `nt_group` (`nt_group_id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 
 INSERT INTO `nt_group` (`nt_group_id`, `parent_group_id`, `name`)

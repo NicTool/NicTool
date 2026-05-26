@@ -674,7 +674,7 @@ NicToolServer::Permission -
 
 =head1 VERSION
 
-version 2.40
+version 2.41
 
 =head1 SYNOPSIS
 

@@ -4,8 +4,10 @@
 .gitignore
 .release
 .test
-Makefile
+Makefile$
 blib
 client
 server
 MANIFEST.bak
+MYMETA.json
+MYMETA.yml
