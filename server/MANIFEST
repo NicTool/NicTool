@@ -1,9 +1,11 @@
 api/Changes
+api/contrib/addserver.pl
 api/contrib/DNS.pm
 api/contrib/nictool-api-php/NictoolAPI.php
 api/contrib/reverse-dns-management/CONFIG
 api/contrib/reverse-dns-management/README.md
 api/contrib/reverse-dns-management/reverse.pl
+api/contrib/update_group_nameservers.pl
 api/contrib/zone2nic.pl
 api/lib/NicTool.pm
 api/lib/NicTool/API.pm
@@ -112,7 +114,6 @@ t/fixtures/named.conf
 t/NicToolTest.pm
 t/README
 t/TODO
-TODO.md
 UPGRADE
 xt/14_permissions.t
 xt/16_delegation.t
