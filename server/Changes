@@ -1,5 +1,29 @@
 Revision history for NicToolServer
 
+2.41    2026.05.26
+
+* Security
+    * CSRF protection, XSS escaping, and security headers, #335
+    * drop unvalidated sortby in get_zone_record (SQL injection), #347
+    * escape LDAP DN/filter values, #347
+    * constant-time password comparison, #347
+    * require /dev/urandom for session IDs, #347
+    * validate nameserver export paths and remote_login, #347
+    * use list-form system() in export modules, #347
+    * stop leaking DB password via process command line, #347
+    * strict whitelist for transport loading (no eval), #333
+    * parameterized SQL in nsupdate export, #333
+    * tighter SHA1 legacy-hash detection, #333
+    * legacy password auto-migration on successful login, #333
+* Fixes
+    * sql/upgrade: two schema corrections, #332
+    * export: strip mid-string quotes from TXT records, #345
+* Updates & Changes
+    * sql: add InnoDB conversion and FK constraints to upgrade script
+    * bump minimum Perl version to 5.022, #349
+    * Docker image hardening, monthly rebuilds, xt tests in CI, #342
+    * consolidate Docker/CI, remove hardcoded passwords, #334
+
 2.40    2026.03.16
 
 * Fixes

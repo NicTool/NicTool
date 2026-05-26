@@ -1,4 +1,13 @@
 
+2.41    2026.05.26
+
+* Security
+    * CSRF protection, XSS escaping, and security headers, #335
+    * Playwright E2E security regression tests, #336, #347
+* Updates & Changes
+    * enable warnings in all CGI entrypoints, #333
+    * safer client redirect rendering in NicToolClient, #333
+    * bump minimum Perl version to 5.022, #349
 
 2.40    2026.03.16
 
