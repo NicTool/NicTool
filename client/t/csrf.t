@@ -18,7 +18,11 @@ package main;
 
 sub client_with { return NicToolClient->new( MockCGI->new(@_) ) }
 
-my $session = 'abc123deadbeefsession';
+# hex, and shaped like the real thing: NicToolServer::Session::session_id
+# unpacks 16 urandom bytes. A fixture with non-hex characters in it cannot be
+# embedded in a hex-only token, which would leave the no-leak check below
+# unable to fail for the reason it exists.
+my $session = 'd41d8cd98f00b204e9800998ecf8427e';
 
 # nav.cgi and group.cgi load concurrently in the frameset, as separate
 # processes, with a valid session and no csrf cookie: the state after a browser
@@ -30,7 +34,7 @@ my $body_token = client_with( cookies => { NicTool => $session } )->get_csrf_tok
 is( $nav_token, $body_token, 'concurrent frames derive an identical token' );
 like( $nav_token, qr/^[0-9a-f]{40}$/, 'derived token is 40 char hex' );
 
-my $other = client_with( cookies => { NicTool => 'a-totally-different-session' } );
+my $other = client_with( cookies => { NicTool => '9e107d9d372bb6826bd81d3542a419d6' } );
 isnt( $other->get_csrf_token(), $nav_token, 'distinct sessions derive distinct tokens' );
 
 unlike( $nav_token, qr/\Q$session\E/, 'token does not embed the session id' );
