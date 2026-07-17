@@ -4,6 +4,7 @@ package NicToolClient;
 
 use strict;
 use vars qw/ $AUTOLOAD /;
+use Digest::SHA ();
 use NicToolServerAPI();
 
 $NicToolClient::VERSION = '2.41';
@@ -122,9 +123,9 @@ sub display_login {
         -samesite => 'Strict',
     );
 
-    # set a fresh CSRF token for the login form
-    $self->{'csrf_token'} = $self->generate_csrf_token();
-    my $csrf = $self->csrf_cookie( $self->{'csrf_token'} );
+    # reuse any token already in play: minting a fresh one here clobbered the
+    # cookie for every other open login tab, stranding their forms. (#335)
+    my $csrf = $self->csrf_cookie( $self->get_csrf_token() );
 
     print $q->header(
         -charset => 'utf-8',
@@ -182,6 +183,10 @@ sub set_cookie {
         -samesite => 'Strict',
     );
 
+    # derive from the session being issued; the request still carries the old
+    # session cookie (or none at all, at login)
+    $self->{'csrf_token'} = $self->derive_csrf_token($value);
+
     my $csrf = $self->csrf_cookie( $self->get_csrf_token() );
 
     print $q->header(
@@ -231,21 +236,37 @@ sub security_headers {
 }
 
 sub generate_csrf_token {
-    my @chars = ( 'a' .. 'f', '0' .. '9' );
-    my $token = '';
-    for ( 1 .. 40 ) {
-        $token .= $chars[ rand @chars ];
-    }
-    return $token;
+    open my $urand, '<:raw', '/dev/urandom'
+        or die "generate_csrf_token: unable to open /dev/urandom ($!)\n";
+    my $bytes = q{};
+    my $read  = read( $urand, $bytes, 20 );
+    close $urand;
+    die "generate_csrf_token: short read from /dev/urandom\n"
+        unless defined $read && $read == 20;
+    return unpack( 'H*', $bytes );
+}
+
+# A one-way function of the session id, so that frames loading concurrently all
+# arrive at the same token without coordinating through a shared store. Session
+# ids are never exposed by this: only the digest reaches the page. (#335)
+sub derive_csrf_token {
+    my ( $self, $session ) = @_;
+    return if !defined $session || $session eq '';
+    return substr( Digest::SHA::sha256_hex( 'NicTool CSRF v1:' . $session ), 0, 40 );
 }
 
 sub csrf_cookie {
     my ( $self, $token ) = @_;
     my $q = $self->{'CGI'};
     return $q->cookie(
-        -name     => 'NicTool_csrf',
-        -value    => $token,
-        -path     => '/',
+        -name  => 'NicTool_csrf',
+        -value => $token,
+        -path  => '/',
+
+        # must match the NicTool session cookie: as a browser-session cookie it
+        # vanished on restart while the month-long session stayed valid, and
+        # every form then failed validation. (#335)
+        -expires  => '+1M',
         -secure   => 1,
         -httponly => 0,
         -samesite => 'Strict',
@@ -256,8 +277,14 @@ sub get_csrf_token {
     my $self = shift;
     return $self->{'csrf_token'} if $self->{'csrf_token'};
 
-    my $q     = $self->{'CGI'};
-    my $token = $q->cookie('NicTool_csrf') || $self->generate_csrf_token();
+    my $q = $self->{'CGI'};
+
+    # the cookie is only a fallback for the pre-login form, where there is no
+    # session to derive from yet
+    my $token = $self->derive_csrf_token( scalar $q->cookie('NicTool') )
+        || $q->cookie('NicTool_csrf')
+        || $self->generate_csrf_token();
+
     $self->{'csrf_token'} = $token;
     return $token;
 }
