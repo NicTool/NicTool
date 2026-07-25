@@ -9,7 +9,7 @@ WriteMakefile(
 
     #dist               => { COMPRESS => 'gzip -9f', },
     dist               => { COMPRESS => 'bzip2', SUFFIX => '.bz2' },
-    'MIN_PERL_VERSION' => 5.022,
+    'MIN_PERL_VERSION' => 5.030,
     'BUILD_REQUIRES'   => {},
     PREREQ_PM          => {},
     TEST_REQUIRES      => {},

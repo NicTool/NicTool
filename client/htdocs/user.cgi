@@ -136,7 +136,9 @@ sub display {
         push @options,
               qq[<a href="group_users.cgi?nt_group_id=]
             . $q->param('nt_group_id')
-            . qq[&amp;delete=1&amp;obj_list=$duser->{'nt_user_id'}" onClick="return confirm(']
+            . qq[&amp;delete=1&amp;obj_list=$duser->{'nt_user_id'}&amp;csrf_token=]
+            . $nt_obj->get_csrf_token()
+            . qq[" onClick="return confirm(']
             . $nt_obj->esc( $nt_obj->js_escape("Delete user $duser->{'username'}?") )
             . qq[');">Delete</a>];
     }

@@ -925,7 +925,7 @@ sub display_edit_record {
         }
     }
     elsif ( $edit ne 'new' && !$pseudo ) {
-        display_new_record_delegates( $user, $zone_record, $q );
+        display_new_record_delegates( $nt_obj, $user, $zone_record, $q );
     }
 
     print qq[
@@ -1385,7 +1385,7 @@ sub display_edit_record_delegates {
 }
 
 sub display_new_record_delegates {
-    my ( $user, $zone_record, $q ) = @_;
+    my ( $nt_obj, $user, $zone_record, $q ) = @_;
 
     my $gid = $q->param('nt_group_id');
     print qq[
@@ -1453,7 +1453,9 @@ sub display_new_record_delegates {
         && $zone_record->{'delegate_delete'} )
     {
         print
-            qq[<a href="zone.cgi?type=record&amp;nt_zone_record_id=$zone_record->{'nt_zone_record_id'}&amp;nt_zone_id=$zone_record->{'nt_zone_id'}&amp;nt_group_id=$gid&amp;delegate_group_id=$gid&amp;deletedelegate=1" onClick="return confirm(']
+            qq[<a href="zone.cgi?type=record&amp;nt_zone_record_id=$zone_record->{'nt_zone_record_id'}&amp;nt_zone_id=$zone_record->{'nt_zone_id'}&amp;nt_group_id=$gid&amp;delegate_group_id=$gid&amp;deletedelegate=1&amp;csrf_token=]
+            . $nt_obj->get_csrf_token()
+            . qq[" onClick="return confirm(']
             . _esc(
             NicToolClient::js_escape(
                 undef,

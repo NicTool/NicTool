@@ -19,7 +19,7 @@ jobs:
       fail-fast: false
       matrix:
         # Floor + intermediates + latest. See PR #349.
-        perl-version: ['5.22', '5.30', '5.36', 'latest']
+        perl-version: ['5.30', '5.36', 'latest']
     container:
       image: perldocker/perl-tester:${{ matrix.perl-version }}
     steps:
