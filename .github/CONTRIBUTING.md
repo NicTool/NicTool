@@ -14,11 +14,11 @@ It scans `server/`, `server/api/`, and `client/` from a single test file. The fl
 The thorough one runs the full unit-test pass against the actual floor Perl, in the same Docker image our matrix CI uses. This also catches CPAN dependencies whose declared minimum Perl exceeds ours — `cpanm` refuses to install them and the build fails loudly:
 
 ```sh
-docker run --rm -v "$PWD:/work" -w /work perldocker/perl-tester:5.22 bash -c '
+docker run --rm -v "$PWD:/work" -w /work perldocker/perl-tester:5.30 bash -c '
   cpanm -n Test::MinimumVersion &&
   cd server && perl Makefile.PL && cpanm -n --installdeps . && make test &&
   cd ../client && perl Makefile.PL && cpanm -n --installdeps . && make test
 '
 ```
 
-Replace `5.22` with whatever `MIN_PERL_VERSION` says today. The matrix CI in `.github/workflows/ci-perl-floor.yml` runs this shape on every PR across the floor, a couple of intermediates, and `latest`, so anything you miss locally fails there instead.
+Replace `5.30` with whatever `MIN_PERL_VERSION` says today. The matrix CI in `.github/workflows/ci-perl-floor.yml` runs this shape on every PR across the floor, a couple of intermediates, and `latest`, so anything you miss locally fails there instead.
