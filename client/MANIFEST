@@ -85,6 +85,7 @@ Makefile.PL
 MANIFEST
 MANIFEST.SKIP
 t/01-syntax.t
+t/csrf.t
 t/html.t
 t/test.t
 templates/body_frame_start.html
