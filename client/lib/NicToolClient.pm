@@ -446,7 +446,9 @@ sub display_group_tree {
 
             if ( _can_group_delete( $user, $group ) ) {
                 push @options,
-                    qq[<a href="group.cgi?nt_group_id=$group->{'parent_group_id'}&amp;delete=$group->{'nt_group_id'}" onClick="return confirm(']
+                    qq[<a href="group.cgi?nt_group_id=$group->{'parent_group_id'}&amp;delete=$group->{'nt_group_id'}&amp;csrf_token=]
+                    . $self->get_csrf_token()
+                    . qq[" onClick="return confirm(']
                     . $self->esc( $self->js_escape( join( ' / ', @list ) ) )
                     . qq[ and all associated data?');">Delete</a>];
             }
@@ -633,7 +635,9 @@ sub display_zone_options {
     # Delete options
     if ( $user->{'zone_delete'} && !$isdelegate && !$zone->{'deleted'} ) {
         push @options,
-            qq[<a href="group_zones.cgi?nt_group_id=$gid&amp;zone_list=$zone->{'nt_zone_id'}&amp;delete=1" onClick="return confirm(']
+            qq[<a href="group_zones.cgi?nt_group_id=$gid&amp;zone_list=$zone->{'nt_zone_id'}&amp;delete=1&amp;csrf_token=]
+            . $self->get_csrf_token()
+            . qq[" onClick="return confirm(']
             . $self->esc(
             $self->js_escape("Delete $zone->{'zone'} and all associated resource records?") )
             . qq[');">Delete</a>];
@@ -651,7 +655,9 @@ sub display_zone_options {
         && $zone->{'delegate_delete'} )
     {
         push @options,
-            qq[<a href="group_zones.cgi?nt_group_id=$gid&amp;nt_zone_id=$zone->{'nt_zone_id'}&amp;deletedelegate=1" onClick="return confirm(']
+            qq[<a href="group_zones.cgi?nt_group_id=$gid&amp;nt_zone_id=$zone->{'nt_zone_id'}&amp;deletedelegate=1&amp;csrf_token=]
+            . $self->get_csrf_token()
+            . qq[" onClick="return confirm(']
             . $self->esc( $self->js_escape("Remove delegation of $zone->{'zone'}?") )
             . qq[');">Remove Delegation</a>];
     }
