@@ -1,76 +1,103 @@
+Upgrading NicTool
+=================
 
-To upgrade NicTool to v2.10+, the following steps should be taken:
+These steps apply to upgrades between modern NicTool releases (2.10 and
+later). If you are upgrading from a pre-2.10 install, read the appendix
+at the end of this document first.
 
-1. shut down export processes (stop DNS server updates)
-     # $local/etc/rc.d/svscan stop
-            or
-     # service svscan stop  (or: initctl stop svscan)
+0. Take a backup
 
-2. shut down web/nictool server (prevent DB changes)
-     $ $local/etc/rc.d/apache22 stop
-            or
-     # service httpd stop
+    # mysqldump -u root -p nictool | gzip > nictool-$(date +%F).sql.gz
 
-3. install NicTool client & server
-     https://github.com/nictool/NicTool/wiki/Install-NicToolClient
-     https://github.com/nictool/NicTool/wiki/Install-NicToolServer
+   There is no sql/downgrade script. The database migration alters
+   tables in place. Do not skip this step.
 
-     Note the default path changes and apply them as shown.
+1. Stop the export processes (stops DNS server updates)
 
-4. run the database migration scripts
-     # cd /usr/local/nictool/server
-     # sql/upgrade.pl
+   daemontools:
+    # svc -d /service/ns1.example.com   (repeat per nameserver)
+   or cron: comment out the nt_export.pl crontab entries.
 
-5. start up web server & validate
+2. Stop the web server (prevents DB changes during the migration)
 
-6. install any new dependencies
-    cd /usr/local/nictool/server
-    ./bin/nt_install_deps.pl
+    # systemctl stop apache2      (Debian/Ubuntu)
+    # service httpd stop          (RHEL-ish)
+    # /usr/local/etc/rc.d/apache24 stop   (FreeBSD)
 
-# Creating new exports is necessary when upgrading to NicTool 2.10. It is not
-# necessary on upgrades after 2.11.
+3. Install the new NicToolServer and NicToolClient
 
-7. create new exports
+   https://github.com/NicTool/NicTool/wiki/Install-NicToolServer
+   https://github.com/NicTool/NicTool/wiki/Install-NicToolClient
+
+   Then install any new perl dependencies:
+
+    # cd /usr/local/nictool/server && perl bin/nt_install_deps.pl
+
+4. Run the database migration
+
+    # cd /usr/local/nictool/server
+    # sql/upgrade.pl
+
+   Notes:
+
+   * The script detects which updates your database still needs, and is
+     safe to re-run: already-applied steps are skipped.
+
+   * Upgrades crossing 2.41 convert all tables to InnoDB and add foreign
+     key constraints. If audit-log rows reference parent rows that no
+     longer exist, the script prints the affected rows and stops with
+     instructions. Nothing is deleted without your say-so (--prune).
+
+   * Upgrades crossing 2.35 convert the database from utf8/latin1 to
+     utf8mb4. If your database predates utf8 defaults AND holds
+     non-ASCII data (names, descriptions, contact addresses), be aware
+     that a charset conversion re-encodes bytes according to each
+     column's declared charset: data that was stored through a
+     mismatched connection charset (mojibake) can be garbled further.
+     Verify any non-ASCII rows on a restored copy of your backup before
+     upgrading production. Pure-ASCII data (the common case for DNS) is
+     unaffected.
+
+5. Start the web server and validate
+
+    # systemctl start apache2
+
+   Log in, browse a few zones, edit and revert a record.
+
+6. Resume exports and verify the published data
+
+    # svc -u /service/ns1.example.com
+
+   Before overwriting your served data, compare a fresh export against
+   the last known-good one (sort both files first; then diff). Expect
+   only formatting differences, e.g. as of 2.41: quotes inside TXT
+   records are stripped, and SOA records with all-default timers export
+   empty fields instead of 0:0:0:0. Record data itself should not
+   change. If it does, stop and investigate before publishing.
+
+
+Appendix: upgrading from pre-2.10
+=================================
+
+The export system was rewritten in 2.10. Each nameserver gets a
+directory containing a 'run' file and a Makefile that handles any
+compilation and rsyncing:
+
     # cd /usr/local/nictool
-    # mkdir ns1.example.com
-    # cd ns1.example.com
+    # mkdir ns1.example.com && cd ns1.example.com
     # ln -s ../server/bin/nt_export.pl .
-    # ./nt_export.pl -nsid N  (run without a NSID to see a list)
-    # chown -R nictool data-*
-
-After a successful export, this last step will leave behind:
-  1. 'run' file
-  2. data directory with the exported data file(s).
-  3. a Makefile, customized for the NS type, any compilation needed, and rsyncing the data file(s) to the right place. If the settings are incorrect, just edit the Makefile. To customize the export (to rsync to multiple servers, or different servers, or via private IPs, or whatever), edit the Makefile.
-
-    # ./run  (test the run file)
-
-Since this is an upgrade, presumably you already have an existing run file, export users, and ssh keys all set up. If so, this should "just work."
-
-    # vi run
-
-Once you have successfully run the export, edit the run file and select a daemon or cron entry. The run file has instructions within.
-
+    # ./nt_export.pl -nsid N     (run without -nsid to see the list)
+    # ./run                      (then follow the instructions in it)
     # ln -s /usr/local/nictool/ns1.example.com /service/
 
-Tell svscan to start up this daemon.
+See https://github.com/NicTool/NicTool/wiki/Export for details.
 
+Differences from the pre-2.10 exports worth knowing:
 
-    SIGNIFICANT DIFFERENCES FROM PRE-v2.10 EXPORT SCRIPT
-
-SPEED: The old export scripts used a c++ application to dump the data from MySQL to the data file. The new exports are pure perl. Most NicTool users have hundreds or thousands of domains. They won't notice the difference. My DB exports complete in under a second.
-
-On a NicTool install with 152,803 domains and 1.2 million RRs, it might hypothetically take 54 seconds to do a full export. On a dual core E8400 @ 3GHz. The old exports completed that same export in 18 seconds. Some export testing on a snapshot of your data may be worth doing before upgrading. There is no sql/downgrade script.
-
-DATA FILE:
-
-I discovered these differences by doing a diff on a 'data' file exported using the old export scripts to one generated by the new export scripts. I suggest you do the same. Pipe them both through sort first, and then diff or diff -y reveals all.
-
-* A zone with no defined resource records now publishes SOA records. Previously it did not.
-
-* SRV records are exported as generic tinydns. The primary reason for this is
-  that now we don't require the tinydns patch to publish SRV records. Here's a before/after:
-
-    S_caldav._tcp.simerson.net::calendars.simerson.net.:443:100:5:3600::
-    :_caldav._tcp.simerson.net:33:\000\005\000\144\001\273\011calendars\010simerson\003net\000:3600::
-
+ * Zones with no resource records now publish SOA records.
+ * SRV records export as generic tinydns records (no tinydns patch
+   needed).
+ * The pure-perl exporter is somewhat slower than the old C++ dump on
+   very large installs (a full export of ~150k zones / 1.2M RRs takes
+   on the order of a minute); incremental exports are the norm and are
+   fast. Test an export against a snapshot of your data if in doubt.
