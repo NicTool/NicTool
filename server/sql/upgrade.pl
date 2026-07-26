@@ -295,7 +295,104 @@ sub _sql_test_2_41 {
     return 1;
 }
 
+# The v2.41 FKs to nt_user cannot be added while log rows reference users that
+# don't exist. Two repairable classes, neither of which warrants deleting audit
+# history (the previously documented remedies, DELETE and --prune, do):
+#  - nt_user_id=0: the writer dropped attribution (the Zone/Record/Sanity.pm
+#    TTL-sync cascade, fixed alongside this). The actor is usually recoverable:
+#    the same action logged a sibling row for the same zone in the same second.
+#  - nt_user_id>0 with no nt_user row: the user was hard-deleted. Restore a
+#    tombstone row (deleted=1) so history keeps its original attribution.
+# Rows referencing hard-deleted zones/groups/records have no parent to repair
+# and still go through the existing prune/abort path.
+sub _repair_user_orphans_2_41 {
+
+    my %pk = (
+        nt_zone_record_log => 'nt_zone_record_log_id',
+        nt_zone_log        => 'nt_zone_log_id',
+    );
+
+    # remap nt_user_id=0 rows to the user who acted on the same zone in the
+    # same second, where that actor is unambiguous
+    for my $table ( sort keys %pk ) {
+        my $id = $pk{$table};
+        my ($zeros) = _try_list("SELECT COUNT(*) FROM `$table` WHERE nt_user_id = 0");
+        next if !$zeros;
+
+        my $q = "UPDATE `$table` o
+            JOIN (
+                SELECT o.`$id` AS id, MIN(t.nt_user_id) AS new_user
+                FROM `$table` o
+                JOIN `$table` t ON t.nt_zone_id = o.nt_zone_id
+                    AND t.timestamp = o.timestamp AND t.nt_user_id <> 0
+                JOIN nt_user u ON u.nt_user_id = t.nt_user_id
+                WHERE o.nt_user_id = 0
+                GROUP BY o.`$id`
+                HAVING COUNT(DISTINCT t.nt_user_id) = 1
+            ) m ON m.id = o.`$id`
+            SET o.nt_user_id = m.new_user
+            WHERE o.nt_user_id = 0";
+        $q =~ s/[\s]{2,}/ /g;
+        print "repairing $table: $zeros row(s) missing attribution (nt_user_id=0), "
+            . "remapping to the triggering user where unambiguous\n$q;\n";
+        $dbh->query($q) or die DBIx::Simple->error;
+    }
+
+    my %seen;
+    my @user_fk_tables = grep { !$seen{$_}++ }
+        map { $_->[0] } grep { $_->[3] eq 'nt_user' } _fks_2_41();
+
+    # restore tombstone users for rows referencing hard-deleted user ids
+    my %orphan_ids;
+    for my $table (@user_fk_tables) {
+        $orphan_ids{$_} = 1 for _try_list(
+            "SELECT DISTINCT l.nt_user_id FROM `$table` l
+                LEFT JOIN nt_user u ON u.nt_user_id = l.nt_user_id
+                WHERE u.nt_user_id IS NULL AND l.nt_user_id <> 0");
+    }
+    if (%orphan_ids) {
+        my ($group_id) = _try_list("SELECT MIN(nt_group_id) FROM nt_group");
+        for my $uid ( sort { $a <=> $b } keys %orphan_ids ) {
+            print "repairing nt_user: restoring tombstone for hard-deleted user $uid "
+                . "(still referenced by logs)\n";
+            $dbh->query(
+                "INSERT INTO nt_user
+                    (nt_user_id, nt_group_id, first_name, last_name, username, password, email, deleted)
+                 VALUES ($uid, $group_id, 'Deleted', 'User', 'deleted-user-$uid', '', '', 1)"
+            ) or die DBIx::Simple->error;
+        }
+    }
+
+    # any nt_user_id=0 rows the heuristic could not resolve get an honest
+    # 'unattributed' system user, not a guess and not a DELETE
+    my $sys_id;
+    for my $table (@user_fk_tables) {
+        my ($zeros) = _try_list("SELECT COUNT(*) FROM `$table` WHERE nt_user_id = 0");
+        next if !$zeros;
+        $sys_id ||= _ensure_unattributed_user();
+        print "repairing $table: $zeros row(s) with no identifiable actor, "
+            . "assigning to 'unattributed' (nt_user $sys_id)\n";
+        $dbh->query("UPDATE `$table` SET nt_user_id = $sys_id WHERE nt_user_id = 0")
+            or die DBIx::Simple->error;
+    }
+}
+
+sub _ensure_unattributed_user {
+    my ($id) = _try_list(
+        "SELECT nt_user_id FROM nt_user WHERE username = 'unattributed' AND deleted = 1");
+    return $id if $id;
+
+    my ($group_id) = _try_list("SELECT MIN(nt_group_id) FROM nt_group");
+    $dbh->query(
+        "INSERT INTO nt_user (nt_group_id, first_name, last_name, username, password, email, deleted)
+         VALUES ($group_id, 'Unattributed', 'Actions', 'unattributed', '', '', 1)"
+    ) or die DBIx::Simple->error;
+    return $dbh->last_insert_id( undef, undef, 'nt_user', undef );
+}
+
 sub _sql_2_41 {
+    _repair_user_orphans_2_41();
+
     my @tables            = $dbh->query("SHOW TABLES")->flat;
     my $convert_to_innodb = engine_innodb(@tables);
     my $existing          = _existing_fks();
@@ -321,7 +418,9 @@ sub _sql_2_41 {
     }
 
     if ( @orphan_info && !$prune ) {
-        print STDERR "\n\nThe v2.41 FK constraints cannot be applied because orphan rows exist:\n\n";
+        print STDERR "\n\nThe v2.41 FK constraints cannot be applied because orphan rows exist\n"
+            . "(these reference hard-deleted parent rows; user-attribution orphans are\n"
+            . "repaired automatically and never reach this point):\n\n";
         for my $row (@orphan_info) {
             printf STDERR "  %d orphan row(s): %s.%s -> %s\n", $row->[3], $row->[0], $row->[1], $row->[2];
         }
