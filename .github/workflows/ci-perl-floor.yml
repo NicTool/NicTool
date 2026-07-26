@@ -28,9 +28,13 @@ jobs:
       - name: Install Test::MinimumVersion
         run: cpanm -n Test::MinimumVersion
 
+      - name: Install MySQL client development libraries
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends libmariadb-dev libmariadb-dev-compat
+
       - name: Build server (with deps)
         run: |
-          apt install -y default-mysql-client
           cd server
           perl Makefile.PL
           cpanm -n --installdeps .
