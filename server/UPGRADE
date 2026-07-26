@@ -97,10 +97,18 @@ at the end of this document first.
    data itself should not change. If it does, stop and investigate
    before publishing.
 
-7. Resume exports -- this publishes
+7. Publish, then resume exports
 
-   Restore the tinydns Makefile 'remote:' target if you disabled it,
-   then:
+   The staged export in step 6 was recorded as a successful export even
+   though nothing was published, so a later non-forced export (the cron
+   model) can see "no changes" and skip publishing. Don't rely on the
+   schedule for the first publish: restore the tinydns Makefile
+   'remote:' target if you disabled it, then run one forced publishing
+   export by hand and check that it succeeds:
+
+    # ./nt_export.pl -nsid N -force -pfextra
+
+   Once that completes cleanly, resume the normal service:
 
     # svc -u /service/ns1.example.com
 
