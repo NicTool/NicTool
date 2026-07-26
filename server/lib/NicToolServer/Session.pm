@@ -313,13 +313,13 @@ sub auth_error {
 sub session_id {
     my $self = shift;
 
-    return $ENV{UNIQUE_ID} if $ENV{UNIQUE_ID};    # mod_uniqueid sets this
-
-    # Require a real CSPRNG. Falling back to time/PID-derived IDs would let an
-    # attacker brute-force concurrent sessions in narrow time windows.
+    # Require a real CSPRNG. mod_unique_id output (host+time+pid+counter) and
+    # other time/PID-derived IDs would let an attacker brute-force concurrent
+    # sessions in narrow time windows, and the CSRF token is derived from this
+    # id, so its entropy caps the token's.
     open my $urand, '<:raw', '/dev/urandom'
         or die "session_id: unable to open /dev/urandom ($!). "
-        . "Configure mod_unique_id or ensure /dev/urandom is accessible.\n";
+        . "Ensure /dev/urandom is accessible.\n";
     my $bytes = q{};
     my $read  = read( $urand, $bytes, 16 );
     close $urand;

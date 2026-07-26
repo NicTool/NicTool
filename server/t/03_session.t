@@ -10,10 +10,11 @@ use NicToolServer::Session;
 
 my $session = bless {}, 'NicToolServer::Session';
 
+# mod_unique_id output is not a CSPRNG; its presence must not displace urandom.
 local $ENV{UNIQUE_ID} = 'apache-unique-id';
-is( $session->session_id, 'apache-unique-id', 'uses UNIQUE_ID when available' );
+isnt( $session->session_id, 'apache-unique-id', 'UNIQUE_ID is ignored' );
+like( $session->session_id, qr/^[0-9a-f]{32}$/, 'session id is 32 char hex' );
 
-local $ENV{UNIQUE_ID};
 my %seen;
 
 for ( 1 .. 1000 ) {
