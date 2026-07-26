@@ -86,6 +86,7 @@ MANIFEST
 MANIFEST.SKIP
 t/01-syntax.t
 t/csrf.t
+t/csrf_forms.t
 t/csrf_links.t
 t/html.t
 t/test.t
