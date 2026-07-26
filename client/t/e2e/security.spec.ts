@@ -3,6 +3,7 @@ import {
   BASE, USERNAME, PASSWORD, GROUP_DEFAULTS,
   freshCtx, getLoginCsrf, apiLogin, authGet, authPost,
   expectSecurityHeaders, browserLogin, collectViolations,
+  findInListing, uniqueName, uniqueNsName,
 } from './helpers';
 
 // ---------------------------------------------------------------------------
@@ -136,26 +137,26 @@ test.describe('T7: CRUD Regression', () => {
     const cookies = `NicTool=${sessionCookie}; NicTool_csrf=${csrfCookie}`;
 
     // --- Create a sub-group ---
-    const groupName = `e2e_test_${Date.now()}`;
+    const groupName = uniqueName('e2e_test');
     await authPost(playwright, `${BASE}/group.cgi`, cookies,
       `nt_group_id=1&new=1&Create=Create&name=${groupName}&${GROUP_DEFAULTS}&csrf_token=${csrfCookie}`);
 
     // Fetch the group list to find the new group ID
-    let { body } = await authGet(playwright, `${BASE}/group.cgi?nt_group_id=1`, cookies);
-    const groupIdMatch = body.match(new RegExp(`nt_group_id=(\\d+)">${groupName}`));
-    expect(groupIdMatch).toBeTruthy();
-    const gid = groupIdMatch![1];
+    let body = '';
+    const groupId = await findInListing(playwright, cookies,
+      { cgi: 'group.cgi', gid: 1, idParam: 'nt_group_id' }, groupName);
+    expect(groupId).toBeTruthy();
+    const gid = groupId!;
 
     // --- Create a zone ---
-    const zoneName = `e2e-${Date.now()}.test`;
+    const zoneName = `${uniqueNsName('e2e')}.test`;
     await authPost(playwright, `${BASE}/group_zones.cgi`, cookies,
       `nt_group_id=${gid}&new=1&Create=Create&zone=${zoneName}&mailaddr=admin.${zoneName}&description=e2e&ttl=3600&refresh=16384&retry=2048&expire=1048576&minimum=2560&csrf_token=${csrfCookie}`);
 
-    // Fetch zone list to find zone ID
-    ({ body } = await authGet(playwright, `${BASE}/group_zones.cgi?nt_group_id=${gid}`, cookies));
-    const zoneIdMatch = body.match(/nt_zone_id=(\d+)/);
-    expect(zoneIdMatch).toBeTruthy();
-    const zid = zoneIdMatch![1];
+    const zoneId = await findInListing(playwright, cookies,
+      { cgi: 'group_zones.cgi', gid, idParam: 'nt_zone_id' }, zoneName);
+    expect(zoneId).toBeTruthy();
+    const zid = zoneId!;
 
     // --- Create an A record ---
     ({ body } = await authPost(playwright, `${BASE}/zone.cgi`, cookies,
@@ -186,7 +187,8 @@ test.describe('T7: CRUD Regression', () => {
     // --- Delete the group (include csrf_token in query string) ---
     ({ body } = await authGet(playwright,
       `${BASE}/group.cgi?nt_group_id=1&delete=${gid}&csrf_token=${csrfCookie}`, cookies));
-    expect(body).not.toContain(groupName);
+    expect(await findInListing(playwright, cookies,
+      { cgi: 'group.cgi', gid: 1, idParam: 'nt_group_id' }, groupName)).toBeNull();
   });
 });
 
@@ -213,15 +215,16 @@ test.describe('T9: Delete Record is POST', () => {
     const cookies = `NicTool=${sessionCookie}; NicTool_csrf=${csrfCookie}`;
 
     // Create a temp zone in root group
-    const zoneName = `e2e-del-${Date.now()}.test`;
+    const zoneName = `${uniqueNsName('e2e-del')}.test`;
     await authPost(playwright, `${BASE}/group_zones.cgi`, cookies,
       `nt_group_id=1&new=1&Create=Create&zone=${zoneName}&mailaddr=admin.${zoneName}&description=e2e&ttl=3600&refresh=16384&retry=2048&expire=1048576&minimum=2560&csrf_token=${csrfCookie}`);
 
     // Find zone ID
-    let { body } = await authGet(playwright, `${BASE}/group_zones.cgi?nt_group_id=1`, cookies);
-    const zoneIdMatch = body.match(/nt_zone_id=(\d+)/);
-    expect(zoneIdMatch).toBeTruthy();
-    const zoneId = zoneIdMatch![1];
+    let body = '';
+    const foundZoneId = await findInListing(playwright, cookies,
+      { cgi: 'group_zones.cgi', gid: 1, idParam: 'nt_zone_id' }, zoneName);
+    expect(foundZoneId).toBeTruthy();
+    const zoneId = foundZoneId!;
 
     // Create an A record
     await authPost(playwright, `${BASE}/zone.cgi`, cookies,

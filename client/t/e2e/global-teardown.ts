@@ -176,7 +176,7 @@ export default async function globalTeardown(): Promise<void> {
 
   let total = 0;
   let lastRemoved = 0;
-  for (let round = 0; round < 5; round++) {
+  for (let round = 0; round <= 5; round++) {
     lastRemoved = await cleanGroup(pw, cookies, '1', new Set(), runIds);
     total += lastRemoved;
     if (lastRemoved === 0) break;

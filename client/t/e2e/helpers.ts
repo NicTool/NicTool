@@ -185,7 +185,7 @@ function findIdInBody(body: string, idParam: string, name: string): string | nul
 // per page (prepare_search_params ignores any limit param), so scanning pages
 // breaks as soon as leftovers accumulate; an exact-match quick search returns
 // the entity regardless of how much else the group holds.
-async function searchListing(playwright: any, cookies: string, cgi: string,
+export async function exactListing(playwright: any, cookies: string, cgi: string,
   gid: string | number, name: string): Promise<string> {
   const { body } = await authGet(playwright,
     `${BASE}/${cgi}?nt_group_id=${gid}&quick_search=1&search_value=${encodeURIComponent(name)}&exact_match=1`,
@@ -204,7 +204,7 @@ async function searchListing(playwright: any, cookies: string, cgi: string,
 export async function findInListing(playwright: any, cookies: string,
   target: { cgi: string; gid: string | number; idParam: string },
   name: string): Promise<string | null> {
-  const body = await searchListing(playwright, cookies, target.cgi, target.gid, name);
+  const body = await exactListing(playwright, cookies, target.cgi, target.gid, name);
   return findIdInBody(body, target.idParam, name);
 }
 
@@ -213,7 +213,7 @@ export async function createGroup(playwright: any, cookies: string, parentGid: s
   await authPost(playwright, `${BASE}/group.cgi`, cookies,
     `nt_group_id=${parentGid}&new=1&Create=Create&name=${groupName}&${GROUP_DEFAULTS}&csrf_token=${extractCsrf(cookies)}`);
 
-  const body = await searchListing(playwright, cookies, 'group.cgi', parentGid, groupName);
+  const body = await exactListing(playwright, cookies, 'group.cgi', parentGid, groupName);
   const gid = findIdInBody(body, 'nt_group_id', groupName);
   if (!gid) throw new Error(`Failed to find created group "${groupName}" in parent ${parentGid}`);
   return gid;
@@ -228,7 +228,7 @@ export async function createZone(playwright: any, cookies: string, gid: string |
   await authPost(playwright, `${BASE}/group_zones.cgi`, cookies,
     `nt_group_id=${gid}&new=1&Create=Create&zone=${zone}&mailaddr=admin.${zone}&description=e2e+test&ttl=3600&refresh=16384&retry=2048&expire=1048576&minimum=2560&csrf_token=${extractCsrf(cookies)}`);
 
-  const body = await searchListing(playwright, cookies, 'group_zones.cgi', gid, zone);
+  const body = await exactListing(playwright, cookies, 'group_zones.cgi', gid, zone);
   const zid = findIdInBody(body, 'nt_zone_id', zone);
   if (!zid) {
     // Fallback: find any zone ID on the search results page
@@ -275,7 +275,7 @@ export async function createUser(playwright: any, cookies: string, gid: string |
   await authPost(playwright, `${BASE}/group_users.cgi`, cookies,
     `nt_group_id=${gid}&new=1&Create=Create&username=${encodeURIComponent(opts.username)}&password=${encodeURIComponent(pw)}&password2=${encodeURIComponent(pw)}&email=${encodeURIComponent(email)}&first_name=${encodeURIComponent(first)}&last_name=${encodeURIComponent(last)}&group_defaults=1&csrf_token=${extractCsrf(cookies)}`);
 
-  const body = await searchListing(playwright, cookies, 'group_users.cgi', gid, opts.username);
+  const body = await exactListing(playwright, cookies, 'group_users.cgi', gid, opts.username);
   const uid = findIdInBody(body, 'nt_user_id', opts.username);
   if (!uid) {
     // Fallback: find any user ID (excluding the nav bar user links)
@@ -301,7 +301,7 @@ export async function createNameserver(playwright: any, cookies: string, gid: st
   await authPost(playwright, `${BASE}/group_nameservers.cgi`, cookies,
     `nt_group_id=${gid}&new=1&Create=Create&name=${encodeURIComponent(opts.name)}&address=${encodeURIComponent(addr)}&description=${encodeURIComponent(desc)}&export_format=${fmt}&export_interval=120&ttl=${ttl}&csrf_token=${extractCsrf(cookies)}`);
 
-  const body = await searchListing(playwright, cookies, 'group_nameservers.cgi', gid, opts.name);
+  const body = await exactListing(playwright, cookies, 'group_nameservers.cgi', gid, opts.name);
   const nsid = findIdInBody(body, 'nt_nameserver_id', opts.name);
   if (!nsid) {
     // Fallback: look for any nameserver ID that isn't one of the default 3

@@ -3,6 +3,7 @@ import {
   apiLogin, cookieString, authGet, authPost,
   createGroup, createZone, createRecord, createUser, createNameserver,
   deleteGroup, deleteZone, deleteRecord, deleteUser, deleteNameserver,
+  exactListing, findInListing,
   uniqueName, uniqueNsName, extractCsrf, BASE,
 } from './helpers';
 
@@ -96,10 +97,9 @@ test.describe('Delete via UI trash icon', () => {
   });
 
   test('delete group via rendered trash icon link', async ({ playwright }) => {
-    const gid = await createGroup(playwright, cookies, 1);
-
-    // Fetch the group listing page as the browser would
-    const { body } = await authGet(playwright, `${BASE}/group.cgi?nt_group_id=1`, cookies);
+    const groupName = uniqueName('deluigrp');
+    const gid = await createGroup(playwright, cookies, 1, groupName);
+    const body = await exactListing(playwright, cookies, 'group.cgi', 1, groupName);
 
     // Extract the actual delete link from the HTML
     const href = extractGroupDeleteHref(body, gid);
@@ -115,8 +115,9 @@ test.describe('Delete via UI trash icon', () => {
     expect(afterBody).not.toContain('CSRF validation failed');
 
     // Group should be gone from listing
-    const { body: listBody } = await authGet(playwright, `${BASE}/group.cgi?nt_group_id=1`, cookies);
-    expect(listBody).not.toContain(`nt_group_id=${gid}"`);
+    expect(await findInListing(playwright, cookies,
+      { cgi: 'group.cgi', gid: 1, idParam: 'nt_group_id' },
+      groupName)).toBeNull();
   });
 
   test('delete user via rendered trash icon link', async ({ playwright }) => {
@@ -149,8 +150,8 @@ test.describe('Delete via UI trash icon', () => {
     const nsName = uniqueNsName('deluins') + '.example.com.';
     const nsid = await createNameserver(playwright, cookies, 1, { name: nsName });
 
-    // Fetch the nameserver listing page
-    const { body } = await authGet(playwright, `${BASE}/group_nameservers.cgi?nt_group_id=1`, cookies);
+    const body = await exactListing(playwright, cookies,
+      'group_nameservers.cgi', 1, nsName);
 
     // Extract the actual delete link
     const href = extractNameserverDeleteHref(body, nsid);
@@ -162,8 +163,9 @@ test.describe('Delete via UI trash icon', () => {
     expect(afterBody).not.toContain('CSRF validation failed');
 
     // Nameserver should be gone
-    const { body: listBody } = await authGet(playwright, `${BASE}/group_nameservers.cgi?nt_group_id=1`, cookies);
-    expect(listBody).not.toContain(nsName);
+    expect(await findInListing(playwright, cookies,
+      { cgi: 'group_nameservers.cgi', gid: 1, idParam: 'nt_nameserver_id' },
+      nsName)).toBeNull();
   });
 
   test('delete zone via rendered trash icon link', async ({ playwright }) => {
