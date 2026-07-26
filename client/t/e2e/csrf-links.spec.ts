@@ -23,7 +23,7 @@ function destructiveHrefs(html: string): string[] {
   let m;
   while ((m = re.exec(html)) !== null) {
     const href = m[1].replace(/&amp;/g, '&');
-    if (/[?&](delete|deletedelegate|delete_record)=/.test(href)) out.push(href);
+    if (/[?&](delete|deletedelegate|delete_record|logout)=/.test(href)) out.push(href);
   }
   return out;
 }
