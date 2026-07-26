@@ -68,6 +68,8 @@ foreach my $version (@versions) {
     print "\n";
 }
 
+heal();
+
 sub _fks_2_41 {
     return (
         # [ table, constraint_name, column, ref_table, ref_column ]
@@ -86,6 +88,181 @@ sub _fks_2_41 {
         [ 'nt_group_log',        'nt_group_log_ibfk_1',        'nt_group_id',       'nt_group',       'nt_group_id' ],
         [ 'nt_delegate',         'nt_delegate_ibfk_1',         'nt_group_id',       'nt_group',       'nt_group_id' ],
     );
+}
+
+sub _try_list {
+    my ($sql) = @_;
+    my @r;
+    # flat, not list: list returns only the first row
+    eval { @r = $dbh->query($sql)->flat; };
+    return @r;
+}
+
+# Version-independent repairs for drift left behind by historical versions of
+# this script (see the git log of sql/upgrade.pl). Detection is read-only;
+# every fix is idempotent and preserves data.
+sub heal {
+
+    my @heals;
+
+    # pre-2026 _sql_test_2_08 left a probe row in nt_user on every single run.
+    # Only rows matching the probe's complete fingerprint AND referenced by
+    # nothing are removed; a legitimate deleted account keeps its audit trail.
+    my $probe_where =
+        "nt_group_id=1 AND first_name='first' AND last_name='last'
+            AND username='test' AND password='123456789012345678'
+            AND email='deleteme\@test.com' AND deleted=1";
+    my @probe_ids = _try_list("SELECT nt_user_id FROM nt_user WHERE $probe_where");
+    my @unreferenced = grep { !_user_is_referenced($_) } @probe_ids;
+    push @heals,
+        [ "remove nt_user probe row(s) left by old _sql_test_2_08",
+          "DELETE FROM nt_user WHERE nt_user_id IN (" . join( ',', @unreferenced ) . ")
+            AND $probe_where" ]
+        if @unreferenced;
+
+    # 2014-2020 releases of the v2.28 block created last_publish as
+    # TIMESTAMP NOT NULL DEFAULT 0 (changed to DATETIME NULL in #249)
+    my ($lp_type) = _try_list(
+        "SELECT DATA_TYPE FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'nt_zone' AND COLUMN_NAME = 'last_publish'");
+    push @heals,
+        [ "nt_zone.last_publish is TIMESTAMP (pre-#249 v2.28 block); convert to DATETIME",
+          "ALTER TABLE nt_zone MODIFY last_publish DATETIME DEFAULT NULL" ]
+        if $lp_type && lc($lp_type) eq 'timestamp';
+
+    # releases 2.31-2.33 shipped the v2.32 block but never wired 2.32 into the version list
+    for my $table (qw/ nt_nameserver_qlog nt_nameserver_qlogfile /) {
+        my ($present) = _try_list(
+            "SELECT COUNT(*) FROM information_schema.TABLES
+                WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '$table'");
+        push @heals,
+            [ "drop $table (v2.32 block was skipped by releases 2.31-2.33)",
+              "DROP TABLE IF EXISTS $table" ]
+            if $present;
+    }
+
+    # the v2.10 block as released in 2011 created nt_zone_nameserver.nt_zone_id
+    # as smallint; fixed a week later (863a05e), healed for upgraders in v2.11
+    my ($zn_type) = _try_list(
+        "SELECT COLUMN_TYPE FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'nt_zone_nameserver' AND COLUMN_NAME = 'nt_zone_id'");
+    push @heals,
+        [ "nt_zone_nameserver.nt_zone_id is smallint (2011 v2.10 block); widen to int",
+          "ALTER TABLE nt_zone_nameserver MODIFY nt_zone_id int(10) unsigned NOT NULL" ]
+        if $zn_type && $zn_type =~ /smallint/i;
+
+    # DBs upgraded through both the 2011 v2.10 and v2.11 blocks carry duplicate
+    # unique indexes: zone_ns_id (2.10, canonical) and zone_ns (2.11 heal)
+    my %zn_idx = map { $_ => 1 } _try_list(
+        "SELECT DISTINCT INDEX_NAME FROM information_schema.STATISTICS
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'nt_zone_nameserver'");
+    push @heals,
+        [ "drop duplicate nt_zone_nameserver index zone_ns (zone_ns_id is canonical)",
+          "ALTER TABLE nt_zone_nameserver DROP INDEX zone_ns" ]
+        if $zn_idx{zone_ns} && $zn_idx{zone_ns_id};
+
+    # a 2014 release window applied v2.27 without adding the pass_salt columns
+    for my $table (qw/ nt_user nt_user_log /) {
+        push @heals,
+            [ "$table.pass_salt missing (2014 v2.27 probe bug); add it",
+              "ALTER TABLE $table ADD COLUMN pass_salt VARCHAR(16) AFTER password" ]
+            if !_column_exists( $table, 'pass_salt' );
+    }
+
+    # the v2.18 block shipped on CPAN in 2013 lacked several RR types; restore
+    # any missing rows (without touching flags on rows the operator may have edited)
+    my ($rrt_count) = _try_list(
+        "SELECT COUNT(*) FROM resource_record_type WHERE id IN
+            (1,2,5,6,12,13,15,16,24,25,28,29,30,33,35,39,43,44,46,47,48,50,51,99,250,252,256,257)");
+    push @heals,
+        [ "restore missing resource_record_type rows (2013 v2.18 block shipped fewer)",
+          "INSERT IGNORE INTO resource_record_type (id, name, description, reverse, forward, obsolete)
+            VALUES
+            (1,'A','Address',1,1,0), (2,'NS','Name Server',1,1,0),
+            (5,'CNAME','Canonical Name',1,1,0), (6,'SOA','Start Of Authority',0,0,0),
+            (12,'PTR','Pointer',1,1,0), (13,'HINFO','Host Info',0,0,1),
+            (15,'MX','Mail Exchanger',0,1,0), (16,'TXT','Text',1,1,0),
+            (24,'SIG','Signature',0,0,0), (25,'KEY','Key',0,0,0),
+            (28,'AAAA','Address IPv6',0,1,0), (29,'LOC','Location',0,1,0),
+            (30,'NXT','Next',0,0,1), (33,'SRV','Service',0,1,0),
+            (35,'NAPTR','Naming Authority Pointer',1,1,0), (39,'DNAME','Delegation Name',0,0,0),
+            (43,'DS','Delegation Signer',1,1,0), (44,'SSHFP','Secure Shell Key Fingerprints',0,1,0),
+            (46,'RRSIG','Resource Record Signature',0,1,0), (47,'NSEC','Next Secure',0,1,0),
+            (48,'DNSKEY','DNS Public Key',0,1,0), (50,'NSEC3','Next Secure v3',0,0,0),
+            (51,'NSEC3PARAM','NSEC3 Parameters',0,0,0), (99,'SPF','Sender Policy Framework',0,0,1),
+            (250,'TSIG','Transaction Signature',0,0,0), (252,'AXFR',NULL,0,0,0),
+            (256,'URI','URI',0,1,0), (257,'CAA','Certification Authority Authorization',0,1,0)" ]
+        if defined $rrt_count && $rrt_count < 28;
+
+    # 2014 pre-release versions of the v2.24 block lacked the knot export type
+    my ($knot) = _try_list("SELECT COUNT(*) FROM nt_nameserver_export_type WHERE id=8");
+    push @heals,
+        [ "restore nt_nameserver_export_type row 8 (knot)",
+          "INSERT IGNORE INTO nt_nameserver_export_type (id, name, descr, url)
+            VALUES (8,'knot','Knot DNS','www.knot-dns.cz')" ]
+        if defined $knot && !$knot;
+
+    return if !@heals;
+
+    print "applying schema repairs\n";
+    for my $heal (@heals) {
+        my ( $why, $sql ) = @$heal;
+        $sql =~ s/[\s]{2,}/ /g;
+        print "  # $why\n  $sql;\n";
+        $dbh->query($sql) or die DBIx::Simple->error;
+    }
+    print "\n";
+}
+
+# true if any row anywhere refers to this user id. An unreadable table counts
+# as a reference: deletion must be provably safe, so probe rows are kept when
+# in doubt (they are harmless; the old script tolerated them for a decade).
+sub _user_is_referenced {
+    my ($id) = @_;
+    $id =~ /\A[0-9]+\z/ or return 1;
+    for my $ref (
+        [ 'nt_group_log',        'nt_user_id' ],
+        [ 'nt_user_log',         'nt_user_id' ],
+        [ 'nt_user_log',         'modified_user_id' ],
+        [ 'nt_user_session',     'nt_user_id' ],
+        [ 'nt_user_session_log', 'nt_user_id' ],
+        [ 'nt_user_global_log',  'nt_user_id' ],
+        [ 'nt_nameserver_log',   'nt_user_id' ],
+        [ 'nt_zone_log',         'nt_user_id' ],
+        [ 'nt_zone_record_log',  'nt_user_id' ],
+        [ 'nt_perm',             'nt_user_id' ],
+        [ 'nt_delegate',         'delegated_by_id' ],
+        [ 'nt_delegate_log',     'nt_user_id' ],
+        # polymorphic references: the id column points at a user only when
+        # the accompanying type column says so
+        [ 'nt_delegate',        'nt_object_id', "nt_object_type = 'USER'" ],
+        [ 'nt_delegate_log',    'nt_object_id', "nt_object_type = 'USER'" ],
+        [ 'nt_user_global_log', 'object_id',    "object = 'user'" ],
+        [ 'nt_user_global_log', 'target_id',    "target = 'user'" ],
+    ) {
+        my ( $table, $column, $cond ) = @$ref;
+        my ($tables) = _try_list(
+            "SELECT COUNT(*) FROM information_schema.TABLES
+                WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '$table'");
+        next if defined $tables && !$tables;    # table absent: nothing to reference
+        my $where = "$column = $id" . ( $cond ? " AND $cond" : '' );
+        my ($n) = _try_list("SELECT COUNT(*) FROM $table WHERE $where");
+        if ( !defined $n || $n ) {
+            print "  leaving nt_user row $id: matches the old _sql_test_2_08 probe "
+                . "fingerprint but is referenced by $table.$column\n";
+            return 1;
+        }
+    }
+    return 0;
+}
+
+sub _column_exists {
+    my ( $table, $column ) = @_;
+    my $r;
+    eval { $r = $dbh->query("SHOW COLUMNS FROM `$table` LIKE '$column'")->hashes; };
+    return ( $r && $r->[0] && $r->[0]{field} ) ? 1 : 0;
 }
 
 sub _existing_fks {
@@ -114,7 +291,7 @@ sub _sql_test_2_41 {
         return 0 if !$existing->{$table}{$name};    # any expected FK missing -> apply
     }
 
-    return 0 if $r eq '2.40';                       # FKs present but db_version still 2.40
+    return 0 if $r < 2.41;                          # FKs present but db_version behind
     return 1;
 }
 
@@ -190,7 +367,7 @@ sub _sql_test_2_40 {
         $dbh->query("SELECT id FROM nt_nameserver_export_type WHERE id=6 AND name='nsd'")->hashes;
     return 0 unless scalar $normalized && $normalized->[0];
 
-    return 0 if $r eq '2.35';                    # do it! bump db_version
+    return 0 if $r < 2.40;                       # do it! bump db_version
     return 1;                                    # don't update
 }
 
@@ -199,6 +376,19 @@ sub _sql_2_40 {
 UPDATE nt_nameserver_export_type SET name='nsd' WHERE id=6 AND LOWER(name)='nsd';
 UPDATE nt_options SET option_value='2.40' WHERE option_name='db_version';
 EO_SQL_2_40
+}
+
+sub _tables_2_35 {
+    return qw/
+        nt_group            nt_group_log             nt_group_subgroups
+        nt_user             nt_user_global_log       nt_user_log
+        nt_user_session     nt_user_session_log
+        nt_nameserver       nt_nameserver_log        nt_nameserver_export_log
+        nt_zone             nt_zone_log              nt_zone_nameserver
+        nt_zone_record      nt_zone_record_log
+        nt_perm             nt_options
+        resource_record_type
+        /;
 }
 
 sub _sql_test_2_35 {
@@ -210,28 +400,179 @@ sub _sql_test_2_35 {
         unless scalar $exists
         && $exists->[0]
         && $exists->[0]{field};                  # column missing
-    return 0 if $r eq '2.34';                    # update!
+
+    # a partial 2.35 run (e.g. killed by the MyISAM key-length limit) leaves
+    # some tables unconverted; the block is idempotent, so re-apply
+    my $tables = join ',', map {"'$_'"} _tables_2_35();
+    my ($unconverted) = _try_list(
+        "SELECT COUNT(*) FROM information_schema.TABLES
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME IN ($tables)
+              AND TABLE_COLLATION NOT LIKE 'utf8mb4%'");
+    return 0 if $unconverted;
+
+    my ($addr_len) = _try_list(
+        "SELECT CHARACTER_MAXIMUM_LENGTH FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'nt_zone_record' AND COLUMN_NAME = 'address'");
+    return 0 if $addr_len && $addr_len < 5120;   # column not yet widened
+
+    return 0 if $r < 2.35;                       # update!
     return 1;                                    # don't update
+}
+
+# columns widened to utf8mb4 by the v2.35 ALTERs below: table => { column => chars }
+sub _new_widths_2_35 {
+    return (
+        nt_nameserver      => { name => 127, description => 255, address => 127, address6 => 127, remote_login => 127 },
+        nt_zone            => { zone => 255, mailaddr => 127, description => 255, location => 8 },
+        nt_zone_log        => { zone => 255, mailaddr => 127, description => 255, location => 8 },
+        nt_zone_record     => { name => 255, description => 255, address => 5120, other => 512, location => 2 },
+        nt_zone_record_log => { name => 255, description => 255, address => 5120, other => 512, location => 2 },
+        nt_user            => { first_name => 120, last_name => 160, username => 200, password => 1020, email => 400 },
+        nt_user_log        => { first_name => 120, last_name => 160, username => 200, password => 1020, email => 400 },
+        nt_group           => { name => 255 },
+    );
+}
+
+# Indexes created by older releases span whole columns: 2.34's own 02_nt_user.sql
+# shipped KEY nt_user_idx1 (username,password). Once v2.35 widens those columns to
+# utf8mb4, such an index exceeds InnoDB's 3072-byte key limit and the ALTER dies.
+# Detect any index that would exceed the limit and rebuild it with the 191-char
+# prefixes the current create scripts use.
+sub _index_heal_2_35 {
+    my %widths = _new_widths_2_35();
+    my $limit  = 3072;    # InnoDB max key bytes; utf8mb4 is 4 bytes/char
+    my $prefix = 191;     # canonical prefix length, matches sql/*.sql
+
+    my ( $drop, $add ) = ( '', '' );
+    my $has_user_idx1 = 0;
+
+    for my $table ( sort keys %widths ) {
+        my $rows;
+        eval {
+            $rows = $dbh->query(
+                "SELECT INDEX_NAME AS i, SEQ_IN_INDEX AS s, COLUMN_NAME AS c,
+                        SUB_PART AS p, NON_UNIQUE AS n
+                    FROM information_schema.STATISTICS
+                    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '$table'
+                    ORDER BY INDEX_NAME, SEQ_IN_INDEX"
+            )->hashes;
+        };
+        next if !$rows;
+
+        my %idx;
+        for my $row (@$rows) {
+            next if $row->{i} eq 'PRIMARY';
+            push @{ $idx{ $row->{i} } }, $row;
+        }
+        $has_user_idx1 = 1 if $table eq 'nt_user' && $idx{nt_user_idx1};
+
+        for my $name ( sort keys %idx ) {
+            my $projected = 0;
+            for my $part ( @{ $idx{$name} } ) {
+                my $chars = $widths{$table}{ $part->{c} };
+                $chars = $part->{p} if defined $part->{p} && ( !defined $chars || $part->{p} < $chars );
+                $chars = 32 if !defined $chars;    # column not widened here (int, enum, ...)
+                $projected += $chars * 4;
+            }
+            next if $projected <= $limit;
+
+            if ( !$idx{$name}[0]{n} ) {            # NON_UNIQUE=0
+                die "Index $table.$name would exceed InnoDB's $limit-byte limit after the\n"
+                    . "utf8mb4 conversion, and it is UNIQUE, so it cannot be safely rebuilt\n"
+                    . "with column prefixes. Please resolve it manually, then re-run.\n";
+            }
+
+            my @parts;
+            for my $part ( @{ $idx{$name} } ) {
+                my $chars = $widths{$table}{ $part->{c} };
+                $chars = $part->{p} if defined $part->{p} && ( !defined $chars || $part->{p} < $chars );
+                if ( defined $chars && $chars > $prefix ) {
+                    push @parts, "`$part->{c}`($prefix)";
+                }
+                else {
+                    push @parts, defined $part->{p} ? "`$part->{c}`($part->{p})" : "`$part->{c}`";
+                }
+            }
+            $drop .= "ALTER TABLE `$table` DROP INDEX `$name`;\n";
+            $add  .= "ALTER TABLE `$table` ADD KEY `$name` (" . join( ',', @parts ) . ");\n";
+        }
+    }
+
+    # a prior partial run (or manual remediation) may have dropped nt_user_idx1
+    # without re-creating it; restore the canonical form from 02_nt_user.sql
+    if ( !$has_user_idx1 ) {
+        $add .= "ALTER TABLE `nt_user` ADD KEY `nt_user_idx1` (`username`($prefix),`password`($prefix));\n";
+    }
+
+    return ( $drop, $add );
+}
+
+# The utf8mb4 conversion re-encodes column contents based on their declared
+# charset. If a latin1/utf8 database holds bytes that don't match its declared
+# charset (classic mojibake), conversion can corrupt them. Warn the operator.
+sub _utf8_preflight_2_35 {
+    my %widths = _new_widths_2_35();
+
+    my @nonascii;
+    for my $table ( sort keys %widths ) {
+        for my $col ( sort keys %{ $widths{$table} } ) {
+            my $count;
+            eval {
+                ($count) = $dbh->query(
+                    "SELECT COUNT(*) FROM `$table` WHERE `$col` <> CONVERT(`$col` USING ASCII)"
+                )->list;
+            };
+            push @nonascii, "  $table.$col: $count row(s)" if $count;
+        }
+    }
+    return if !@nonascii;
+
+    my $report = join "\n", @nonascii;
+    print STDERR <<EO_UTF8_WARN;
+
+WARNING: non-ASCII data detected in text columns:
+
+$report
+
+The v2.35 update converts these columns to utf8mb4. If this database has ever
+stored misencoded bytes (e.g. UTF-8 written through a latin1 connection), the
+conversion can garble them. If unsure, verify those rows on a copy of the
+database first. You have a backup, right?
+
+Continuing in 10 seconds (Ctrl-C to abort)...
+EO_UTF8_WARN
+    sleep 10;
 }
 
 sub _sql_2_35 {
 
-    my @tables = qw/
-        nt_group            nt_group_log             nt_group_subgroups
-        nt_user             nt_user_global_log       nt_user_log
-        nt_user_session     nt_user_session_log
-        nt_nameserver       nt_nameserver_log        nt_nameserver_export_log
-        nt_zone             nt_zone_log              nt_zone_nameserver
-        nt_zone_record      nt_zone_record_log
-        nt_perm             nt_options
-        resource_record_type
-        /;
+    my @tables = _tables_2_35();
+
+    # Convert to InnoDB BEFORE widening columns to utf8mb4: MyISAM (the historical
+    # default engine) limits index keys to 1000 bytes, InnoDB allows 3072. On a
+    # MyISAM table the ALTERs below die with "Specified key was too long".
+    my $convert_to_innodb = engine_innodb(@tables);
+
+    my ( $drop_oversized, $add_prefixed ) = _index_heal_2_35();
+
+    _utf8_preflight_2_35();
 
     my $encode_utf8mb4 = encode_utf8mb4(@tables);
+
+    # a previous partial run may have already added nt_zone_log.location
+    my $zone_log_location = _column_exists( 'nt_zone_log', 'location' ) ? 'MODIFY' : 'ADD';
 
     <<EO_SQL_2_35
 /* Mark SPF as obsolete and disable */
 UPDATE resource_record_type SET forward=0, obsolete=1 WHERE id=99;
+
+/* InnoDB before utf8mb4: MyISAM's 1000-byte index key limit cannot hold the new schema */
+$convert_to_innodb
+
+/* Indexes that would exceed the key-length limit post-conversion (re-created below, prefixed) */
+$drop_oversized
 
 /*  Update CHARACTER & COLLATION for VARCHAR columns */
 
@@ -253,7 +594,7 @@ ALTER TABLE nt_zone_log DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin,
     MODIFY zone        varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '',
     MODIFY mailaddr    varchar(127) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
     MODIFY description varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-    ADD location       varchar(8)   CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL;
+    $zone_log_location location    varchar(8)   CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL;
 
 ALTER TABLE nt_zone_record DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin,
   MODIFY name        varchar(255)  CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '',
@@ -286,6 +627,9 @@ ALTER TABLE nt_user_log DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin,
 ALTER TABLE nt_group DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin,
     MODIFY name varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '';
 
+/* re-create the oversized indexes, now with 191-char prefixes (as in sql/*.sql) */
+$add_prefixed
+
 $encode_utf8mb4
 
 
@@ -297,13 +641,13 @@ EO_SQL_2_35
 sub _sql_test_2_34 {
     my $r = _get_db_version();
     return 1 if !defined $r;     # query failed
-    return 0 if $r eq '2.32';    # update!
+    return 0 if $r < 2.34;       # update!
     return 1;                    # don't update
 }
 
 sub _sql_2_34 {
     <<EO_SQL_2_34
-INSERT INTO `resource_record_type` (`id`, `name`, `description`, `reverse`, `forward`, `obsolete`)
+INSERT IGNORE INTO `resource_record_type` (`id`, `name`, `description`, `reverse`, `forward`, `obsolete`)
 VALUES
     (13,'HINFO','Host Info',0,0,1),
     (256,'URI','URI',0,1,0),
@@ -317,7 +661,7 @@ EO_SQL_2_34
 sub _sql_test_2_32 {
     my $r = _get_db_version();
     return 1 if !defined $r;     # query failed
-    return 0 if $r eq '2.30';    # update!
+    return 0 if $r < 2.32;       # update!
     return 1;                    # don't update
 }
 
@@ -334,7 +678,7 @@ EO_SQL_2_32
 sub _sql_test_2_30 {
     my $r = _get_db_version();
     return 1 if !defined $r;     # query failed
-    return 0 if $r eq '2.29';    # update!
+    return 0 if $r < 2.30;       # update!
     return 1;                    # don't update
 }
 
@@ -356,14 +700,16 @@ sub _sql_test_2_29 {
         unless scalar $exists
         && $exists->[0]
         && $exists->[0]{field};    # column missing
-    return 0 if $r eq '2.28';      # do it!
+    return 0 if $r < 2.29;         # do it!
     return 1;                      # don't update
 }
 
 sub _sql_2_29 {
-    <<EO_SQL_2_29;
-ALTER TABLE nt_zone_record_log ADD COLUMN location VARCHAR(2) DEFAULT NULL AFTER other;
+    my $sql = '';
+    $sql .= "ALTER TABLE nt_zone_record_log ADD COLUMN location VARCHAR(2) DEFAULT NULL AFTER other;\n"
+        if !_column_exists( 'nt_zone_record_log', 'location' );
 
+    return $sql . <<EO_SQL_2_29;
 UPDATE nt_options SET option_value='2.29' WHERE option_name='db_version';
 EO_SQL_2_29
 }
@@ -377,14 +723,16 @@ sub _sql_test_2_28 {
         unless scalar $exists
         && $exists->[0]
         && $exists->[0]{field};    # column missing
-    return 0 if $r eq '2.27';      # do it!
+    return 0 if $r < 2.28;         # do it!
     return 1;                      # don't update
 }
 
 sub _sql_2_28 {
-    <<EO_SQL_2_28;
-ALTER TABLE nt_zone ADD COLUMN last_publish DATETIME DEFAULT NULL AFTER last_modified;
+    my $sql = '';
+    $sql .= "ALTER TABLE nt_zone ADD COLUMN last_publish DATETIME DEFAULT NULL AFTER last_modified;\n"
+        if !_column_exists( 'nt_zone', 'last_publish' );
 
+    return $sql . <<EO_SQL_2_28;
 UPDATE nt_options SET option_value='2.28' WHERE option_name='db_version';
 EO_SQL_2_28
 }
@@ -400,16 +748,19 @@ sub _sql_test_2_27 {
         unless scalar $exists
         && $exists->[0]
         && $exists->[0]{option_value};    # option missing
-    return 0 if $r eq '2.24';             # do it!
+    return 0 if $r < 2.27;                # do it!
     return 1;                             # don't update
 }
 
 sub _sql_2_27 {
-    <<EO_SQL_2_27;
-ALTER TABLE nt_user ADD COLUMN pass_salt VARCHAR(16) AFTER password;
-ALTER TABLE nt_user_log ADD COLUMN pass_salt VARCHAR(16) AFTER password;
+    my $sql = '';
+    $sql .= "ALTER TABLE nt_user ADD COLUMN pass_salt VARCHAR(16) AFTER password;\n"
+        if !_column_exists( 'nt_user', 'pass_salt' );
+    $sql .= "ALTER TABLE nt_user_log ADD COLUMN pass_salt VARCHAR(16) AFTER password;\n"
+        if !_column_exists( 'nt_user_log', 'pass_salt' );
 
-INSERT INTO nt_options
+    return $sql . <<EO_SQL_2_27;
+INSERT IGNORE INTO nt_options
 VALUES (2,'session_timeout','45'),
        (3,'default_group','NicTool');
 
@@ -429,18 +780,36 @@ sub _sql_test_2_24 {
     my $tbl = $dbh->query("SHOW TABLES LIKE 'nt_nameserver_export_type'")->hashes;
     return 0 unless scalar $tbl && $tbl->[0];                   # table missing
 
-    return 0 if $r eq '2.18';                                   # do it!
+    return 0 if $r < 2.24;                                      # do it!
     return 1;                                                   # don't update
 }
 
 sub _sql_2_24 {
-    <<EO_SQL_2_24;
-ALTER TABLE `nt_nameserver` ADD column address6 VARCHAR(127)  NULL DEFAULT NULL AFTER address;
-ALTER TABLE `nt_nameserver` ADD column remote_login VARCHAR(127) DEFAULT NULL AFTER address6;
-ALTER TABLE `nt_nameserver` ADD column export_type_id INT UNSIGNED DEFAULT '1' AFTER remote_login;
-ALTER TABLE `nt_nameserver_log` ADD column `address6` VARCHAR(127) NULL DEFAULT NULL AFTER address;
-ALTER TABLE `nt_nameserver_log` ADD column export_type_id INT UNSIGNED NULL AFTER address6;
+    my $sql = '';
+    $sql .= "ALTER TABLE `nt_nameserver` ADD column address6 VARCHAR(127)  NULL DEFAULT NULL AFTER address;\n"
+        if !_column_exists( 'nt_nameserver', 'address6' );
+    $sql .= "ALTER TABLE `nt_nameserver` ADD column remote_login VARCHAR(127) DEFAULT NULL AFTER address6;\n"
+        if !_column_exists( 'nt_nameserver', 'remote_login' );
+    $sql .= "ALTER TABLE `nt_nameserver` ADD column export_type_id INT UNSIGNED DEFAULT '1' AFTER remote_login;\n"
+        if !_column_exists( 'nt_nameserver', 'export_type_id' );
+    $sql .= "ALTER TABLE `nt_nameserver_log` ADD column `address6` VARCHAR(127) NULL DEFAULT NULL AFTER address;\n"
+        if !_column_exists( 'nt_nameserver_log', 'address6' );
+    $sql .= "ALTER TABLE `nt_nameserver_log` ADD column export_type_id INT UNSIGNED NULL AFTER address6;\n"
+        if !_column_exists( 'nt_nameserver_log', 'export_type_id' );
 
+    # migrate & drop export_format, unless a previous run already did
+    my $export_format_sql = '';
+    if ( _column_exists( 'nt_nameserver', 'export_format' ) ) {
+        $export_format_sql = <<EO_EXPORT_FORMAT;
+UPDATE nt_nameserver SET export_type_id=1 WHERE export_format IN ('tinydns','djb','djbdns');
+UPDATE nt_nameserver SET export_type_id=2 WHERE export_format='bind';
+UPDATE nt_nameserver SET export_type_id=3 WHERE export_format='maradns';
+UPDATE nt_nameserver SET export_type_id=4 WHERE export_format='powerdns';
+ALTER TABLE nt_nameserver DROP column export_format;
+EO_EXPORT_FORMAT
+    }
+
+    return $sql . <<EO_SQL_2_24;
 DROP TABLE IF EXISTS nt_nameserver_export_types;
 DROP TABLE IF EXISTS nt_nameserver_export_type;
 CREATE TABLE `nt_nameserver_export_type` (
@@ -461,12 +830,7 @@ VALUES (1,'djbdns',    'djbdns (tinydns & axfrdns)',  'cr.yp.to/djbdns.html'),
        (7,'dynect',    'DynECT Standard DNS','dyn.com/managed-dns/'),
        (8,'knot',      'Knot DNS',           'www.knot-dns.cz');
 
-UPDATE nt_nameserver SET export_type_id=1 WHERE export_format IN ('tinydns','djb','djbdns');
-UPDATE nt_nameserver SET export_type_id=2 WHERE export_format='bind';
-UPDATE nt_nameserver SET export_type_id=3 WHERE export_format='maradns';
-UPDATE nt_nameserver SET export_type_id=4 WHERE export_format='powerdns';
-ALTER TABLE nt_nameserver DROP column export_format;
-
+$export_format_sql
 UPDATE nt_options SET option_value='2.24' WHERE option_name='db_version';
 EO_SQL_2_24
 }
@@ -481,13 +845,16 @@ sub _sql_test_2_18 {
         && $exists->[0]
         && $exists->[0]{field};    # column missing
 
-    return 0 if $r eq '2.17';      # do it!
+    return 0 if $r < 2.18;         # do it!
     return 1;                      # don't update
 }
 
 sub _sql_2_18 {
-    <<EO_SQL_2_18;
-ALTER TABLE resource_record_type ADD column obsolete TINYINT(1) NOT NULL DEFAULT '0' AFTER forward;
+    my $sql = '';
+    $sql .= "ALTER TABLE resource_record_type ADD column obsolete TINYINT(1) NOT NULL DEFAULT '0' AFTER forward;\n"
+        if !_column_exists( 'resource_record_type', 'obsolete' );
+
+    return $sql . <<EO_SQL_2_18;
 REPLACE INTO `resource_record_type`
  (`id`, `name`, `description`, `reverse`, `forward`, `obsolete`)
 VALUES
@@ -503,7 +870,7 @@ VALUES
 
 UPDATE nt_zone SET mailaddr=CONCAT('hostmaster.',zone,'.') WHERE mailaddr IS NULL;
 UPDATE nt_zone SET mailaddr=CONCAT('hostmaster.',zone,'.') WHERE mailaddr LIKE 'hostmaster.ZONE.TLD%';
-UPDATE nt_zone SET mailaddr=slice(mailaddr, 1, LENGTH(mailaddr)-1) WHERE mailaddr LIKE '%.';
+UPDATE nt_zone SET mailaddr=SUBSTRING(mailaddr, 1, LENGTH(mailaddr)-1) WHERE mailaddr LIKE '%.';
 UPDATE nt_options SET option_value='2.18' WHERE option_name='db_version';
 EO_SQL_2_18
 }
@@ -517,15 +884,15 @@ sub _sql_test_2_17 {
         unless scalar $exists
         && $exists->[0]
         && $exists->[0]{field};    # column missing
-    return 0 if $r eq '2.16';      # do it!
+    return 0 if $r < 2.17;         # do it!
     return 1;                      # don't update
 }
 
 sub _sql_2_17 {
-
-    return <<EO_SQL_2_17;
-ALTER TABLE nt_user ADD COLUMN is_admin TINYINT(1) UNSIGNED default '0' AFTER email;
-EO_SQL_2_17
+    my $sql = '';
+    $sql .= "ALTER TABLE nt_user ADD COLUMN is_admin TINYINT(1) UNSIGNED default '0' AFTER email;\n"
+        if !_column_exists( 'nt_user', 'is_admin' );
+    return $sql;
 }
 
 sub _sql_test_2_16 {
@@ -542,19 +909,19 @@ sub _sql_test_2_16 {
 }
 
 sub _sql_2_16 {
-    return <<EO_SQL_2_16;
-ALTER TABLE nt_perm ADD column usable_ns VARCHAR(50) AFTER self_write;
-UPDATE nt_perm SET usable_ns=(CONCAT_WS(',', usable_ns0,usable_ns1,usable_ns2,usable_ns3,usable_ns4,usable_ns5,usable_ns6,usable_ns7,usable_ns8,usable_ns9));
-ALTER TABLE nt_perm DROP column usable_ns0;
-ALTER TABLE nt_perm DROP column usable_ns1;
-ALTER TABLE nt_perm DROP column usable_ns2;
-ALTER TABLE nt_perm DROP column usable_ns3;
-ALTER TABLE nt_perm DROP column usable_ns4;
-ALTER TABLE nt_perm DROP column usable_ns5;
-ALTER TABLE nt_perm DROP column usable_ns6;
-ALTER TABLE nt_perm DROP column usable_ns7;
-ALTER TABLE nt_perm DROP column usable_ns8;
-ALTER TABLE nt_perm DROP column usable_ns9;
+    my $sql = '';
+    $sql .= "ALTER TABLE nt_perm ADD column usable_ns VARCHAR(50) AFTER self_write;\n"
+        if !_column_exists( 'nt_perm', 'usable_ns' );
+
+    if ( _column_exists( 'nt_perm', 'usable_ns0' ) ) {
+        $sql .= "UPDATE nt_perm SET usable_ns=(CONCAT_WS(',', usable_ns0,usable_ns1,usable_ns2,usable_ns3,usable_ns4,usable_ns5,usable_ns6,usable_ns7,usable_ns8,usable_ns9));\n";
+    }
+    for my $n ( 0 .. 9 ) {
+        $sql .= "ALTER TABLE nt_perm DROP column usable_ns$n;\n"
+            if _column_exists( 'nt_perm', "usable_ns$n" );
+    }
+
+    return $sql . <<EO_SQL_2_16;
 ALTER TABLE nt_zone_record MODIFY address VARCHAR(512) NOT NULL;
 ALTER TABLE nt_zone_record_log MODIFY address VARCHAR(512) NOT NULL;
 UPDATE nt_options SET option_value='2.16' WHERE option_name='db_version';
@@ -564,7 +931,7 @@ EO_SQL_2_16
 sub _sql_test_2_15 {
     my $r = _get_db_version();
     return 1 if !defined $r;     # query failed
-    return 0 if $r eq '2.14';    # do it!
+    return 0 if $r < 2.15;       # do it!
     return 1;                    # don't update
 }
 
@@ -580,7 +947,7 @@ EO_SQL_2_15
 sub _sql_test_2_14 {
     my $r = _get_db_version();
     return 1 if !defined $r;     # query failed
-    return 0 if $r eq '2.11';    # do it! (no DB changes since v2.11)
+    return 0 if $r < 2.14;       # do it! (no DB changes since v2.11)
     return 1;                    # don't update
 }
 
@@ -611,7 +978,7 @@ EO_SQL_2_14
 sub _sql_test_2_11 {
     my $r = _get_db_version();
     return 1 if !defined $r;     # query failed
-    return 0 if $r eq '2.10';    # do it!
+    return 0 if $r < 2.11;       # do it!
     return 1;                    # don't update
 }
 
@@ -683,11 +1050,9 @@ EO_211
 }
 
 sub _sql_test_2_10 {
-    my $r;
-    my $sql = 'SELECT option_value FROM nt_options WHERE option_value="2.09"';
-    eval { $r = $dbh->query($sql)->list; };
+    my $r = _get_db_version();
     return 1 if !defined $r;     # query failed, 2.09 not applied yet
-    return 0 if $r eq '2.09';    # set is_applied=0
+    return 0 if $r < 2.10;       # do it!
     return 1;                    # DB version is probably > 2.09 already
 }
 
@@ -821,11 +1186,8 @@ EO_SQL_2_10
 
 sub _sql_test_2_09 {
 
-    # the nt_options table was added in 2.09.
-    my $r;
-    eval { $r = $dbh->query('SELECT option_id FROM nt_options LIMIT 1'); };
-    return 0 if !defined $r;    # query failed, set is_applied=0
-    return $r;                  # result will be a positive int
+    # the nt_options table (with the db_version row) was added in 2.09
+    return defined _get_db_version() ? 1 : 0;
 }
 
 sub _sql_2_09 {
@@ -872,21 +1234,17 @@ EO_SQL_2_09
 
 sub _sql_test_2_08 {
 
-    # was varchar 15. These queries will succeed after the initial failure
-    $dbh->query("SET sql_mode='STRICT_ALL_TABLES'");
-    my $r = $dbh->query(
-        "REPLACE INTO nt_user SET
-            nt_group_id=1, email='deleteme\@test.com',
-            first_name = 'first', last_name = 'last',
-            username   = 'test',  password  = '123456789012345678',
-            deleted='1'"
-    );
-    my $id = $dbh->last_insert_id( undef, undef, 'nt_user', undef );
-    $dbh->query("SET sql_mode=''");
-
-    # ID will be undefined if the query fails.
-    # Otherwise, it'll return some positive integer, meaning 'patch applied'
-    return $id;
+    # v2.08 widened nt_user.password from varchar(15) to varchar(128)
+    my $len;
+    eval {
+        ($len) = $dbh->query(
+            "SELECT CHARACTER_MAXIMUM_LENGTH FROM information_schema.COLUMNS
+                WHERE TABLE_SCHEMA = DATABASE()
+                  AND TABLE_NAME   = 'nt_user'
+                  AND COLUMN_NAME  = 'password'"
+        )->list;
+    };
+    return ( $len && $len >= 128 ) ? 1 : 0;
 }
 
 sub _sql_2_08 {
@@ -898,10 +1256,9 @@ EO_SQL_2_08
 }
 
 sub _sql_test_2_05 {
-    my $r;
-    eval { $r = $dbh->query('SELECT priority FROM nt_zone_record LIMIT 1')->list; };
-    return 1 if $dbh->error eq 'DBI error: ';    # the query succeeded
-    return;
+
+    # nt_zone_record.priority was added in v2.05
+    return _column_exists( 'nt_zone_record', 'priority' );
 }
 
 sub _sql_2_05 {
@@ -920,9 +1277,10 @@ EO_SQL_2_05
 
 sub _sql_test_2_00 {
 
-    # the nt_perm table was introduced in 2.00. A failed query means the patch
-    # needs to be applied.
-    return $dbh->query('SELECT nt_perm_id FROM nt_perm')->list;
+    # the nt_perm table was introduced in 2.00
+    my $r;
+    eval { $r = $dbh->query("SHOW TABLES LIKE 'nt_perm'")->hashes; };
+    return ( $r && $r->[0] ) ? 1 : 0;
 }
 
 sub _sql_2_00 {
