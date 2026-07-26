@@ -30,6 +30,7 @@ jobs:
 
       - name: Build server (with deps)
         run: |
+          apt install -y default-mysql-client
           cd server
           perl Makefile.PL
           cpanm -n --installdeps .
