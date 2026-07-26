@@ -3,6 +3,7 @@ import { defineConfig } from '@playwright/test';
 export default defineConfig({
   testDir: '.',
   testMatch: '*.spec.ts',
+  globalSetup: './global-setup.ts',
   globalTeardown: './global-teardown.ts',
   timeout: 30_000,
   retries: 0,

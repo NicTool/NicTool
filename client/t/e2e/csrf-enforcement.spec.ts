@@ -2,15 +2,14 @@ import { test, expect } from '@playwright/test';
 import {
   apiLogin, cookieString, authGet, authPost,
   createGroup, createZone, createRecord, createUser, createNameserver,
-  deleteGroup, deleteZone, deleteUser, deleteNameserver,
-  uniqueName, uniqueNsName, extractCsrf, BASE,
+  deleteGroup, deleteZone, deleteRecord, deleteUser, deleteNameserver,
+  uniqueName, uniqueNsName, extractCsrf, BASE, GROUP_DEFAULTS,
 } from './helpers';
 
 // ---------------------------------------------------------------------------
-// The other half of the CSRF pincer. csrf-links.spec.ts proves every rendered
-// link and form carries a token; this file proves every mutating endpoint
-// refuses to act without one. A handler someone forgets to guard passes the
-// rendering sweep (its form dutifully carries a token) but fails here.
+// csrf-links.spec.ts checks rendered links and forms; these state-based tests
+// exercise each distinct mutation shape so a rendered token cannot conceal an
+// unguarded handler branch.
 //
 // Every request below rides a real session — exactly what a cross-site
 // forgery has (the browser attaches cookies) and doesn't have (the token).
@@ -27,6 +26,7 @@ test.describe('Mutating endpoints reject requests without a csrf_token', () => {
   let zid: string;
   let rrid: string;
   let nsid: string;
+  let groupName: string;
   let username: string;
   let zoneName: string;
   let nsName: string;
@@ -35,7 +35,8 @@ test.describe('Mutating endpoints reject requests without a csrf_token', () => {
     const login = await apiLogin(playwright);
     cookies = cookieString(login.sessionCookie, login.csrfCookie);
 
-    gid = await createGroup(playwright, cookies, 1);
+    groupName = uniqueName('csrfenf');
+    gid = await createGroup(playwright, cookies, 1, groupName);
     childGid = await createGroup(playwright, cookies, gid);
     username = uniqueName('csrfenf');
     uid = await createUser(playwright, cookies, gid, { username });
@@ -105,6 +106,25 @@ test.describe('Mutating endpoints reject requests without a csrf_token', () => {
       `zone.cgi?nt_group_id=${gid}&nt_zone_id=${zid}`, `nt_zone_record_id=${rrid}`)).toBe(true);
   });
 
+  test('zone recovery via POST', async ({ playwright }) => {
+    const name = `${uniqueName('csrfrecover')}.test`;
+    const deletedZid = await createZone(playwright, cookies, gid, name);
+    await deleteZone(playwright, cookies, gid, deletedZid);
+    await authPost(playwright, `${BASE}/zone.cgi`, cookies,
+      `nt_group_id=${gid}&nt_zone_id=${deletedZid}&edit_zone=1&undelete=1&Save=Save&zone=${name}&mailaddr=admin.${name}&ttl=3600&refresh=16384&retry=2048&expire=1048576&minimum=2560`);
+    expect(await pageHas(playwright, `group_zones.cgi?nt_group_id=${gid}`, name)).toBe(false);
+  });
+
+  test('record recovery via POST', async ({ playwright }) => {
+    const deletedRrid = await createRecord(playwright, cookies, gid, zid, {
+      name: 'forgedrecovery', type: 'A', address: '192.0.2.111',
+    });
+    await deleteRecord(playwright, cookies, gid, zid, deletedRrid);
+    const { body } = await authPost(playwright, `${BASE}/zone.cgi`, cookies,
+      `nt_group_id=${gid}&nt_zone_id=${zid}&nt_zone_record_id=${deletedRrid}&edit_record=1&deleted=0&Save=Save&name=forgedrecovery&type=A&address=192.0.2.111&ttl=3600`);
+    expect(body).toContain('CSRF validation failed');
+  });
+
   // --- creates ---
 
   test('group create via POST', async ({ playwright }) => {
@@ -133,9 +153,9 @@ test.describe('Mutating endpoints reject requests without a csrf_token', () => {
 
   test('record create via POST', async ({ playwright }) => {
     await authPost(playwright, `${BASE}/zone.cgi`, cookies,
-      `nt_group_id=${gid}&nt_zone_id=${zid}&new_record=1&Create=Create&name=forgedrec&type=A&address=192.0.2.66&ttl=3600`);
+      `nt_group_id=${gid}&nt_zone_id=${zid}&new_record=1&Create=Create&name=blockedcreate&type=A&address=192.0.2.66&ttl=3600`);
     expect(await pageHas(playwright,
-      `zone.cgi?nt_group_id=${gid}&nt_zone_id=${zid}`, 'forgedrec')).toBe(false);
+      `zone.cgi?nt_group_id=${gid}&nt_zone_id=${zid}`, 'blockedcreate')).toBe(false);
   });
 
   test('nameserver create via POST', async ({ playwright }) => {
@@ -152,6 +172,20 @@ test.describe('Mutating endpoints reject requests without a csrf_token', () => {
     expect(await pageHas(playwright, `group_zones.cgi?nt_group_id=${gid}`, name)).toBe(false);
   });
 
+  test('zone create via zone.cgi POST', async ({ playwright }) => {
+    const name = `${uniqueName('csrfforged')}.test`;
+    await authPost(playwright, `${BASE}/zone.cgi`, cookies,
+      `nt_group_id=${gid}&new_zone=1&Create=Create&zone=${name}&mailaddr=admin.${name}&description=forged&ttl=3600&refresh=16384&retry=2048&expire=1048576&minimum=2560`);
+    expect(await pageHas(playwright, `group_zones.cgi?nt_group_id=${gid}`, name)).toBe(false);
+  });
+
+  test('user create via user.cgi POST', async ({ playwright }) => {
+    const name = uniqueName('csrfforged');
+    await authPost(playwright, `${BASE}/user.cgi`, cookies,
+      `nt_group_id=${gid}&new=1&Create=Create&username=${name}&password=testpass123!&password2=testpass123!&email=f@test.example&first_name=F&last_name=U&group_defaults=1`);
+    expect(await pageHas(playwright, `group_users.cgi?nt_group_id=${gid}`, name)).toBe(false);
+  });
+
   // --- edits ---
 
   test('zone edit via POST', async ({ playwright }) => {
@@ -166,6 +200,46 @@ test.describe('Mutating endpoints reject requests without a csrf_token', () => {
       `nt_group_id=${gid}&edit=1&Save=Save&nt_user_id=${uid}&username=${username}&first_name=FORGEDNAME&last_name=U&email=f@test.example`);
     expect(await pageHas(playwright,
       `user.cgi?nt_group_id=${gid}&nt_user_id=${uid}`, 'FORGEDNAME')).toBe(false);
+  });
+
+  test('zone edit via group_zones.cgi POST', async ({ playwright }) => {
+    await authPost(playwright, `${BASE}/group_zones.cgi`, cookies,
+      `nt_group_id=${gid}&nt_zone_id=${zid}&edit=1&Save=Save&zone=${zoneName}&mailaddr=admin.${zoneName}&description=FORGED_LIST_EDIT&ttl=3600&refresh=16384&retry=2048&expire=1048576&minimum=2560`);
+    expect(await pageHas(playwright,
+      `group_zones.cgi?nt_group_id=${gid}&nt_zone_id=${zid}&edit=1`,
+      'FORGED_LIST_EDIT')).toBe(false);
+  });
+
+  test('user edit via user.cgi POST', async ({ playwright }) => {
+    await authPost(playwright, `${BASE}/user.cgi`, cookies,
+      `nt_group_id=${gid}&nt_user_id=${uid}&edit=1&Save=Save&username=${username}&first_name=FORGED_DETAIL_EDIT&last_name=U&email=f@test.example&group_defaults=1`);
+    expect(await pageHas(playwright,
+      `user.cgi?nt_group_id=${gid}&nt_user_id=${uid}`, 'FORGED_DETAIL_EDIT')).toBe(false);
+  });
+
+  test('group edit via POST', async ({ playwright }) => {
+    const forgedName = uniqueName('csrfforged');
+    await authPost(playwright, `${BASE}/group.cgi`, cookies,
+      `nt_group_id=${gid}&edit=1&Save=Save&name=${forgedName}&${GROUP_DEFAULTS}`);
+    expect(await pageHas(playwright, 'group.cgi?nt_group_id=1', groupName)).toBe(true);
+    expect(await pageHas(playwright, 'group.cgi?nt_group_id=1', forgedName)).toBe(false);
+  });
+
+  test('nameserver edit via POST', async ({ playwright }) => {
+    await authPost(playwright, `${BASE}/group_nameservers.cgi`, cookies,
+      `nt_group_id=1&nt_nameserver_id=${nsid}&edit=1&Save=Save&name=${encodeURIComponent(nsName)}&address=192.0.2.1&description=FORGED_NS_EDIT&export_format=bind&export_interval=120&ttl=3600`);
+    expect(await pageHas(playwright,
+      `group_nameservers.cgi?nt_group_id=1&nt_nameserver_id=${nsid}&edit=1`,
+      'FORGED_NS_EDIT')).toBe(false);
+  });
+
+  test('record edit via POST', async ({ playwright }) => {
+    await authPost(playwright, `${BASE}/zone.cgi`, cookies,
+      `nt_group_id=${gid}&nt_zone_id=${zid}&nt_zone_record_id=${rrid}&edit_record=1&Save=Save&name=enforce&type=A&address=192.0.2.200&ttl=3600`);
+    expect(await pageHas(playwright,
+      `zone.cgi?nt_group_id=${gid}&nt_zone_id=${zid}`, '192.0.2.200')).toBe(false);
+    expect(await pageHas(playwright,
+      `zone.cgi?nt_group_id=${gid}&nt_zone_id=${zid}`, '192.0.2.99')).toBe(true);
   });
 
   // --- delegation and moves ---
@@ -193,10 +267,52 @@ test.describe('Mutating endpoints reject requests without a csrf_token', () => {
       `group_zones.cgi?nt_group_id=${childGid}`, `nt_zone_id=${zid}`)).toBe(true);
   });
 
+  test('delegation modify via POST', async ({ playwright }) => {
+    const { body } = await authPost(playwright, `${BASE}/delegate_zones.cgi`, cookies,
+      `Modify=Modify&nt_group_id=${childGid}&obj_list=${zid}&type=zone&perm_write=0&perm_delete=0&perm_delegate=0&zone_perm_add_records=0&zone_perm_delete_records=0`);
+    expect(body).toContain('CSRF validation failed');
+    expect(await pageHas(playwright,
+      `group_zones.cgi?nt_group_id=${childGid}`, `nt_zone_id=${zid}`)).toBe(true);
+  });
+
+  test('delegation removal via group_zones.cgi GET', async ({ playwright }) => {
+    await authGet(playwright,
+      `${BASE}/group_zones.cgi?nt_group_id=${childGid}&nt_zone_id=${zid}&deletedelegate=1`,
+      cookies);
+    expect(await pageHas(playwright,
+      `group_zones.cgi?nt_group_id=${childGid}`, `nt_zone_id=${zid}`)).toBe(true);
+  });
+
+  test('delegation removal via zone.cgi GET', async ({ playwright }) => {
+    await authGet(playwright,
+      `${BASE}/zone.cgi?nt_group_id=${childGid}&nt_zone_id=${zid}&delegate_group_id=${childGid}&deletedelegate=1&type=zone`,
+      cookies);
+    expect(await pageHas(playwright,
+      `group_zones.cgi?nt_group_id=${childGid}`, `nt_zone_id=${zid}`)).toBe(true);
+  });
+
   test('zone move via POST', async ({ playwright }) => {
     await authPost(playwright, `${BASE}/move_zones.cgi`, cookies,
       `Save=Save&group_list=${childGid}&obj_list=${zid}`);
     // The zone must still live in its original group.
     expect(await pageHas(playwright, `group_zones.cgi?nt_group_id=${gid}`, zoneName)).toBe(true);
+  });
+
+  test('user move via POST', async ({ playwright }) => {
+    await authPost(playwright, `${BASE}/move_users.cgi`, cookies,
+      `Save=Save&group_list=${childGid}&obj_list=${uid}`);
+    expect(await pageHas(playwright,
+      `group_users.cgi?nt_group_id=${gid}`, username)).toBe(true);
+    expect(await pageHas(playwright,
+      `group_users.cgi?nt_group_id=${childGid}`, username)).toBe(false);
+  });
+
+  test('nameserver move via POST', async ({ playwright }) => {
+    await authPost(playwright, `${BASE}/move_nameservers.cgi`, cookies,
+      `Save=Save&group_list=${childGid}&obj_list=${nsid}`);
+    expect(await pageHas(playwright,
+      'group_nameservers.cgi?nt_group_id=1', nsName)).toBe(true);
+    expect(await pageHas(playwright,
+      `group_nameservers.cgi?nt_group_id=${childGid}`, nsName)).toBe(false);
   });
 });

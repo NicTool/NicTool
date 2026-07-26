@@ -302,15 +302,12 @@ sub verify_csrf {
     my $form_token = scalar( $q->param('csrf_token') );
     return 0 if !$form_token;
 
-    # With a session present, the only valid token is the one derived from it.
-    # A cookie comparison alone would accept any attacker-planted pair, since
-    # the double-submit cookie is not something a forger has to guess. (#335)
+    # Bind authenticated requests to the session; only login uses double-submit.
     my $derived = $self->derive_csrf_token( scalar $q->cookie('NicTool') );
     if ($derived) {
         return $form_token eq $derived ? 1 : 0;
     }
 
-    # Pre-login there is no session to derive from; fall back to double-submit.
     my $cookie_token = $q->cookie('NicTool_csrf');
     return ( $cookie_token && $form_token eq $cookie_token ) ? 1 : 0;
 }

@@ -141,13 +141,20 @@ export function getNavFrame(page: Page): Frame | undefined {
 // ---------------------------------------------------------------------------
 
 let _counter = 0;
+
+function runId(): string {
+  const id = process.env.NICTOOL_E2E_RUN_ID;
+  if (!id) throw new Error('NICTOOL_E2E_RUN_ID was not initialized by global-setup.ts');
+  return id;
+}
+
 export function uniqueName(prefix: string): string {
-  return `${prefix}_${Date.now()}_${++_counter}`;
+  return `${prefix}_${runId()}_${++_counter}`;
 }
 
 // For nameserver names which cannot contain underscores
 export function uniqueNsName(prefix: string): string {
-  return `${prefix}-${Date.now()}-${++_counter}`;
+  return `${prefix}-${runId()}-${++_counter}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -232,7 +239,8 @@ export async function createRecord(playwright: any, cookies: string, gid: string
   if (opts.description !== undefined) data += `&description=${encodeURIComponent(opts.description)}`;
 
   const { body } = await authPost(playwright, `${BASE}/zone.cgi`, cookies, data);
-  const m = body.match(/nt_zone_record_id=(\d+)/);
+  const m = body.match(new RegExp(
+    `nt_zone_record_id=(\\d+)[^"]*"[^>]*>${escapeRegex(opts.name)}<`));
   if (!m) throw new Error(`Failed to create record ${opts.type} "${opts.name}" in zone ${zid}. Body snippet: ${body.substring(0, 500)}`);
   return m[1];
 }
