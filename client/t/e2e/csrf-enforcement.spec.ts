@@ -3,7 +3,7 @@ import {
   apiLogin, cookieString, authGet, authPost,
   createGroup, createZone, createRecord, createUser, createNameserver,
   deleteGroup, deleteZone, deleteRecord, deleteUser, deleteNameserver,
-  uniqueName, uniqueNsName, extractCsrf, BASE, GROUP_DEFAULTS,
+  findInListing, uniqueName, uniqueNsName, extractCsrf, BASE, GROUP_DEFAULTS,
 } from './helpers';
 
 // ---------------------------------------------------------------------------
@@ -67,6 +67,14 @@ test.describe('Mutating endpoints reject requests without a csrf_token', () => {
     return body.includes(needle);
   }
 
+  // pageHas only works on a listing scoped to a group this run owns, which
+  // holds a handful of rows. Root is shared with every other run, and
+  // group.cgi shows 10 subgroups per page, so use a filtered lookup there.
+  async function rootRow(playwright: any, cgi: string, idParam: string,
+    name: string): Promise<string | null> {
+    return findInListing(playwright, cookies, { cgi, gid: 1, idParam }, name);
+  }
+
   // --- deletes ---
 
   test('group delete via GET', async ({ playwright }) => {
@@ -96,7 +104,7 @@ test.describe('Mutating endpoints reject requests without a csrf_token', () => {
   test('nameserver delete via GET', async ({ playwright }) => {
     await authGet(playwright,
       `${BASE}/group_nameservers.cgi?nt_group_id=1&delete=1&nt_nameserver_id=${nsid}`, cookies);
-    expect(await pageHas(playwright, `group_nameservers.cgi?nt_group_id=1`, nsName)).toBe(true);
+    expect(await rootRow(playwright, 'group_nameservers.cgi', 'nt_nameserver_id', nsName)).toBeTruthy();
   });
 
   test('record delete via POST', async ({ playwright }) => {
@@ -131,10 +139,7 @@ test.describe('Mutating endpoints reject requests without a csrf_token', () => {
     const name = uniqueName('csrfforged');
     await authPost(playwright, `${BASE}/group.cgi`, cookies,
       `nt_group_id=1&new=1&Create=Create&name=${name}`);
-    // The search page echoes the searched value in its own form, so look for
-    // the name as rendered link text, which only a real row produces.
-    expect(await pageHas(playwright,
-      `group.cgi?nt_group_id=1&quick_search=1&search_value=${name}&exact_match=1`, `>${name}<`)).toBe(false);
+    expect(await rootRow(playwright, 'group.cgi', 'nt_group_id', name)).toBeNull();
   });
 
   test('zone create via POST', async ({ playwright }) => {
@@ -162,7 +167,7 @@ test.describe('Mutating endpoints reject requests without a csrf_token', () => {
     const name = uniqueNsName('csrfforged') + '.example.com.';
     await authPost(playwright, `${BASE}/group_nameservers.cgi`, cookies,
       `nt_group_id=1&new=1&Create=Create&name=${name}&address=192.0.2.67&description=forged&export_format=bind&export_interval=120&ttl=3600`);
-    expect(await pageHas(playwright, `group_nameservers.cgi?nt_group_id=1`, name)).toBe(false);
+    expect(await rootRow(playwright, 'group_nameservers.cgi', 'nt_nameserver_id', name)).toBeNull();
   });
 
   test('bulk zone add via zones.cgi', async ({ playwright }) => {
@@ -221,8 +226,8 @@ test.describe('Mutating endpoints reject requests without a csrf_token', () => {
     const forgedName = uniqueName('csrfforged');
     await authPost(playwright, `${BASE}/group.cgi`, cookies,
       `nt_group_id=${gid}&edit=1&Save=Save&name=${forgedName}&${GROUP_DEFAULTS}`);
-    expect(await pageHas(playwright, 'group.cgi?nt_group_id=1', groupName)).toBe(true);
-    expect(await pageHas(playwright, 'group.cgi?nt_group_id=1', forgedName)).toBe(false);
+    expect(await rootRow(playwright, 'group.cgi', 'nt_group_id', groupName)).toBeTruthy();
+    expect(await rootRow(playwright, 'group.cgi', 'nt_group_id', forgedName)).toBeNull();
   });
 
   test('nameserver edit via POST', async ({ playwright }) => {
@@ -310,8 +315,7 @@ test.describe('Mutating endpoints reject requests without a csrf_token', () => {
   test('nameserver move via POST', async ({ playwright }) => {
     await authPost(playwright, `${BASE}/move_nameservers.cgi`, cookies,
       `Save=Save&group_list=${childGid}&obj_list=${nsid}`);
-    expect(await pageHas(playwright,
-      'group_nameservers.cgi?nt_group_id=1', nsName)).toBe(true);
+    expect(await rootRow(playwright, 'group_nameservers.cgi', 'nt_nameserver_id', nsName)).toBeTruthy();
     expect(await pageHas(playwright,
       `group_nameservers.cgi?nt_group_id=${childGid}`, nsName)).toBe(false);
   });

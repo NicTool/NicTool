@@ -193,6 +193,21 @@ async function searchListing(playwright: any, cookies: string, cgi: string,
   return body;
 }
 
+// The id of the row an exact-match quick search returns for this name, or null
+// when the listing holds no such row.
+//
+// Tests must use this rather than scanning an unfiltered listing: the row can
+// sit past the page-one cutoff as soon as an earlier run leaves anything
+// behind, which turns a presence check into a failure and an absence check
+// into a vacuous pass. They also cannot substring-test the search body, since
+// the search page echoes search_value back into its own form.
+export async function findInListing(playwright: any, cookies: string,
+  target: { cgi: string; gid: string | number; idParam: string },
+  name: string): Promise<string | null> {
+  const body = await searchListing(playwright, cookies, target.cgi, target.gid, name);
+  return findIdInBody(body, target.idParam, name);
+}
+
 export async function createGroup(playwright: any, cookies: string, parentGid: string | number, name?: string): Promise<string> {
   const groupName = name || uniqueName('e2e_grp');
   await authPost(playwright, `${BASE}/group.cgi`, cookies,

@@ -3,7 +3,7 @@ import {
   apiLogin, cookieString, authGet, authPost,
   createGroup, createZone, createRecord, createUser,
   deleteGroup, deleteZone, deleteUser,
-  uniqueName, extractCsrf, BASE,
+  findInListing, uniqueName, extractCsrf, BASE,
 } from './helpers';
 
 // ---------------------------------------------------------------------------
@@ -49,7 +49,8 @@ test.describe('Options-menu delete links carry CSRF (#354)', () => {
   });
 
   test('group tree Delete link works', async ({ playwright }) => {
-    const gid = await createGroup(playwright, cookies, 1);
+    const groupName = uniqueName('csrflnk');
+    const gid = await createGroup(playwright, cookies, 1, groupName);
 
     // The group tree is rendered in the nav header of the group's own pages.
     const { body } = await authGet(playwright, `${BASE}/group.cgi?nt_group_id=${gid}`, cookies);
@@ -61,8 +62,8 @@ test.describe('Options-menu delete links carry CSRF (#354)', () => {
     const { body: after } = await authGet(playwright, `${BASE}/${href}`, cookies);
     expect(after).not.toContain('CSRF validation failed');
 
-    const { body: list } = await authGet(playwright, `${BASE}/group.cgi?nt_group_id=1`, cookies);
-    expect(list).not.toContain(`nt_group_id=${gid}"`);
+    expect(await findInListing(playwright, cookies,
+      { cgi: 'group.cgi', gid: 1, idParam: 'nt_group_id' }, groupName)).toBeNull();
   });
 
   test('zone options menu Delete link works', async ({ playwright }) => {

@@ -27,13 +27,21 @@ for my $file (@sources) {
         )
     {
         my $open = pos($src) - length($1);
-
-        # The token field must appear before the form is closed.
-        my $rest  = substr( $src, pos($src) );
-        my $close = $rest =~ /(end_form|<\/form)/i ? $-[1] : length($rest);
-        next if substr( $rest, 0, $close ) =~ /csrf_hidden_field|csrf_token/;
-
         my $line = 1 + ( substr( $src, 0, $open ) =~ tr/\n// );
+
+        # An unterminated form has no bounded body to search, and scanning to
+        # end of file would let an unrelated token further down vouch for it.
+        my $rest = substr( $src, pos($src) );
+        if ( $rest !~ /(end_form|<\/form)/i ) {
+            push @missing, "$file:$line (form is never closed)";
+            next;
+        }
+
+        # The hidden field must appear before the form is closed. Only
+        # csrf_hidden_field counts: a bare csrf_token would also match a
+        # destructive link's query string, which does nothing for the submit.
+        next if substr( $rest, 0, $-[1] ) =~ /csrf_hidden_field/;
+
         push @missing, "$file:$line";
     }
 
