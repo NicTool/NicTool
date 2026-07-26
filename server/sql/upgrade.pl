@@ -298,43 +298,47 @@ sub _sql_test_2_41 {
 # The v2.41 FKs to nt_user cannot be added while log rows reference users that
 # don't exist. Two repairable classes, neither of which warrants deleting audit
 # history (the previously documented remedies, DELETE and --prune, do):
-#  - nt_user_id=0: the writer dropped attribution (the Zone/Record/Sanity.pm
-#    TTL-sync cascade, fixed alongside this). The actor is usually recoverable:
-#    the same action logged a sibling row for the same zone in the same second.
+#  - nt_user_id=0 in nt_zone_record_log: the Zone/Record/Sanity.pm TTL-sync
+#    cascade dropped attribution (fixed alongside this). The actor is provable
+#    when exactly one attributed edit of the same RRset carries the same new
+#    TTL in the same second; anything less stays unattributed, never guessed.
+#    nt_zone_log rows never came from that cascade, so they are not remapped.
 #  - nt_user_id>0 with no nt_user row: the user was hard-deleted. Restore a
 #    tombstone row (deleted=1) so history keeps its original attribution.
 # Rows referencing hard-deleted zones/groups/records have no parent to repair
 # and still go through the existing prune/abort path.
 sub _repair_user_orphans_2_41 {
 
-    my %pk = (
-        nt_zone_record_log => 'nt_zone_record_log_id',
-        nt_zone_log        => 'nt_zone_log_id',
-    );
-
-    # remap nt_user_id=0 rows to the user who acted on the same zone in the
-    # same second, where that actor is unambiguous
-    for my $table ( sort keys %pk ) {
-        my $id = $pk{$table};
-        my ($zeros) = _try_list("SELECT COUNT(*) FROM `$table` WHERE nt_user_id = 0");
-        next if !$zeros;
-
-        my $q = "UPDATE `$table` o
+    # The cascade's fingerprint: _valid_ttl copies the triggering edit's new
+    # TTL onto every *other* record of the same RRset (zone + name + type),
+    # logging each as 'modified' in the same request. Attribute an orphan only
+    # to the single attributed 'added'/'modified' sibling matching all of that.
+    my ($zeros) = _try_list(
+        "SELECT COUNT(*) FROM nt_zone_record_log WHERE nt_user_id = 0");
+    if ($zeros) {
+        my $q = "UPDATE nt_zone_record_log o
             JOIN (
-                SELECT o.`$id` AS id, MIN(t.nt_user_id) AS new_user
-                FROM `$table` o
-                JOIN `$table` t ON t.nt_zone_id = o.nt_zone_id
-                    AND t.timestamp = o.timestamp AND t.nt_user_id <> 0
+                SELECT o.nt_zone_record_log_id AS id, MIN(t.nt_user_id) AS new_user
+                FROM nt_zone_record_log o
+                JOIN nt_zone_record_log t ON t.nt_zone_id = o.nt_zone_id
+                    AND t.name = o.name
+                    AND t.type_id = o.type_id
+                    AND t.ttl = o.ttl
+                    AND t.timestamp = o.timestamp
+                    AND t.nt_zone_record_id <> o.nt_zone_record_id
+                    AND t.action IN ('added','modified')
+                    AND t.nt_user_id <> 0
                 JOIN nt_user u ON u.nt_user_id = t.nt_user_id
-                WHERE o.nt_user_id = 0
-                GROUP BY o.`$id`
+                WHERE o.nt_user_id = 0 AND o.action = 'modified'
+                GROUP BY o.nt_zone_record_log_id
                 HAVING COUNT(DISTINCT t.nt_user_id) = 1
-            ) m ON m.id = o.`$id`
+            ) m ON m.id = o.nt_zone_record_log_id
             SET o.nt_user_id = m.new_user
             WHERE o.nt_user_id = 0";
         $q =~ s/[\s]{2,}/ /g;
-        print "repairing $table: $zeros row(s) missing attribution (nt_user_id=0), "
-            . "remapping to the triggering user where unambiguous\n$q;\n";
+        print "repairing nt_zone_record_log: $zeros row(s) missing attribution "
+            . "(nt_user_id=0), remapping TTL-sync cascade rows to the "
+            . "triggering user where provable\n$q;\n";
         $dbh->query($q) or die DBIx::Simple->error;
     }
 
