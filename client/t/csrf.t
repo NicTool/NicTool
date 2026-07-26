@@ -3,7 +3,7 @@ use warnings;
 
 use lib 'lib';
 
-use Test::More tests => 8;
+use Test::More tests => 12;
 
 use NicToolClient;
 
@@ -56,6 +56,33 @@ my $forged = client_with(
 );
 ok( !$forged->verify_csrf(), 'mismatched form token is rejected' );
 
+# Verification is bound to the session, not the cookie: a POST whose csrf
+# cookie was lost mid-session still validates on the derived form token alone.
+my $cookieless = client_with(
+    cookies => { NicTool => $session },
+    params  => { csrf_token => $nav_token },
+);
+ok( $cookieless->verify_csrf(), 'derived form token validates without a csrf cookie' );
+
+# An attacker who plants a matching cookie/form pair never held the session,
+# so the pair cannot be the derived token. Double-submit alone accepted this.
+my $planted = client_with(
+    cookies => { NicTool => $session, NicTool_csrf => 'a' x 40 },
+    params  => { csrf_token => 'a' x 40 },
+);
+ok( !$planted->verify_csrf(), 'planted cookie/form pair is rejected for a live session' );
+
+my $tokenless = client_with( cookies => { NicTool => $session, NicTool_csrf => $nav_token } );
+ok( !$tokenless->verify_csrf(), 'missing form token is rejected' );
+
 # No session to derive from before login.
 my $login = client_with( cookies => {} );
 like( $login->get_csrf_token(), qr/^[0-9a-f]{40}$/, 'login page mints a random token' );
+
+# Pre-login the double-submit fallback still guards the login form itself.
+my $prelogin_token = $login->get_csrf_token();
+my $prelogin_post  = client_with(
+    cookies => { NicTool_csrf => $prelogin_token },
+    params  => { csrf_token => $prelogin_token },
+);
+ok( $prelogin_post->verify_csrf(), 'pre-login double-submit fallback validates' );
