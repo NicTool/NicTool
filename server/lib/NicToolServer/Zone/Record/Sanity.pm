@@ -120,6 +120,11 @@ sub _valid_ttl {
         map {
             $_->{ttl} = $data->{ttl};
 
+            # collision rows come from the DB and carry no request context;
+            # attribute the cascaded update to the user who triggered it,
+            # else log_zone_record records nt_user_id=0
+            $_->{user} = $data->{user};
+
             # Push that update to the DB as well(!)
             $self->SUPER::edit_zone_record($_);
         } @same_type;
