@@ -64,16 +64,47 @@ at the end of this document first.
 
    Log in, browse a few zones, edit and revert a record.
 
-6. Resume exports and verify the published data
+6. Stage an export and compare it -- with exports still stopped
+
+   Do not resume the export service yet. The generated run file invokes
+   nt_export.pl with -force -pfextra, which publishes immediately: the
+   BIND postflight compiles, rsyncs, and restarts the nameserver, and
+   the tinydns postflight compiles and rsyncs data.cdb into place. Stage
+   an export by hand and compare it against the pre-upgrade output
+   before any of that happens.
+
+   First save the last known-good export output:
+
+    # cd /usr/local/nictool/ns1.example.com
+    # cp -a data data.pre-upgrade      (tinydns)
+    # cp -a data-ns1.example.com data.pre-upgrade   (BIND: the zone-file dir)
+
+   tinydns only: the export postflight always runs 'make remote', so
+   temporarily disable publishing by removing the rsync line under the
+   'remote:' target in ./Makefile (an empty recipe is fine; restore it
+   in step 7).
+
+   Then stage a fresh export. Omitting -pfextra keeps the BIND
+   postflight from compiling, rsyncing, or restarting anything:
+
+    # ./nt_export.pl -nsid N -force
+
+   Compare the staged output against the saved copy -- for tinydns sort
+   both data files first, then diff; for BIND, diff -r the two
+   directories. Expect only formatting differences, e.g. as of 2.41:
+   quotes inside TXT records are stripped, and SOA records with
+   all-default timers export empty fields instead of 0:0:0:0. Record
+   data itself should not change. If it does, stop and investigate
+   before publishing.
+
+7. Resume exports -- this publishes
+
+   Restore the tinydns Makefile 'remote:' target if you disabled it,
+   then:
 
     # svc -u /service/ns1.example.com
 
-   Before overwriting your served data, compare a fresh export against
-   the last known-good one (sort both files first; then diff). Expect
-   only formatting differences, e.g. as of 2.41: quotes inside TXT
-   records are stripped, and SOA records with all-default timers export
-   empty fields instead of 0:0:0:0. Record data itself should not
-   change. If it does, stop and investigate before publishing.
+   or re-enable the nt_export.pl crontab entries.
 
 
 Appendix: upgrading from pre-2.10
