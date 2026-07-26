@@ -6,7 +6,7 @@ use Test::More;
 # Destructive actions reachable by GET must carry the token in the URL. The list
 # views were fixed for #335 but the options menus rendered above them were not,
 # so every Delete in a nav header failed validation. (#354)
-my @sources = ( glob('htdocs/*.cgi'), 'lib/NicToolClient.pm' );
+my @sources = ( glob('htdocs/*.cgi'), glob('templates/*.html'), 'lib/NicToolClient.pm' );
 plan tests => scalar @sources;
 
 for my $file (@sources) {
@@ -20,7 +20,7 @@ for my $file (@sources) {
     # runs to the closing quote across whatever Perl sits in between.
     while ( $src =~ /href="(.*?)"/gs ) {
         my $href = $1;
-        next if $href !~ /(?:[?&;])(?:delete|deletedelegate|delete_record)=/;
+        next if $href !~ /(?:[?&;])(?:delete|deletedelegate|delete_record|logout)=/;
         next if $href =~ /csrf_token/;
 
         my $line = 1 + ( substr( $src, 0, pos $src ) =~ tr/\n// );
@@ -28,6 +28,6 @@ for my $file (@sources) {
         push @missing, "$file:$line: $flat";
     }
 
-    is( scalar @missing, 0, "$file: delete links carry a csrf_token" )
+    is( scalar @missing, 0, "$file: state-changing links carry a csrf_token" )
         or diag( join "\n", @missing );
 }

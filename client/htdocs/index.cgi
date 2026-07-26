@@ -34,7 +34,7 @@ sub main {
         do_login( $nt_obj, $q );
         return;
     }
-    if ( $q->param('logout') ) {
+    if ( $q->param('logout') && $nt_obj->verify_csrf() ) {
         my $data = $nt_obj->logout_user();
         $nt_obj->display_login($data);
         return;

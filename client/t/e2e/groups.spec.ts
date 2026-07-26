@@ -2,8 +2,10 @@ import { test, expect } from '@playwright/test';
 import {
   BASE, GROUP_DEFAULTS,
   apiLogin, authGet, authPost, cookieString,
-  createGroup, deleteGroup, uniqueName, extractCsrf,
+  createGroup, deleteGroup, findInListing, uniqueName, extractCsrf,
 } from './helpers';
+
+const ROOT_GROUPS = { cgi: 'group.cgi', gid: 1, idParam: 'nt_group_id' };
 
 test.describe('Groups', () => {
   let cookies: string;
@@ -28,8 +30,7 @@ test.describe('Groups', () => {
     const name = uniqueName('e2e_grp');
     const gid = await createGroup(playwright, cookies, 1, name);
 
-    const { body } = await authGet(playwright, `${BASE}/group.cgi?nt_group_id=1`, cookies);
-    expect(body).toContain(name);
+    expect(await findInListing(playwright, cookies, ROOT_GROUPS, name)).toBe(gid);
 
     await deleteGroup(playwright, cookies, 1, gid);
   });
@@ -42,8 +43,7 @@ test.describe('Groups', () => {
     await authPost(playwright, `${BASE}/group.cgi`, cookies,
       `nt_group_id=${gid}&edit=1&Save=Save&name=${newName}&${GROUP_DEFAULTS}&csrf_token=${csrfToken}`);
 
-    const { body } = await authGet(playwright, `${BASE}/group.cgi?nt_group_id=1`, cookies);
-    expect(body).toContain(newName);
+    expect(await findInListing(playwright, cookies, ROOT_GROUPS, newName)).toBe(gid);
 
     await deleteGroup(playwright, cookies, 1, gid);
   });
@@ -70,8 +70,7 @@ test.describe('Groups', () => {
 
     await deleteGroup(playwright, cookies, 1, gid);
 
-    const { body } = await authGet(playwright, `${BASE}/group.cgi?nt_group_id=1`, cookies);
-    expect(body).not.toContain(name);
+    expect(await findInListing(playwright, cookies, ROOT_GROUPS, name)).toBeNull();
   });
 
   test('create group without name fails gracefully', async ({ playwright }) => {

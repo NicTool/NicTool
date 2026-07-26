@@ -60,11 +60,31 @@ test.describe('Authentication', () => {
     expect(before).toContain('NicTool');
 
     // Logout
-    await authGet(playwright, `${BASE}/index.cgi?logout=1`, cookies);
+    await authGet(playwright,
+      `${BASE}/index.cgi?logout=1&csrf_token=${csrfCookie}`, cookies);
 
     // Session should no longer work - should get login page or redirect
     const { body: after } = await authGet(playwright, `${BASE}/group.cgi?nt_group_id=1`, cookies);
     expect(after.toLowerCase()).toMatch(/login|username|password|error|session/);
+  });
+
+  test('logout rejects a missing or forged csrf_token', async ({ playwright }) => {
+    const { sessionCookie, csrfCookie } = await apiLogin(playwright);
+    const cookies = cookieString(sessionCookie, csrfCookie);
+
+    // The nav bar's logout link only renders for an authenticated request, so
+    // it marks a surviving session. Do not assert on 'NicTool' here: the login
+    // page is titled that too, which would pass whether or not logout happened.
+    await authGet(playwright, `${BASE}/index.cgi?logout=1`, cookies);
+    const { body: afterMissing } = await authGet(playwright,
+      `${BASE}/group.cgi?nt_group_id=1`, cookies);
+    expect(afterMissing).toContain('logout=1');
+
+    await authGet(playwright,
+      `${BASE}/index.cgi?logout=1&csrf_token=${'f'.repeat(40)}`, cookies);
+    const { body: afterForged } = await authGet(playwright,
+      `${BASE}/group.cgi?nt_group_id=1`, cookies);
+    expect(afterForged).toContain('logout=1');
   });
 
   test('invalid session cookie gets no authenticated content', async ({ playwright }) => {

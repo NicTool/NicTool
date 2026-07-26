@@ -299,13 +299,17 @@ sub verify_csrf {
     my $self = shift;
     my $q    = $self->{'CGI'};
 
-    my $cookie_token = $q->cookie('NicTool_csrf');
-    my $form_token   = scalar( $q->param('csrf_token') );
+    my $form_token = scalar( $q->param('csrf_token') );
+    return 0 if !$form_token;
 
-    if ( !$cookie_token || !$form_token || $cookie_token ne $form_token ) {
-        return 0;
+    # Bind authenticated requests to the session; only login uses double-submit.
+    my $derived = $self->derive_csrf_token( scalar $q->cookie('NicTool') );
+    if ($derived) {
+        return $form_token eq $derived ? 1 : 0;
     }
-    return 1;
+
+    my $cookie_token = $q->cookie('NicTool_csrf');
+    return ( $cookie_token && $form_token eq $cookie_token ) ? 1 : 0;
 }
 
 sub csrf_error_page {

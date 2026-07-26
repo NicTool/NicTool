@@ -141,13 +141,20 @@ export function getNavFrame(page: Page): Frame | undefined {
 // ---------------------------------------------------------------------------
 
 let _counter = 0;
+
+function runId(): string {
+  const id = process.env.NICTOOL_E2E_RUN_ID;
+  if (!id) throw new Error('NICTOOL_E2E_RUN_ID was not initialized by global-setup.ts');
+  return id;
+}
+
 export function uniqueName(prefix: string): string {
-  return `${prefix}_${Date.now()}_${++_counter}`;
+  return `${prefix}_${runId()}_${++_counter}`;
 }
 
 // For nameserver names which cannot contain underscores
 export function uniqueNsName(prefix: string): string {
-  return `${prefix}-${Date.now()}-${++_counter}`;
+  return `${prefix}-${runId()}-${++_counter}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -174,20 +181,42 @@ function findIdInBody(body: string, idParam: string, name: string): string | nul
   return null;
 }
 
+// Fetch a listing filtered to exactly one name. The lists hardcode 10 rows
+// per page (prepare_search_params ignores any limit param), so scanning pages
+// breaks as soon as leftovers accumulate; an exact-match quick search returns
+// the entity regardless of how much else the group holds.
+export async function exactListing(playwright: any, cookies: string, cgi: string,
+  gid: string | number, name: string): Promise<string> {
+  const { body } = await authGet(playwright,
+    `${BASE}/${cgi}?nt_group_id=${gid}&quick_search=1&search_value=${encodeURIComponent(name)}&exact_match=1`,
+    cookies);
+  return body;
+}
+
+// The id of the row an exact-match quick search returns for this name, or null
+// when the listing holds no such row.
+//
+// Tests must use this rather than scanning an unfiltered listing: the row can
+// sit past the page-one cutoff as soon as an earlier run leaves anything
+// behind, which turns a presence check into a failure and an absence check
+// into a vacuous pass. They also cannot substring-test the search body, since
+// the search page echoes search_value back into its own form.
+export async function findInListing(playwright: any, cookies: string,
+  target: { cgi: string; gid: string | number; idParam: string },
+  name: string): Promise<string | null> {
+  const body = await exactListing(playwright, cookies, target.cgi, target.gid, name);
+  return findIdInBody(body, target.idParam, name);
+}
+
 export async function createGroup(playwright: any, cookies: string, parentGid: string | number, name?: string): Promise<string> {
   const groupName = name || uniqueName('e2e_grp');
   await authPost(playwright, `${BASE}/group.cgi`, cookies,
     `nt_group_id=${parentGid}&new=1&Create=Create&name=${groupName}&${GROUP_DEFAULTS}&csrf_token=${extractCsrf(cookies)}`);
 
-  // Check multiple pages since NicTool hardcodes 10 items per page
-  for (let page = 1; page <= 10; page++) {
-    const { body } = await authGet(playwright, `${BASE}/group.cgi?nt_group_id=${parentGid}&page=${page}`, cookies);
-    const gid = findIdInBody(body, 'nt_group_id', groupName);
-    if (gid) return gid;
-    // If no "next page" link, stop searching
-    if (!body.includes('page=' + (page + 1))) break;
-  }
-  throw new Error(`Failed to find created group "${groupName}" in parent ${parentGid}`);
+  const body = await exactListing(playwright, cookies, 'group.cgi', parentGid, groupName);
+  const gid = findIdInBody(body, 'nt_group_id', groupName);
+  if (!gid) throw new Error(`Failed to find created group "${groupName}" in parent ${parentGid}`);
+  return gid;
 }
 
 export async function deleteGroup(playwright: any, cookies: string, parentGid: string | number, gid: string | number): Promise<void> {
@@ -199,10 +228,10 @@ export async function createZone(playwright: any, cookies: string, gid: string |
   await authPost(playwright, `${BASE}/group_zones.cgi`, cookies,
     `nt_group_id=${gid}&new=1&Create=Create&zone=${zone}&mailaddr=admin.${zone}&description=e2e+test&ttl=3600&refresh=16384&retry=2048&expire=1048576&minimum=2560&csrf_token=${extractCsrf(cookies)}`);
 
-  const { body } = await authGet(playwright, `${BASE}/group_zones.cgi?nt_group_id=${gid}&limit=255`, cookies);
+  const body = await exactListing(playwright, cookies, 'group_zones.cgi', gid, zone);
   const zid = findIdInBody(body, 'nt_zone_id', zone);
   if (!zid) {
-    // Fallback: find any zone ID on the page
+    // Fallback: find any zone ID on the search results page
     const m2 = body.match(/nt_zone_id=(\d+)/);
     if (!m2) throw new Error(`Failed to find created zone "${zone}" in group ${gid}`);
     return m2[1];
@@ -225,7 +254,8 @@ export async function createRecord(playwright: any, cookies: string, gid: string
   if (opts.description !== undefined) data += `&description=${encodeURIComponent(opts.description)}`;
 
   const { body } = await authPost(playwright, `${BASE}/zone.cgi`, cookies, data);
-  const m = body.match(/nt_zone_record_id=(\d+)/);
+  const m = body.match(new RegExp(
+    `nt_zone_record_id=(\\d+)[^"]*"[^>]*>${escapeRegex(opts.name)}<`));
   if (!m) throw new Error(`Failed to create record ${opts.type} "${opts.name}" in zone ${zid}. Body snippet: ${body.substring(0, 500)}`);
   return m[1];
 }
@@ -245,7 +275,7 @@ export async function createUser(playwright: any, cookies: string, gid: string |
   await authPost(playwright, `${BASE}/group_users.cgi`, cookies,
     `nt_group_id=${gid}&new=1&Create=Create&username=${encodeURIComponent(opts.username)}&password=${encodeURIComponent(pw)}&password2=${encodeURIComponent(pw)}&email=${encodeURIComponent(email)}&first_name=${encodeURIComponent(first)}&last_name=${encodeURIComponent(last)}&group_defaults=1&csrf_token=${extractCsrf(cookies)}`);
 
-  const { body } = await authGet(playwright, `${BASE}/group_users.cgi?nt_group_id=${gid}&limit=255`, cookies);
+  const body = await exactListing(playwright, cookies, 'group_users.cgi', gid, opts.username);
   const uid = findIdInBody(body, 'nt_user_id', opts.username);
   if (!uid) {
     // Fallback: find any user ID (excluding the nav bar user links)
@@ -271,7 +301,7 @@ export async function createNameserver(playwright: any, cookies: string, gid: st
   await authPost(playwright, `${BASE}/group_nameservers.cgi`, cookies,
     `nt_group_id=${gid}&new=1&Create=Create&name=${encodeURIComponent(opts.name)}&address=${encodeURIComponent(addr)}&description=${encodeURIComponent(desc)}&export_format=${fmt}&export_interval=120&ttl=${ttl}&csrf_token=${extractCsrf(cookies)}`);
 
-  const { body } = await authGet(playwright, `${BASE}/group_nameservers.cgi?nt_group_id=${gid}&limit=255`, cookies);
+  const body = await exactListing(playwright, cookies, 'group_nameservers.cgi', gid, opts.name);
   const nsid = findIdInBody(body, 'nt_nameserver_id', opts.name);
   if (!nsid) {
     // Fallback: look for any nameserver ID that isn't one of the default 3
