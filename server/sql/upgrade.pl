@@ -93,7 +93,8 @@ sub _fks_2_41 {
 sub _try_list {
     my ($sql) = @_;
     my @r;
-    eval { @r = $dbh->query($sql)->list; };
+    # flat, not list: list returns only the first row
+    eval { @r = $dbh->query($sql)->flat; };
     return @r;
 }
 
@@ -104,14 +105,20 @@ sub heal {
 
     my @heals;
 
-    # pre-2026 _sql_test_2_08 left a probe row in nt_user on every single run
-    my ($litter) = _try_list(
-        "SELECT COUNT(*) FROM nt_user WHERE username='test'
-            AND email='deleteme\@test.com' AND deleted=1");
+    # pre-2026 _sql_test_2_08 left a probe row in nt_user on every single run.
+    # Only rows matching the probe's complete fingerprint AND referenced by
+    # nothing are removed; a legitimate deleted account keeps its audit trail.
+    my $probe_where =
+        "nt_group_id=1 AND first_name='first' AND last_name='last'
+            AND username='test' AND password='123456789012345678'
+            AND email='deleteme\@test.com' AND deleted=1";
+    my @probe_ids = _try_list("SELECT nt_user_id FROM nt_user WHERE $probe_where");
+    my @unreferenced = grep { !_user_is_referenced($_) } @probe_ids;
     push @heals,
-        [ "remove nt_user probe row left by old _sql_test_2_08",
-          "DELETE FROM nt_user WHERE username='test' AND email='deleteme\@test.com' AND deleted=1" ]
-        if $litter;
+        [ "remove nt_user probe row(s) left by old _sql_test_2_08",
+          "DELETE FROM nt_user WHERE nt_user_id IN (" . join( ',', @unreferenced ) . ")
+            AND $probe_where" ]
+        if @unreferenced;
 
     # 2014-2020 releases of the v2.28 block created last_publish as
     # TIMESTAMP NOT NULL DEFAULT 0 (changed to DATETIME NULL in #249)
@@ -207,6 +214,40 @@ sub heal {
         $dbh->query($sql) or die DBIx::Simple->error;
     }
     print "\n";
+}
+
+# true if any row anywhere refers to this user id. An unreadable table counts
+# as a reference: deletion must be provably safe, so probe rows are kept when
+# in doubt (they are harmless; the old script tolerated them for a decade).
+sub _user_is_referenced {
+    my ($id) = @_;
+    $id =~ /\A[0-9]+\z/ or return 1;
+    for my $ref (
+        [ 'nt_group_log',        'nt_user_id' ],
+        [ 'nt_user_log',         'nt_user_id' ],
+        [ 'nt_user_log',         'modified_user_id' ],
+        [ 'nt_user_session',     'nt_user_id' ],
+        [ 'nt_user_session_log', 'nt_user_id' ],
+        [ 'nt_user_global_log',  'nt_user_id' ],
+        [ 'nt_nameserver_log',   'nt_user_id' ],
+        [ 'nt_zone_log',         'nt_user_id' ],
+        [ 'nt_zone_record_log',  'nt_user_id' ],
+        [ 'nt_perm',             'nt_user_id' ],
+        [ 'nt_delegate_log',     'nt_user_id' ],
+    ) {
+        my ( $table, $column ) = @$ref;
+        my ($tables) = _try_list(
+            "SELECT COUNT(*) FROM information_schema.TABLES
+                WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '$table'");
+        next if defined $tables && !$tables;    # table absent: nothing to reference
+        my ($n) = _try_list("SELECT COUNT(*) FROM $table WHERE $column = $id");
+        if ( !defined $n || $n ) {
+            print "  leaving nt_user row $id: matches the old _sql_test_2_08 probe "
+                . "fingerprint but is referenced by $table.$column\n";
+            return 1;
+        }
+    }
+    return 0;
 }
 
 sub _column_exists {
