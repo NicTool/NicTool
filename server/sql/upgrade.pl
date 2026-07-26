@@ -233,14 +233,22 @@ sub _user_is_referenced {
         [ 'nt_zone_log',         'nt_user_id' ],
         [ 'nt_zone_record_log',  'nt_user_id' ],
         [ 'nt_perm',             'nt_user_id' ],
+        [ 'nt_delegate',         'delegated_by_id' ],
         [ 'nt_delegate_log',     'nt_user_id' ],
+        # polymorphic references: the id column points at a user only when
+        # the accompanying type column says so
+        [ 'nt_delegate',        'nt_object_id', "nt_object_type = 'USER'" ],
+        [ 'nt_delegate_log',    'nt_object_id', "nt_object_type = 'USER'" ],
+        [ 'nt_user_global_log', 'object_id',    "object = 'user'" ],
+        [ 'nt_user_global_log', 'target_id',    "target = 'user'" ],
     ) {
-        my ( $table, $column ) = @$ref;
+        my ( $table, $column, $cond ) = @$ref;
         my ($tables) = _try_list(
             "SELECT COUNT(*) FROM information_schema.TABLES
                 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '$table'");
         next if defined $tables && !$tables;    # table absent: nothing to reference
-        my ($n) = _try_list("SELECT COUNT(*) FROM $table WHERE $column = $id");
+        my $where = "$column = $id" . ( $cond ? " AND $cond" : '' );
+        my ($n) = _try_list("SELECT COUNT(*) FROM $table WHERE $where");
         if ( !defined $n || $n ) {
             print "  leaving nt_user row $id: matches the old _sql_test_2_08 probe "
                 . "fingerprint but is referenced by $table.$column\n";
