@@ -283,7 +283,10 @@ sub get_dbh {
 
     return if $test_run;
     my %opts = ( ChopBlanks => 1 );
-    $opts{mysql_ssl} = 1 if $ENV{DB_SSL};
+    if ( $ENV{DB_SSL} ) {
+        # each driver has its own attribute name for TLS
+        $opts{ $db_engine eq 'MariaDB' ? 'mariadb_ssl' : 'mysql_ssl' } = 1;
+    }
     my $dbh = DBI->connect( "dbi:$db_engine:host=$db_host", "root", $db_root_pw, \%opts )
         or die $DBI::errstr;
 

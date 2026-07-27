@@ -1522,7 +1522,7 @@ sub get_db_creds_from_nictoolserver_conf {
     if ( !$dsn ) {
 
         #warn "\tparsing DB DSN from $file\n";
-        ($dsn) = $contents =~ m/['"](DBI:mysql.*?)["']/;
+        ($dsn) = $contents =~ m/['"](DBI:(?:mysql|MariaDB).*?)["']/;
     }
 
     if ( !$db_user ) {
