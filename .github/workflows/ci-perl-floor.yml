@@ -33,7 +33,7 @@ jobs:
       - name: Install DBD::mysql
         run: |
           apt-get update -qq && apt-get install -y -qq default-libmysqlclient-dev
-          cpanm -n DBD::mysql@4.050
+          cpanm -n --configure-args="--cflags=\"$(mysql_config --cflags) -Wno-error=incompatible-pointer-types\"" DBD::mysql@4.050
 
       - name: Build server (with deps)
         run: |
