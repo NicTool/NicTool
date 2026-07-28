@@ -27,6 +27,7 @@ use NicToolServer::Nameserver::Sanity;
 
 BEGIN {
     # Database configuration — credentials are required env vars
+    # DB_ENGINE=MariaDB uses DBD::MariaDB instead
     my $db_engine = $ENV{DB_ENGINE}       || 'mysql';
     my $db_host   = $ENV{DB_HOSTNAME}     || '127.0.0.1';
     my $db_name   = $ENV{NICTOOL_DB_NAME} || 'nictool';
@@ -38,7 +39,7 @@ BEGIN {
 
     my $db_port = $ENV{DB_PORT} || '3306';
     my $dsn     = "DBI:$db_engine:database=$db_name;host=$db_host;port=$db_port";
-    $dsn .= ";mysql_ssl=1" if $ENV{DB_SSL};
+    $dsn .= $db_engine eq 'MariaDB' ? ";mariadb_ssl=1" : ";mysql_ssl=1" if $ENV{DB_SSL};
 
     $NicToolServer::dsn     = $dsn;
     $NicToolServer::db_user = $db_user;

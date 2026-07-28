@@ -28,6 +28,13 @@ jobs:
       - name: Install Test::MinimumVersion
         run: cpanm -n Test::MinimumVersion
 
+      # 4.050, not 5.x: the perl-tester images only carry MariaDB client
+      # libs, which DBD::mysql 5.x won't build against
+      - name: Install DBD::mysql
+        run: |
+          apt-get update -qq && apt-get install -y -qq default-libmysqlclient-dev
+          cpanm -n DBD::mysql@4.050
+
       - name: Build server (with deps)
         run: |
           cd server
