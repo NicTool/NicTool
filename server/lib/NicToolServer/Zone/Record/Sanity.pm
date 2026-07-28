@@ -120,6 +120,10 @@ sub _valid_ttl {
         map {
             $_->{ttl} = $data->{ttl};
 
+            # collision rows come from the DB with no {user}; without it the
+            # cascade logs nt_user_id=0
+            $_->{user} = $data->{user};
+
             # Push that update to the DB as well(!)
             $self->SUPER::edit_zone_record($_);
         } @same_type;

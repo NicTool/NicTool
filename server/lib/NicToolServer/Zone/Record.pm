@@ -226,6 +226,11 @@ sub log_zone_record {
     $data->{action}     = $action;
     $data->{timestamp}  = time();
 
+    # without a user the INSERT logs nt_user_id=0, an orphan once the v2.41 FKs exist
+    warn "log_zone_record: no user attribution for '$action' on zone record "
+        . ( $data->{nt_zone_record_id} || '?' ) . "\n"
+        if !$data->{nt_user_id};
+
     # get zone_id if not provided.
     my $db_data;
     if ( !$data->{nt_zone_id} ) {
