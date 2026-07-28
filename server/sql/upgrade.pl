@@ -295,24 +295,11 @@ sub _sql_test_2_41 {
     return 1;
 }
 
-# The v2.41 FKs to nt_user cannot be added while log rows reference users that
-# don't exist. Two repairable classes, neither of which warrants deleting audit
-# history (the previously documented remedies, DELETE and --prune, do):
-#  - nt_user_id=0 in nt_zone_record_log: the Zone/Record/Sanity.pm TTL-sync
-#    cascade dropped attribution (fixed alongside this). The actor is provable
-#    when exactly one attributed edit of the same RRset carries the same new
-#    TTL in the same second; anything less stays unattributed, never guessed.
-#    nt_zone_log rows never came from that cascade, so they are not remapped.
-#  - nt_user_id>0 with no nt_user row: the user was hard-deleted. Restore a
-#    tombstone row (deleted=1) so history keeps its original attribution.
-# Rows referencing hard-deleted zones/groups/records have no parent to repair
-# and still go through the existing prune/abort path.
 sub _repair_user_orphans_2_41 {
 
-    # The cascade's fingerprint: _valid_ttl copies the triggering edit's new
-    # TTL onto every *other* record of the same RRset (zone + name + type),
-    # logging each as 'modified' in the same request. Attribute an orphan only
-    # to the single attributed 'added'/'modified' sibling matching all of that.
+    # the TTL-sync cascade (Zone/Record/Sanity.pm, fixed alongside this) logged
+    # sibling records as 'modified' with nt_user_id=0 in the same second as the
+    # attributed triggering edit; remap only when that actor is unambiguous
     my ($zeros) = _try_list(
         "SELECT COUNT(*) FROM nt_zone_record_log WHERE nt_user_id = 0");
     if ($zeros) {
@@ -346,7 +333,6 @@ sub _repair_user_orphans_2_41 {
     my @user_fk_tables = grep { !$seen{$_}++ }
         map { $_->[0] } grep { $_->[3] eq 'nt_user' } _fks_2_41();
 
-    # restore tombstone users for rows referencing hard-deleted user ids
     my %orphan_ids;
     for my $table (@user_fk_tables) {
         $orphan_ids{$_} = 1 for _try_list(
@@ -367,8 +353,6 @@ sub _repair_user_orphans_2_41 {
         }
     }
 
-    # any nt_user_id=0 rows the heuristic could not resolve get an honest
-    # 'unattributed' system user, not a guess and not a DELETE
     my $sys_id;
     for my $table (@user_fk_tables) {
         my ($zeros) = _try_list("SELECT COUNT(*) FROM `$table` WHERE nt_user_id = 0");
