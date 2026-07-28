@@ -4,7 +4,7 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
-      - '.github/workflows/ci.yml'
+      - '.github/workflows/**'
       - '.test/**'
       - 'client/**'
       - 'server/**'
