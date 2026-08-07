@@ -82,7 +82,7 @@ sub diffhtok {
 
 sub import {
     my $settings;
-    my $file = "test.cfg";
+    my $file = $ENV{NICTOOL_TEST_CFG} || "test.cfg";
     -f $file or $file = "t/test.cfg";
     -f $file or die "could not find your test.cfg file in t/test.cfg\n";
 
@@ -132,10 +132,12 @@ Please install the NicTool api library or edit 'test.cfg' to specify its locatio
 sub nt_api_connect () {
 
     my $user = new NicTool(
-        cache_users  => 0,
-        cache_groups => 0,
-        server_host  => main::Config('server_host'),
-        server_port  => main::Config('server_port')
+        cache_users       => 0,
+        cache_groups      => 0,
+        server_host       => main::Config('server_host'),
+        server_port       => main::Config('server_port'),
+        data_protocol     => main::Config('data_protocol'),
+        transfer_protocol => (main::Config('transfer_protocol') || 'http'),
     );
 
     ok( ref $user, 'NicTool API client' )
