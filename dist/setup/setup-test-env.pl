@@ -114,6 +114,18 @@ db_pass => '$db_pass',
 }
 EOF
 
+# Write server/t/test-rest.cfg (REST bridge to the v3 API)
+write_test_cfg( "$project_root/server/t/test-rest.cfg", <<EOF );
+{
+server_host       => 'api',
+server_port       => 3000,
+transfer_protocol => 'http',
+data_protocol     => 'rest',
+username          => 'nictest\@test_group',
+password          => '$test_pass',
+}
+EOF
+
 # Write server/api/t/test.cfg
 write_test_cfg( "$project_root/server/api/t/test.cfg", <<EOF );
 # edit the following values

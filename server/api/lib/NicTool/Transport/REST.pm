@@ -119,6 +119,137 @@ my %RESOURCE_FOR = (
     delegation  => 'delegation',
 );
 
+# v3 returns RFC field names for zone records; v2 uses generic DB columns
+# (address, weight, priority, other, description).  Map them back.
+my %ZR_RFC_TO_V2 = (
+    CAA   => { value => 'address', flags => 'weight', tag => 'other' },
+    CNAME => { cname => 'address' },
+    DNAME => { target => 'address' },
+    DNSKEY => { publickey => 'address', flags => 'weight',
+                protocol => 'priority', algorithm => 'other' },
+    DS    => { digest => 'address', 'digest type' => 'weight',
+               algorithm => 'priority', 'key tag' => 'other' },
+    HINFO => { os => 'address', cpu => 'other' },
+    HTTPS => { 'target name' => 'address', params => 'other' },
+    KEY   => { publickey => 'address', protocol => 'weight',
+               algorithm => 'priority', flags => 'other' },
+    MX    => { exchange => 'address', preference => 'weight' },
+    NS    => { dname => 'address' },
+    OPENPGPKEY => { 'public key' => 'address' },
+    PTR   => { dname => 'address' },
+    SPF   => { data => 'address' },
+    SRV   => { target => 'address', port => 'other' },
+    SSHFP => { fingerprint => 'address', algorithm => 'weight',
+               fptype => 'priority' },
+    SVCB  => { 'target name' => 'address', params => 'other' },
+    TXT   => { data => 'address' },
+    URI   => { target => 'address' },
+);
+
+sub _remap_zr_rfc_to_v2 {
+    my ($out) = @_;
+    my $map = $ZR_RFC_TO_V2{$out->{type}} or return;
+    for my $rfc_name (keys %$map) {
+        if (exists $out->{$rfc_name}) {
+            $out->{$map->{$rfc_name}} = delete $out->{$rfc_name};
+        }
+    }
+}
+
+# v2 DB columns -> v3 RFC field names, the inverse of %ZR_RFC_TO_V2
+my %ZR_V2_TO_RFC = map {
+    $_ => { reverse %{ $ZR_RFC_TO_V2{$_} } }
+} keys %ZR_RFC_TO_V2;
+
+sub _v2_param_error {
+    my ($param, $code) = @_;
+    return {
+        error_code => $code,
+        error_msg  => $param,
+        error_desc => $code == 301
+            ? 'Required parameters missing'
+            : 'Some parameters were invalid',
+    };
+}
+
+sub _get_json {
+    my ($self, $path) = @_;
+    my $token = $self->_nt->{_rest_jwt_token};
+    my %headers = ('Content-Type' => 'application/json');
+    $headers{'Authorization'} = "Bearer $token" if $token;
+
+    $self->{http} ||= HTTP::Tiny->new(
+        agent   => "NicTool-REST/$NicTool::VERSION",
+        timeout => 30,
+    );
+    my $resp = $self->{http}->request('GET', $self->_base_url . $path,
+        { headers => \%headers });
+    return undef unless $resp->{status} == 200 && $resp->{content};
+    return eval { $JSON->decode($resp->{content}) };
+}
+
+sub _qualify_owner {
+    my ($self, $body) = @_;
+    my $zid = $body->{zid} or return;
+
+    my $zone = $self->_get_zone($zid) or return;
+    (my $bare = $zone->{zone}) =~ s/\.$//;
+    $body->{owner} .= $body->{owner} eq $bare ? '.' : ".$bare.";
+}
+
+# zone id -> { zone, gid }, cached for the life of the transport
+sub _get_zone {
+    my ($self, $zid) = @_;
+    return undef unless $zid && $zid =~ /^\d+$/;
+
+    $self->{zones_by_zid} //= {};
+    if (!exists $self->{zones_by_zid}{$zid}) {
+        my $data = $self->_get_json("/zone/$zid");
+        return undef unless $data && $data->{zone} && $data->{zone}[0];
+        my $z = $data->{zone}[0];
+        $self->{zones_by_zid}{$zid}
+            = { zone => $z->{zone}, gid => $z->{gid} };
+    }
+    return $self->{zones_by_zid}{$zid};
+}
+
+# v2 kept record owners relative to their zone ('a' for 'a.zone.com.');
+# v3 stores them fully qualified, so strip the known zone suffix back off
+sub _unqualify_owner {
+    my ($self, $entity) = @_;
+    return unless $entity && ref $entity eq 'HASH';
+    my $owner = $entity->{owner};
+    return unless defined $owner && $owner =~ /\.$/;
+
+    # _remap_fields has already renamed zid -> nt_zone_id
+    my $zone = $self->_get_zone( $entity->{nt_zone_id} ) or return;
+    (my $bare = $zone->{zone}) =~ s/\.$//;
+    return unless $bare;
+
+    if ($owner eq "$bare.") {
+        $entity->{owner} = '';
+    }
+    else {
+        $entity->{owner} =~ s/\.\Q$bare\E\.$//;
+    }
+}
+
+# owning group id of a delegated object (zone, or the zone under a record)
+sub _delegation_object_gid {
+    my ($self, $action, $oid) = @_;
+    if ( $action =~ /zone_record/ ) {
+        my $data = $self->_get_json("/zone_record/$oid");
+        return undef unless $data && $data->{zone_record} && $data->{zone_record}[0];
+        my $zone = $self->_get_zone( $data->{zone_record}[0]{zid} );
+        return undef unless $zone;
+        return $zone->{gid};
+    }
+    my $zone = $self->_get_zone($oid);
+    return undef unless $zone;
+    return $zone->{gid};
+}
+
+
 sub send_request {
     my ($self, $url, %vars) = @_;
 
@@ -132,10 +263,12 @@ sub send_request {
     my $http_method = $spec->{method};
     my $path        = $spec->{path};
 
-    # For id_from_list actions, extract first ID from comma-separated list
+    # For id_from_list actions, extract IDs from an arrayref or comma-separated list
+    my $list_raw;
     if ($spec->{id_from_list}) {
-        my $list_val = delete $vars{$spec->{id_from_list}} // '';
-        my @ids = grep { /^\d+$/ } split /,/, $list_val;
+        $list_raw = delete $vars{$spec->{id_from_list}} // '';
+        my @vals = ref $list_raw eq 'ARRAY' ? @$list_raw : split /,/, $list_raw;
+        my @ids = grep { defined && /^\d+$/ && $_ > 0 } @vals;
         if (@ids > 1) {
             if ($http_method eq 'POST') {
                 return $self->_multi_create($url, $action, $spec, \@ids, %vars);
@@ -143,6 +276,52 @@ sub send_request {
             return $self->_multi_delete($url, $spec, \@ids, %vars);
         }
         $vars{id} = $ids[0] if @ids;
+    }
+
+    # delegation calls: reject missing/invalid list, object and group ids
+    # with the error codes the v2 client expects
+    if ( $action =~ /delegat/ ) {
+        my $id_param = $action =~ /zone_record/ ? 'nt_zone_record_id' : 'nt_zone_id';
+
+        if ( defined $list_raw && !exists $vars{id} ) {
+            return _v2_param_error( $spec->{id_from_list},
+                length $list_raw ? 302 : 301 );
+        }
+
+        my $oid = exists $vars{id} ? $vars{id} : $vars{$id_param};
+        if ( $action !~ /^get_delegated_/ ) {
+            if ( !defined $oid || $oid eq '' ) {
+                return _v2_param_error( $id_param, 301 );
+            }
+            if ( $oid !~ /^\d+$/ || $oid == 0 ) {
+                return _v2_param_error( $id_param, 302 );
+            }
+        }
+
+        my $gid = $vars{nt_group_id};
+        if ( $action =~ /^get_delegated_/ || $http_method ne 'GET' ) {
+            if ( !defined $gid || $gid eq '' ) {
+                return _v2_param_error( 'nt_group_id', 301 );
+            }
+            if ( $gid !~ /^\d+$/ || $gid == 0 ) {
+                return _v2_param_error( 'nt_group_id', 302 );
+            }
+        }
+
+        # delegating an object to the group that already owns it is a no-op
+        # the v2 server rejected as a sanity error
+        if (   $http_method eq 'POST'
+            && defined $oid
+            && ( my $obj_gid = $self->_delegation_object_gid( $action, $oid ) ) )
+        {
+            if ( $obj_gid == $gid ) {
+                return {
+                    error_code => 300,
+                    error_msg  => 'Cannot delegate to your own group.',
+                    error_desc => 'Sanity error',
+                };
+            }
+        }
     }
 
     # Substitute :param placeholders in path
@@ -181,12 +360,35 @@ sub send_request {
         $body{owner} = delete $body{name};
     }
 
+    # zone_record: qualify relative owners against their zone, like the v2
+    # server did; v3's RR parser rejects them
+    if (   $action =~ /^(?:new|edit)_zone_record$/
+        && defined $body{owner}
+        && $body{owner} !~ /\.$/ )
+    {
+        $self->_qualify_owner( \%body );
+    }
+
+    # zone_record: v2 generic DB columns -> v3 RFC field names
+    # (A/TXT/etc. use 'address' in both; only mapped types change)
+    if ($action =~ /^(?:new|edit)_zone_record$/ && $body{type}) {
+        my $map = $ZR_V2_TO_RFC{ $body{type} };
+        if ($map) {
+            for my $v2col (keys %$map) {
+                $body{ $map->{$v2col} } = delete $body{$v2col}
+                    if exists $body{$v2col};
+            }
+        }
+        # v2 edits can't change a record's type; v3 chokes on the extra field
+        delete $body{type} if $action =~ /^edit_/;
+    }
+
     # user: v2 sends password2 (confirmation), v3 doesn't use it
     delete $body{password2};
 
-    # nameserver: v2 sends export_format, v3 nests it as export.type
+    # nameserver: v2 calls it export_format, v3 wants a flat type
     if ($action =~ /nameserver/ && exists $body{export_format}) {
-        $body{export} = { type => delete $body{export_format} };
+        $body{type} = delete $body{export_format};
     }
 
     # nameserver: v3 requires ttl, v2 doesn't always send it
@@ -367,6 +569,22 @@ sub _delegation_type {
     return 'ZONE';
 }
 
+# v2 client reads lists from a per-action key (NicTool::API
+# result-list-param); mirror the response under that name too
+my %LIST_PARAM = (
+    get_group_groups             => 'groups',
+    get_group_branch             => 'groups',
+    get_group_subgroups          => 'groups',
+    get_group_zones              => 'zones',
+    get_zone_records             => 'records',
+    get_usable_nameservers       => 'nameservers',
+    get_nameserver_export_types  => 'types',
+    get_delegated_zones          => 'ZONE',
+    get_delegated_zone_records   => 'ZONERECORD',
+    get_zone_delegates           => 'delegates',
+    get_zone_record_delegates    => 'delegates',
+);
+
 sub _adapt_response {
     my ($self, $action, $data) = @_;
 
@@ -408,10 +626,13 @@ sub _adapt_response {
     if ($is_list) {
         my @remapped = map {
             my $r = _remap_fields($_, $resource);
+            $self->_unqualify_owner($r) if $resource eq 'zone_record';
             _flatten_permissions($r);
             $r;
         } @$entity_data;
         $result->{list} = \@remapped;
+        my $list_param = $LIST_PARAM{$action};
+        $result->{$list_param} = \@remapped if $list_param;
         if (my $pg = $data->{meta}{pagination}) {
             $result->{total}  = $pg->{total}    // 0;
             $result->{start}  = ($pg->{offset}  // 0);
@@ -430,6 +651,7 @@ sub _adapt_response {
     else {
         # Single-entity GET/PUT/DELETE
         my $entity = _remap_fields($entity_data->[0], $resource);
+        $self->_unqualify_owner($entity) if $resource eq 'zone_record';
         %$result = (%$result, %$entity);
     }
 
@@ -606,6 +828,11 @@ sub _remap_fields {
         $out{export_status}   = $exp->{status}    if exists $exp->{status};
     }
 
+    # v3 returns the export type as a flat field
+    if ($resource eq 'nameserver' && exists $out{type}) {
+        $out{export_format} //= delete $out{type};
+    }
+
     return \%out;
 }
 
@@ -674,43 +901,6 @@ sub _flatten_permissions {
     # Top-level permission fields
     $result->{self_write} = $perms->{self_write} ? 1 : 0
         if exists $perms->{self_write};
-}
-
-# v3 returns RFC field names for zone records; v2 uses generic DB columns
-# (address, weight, priority, other, description).  Map them back.
-my %ZR_RFC_TO_V2 = (
-    CAA   => { value => 'address', flags => 'weight', tag => 'other' },
-    CNAME => { cname => 'address' },
-    DNAME => { target => 'address' },
-    DNSKEY => { publickey => 'address', flags => 'weight',
-                protocol => 'priority', algorithm => 'other' },
-    DS    => { digest => 'address', 'digest type' => 'weight',
-               algorithm => 'priority', 'key tag' => 'other' },
-    HINFO => { os => 'address', cpu => 'other' },
-    HTTPS => { 'target name' => 'address', params => 'other' },
-    KEY   => { publickey => 'address', protocol => 'weight',
-               algorithm => 'priority', flags => 'other' },
-    MX    => { exchange => 'address', preference => 'weight' },
-    NS    => { dname => 'address' },
-    OPENPGPKEY => { 'public key' => 'address' },
-    PTR   => { dname => 'address' },
-    SPF   => { data => 'address' },
-    SRV   => { target => 'address', port => 'other' },
-    SSHFP => { fingerprint => 'address', algorithm => 'weight',
-               fptype => 'priority' },
-    SVCB  => { 'target name' => 'address', params => 'other' },
-    TXT   => { data => 'address' },
-    URI   => { target => 'address' },
-);
-
-sub _remap_zr_rfc_to_v2 {
-    my ($out) = @_;
-    my $map = $ZR_RFC_TO_V2{$out->{type}} or return;
-    for my $rfc_name (keys %$map) {
-        if (exists $out->{$rfc_name}) {
-            $out->{$map->{$rfc_name}} = delete $out->{$rfc_name};
-        }
-    }
 }
 
 sub _not_implemented {

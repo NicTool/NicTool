@@ -248,7 +248,8 @@ sub start {
         cache_zone    => 0,
         cache_records => 0,
         server_host   => Config('server_host'),
-        server_port   => Config('server_port')
+        server_port   => Config('server_port'),
+        data_protocol => Config('data_protocol')
     );
     isa_ok( $tuser, 'NicTool' );
 
@@ -1399,6 +1400,7 @@ sub test_zones {
         cache_groups => 0,
         server_host  => Config('server_host'),
         server_port  => Config('server_port'),
+        data_protocol => Config('data_protocol'),
     );
     isa_ok( $tuser2, 'NicTool' ) or die "Couldn't create NicTool Object";
 
@@ -1851,7 +1853,8 @@ sub test_zone_records {
         cache_users  => 0,
         cache_groups => 0,
         server_host  => Config('server_host'),
-        server_port  => Config('server_port')
+        server_port  => Config('server_port'),
+        data_protocol => Config('data_protocol')
     );
     isa_ok( $tuser2, 'NicTool' )
         or die "Couldn't create NicTool Object";
