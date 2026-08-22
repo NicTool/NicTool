@@ -218,7 +218,7 @@ sub _get_zone {
 sub _unqualify_owner {
     my ($self, $entity) = @_;
     return unless $entity && ref $entity eq 'HASH';
-    my $owner = $entity->{owner};
+    my $owner = $entity->{name};
     return unless defined $owner && $owner =~ /\.$/;
 
     # _remap_fields has already renamed zid -> nt_zone_id
@@ -227,10 +227,10 @@ sub _unqualify_owner {
     return unless $bare;
 
     if ($owner eq "$bare.") {
-        $entity->{owner} = '';
+        $entity->{name} = '';
     }
     else {
-        $entity->{owner} =~ s/\.\Q$bare\E\.$//;
+        $entity->{name} =~ s/\.\Q$bare\E\.$//;
     }
 }
 
@@ -366,6 +366,12 @@ sub send_request {
         && defined $body{owner}
         && $body{owner} !~ /\.$/ )
     {
+        if ($action eq 'edit_zone_record' && !$body{zid} && $path =~ m{/zone_record/(\d+)$}) {
+            my $data = $self->_get_json("/zone_record/$1");
+            if ($data && $data->{zone_record} && $data->{zone_record}[0]) {
+                $body{zid} = $data->{zone_record}[0]{zid};
+            }
+        }
         $self->_qualify_owner( \%body );
     }
 
@@ -379,8 +385,6 @@ sub send_request {
                     if exists $body{$v2col};
             }
         }
-        # v2 edits can't change a record's type; v3 chokes on the extra field
-        delete $body{type} if $action =~ /^edit_/;
     }
 
     # user: v2 sends password2 (confirmation), v3 doesn't use it
@@ -411,6 +415,10 @@ sub send_request {
     # v2 sends booleans as 0/1 integers; v3 Joi expects real booleans
     for my $bkey (qw(inherit_group_permissions is_admin deleted)) {
         $body{$bkey} = $body{$bkey} ? \1 : \0 if exists $body{$bkey};
+    }
+
+    if ($action eq 'edit_zone' && defined $body{serial}) {
+        $body{serial} = _increment_serial($body{serial});
     }
 
     # delegation: inject object type and remap object ID param
@@ -476,7 +484,38 @@ sub send_request {
         return _http_error($resp->{status}, $data);
     }
 
+    if (
+        $action =~ /^get_(?:zone|zone_record|group|user|nameserver)$/
+        && $path =~ m{/\d+$}
+    ) {
+        my $resource = _resource_for_action($action);
+        my $rkey = $RESOURCE_FOR{$resource} // $resource;
+        my $entities = $data->{$rkey};
+        if (!$entities || (ref $entities eq 'ARRAY' && !@$entities)) {
+            my $retry_url = $full_url . ($full_url =~ /\?/ ? '&' : '?') . 'deleted=true';
+            my $retry = $self->{http}->request('GET', $retry_url,
+                { headers => \%headers });
+            if ($retry->{status} < 400 && $retry->{content}) {
+                my $retry_data = eval { $JSON->decode($retry->{content}) };
+                $data = $retry_data if $retry_data;
+            }
+        }
+    }
+
     return $self->_adapt_response($action, $data);
+}
+
+sub _increment_serial {
+    my ($serial) = @_;
+    return ++$serial if length($serial) < 10 || $serial <= 1970000000;
+    return 1 if $serial + 1 >= 2**32;
+    return ++$serial unless $serial =~ /^(\d{4})(\d{2})(\d{2})(\d{2})$/;
+
+    my $serial_date = "$1$2$3";
+    my @now = localtime;
+    my $today = sprintf '%04d%02d%02d', $now[5] + 1900, $now[4] + 1, $now[3];
+    return $today . '00' if $serial_date < $today;
+    return ++$serial;
 }
 
 sub _multi_delete {
@@ -626,7 +665,16 @@ sub _adapt_response {
     if ($is_list) {
         my @remapped = map {
             my $r = _remap_fields($_, $resource);
+            $r->{deleted} //= 0
+                if $resource =~ /^(?:zone|zone_record|group|user|nameserver)$/;
             $self->_unqualify_owner($r) if $resource eq 'zone_record';
+            if ($action =~ /^get_delegated_(?:zones|zone_records)$/) {
+                my $oid = $action eq 'get_delegated_zones'
+                    ? $r->{nt_zone_id}
+                    : $r->{nt_zone_record_id};
+                my $gid = $self->_delegation_object_gid($action, $oid);
+                $r->{nt_group_id} = $gid if $gid;
+            }
             _flatten_permissions($r);
             $r;
         } @$entity_data;
@@ -651,6 +699,8 @@ sub _adapt_response {
     else {
         # Single-entity GET/PUT/DELETE
         my $entity = _remap_fields($entity_data->[0], $resource);
+        $entity->{deleted} //= 0
+            if $resource =~ /^(?:zone|zone_record|group|user|nameserver)$/;
         $self->_unqualify_owner($entity) if $resource eq 'zone_record';
         %$result = (%$result, %$entity);
     }
@@ -775,6 +825,28 @@ sub _supplement_delegation {
 
     return unless $resp->{status} == 200 && $resp->{content};
     my $data = eval { $JSON->decode($resp->{content}) };
+    if (   $action eq 'get_zone'
+        && (!$data || !$data->{delegation} || !@{$data->{delegation}}) )
+    {
+        my $delegated = $self->_get_json(
+            "/delegation?gid=$gid&type=ZONERECORD" );
+        for my $record (@{ $delegated->{delegation} // [] }) {
+            my $rid = $record->{nt_zone_record_id} // $record->{nt_object_id};
+            next unless $rid;
+            my $zr = $self->_get_json("/zone_record/$rid");
+            next unless $zr && $zr->{zone_record} && $zr->{zone_record}[0];
+            next unless $zr->{zone_record}[0]{zid} == $oid;
+            $result->{pseudo}                  = 1;
+            $result->{deleted}                 = 0;
+            $result->{delegate_write}          = 0;
+            $result->{delegate_delete}         = 0;
+            $result->{delegate_delegate}       = 0;
+            $result->{delegate_add_records}    = 0;
+            $result->{delegate_delete_records} = 0;
+            return;
+        }
+    }
+
     return unless $data && $data->{delegation} && @{$data->{delegation}};
 
     my $d = $data->{delegation}[0];
