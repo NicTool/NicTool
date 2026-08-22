@@ -98,7 +98,7 @@ test.describe('Delegation', () => {
         `Save=Save&group_list=${childGid}&obj_list=${zid}&type=zone&perm_write=1&perm_delete=0&perm_delegate=0&zone_perm_add_records=1&zone_perm_delete_records=1&csrf_token=${csrfToken}`);
 
       // Login as child user
-      const childLogin = await apiLogin(playwright, `${username}@${childGroupName}`, 'delegtest123!');
+      const childLogin = await apiLogin(playwright, `${username}@${childGroupName}`, 'Deleg#Test#E2E46');
       const childCookies = cookieString(childLogin.sessionCookie, childLogin.csrfCookie);
 
       // Should be able to create a record in the delegated zone
@@ -121,7 +121,7 @@ test.describe('Delegation', () => {
         `Modify=Modify&nt_group_id=${childGid}&obj_list=${zid}&type=zone&perm_write=0&perm_delete=0&perm_delegate=0&zone_perm_add_records=0&zone_perm_delete_records=0&csrf_token=${csrfToken}`);
 
       // Login as child user
-      const childLogin = await apiLogin(playwright, `${username}@${childGroupName}`, 'delegtest123!');
+      const childLogin = await apiLogin(playwright, `${username}@${childGroupName}`, 'Deleg#Test#E2E46');
       const childCookies = cookieString(childLogin.sessionCookie, childLogin.csrfCookie);
 
       // Trying to add a record should fail

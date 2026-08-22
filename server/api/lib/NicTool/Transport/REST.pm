@@ -1049,7 +1049,12 @@ sub _adapt_session {
 sub _supplement_delegation {
     my ($self, $result, $action) = @_;
 
-    my $gid = $self->_nt->{user}{store}{nt_group_id};
+    my $gid = eval { $self->_nt->{user}{store}{nt_group_id} };
+    if (!$gid) {
+        my $session = $self->_get_json('/session');
+        $gid = $session->{group}{id}
+            if $session && $session->{group};
+    }
     return unless $gid;
 
     my $oid;

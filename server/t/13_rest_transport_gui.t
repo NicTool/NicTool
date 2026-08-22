@@ -159,6 +159,28 @@ my $rr_type_result = $rr_types->send_request(
 is_deeply [ map { $_->{name} } @{ $rr_type_result->{types} } ],
     [qw( A AAAA TXT )], 'record choices come from the v3 API schema';
 
+my $delegated_zone = transport(
+    response({ zone => [ { id => 9, gid => 1, zone => 'delegated.test' } ] }),
+    response({ group => { id => 2 } }),
+    response({ delegation => [ {
+        delegate_write => 1,
+        delegate_delete => 1,
+        delegate_delegate => 0,
+        delegate_add_records => 1,
+        delegate_delete_records => 1,
+    } ] }),
+);
+my $delegated_zone_result = $delegated_zone->send_request(
+    'http://api:3000',
+    action      => 'get_zone',
+    nt_zone_id => 9,
+);
+is $delegated_zone_result->{delegate_write}, 1,
+    'GUI zone reads derive delegation from the authenticated session group';
+like $delegated_zone->{http}{requests}[2][1],
+    qr{/delegation\?oid=9&gid=2&type=ZONE$},
+    'GUI delegation lookup uses the session group';
+
 my $new_zone = transport(response({ zone => [ { id => 9, gid => 2 } ] }));
 my $new_zone_result = $new_zone->send_request(
     'http://api:3000',
