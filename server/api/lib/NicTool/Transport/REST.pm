@@ -24,6 +24,8 @@ my %ACTION_MAP = (
     edit_zone       => { method => 'PUT',     path => '/zone/:nt_zone_id' },
     delete_zones    => { method => 'DELETE',  path => '/zone/:id',
                          id_from_list => 'zone_list' },
+    move_zones      => { method => 'PUT',     path => '/zone/:id',
+                         id_from_list => 'zone_list' },
     get_zone_list   => { method => 'GET',     path => '/zone/:id',
                          id_from_list => 'zone_list' },
     get_group_zones => { method => 'GET',     path => '/zone',
@@ -68,6 +70,8 @@ my %ACTION_MAP = (
     edit_user       => { method => 'PUT',     path => '/user/:nt_user_id' },
     delete_users    => { method => 'DELETE',  path => '/user/:id',
                          id_from_list => 'user_list' },
+    move_users      => { method => 'PUT',     path => '/user/:id',
+                         id_from_list => 'user_list' },
     get_user_list   => { method => 'GET',     path => '/user/:id',
                          id_from_list => 'user_list' },
     get_group_users => { method => 'GET',     path => '/user',
@@ -84,6 +88,8 @@ my %ACTION_MAP = (
     get_nameserver        => { method => 'GET',     path => '/nameserver/:nt_nameserver_id' },
     edit_nameserver       => { method => 'PUT',     path => '/nameserver/:nt_nameserver_id' },
     delete_nameserver     => { method => 'DELETE',  path => '/nameserver/:nt_nameserver_id' },
+    move_nameservers      => { method => 'PUT',     path => '/nameserver/:id',
+                               id_from_list => 'nameserver_list' },
     get_nameserver_list   => { method => 'GET',     path => '/nameserver/:id',
                                id_from_list => 'nameserver_list' },
     get_group_nameservers => { method => 'GET',     path => '/nameserver',
@@ -464,6 +470,9 @@ sub send_request {
             if ($http_method eq 'POST') {
                 return $self->_multi_create($url, $action, $spec, \@ids, %vars);
             }
+            if ($http_method eq 'PUT') {
+                return $self->_multi_put($url, $spec, \@ids, %vars);
+            }
             return $self->_multi_delete($url, $spec, \@ids, %vars);
         }
         if ($http_method eq 'GET' && !@ids) {
@@ -784,6 +793,41 @@ sub _multi_delete {
 
         my $resp = $self->_http->request('DELETE', $full_url,
             { headers => \%headers });
+
+        if ($resp->{status} >= 400) {
+            my $data = {};
+            if ($resp->{content} && length $resp->{content}) {
+                eval { $data = $JSON->decode($resp->{content}) };
+            }
+            return _http_error($resp->{status}, $data);
+        }
+    }
+
+    return { error_code => 200, error_msg => 'OK' };
+}
+
+sub _multi_put {
+    my ($self, $url, $spec, $ids, %vars) = @_;
+
+    my %body;
+    for my $key (keys %vars) {
+        my $v3key = $PARAM_V3{$key} // $key;
+        $body{$v3key} = $vars{$key};
+    }
+    delete $body{$_} for grep { !defined $body{$_} } keys %body;
+
+    my $token = $self->_nt->{_rest_jwt_token};
+    my %headers = ('Content-Type' => 'application/json');
+    $headers{'Authorization'} = "Bearer $token" if $token;
+
+    for my $id (@$ids) {
+        my $path = $spec->{path};
+        $path =~ s{:id}{$id}g;
+
+        my $resp = $self->_http->request('PUT', $url . $path, {
+            headers => \%headers,
+            content => $JSON->encode(\%body),
+        });
 
         if ($resp->{status} >= 400) {
             my $data = {};

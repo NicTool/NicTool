@@ -120,6 +120,50 @@ my $zone_result = $zones->send_request(
 is_deeply [ map { $_->{nt_zone_id} } @{ $zone_result->{zones} } ],
     [ 7, 8 ], 'ID list reads are aggregated through single-object v3 routes';
 
+my $move_zones = transport(response({}), response({}));
+my $move_result = $move_zones->send_request(
+    'http://api:3000',
+    action      => 'move_zones',
+    nt_group_id => 4,
+    zone_list   => '7,8',
+);
+is $move_result->{error_code}, 200,
+    'multi-zone moves retain the v2 success response';
+is_deeply [ map { $_->[0] } @{ $move_zones->{http}{requests} } ],
+    [qw( PUT PUT )], 'multi-zone moves use PUT rather than DELETE';
+is_deeply [ map { $_->[1] } @{ $move_zones->{http}{requests} } ],
+    [qw( http://api:3000/zone/7 http://api:3000/zone/8 )],
+    'each moved zone targets its v3 object route';
+for my $request (@{ $move_zones->{http}{requests} }) {
+    is_deeply(
+        JSON::PP->new->decode( $request->[2]{content} ),
+        { gid => 4 },
+        'each moved zone receives the destination group'
+    );
+}
+
+my $move_users = transport(response({}), response({}));
+$move_users->send_request(
+    'http://api:3000',
+    action      => 'move_users',
+    nt_group_id => 4,
+    user_list   => [ 5, 6 ],
+);
+is_deeply [ map { $_->[1] } @{ $move_users->{http}{requests} } ],
+    [qw( http://api:3000/user/5 http://api:3000/user/6 )],
+    'multi-user moves use each v3 user route';
+
+my $move_nameservers = transport(response({}), response({}));
+$move_nameservers->send_request(
+    'http://api:3000',
+    action          => 'move_nameservers',
+    nt_group_id     => 4,
+    nameserver_list => '10,11',
+);
+is_deeply [ map { $_->[1] } @{ $move_nameservers->{http}{requests} } ],
+    [qw( http://api:3000/nameserver/10 http://api:3000/nameserver/11 )],
+    'multi-nameserver moves use each v3 nameserver route';
+
 my $swagger = {
     paths => {
         '/nameserver' => { post => { parameters => [ {
