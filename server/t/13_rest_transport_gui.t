@@ -389,4 +389,115 @@ my $record_body = JSON::PP->new->decode(
     $new_record->{http}{requests}[1][2]{content} );
 ok !exists $record_body->{gid}, 'zone record writes omit the display group id';
 
+my $sshfp = transport(response({
+    zone_record => [ {
+        id => 12, zid => 9, owner => 'ssh.new.test.', type => 'SSHFP',
+        algorithm => 1, fptype => 1, fingerprint => 'abcdef',
+    } ],
+}));
+$sshfp->send_request(
+    'http://api:3000',
+    action        => 'new_zone_record',
+    nt_group_id   => 2,
+    nt_zone_id    => 9,
+    name          => 'ssh.new.test.',
+    type          => 'SSHFP',
+    address       => 'abcdef',
+    weight        => '1',
+    other         => '1',
+);
+my $sshfp_body = JSON::PP->new->decode(
+    $sshfp->{http}{requests}[0][2]{content} );
+is $sshfp_body->{fptype}, 1,
+    'SSHFP accepts the legacy other-column fingerprint type fallback';
+ok !exists $sshfp_body->{other}, 'SSHFP fallback removes the unused column';
+
+my $naptr = transport(response({
+    zone_record => [ {
+        id => 13, zid => 9, owner => 'naptr.new.test.', type => 'NAPTR',
+        order => 100, preference => 10, flags => 'U', service => 'E2U+sip',
+        regexp => '!^.*$!sip:info@example.com!', replacement => '.',
+    } ],
+}));
+$naptr->send_request(
+    'http://api:3000',
+    action        => 'new_zone_record',
+    nt_group_id   => 2,
+    nt_zone_id    => 9,
+    name          => 'naptr.new.test.',
+    type          => 'NAPTR',
+    address       => '"U" "E2U+sip" "!^.*$!sip:info@example.com!"',
+    weight        => '100',
+    priority      => '10',
+    description   => '.',
+);
+my $naptr_body = JSON::PP->new->decode(
+    $naptr->{http}{requests}[0][2]{content} );
+is_deeply {
+    map { $_ => $naptr_body->{$_} }
+        qw(order preference flags service regexp replacement)
+}, {
+    order => 100, preference => 10, flags => 'U', service => 'E2U+sip',
+    regexp => '!^.*$!sip:info@example.com!', replacement => '.',
+}, 'packed v2 NAPTR fields become RFC fields';
+my $naptr_read = transport(response({
+    zone_record => [ {
+        id => 13, zid => 9, owner => 'naptr.new.test.', type => 'NAPTR',
+        order => 100, preference => 10, flags => 'U', service => 'E2U+sip',
+        regexp => '!^.*$!sip:info@example.com!', replacement => '.',
+    } ],
+}), response({ zone => [ { id => 9, gid => 2, zone => 'new.test.' } ] }));
+my $naptr_result = $naptr_read->send_request(
+    'http://api:3000',
+    action     => 'get_zone_records',
+    nt_zone_id => 9,
+);
+is $naptr_result->{records}[0]{address},
+    '"U" "E2U+sip" "!^.*$!sip:info@example.com!"',
+    'RFC NAPTR fields return in the v2 packed address column';
+
+my $naptr_short = transport(response({
+    zone_record => [ {
+        id => 14, zid => 9, owner => 'short.new.test.', type => 'NAPTR',
+        order => 100, preference => 10, flags => 'U', service => '',
+        regexp => '!^.*$!sip:info@example.com!', replacement => '.',
+    } ],
+}));
+$naptr_short->send_request(
+    'http://api:3000',
+    action        => 'new_zone_record',
+    nt_group_id   => 2,
+    nt_zone_id    => 9,
+    name          => 'short.new.test.',
+    type          => 'NAPTR',
+    address       => '!^.*$!sip:info@example.com!',
+    weight        => '100',
+    priority      => '10',
+    other         => 'u',
+);
+my $naptr_short_body = JSON::PP->new->decode(
+    $naptr_short->{http}{requests}[0][2]{content} );
+is_deeply {
+    map { $_ => $naptr_short_body->{$_} }
+        qw(flags service regexp replacement)
+}, {
+    flags => 'u', service => '', regexp => '!^.*$!sip:info@example.com!',
+    replacement => '.',
+}, 'legacy NAPTR shorthand receives valid RFC defaults';
+
+my $naptr_partial = transport(response({
+    zone_record => [ { id => 14, zid => 9, owner => 'short.new.test.', type => 'NAPTR' } ],
+}), response({ zone => [ { id => 9, gid => 2, zone => 'new.test.' } ] }));
+$naptr_partial->send_request(
+    'http://api:3000',
+    action            => 'edit_zone_record',
+    nt_zone_record_id => 14,
+    type              => 'NAPTR',
+    ttl               => 7200,
+);
+my $naptr_partial_body = JSON::PP->new->decode(
+    $naptr_partial->{http}{requests}[0][2]{content} );
+ok !exists $naptr_partial_body->{regexp},
+    'partial NAPTR edits do not clear omitted rdata fields';
+
 done_testing;

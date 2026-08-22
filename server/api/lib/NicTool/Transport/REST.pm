@@ -197,6 +197,8 @@ my %ZR_RFC_TO_V2 = (
     KEY   => { publickey => 'address', protocol => 'weight',
                algorithm => 'priority', flags => 'other' },
     MX    => { exchange => 'address', preference => 'weight' },
+    NAPTR => { order => 'weight', preference => 'priority',
+               replacement => 'description' },
     NS    => { dname => 'address' },
     OPENPGPKEY => { 'public key' => 'address' },
     PTR   => { dname => 'address' },
@@ -217,6 +219,34 @@ sub _remap_zr_rfc_to_v2 {
             $out->{$map->{$rfc_name}} = delete $out->{$rfc_name};
         }
     }
+    if ($out->{type} eq 'NAPTR') {
+        my @parts = map { delete $out->{$_} // '' } qw(flags service regexp);
+        $out->{address} = join ' ', map { qq{"$_"} } @parts;
+    }
+}
+
+sub _unpack_v2_naptr {
+    my ($body, $default_replacement) = @_;
+    return unless exists $body->{address} || exists $body->{other};
+
+    my $packed = delete $body->{address} // '';
+    my @parts;
+
+    if ($packed =~ /^\s*"([^"]*)"\s+"([^"]*)"\s+"([^"]*)"\s*$/) {
+        @parts = ($1, $2, $3);
+    } elsif ($packed =~ /^'([^']*)','([^']*)','([^']*)'$/) {
+        @parts = ($1, $2, $3);
+    } else {
+        @parts = (delete($body->{other}) // '', '', $packed);
+    }
+
+    @{$body}{qw(flags service regexp)} = @parts;
+    if (   $default_replacement
+        && (!defined $body->{description} || !length $body->{description}) )
+    {
+        $body->{description} = '.';
+    }
+    delete $body->{other};
 }
 
 # v2 DB columns -> v3 RFC field names, the inverse of %ZR_RFC_TO_V2
@@ -632,6 +662,14 @@ sub send_request {
     # zone_record: v2 generic DB columns -> v3 RFC field names
     # (A/TXT/etc. use 'address' in both; only mapped types change)
     if ($action =~ /^(?:new|edit)_zone_record$/ && $body{type}) {
+        if ($body{type} eq 'SSHFP') {
+            $body{priority} = $body{other}
+                if !exists $body{priority} && exists $body{other};
+            delete $body{other};
+        }
+        _unpack_v2_naptr(\%body, $action eq 'new_zone_record')
+            if $body{type} eq 'NAPTR';
+
         my $map = $ZR_V2_TO_RFC{ $body{type} };
         if ($map) {
             for my $v2col (keys %$map) {
