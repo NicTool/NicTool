@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import {
-  BASE,
+  BASE, TEST_GID,
   apiLogin, authGet, authPost, cookieString,
   createGroup, deleteGroup, createZone, deleteZone,
   createRecord, deleteRecord, uniqueName, extractCsrf,
@@ -17,13 +17,13 @@ test.describe('Records', () => {
     const { sessionCookie, csrfCookie } = await apiLogin(playwright);
     cookies = cookieString(sessionCookie, csrfCookie);
     csrfToken = csrfCookie;
-    gid = await createGroup(playwright, cookies, 1, uniqueName('e2e_recs'));
+    gid = await createGroup(playwright, cookies, TEST_GID, uniqueName('e2e_recs'));
     zid = await createZone(playwright, cookies, gid, `${uniqueName('e2e')}.test`);
   });
 
   test.afterAll(async ({ playwright }) => {
     await deleteZone(playwright, cookies, gid, zid);
-    await deleteGroup(playwright, cookies, 1, gid);
+    await deleteGroup(playwright, cookies, TEST_GID, gid);
   });
 
   // --- Basic record types ---

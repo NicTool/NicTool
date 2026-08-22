@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import {
-  BASE,
+  BASE, TEST_GID,
   apiLogin, authGet, authPost, cookieString,
   createGroup, deleteGroup, createUser, deleteUser,
   uniqueName, extractCsrf,
@@ -17,11 +17,11 @@ test.describe('Users', () => {
     cookies = cookieString(sessionCookie, csrfCookie);
     csrfToken = csrfCookie;
     groupName = uniqueName('e2e_users');
-    gid = await createGroup(playwright, cookies, 1, groupName);
+    gid = await createGroup(playwright, cookies, TEST_GID, groupName);
   });
 
   test.afterAll(async ({ playwright }) => {
-    await deleteGroup(playwright, cookies, 1, gid);
+    await deleteGroup(playwright, cookies, TEST_GID, gid);
   });
 
   test('create user with inherited group permissions', async ({ playwright }) => {

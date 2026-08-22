@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import {
-  BASE,
+  BASE, TEST_GID,
   apiLogin, authGet, authPost, cookieString,
   createGroup, deleteGroup, createZone, deleteZone,
   createRecord, deleteRecord, uniqueName, extractCsrf,
@@ -15,11 +15,11 @@ test.describe('Logs', () => {
     const { sessionCookie, csrfCookie } = await apiLogin(playwright);
     cookies = cookieString(sessionCookie, csrfCookie);
     csrfToken = csrfCookie;
-    gid = await createGroup(playwright, cookies, 1, uniqueName('e2e_logs'));
+    gid = await createGroup(playwright, cookies, TEST_GID, uniqueName('e2e_logs'));
   });
 
   test.afterAll(async ({ playwright }) => {
-    await deleteGroup(playwright, cookies, 1, gid);
+    await deleteGroup(playwright, cookies, TEST_GID, gid);
   });
 
   test('group_log.cgi renders log page', async ({ playwright }) => {

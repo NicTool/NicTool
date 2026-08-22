@@ -3,7 +3,7 @@ import {
   apiLogin, cookieString, authGet, authPost,
   createGroup, createZone, createRecord, createUser,
   deleteGroup, deleteZone, deleteUser,
-  findInListing, uniqueName, extractCsrf, BASE,
+  findInListing, uniqueName, extractCsrf, BASE, TEST_GID,
 } from './helpers';
 
 // ---------------------------------------------------------------------------
@@ -50,7 +50,7 @@ test.describe('Options-menu delete links carry CSRF (#354)', () => {
 
   test('group tree Delete link works', async ({ playwright }) => {
     const groupName = uniqueName('csrflnk');
-    const gid = await createGroup(playwright, cookies, 1, groupName);
+    const gid = await createGroup(playwright, cookies, TEST_GID, groupName);
 
     // The group tree is rendered in the nav header of the group's own pages.
     const { body } = await authGet(playwright, `${BASE}/group.cgi?nt_group_id=${gid}`, cookies);
@@ -63,11 +63,11 @@ test.describe('Options-menu delete links carry CSRF (#354)', () => {
     expect(after).not.toContain('CSRF validation failed');
 
     expect(await findInListing(playwright, cookies,
-      { cgi: 'group.cgi', gid: 1, idParam: 'nt_group_id' }, groupName)).toBeNull();
+      { cgi: 'group.cgi', gid: TEST_GID, idParam: 'nt_group_id' }, groupName)).toBeNull();
   });
 
   test('zone options menu Delete link works', async ({ playwright }) => {
-    const gid = await createGroup(playwright, cookies, 1);
+    const gid = await createGroup(playwright, cookies, TEST_GID);
     const zid = await createZone(playwright, cookies, gid);
 
     // The options menu is rendered above the zone detail view.
@@ -85,11 +85,11 @@ test.describe('Options-menu delete links carry CSRF (#354)', () => {
       `${BASE}/group_zones.cgi?nt_group_id=${gid}`, cookies);
     expect(list).not.toContain(`nt_zone_id=${zid}"`);
 
-    await deleteGroup(playwright, cookies, 1, gid);
+    await deleteGroup(playwright, cookies, TEST_GID, gid);
   });
 
   test('user page Delete link works', async ({ playwright }) => {
-    const gid = await createGroup(playwright, cookies, 1);
+    const gid = await createGroup(playwright, cookies, TEST_GID);
     const username = uniqueName('csrflnk');
     const uid = await createUser(playwright, cookies, gid, { username });
 
@@ -107,13 +107,13 @@ test.describe('Options-menu delete links carry CSRF (#354)', () => {
       `${BASE}/group_users.cgi?nt_group_id=${gid}`, cookies);
     expect(list).not.toContain(username);
 
-    await deleteGroup(playwright, cookies, 1, gid);
+    await deleteGroup(playwright, cookies, TEST_GID, gid);
   });
 
   test('zone Remove Delegation link works', async ({ playwright }) => {
     const groupName = uniqueName('csrfdlg');
-    const childGid = await createGroup(playwright, cookies, 1, groupName);
-    const zid = await createZone(playwright, cookies, 1);
+    const childGid = await createGroup(playwright, cookies, TEST_GID, groupName);
+    const zid = await createZone(playwright, cookies, TEST_GID);
 
     // Remove Delegation only renders for a user whose own group received the
     // delegation, so create a user inside the child group and log in as them.
@@ -142,9 +142,9 @@ test.describe('Options-menu delete links carry CSRF (#354)', () => {
       `${BASE}/group_zones.cgi?nt_group_id=${childGid}`, childCookies);
     expect(list).not.toContain(`nt_zone_id=${zid}"`);
 
-    await deleteZone(playwright, cookies, 1, zid);
+    await deleteZone(playwright, cookies, TEST_GID, zid);
     await deleteUser(playwright, cookies, childGid, uid);
-    await deleteGroup(playwright, cookies, 1, childGid);
+    await deleteGroup(playwright, cookies, TEST_GID, childGid);
   });
 
   test('no rendered page carries a tokenless destructive link or POST form', async ({ playwright }) => {
@@ -154,7 +154,7 @@ test.describe('Options-menu delete links carry CSRF (#354)', () => {
     // URL, and every POST form embeds a well-formed csrf_token field — a form
     // without one renders fine and then dies in verify_csrf on submit, which
     // is precisely how #354 escaped the list-view fixes.
-    const gid = await createGroup(playwright, cookies, 1);
+    const gid = await createGroup(playwright, cookies, TEST_GID);
     const childGid = await createGroup(playwright, cookies, gid);
     const username = uniqueName('csrfswp');
     const uid = await createUser(playwright, cookies, gid, { username });
@@ -169,30 +169,30 @@ test.describe('Options-menu delete links carry CSRF (#354)', () => {
 
     const pages = [
       // list and detail views
-      `group.cgi?nt_group_id=1`,
+      `group.cgi?nt_group_id=${TEST_GID}`,
       `group.cgi?nt_group_id=${gid}`,
       `nav.cgi?nt_group_id=${gid}`,
       `group_users.cgi?nt_group_id=${gid}`,
       `user.cgi?nt_group_id=${gid}&nt_user_id=${uid}`,
       `group_zones.cgi?nt_group_id=${gid}`,
       `group_zones.cgi?nt_group_id=${childGid}`,
-      `group_nameservers.cgi?nt_group_id=1`,
+      `group_nameservers.cgi?nt_group_id=${TEST_GID}`,
       `zone.cgi?nt_group_id=${gid}&nt_zone_id=${zid}`,
       `zone.cgi?nt_group_id=${childGid}&nt_zone_id=${zid}`,
       `zone.cgi?nt_group_id=${gid}&nt_zone_id=${zid}&type=record&nt_zone_record_id=${rrid}`,
       `zone.cgi?nt_group_id=${childGid}&nt_zone_id=${zid}&type=record&nt_zone_record_id=${rrid}`,
       `group_log.cgi?nt_group_id=${gid}`,
       // new/edit forms
-      `group.cgi?nt_group_id=1&new=1`,
+      `group.cgi?nt_group_id=${TEST_GID}&new=1`,
       `group.cgi?nt_group_id=${gid}&edit=1`,
       `group_users.cgi?nt_group_id=${gid}&new=1`,
       `group_users.cgi?nt_group_id=${gid}&edit=1&nt_user_id=${uid}`,
-      `group_nameservers.cgi?nt_group_id=1&new=1`,
+      `group_nameservers.cgi?nt_group_id=${TEST_GID}&new=1`,
       `group_zones.cgi?nt_group_id=${gid}&new=1`,
       `zone.cgi?nt_group_id=${gid}&nt_zone_id=${zid}&edit_zone=1`,
       `zone.cgi?nt_group_id=${gid}&nt_zone_id=${zid}&new_record=1`,
       `zone.cgi?nt_group_id=${gid}&nt_zone_id=${zid}&edit_record=1&nt_zone_record_id=${rrid}`,
-      `zones.cgi?nt_group_id=1`,
+      `zones.cgi?nt_group_id=${TEST_GID}`,
       // popup windows, including the delegation edit/remove second step
       `delegate_zones.cgi?obj_list=${zid}`,
       `delegate_zones.cgi?obj_list=${zid}&type=zone&edit=1&nt_group_id=${childGid}`,
@@ -228,6 +228,6 @@ test.describe('Options-menu delete links carry CSRF (#354)', () => {
     await deleteZone(playwright, cookies, gid, zid);
     await deleteUser(playwright, cookies, gid, uid);
     await deleteGroup(playwright, cookies, gid, childGid);
-    await deleteGroup(playwright, cookies, 1, gid);
+    await deleteGroup(playwright, cookies, TEST_GID, gid);
   });
 });

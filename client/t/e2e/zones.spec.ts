@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import {
-  BASE,
+  BASE, TEST_GID,
   apiLogin, authGet, authPost, cookieString,
   createGroup, deleteGroup, createZone, deleteZone,
   uniqueName, extractCsrf, browserLogin,
@@ -15,11 +15,11 @@ test.describe('Zones', () => {
     const { sessionCookie, csrfCookie } = await apiLogin(playwright);
     cookies = cookieString(sessionCookie, csrfCookie);
     csrfToken = csrfCookie;
-    gid = await createGroup(playwright, cookies, 1, uniqueName('e2e_zones'));
+    gid = await createGroup(playwright, cookies, TEST_GID, uniqueName('e2e_zones'));
   });
 
   test.afterAll(async ({ playwright }) => {
-    await deleteGroup(playwright, cookies, 1, gid);
+    await deleteGroup(playwright, cookies, TEST_GID, gid);
   });
 
   test('create zone with default SOA values', async ({ playwright }) => {

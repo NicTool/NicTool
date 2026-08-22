@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test';
 import {
-  BASE, GROUP_DEFAULTS,
+  BASE, GROUP_DEFAULTS, TEST_GID,
   apiLogin, authGet, authPost, deleteGroup, findInListing, uniqueName,
 } from './helpers';
 
-const ROOT_GROUPS = { cgi: 'group.cgi', gid: 1, idParam: 'nt_group_id' };
+const ROOT_GROUPS = { cgi: 'group.cgi', gid: TEST_GID, idParam: 'nt_group_id' };
 
 // Regression tests for the cross-process CSRF token race (#335, fixed in #353).
 //
@@ -43,8 +43,8 @@ test.describe('CSRF token agreement across CGI processes', () => {
     const sessionOnly = `NicTool=${sessionCookie}`;
 
     // Frameset loads: same initial jar state, responses not exchanged.
-    const bodyFrame = await authGet(playwright, `${BASE}/group.cgi?nt_group_id=1`, sessionOnly);
-    const navFrame  = await authGet(playwright, `${BASE}/nav.cgi?nt_group_id=1`, sessionOnly);
+    const bodyFrame = await authGet(playwright, `${BASE}/group.cgi?nt_group_id=${TEST_GID}`, sessionOnly);
+    const navFrame  = await authGet(playwright, `${BASE}/nav.cgi?nt_group_id=${TEST_GID}`, sessionOnly);
 
     const groupFormToken = formToken(bodyFrame.body);
     expect(groupFormToken, 'group.cgi renders a csrf token').toMatch(/^[0-9a-f]{40}$/);
@@ -60,14 +60,14 @@ test.describe('CSRF token agreement across CGI processes', () => {
     const name = uniqueName('e2e_csrf');
     const post = await authPost(playwright, `${BASE}/group.cgi`,
       `NicTool=${sessionCookie}; NicTool_csrf=${navCookieToken}`,
-      `nt_group_id=1&new=1&Create=Create&name=${name}&${GROUP_DEFAULTS}&csrf_token=${groupFormToken}`);
+      `nt_group_id=${TEST_GID}&new=1&Create=Create&name=${name}&${GROUP_DEFAULTS}&csrf_token=${groupFormToken}`);
     expect(post.body).not.toContain('CSRF validation failed');
 
     // Prove the POST actually took effect, then clean up.
     const cookies = `NicTool=${sessionCookie}; NicTool_csrf=${navCookieToken}`;
     const gid = await findInListing(playwright, cookies, ROOT_GROUPS, name);
     expect(gid, 'created group appears in listing').toBeTruthy();
-    await deleteGroup(playwright, cookies, 1, gid!);
+    await deleteGroup(playwright, cookies, TEST_GID, gid!);
   });
 
   test('form POST validates against the session, not the csrf cookie', async ({ playwright }) => {
@@ -77,20 +77,20 @@ test.describe('CSRF token agreement across CGI processes', () => {
     // A rendered form whose csrf cookie has since vanished (cleared by the
     // browser, eaten by an extension, or simply never re-sent). The form
     // token is derived from the session, so the POST must stand on its own.
-    const { body: page } = await authGet(playwright, `${BASE}/group.cgi?nt_group_id=1`, sessionOnly);
+    const { body: page } = await authGet(playwright, `${BASE}/group.cgi?nt_group_id=${TEST_GID}`, sessionOnly);
     const token = formToken(page);
     expect(token, 'group.cgi renders a csrf token').toMatch(/^[0-9a-f]{40}$/);
 
     const name = uniqueName('e2e_csrf_nocookie');
     const post = await authPost(playwright, `${BASE}/group.cgi`, sessionOnly,
-      `nt_group_id=1&new=1&Create=Create&name=${name}&${GROUP_DEFAULTS}&csrf_token=${token}`);
+      `nt_group_id=${TEST_GID}&new=1&Create=Create&name=${name}&${GROUP_DEFAULTS}&csrf_token=${token}`);
     expect(post.body).not.toContain('CSRF validation failed');
 
     const gid = await findInListing(playwright, sessionOnly, ROOT_GROUPS, name);
     expect(gid, 'created group appears in listing').toBeTruthy();
     // deleteGroup reads the token from the jar's csrf cookie; the form token
     // is the same session-derived value, so lend it to the jar for cleanup.
-    await deleteGroup(playwright, `${sessionOnly}; NicTool_csrf=${token}`, 1, gid!);
+    await deleteGroup(playwright, `${sessionOnly}; NicTool_csrf=${token}`, TEST_GID, gid!);
   });
 
   test('csrf cookie lifetime matches the session cookie', async ({ playwright }) => {

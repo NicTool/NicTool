@@ -1,11 +1,11 @@
 import { test, expect } from '@playwright/test';
 import {
-  BASE, GROUP_DEFAULTS,
+  BASE, GROUP_DEFAULTS, TEST_GID,
   apiLogin, authGet, authPost, cookieString,
   createGroup, deleteGroup, findInListing, uniqueName, extractCsrf,
 } from './helpers';
 
-const ROOT_GROUPS = { cgi: 'group.cgi', gid: 1, idParam: 'nt_group_id' };
+const ROOT_GROUPS = { cgi: 'group.cgi', gid: TEST_GID, idParam: 'nt_group_id' };
 
 test.describe('Groups', () => {
   let cookies: string;
@@ -19,25 +19,25 @@ test.describe('Groups', () => {
 
   test('create sub-group with all permissions', async ({ playwright }) => {
     const name = uniqueName('e2e_grp');
-    const gid = await createGroup(playwright, cookies, 1, name);
+    const gid = await createGroup(playwright, cookies, TEST_GID, name);
     expect(Number(gid)).toBeGreaterThan(0);
 
     // Cleanup
-    await deleteGroup(playwright, cookies, 1, gid);
+    await deleteGroup(playwright, cookies, TEST_GID, gid);
   });
 
   test('sub-group appears in group list', async ({ playwright }) => {
     const name = uniqueName('e2e_grp');
-    const gid = await createGroup(playwright, cookies, 1, name);
+    const gid = await createGroup(playwright, cookies, TEST_GID, name);
 
     expect(await findInListing(playwright, cookies, ROOT_GROUPS, name)).toBe(gid);
 
-    await deleteGroup(playwright, cookies, 1, gid);
+    await deleteGroup(playwright, cookies, TEST_GID, gid);
   });
 
   test('edit sub-group name', async ({ playwright }) => {
     const name = uniqueName('e2e_grp');
-    const gid = await createGroup(playwright, cookies, 1, name);
+    const gid = await createGroup(playwright, cookies, TEST_GID, name);
 
     const newName = uniqueName('e2e_renamed');
     await authPost(playwright, `${BASE}/group.cgi`, cookies,
@@ -45,12 +45,12 @@ test.describe('Groups', () => {
 
     expect(await findInListing(playwright, cookies, ROOT_GROUPS, newName)).toBe(gid);
 
-    await deleteGroup(playwright, cookies, 1, gid);
+    await deleteGroup(playwright, cookies, TEST_GID, gid);
   });
 
   test('edit sub-group permissions', async ({ playwright }) => {
     const name = uniqueName('e2e_grp');
-    const gid = await createGroup(playwright, cookies, 1, name);
+    const gid = await createGroup(playwright, cookies, TEST_GID, name);
 
     // Edit to remove zone_create permission
     const reducedPerms = GROUP_DEFAULTS.replace('zone_create=1', 'zone_create=0');
@@ -61,21 +61,21 @@ test.describe('Groups', () => {
     const { body } = await authGet(playwright, `${BASE}/group.cgi?nt_group_id=${gid}&edit=1`, cookies);
     expect(body).toContain(name);
 
-    await deleteGroup(playwright, cookies, 1, gid);
+    await deleteGroup(playwright, cookies, TEST_GID, gid);
   });
 
   test('delete sub-group', async ({ playwright }) => {
     const name = uniqueName('e2e_grp');
-    const gid = await createGroup(playwright, cookies, 1, name);
+    const gid = await createGroup(playwright, cookies, TEST_GID, name);
 
-    await deleteGroup(playwright, cookies, 1, gid);
+    await deleteGroup(playwright, cookies, TEST_GID, gid);
 
     expect(await findInListing(playwright, cookies, ROOT_GROUPS, name)).toBeNull();
   });
 
   test('create group without name fails gracefully', async ({ playwright }) => {
     const { body } = await authPost(playwright, `${BASE}/group.cgi`, cookies,
-      `nt_group_id=1&new=1&Create=Create&name=&${GROUP_DEFAULTS}&csrf_token=${csrfToken}`);
+      `nt_group_id=${TEST_GID}&new=1&Create=Create&name=&${GROUP_DEFAULTS}&csrf_token=${csrfToken}`);
     // Should show error or remain on form, not crash
     expect(body.toLowerCase()).toMatch(/error|required|invalid|group/i);
   });
@@ -83,7 +83,7 @@ test.describe('Groups', () => {
   test('quick zone search from group page', async ({ playwright }) => {
     // The group page has a zone quick-search. Verify it responds.
     const { body } = await authGet(playwright,
-      `${BASE}/group_zones.cgi?nt_group_id=1&Quick+search=Search&search_value=nonexistent`, cookies);
+      `${BASE}/group_zones.cgi?nt_group_id=${TEST_GID}&Quick+search=Search&search_value=nonexistent`, cookies);
     expect(body).toBeDefined();
     // Should not crash even with no results
     expect(body.toLowerCase()).not.toContain('internal server error');
@@ -91,7 +91,7 @@ test.describe('Groups', () => {
 
   test('nested sub-group creation and deletion', async ({ playwright }) => {
     const parentName = uniqueName('e2e_parent');
-    const parentGid = await createGroup(playwright, cookies, 1, parentName);
+    const parentGid = await createGroup(playwright, cookies, TEST_GID, parentName);
 
     const childName = uniqueName('e2e_child');
     const childGid = await createGroup(playwright, cookies, parentGid, childName);
@@ -102,6 +102,6 @@ test.describe('Groups', () => {
 
     // Delete child first, then parent
     await deleteGroup(playwright, cookies, parentGid, childGid);
-    await deleteGroup(playwright, cookies, 1, parentGid);
+    await deleteGroup(playwright, cookies, TEST_GID, parentGid);
   });
 });

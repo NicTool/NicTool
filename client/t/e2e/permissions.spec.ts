@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import {
-  BASE, GROUP_DEFAULTS,
+  BASE, GROUP_DEFAULTS, TEST_GID,
   apiLogin, authGet, authPost, cookieString,
   createGroup, deleteGroup, createZone, deleteZone,
   createRecord, deleteRecord, createUser, deleteUser,
@@ -19,13 +19,13 @@ test.describe('Permissions', () => {
     rootCookies = cookieString(sessionCookie, csrfCookie);
     rootCsrf = csrfCookie;
     groupName = uniqueName('e2e_perms');
-    gid = await createGroup(playwright, rootCookies, 1, groupName);
+    gid = await createGroup(playwright, rootCookies, TEST_GID, groupName);
     zid = await createZone(playwright, rootCookies, gid, `${uniqueName('e2e')}.test`);
   });
 
   test.afterAll(async ({ playwright }) => {
     await deleteZone(playwright, rootCookies, gid, zid);
-    await deleteGroup(playwright, rootCookies, 1, gid);
+    await deleteGroup(playwright, rootCookies, TEST_GID, gid);
   });
 
   async function createRestrictedUser(playwright: any, overrides: Record<string, string>) {

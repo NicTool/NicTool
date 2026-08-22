@@ -3,7 +3,7 @@ import {
   apiLogin, cookieString, authGet, authPost,
   createGroup, createZone, createRecord, createUser, createNameserver,
   deleteGroup, deleteZone, deleteRecord, deleteUser, deleteNameserver,
-  findInListing, uniqueName, uniqueNsName, extractCsrf, BASE, GROUP_DEFAULTS,
+  findInListing, uniqueName, uniqueNsName, extractCsrf, BASE, GROUP_DEFAULTS, TEST_GID,
 } from './helpers';
 
 // ---------------------------------------------------------------------------
@@ -36,7 +36,7 @@ test.describe('Mutating endpoints reject requests without a csrf_token', () => {
     cookies = cookieString(login.sessionCookie, login.csrfCookie);
 
     groupName = uniqueName('csrfenf');
-    gid = await createGroup(playwright, cookies, 1, groupName);
+    gid = await createGroup(playwright, cookies, TEST_GID, groupName);
     childGid = await createGroup(playwright, cookies, gid);
     username = uniqueName('csrfenf');
     uid = await createUser(playwright, cookies, gid, { username });
@@ -46,7 +46,7 @@ test.describe('Mutating endpoints reject requests without a csrf_token', () => {
       name: 'enforce', type: 'A', address: '192.0.2.99',
     });
     nsName = uniqueNsName('csrfenf') + '.example.com.';
-    nsid = await createNameserver(playwright, cookies, 1, { name: nsName });
+    nsid = await createNameserver(playwright, cookies, TEST_GID, { name: nsName });
     await authPost(playwright, `${BASE}/delegate_zones.cgi`, cookies,
       `Save=Save&group_list=${childGid}&obj_list=${zid}&type=zone&perm_write=1&perm_delete=1&perm_delegate=1&zone_perm_add_records=1&zone_perm_delete_records=1&csrf_token=${extractCsrf(cookies)}`);
   });
@@ -56,10 +56,10 @@ test.describe('Mutating endpoints reject requests without a csrf_token', () => {
     await authPost(playwright, `${BASE}/delegate_zones.cgi`, cookies,
       `Remove=Remove&nt_group_id=${childGid}&nt_zone_id=${zid}&type=zone&csrf_token=${token}`);
     await deleteZone(playwright, cookies, gid, zid);
-    await deleteNameserver(playwright, cookies, 1, nsid);
+    await deleteNameserver(playwright, cookies, TEST_GID, nsid);
     await deleteUser(playwright, cookies, gid, uid);
     await deleteGroup(playwright, cookies, gid, childGid);
-    await deleteGroup(playwright, cookies, 1, gid);
+    await deleteGroup(playwright, cookies, TEST_GID, gid);
   });
 
   async function pageHas(playwright: any, path: string, needle: string): Promise<boolean> {
@@ -72,7 +72,7 @@ test.describe('Mutating endpoints reject requests without a csrf_token', () => {
   // group.cgi shows 10 subgroups per page, so use a filtered lookup there.
   async function rootRow(playwright: any, cgi: string, idParam: string,
     name: string): Promise<string | null> {
-    return findInListing(playwright, cookies, { cgi, gid: 1, idParam }, name);
+    return findInListing(playwright, cookies, { cgi, gid: TEST_GID, idParam }, name);
   }
 
   // --- deletes ---
@@ -103,7 +103,7 @@ test.describe('Mutating endpoints reject requests without a csrf_token', () => {
 
   test('nameserver delete via GET', async ({ playwright }) => {
     await authGet(playwright,
-      `${BASE}/group_nameservers.cgi?nt_group_id=1&delete=1&nt_nameserver_id=${nsid}`, cookies);
+      `${BASE}/group_nameservers.cgi?nt_group_id=${TEST_GID}&delete=1&nt_nameserver_id=${nsid}`, cookies);
     expect(await rootRow(playwright, 'group_nameservers.cgi', 'nt_nameserver_id', nsName)).toBeTruthy();
   });
 
@@ -138,7 +138,7 @@ test.describe('Mutating endpoints reject requests without a csrf_token', () => {
   test('group create via POST', async ({ playwright }) => {
     const name = uniqueName('csrfforged');
     await authPost(playwright, `${BASE}/group.cgi`, cookies,
-      `nt_group_id=1&new=1&Create=Create&name=${name}`);
+      `nt_group_id=${TEST_GID}&new=1&Create=Create&name=${name}`);
     expect(await rootRow(playwright, 'group.cgi', 'nt_group_id', name)).toBeNull();
   });
 
@@ -166,7 +166,7 @@ test.describe('Mutating endpoints reject requests without a csrf_token', () => {
   test('nameserver create via POST', async ({ playwright }) => {
     const name = uniqueNsName('csrfforged') + '.example.com.';
     await authPost(playwright, `${BASE}/group_nameservers.cgi`, cookies,
-      `nt_group_id=1&new=1&Create=Create&name=${name}&address=192.0.2.67&description=forged&export_format=bind&export_interval=120&ttl=3600`);
+      `nt_group_id=${TEST_GID}&new=1&Create=Create&name=${name}&address=192.0.2.67&description=forged&export_format=bind&export_interval=120&ttl=3600`);
     expect(await rootRow(playwright, 'group_nameservers.cgi', 'nt_nameserver_id', name)).toBeNull();
   });
 
@@ -232,9 +232,9 @@ test.describe('Mutating endpoints reject requests without a csrf_token', () => {
 
   test('nameserver edit via POST', async ({ playwright }) => {
     await authPost(playwright, `${BASE}/group_nameservers.cgi`, cookies,
-      `nt_group_id=1&nt_nameserver_id=${nsid}&edit=1&Save=Save&name=${encodeURIComponent(nsName)}&address=192.0.2.1&description=FORGED_NS_EDIT&export_format=bind&export_interval=120&ttl=3600`);
+      `nt_group_id=${TEST_GID}&nt_nameserver_id=${nsid}&edit=1&Save=Save&name=${encodeURIComponent(nsName)}&address=192.0.2.1&description=FORGED_NS_EDIT&export_format=bind&export_interval=120&ttl=3600`);
     expect(await pageHas(playwright,
-      `group_nameservers.cgi?nt_group_id=1&nt_nameserver_id=${nsid}&edit=1`,
+      `group_nameservers.cgi?nt_group_id=${TEST_GID}&nt_nameserver_id=${nsid}&edit=1`,
       'FORGED_NS_EDIT')).toBe(false);
   });
 

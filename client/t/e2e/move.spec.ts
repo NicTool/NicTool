@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import {
-  BASE,
+  BASE, TEST_GID,
   apiLogin, authGet, authPost, cookieString,
   createGroup, deleteGroup, createZone, deleteZone,
   createUser, deleteUser, createNameserver, deleteNameserver,
@@ -18,13 +18,13 @@ test.describe('Move Operations', () => {
     cookies = cookieString(sessionCookie, csrfCookie);
     csrfToken = csrfCookie;
 
-    groupA = await createGroup(playwright, cookies, 1, uniqueName('e2e_moveA'));
-    groupB = await createGroup(playwright, cookies, 1, uniqueName('e2e_moveB'));
+    groupA = await createGroup(playwright, cookies, TEST_GID, uniqueName('e2e_moveA'));
+    groupB = await createGroup(playwright, cookies, TEST_GID, uniqueName('e2e_moveB'));
   });
 
   test.afterAll(async ({ playwright }) => {
-    await deleteGroup(playwright, cookies, 1, groupA);
-    await deleteGroup(playwright, cookies, 1, groupB);
+    await deleteGroup(playwright, cookies, TEST_GID, groupA);
+    await deleteGroup(playwright, cookies, TEST_GID, groupB);
   });
 
   test('move zone to different group', async ({ playwright }) => {

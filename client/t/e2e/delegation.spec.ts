@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import {
-  BASE, GROUP_DEFAULTS,
+  BASE, GROUP_DEFAULTS, TEST_GID,
   apiLogin, authGet, authPost, cookieString,
   createGroup, deleteGroup, createZone, deleteZone,
   createRecord, deleteRecord, createUser, deleteUser,
@@ -21,7 +21,7 @@ test.describe('Delegation', () => {
     cookies = cookieString(sessionCookie, csrfCookie);
     csrfToken = csrfCookie;
 
-    parentGid = await createGroup(playwright, cookies, 1, uniqueName('e2e_deleg_parent'));
+    parentGid = await createGroup(playwright, cookies, TEST_GID, uniqueName('e2e_deleg_parent'));
     childGroupName = uniqueName('e2e_deleg_child');
     childGid = await createGroup(playwright, cookies, parentGid, childGroupName);
     zoneName = `${uniqueName('e2e-deleg')}.test`;
@@ -31,7 +31,7 @@ test.describe('Delegation', () => {
   test.afterAll(async ({ playwright }) => {
     await deleteZone(playwright, cookies, parentGid, zid);
     await deleteGroup(playwright, cookies, parentGid, childGid);
-    await deleteGroup(playwright, cookies, 1, parentGid);
+    await deleteGroup(playwright, cookies, TEST_GID, parentGid);
   });
 
   test('delegate zone to child group', async ({ playwright }) => {
