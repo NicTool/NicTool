@@ -10,7 +10,7 @@ use JSON::PP;
 
 my $JSON = JSON::PP->new->utf8->allow_nonref;
 
-# v2 action -> { method, path, [id_param], [id_from_list], [query_map] }
+# v2 action -> { method, path, [id_from_list], [query_map], [synthesize] }
 # :param in path is substituted from %vars and removed before body
 my %ACTION_MAP = (
     # Session
@@ -24,16 +24,29 @@ my %ACTION_MAP = (
     edit_zone       => { method => 'PUT',     path => '/zone/:nt_zone_id' },
     delete_zones    => { method => 'DELETE',  path => '/zone/:id',
                          id_from_list => 'zone_list' },
+    get_zone_list   => { method => 'GET',     path => '/zone/:id',
+                         id_from_list => 'zone_list' },
     get_group_zones => { method => 'GET',     path => '/zone',
-                         query_map => { nt_group_id => 'gid' } },
+                         query_map => { nt_group_id => 'gid',
+                                        include_subgroups => 'include_subgroups',
+                                        limit => 'limit', start => 'offset',
+                                        search_value => 'search',
+                                        '1_sortfield' => 'sort_by',
+                                        '1_sortmod' => 'sort_dir' } },
 
     # Zone records
     new_zone_record    => { method => 'POST',   path => '/zone_record' },
     get_zone_record    => { method => 'GET',     path => '/zone_record/:nt_zone_record_id' },
     get_zone_records   => { method => 'GET',     path => '/zone_record',
-                            query_map => { nt_zone_id => 'zid' } },
+                            query_map => { nt_zone_id => 'zid',
+                                           limit => 'limit', start => 'offset',
+                                           search_value => 'search',
+                                           '1_sortfield' => 'sort_by',
+                                           '1_sortmod' => 'sort_dir' } },
     edit_zone_record   => { method => 'PUT',     path => '/zone_record/:nt_zone_record_id' },
     delete_zone_record => { method => 'DELETE',  path => '/zone_record/:nt_zone_record_id' },
+    get_record_type    => { method => 'GET',     path => '/swagger.json',
+                            synthesize => 'record_types' },
 
     # Groups
     new_group        => { method => 'POST',   path => '/group' },
@@ -42,6 +55,12 @@ my %ACTION_MAP = (
     delete_group     => { method => 'DELETE',  path => '/group/:nt_group_id' },
     get_group_groups => { method => 'GET',     path => '/group',
                           query_map => { nt_group_id => 'parent_gid' } },
+    get_group_branch => { method => 'GET',     path => '/group/:nt_group_id',
+                          synthesize => 'group_branch' },
+    get_group_subgroups => { method => 'GET',  path => '/group',
+                             query_map => { nt_group_id => 'parent_gid',
+                                            search_value => 'name',
+                                            include_subgroups => 'include_subgroups' } },
 
     # Users
     new_user        => { method => 'POST',   path => '/user' },
@@ -49,16 +68,25 @@ my %ACTION_MAP = (
     edit_user       => { method => 'PUT',     path => '/user/:nt_user_id' },
     delete_users    => { method => 'DELETE',  path => '/user/:id',
                          id_from_list => 'user_list' },
+    get_user_list   => { method => 'GET',     path => '/user/:id',
+                         id_from_list => 'user_list' },
     get_group_users => { method => 'GET',     path => '/user',
-                         query_map => { nt_group_id => 'gid' } },
+                         query_map => { nt_group_id => 'gid',
+                                        include_subgroups => 'include_subgroups' } },
 
     # Nameservers
     new_nameserver        => { method => 'POST',   path => '/nameserver' },
     get_nameserver        => { method => 'GET',     path => '/nameserver/:nt_nameserver_id' },
     edit_nameserver       => { method => 'PUT',     path => '/nameserver/:nt_nameserver_id' },
     delete_nameserver     => { method => 'DELETE',  path => '/nameserver/:nt_nameserver_id' },
+    get_nameserver_list   => { method => 'GET',     path => '/nameserver/:id',
+                               id_from_list => 'nameserver_list' },
     get_group_nameservers => { method => 'GET',     path => '/nameserver',
                                query_map => { nt_group_id => 'gid' } },
+    get_usable_nameservers => { method => 'GET',    path => '/nameserver',
+                                synthesize => 'usable_nameservers' },
+    get_nameserver_export_types => { method => 'GET', path => '/swagger.json',
+                                     synthesize => 'nameserver_types' },
 
     # Zone delegation
     delegate_zones         => { method => 'POST',   path => '/delegation',
@@ -100,8 +128,7 @@ my %FIELD_V2 = (
     zone_record => { id => 'nt_zone_record_id', zid => 'nt_zone_id',
                      gid => 'nt_group_id', owner => 'name' },
     user        => { id => 'nt_user_id',         gid => 'nt_group_id' },
-    group       => { id => 'nt_group_id',
-                     parent_group_id => 'parent_group_id' },
+    group       => { id => 'nt_group_id', parent_gid => 'parent_group_id' },
     nameserver  => { id => 'nt_nameserver_id',   gid => 'nt_group_id' },
     permission  => { id => 'nt_perm_id' },
     delegation  => {},
@@ -178,11 +205,7 @@ sub _get_json {
     my %headers = ('Content-Type' => 'application/json');
     $headers{'Authorization'} = "Bearer $token" if $token;
 
-    $self->{http} ||= HTTP::Tiny->new(
-        agent   => "NicTool-REST/$NicTool::VERSION",
-        timeout => 30,
-    );
-    my $resp = $self->{http}->request('GET', $self->_base_url . $path,
+    my $resp = $self->_http->request('GET', $self->_base_url . $path,
         { headers => \%headers });
     return undef unless $resp->{status} == 200 && $resp->{content};
     return eval { $JSON->decode($resp->{content}) };
@@ -249,6 +272,154 @@ sub _delegation_object_gid {
     return $zone->{gid};
 }
 
+sub _get_group_branch {
+    my ($self, $target_gid) = @_;
+    return _v2_param_error( 'nt_group_id', 301 )
+        unless defined $target_gid && length $target_gid;
+    return _v2_param_error( 'nt_group_id', 302 )
+        unless $target_gid =~ /^\d+$/ && $target_gid > 0;
+
+    my $session = $self->_get_json('/session');
+    my $user_gid = $session && $session->{group} ? $session->{group}{id} : undef;
+    return _http_error( 401, {} ) unless $user_gid;
+
+    my @groups;
+    my %seen;
+    my $gid = $target_gid;
+    while ($gid && !$seen{$gid}++) {
+        my $data = $self->_get_json("/group/$gid");
+        my $rows = $data ? $data->{group} : undef;
+        return _http_error( 404, { error => 'Group not found' } )
+            unless ref $rows eq 'ARRAY' && @$rows;
+
+        my $group = _remap_fields( $rows->[0], 'group' );
+        $self->_set_group_has_children($group);
+        unshift @groups, $group;
+        last if $gid == $user_gid;
+        $gid = $group->{parent_group_id};
+    }
+
+    return _http_error( 403, { error => 'Group is outside the user branch' } )
+        unless @groups && $groups[0]{nt_group_id} == $user_gid;
+    return { error_code => 200, error_msg => 'OK', groups => \@groups };
+}
+
+sub _get_usable_nameservers {
+    my ($self, $target_gid) = @_;
+
+    my $session = $self->_get_json('/session');
+    return _http_error( 401, {} ) unless $session && $session->{group}{id};
+    $target_gid ||= $session->{group}{id};
+
+    my $branch = $self->_get_group_branch($target_gid);
+    return $branch if $branch->{error_code} != 200;
+
+    my @raw;
+    my %seen;
+    for my $group (@{ $branch->{groups} }) {
+        my $data = $self->_get_json('/nameserver?gid=' . $group->{nt_group_id});
+        for my $ns (@{ $data->{nameserver} // [] }) {
+            push @raw, $ns unless $seen{ $ns->{id} }++;
+        }
+    }
+
+    my $usable = $session->{permissions}{nameserver}{usable} // [];
+    for my $nsid (@$usable) {
+        next if $seen{$nsid}++;
+        my $data = $self->_get_json("/nameserver/$nsid");
+        push @raw, @{ $data->{nameserver} // [] };
+    }
+
+    return $self->_adapt_response('get_usable_nameservers', { nameserver => \@raw });
+}
+
+sub _get_api_types {
+    my ($self, $kind, $lookup) = @_;
+    my ($path, $field) = $kind eq 'record_types'
+        ? ('/zone_record', 'type')
+        : ('/nameserver', 'type');
+    my $swagger = $self->_get_json('/swagger.json');
+    my $enum = _swagger_enum( $swagger, $path, 'post', $field );
+    return _http_error( 502, { error => 'API schema has no type choices' } )
+        unless @$enum;
+
+    my @types;
+    my $id = 0;
+    for my $name (@$enum) {
+        my $type = {
+            id          => ++$id,
+            name        => $name,
+            description => $name,
+            descr       => $name,
+            url         => '',
+        };
+        if ($kind eq 'record_types') {
+            $type->{forward} = $name eq 'SOA' ? 0 : 1;
+            $type->{reverse} = $name eq 'SOA' ? 0 : 1;
+        }
+        push @types, $type;
+    }
+
+    return { error_code => 200, error_msg => 'OK', types => \@types }
+        if $lookup eq 'ALL';
+    return $types[$lookup - 1]{name}
+        if defined $lookup && $lookup =~ /^\d+$/ && $lookup > 0 && $lookup <= @types;
+    for my $type (@types) {
+        return $type->{id} if defined $lookup && $type->{name} eq $lookup;
+    }
+    return undef;
+}
+
+sub _swagger_enum {
+    my ($swagger, $path, $method, $field) = @_;
+    return [] unless ref $swagger eq 'HASH';
+    my $params = $swagger->{paths}{$path}{$method}{parameters};
+    return [] unless ref $params eq 'ARRAY';
+    my ($body) = grep { ($_->{in} // '') eq 'body' } @$params;
+    return [] unless $body;
+
+    my $schema = _swagger_resolve( $swagger, $body->{schema} );
+    return [] unless $schema && ref $schema->{properties} eq 'HASH';
+    my $property = _swagger_resolve( $swagger, $schema->{properties}{$field} );
+    return ref $property->{enum} eq 'ARRAY' ? $property->{enum} : [];
+}
+
+sub _swagger_resolve {
+    my ($swagger, $node) = @_;
+    while (ref $node eq 'HASH' && $node->{'$ref'}) {
+        my $ref = $node->{'$ref'};
+        return undef unless $ref =~ m{^#/definitions/([^/]+)$};
+        $node = $swagger->{definitions}{$1};
+    }
+    return $node;
+}
+
+sub _set_group_has_children {
+    my ($self, $group) = @_;
+    return if exists $group->{has_children};
+    my $gid = $group->{nt_group_id} or return;
+    my $data = $self->_get_json("/group?parent_gid=$gid");
+    $group->{has_children} = @{ $data->{group} // [] } ? 1 : 0;
+}
+
+sub _http {
+    my ($self) = @_;
+    my $agent = 'NicTool-REST';
+    $agent .= "/$NicTool::VERSION"
+        if defined $NicTool::VERSION && length $NicTool::VERSION;
+    return $self->{http} ||= HTTP::Tiny->new(
+        agent   => $agent,
+        timeout => 30,
+    );
+}
+
+sub _uri_escape {
+    my ($value) = @_;
+    $value = "$value";
+    $value =~ s/([^A-Za-z0-9\-._~])/sprintf '%%%02X', ord $1/ge;
+    return $value;
+}
+
 
 sub send_request {
     my ($self, $url, %vars) = @_;
@@ -256,9 +427,21 @@ sub send_request {
     my $action = delete $vars{action};
     delete $vars{nt_user_session};
     delete $vars{nt_protocol_version};
+    $self->{base_url} = $url;
+    $self->{request_group_id} = $vars{nt_group_id};
 
     my $spec = $ACTION_MAP{$action};
     return _not_implemented($action) unless $spec;
+
+    if ( ($spec->{synthesize} // '') eq 'group_branch' ) {
+        return $self->_get_group_branch( $vars{nt_group_id} );
+    }
+    if ( ($spec->{synthesize} // '') eq 'usable_nameservers' ) {
+        return $self->_get_usable_nameservers( $vars{nt_group_id} );
+    }
+    if ( ($spec->{synthesize} // '') =~ /^(?:record|nameserver)_types$/ ) {
+        return $self->_get_api_types( $spec->{synthesize}, $vars{type} );
+    }
 
     my $http_method = $spec->{method};
     my $path        = $spec->{path};
@@ -270,10 +453,16 @@ sub send_request {
         my @vals = ref $list_raw eq 'ARRAY' ? @$list_raw : split /,/, $list_raw;
         my @ids = grep { defined && /^\d+$/ && $_ > 0 } @vals;
         if (@ids > 1) {
+            if ($http_method eq 'GET') {
+                return $self->_multi_get($action, $spec, \@ids);
+            }
             if ($http_method eq 'POST') {
                 return $self->_multi_create($url, $action, $spec, \@ids, %vars);
             }
             return $self->_multi_delete($url, $spec, \@ids, %vars);
+        }
+        if ($http_method eq 'GET' && !@ids) {
+            return _v2_param_error( $spec->{id_from_list}, length $list_raw ? 302 : 301 );
         }
         $vars{id} = $ids[0] if @ids;
     }
@@ -335,10 +524,18 @@ sub send_request {
     my $query = '';
     if ($spec->{query_map}) {
         my @qparts;
-        for my $v2key (keys %{$spec->{query_map}}) {
+        for my $v2key (sort keys %{$spec->{query_map}}) {
             my $v3key = $spec->{query_map}{$v2key};
             my $val = delete $vars{$v2key};
-            push @qparts, "$v3key=$val" if defined $val;
+            next unless defined $val && length $val;
+            $val = $val > 0 ? $val - 1 : 0 if $v3key eq 'offset';
+            if ($v3key eq 'sort_dir') {
+                $val = lc $val;
+                $val = 'asc'  if $val eq 'ascending';
+                $val = 'desc' if $val eq 'descending';
+            }
+            $val = $val ? 'true' : 'false' if $v3key eq 'include_subgroups';
+            push @qparts, _uri_escape($v3key) . '=' . _uri_escape($val);
         }
         $query = '?' . join('&', @qparts) if @qparts;
     }
@@ -349,16 +546,33 @@ sub send_request {
         my $v3key = $PARAM_V3{$key} // $key;
         $body{$v3key} = $vars{$key};
     }
+    delete $body{$_} for grep { !defined $body{$_} } keys %body;
 
     # new_group: v2 sends nt_group_id as parent, v3 wants parent_gid
     if ($action eq 'new_group' && exists $body{gid}) {
         $body{parent_gid} = delete $body{gid};
     }
 
+    if ($action eq 'new_zone') {
+        delete $body{template};
+        $body{serial} = 0
+            unless defined $body{serial} && $body{serial} =~ /^\d+$/;
+
+        if (exists $body{nameservers}) {
+            my $value = delete $body{nameservers};
+            my @ids = grep { length } split /,/, $value;
+            return {
+                error_code => 510,
+                error_msg  => 'REST: v3 has no route for assigning nameservers to a zone',
+            } if @ids;
+        }
+    }
+
     # zone_record: v2 uses 'name', v3 uses 'owner'
     if ($action =~ /zone_record/ && exists $body{name}) {
         $body{owner} = delete $body{name};
     }
+    delete $body{gid} if $action =~ /^(?:new|edit)_zone_record$/;
 
     # zone_record: qualify relative owners against their zone, like the v2
     # server did; v3's RR parser rejects them
@@ -393,6 +607,20 @@ sub send_request {
     # nameserver: v2 calls it export_format, v3 wants a flat type
     if ($action =~ /nameserver/ && exists $body{export_format}) {
         $body{type} = delete $body{export_format};
+    }
+
+    if ($action =~ /^(?:new|edit)_nameserver$/) {
+        delete $body{gid} if $action eq 'edit_nameserver';
+        my %export;
+        if (exists $body{export_interval}) {
+            my $value = delete $body{export_interval};
+            $export{interval} = $value + 0 if length $value;
+        }
+        if (exists $body{export_serials}) {
+            my $value = delete $body{export_serials};
+            $export{serials} = $value ? \1 : \0 if length $value;
+        }
+        $body{export} = \%export if %export;
     }
 
     # nameserver: v3 requires ttl, v2 doesn't always send it
@@ -460,12 +688,7 @@ sub send_request {
         $opts{content} = $JSON->encode(\%body);
     }
 
-    $self->{http} ||= HTTP::Tiny->new(
-        agent      => "NicTool-REST/$NicTool::VERSION",
-        timeout    => 30,
-    );
-
-    my $resp = $self->{http}->request($http_method, $full_url, \%opts);
+    my $resp = $self->_http->request($http_method, $full_url, \%opts);
 
     # Decode response
     my $data = {};
@@ -518,6 +741,27 @@ sub _increment_serial {
     return ++$serial;
 }
 
+sub _multi_get {
+    my ($self, $action, $spec, $ids) = @_;
+
+    my $resource = _resource_for_action($action);
+    my $rkey = $RESOURCE_FOR{$resource} // $resource;
+    my @entities;
+
+    for my $id (@$ids) {
+        my $path = $spec->{path};
+        $path =~ s{:id}{$id}g;
+        my $data = $self->_get_json($path);
+        next unless $data && ref $data->{$rkey} eq 'ARRAY';
+        if ($resource eq 'user' && ref $data->{group} eq 'HASH') {
+            $_->{gid} //= $data->{group}{id} for @{ $data->{$rkey} };
+        }
+        push @entities, @{ $data->{$rkey} };
+    }
+
+    return $self->_adapt_response($action, { $rkey => \@entities });
+}
+
 sub _multi_delete {
     my ($self, $url, $spec, $ids, %vars) = @_;
 
@@ -532,12 +776,7 @@ sub _multi_delete {
         my %headers = ('Content-Type' => 'application/json');
         $headers{'Authorization'} = "Bearer $token" if $token;
 
-        $self->{http} ||= HTTP::Tiny->new(
-            agent   => "NicTool-REST/$NicTool::VERSION",
-            timeout => 30,
-        );
-
-        my $resp = $self->{http}->request('DELETE', $full_url,
+        my $resp = $self->_http->request('DELETE', $full_url,
             { headers => \%headers });
 
         if ($resp->{status} >= 400) {
@@ -574,18 +813,13 @@ sub _multi_create {
     my $path  = $spec->{path};
     my $token = $self->_nt->{_rest_jwt_token};
 
-    $self->{http} ||= HTTP::Tiny->new(
-        agent   => "NicTool-REST/$NicTool::VERSION",
-        timeout => 30,
-    );
-
     for my $id (@$ids) {
         $body{oid} = $id;
 
         my %headers = ('Content-Type' => 'application/json');
         $headers{'Authorization'} = "Bearer $token" if $token;
 
-        my $resp = $self->{http}->request('POST', $url . $path,
+        my $resp = $self->_http->request('POST', $url . $path,
             { headers => \%headers, content => $JSON->encode(\%body) });
 
         if ($resp->{status} >= 400) {
@@ -615,8 +849,11 @@ my %LIST_PARAM = (
     get_group_branch             => 'groups',
     get_group_subgroups          => 'groups',
     get_group_zones              => 'zones',
+    get_zone_list                => 'zones',
     get_zone_records             => 'records',
     get_usable_nameservers       => 'nameservers',
+    get_user_list                => 'list',
+    get_nameserver_list          => 'list',
     get_nameserver_export_types  => 'types',
     get_delegated_zones          => 'ZONE',
     get_delegated_zone_records   => 'ZONERECORD',
@@ -646,6 +883,15 @@ sub _adapt_response {
     my $rkey     = $RESOURCE_FOR{$resource} // $resource;
 
     my $result = { error_code => 200, error_msg => 'OK' };
+    my $is_list = _is_list_action($action);
+    my $is_create = ($action =~ /^new_/);
+
+    if ($is_list) {
+        $result->{list} = [];
+        my $list_param = $LIST_PARAM{$action};
+        $result->{$list_param} = [] if $list_param;
+        $result->{total} = 0;
+    }
 
     my $entity_data = $data->{$rkey};
 
@@ -659,12 +905,12 @@ sub _adapt_response {
         return $result;
     }
 
-    my $is_list = _is_list_action($action);
-    my $is_create = ($action =~ /^new_/);
-
     if ($is_list) {
         my @remapped = map {
             my $r = _remap_fields($_, $resource);
+            $r->{nt_group_id} //= $self->{request_group_id}
+                if $resource eq 'user';
+            $self->_set_group_has_children($r) if $resource eq 'group';
             $r->{deleted} //= 0
                 if $resource =~ /^(?:zone|zone_record|group|user|nameserver)$/;
             $self->_unqualify_owner($r) if $resource eq 'zone_record';
@@ -682,10 +928,11 @@ sub _adapt_response {
         my $list_param = $LIST_PARAM{$action};
         $result->{$list_param} = \@remapped if $list_param;
         if (my $pg = $data->{meta}{pagination}) {
-            $result->{total}  = $pg->{total}    // 0;
-            $result->{start}  = ($pg->{offset}  // 0);
-            $result->{end}    = $result->{start} + scalar(@remapped);
-            $result->{page}   = 1;
+            $result->{total}  = $pg->{filtered} // $pg->{total} // 0;
+            $result->{start}  = ($pg->{offset} // 0) + 1;
+            $result->{end}    = $result->{start} + scalar(@remapped) - 1;
+            my $limit = $pg->{limit} || scalar(@remapped) || 1;
+            $result->{page} = int(($pg->{offset} // 0) / $limit) + 1;
         }
         else {
             $result->{total} = scalar @remapped;
@@ -699,6 +946,7 @@ sub _adapt_response {
     else {
         # Single-entity GET/PUT/DELETE
         my $entity = _remap_fields($entity_data->[0], $resource);
+        $self->_set_group_has_children($entity) if $resource eq 'group';
         $entity->{deleted} //= 0
             if $resource =~ /^(?:zone|zone_record|group|user|nameserver)$/;
         $self->_unqualify_owner($entity) if $resource eq 'zone_record';
@@ -811,12 +1059,7 @@ sub _supplement_delegation {
 
     my $url   = $self->_base_url;
     my $token = $self->_nt->{_rest_jwt_token};
-    $self->{http} ||= HTTP::Tiny->new(
-        agent   => "NicTool-REST/$NicTool::VERSION",
-        timeout => 30,
-    );
-
-    my $resp = $self->{http}->request('GET',
+    my $resp = $self->_http->request('GET',
         "$url/delegation?oid=$oid&gid=$gid&type=$type",
         { headers => {
             'Content-Type'  => 'application/json',
@@ -859,6 +1102,7 @@ sub _supplement_delegation {
 
 sub _base_url {
     my ($self) = @_;
+    return $self->{base_url} if $self->{base_url};
     my $nt   = $self->_nt;
     my $proto = $nt->{transfer_protocol} || 'http';
     my $host  = $nt->{server_host} || 'localhost';
@@ -923,6 +1167,8 @@ sub _resource_for_action {
 sub _is_list_action {
     my ($action) = @_;
     return 1 if $action =~ /^get_group_(?:zones|users|nameservers|groups)$/;
+    return 1 if $action =~ /^get_(?:group_subgroups|zone_list|user_list|nameserver_list)$/;
+    return 1 if $action eq 'get_usable_nameservers';
     return 1 if $action eq 'get_zone_records';
     return 1 if $action =~ /^get_(?:delegated_|zone_delegates|zone_record_delegates)/;
     return 0;
