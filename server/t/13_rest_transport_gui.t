@@ -164,6 +164,75 @@ is_deeply [ map { $_->[1] } @{ $move_nameservers->{http}{requests} } ],
     [qw( http://api:3000/nameserver/10 http://api:3000/nameserver/11 )],
     'multi-nameserver moves use each v3 nameserver route';
 
+my $zone_logs = transport(response({
+    log => [ {
+        id => 12, gid => 4, uid => 5, zid => 7,
+        timestamp => 123456, action => 'deleted', zone => 'logged.test.',
+    } ],
+    meta => { pagination => { total => 3, filtered => 1, limit => 50, offset => 0 } },
+}));
+my $zone_log_result = $zone_logs->send_request(
+    'http://api:3000',
+    action            => 'get_group_zones_log',
+    nt_group_id       => 4,
+    include_subgroups => 1,
+    search_value      => 'logged.test.',
+    limit             => 50,
+    start             => 1,
+);
+is $zone_log_result->{log}[0]{nt_zone_log_id}, 12,
+    'zone log ids are adapted to the v2 shape';
+is $zone_log_result->{log}[0]{nt_zone_id}, 7,
+    'zone log object ids are adapted to the v2 shape';
+is $zone_log_result->{total}, 1, 'zone log filtered total is retained';
+is_deeply $zone_log_result->{group_map}, {},
+    'zone log response always supplies a group map';
+like $zone_logs->{http}{requests}[0][1],
+    qr{/log/zone\?include_subgroups=true&limit=50&gid=4&search=logged\.test\.&offset=0$},
+    'zone log request maps scope, search, and pagination';
+
+my $record_logs = transport(response({
+    log => [ {
+        id => 13, uid => 5, zid => 7, zrid => 8,
+        timestamp => 123456, action => 'deleted', owner => 'host.logged.test.',
+        type => 'A', address => '192.0.2.8',
+    } ],
+    meta => { pagination => { total => 1, filtered => 1, limit => 20, offset => 0 } },
+}));
+my $record_log_result = $record_logs->send_request(
+    'http://api:3000',
+    action      => 'get_zone_record_log',
+    nt_zone_id => 7,
+    limit       => 20,
+    start       => 1,
+);
+is $record_log_result->{log}[0]{nt_zone_record_log_id}, 13,
+    'record log ids are adapted to the v2 shape';
+is $record_log_result->{log}[0]{nt_zone_record_id}, 8,
+    'record log object ids are adapted to the v2 shape';
+is $record_log_result->{log}[0]{name}, 'host.logged.test.',
+    'record log owners use the v2 name field';
+
+my $global_logs = transport(response({
+    log => [ {
+        id => 14, gid => 4, uid => 5, timestamp => 123456,
+        action => 'added', object => 'zone', object_id => 7,
+        title => 'logged.test.', description => 'initial creation zone',
+    } ],
+    meta => { pagination => { total => 1, filtered => 1, limit => 50, offset => 0 } },
+}));
+my $global_log_result = $global_logs->send_request(
+    'http://api:3000',
+    action      => 'get_global_application_log',
+    nt_group_id => 4,
+    limit       => 50,
+    start       => 1,
+);
+is $global_log_result->{log}[0]{nt_user_global_log_id}, 14,
+    'global log ids are adapted to the v2 shape';
+is $global_log_result->{log}[0]{nt_user_id}, 5,
+    'global log actor ids are adapted to the v2 shape';
+
 my $swagger = {
     paths => {
         '/nameserver' => { post => { parameters => [ {

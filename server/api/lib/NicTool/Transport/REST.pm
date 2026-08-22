@@ -99,6 +99,31 @@ my %ACTION_MAP = (
     get_nameserver_export_types => { method => 'GET', path => '/swagger.json',
                                      synthesize => 'nameserver_types' },
 
+    # Audit logs
+    get_global_application_log => { method => 'GET', path => '/log/global',
+                                    query_map => { nt_group_id => 'gid',
+                                                   include_subgroups => 'include_subgroups',
+                                                   limit => 'limit', start => 'offset',
+                                                   search_value => 'search',
+                                                   exact_match => 'exact_match',
+                                                   '1_sortfield' => 'sort_by',
+                                                   '1_sortmod' => 'sort_dir' } },
+    get_group_zones_log => { method => 'GET', path => '/log/zone',
+                             query_map => { nt_group_id => 'gid',
+                                            include_subgroups => 'include_subgroups',
+                                            limit => 'limit', start => 'offset',
+                                            search_value => 'search',
+                                            exact_match => 'exact_match',
+                                            '1_sortfield' => 'sort_by',
+                                            '1_sortmod' => 'sort_dir' } },
+    get_zone_record_log => { method => 'GET', path => '/log/zone_record',
+                             query_map => { nt_zone_id => 'zid',
+                                            limit => 'limit', start => 'offset',
+                                            search_value => 'search',
+                                            exact_match => 'exact_match',
+                                            '1_sortfield' => 'sort_by',
+                                            '1_sortmod' => 'sort_dir' } },
+
     # Zone delegation
     delegate_zones         => { method => 'POST',   path => '/delegation',
                                 id_from_list => 'zone_list' },
@@ -928,6 +953,10 @@ sub _adapt_response {
         return { error_code => 200, error_msg => 'OK' };
     }
 
+    if ($action =~ /^(?:get_global_application_log|get_group_zones_log|get_zone_record_log)$/) {
+        return _adapt_log_response($action, $data);
+    }
+
     # Determine resource type from action
     my $resource = _resource_for_action($action);
     my $rkey     = $RESOURCE_FOR{$resource} // $resource;
@@ -1024,6 +1053,56 @@ sub _adapt_response {
     }
 
     return $result;
+}
+
+sub _adapt_log_response {
+    my ($action, $data) = @_;
+
+    my %field_map = (
+        get_global_application_log => {
+            id  => 'nt_user_global_log_id',
+            gid => 'nt_group_id',
+            uid => 'nt_user_id',
+        },
+        get_group_zones_log => {
+            id  => 'nt_zone_log_id',
+            gid => 'nt_group_id',
+            uid => 'nt_user_id',
+            zid => 'nt_zone_id',
+        },
+        get_zone_record_log => {
+            id    => 'nt_zone_record_log_id',
+            uid   => 'nt_user_id',
+            zid   => 'nt_zone_id',
+            zrid  => 'nt_zone_record_id',
+            owner => 'name',
+        },
+    );
+
+    my @log;
+    for my $entry (@{ $data->{log} // [] }) {
+        my %row = %$entry;
+        for my $v3key (keys %{ $field_map{$action} }) {
+            next unless exists $row{$v3key};
+            $row{ $field_map{$action}{$v3key} } = delete $row{$v3key};
+        }
+        push @log, \%row;
+    }
+
+    my $pg = $data->{meta}{pagination} // {};
+    my $start = ($pg->{offset} // 0) + 1;
+    my $limit = $pg->{limit} || scalar(@log) || 1;
+    return {
+        error_code => 200,
+        error_msg  => 'OK',
+        log        => \@log,
+        group_map  => {},
+        total      => $pg->{filtered} // $pg->{total} // scalar(@log),
+        start      => $start,
+        end        => $start + scalar(@log) - 1,
+        limit      => $limit,
+        page       => int(($pg->{offset} // 0) / $limit) + 1,
+    };
 }
 
 sub _adapt_login {
