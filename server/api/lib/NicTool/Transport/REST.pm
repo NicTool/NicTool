@@ -108,6 +108,14 @@ my %ACTION_MAP = (
                                                    exact_match => 'exact_match',
                                                    '1_sortfield' => 'sort_by',
                                                    '1_sortmod' => 'sort_dir' } },
+    get_user_global_log => { method => 'GET', path => '/log/global',
+                             query_map => { nt_group_id => 'gid',
+                                            nt_user_id => 'uid',
+                                            limit => 'limit', start => 'offset',
+                                            search_value => 'search',
+                                            exact_match => 'exact_match',
+                                            '1_sortfield' => 'sort_by',
+                                            '1_sortmod' => 'sort_dir' } },
     get_group_zones_log => { method => 'GET', path => '/log/zone',
                              query_map => { nt_group_id => 'gid',
                                             include_subgroups => 'include_subgroups',
@@ -123,6 +131,9 @@ my %ACTION_MAP = (
                                             exact_match => 'exact_match',
                                             '1_sortfield' => 'sort_by',
                                             '1_sortmod' => 'sort_dir' } },
+    get_zone_record_log_entry => { method => 'GET', path => '/log/zone_record',
+                                   query_map => { nt_zone_id => 'zid',
+                                                  nt_zone_record_log_id => 'id' } },
 
     # Zone delegation
     delegate_zones         => { method => 'POST',   path => '/delegation',
@@ -511,6 +522,18 @@ sub send_request {
 
     my $http_method = $spec->{method};
     my $path        = $spec->{path};
+
+    if ($action eq 'get_zone_record_log_entry') {
+        my $zrid = delete $vars{nt_zone_record_id};
+        return _v2_param_error('nt_zone_record_id', 301)
+            unless defined $zrid && length $zrid;
+        return _v2_param_error('nt_zone_record_id', 302)
+            unless $zrid =~ /^\d+$/ && $zrid > 0;
+        my $record = $self->_get_json("/zone_record/$zrid");
+        return _http_error(404, { error => 'No such zone record exists' })
+            unless $record && $record->{zone_record} && $record->{zone_record}[0];
+        $vars{nt_zone_id} = $record->{zone_record}[0]{zid};
+    }
 
     # For id_from_list actions, extract IDs from an arrayref or comma-separated list
     my $list_raw;
@@ -991,7 +1014,7 @@ sub _adapt_response {
         return { error_code => 200, error_msg => 'OK' };
     }
 
-    if ($action =~ /^(?:get_global_application_log|get_group_zones_log|get_zone_record_log)$/) {
+    if ($action =~ /^(?:get_global_application_log|get_user_global_log|get_group_zones_log|get_zone_record_log|get_zone_record_log_entry)$/) {
         return _adapt_log_response($action, $data);
     }
 
@@ -1102,6 +1125,11 @@ sub _adapt_log_response {
             gid => 'nt_group_id',
             uid => 'nt_user_id',
         },
+        get_user_global_log => {
+            id  => 'nt_user_global_log_id',
+            gid => 'nt_group_id',
+            uid => 'nt_user_id',
+        },
         get_group_zones_log => {
             id  => 'nt_zone_log_id',
             gid => 'nt_group_id',
@@ -1109,6 +1137,13 @@ sub _adapt_log_response {
             zid => 'nt_zone_id',
         },
         get_zone_record_log => {
+            id    => 'nt_zone_record_log_id',
+            uid   => 'nt_user_id',
+            zid   => 'nt_zone_id',
+            zrid  => 'nt_zone_record_id',
+            owner => 'name',
+        },
+        get_zone_record_log_entry => {
             id    => 'nt_zone_record_log_id',
             uid   => 'nt_user_id',
             zid   => 'nt_zone_id',
@@ -1130,7 +1165,7 @@ sub _adapt_log_response {
     my $pg = $data->{meta}{pagination} // {};
     my $start = ($pg->{offset} // 0) + 1;
     my $limit = $pg->{limit} || scalar(@log) || 1;
-    return {
+    my $result = {
         error_code => 200,
         error_msg  => 'OK',
         log        => \@log,
@@ -1141,6 +1176,14 @@ sub _adapt_log_response {
         limit      => $limit,
         page       => int(($pg->{offset} // 0) / $limit) + 1,
     };
+    $result->{list} = $result->{log} if $action eq 'get_user_global_log';
+    return {
+        error_code => 600,
+        error_msg  => 'No such log entry exists',
+    } if $action eq 'get_zone_record_log_entry' && !@log;
+    return { error_code => 200, error_msg => 'OK', %{ $log[0] } }
+        if $action eq 'get_zone_record_log_entry';
+    return $result;
 }
 
 sub _adapt_login {

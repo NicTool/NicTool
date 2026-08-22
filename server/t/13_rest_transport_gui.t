@@ -233,6 +233,51 @@ is $global_log_result->{log}[0]{nt_user_global_log_id}, 14,
 is $global_log_result->{log}[0]{nt_user_id}, 5,
     'global log actor ids are adapted to the v2 shape';
 
+my $user_logs = transport(response({
+    log => [ {
+        id => 15, gid => 4, uid => 5, timestamp => 123456,
+        action => 'added', object => 'zone', object_id => 7,
+        title => 'logged.test.', description => 'initial creation zone',
+    } ],
+    meta => { pagination => { total => 1, filtered => 1, limit => 20, offset => 0 } },
+}));
+my $user_log_result = $user_logs->send_request(
+    'http://api:3000',
+    action      => 'get_user_global_log',
+    nt_group_id => 4,
+    nt_user_id  => 5,
+    limit       => 20,
+    start       => 1,
+);
+is $user_log_result->{list}[0]{nt_user_global_log_id}, 15,
+    'user global logs use the v2 list and field shape';
+like $user_logs->{http}{requests}[0][1],
+    qr{/log/global\?.*gid=4.*uid=5},
+    'user global logs scope the v3 request to the selected user';
+
+my $record_log_entry = transport(
+    response({ zone_record => [ { id => 8, zid => 7 } ] }),
+    response({
+        log => [ {
+            id => 13, uid => 5, zid => 7, zrid => 8,
+            timestamp => 123456, action => 'deleted', owner => 'host.logged.test.',
+            type => 'A', address => '192.0.2.8',
+        } ],
+        meta => { pagination => { total => 1, filtered => 1, limit => 50, offset => 0 } },
+    }),
+);
+my $record_log_entry_result = $record_log_entry->send_request(
+    'http://api:3000',
+    action                    => 'get_zone_record_log_entry',
+    nt_zone_record_id         => 8,
+    nt_zone_record_log_id     => 13,
+);
+is $record_log_entry_result->{nt_zone_record_log_id}, 13,
+    'one record log entry is adapted as a v2 object';
+like $record_log_entry->{http}{requests}[1][1],
+    qr{/log/zone_record\?.*id=13.*zid=7|/log/zone_record\?.*zid=7.*id=13},
+    'record log entry lookup is scoped to its zone and log id';
+
 my $swagger = {
     paths => {
         '/nameserver' => { post => { parameters => [ {
