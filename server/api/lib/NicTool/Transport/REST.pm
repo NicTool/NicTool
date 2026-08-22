@@ -920,6 +920,8 @@ sub _adapt_response {
             $r->{deleted} //= 0
                 if $resource =~ /^(?:zone|zone_record|group|user|nameserver)$/;
             $self->_unqualify_owner($r) if $resource eq 'zone_record';
+            $self->_supplement_delegation($r, 'get_zone')
+                if $action eq 'get_group_zones';
             if ($action =~ /^get_delegated_(?:zones|zone_records)$/) {
                 my $oid = $action eq 'get_delegated_zones'
                     ? $r->{nt_zone_id}
@@ -1049,12 +1051,7 @@ sub _adapt_session {
 sub _supplement_delegation {
     my ($self, $result, $action) = @_;
 
-    my $gid = eval { $self->_nt->{user}{store}{nt_group_id} };
-    if (!$gid) {
-        my $session = $self->_get_json('/session');
-        $gid = $session->{group}{id}
-            if $session && $session->{group};
-    }
+    my $gid = $self->_session_group_id;
     return unless $gid;
 
     my $oid;
@@ -1104,11 +1101,27 @@ sub _supplement_delegation {
     return unless $data && $data->{delegation} && @{$data->{delegation}};
 
     my $d = $data->{delegation}[0];
+    $result->{delegated_by_id}          = $d->{delegated_by_id};
+    $result->{delegated_by_name}        = $d->{delegated_by_name};
     $result->{delegate_write}          = $d->{delegate_write}          // 0;
     $result->{delegate_delete}         = $d->{delegate_delete}         // 0;
     $result->{delegate_delegate}       = $d->{delegate_delegate}       // 0;
     $result->{delegate_add_records}    = $d->{delegate_add_records}    // 0;
     $result->{delegate_delete_records} = $d->{delegate_delete_records} // 0;
+}
+
+sub _session_group_id {
+    my ($self) = @_;
+    return $self->{session_group_id} if exists $self->{session_group_id};
+
+    my $gid = eval { $self->_nt->{user}{store}{nt_group_id} };
+    if (!$gid) {
+        my $session = $self->_get_json('/session');
+        $gid = $session->{group}{id}
+            if $session && $session->{group};
+    }
+    $self->{session_group_id} = $gid;
+    return $gid;
 }
 
 sub _base_url {

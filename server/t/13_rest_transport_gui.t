@@ -163,6 +163,8 @@ my $delegated_zone = transport(
     response({ zone => [ { id => 9, gid => 1, zone => 'delegated.test' } ] }),
     response({ group => { id => 2 } }),
     response({ delegation => [ {
+        delegated_by_id => 1,
+        delegated_by_name => 'root',
         delegate_write => 1,
         delegate_delete => 1,
         delegate_delegate => 0,
@@ -177,9 +179,34 @@ my $delegated_zone_result = $delegated_zone->send_request(
 );
 is $delegated_zone_result->{delegate_write}, 1,
     'GUI zone reads derive delegation from the authenticated session group';
+is $delegated_zone_result->{delegated_by_id}, 1,
+    'GUI zone reads retain delegation identity';
 like $delegated_zone->{http}{requests}[2][1],
     qr{/delegation\?oid=9&gid=2&type=ZONE$},
     'GUI delegation lookup uses the session group';
+
+my $delegated_zones = transport(
+    response({ zone => [ { id => 9, gid => 1, zone => 'delegated.test' } ] }),
+    response({ group => { id => 2 } }),
+    response({ delegation => [ {
+        delegated_by_id => 1,
+        delegated_by_name => 'root',
+        delegate_write => 1,
+        delegate_delete => 1,
+        delegate_delegate => 0,
+        delegate_add_records => 1,
+        delegate_delete_records => 1,
+    } ] }),
+);
+my $delegated_zones_result = $delegated_zones->send_request(
+    'http://api:3000',
+    action      => 'get_group_zones',
+    nt_group_id => 2,
+);
+is $delegated_zones_result->{zones}[0]{delegated_by_id}, 1,
+    'GUI zone lists retain delegation identity';
+is $delegated_zones_result->{zones}[0]{delegate_delete}, 1,
+    'GUI zone lists retain delegation permissions';
 
 my $new_zone = transport(response({ zone => [ { id => 9, gid => 2 } ] }));
 my $new_zone_result = $new_zone->send_request(

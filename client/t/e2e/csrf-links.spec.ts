@@ -128,7 +128,7 @@ test.describe('Options-menu delete links carry CSRF (#354)', () => {
     const childCookies = cookieString(childLogin.sessionCookie, childLogin.csrfCookie);
 
     const { body } = await authGet(playwright,
-      `${BASE}/zone.cgi?nt_group_id=${childGid}&nt_zone_id=${zid}`, childCookies);
+      `${BASE}/group_zones.cgi?nt_group_id=${childGid}`, childCookies);
 
     const href = findHref(body, 'group_zones.cgi?', `nt_zone_id=${zid}`, 'deletedelegate=1');
     expect(href, 'delegated zone should render a Remove Delegation link').toBeTruthy();
