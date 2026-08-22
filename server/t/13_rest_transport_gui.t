@@ -87,6 +87,27 @@ like $subgroups->{http}{requests}[0][1],
     qr{/group\?parent_gid=2&name=subgroup$},
     'subgroup request maps parent and search parameters';
 
+my $users = transport(response({
+    user => [
+        { id => 5, gid => 2, username => 'matched-user' },
+    ],
+    meta => { pagination => { filtered => 1, limit => 10, offset => 0 } },
+}));
+my $user_result = $users->send_request(
+    'http://api:3000',
+    action       => 'get_group_users',
+    nt_group_id  => 2,
+    search_value => 'matched-user',
+    exact_match  => 1,
+    limit        => 10,
+    start        => 1,
+);
+is $user_result->{list}[0]{nt_user_id}, 5,
+    'group user list is adapted under the v2 list key';
+like $users->{http}{requests}[0][1],
+    qr{/user\?exact_match=true&limit=10&gid=2&search=matched-user&offset=0$},
+    'group user request maps search and pagination parameters';
+
 my $zones = transport(
     response({ zone => [ { id => 7, gid => 2, zone => 'one.test' } ] }),
     response({ zone => [ { id => 8, gid => 2, zone => 'two.test' } ] }),

@@ -119,7 +119,7 @@ test.describe('Options-menu delete links carry CSRF (#354)', () => {
     // delegation, so create a user inside the child group and log in as them.
     // Users outside the default group authenticate as username@groupname.
     const username = uniqueName('csrfdel');
-    const password = 'testpass123!';
+    const password = 'Valid#E2e#Pass44';
     const uid = await createUser(playwright, cookies, childGid, { username, password });
     await authPost(playwright, `${BASE}/delegate_zones.cgi`, cookies,
       `Save=Save&group_list=${childGid}&obj_list=${zid}&type=zone&perm_write=1&perm_delete=1&perm_delegate=0&zone_perm_add_records=1&zone_perm_delete_records=1&csrf_token=${csrfToken}`);

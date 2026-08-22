@@ -47,7 +47,7 @@ test.describe('Users', () => {
     const uid = await createUser(playwright, cookies, gid, { username });
 
     await authPost(playwright, `${BASE}/group_users.cgi`, cookies,
-      `nt_group_id=${gid}&nt_user_id=${uid}&edit=1&Save=Save&username=${username}&email=updated@test.example&first_name=Updated&last_name=Person&csrf_token=${csrfToken}`);
+      `nt_group_id=${gid}&nt_user_id=${uid}&edit=1&Save=Save&username=${username}&email=updated@example.com&first_name=Updated&last_name=Person&csrf_token=${csrfToken}`);
 
     const { body } = await authGet(playwright,
       `${BASE}/group_users.cgi?nt_group_id=${gid}&nt_user_id=${uid}&edit=1`, cookies);
@@ -58,13 +58,13 @@ test.describe('Users', () => {
 
   test('edit user password requires current_password', async ({ playwright }) => {
     const username = uniqueName('e2euser');
-    const uid = await createUser(playwright, cookies, gid, { username, password: 'oldpass123!' });
+    const uid = await createUser(playwright, cookies, gid, { username, password: 'Old#Pass#E2E44' });
 
     // The CGI doesn't forward current_password to the server API,
     // so password changes via the web UI require the server's sanity check.
     // Verify the server enforces the current_password requirement.
     const { body: editBody } = await authPost(playwright, `${BASE}/group_users.cgi`, cookies,
-      `nt_group_id=${gid}&nt_user_id=${uid}&edit=1&Save=Save&username=${username}&password=newpass456!&password2=newpass456!&email=${username}@test.example&first_name=Test&last_name=User&csrf_token=${csrfToken}`);
+      `nt_group_id=${gid}&nt_user_id=${uid}&edit=1&Save=Save&username=${username}&password=New%23Pass%23E2E46&password2=New%23Pass%23E2E46&email=${username}@example.com&first_name=Test&last_name=User&csrf_token=${csrfToken}`);
 
     // Server should reject without current_password (for non-admin users)
     // As admin, this may succeed or show an error depending on the is_admin check
@@ -88,7 +88,7 @@ test.describe('Users', () => {
     const username = uniqueName('e2euser');
     // Create user with explicit permissions in POST data
     await authPost(playwright, `${BASE}/group_users.cgi`, cookies,
-      `nt_group_id=${gid}&new=1&Create=Create&username=${username}&password=testpass123!&password2=testpass123!&email=${username}@test.example&first_name=Custom&last_name=Perms&zone_create=1&zone_delete=0&group_create=0&csrf_token=${csrfToken}`);
+      `nt_group_id=${gid}&new=1&Create=Create&username=${username}&password=Valid%23E2e%23Pass44&password2=Valid%23E2e%23Pass44&email=${username}@example.com&first_name=Custom&last_name=Perms&zone_create=1&zone_delete=0&group_create=0&csrf_token=${csrfToken}`);
 
     const { body } = await authGet(playwright,
       `${BASE}/group_users.cgi?nt_group_id=${gid}`, cookies);
@@ -103,7 +103,7 @@ test.describe('Users', () => {
 
   test('created user can login', async ({ playwright }) => {
     const username = uniqueName('e2euser');
-    const pw = 'canlogin789!';
+    const pw = 'Can#Login#E2E78';
     const uid = await createUser(playwright, cookies, gid, { username, password: pw });
 
     // Login as the new user (NicTool login format: username@group)
@@ -117,7 +117,7 @@ test.describe('Users', () => {
   test('create user with missing required field shows error', async ({ playwright }) => {
     // Attempt to create user without username
     const { body } = await authPost(playwright, `${BASE}/group_users.cgi`, cookies,
-      `nt_group_id=${gid}&new=1&Create=Create&username=&password=test123!&password2=test123!&email=bad@test.example&first_name=Bad&last_name=User&csrf_token=${csrfToken}`);
+      `nt_group_id=${gid}&new=1&Create=Create&username=&password=Valid%23E2e%23Pass44&password2=Valid%23E2e%23Pass44&email=bad@example.com&first_name=Bad&last_name=User&csrf_token=${csrfToken}`);
     // Should show error, not crash
     expect(body.toLowerCase()).toMatch(/error|required|invalid|username/i);
   });

@@ -8,6 +8,7 @@ export const BASE = process.env.NICTOOL_URL || 'https://localhost:8443';
 export const USERNAME = process.env.NICTOOL_TEST_USER || 'root';
 export const PASSWORD = process.env.NICTOOL_TEST_PASSWORD || 'nictool';
 export const TEST_GID = Number(process.env.NICTOOL_TEST_GID || '1');
+export const TEST_USER_PASSWORD = 'Valid#E2e#Pass44';
 
 export const GROUP_DEFAULTS = [
   'user_create=1', 'user_delete=1', 'user_write=1',
@@ -269,8 +270,8 @@ export async function deleteRecord(playwright: any, cookies: string, gid: string
 export async function createUser(playwright: any, cookies: string, gid: string | number,
   opts: { username: string; password?: string; email?: string; first_name?: string; last_name?: string }
 ): Promise<string> {
-  const pw = opts.password || 'testpass123!';
-  const email = opts.email || `${opts.username}@test.example`;
+  const pw = opts.password || TEST_USER_PASSWORD;
+  const email = opts.email || `${opts.username}@example.com`;
   const first = opts.first_name || 'Test';
   const last = opts.last_name || 'User';
   await authPost(playwright, `${BASE}/group_users.cgi`, cookies,

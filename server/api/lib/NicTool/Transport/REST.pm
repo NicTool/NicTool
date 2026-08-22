@@ -72,7 +72,12 @@ my %ACTION_MAP = (
                          id_from_list => 'user_list' },
     get_group_users => { method => 'GET',     path => '/user',
                          query_map => { nt_group_id => 'gid',
-                                        include_subgroups => 'include_subgroups' } },
+                                        include_subgroups => 'include_subgroups',
+                                        limit => 'limit', start => 'offset',
+                                        search_value => 'search',
+                                        exact_match => 'exact_match',
+                                        '1_sortfield' => 'sort_by',
+                                        '1_sortmod' => 'sort_dir' } },
 
     # Nameservers
     new_nameserver        => { method => 'POST',   path => '/nameserver' },
@@ -534,7 +539,8 @@ sub send_request {
                 $val = 'asc'  if $val eq 'ascending';
                 $val = 'desc' if $val eq 'descending';
             }
-            $val = $val ? 'true' : 'false' if $v3key eq 'include_subgroups';
+            $val = $val ? 'true' : 'false'
+                if $v3key eq 'include_subgroups' || $v3key eq 'exact_match';
             push @qparts, _uri_escape($v3key) . '=' . _uri_escape($val);
         }
         $query = '?' . join('&', @qparts) if @qparts;
@@ -1158,8 +1164,8 @@ sub _resource_for_action {
     return 'zone_record' if $action =~ /zone_record/;
     return 'nameserver'  if $action =~ /nameserver/;
     return 'zone'        if $action =~ /zone/;
-    return 'group'       if $action =~ /group/;
     return 'user'        if $action =~ /user/;
+    return 'group'       if $action =~ /group/;
     return 'permission'  if $action =~ /perm/;
     return 'session';
 }

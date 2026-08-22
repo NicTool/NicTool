@@ -152,7 +152,7 @@ test.describe('Mutating endpoints reject requests without a csrf_token', () => {
   test('user create via POST', async ({ playwright }) => {
     const name = uniqueName('csrfforged');
     await authPost(playwright, `${BASE}/group_users.cgi`, cookies,
-      `nt_group_id=${gid}&new=1&Create=Create&username=${name}&password=testpass123!&password2=testpass123!&email=f@test.example&first_name=F&last_name=U&group_defaults=1`);
+      `nt_group_id=${gid}&new=1&Create=Create&username=${name}&password=Valid%23E2e%23Pass44&password2=Valid%23E2e%23Pass44&email=f@example.com&first_name=F&last_name=U&group_defaults=1`);
     expect(await pageHas(playwright, `group_users.cgi?nt_group_id=${gid}`, name)).toBe(false);
   });
 
@@ -187,7 +187,7 @@ test.describe('Mutating endpoints reject requests without a csrf_token', () => {
   test('user create via user.cgi POST', async ({ playwright }) => {
     const name = uniqueName('csrfforged');
     await authPost(playwright, `${BASE}/user.cgi`, cookies,
-      `nt_group_id=${gid}&new=1&Create=Create&username=${name}&password=testpass123!&password2=testpass123!&email=f@test.example&first_name=F&last_name=U&group_defaults=1`);
+      `nt_group_id=${gid}&new=1&Create=Create&username=${name}&password=Valid%23E2e%23Pass44&password2=Valid%23E2e%23Pass44&email=f@example.com&first_name=F&last_name=U&group_defaults=1`);
     expect(await pageHas(playwright, `group_users.cgi?nt_group_id=${gid}`, name)).toBe(false);
   });
 
@@ -202,7 +202,7 @@ test.describe('Mutating endpoints reject requests without a csrf_token', () => {
 
   test('user edit via POST', async ({ playwright }) => {
     await authPost(playwright, `${BASE}/group_users.cgi`, cookies,
-      `nt_group_id=${gid}&edit=1&Save=Save&nt_user_id=${uid}&username=${username}&first_name=FORGEDNAME&last_name=U&email=f@test.example`);
+      `nt_group_id=${gid}&edit=1&Save=Save&nt_user_id=${uid}&username=${username}&first_name=FORGEDNAME&last_name=U&email=f@example.com`);
     expect(await pageHas(playwright,
       `user.cgi?nt_group_id=${gid}&nt_user_id=${uid}`, 'FORGEDNAME')).toBe(false);
   });
@@ -217,7 +217,7 @@ test.describe('Mutating endpoints reject requests without a csrf_token', () => {
 
   test('user edit via user.cgi POST', async ({ playwright }) => {
     await authPost(playwright, `${BASE}/user.cgi`, cookies,
-      `nt_group_id=${gid}&nt_user_id=${uid}&edit=1&Save=Save&username=${username}&first_name=FORGED_DETAIL_EDIT&last_name=U&email=f@test.example&group_defaults=1`);
+      `nt_group_id=${gid}&nt_user_id=${uid}&edit=1&Save=Save&username=${username}&first_name=FORGED_DETAIL_EDIT&last_name=U&email=f@example.com&group_defaults=1`);
     expect(await pageHas(playwright,
       `user.cgi?nt_group_id=${gid}&nt_user_id=${uid}`, 'FORGED_DETAIL_EDIT')).toBe(false);
   });

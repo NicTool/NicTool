@@ -90,7 +90,7 @@ test.describe('Delegation', () => {
 
   test('delegation with write perm allows editing', async ({ playwright }) => {
     const username = uniqueName('e2e_deleg_user');
-    const uid = await createUser(playwright, cookies, childGid, { username, password: 'delegtest123!' });
+    const uid = await createUser(playwright, cookies, childGid, { username, password: 'Deleg#Test#E2E46' });
 
     try {
       // Ensure zone is delegated with write + add_records permission
@@ -113,7 +113,7 @@ test.describe('Delegation', () => {
 
   test('delegation without write perm prevents editing', async ({ playwright }) => {
     const username = uniqueName('e2e_deleg_nowrite');
-    const uid = await createUser(playwright, cookies, childGid, { username, password: 'delegtest123!' });
+    const uid = await createUser(playwright, cookies, childGid, { username, password: 'Deleg#Test#E2E46' });
 
     try {
       // Delegate zone with NO write, NO add_records permission
