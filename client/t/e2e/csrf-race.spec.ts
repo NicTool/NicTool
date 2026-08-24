@@ -43,7 +43,8 @@ test.describe('CSRF token agreement across CGI processes', () => {
     const sessionOnly = `NicTool=${sessionCookie}`;
 
     // Frameset loads: same initial jar state, responses not exchanged.
-    const bodyFrame = await authGet(playwright, `${BASE}/group.cgi?nt_group_id=${TEST_GID}`, sessionOnly);
+    const bodyFrame = await authGet(playwright,
+      `${BASE}/group.cgi?nt_group_id=${TEST_GID}&parent_group_id=${TEST_GID}&new=1`, sessionOnly);
     const navFrame  = await authGet(playwright, `${BASE}/nav.cgi?nt_group_id=${TEST_GID}`, sessionOnly);
 
     const groupFormToken = formToken(bodyFrame.body);
@@ -77,7 +78,8 @@ test.describe('CSRF token agreement across CGI processes', () => {
     // A rendered form whose csrf cookie has since vanished (cleared by the
     // browser, eaten by an extension, or simply never re-sent). The form
     // token is derived from the session, so the POST must stand on its own.
-    const { body: page } = await authGet(playwright, `${BASE}/group.cgi?nt_group_id=${TEST_GID}`, sessionOnly);
+    const { body: page } = await authGet(playwright,
+      `${BASE}/group.cgi?nt_group_id=${TEST_GID}&parent_group_id=${TEST_GID}&new=1`, sessionOnly);
     const token = formToken(page);
     expect(token, 'group.cgi renders a csrf token').toMatch(/^[0-9a-f]{40}$/);
 
