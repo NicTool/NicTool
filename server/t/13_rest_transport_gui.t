@@ -108,6 +108,28 @@ like $users->{http}{requests}[0][1],
     qr{/user\?exact_match=true&limit=10&gid=2&search=matched-user&offset=0$},
     'group user request maps search and pagination parameters';
 
+# v3 strips gid from user rows; members pulled in by include_subgroups must
+# keep their own group id rather than inheriting the requested one
+my $sub_users = transport(response({
+    user => [
+        { id => 6, username => 'top', permissions => { group => { id => 2 } } },
+        { id => 7, username => 'sub', permissions => { group => { id => 4 } } },
+        { id => 8, username => 'bare' },
+    ],
+    meta => { pagination => { filtered => 3, limit => 10, offset => 0 } },
+}));
+my $sub_user_result = $sub_users->send_request(
+    'http://api:3000',
+    action            => 'get_group_users',
+    nt_group_id       => 2,
+    include_subgroups => 1,
+    limit             => 10,
+    start             => 1,
+);
+is_deeply [ map { $_->{nt_group_id} } @{ $sub_user_result->{list} } ],
+    [ 2, 4, 2 ],
+    'user listings keep each member own group id';
+
 my $zones = transport(
     response({ zone => [ { id => 7, gid => 2, zone => 'one.test' } ] }),
     response({ zone => [ { id => 8, gid => 2, zone => 'two.test' } ] }),
