@@ -1048,8 +1048,17 @@ sub _adapt_response {
     if ($is_list) {
         my @remapped = map {
             my $r = _remap_fields($_, $resource);
-            $r->{nt_group_id} //= $self->{request_group_id}
-                if $resource eq 'user';
+            if ($resource eq 'user') {
+                # the effective perm rides on the user's own group, so it names
+                # the member's real group even in include_subgroups listings
+                my $perm_gid
+                    = ref $r->{permissions} eq 'HASH'
+                    ? $r->{permissions}{group}{id}
+                    : undef;
+                $r->{nt_group_id}
+                    //= defined $perm_gid && length $perm_gid ? $perm_gid
+                    : $self->{request_group_id};
+            }
             $self->_set_group_has_children($r) if $resource eq 'group';
             $r->{deleted} //= 0
                 if $resource =~ /^(?:zone|zone_record|group|user|nameserver)$/;
@@ -1413,7 +1422,17 @@ sub _http_error {
         // "HTTP $status";
     my $desc = '';
     if ($data->{error_msg}) {
-        $desc = 'Access Permission denied';
+        # v2 clients branch on error_desc, so mirror NicToolServer::error_response
+        # where v3's codes line up; permission denials stay the catch-all
+        my %desc_for = (
+            300 => 'Sanity error',
+            301 => 'Required parameters missing',
+            302 => 'Some parameters were invalid',
+            400 => 'Some parameters were invalid',
+            409 => 'Sanity error',
+            601 => 'Object Not Found',
+        );
+        $desc = $desc_for{$code} // 'Access Permission denied';
     } else {
         $msg = "REST: $msg";
     }
