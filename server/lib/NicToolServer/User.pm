@@ -428,8 +428,13 @@ sub move_users {
     foreach my $row (@$users) {
         next unless ( $groups{ $row->{nt_group_id} } );
 
-        $sql = "UPDATE nt_user SET nt_group_id = ? WHERE nt_user_id = ?";
-        $self->exec_query( $sql, [ $data->{nt_group_id}, $row->{nt_user_id} ] )
+        $sql = "UPDATE nt_user
+            LEFT JOIN nt_perm ON nt_perm.nt_user_id = nt_user.nt_user_id
+                AND nt_perm.deleted = 0
+            SET nt_user.nt_group_id = ?, nt_perm.nt_group_id = ?
+            WHERE nt_user.nt_user_id = ?";
+        $self->exec_query( $sql,
+            [ $data->{nt_group_id}, $data->{nt_group_id}, $row->{nt_user_id} ] )
             or next;
 
         my %user = ( %$row, user => $data->{user} );

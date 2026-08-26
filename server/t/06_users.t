@@ -36,10 +36,16 @@ use lib 't';
 use lib 'lib';
 use NicToolTest;
 use NicTool;
+use NicToolServer;
 use NicToolServer::User;
 use Test::More 'no_plan';
 
 my $nt_obj = nt_api_connect();
+
+$NicToolServer::dsn     = Config('dsn');
+$NicToolServer::db_user = Config('db_user');
+$NicToolServer::db_pass = Config('db_pass');
+my $nts = NicToolServer->new( undef, undef, NicToolServer->dbh() );
 
 my ( $uid1, $uid2, $gid1, $gid2, $user1, $user2, $group1, $group2 );
 my ( %username, %first_name, %last_name, %email );
@@ -545,6 +551,9 @@ sub test_move_users {
     is( $res->get('error_msg'), 'nt_group_id' );
     ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
 
+    $res = $user2->edit_user( inherit_group_permissions => 1 );
+    noerrok($res);
+
     $res = $group2->move_users( user_list => "$uid1,$uid2" );
     noerrok($res);
 
@@ -555,6 +564,39 @@ sub test_move_users {
     $user2 = $nt_obj->get_user( nt_user_id => $uid2 );
     noerrok($user2);
     is( $user2->get('nt_group_id'), $gid2 );
+
+    my $perms =
+        $nts->exec_query( 'SELECT nt_group_id FROM nt_perm WHERE deleted=0 AND nt_user_id=?',
+        $uid1 );
+    is( scalar @$perms,             1,     'explicit permissions remain present' );
+    is( $perms->[0]->{nt_group_id}, $gid2, 'explicit permissions move with user' );
+
+    $perms = $nts->exec_query( 'SELECT nt_group_id FROM nt_perm WHERE deleted=0 AND nt_user_id=?',
+        $uid2 );
+    is( scalar @$perms, 0, 'move does not create user permissions' );
+
+    # a group edit must change the group's row, not the moved user's
+    $res = $group2->edit_group( zone_create => 1 );
+    noerrok($res);
+
+    $res = $nt_obj->get_group( nt_group_id => $gid2 );
+    noerrok($res);
+    is( $res->get('zone_create'), 1, 'group permissions changed' );
+
+    $user1 = $nt_obj->get_user( nt_user_id => $uid1 );
+    noerrok($user1);
+    is( $user1->get('inherit_group_permissions'), 0 );
+    is( $user1->get('zone_create'), 0, 'group edit leaves explicit permissions alone' );
+
+    $user2 = $nt_obj->get_user( nt_user_id => $uid2 );
+    noerrok($user2);
+    is( $user2->get('inherit_group_permissions'), 1 );
+    is( $user2->get('zone_create'), 1, 'inherited permissions follow the group' );
+
+    $res = $nt_obj->get_group->get_group_groups;
+    noerrok($res);
+    is( scalar( grep { $_->get('nt_group_id') == $gid2 } $res->list ),
+        1, 'moved user does not duplicate the group listing' );
 
     $res = $group2->get_group_users;
     noerrok($res);
