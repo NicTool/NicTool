@@ -227,6 +227,8 @@ my $record_log_result = $record_logs->send_request(
     nt_zone_id => 7,
     limit       => 20,
     start       => 1,
+    '1_sortfield' => 'name',
+    '1_sortmod'   => 'Ascending',
 );
 is $record_log_result->{log}[0]{nt_zone_record_log_id}, 13,
     'record log ids are adapted to the v2 shape';
@@ -234,6 +236,10 @@ is $record_log_result->{log}[0]{nt_zone_record_id}, 8,
     'record log object ids are adapted to the v2 shape';
 is $record_log_result->{log}[0]{name}, 'host.logged.test.',
     'record log owners use the v2 name field';
+like $record_logs->{http}{requests}[0][1], qr{sort_by=owner},
+    'record log maps name sorting to owner';
+like $record_logs->{http}{requests}[0][1], qr{sort_dir=asc},
+    'record log maps ascending sort direction';
 
 my $global_logs = transport(response({
     log => [ {
@@ -404,6 +410,37 @@ my $zone_body = JSON::PP->new->decode(
 is $zone_body->{serial}, 0, 'empty zone serial becomes the v3 default';
 ok !exists $zone_body->{nameservers}, 'empty nameserver selection is omitted';
 ok !exists $zone_body->{template}, 'client-side record template is omitted';
+
+my $edit_zone = transport(response({ zone => [ { id => 9, gid => 2 } ] }));
+$edit_zone->send_request(
+    'http://api:3000',
+    action     => 'edit_zone',
+    nt_zone_id => 9,
+    zone       => 'new.test',
+    nameservers => '',
+    ttl        => 7200,
+);
+my $edit_zone_body = JSON::PP->new->decode(
+    $edit_zone->{http}{requests}[0][2]{content} );
+ok !exists $edit_zone_body->{zone}, 'zone edit omits the immutable name';
+ok !exists $edit_zone_body->{nameservers}, 'zone edit omits an empty nameserver selection';
+is $edit_zone_body->{ttl}, 7200, 'zone edit retains mutable fields';
+
+my $new_group = transport(response({ group => [ { id => 12 } ] }));
+$new_group->send_request(
+    'http://api:3000',
+    action       => 'new_group',
+    nt_group_id  => 2,
+    name         => 'permission.test',
+    group_write  => 1,
+    zone_delete  => 0,
+);
+my $group_body = JSON::PP->new->decode(
+    $new_group->{http}{requests}[0][2]{content} );
+is $group_body->{group_write}, JSON::PP::true,
+    'group permission flags become JSON booleans';
+is $group_body->{zone_delete}, JSON::PP::false,
+    'false permission flags become JSON booleans';
 
 my $new_ns = transport(response({ nameserver => [ { id => 10, gid => 2 } ] }));
 $new_ns->send_request(

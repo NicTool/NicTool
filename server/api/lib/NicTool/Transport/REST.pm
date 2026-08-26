@@ -626,6 +626,10 @@ sub send_request {
                 $val = 'asc'  if $val eq 'ascending';
                 $val = 'desc' if $val eq 'descending';
             }
+            $val = 'owner'
+                if $action eq 'get_zone_record_log'
+                && $v3key eq 'sort_by'
+                && $val eq 'name';
             $val = $val ? 'true' : 'false'
                 if $v3key eq 'include_subgroups' || $v3key eq 'exact_match';
             push @qparts, _uri_escape($v3key) . '=' . _uri_escape($val);
@@ -646,10 +650,8 @@ sub send_request {
         $body{parent_gid} = delete $body{gid};
     }
 
-    if ($action eq 'new_zone') {
+    if ($action =~ /^(?:new|edit)_zone$/) {
         delete $body{template};
-        $body{serial} = 0
-            unless defined $body{serial} && $body{serial} =~ /^\d+$/;
 
         if (exists $body{nameservers}) {
             my $value = delete $body{nameservers};
@@ -660,6 +662,12 @@ sub send_request {
             } if @ids;
         }
     }
+
+    if ($action eq 'new_zone') {
+        $body{serial} = 0
+            unless defined $body{serial} && $body{serial} =~ /^\d+$/;
+    }
+    delete $body{zone} if $action eq 'edit_zone';
 
     # zone_record: v2 uses 'name', v3 uses 'owner'
     if ($action =~ /zone_record/ && exists $body{name}) {
@@ -742,7 +750,14 @@ sub send_request {
     }
 
     # v2 sends booleans as 0/1 integers; v3 Joi expects real booleans
-    for my $bkey (qw(inherit_group_permissions is_admin deleted)) {
+    for my $bkey (qw(
+        inherit_group_permissions is_admin deleted
+        group_write group_create group_delete
+        zone_write zone_create zone_delegate zone_delete
+        zonerecord_write zonerecord_create zonerecord_delegate zonerecord_delete
+        user_write user_create user_delete
+        nameserver_write nameserver_create nameserver_delete self_write
+    )) {
         $body{$bkey} = $body{$bkey} ? \1 : \0 if exists $body{$bkey};
     }
 
