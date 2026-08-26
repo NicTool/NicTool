@@ -626,10 +626,12 @@ sub send_request {
                 $val = 'asc'  if $val eq 'ascending';
                 $val = 'desc' if $val eq 'descending';
             }
-            $val = 'owner'
-                if $action eq 'get_zone_record_log'
-                && $v3key eq 'sort_by'
-                && $val eq 'name';
+            if ($v3key eq 'sort_by') {
+                $val = 'owner'
+                    if $action =~ /^get_zone_record(?:s|_log)$/ && $val eq 'name';
+                # v3 zone listings cannot sort by the owning group
+                next if $action eq 'get_group_zones' && $val eq 'group_name';
+            }
             $val = $val ? 'true' : 'false'
                 if $v3key eq 'include_subgroups' || $v3key eq 'exact_match';
             push @qparts, _uri_escape($v3key) . '=' . _uri_escape($val);
@@ -668,6 +670,9 @@ sub send_request {
             unless defined $body{serial} && $body{serial} =~ /^\d+$/;
     }
     delete $body{zone} if $action eq 'edit_zone';
+
+    # edit forms carry the browsed group; moves go through move_*
+    delete $body{gid} if $action =~ /^edit_(?:zone|user)$/;
 
     # zone_record: v2 uses 'name', v3 uses 'owner'
     if ($action =~ /zone_record/ && exists $body{name}) {

@@ -414,17 +414,71 @@ ok !exists $zone_body->{template}, 'client-side record template is omitted';
 my $edit_zone = transport(response({ zone => [ { id => 9, gid => 2 } ] }));
 $edit_zone->send_request(
     'http://api:3000',
-    action     => 'edit_zone',
-    nt_zone_id => 9,
-    zone       => 'new.test',
+    action      => 'edit_zone',
+    nt_group_id => 4,
+    nt_zone_id  => 9,
+    zone        => 'new.test',
     nameservers => '',
-    ttl        => 7200,
+    ttl         => 7200,
 );
 my $edit_zone_body = JSON::PP->new->decode(
     $edit_zone->{http}{requests}[0][2]{content} );
 ok !exists $edit_zone_body->{zone}, 'zone edit omits the immutable name';
+ok !exists $edit_zone_body->{gid}, 'zone edit omits the browsed group id';
 ok !exists $edit_zone_body->{nameservers}, 'zone edit omits an empty nameserver selection';
 is $edit_zone_body->{ttl}, 7200, 'zone edit retains mutable fields';
+
+my $move_zone = transport(response({ zone => [ { id => 9, gid => 4 } ] }));
+$move_zone->send_request(
+    'http://api:3000',
+    action      => 'move_zones',
+    nt_group_id => 4,
+    zone_list   => '9',
+);
+is $move_zone->{http}{requests}[0][1], 'http://api:3000/zone/9',
+    'a single-zone move targets its v3 object route';
+is_deeply(
+    JSON::PP->new->decode( $move_zone->{http}{requests}[0][2]{content} ),
+    { gid => 4 },
+    'a single-zone move sends the destination group'
+);
+
+my $edit_user = transport(response({ user => [ { id => 5 } ] }));
+$edit_user->send_request(
+    'http://api:3000',
+    action      => 'edit_user',
+    nt_group_id => 4,
+    nt_user_id  => 5,
+    first_name  => 'renamed',
+    password2   => '',
+);
+my $edit_user_body = JSON::PP->new->decode(
+    $edit_user->{http}{requests}[0][2]{content} );
+ok !exists $edit_user_body->{gid}, 'user edit omits the browsed group id';
+is $edit_user_body->{first_name}, 'renamed', 'user edit retains profile fields';
+
+my $sorted_records = transport(response({ zone_record => [] }));
+$sorted_records->send_request(
+    'http://api:3000',
+    action        => 'get_zone_records',
+    nt_zone_id    => 9,
+    '1_sortfield' => 'name',
+    '1_sortmod'   => 'Descending',
+);
+like $sorted_records->{http}{requests}[0][1], qr{sort_by=owner&sort_dir=desc},
+    'record listings map the v2 name sort to owner';
+
+my $sorted_zones = transport(response({ zone => [] }));
+$sorted_zones->send_request(
+    'http://api:3000',
+    action            => 'get_group_zones',
+    nt_group_id       => 2,
+    include_subgroups => 1,
+    '1_sortfield'     => 'group_name',
+    '1_sortmod'       => 'Ascending',
+);
+unlike $sorted_zones->{http}{requests}[0][1], qr{sort_by},
+    'zone listings drop the group sort v3 lacks';
 
 my $new_group = transport(response({ group => [ { id => 12 } ] }));
 $new_group->send_request(
