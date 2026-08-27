@@ -143,7 +143,8 @@ sub edit_group {
     my %usable = map { $_ => 1 } split( /,/, $data->{usable_nameservers} );
 
     # merge the usable nameservers settings
-    $sql = "SELECT * from nt_perm WHERE nt_group_id = ?";
+    $sql = "SELECT * from nt_perm WHERE nt_group_id = ?
+        AND (nt_user_id IS NULL OR nt_user_id = 0)";
     my $gperms = $self->exec_query( $sql, $data->{nt_group_id} )
         or return $self->error_response( 505, $dbh->errstr );
     $gperms     = $gperms->[0];
@@ -183,7 +184,8 @@ sub edit_group {
 
     if (@permcols) {
         my @s = map( "$_ = " . $dbh->quote( $data->{$_} ), @permcols );
-        $sql = "UPDATE nt_perm SET " . join( ',', @s ) . " WHERE nt_group_id=?";
+        $sql = "UPDATE nt_perm SET " . join( ',', @s )
+            . " WHERE nt_group_id=? AND (nt_user_id IS NULL OR nt_user_id = 0)";
         $self->exec_query( $sql, $data->{nt_group_id} )
             or return $self->error_response( 505, $dbh->errstr );
 
@@ -192,7 +194,8 @@ sub edit_group {
     }
 
     if ( defined $data->{usable_ns} ) {
-        $sql = "UPDATE nt_perm SET usable_ns=? WHERE nt_group_id=?";
+        $sql = "UPDATE nt_perm SET usable_ns=?
+            WHERE nt_group_id=? AND (nt_user_id IS NULL OR nt_user_id = 0)";
         $self->exec_query( $sql, [ $data->{usable_ns}, $data->{nt_group_id} ] )
             or return $self->error_response( 505, $dbh->errstr );
         $action = 'modified';
@@ -266,7 +269,8 @@ sub get_group {
           "SELECT nt_group.*, "
         . $self->perm_fields_select
         . " FROM nt_group,nt_perm WHERE nt_group.nt_group_id = ?"
-        . " AND nt_perm.nt_group_id = nt_group.nt_group_id";
+        . " AND nt_perm.nt_group_id = nt_group.nt_group_id"
+        . " AND (nt_perm.nt_user_id IS NULL OR nt_perm.nt_user_id = 0)";
     my $perms = $self->exec_query( $sql, $data->{nt_group_id} )
         or return $self->error_response( 505, $self->{dbh}->errstr );
 
@@ -301,7 +305,9 @@ sub get_group_groups {
           "SELECT nt_group.*, "
         . $self->perm_fields_select
         . " FROM nt_group,nt_perm WHERE nt_group.deleted=0 AND nt_perm.deleted=0 AND nt_group.parent_group_id = ?"
-        . " AND nt_perm.nt_group_id = nt_group.nt_group_id ORDER BY nt_group.name";
+        . " AND nt_perm.nt_group_id = nt_group.nt_group_id"
+        . " AND (nt_perm.nt_user_id IS NULL OR nt_perm.nt_user_id = 0)"
+        . " ORDER BY nt_group.name";
     my $rows   = $self->exec_query( $sql, $data->{nt_group_id} );
     my $r_data = { error_code => 200, error_msg => 'OK' };
     $r_data->{groups} = [];

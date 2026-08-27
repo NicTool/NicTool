@@ -205,7 +205,8 @@ sub edit_user {
                   "SELECT nt_perm.*,nt_user.nt_group_id as group_id"
                 . " FROM nt_perm"
                 . " INNER JOIN nt_user ON nt_perm.nt_group_id = nt_user.nt_group_id"
-                . " AND nt_user.nt_user_id = ?";
+                . " AND nt_user.nt_user_id = ?"
+                . " WHERE (nt_perm.nt_user_id IS NULL OR nt_perm.nt_user_id = 0)";
             my $perms = $self->exec_query( $sql, $data->{nt_user_id} )
                 or return $self->error_response( 505, $dbh->errstr );
 
@@ -709,7 +710,8 @@ sub _select_group_perm {
      INNER JOIN nt_user ON nt_perm.nt_group_id = nt_user.nt_group_id
        WHERE ( nt_perm.deleted=0
         AND nt_user.deleted=0
-        AND nt_user.nt_user_id = ?)", $uid
+        AND nt_user.nt_user_id = ?
+        AND (nt_perm.nt_user_id IS NULL OR nt_perm.nt_user_id = 0))", $uid
     ) or return $self->error_response( 505, $self->{dbh}->errstr );
 
     return ( undef, $r->[0] );

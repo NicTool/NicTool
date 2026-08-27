@@ -69,7 +69,8 @@ sub get_group_permissions {
     my ( $self, $data ) = @_;
 
     my $gid   = $data->{nt_group_id};
-    my $sql   = "SELECT * FROM nt_perm WHERE deleted != 1 " . "AND nt_group_id = ?";
+    my $sql   = "SELECT * FROM nt_perm WHERE deleted != 1 AND nt_group_id = ?"
+        . " AND (nt_user_id IS NULL OR nt_user_id = 0)";
     my $perms = $self->exec_query( $sql, $gid )
         or return $self->error_response( 505, $self->{dbh}->errstr );
 
@@ -96,8 +97,9 @@ sub get_user_permissions {
         $sql =
               "SELECT nt_perm.* FROM nt_perm,nt_user WHERE nt_perm.deleted != 1 "
             . "AND nt_user.deleted != 1 "
-            . "AND nt_user.nt_user_id = ?"
-            . "AND nt_perm.nt_group_id = nt_user.nt_group_id";
+            . "AND nt_user.nt_user_id = ? "
+            . "AND nt_perm.nt_group_id = nt_user.nt_group_id "
+            . "AND (nt_perm.nt_user_id IS NULL OR nt_perm.nt_user_id = 0)";
         $perms = $self->exec_query( $sql, $uid )
             or return $self->error_response( 505, $self->{dbh}->errstr );
         $perm = $perms->[0];

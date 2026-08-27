@@ -151,6 +151,7 @@ sub _get_group_perms {
     WHERE ( nt_perm.deleted=0
             AND nt_user.deleted=0
             AND nt_user.nt_user_id = ?
+            AND (nt_perm.nt_user_id IS NULL OR nt_perm.nt_user_id = 0)
            )";
     my $perms = $self->exec_query( $sql, $nt_uid )
         or return $self->error_response( 505, $self->{dbh}->errstr );
