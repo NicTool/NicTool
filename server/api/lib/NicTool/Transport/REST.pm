@@ -313,6 +313,24 @@ sub _qualify_owner {
         : "$body->{owner}.$bare.";
 }
 
+# v3 hands back the zone's nameserver ids; v2's GUI reads whole rows
+sub _expand_zone_nameservers {
+    my ($self, $zone) = @_;
+    my $ids = $zone->{nameservers};
+    return unless ref $ids eq 'ARRAY';
+
+    my @rows;
+    for my $nsid (@$ids) {
+        my $data = $self->{nameservers_by_id}{$nsid}
+            //= $self->_get_json("/nameserver/$nsid");
+        my $ns = $data && $data->{nameserver} && $data->{nameserver}[0] or next;
+        my $row = _remap_fields($ns, 'nameserver');
+        $row->{deleted} //= 0;
+        push @rows, $row;
+    }
+    $zone->{nameservers} = \@rows;
+}
+
 # zone id -> { zone, gid }, cached for the life of the transport
 sub _get_zone {
     my ($self, $zid) = @_;
@@ -688,13 +706,14 @@ sub send_request {
     if ($action =~ /^(?:new|edit)_zone$/) {
         delete $body{template};
 
+        # v2 sends the selection as a comma list of ids; an empty list clears it
         if (exists $body{nameservers}) {
             my $value = delete $body{nameservers};
-            my @ids = grep { length } split /,/, $value;
-            return {
-                error_code => 510,
-                error_msg  => 'REST: v3 has no route for assigning nameservers to a zone',
-            } if @ids;
+            my @ids = ref $value eq 'ARRAY' ? @$value : split /,/, $value // '';
+            return _v2_param_error( 'nameservers', 302 )
+                if grep { !defined || !/^\d+$/ || $_ == 0 } @ids;
+            my %seen;
+            $body{nameservers} = [ grep { !$seen{$_}++ } map { $_ + 0 } @ids ];
         }
     }
 
@@ -1154,6 +1173,7 @@ sub _adapt_response {
         $entity->{deleted} //= 0
             if $resource =~ /^(?:zone|zone_record|group|user|nameserver)$/;
         $self->_unqualify_owner($entity) if $resource eq 'zone_record';
+        $self->_expand_zone_nameservers($entity) if $resource eq 'zone';
         %$result = (%$result, %$entity);
     }
 
