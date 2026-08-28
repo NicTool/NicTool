@@ -697,4 +697,35 @@ is owner_body( name => '@', type => 'MX', address => 'mail.@', weight => 10 )->{
 is owner_body( name => '1', type => 'PTR', address => '1.0.0.10.&' )->{dname},
     '1.0.0.10.in-addr.arpa.', 'a name.& address is expanded to in-addr.arpa';
 
+# parameter errors answer like the v2 server did, before any v3 request
+sub param_error {
+    my ( $action, %vars ) = @_;
+    my $rest   = transport();
+    my $result = $rest->send_request( 'http://api:3000', action => $action, %vars );
+    is scalar @{ $rest->{http}{requests} }, 0, "$action: no request for a bad $result->{error_msg}";
+    return "$result->{error_code} $result->{error_msg}";
+}
+is param_error( 'get_zone', nt_zone_id => '' ),    '301 nt_zone_id', 'missing path id is 301';
+is param_error( 'get_zone', nt_zone_id => 'abc' ), '302 nt_zone_id', 'non-numeric path id is 302';
+is param_error( 'get_zone', nt_zone_id => 0 ),     '302 nt_zone_id', 'zero path id is 302';
+is param_error( 'delete_zones', zone_list => '' ),     '301 zone_list', 'empty delete list is 301';
+is param_error( 'delete_zones', zone_list => 'abc' ),  '302 zone_list', 'bad delete list is 302';
+is param_error( 'delete_zones', zone_list => '5,abc' ), '302 zone_list', 'partly bad delete list is 302';
+is param_error( 'delete_users', user_list => [] ),     '301 user_list', 'empty arrayref list is 301';
+is param_error( 'delete_users', user_list => [ 5, '' ] ), '301 user_list', 'an empty list entry is 301';
+is param_error( 'delete_zones', zone_list => '5,,6' ),   '301 zone_list', 'an empty list element is 301';
+is param_error( 'move_zones', zone_list => '5,6', nt_group_id => '' ),
+    '301 nt_group_id', 'multi-zone move without a group is 301';
+is param_error( 'move_zones', zone_list => '5,6', nt_group_id => 'abc' ),
+    '302 nt_group_id', 'multi-zone move to a bad group is 302';
+is param_error( 'move_users', user_list => '7', nt_group_id => 0 ),
+    '302 nt_group_id', 'single-user move to group 0 is 302';
+
+my $multi_move = transport( response({}), response({}) );
+$multi_move->send_request( 'http://api:3000',
+    action => 'move_zones', zone_list => '5,6', nt_group_id => 3 );
+is_deeply [ map { $_->[1] } @{ $multi_move->{http}{requests} } ],
+    [ 'http://api:3000/zone/5', 'http://api:3000/zone/6' ],
+    'a valid multi-zone move still reaches every zone';
+
 done_testing;

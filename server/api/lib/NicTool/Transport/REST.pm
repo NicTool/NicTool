@@ -551,82 +551,85 @@ sub send_request {
         $vars{nt_zone_id} = $record->{zone_record}[0]{zid};
     }
 
-    # For id_from_list actions, extract IDs from an arrayref or comma-separated list
-    my $list_raw;
+    # id_from_list actions take an arrayref or a comma-separated list; the
+    # v2 server answered 301 for an empty list and 302 for a bad entry
+    my @ids;
     if ($spec->{id_from_list}) {
-        $list_raw = delete $vars{$spec->{id_from_list}} // '';
+        my $list_raw = delete $vars{$spec->{id_from_list}} // '';
         my @vals = ref $list_raw eq 'ARRAY' ? @$list_raw : split /,/, $list_raw;
-        my @ids = grep { defined && /^\d+$/ && $_ > 0 } @vals;
-        if (@ids > 1) {
-            if ($http_method eq 'GET') {
-                return $self->_multi_get($action, $spec, \@ids);
-            }
-            if ($http_method eq 'POST') {
-                return $self->_multi_create($url, $action, $spec, \@ids, %vars);
-            }
-            if ($http_method eq 'PUT') {
-                return $self->_multi_put($url, $spec, \@ids, %vars);
-            }
-            return $self->_multi_delete($url, $spec, \@ids, %vars);
-        }
-        if ($http_method eq 'GET' && !@ids) {
-            return _v2_param_error( $spec->{id_from_list}, length $list_raw ? 302 : 301 );
-        }
-        $vars{id} = $ids[0] if @ids;
+        return _v2_param_error( $spec->{id_from_list}, 301 )
+            if !@vals || grep { !defined || $_ eq '' } @vals;
+        return _v2_param_error( $spec->{id_from_list}, 302 )
+            if grep { !/^\d+$/ || $_ == 0 } @vals;
+        @ids = @vals;
     }
 
-    # delegation calls: reject missing/invalid list, object and group ids
+    # every action parameter is checked before anything is dispatched,
+    # however many ids the list carried
+    if ( $action =~ /^move_/ ) {
+        my $gid = $vars{nt_group_id};
+        return _v2_param_error( 'nt_group_id', 301 ) if !defined $gid || $gid eq '';
+        return _v2_param_error( 'nt_group_id', 302 ) if $gid !~ /^\d+$/ || $gid == 0;
+    }
+
+    # delegation calls: reject missing/invalid object and group ids
     # with the error codes the v2 client expects
     if ( $action =~ /delegat/ ) {
         my $id_param = $action =~ /zone_record/ ? 'nt_zone_record_id' : 'nt_zone_id';
+        my @oids = @ids ? @ids : ( $vars{$id_param} );
 
-        if ( defined $list_raw && !exists $vars{id} ) {
-            return _v2_param_error( $spec->{id_from_list},
-                length $list_raw ? 302 : 301 );
-        }
-
-        my $oid = exists $vars{id} ? $vars{id} : $vars{$id_param};
         if ( $action !~ /^get_delegated_/ ) {
-            if ( !defined $oid || $oid eq '' ) {
-                return _v2_param_error( $id_param, 301 );
-            }
-            if ( $oid !~ /^\d+$/ || $oid == 0 ) {
-                return _v2_param_error( $id_param, 302 );
+            for my $oid (@oids) {
+                return _v2_param_error( $id_param, 301 ) if !defined $oid || $oid eq '';
+                return _v2_param_error( $id_param, 302 ) if $oid !~ /^\d+$/ || $oid == 0;
             }
         }
 
         my $gid = $vars{nt_group_id};
         if ( $action =~ /^get_delegated_/ || $http_method ne 'GET' ) {
-            if ( !defined $gid || $gid eq '' ) {
-                return _v2_param_error( 'nt_group_id', 301 );
-            }
-            if ( $gid !~ /^\d+$/ || $gid == 0 ) {
-                return _v2_param_error( 'nt_group_id', 302 );
-            }
+            return _v2_param_error( 'nt_group_id', 301 ) if !defined $gid || $gid eq '';
+            return _v2_param_error( 'nt_group_id', 302 ) if $gid !~ /^\d+$/ || $gid == 0;
         }
 
         # delegating an object to the group that already owns it is a no-op
         # the v2 server rejected as a sanity error
-        if (   $http_method eq 'POST'
-            && defined $oid
-            && ( my $obj_gid = $self->_delegation_object_gid( $action, $oid ) ) )
-        {
-            if ( $obj_gid == $gid ) {
-                return {
-                    error_code => 300,
-                    error_msg  => 'Cannot delegate to your own group.',
-                    error_desc => 'Sanity error',
-                };
+        if ( $http_method eq 'POST' ) {
+            for my $oid (@oids) {
+                my $obj_gid = $self->_delegation_object_gid( $action, $oid ) or next;
+                if ( $obj_gid == $gid ) {
+                    return {
+                        error_code => 300,
+                        error_msg  => 'Cannot delegate to your own group.',
+                        error_desc => 'Sanity error',
+                    };
+                }
             }
         }
     }
 
-    # Substitute :param placeholders in path
-    $path =~ s{:(\w+)}{
-        my $key = $1;
-        my $val = delete $vars{$key};
-        defined $val ? $val : ''
-    }ge;
+    if (@ids > 1) {
+        if ($http_method eq 'GET') {
+            return $self->_multi_get($action, $spec, \@ids);
+        }
+        if ($http_method eq 'POST') {
+            return $self->_multi_create($url, $action, $spec, \@ids, %vars);
+        }
+        if ($http_method eq 'PUT') {
+            return $self->_multi_put($url, $spec, \@ids, %vars);
+        }
+        return $self->_multi_delete($url, $spec, \@ids, %vars);
+    }
+    $vars{id} = $ids[0] if @ids;
+
+    # Substitute :param placeholders in path; v3 treats an empty segment as
+    # the collection, so a missing or bad id must stop here
+    for my $key ( $path =~ /:(\w+)/g ) {
+        my $val   = delete $vars{$key};
+        my $param = $key eq 'id' ? $spec->{id_from_list} // $key : $key;
+        return _v2_param_error( $param, 301 ) if !defined $val || $val eq '';
+        return _v2_param_error( $param, 302 ) if $val !~ /^\d+$/ || $val == 0;
+        $path =~ s/:\Q$key\E(?!\w)/$val/;
+    }
 
     # Build query string for GET requests
     my $query = '';
