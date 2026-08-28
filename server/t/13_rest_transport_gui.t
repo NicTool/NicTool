@@ -744,4 +744,30 @@ is_deeply { map { $_->{name} => "$_->{forward}/$_->{reverse}" } @{ $typed_result
       SOA => '0/0', SVCB => '1/1' },
     'record type forward/reverse flags follow the v2 metadata';
 
+# zones without a direct delegation fall back to the group's delegated
+# records; that list, and each record's zone, is fetched once per request
+my $pseudo_zones = transport(
+    response({ zone => [
+        { id => 7, gid => 1, zone => 'plain.test' },
+        { id => 8, gid => 1, zone => 'pseudo.test' },
+    ] }),
+    response({ group => { id => 2 } }),
+    response({ delegation => [] }),
+    response({ delegation => [ { nt_zone_record_id => 21 } ] }),
+    response({ zone_record => [ { id => 21, zid => 8 } ] }),
+    response({ delegation => [] }),
+);
+my $pseudo_result = $pseudo_zones->send_request(
+    'http://api:3000', action => 'get_group_zones', nt_group_id => 2 );
+is_deeply [ map { $_->{pseudo} // 0 } @{ $pseudo_result->{zones} } ], [ 0, 1 ],
+    'a zone with a delegated record is marked pseudo';
+is_deeply [ map { $_->[1] } @{ $pseudo_zones->{http}{requests} } ], [
+    'http://api:3000/zone?gid=2',
+    'http://api:3000/session',
+    'http://api:3000/delegation?oid=7&gid=2&type=ZONE',
+    'http://api:3000/delegation?gid=2&type=ZONERECORD',
+    'http://api:3000/zone_record/21',
+    'http://api:3000/delegation?oid=8&gid=2&type=ZONE',
+], 'delegated records are fetched once for the whole zone list';
+
 done_testing;

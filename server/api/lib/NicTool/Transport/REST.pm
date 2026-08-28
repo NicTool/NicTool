@@ -535,6 +535,7 @@ sub send_request {
     delete $vars{nt_protocol_version};
     $self->{base_url} = $url;
     $self->{request_group_id} = $vars{nt_group_id};
+    delete $self->{record_delegated_zids};
 
     my $spec = $ACTION_MAP{$action};
     return _not_implemented($action) unless $spec;
@@ -1344,14 +1345,7 @@ sub _supplement_delegation {
     if (   $action eq 'get_zone'
         && (!$data || !$data->{delegation} || !@{$data->{delegation}}) )
     {
-        my $delegated = $self->_get_json(
-            "/delegation?gid=$gid&type=ZONERECORD" );
-        for my $record (@{ $delegated->{delegation} // [] }) {
-            my $rid = $record->{nt_zone_record_id} // $record->{nt_object_id};
-            next unless $rid;
-            my $zr = $self->_get_json("/zone_record/$rid");
-            next unless $zr && $zr->{zone_record} && $zr->{zone_record}[0];
-            next unless $zr->{zone_record}[0]{zid} == $oid;
+        if ( $self->_record_delegated_zids($gid)->{$oid} ) {
             $result->{pseudo}                  = 1;
             $result->{deleted}                 = 0;
             $result->{delegate_write}          = 0;
@@ -1373,6 +1367,24 @@ sub _supplement_delegation {
     $result->{delegate_delegate}       = $d->{delegate_delegate}       // 0;
     $result->{delegate_add_records}    = $d->{delegate_add_records}    // 0;
     $result->{delegate_delete_records} = $d->{delegate_delete_records} // 0;
+}
+
+# zones holding a record delegated to the group; a zone list asks this
+# once per zone, so fetch and index the delegated records once per request
+sub _record_delegated_zids {
+    my ($self, $gid) = @_;
+    return $self->{record_delegated_zids}{$gid} //= do {
+        my %zids;
+        my $delegated = $self->_get_json("/delegation?gid=$gid&type=ZONERECORD");
+        for my $record (@{ $delegated->{delegation} // [] }) {
+            my $rid = $record->{nt_zone_record_id} // $record->{nt_object_id};
+            next unless $rid;
+            my $zr = $self->_get_json("/zone_record/$rid");
+            next unless $zr && $zr->{zone_record} && $zr->{zone_record}[0];
+            $zids{ $zr->{zone_record}[0]{zid} } = 1;
+        }
+        \%zids;
+    };
 }
 
 sub _session_group_id {
