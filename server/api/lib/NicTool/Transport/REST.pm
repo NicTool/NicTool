@@ -426,6 +426,18 @@ sub _get_usable_nameservers {
     return $self->_adapt_response('get_usable_nameservers', { nameserver => \@raw });
 }
 
+# which zone kinds each record type applies to, as the v2 GUI menus had it
+# (server/sql/06_resource_records.sql); v3 types it never knew get both
+my %RR_TYPE_ZONES = (
+    A     => [ 1, 1 ], NS    => [ 1, 1 ], CNAME => [ 1, 1 ], SOA   => [ 0, 0 ],
+    PTR   => [ 1, 1 ], HINFO => [ 0, 0 ], MX    => [ 1, 0 ], TXT   => [ 1, 1 ],
+    SIG   => [ 0, 0 ], KEY   => [ 0, 0 ], AAAA  => [ 1, 0 ], LOC   => [ 1, 0 ],
+    NXT   => [ 0, 0 ], SRV   => [ 1, 0 ], NAPTR => [ 1, 1 ], DNAME => [ 0, 0 ],
+    DS    => [ 1, 1 ], SSHFP => [ 1, 0 ], RRSIG => [ 1, 0 ], NSEC  => [ 1, 0 ],
+    DNSKEY => [ 1, 0 ], NSEC3 => [ 0, 0 ], NSEC3PARAM => [ 0, 0 ], SPF => [ 0, 0 ],
+    TSIG  => [ 0, 0 ], AXFR  => [ 0, 0 ], URI   => [ 1, 0 ], CAA   => [ 1, 0 ],
+);
+
 sub _get_api_types {
     my ($self, $kind, $lookup) = @_;
     my ($path, $field) = $kind eq 'record_types'
@@ -447,8 +459,9 @@ sub _get_api_types {
             url         => '',
         };
         if ($kind eq 'record_types') {
-            $type->{forward} = $name eq 'SOA' ? 0 : 1;
-            $type->{reverse} = $name eq 'SOA' ? 0 : 1;
+            my $zones = $RR_TYPE_ZONES{$name} // [ 1, 1 ];
+            $type->{forward} = $zones->[0];
+            $type->{reverse} = $zones->[1];
         }
         push @types, $type;
     }

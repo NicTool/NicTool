@@ -728,4 +728,20 @@ is_deeply [ map { $_->[1] } @{ $multi_move->{http}{requests} } ],
     [ 'http://api:3000/zone/5', 'http://api:3000/zone/6' ],
     'a valid multi-zone move still reaches every zone';
 
+# the GUI filters its record-type menu on forward/reverse, so the flags
+# must follow the v2 metadata rather than treating every type as universal
+my $typed = transport(response({
+    paths => { '/zone_record' => { post => { parameters => [ {
+        in => 'body', schema => { properties => { type => {
+            type => 'string', enum => [qw( A AAAA MX PTR SPF SOA SVCB )],
+        } } },
+    } ] } } },
+}));
+my $typed_result = $typed->send_request(
+    'http://api:3000', action => 'get_record_type', type => 'ALL' );
+is_deeply { map { $_->{name} => "$_->{forward}/$_->{reverse}" } @{ $typed_result->{types} } },
+    { A => '1/1', AAAA => '1/0', MX => '1/0', PTR => '1/1', SPF => '0/0',
+      SOA => '0/0', SVCB => '1/1' },
+    'record type forward/reverse flags follow the v2 metadata';
+
 done_testing;
