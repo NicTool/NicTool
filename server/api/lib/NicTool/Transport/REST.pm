@@ -294,7 +294,23 @@ sub _qualify_owner {
 
     my $zone = $self->_get_zone($zid) or return;
     (my $bare = $zone->{zone}) =~ s/\.$//;
-    $body->{owner} .= $body->{owner} eq $bare ? '.' : ".$bare.";
+
+    # the v2 sanity layer expanded these shortcuts before storing
+    for my $field (qw(owner address)) {
+        next unless defined $body->{$field};
+        if ($body->{$field} eq '@') {
+            $body->{$field} = "$bare.";
+        }
+        elsif ($body->{$field} =~ s/\.\@$//) {
+            $body->{$field} .= ".$bare.";
+        }
+    }
+    $body->{address} =~ s/\.\&$/.in-addr.arpa./ if defined $body->{address};
+
+    return if !defined $body->{owner} || $body->{owner} =~ /\.$/;
+    $body->{owner} = $body->{owner} eq '' || $body->{owner} eq $bare
+        ? "$bare."
+        : "$body->{owner}.$bare.";
 }
 
 # zone id -> { zone, gid }, cached for the life of the transport
@@ -683,8 +699,8 @@ sub send_request {
     # zone_record: qualify relative owners against their zone, like the v2
     # server did; v3's RR parser rejects them
     if (   $action =~ /^(?:new|edit)_zone_record$/
-        && defined $body{owner}
-        && $body{owner} !~ /\.$/ )
+        && (   ( defined $body{owner} && $body{owner} !~ /\.$/ )
+            || ( defined $body{address} && $body{address} =~ /(?:^|\.)[\@\&]$/ ) ) )
     {
         if ($action eq 'edit_zone_record' && !$body{zid} && $path =~ m{/zone_record/(\d+)$}) {
             my $data = $self->_get_json("/zone_record/$1");

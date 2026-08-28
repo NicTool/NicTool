@@ -658,4 +658,43 @@ my $naptr_partial_body = JSON::PP->new->decode(
 ok !exists $naptr_partial_body->{regexp},
     'partial NAPTR edits do not clear omitted rdata fields';
 
+# the v2 sanity layer expanded '@', 'name.@', and 'name.&' against the zone
+# before storing; v3 gets the qualified owner and address instead
+sub owner_body {
+    my (%record) = @_;
+    my $rest = transport(
+        response({ zone => [ { id => 5, zone => 'zone.com.', gid => 2 } ] }),
+        response({ zone_record => [ { id => 9, zid => 5 } ] }),
+    );
+    $rest->send_request(
+        'http://api:3000',
+        action     => 'new_zone_record',
+        nt_zone_id => 5,
+        type       => 'A',
+        address    => '10.0.0.1',
+        ttl        => 86400,
+        %record,
+    );
+    my ($post) = grep { $_->[0] eq 'POST' } @{ $rest->{http}{requests} };
+    return JSON::PP->new->decode( $post->[2]{content} );
+}
+is owner_body( name => '@' )->{owner}, 'zone.com.',
+    'an @ owner is the zone apex';
+is owner_body( name => '' )->{owner}, 'zone.com.',
+    'an empty owner is the zone apex';
+is owner_body( name => 'www.@' )->{owner}, 'www.zone.com.',
+    'a name.@ owner is expanded against the zone';
+is owner_body( name => 'www' )->{owner}, 'www.zone.com.',
+    'a relative owner is qualified against the zone';
+is owner_body( name => 'www.zone.com.' )->{owner}, 'www.zone.com.',
+    'a qualified owner is left alone';
+is owner_body( name => 'cn', type => 'CNAME', address => '@' )->{cname},
+    'zone.com.', 'an @ address is the zone apex';
+is owner_body( name => 'cn', type => 'CNAME', address => 'mail.@' )->{cname},
+    'mail.zone.com.', 'a name.@ address is expanded against the zone';
+is owner_body( name => '@', type => 'MX', address => 'mail.@', weight => 10 )->{exchange},
+    'mail.zone.com.', 'a name.@ address is expanded for mapped rdata fields';
+is owner_body( name => '1', type => 'PTR', address => '1.0.0.10.&' )->{dname},
+    '1.0.0.10.in-addr.arpa.', 'a name.& address is expanded to in-addr.arpa';
+
 done_testing;
