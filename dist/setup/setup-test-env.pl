@@ -114,7 +114,7 @@ db_pass => '$db_pass',
 }
 EOF
 
-# Write server/t/test-rest.cfg (REST bridge to the v3 API)
+# the REST bridge to the v3 API
 write_test_cfg( "$project_root/server/t/test-rest.cfg", <<EOF );
 {
 server_host       => 'api',
