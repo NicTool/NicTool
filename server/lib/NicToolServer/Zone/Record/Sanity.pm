@@ -290,22 +290,20 @@ sub _valid_name_chars {
 
     return if !defined $data->{name};    # an edit may not have this defined
 
-    my $invalid_match = $self->get_invalid_chars( $data->{type}, 'name', $zone_text );
-
-    return if $data->{name} !~ m/($invalid_match)/;    # no ickies
-
-    # wildcard records: RFC 1034, 4592
-    return if $data->{name} eq '*';                    # wildcard *
-    return if $data->{name} =~ /^\*\./;                # wildcard *.something
-    return if $data->{name} =~ /\.\*\./;               # wildcard some.*.something
-
-    if ( $data->{name} =~ /\*/ ) {
-        return $self->error( 'name',
-            "only *.something or * (by itself) is a valid wildcard record" );
+    my $name = $data->{name};
+    if ( $name =~ /\*/ ) {
+        return if $name eq '*';
+        if ( $name !~ /^\*\.([^*]*)$/ ) {
+            return $self->error( 'name',
+                "only *.something or * (by itself) is a valid wildcard record" );
+        }
+        $name = $1;
     }
 
-    $data->{name} =~ m/($invalid_match)/g;             # match ickies
-    $self->error( 'name', "invalid character(s) in record name -- $1" );
+    my $invalid_match = $self->get_invalid_chars( $data->{type}, 'name', $zone_text );
+    if ( $name =~ m/($invalid_match)/ ) {
+        $self->error( 'name', "invalid character(s) in record name -- $1" );
+    }
 }
 
 sub _valid_name {

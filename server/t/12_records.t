@@ -236,11 +236,6 @@ sub doit {
             type    => 'A',
             ttl     => 3602
         },
-        {   name    => 'some.*.thing',
-            address => '1.1.1.5',
-            type    => 'A',
-            ttl     => 3603
-        },
         { name => 'x', address => $fqdn, type => 'NS', ttl => 300 },
         {   name    => 'x',
             address => $fqdn,
@@ -325,6 +320,36 @@ sub doit {
             $res = $user->delete_zone_record( nt_zone_record_id => $t );
             noerrok($res) or die "couldn't delete test record $t ";
         }
+    }
+
+    my @misplaced = map { [ $_, 'A', '1.1.1.5' ] } 'some.*', 'some.*.thing', '*.*.thing', '**',
+        'some*thing', '*something';
+    push @misplaced, map { [ $_, 'TXT', 'x' ] } 'some.*.thing', 'foo*bar';
+    for my $case (@misplaced) {
+        my ( $name, $type, $address ) = @$case;
+        $res = $zone1->new_zone_record(
+            name    => $name,
+            address => $address,
+            type    => $type,
+            ttl     => 3603,
+        );
+        noerrok( $res, 300, "$type $name is not a wildcard owner" );
+        like( $res->get('error_msg'), qr/only \*\.something or \*/, 'reports the wildcard rule' );
+        if ( my $made = $res->get('nt_zone_record_id') ) {
+            $user->delete_zone_record( nt_zone_record_id => $made );
+        }
+    }
+
+    $res = $zone1->new_zone_record(
+        name    => '*.bad!name',
+        address => '1.1.1.5',
+        type    => 'A',
+        ttl     => 3603
+    );
+    noerrok( $res, 300, 'a wildcard owner gets the character check too' );
+    like( $res->get('error_msg'), qr/invalid character/, 'reports the bad character' );
+    if ( my $made = $res->get('nt_zone_record_id') ) {
+        $user->delete_zone_record( nt_zone_record_id => $made );
     }
 
     #conflicting sub-zones and records
