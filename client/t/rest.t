@@ -50,4 +50,10 @@ my $group = $api->send_rest_request(
 );
 is $group->{error_code}, 200, 'ordinary GUI actions retain the v2 success code';
 
+open my $makefile, '<', 'Makefile.PL' or die "Cannot read Makefile.PL: $!";
+my $makefile_text = do { local $/; <$makefile> };
+close $makefile;
+like $makefile_text, qr/"NicTool"\s*=>\s*"1\.03"/,
+    'client metadata requires the REST transport distribution';
+
 done_testing;

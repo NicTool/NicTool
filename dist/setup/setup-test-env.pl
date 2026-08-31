@@ -124,6 +124,9 @@ data_protocol     => 'rest',
 username          => 'nictest\@test_group',
 password          => '$test_pass',
 test_gid          => $test_gid,
+dsn               => '$dsn',
+db_user           => '$db_user',
+db_pass           => '$db_pass',
 }
 EOF
 

@@ -41,10 +41,14 @@ sub transport {
 my $branch = transport(
     response({ group => { id => 2 } }),
     response({ group => [
-        { id => 3, parent_gid => 2, name => 'child', has_children => 0 },
+        { id => 2, parent_gid => 1, name => 'test group' },
+        { id => 3, parent_gid => 2, name => 'child' },
     ] }),
     response({ group => [
-        { id => 2, parent_gid => 1, name => 'test group', has_children => 1 },
+        { id => 3, parent_gid => 2, name => 'child' },
+    ] }),
+    response({ group => [
+        { id => 2, parent_gid => 1, name => 'test group' },
     ] }),
 );
 my @warnings;
@@ -60,6 +64,8 @@ my $branch_result;
 is_deeply [ map { $_->{nt_group_id} } @{ $branch_result->{groups} } ],
     [ 2, 3 ], 'group branch is synthesized from v3 group reads';
 is_deeply \@warnings, [], 'minimal GUI transport object emits no version warning';
+is scalar @{ $branch->{http}{requests} }, 4,
+    'group branch derives child flags from one subtree read';
 
 my $empty = transport(response({ meta => {} }));
 my $empty_result = $empty->send_request(
@@ -349,6 +355,7 @@ my $delegated_zone = transport(
     response({ zone => [ { id => 9, gid => 1, zone => 'delegated.test' } ] }),
     response({ group => { id => 2 } }),
     response({ delegation => [ {
+        nt_zone_id => 9,
         delegated_by_id => 1,
         delegated_by_name => 'root',
         delegate_write => 1,
@@ -375,6 +382,7 @@ my $delegated_zones = transport(
     response({ zone => [ { id => 9, gid => 1, zone => 'delegated.test' } ] }),
     response({ group => { id => 2 } }),
     response({ delegation => [ {
+        nt_zone_id => 9,
         delegated_by_id => 1,
         delegated_by_name => 'root',
         delegate_write => 1,
@@ -407,11 +415,20 @@ my $new_zone_result = $new_zone->send_request(
 is $new_zone_result->{nt_zone_id}, 9, 'zone create response is adapted';
 my $zone_body = JSON::PP->new->decode(
     $new_zone->{http}{requests}[0][2]{content} );
-is $zone_body->{serial}, 0, 'empty zone serial becomes the v3 default';
+my @serial_now = localtime;
+my $new_serial = sprintf '%04d%02d%02d00',
+    $serial_now[5] + 1900, $serial_now[4] + 1, $serial_now[3];
+is $zone_body->{serial}, $new_serial,
+    'empty zone serial becomes the v2 date serial';
 is_deeply $zone_body->{nameservers}, [], 'an empty nameserver selection is sent as none';
 ok !exists $zone_body->{template}, 'client-side record template is omitted';
 
-my $edit_zone = transport(response({ zone => [ { id => 9, gid => 2 } ] }));
+my $edit_zone = transport(
+    response({ zone => [ {
+        id => 9, gid => 2, zone => 'new.test', serial => 2026083100,
+    } ] }),
+    response({ zone => [ { id => 9, gid => 2 } ] }),
+);
 $edit_zone->send_request(
     'http://api:3000',
     action      => 'edit_zone',
@@ -422,11 +439,13 @@ $edit_zone->send_request(
     ttl         => 7200,
 );
 my $edit_zone_body = JSON::PP->new->decode(
-    $edit_zone->{http}{requests}[0][2]{content} );
+    $edit_zone->{http}{requests}[1][2]{content} );
 ok !exists $edit_zone_body->{zone}, 'zone edit omits the immutable name';
 ok !exists $edit_zone_body->{gid}, 'zone edit omits the browsed group id';
 is_deeply $edit_zone_body->{nameservers}, [], 'zone edit clears an empty nameserver selection';
 is $edit_zone_body->{ttl}, 7200, 'zone edit retains mutable fields';
+is $edit_zone_body->{serial}, 2026083101,
+    'zone edit bumps the stored serial when the caller omits it';
 
 my $move_zone = transport(response({ zone => [ { id => 9, gid => 4 } ] }));
 $move_zone->send_request(
@@ -749,26 +768,27 @@ is_deeply { map { $_->{name} => "$_->{forward}/$_->{reverse}" } @{ $typed_result
 my $pseudo_zones = transport(
     response({ zone => [
         { id => 7, gid => 1, zone => 'plain.test' },
-        { id => 8, gid => 1, zone => 'pseudo.test' },
+        { id => 8, gid => 1, zone => 'pseudo.test', deleted => JSON::PP::true },
     ] }),
     response({ group => { id => 2 } }),
     response({ delegation => [] }),
-    response({ delegation => [ { nt_zone_record_id => 21 } ] }),
-    response({ zone_record => [ { id => 21, zid => 8 } ] }),
-    response({ delegation => [] }),
+    response({ delegation => [ {
+        nt_zone_record_id => 21,
+        nt_zone_id        => 8,
+    } ] }),
 );
 my $pseudo_result = $pseudo_zones->send_request(
     'http://api:3000', action => 'get_group_zones', nt_group_id => 2 );
 is_deeply [ map { $_->{pseudo} // 0 } @{ $pseudo_result->{zones} } ], [ 0, 1 ],
     'a zone with a delegated record is marked pseudo';
+is $pseudo_result->{zones}[1]{deleted}, JSON::PP::true,
+    'pseudo delegation keeps the zone deleted flag';
 is_deeply [ map { $_->[1] } @{ $pseudo_zones->{http}{requests} } ], [
     'http://api:3000/zone?gid=2',
     'http://api:3000/session',
-    'http://api:3000/delegation?oid=7&gid=2&type=ZONE',
+    'http://api:3000/delegation?gid=2&type=ZONE',
     'http://api:3000/delegation?gid=2&type=ZONERECORD',
-    'http://api:3000/zone_record/21',
-    'http://api:3000/delegation?oid=8&gid=2&type=ZONE',
-], 'delegated records are fetched once for the whole zone list';
+], 'zone delegation lookups stay bounded for the whole listing';
 
 # zone nameserver assignment: v2 posts a comma list of ids, v3 takes an
 # array, and a zone read comes back with the rows the GUI displays
@@ -777,8 +797,8 @@ $ns_zone->send_request( 'http://api:3000',
     action => 'new_zone', nt_group_id => 2, zone => 'zone.com.', serial => 0,
     ttl => 86400, refresh => 10, retry => 20, expire => 30, minimum => 40,
     mailaddr => 'root.zone.com.', nameservers => '3,1,3' );
-my $ns_body = JSON::PP->new->decode( $ns_zone->{http}{requests}[0][2]{content} );
-is_deeply $ns_body->{nameservers}, [ 3, 1 ], 'new_zone sends the nameserver ids once each';
+my $ns_zone_body = JSON::PP->new->decode( $ns_zone->{http}{requests}[0][2]{content} );
+is_deeply $ns_zone_body->{nameservers}, [ 3, 1 ], 'new_zone sends the nameserver ids once each';
 
 my $ns_bad = transport();
 my $ns_bad_result = $ns_bad->send_request( 'http://api:3000',
@@ -787,10 +807,15 @@ is "$ns_bad_result->{error_code} $ns_bad_result->{error_msg}", '302 nameservers'
     'a bad nameserver id is rejected like the v2 server did';
 is scalar @{ $ns_bad->{http}{requests} }, 0, 'a bad nameserver id sends nothing';
 
-my $ns_clear = transport( response({ zone => [ { id => 5, gid => 2, zone => 'zone.com.' } ] }) );
+my $ns_clear = transport(
+    response({ zone => [ {
+        id => 5, gid => 2, zone => 'zone.com.', serial => 2026083100,
+    } ] }),
+    response({ zone => [ { id => 5, gid => 2, zone => 'zone.com.' } ] }),
+);
 $ns_clear->send_request( 'http://api:3000',
     action => 'edit_zone', nt_zone_id => 5, nameservers => '' );
-my $ns_clear_body = JSON::PP->new->decode( $ns_clear->{http}{requests}[0][2]{content} );
+my $ns_clear_body = JSON::PP->new->decode( $ns_clear->{http}{requests}[1][2]{content} );
 is_deeply $ns_clear_body->{nameservers}, [], 'edit_zone with an empty selection clears it';
 
 my $ns_read = transport(

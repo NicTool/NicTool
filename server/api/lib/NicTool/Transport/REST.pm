@@ -201,12 +201,12 @@ my %ZR_RFC_TO_V2 = (
     DNAME => { target => 'address' },
     DNSKEY => { publickey => 'address', flags => 'weight',
                 protocol => 'priority', algorithm => 'other' },
-    DS    => { digest => 'address', 'digest type' => 'weight',
-               algorithm => 'priority', 'key tag' => 'other' },
+    DS    => { digest => 'address', 'key tag' => 'weight',
+               algorithm => 'priority', 'digest type' => 'other' },
     HINFO => { os => 'address', cpu => 'other' },
     HTTPS => { 'target name' => 'address', params => 'other' },
-    KEY   => { publickey => 'address', protocol => 'weight',
-               algorithm => 'priority', flags => 'other' },
+    KEY   => { publickey => 'address', flags => 'weight',
+               protocol => 'priority', algorithm => 'other' },
     MX    => { exchange => 'address', preference => 'weight' },
     NAPTR => { order => 'weight', preference => 'priority',
                replacement => 'description' },
@@ -284,8 +284,9 @@ sub _get_json {
 
     my $resp = $self->_http->request('GET', $self->_base_url . $path,
         { headers => \%headers });
-    return undef unless $resp->{status} == 200 && $resp->{content};
-    return eval { $JSON->decode($resp->{content}) };
+    return undef unless $resp && $resp->{status} == 200 && $resp->{content};
+    my $data = eval { $JSON->decode($resp->{content}) };
+    return ref $data eq 'HASH' ? $data : undef;
 }
 
 sub _qualify_owner {
@@ -306,6 +307,13 @@ sub _qualify_owner {
         }
     }
     $body->{address} =~ s/\.\&$/.in-addr.arpa./ if defined $body->{address};
+    if (   defined $body->{address}
+        && length $body->{address}
+        && ($body->{type} // '') =~ /^(?:CNAME|MX|NS|PTR|SRV)$/
+        && $body->{address} !~ /\.$/ )
+    {
+        $body->{address} .= ".$bare.";
+    }
 
     return if !defined $body->{owner} || $body->{owner} =~ /\.$/;
     $body->{owner} = $body->{owner} eq '' || $body->{owner} eq $bare
@@ -341,8 +349,11 @@ sub _get_zone {
         my $data = $self->_get_json("/zone/$zid");
         return undef unless $data && $data->{zone} && $data->{zone}[0];
         my $z = $data->{zone}[0];
-        $self->{zones_by_zid}{$zid}
-            = { zone => $z->{zone}, gid => $z->{gid} };
+        $self->{zones_by_zid}{$zid} = {
+            zone   => $z->{zone},
+            gid    => $z->{gid},
+            serial => $z->{serial},
+        };
     }
     return $self->{zones_by_zid}{$zid};
 }
@@ -393,6 +404,8 @@ sub _get_group_branch {
     my $session = $self->_get_json('/session');
     my $user_gid = $session && $session->{group} ? $session->{group}{id} : undef;
     return _http_error( 401, {} ) unless $user_gid;
+    $self->{group_tree_root} = $user_gid;
+    $self->_prime_group_children($user_gid);
 
     my @groups;
     my %seen;
@@ -456,6 +469,20 @@ my %RR_TYPE_ZONES = (
     TSIG  => [ 0, 0 ], AXFR  => [ 0, 0 ], URI   => [ 1, 0 ], CAA   => [ 1, 0 ],
 );
 
+my %RR_TYPE_ID = (
+    A          => 1,   NS         => 2,   CNAME      => 5,
+    SOA        => 6,   PTR        => 12,  HINFO      => 13,
+    MX         => 15,  TXT        => 16,  SIG        => 24,
+    KEY        => 25,  AAAA       => 28,  LOC        => 29,
+    NXT        => 30,  SRV        => 33,  NAPTR      => 35,
+    DNAME      => 39,  DS         => 43,  SSHFP      => 44,
+    RRSIG      => 46,  NSEC       => 47,  DNSKEY     => 48,
+    NSEC3      => 50,  NSEC3PARAM => 51,  OPENPGPKEY => 61,
+    SVCB       => 64,  HTTPS      => 65,  SPF        => 99,
+    TSIG       => 250, AXFR       => 252, URI        => 256,
+    CAA        => 257,
+);
+
 sub _get_api_types {
     my ($self, $kind, $lookup) = @_;
     my ($path, $field) = $kind eq 'record_types'
@@ -467,10 +494,13 @@ sub _get_api_types {
         unless @$enum;
 
     my @types;
-    my $id = 0;
+    my $next_id = 0;
     for my $name (@$enum) {
+        my $id = $kind eq 'record_types' ? $RR_TYPE_ID{$name} : ++$next_id;
+        return _http_error( 502, { error => "No record type id for $name" } )
+            unless defined $id;
         my $type = {
-            id          => ++$id,
+            id          => $id,
             name        => $name,
             description => $name,
             descr       => $name,
@@ -486,8 +516,12 @@ sub _get_api_types {
 
     return { error_code => 200, error_msg => 'OK', types => \@types }
         if $lookup eq 'ALL';
-    return $types[$lookup - 1]{name}
-        if defined $lookup && $lookup =~ /^\d+$/ && $lookup > 0 && $lookup <= @types;
+    if (defined $lookup && $lookup =~ /^\d+$/ && $lookup > 0) {
+        for my $type (@types) {
+            return $type->{name} if $type->{id} == $lookup;
+        }
+        return undef;
+    }
     for my $type (@types) {
         return $type->{id} if defined $lookup && $type->{name} eq $lookup;
     }
@@ -522,8 +556,26 @@ sub _set_group_has_children {
     my ($self, $group) = @_;
     return if exists $group->{has_children};
     my $gid = $group->{nt_group_id} or return;
+
+    if ($self->{group_tree_root}) {
+        $self->_prime_group_children( $self->{group_tree_root} );
+        if ($self->{group_child_ids}) {
+            $group->{has_children} = $self->{group_child_ids}{$gid} ? 1 : 0;
+            return;
+        }
+    }
+
     my $data = $self->_get_json("/group?parent_gid=$gid");
     $group->{has_children} = @{ $data->{group} // [] } ? 1 : 0;
+}
+
+sub _prime_group_children {
+    my ($self, $root_gid) = @_;
+    return if exists $self->{group_child_ids};
+    my $data = $self->_get_json("/group/$root_gid?include_subgroups=true");
+    return unless $data && ref $data->{group} eq 'ARRAY';
+    my %parents = map { ($_->{parent_gid} // 0) => 1 } @{ $data->{group} };
+    $self->{group_child_ids} = \%parents;
 }
 
 sub _http {
@@ -553,7 +605,11 @@ sub send_request {
     delete $vars{nt_protocol_version};
     $self->{base_url} = $url;
     $self->{request_group_id} = $vars{nt_group_id};
-    delete $self->{record_delegated_zids};
+    $self->{current_action} = $action;
+    delete @{$self}{qw(
+        direct_delegations group_child_ids group_tree_root
+        record_delegated_zids zones_by_zid
+    )};
 
     my $spec = $ACTION_MAP{$action};
     return _not_implemented($action) unless $spec;
@@ -649,7 +705,7 @@ sub send_request {
         if ($http_method eq 'PUT') {
             return $self->_multi_put($url, $spec, \@ids, %vars);
         }
-        return $self->_multi_delete($url, $spec, \@ids, %vars);
+        return $self->_multi_delete($url, $spec, \@ids);
     }
     $vars{id} = $ids[0] if @ids;
 
@@ -697,6 +753,10 @@ sub send_request {
         $body{$v3key} = $vars{$key};
     }
     delete $body{$_} for grep { !defined $body{$_} } keys %body;
+    if ($action =~ /^(?:new|edit)_zone_record$/) {
+        delete $body{$_}
+            for grep { defined $body{$_} && $body{$_} eq '' } qw(weight priority);
+    }
 
     # new_group: v2 sends nt_group_id as parent, v3 wants parent_gid
     if ($action eq 'new_group' && exists $body{gid}) {
@@ -718,7 +778,7 @@ sub send_request {
     }
 
     if ($action eq 'new_zone') {
-        $body{serial} = 0
+        $body{serial} = _new_serial()
             unless defined $body{serial} && $body{serial} =~ /^\d+$/;
     }
     delete $body{zone} if $action eq 'edit_zone';
@@ -736,7 +796,11 @@ sub send_request {
     # server did; v3's RR parser rejects them
     if (   $action =~ /^(?:new|edit)_zone_record$/
         && (   ( defined $body{owner} && $body{owner} !~ /\.$/ )
-            || ( defined $body{address} && $body{address} =~ /(?:^|\.)[\@\&]$/ ) ) )
+            || ( defined $body{address} && $body{address} =~ /(?:^|\.)[\@\&]$/ )
+            || (   defined $body{address}
+                && length $body{address}
+                && ($body{type} // '') =~ /^(?:CNAME|MX|NS|PTR|SRV)$/
+                && $body{address} !~ /\.$/ ) ) )
     {
         if ($action eq 'edit_zone_record' && !$body{zid} && $path =~ m{/zone_record/(\d+)$}) {
             my $data = $self->_get_json("/zone_record/$1");
@@ -818,8 +882,15 @@ sub send_request {
         $body{$bkey} = $body{$bkey} ? \1 : \0 if exists $body{$bkey};
     }
 
-    if ($action eq 'edit_zone' && defined $body{serial}) {
-        $body{serial} = _increment_serial($body{serial});
+    if ($action eq 'edit_zone') {
+        if (!defined $body{serial} || $body{serial} !~ /^\d+$/) {
+            my ($zid) = $path =~ m{/zone/(\d+)$};
+            my $zone = $self->_get_zone($zid);
+            $body{serial} = $zone->{serial}
+                if $zone && defined $zone->{serial};
+        }
+        $body{serial} = _increment_serial($body{serial})
+            if defined $body{serial} && $body{serial} =~ /^\d+$/;
     }
 
     # delegation: inject object type and remap object ID param
@@ -879,6 +950,8 @@ sub send_request {
     if ($resp->{status} >= 400) {
         return _http_error($resp->{status}, $data);
     }
+    return _http_error( 502, { error => 'Expected a JSON object response' } )
+        unless ref $data eq 'HASH';
 
     if (
         $action =~ /^get_(?:zone|zone_record|group|user|nameserver)$/
@@ -914,6 +987,11 @@ sub _increment_serial {
     return ++$serial;
 }
 
+sub _new_serial {
+    my @now = localtime;
+    return sprintf '%04d%02d%02d00', $now[5] + 1900, $now[4] + 1, $now[3];
+}
+
 sub _multi_get {
     my ($self, $action, $spec, $ids) = @_;
 
@@ -936,10 +1014,12 @@ sub _multi_get {
 }
 
 sub _multi_delete {
-    my ($self, $url, $spec, $ids, %vars) = @_;
+    my ($self, $url, $spec, $ids) = @_;
+
+    my @completed;
+    my @failed;
 
     for my $id (@$ids) {
-        my %call_vars = (%vars, id => $id);
         my $path = $spec->{path};
         $path =~ s{:id}{$id}g;
 
@@ -957,11 +1037,13 @@ sub _multi_delete {
             if ($resp->{content} && length $resp->{content}) {
                 eval { $data = $JSON->decode($resp->{content}) };
             }
-            return _http_error($resp->{status}, $data);
+            push @failed, { id => $id, error => _http_error($resp->{status}, $data) };
+            next;
         }
+        push @completed, $id;
     }
 
-    return { error_code => 200, error_msg => 'OK' };
+    return _multi_result( \@completed, \@failed );
 }
 
 sub _multi_put {
@@ -977,6 +1059,8 @@ sub _multi_put {
     my $token = $self->_nt->{_rest_jwt_token};
     my %headers = ('Content-Type' => 'application/json');
     $headers{'Authorization'} = "Bearer $token" if $token;
+    my @completed;
+    my @failed;
 
     for my $id (@$ids) {
         my $path = $spec->{path};
@@ -992,11 +1076,13 @@ sub _multi_put {
             if ($resp->{content} && length $resp->{content}) {
                 eval { $data = $JSON->decode($resp->{content}) };
             }
-            return _http_error($resp->{status}, $data);
+            push @failed, { id => $id, error => _http_error($resp->{status}, $data) };
+            next;
         }
+        push @completed, $id;
     }
 
-    return { error_code => 200, error_msg => 'OK' };
+    return _multi_result( \@completed, \@failed );
 }
 
 sub _multi_create {
@@ -1010,6 +1096,13 @@ sub _multi_create {
         my $v3key = $PARAM_V3{$key} // $key;
         $body{$v3key} = $vars{$key};
     }
+    delete $body{$_} for grep { !defined $body{$_} } keys %body;
+    for my $old_key (qw(zid zrid nsid id)) {
+        if (exists $body{$old_key}) {
+            $body{oid} = delete $body{$old_key};
+            last;
+        }
+    }
     $body{type} = $dtype;
 
     # Coerce delegation perm fields from 0/1 to JSON booleans
@@ -1020,26 +1113,44 @@ sub _multi_create {
 
     my $path  = $spec->{path};
     my $token = $self->_nt->{_rest_jwt_token};
+    my @completed;
+    my @failed;
 
     for my $id (@$ids) {
-        $body{oid} = $id;
+        my %request_body = (%body, oid => $id);
 
         my %headers = ('Content-Type' => 'application/json');
         $headers{'Authorization'} = "Bearer $token" if $token;
 
         my $resp = $self->_http->request('POST', $url . $path,
-            { headers => \%headers, content => $JSON->encode(\%body) });
+            { headers => \%headers, content => $JSON->encode(\%request_body) });
 
         if ($resp->{status} >= 400) {
             my $data = {};
             if ($resp->{content} && length $resp->{content}) {
                 eval { $data = $JSON->decode($resp->{content}) };
             }
-            return _http_error($resp->{status}, $data);
+            push @failed, { id => $id, error => _http_error($resp->{status}, $data) };
+            next;
         }
+        push @completed, $id;
     }
 
-    return { error_code => 200, error_msg => 'OK' };
+    return _multi_result( \@completed, \@failed );
+}
+
+sub _multi_result {
+    my ($completed, $failed) = @_;
+    return { error_code => 200, error_msg => 'OK' } unless @$failed;
+
+    my %result = %{ $failed->[0]{error} };
+    my @failed_ids = map { $_->{id} } @$failed;
+    $result{completed_ids} = $completed;
+    $result{failed_ids} = \@failed_ids;
+    $result{error_msg} .= '; completed ids: '
+        . (@$completed ? join(',', @$completed) : 'none')
+        . '; failed ids: ' . join(',', @failed_ids);
+    return \%result;
 }
 
 sub _delegation_type {
@@ -1118,6 +1229,8 @@ sub _adapt_response {
     }
 
     if ($is_list) {
+        $self->{group_tree_root} = $self->{request_group_id}
+            if $resource eq 'group' && $self->{request_group_id};
         my @remapped = map {
             my $r = _remap_fields($_, $resource);
             if ($resource eq 'user') {
@@ -1351,23 +1464,19 @@ sub _supplement_delegation {
     }
     return unless $oid;
 
-    my $url   = $self->_base_url;
-    my $token = $self->_nt->{_rest_jwt_token};
-    my $resp = $self->_http->request('GET',
-        "$url/delegation?oid=$oid&gid=$gid&type=$type",
-        { headers => {
-            'Content-Type'  => 'application/json',
-            'Authorization' => "Bearer $token",
-        }});
-
-    return unless $resp->{status} == 200 && $resp->{content};
-    my $data = eval { $JSON->decode($resp->{content}) };
+    my $data;
+    if ($self->{current_action} eq 'get_group_zones') {
+        my $direct = $self->_group_delegations($gid, $type);
+        $data = { delegation => $direct->{$oid} ? [ $direct->{$oid} ] : [] };
+    }
+    else {
+        $data = $self->_get_json("/delegation?oid=$oid&gid=$gid&type=$type");
+    }
     if (   $action eq 'get_zone'
         && (!$data || !$data->{delegation} || !@{$data->{delegation}}) )
     {
         if ( $self->_record_delegated_zids($gid)->{$oid} ) {
             $result->{pseudo}                  = 1;
-            $result->{deleted}                 = 0;
             $result->{delegate_write}          = 0;
             $result->{delegate_delete}         = 0;
             $result->{delegate_delegate}       = 0;
@@ -1395,8 +1504,12 @@ sub _record_delegated_zids {
     my ($self, $gid) = @_;
     return $self->{record_delegated_zids}{$gid} //= do {
         my %zids;
-        my $delegated = $self->_get_json("/delegation?gid=$gid&type=ZONERECORD");
-        for my $record (@{ $delegated->{delegation} // [] }) {
+        my $delegated = $self->_group_delegations($gid, 'ZONERECORD');
+        for my $record (values %$delegated) {
+            if ($record->{nt_zone_id}) {
+                $zids{ $record->{nt_zone_id} } = 1;
+                next;
+            }
             my $rid = $record->{nt_zone_record_id} // $record->{nt_object_id};
             next unless $rid;
             my $zr = $self->_get_json("/zone_record/$rid");
@@ -1404,6 +1517,23 @@ sub _record_delegated_zids {
             $zids{ $zr->{zone_record}[0]{zid} } = 1;
         }
         \%zids;
+    };
+}
+
+sub _group_delegations {
+    my ($self, $gid, $type) = @_;
+    return $self->{direct_delegations}{$gid}{$type} //= do {
+        my $data = $self->_get_json("/delegation?gid=$gid&type=$type");
+        my %by_oid;
+        my $rows = $data && ref $data->{delegation} eq 'ARRAY'
+            ? $data->{delegation}
+            : [];
+        for my $delegation (@$rows) {
+            my $oid = $delegation->{nt_object_id} // $delegation->{nt_zone_id}
+                // $delegation->{nt_zone_record_id};
+            $by_oid{$oid} = $delegation if $oid;
+        }
+        \%by_oid;
     };
 }
 
@@ -1497,12 +1627,22 @@ sub _is_list_action {
 
 sub _http_error {
     my ($status, $data) = @_;
+    if (ref $data ne 'HASH') {
+        my $msg = !ref $data && defined $data && length $data
+            ? $data
+            : "HTTP $status";
+        return {
+            error_code => $status,
+            error_msg  => "REST: $msg",
+            error_desc => '',
+        };
+    }
     my $code = $data->{error_code} // $status;
     my $msg  = $data->{error_msg}
         // $data->{message}
         // $data->{err}
         // $data->{error}
-        // ($data->{meta} ? $data->{meta}{msg} : undef)
+        // (ref $data->{meta} eq 'HASH' ? $data->{meta}{msg} : undef)
         // "HTTP $status";
     my $desc = '';
     if ($data->{error_msg}) {
