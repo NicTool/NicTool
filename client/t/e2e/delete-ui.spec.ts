@@ -146,8 +146,20 @@ test.describe('Delete via UI trash icon', () => {
   });
 
   test('delete nameserver via rendered trash icon link', async ({ playwright }) => {
+    const deletedName = uniqueNsName('deluinsgone') + '.example.com.';
+    const deletedId = await createNameserver(playwright, cookies, TEST_GID,
+      { name: deletedName });
+    await deleteNameserver(playwright, cookies, TEST_GID, deletedId);
+
+    const existingName = uniqueNsName('deluinskeep') + '.example.com.';
+    const existingId = await createNameserver(playwright, cookies, TEST_GID,
+      { name: existingName });
+
     const nsName = uniqueNsName('deluins') + '.example.com.';
     const nsid = await createNameserver(playwright, cookies, TEST_GID, { name: nsName });
+    expect(await findInListing(playwright, cookies,
+      { cgi: 'group_nameservers.cgi', gid: TEST_GID, idParam: 'nt_nameserver_id' },
+      nsName)).toBe(nsid);
 
     const body = await exactListing(playwright, cookies,
       'group_nameservers.cgi', TEST_GID, nsName);
@@ -165,6 +177,8 @@ test.describe('Delete via UI trash icon', () => {
     expect(await findInListing(playwright, cookies,
       { cgi: 'group_nameservers.cgi', gid: TEST_GID, idParam: 'nt_nameserver_id' },
       nsName)).toBeNull();
+
+    await deleteNameserver(playwright, cookies, TEST_GID, existingId);
   });
 
   test('delete zone via rendered trash icon link', async ({ playwright }) => {
