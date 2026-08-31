@@ -4,7 +4,7 @@ import {
   apiLogin, authGet, authPost, cookieString,
   createGroup, deleteGroup, createZone, deleteZone,
   createUser, deleteUser, createNameserver, deleteNameserver,
-  uniqueName, uniqueNsName, extractCsrf,
+  uniqueName, uniqueNsName, uniqueZoneName, extractCsrf,
 } from './helpers';
 
 test.describe('Move Operations', () => {
@@ -28,7 +28,7 @@ test.describe('Move Operations', () => {
   });
 
   test('move zone to different group', async ({ playwright }) => {
-    const zone = `${uniqueName('e2e-move')}.test`;
+    const zone = uniqueZoneName('e2e-move');
     const zid = await createZone(playwright, cookies, groupA, zone);
 
     try {
@@ -47,7 +47,7 @@ test.describe('Move Operations', () => {
   });
 
   test('moved zone absent from source, present in target', async ({ playwright }) => {
-    const zone = `${uniqueName('e2e-move2')}.test`;
+    const zone = uniqueZoneName('e2e-move2');
     const zid = await createZone(playwright, cookies, groupA, zone);
 
     try {

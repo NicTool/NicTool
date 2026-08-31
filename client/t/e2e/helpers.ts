@@ -159,6 +159,10 @@ export function uniqueNsName(prefix: string): string {
   return `${prefix}-${runId()}-${++_counter}`;
 }
 
+export function uniqueZoneName(prefix: string): string {
+  return `${uniqueNsName(prefix)}.test`;
+}
+
 // ---------------------------------------------------------------------------
 // CRUD Factory Helpers
 // ---------------------------------------------------------------------------
@@ -227,7 +231,7 @@ export async function deleteGroup(playwright: any, cookies: string, parentGid: s
 }
 
 export async function createZone(playwright: any, cookies: string, gid: string | number, zoneName?: string): Promise<string> {
-  const zone = zoneName || `${uniqueName('e2e')}.test`;
+  const zone = zoneName || uniqueZoneName('e2e');
   await authPost(playwright, `${BASE}/group_zones.cgi`, cookies,
     `nt_group_id=${gid}&new=1&Create=Create&zone=${zone}&mailaddr=admin.${zone}&description=e2e+test&ttl=3600&refresh=16384&retry=2048&expire=1048576&minimum=2560&csrf_token=${extractCsrf(cookies)}`);
 

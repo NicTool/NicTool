@@ -4,7 +4,7 @@ import {
   apiLogin, authGet, authPost, cookieString,
   createGroup, deleteGroup, createZone, deleteZone,
   createRecord, deleteRecord, createUser, deleteUser,
-  uniqueName, extractCsrf,
+  uniqueName, uniqueZoneName, extractCsrf,
 } from './helpers';
 
 test.describe('Delegation', () => {
@@ -24,7 +24,7 @@ test.describe('Delegation', () => {
     parentGid = await createGroup(playwright, cookies, TEST_GID, uniqueName('e2e_deleg_parent'));
     childGroupName = uniqueName('e2e_deleg_child');
     childGid = await createGroup(playwright, cookies, parentGid, childGroupName);
-    zoneName = `${uniqueName('e2e-deleg')}.test`;
+    zoneName = uniqueZoneName('e2e-deleg');
     zid = await createZone(playwright, cookies, parentGid, zoneName);
   });
 

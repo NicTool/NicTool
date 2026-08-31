@@ -3,7 +3,7 @@ import {
   apiLogin, cookieString, authGet, authPost,
   createGroup, createZone, createRecord, createUser, createNameserver,
   deleteGroup, deleteZone, deleteRecord, deleteUser, deleteNameserver,
-  findInListing, uniqueName, uniqueNsName, extractCsrf, BASE, GROUP_DEFAULTS, TEST_GID,
+  findInListing, uniqueName, uniqueNsName, uniqueZoneName, extractCsrf, BASE, GROUP_DEFAULTS, TEST_GID,
 } from './helpers';
 
 // ---------------------------------------------------------------------------
@@ -40,7 +40,7 @@ test.describe('Mutating endpoints reject requests without a csrf_token', () => {
     childGid = await createGroup(playwright, cookies, gid);
     username = uniqueName('csrfenf');
     uid = await createUser(playwright, cookies, gid, { username });
-    zoneName = `${uniqueName('csrfenf')}.test`;
+    zoneName = uniqueZoneName('csrfenf');
     zid = await createZone(playwright, cookies, gid, zoneName);
     rrid = await createRecord(playwright, cookies, gid, zid, {
       name: 'enforce', type: 'A', address: '192.0.2.99',
@@ -115,7 +115,7 @@ test.describe('Mutating endpoints reject requests without a csrf_token', () => {
   });
 
   test('zone recovery via POST', async ({ playwright }) => {
-    const name = `${uniqueName('csrfrecover')}.test`;
+    const name = uniqueZoneName('csrfrecover');
     const deletedZid = await createZone(playwright, cookies, gid, name);
     await deleteZone(playwright, cookies, gid, deletedZid);
     await authPost(playwright, `${BASE}/zone.cgi`, cookies,
@@ -143,7 +143,7 @@ test.describe('Mutating endpoints reject requests without a csrf_token', () => {
   });
 
   test('zone create via POST', async ({ playwright }) => {
-    const name = `${uniqueName('csrfforged')}.test`;
+    const name = uniqueZoneName('csrfforged');
     await authPost(playwright, `${BASE}/group_zones.cgi`, cookies,
       `nt_group_id=${gid}&new=1&Create=Create&zone=${name}&mailaddr=admin.${name}&ttl=3600&refresh=16384&retry=2048&expire=1048576&minimum=2560`);
     expect(await pageHas(playwright, `group_zones.cgi?nt_group_id=${gid}`, name)).toBe(false);
@@ -171,14 +171,14 @@ test.describe('Mutating endpoints reject requests without a csrf_token', () => {
   });
 
   test('bulk zone add via zones.cgi', async ({ playwright }) => {
-    const name = `${uniqueName('csrfforged')}.test`;
+    const name = uniqueZoneName('csrfforged');
     await authPost(playwright, `${BASE}/zones.cgi`, cookies,
       `nt_group_id=${gid}&action=add&zone_list=${name}&nameservers=1`);
     expect(await pageHas(playwright, `group_zones.cgi?nt_group_id=${gid}`, name)).toBe(false);
   });
 
   test('zone create via zone.cgi POST', async ({ playwright }) => {
-    const name = `${uniqueName('csrfforged')}.test`;
+    const name = uniqueZoneName('csrfforged');
     await authPost(playwright, `${BASE}/zone.cgi`, cookies,
       `nt_group_id=${gid}&new_zone=1&Create=Create&zone=${name}&mailaddr=admin.${name}&description=forged&ttl=3600&refresh=16384&retry=2048&expire=1048576&minimum=2560`);
     expect(await pageHas(playwright, `group_zones.cgi?nt_group_id=${gid}`, name)).toBe(false);

@@ -3,7 +3,7 @@ import {
   BASE, TEST_GID,
   apiLogin, authGet, authPost, cookieString,
   createGroup, deleteGroup, createZone, deleteZone,
-  uniqueName, extractCsrf, browserLogin,
+  uniqueName, uniqueZoneName, extractCsrf, browserLogin,
 } from './helpers';
 
 test.describe('Zones', () => {
@@ -23,14 +23,14 @@ test.describe('Zones', () => {
   });
 
   test('create zone with default SOA values', async ({ playwright }) => {
-    const zone = `${uniqueName('e2e')}.test`;
+    const zone = uniqueZoneName('e2e');
     const zid = await createZone(playwright, cookies, gid, zone);
     expect(Number(zid)).toBeGreaterThan(0);
     await deleteZone(playwright, cookies, gid, zid);
   });
 
   test('zone appears in zone list', async ({ playwright }) => {
-    const zone = `${uniqueName('e2e')}.test`;
+    const zone = uniqueZoneName('e2e');
     const zid = await createZone(playwright, cookies, gid, zone);
 
     const { body } = await authGet(playwright, `${BASE}/group_zones.cgi?nt_group_id=${gid}`, cookies);
@@ -40,7 +40,7 @@ test.describe('Zones', () => {
   });
 
   test('edit zone SOA properties', async ({ playwright }) => {
-    const zone = `${uniqueName('e2e')}.test`;
+    const zone = uniqueZoneName('e2e');
     const zid = await createZone(playwright, cookies, gid, zone);
 
     // Edit SOA values
@@ -57,7 +57,7 @@ test.describe('Zones', () => {
   });
 
   test('edit zone description', async ({ playwright }) => {
-    const zone = `${uniqueName('e2e')}.test`;
+    const zone = uniqueZoneName('e2e');
     const zid = await createZone(playwright, cookies, gid, zone);
 
     const newDesc = 'Updated description for e2e test';
@@ -71,7 +71,7 @@ test.describe('Zones', () => {
   });
 
   test('delete zone', async ({ playwright }) => {
-    const zone = `${uniqueName('e2e')}.test`;
+    const zone = uniqueZoneName('e2e');
     const zid = await createZone(playwright, cookies, gid, zone);
 
     await deleteZone(playwright, cookies, gid, zid);
@@ -81,7 +81,7 @@ test.describe('Zones', () => {
   });
 
   test('zone properties display shows correct values', async ({ playwright }) => {
-    const zone = `${uniqueName('e2e')}.test`;
+    const zone = uniqueZoneName('e2e');
     const zid = await createZone(playwright, cookies, gid, zone);
 
     // View the zone record list page (shows zone name in header)
@@ -92,7 +92,7 @@ test.describe('Zones', () => {
   });
 
   test('create zone with custom SOA values persists them', async ({ playwright }) => {
-    const zone = `${uniqueName('e2e')}.test`;
+    const zone = uniqueZoneName('e2e');
     const { body: createBody } = await authPost(playwright, `${BASE}/group_zones.cgi`, cookies,
       `nt_group_id=${gid}&new=1&Create=Create&zone=${zone}&mailaddr=hostmaster.${zone}&description=custom+SOA&ttl=7200&refresh=32768&retry=4096&expire=2097152&minimum=5120&csrf_token=${csrfToken}`);
 
@@ -111,7 +111,7 @@ test.describe('Zones', () => {
   });
 
   test('duplicate zone name fails gracefully', async ({ playwright }) => {
-    const zone = `${uniqueName('e2e')}.test`;
+    const zone = uniqueZoneName('e2e');
     const zid = await createZone(playwright, cookies, gid, zone);
 
     // Try to create the same zone again

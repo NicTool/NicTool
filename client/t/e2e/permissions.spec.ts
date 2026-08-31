@@ -4,7 +4,7 @@ import {
   apiLogin, authGet, authPost, cookieString,
   createGroup, deleteGroup, createZone, deleteZone,
   createRecord, deleteRecord, createUser, deleteUser,
-  uniqueName, extractCsrf,
+  uniqueName, uniqueZoneName, extractCsrf,
 } from './helpers';
 
 test.describe('Permissions', () => {
@@ -20,7 +20,7 @@ test.describe('Permissions', () => {
     rootCsrf = csrfCookie;
     groupName = uniqueName('e2e_perms');
     gid = await createGroup(playwright, rootCookies, TEST_GID, groupName);
-    zid = await createZone(playwright, rootCookies, gid, `${uniqueName('e2e')}.test`);
+    zid = await createZone(playwright, rootCookies, gid, uniqueZoneName('e2e'));
   });
 
   test.afterAll(async ({ playwright }) => {

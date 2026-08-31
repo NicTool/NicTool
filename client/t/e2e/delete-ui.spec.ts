@@ -4,7 +4,7 @@ import {
   createGroup, createZone, createRecord, createUser, createNameserver,
   deleteGroup, deleteZone, deleteRecord, deleteUser, deleteNameserver,
   exactListing, findInListing,
-  uniqueName, uniqueNsName, extractCsrf, BASE, TEST_GID,
+  uniqueName, uniqueNsName, uniqueZoneName, extractCsrf, BASE, TEST_GID,
 } from './helpers';
 
 // ---------------------------------------------------------------------------
@@ -183,7 +183,7 @@ test.describe('Delete via UI trash icon', () => {
 
   test('delete zone via rendered trash icon link', async ({ playwright }) => {
     const gid = await createGroup(playwright, cookies, TEST_GID);
-    const zoneName = `${uniqueName('deluizn')}.test`;
+    const zoneName = uniqueZoneName('deluizn');
     const zid = await createZone(playwright, cookies, gid, zoneName);
 
     // Fetch the zone listing page
@@ -208,7 +208,7 @@ test.describe('Delete via UI trash icon', () => {
 
   test('delete record via rendered trash form submit', async ({ playwright }) => {
     const gid = await createGroup(playwright, cookies, TEST_GID);
-    const zoneName = `${uniqueName('deluirr')}.test`;
+    const zoneName = uniqueZoneName('deluirr');
     const zid = await createZone(playwright, cookies, gid, zoneName);
     const rrid = await createRecord(playwright, cookies, gid, zid, {
       name: 'deltest', type: 'A', address: '10.0.0.99',

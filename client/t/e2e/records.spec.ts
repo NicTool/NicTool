@@ -3,7 +3,7 @@ import {
   BASE, TEST_GID,
   apiLogin, authGet, authPost, cookieString,
   createGroup, deleteGroup, createZone, deleteZone,
-  createRecord, deleteRecord, uniqueName, extractCsrf,
+  createRecord, deleteRecord, uniqueName, uniqueZoneName, extractCsrf,
   browserLogin,
 } from './helpers';
 
@@ -18,7 +18,7 @@ test.describe('Records', () => {
     cookies = cookieString(sessionCookie, csrfCookie);
     csrfToken = csrfCookie;
     gid = await createGroup(playwright, cookies, TEST_GID, uniqueName('e2e_recs'));
-    zid = await createZone(playwright, cookies, gid, `${uniqueName('e2e')}.test`);
+    zid = await createZone(playwright, cookies, gid, uniqueZoneName('e2e'));
   });
 
   test.afterAll(async ({ playwright }) => {

@@ -3,7 +3,7 @@ import {
   BASE, TEST_GID,
   apiLogin, authGet, authPost, cookieString,
   createGroup, deleteGroup, createZone, deleteZone,
-  createRecord, deleteRecord, uniqueName, extractCsrf,
+  createRecord, deleteRecord, uniqueName, uniqueZoneName, extractCsrf,
 } from './helpers';
 
 test.describe('Logs', () => {
@@ -33,7 +33,7 @@ test.describe('Logs', () => {
 
   test('group_zones_log.cgi shows zone changes', async ({ playwright }) => {
     // Create and delete a zone to generate log entries
-    const zone = `${uniqueName('e2e-log')}.test`;
+    const zone = uniqueZoneName('e2e-log');
     const zid = await createZone(playwright, cookies, gid, zone);
     await deleteZone(playwright, cookies, gid, zid);
 
@@ -44,7 +44,7 @@ test.describe('Logs', () => {
   });
 
   test('zone_record_log.cgi shows record changes', async ({ playwright }) => {
-    const zone = `${uniqueName('e2e-reclog')}.test`;
+    const zone = uniqueZoneName('e2e-reclog');
     const zid = await createZone(playwright, cookies, gid, zone);
     const rrid = await createRecord(playwright, cookies, gid, zid,
       { name: 'logtest', type: 'A', address: '192.0.2.200' });
@@ -59,7 +59,7 @@ test.describe('Logs', () => {
   });
 
   test('log entry appears after creating a zone', async ({ playwright }) => {
-    const zone = `${uniqueName('e2e-logz')}.test`;
+    const zone = uniqueZoneName('e2e-logz');
     const zid = await createZone(playwright, cookies, gid, zone);
 
     // Check group zone log for the creation entry
@@ -71,7 +71,7 @@ test.describe('Logs', () => {
   });
 
   test('log entry appears after deleting a record', async ({ playwright }) => {
-    const zone = `${uniqueName('e2e-logr')}.test`;
+    const zone = uniqueZoneName('e2e-logr');
     const zid = await createZone(playwright, cookies, gid, zone);
     const rrid = await createRecord(playwright, cookies, gid, zid,
       { name: 'logdel', type: 'A', address: '192.0.2.201' });
@@ -87,7 +87,7 @@ test.describe('Logs', () => {
   });
 
   test('deleted zone has undelete link in log', async ({ playwright }) => {
-    const zone = `${uniqueName('e2e-undel')}.test`;
+    const zone = uniqueZoneName('e2e-undel');
     const zid = await createZone(playwright, cookies, gid, zone);
     await deleteZone(playwright, cookies, gid, zid);
 
