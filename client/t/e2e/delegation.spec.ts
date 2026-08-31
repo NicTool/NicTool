@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test';
 import {
-  BASE, GROUP_DEFAULTS,
+  BASE, GROUP_DEFAULTS, TEST_GID,
   apiLogin, authGet, authPost, cookieString,
   createGroup, deleteGroup, createZone, deleteZone,
   createRecord, deleteRecord, createUser, deleteUser,
-  uniqueName, extractCsrf,
+  uniqueName, uniqueZoneName, extractCsrf,
 } from './helpers';
 
 test.describe('Delegation', () => {
@@ -21,17 +21,17 @@ test.describe('Delegation', () => {
     cookies = cookieString(sessionCookie, csrfCookie);
     csrfToken = csrfCookie;
 
-    parentGid = await createGroup(playwright, cookies, 1, uniqueName('e2e_deleg_parent'));
+    parentGid = await createGroup(playwright, cookies, TEST_GID, uniqueName('e2e_deleg_parent'));
     childGroupName = uniqueName('e2e_deleg_child');
     childGid = await createGroup(playwright, cookies, parentGid, childGroupName);
-    zoneName = `${uniqueName('e2e-deleg')}.test`;
+    zoneName = uniqueZoneName('e2e-deleg');
     zid = await createZone(playwright, cookies, parentGid, zoneName);
   });
 
   test.afterAll(async ({ playwright }) => {
     await deleteZone(playwright, cookies, parentGid, zid);
     await deleteGroup(playwright, cookies, parentGid, childGid);
-    await deleteGroup(playwright, cookies, 1, parentGid);
+    await deleteGroup(playwright, cookies, TEST_GID, parentGid);
   });
 
   test('delegate zone to child group', async ({ playwright }) => {
@@ -90,7 +90,7 @@ test.describe('Delegation', () => {
 
   test('delegation with write perm allows editing', async ({ playwright }) => {
     const username = uniqueName('e2e_deleg_user');
-    const uid = await createUser(playwright, cookies, childGid, { username, password: 'delegtest123!' });
+    const uid = await createUser(playwright, cookies, childGid, { username, password: 'Deleg#Test#E2E46' });
 
     try {
       // Ensure zone is delegated with write + add_records permission
@@ -98,7 +98,7 @@ test.describe('Delegation', () => {
         `Save=Save&group_list=${childGid}&obj_list=${zid}&type=zone&perm_write=1&perm_delete=0&perm_delegate=0&zone_perm_add_records=1&zone_perm_delete_records=1&csrf_token=${csrfToken}`);
 
       // Login as child user
-      const childLogin = await apiLogin(playwright, `${username}@${childGroupName}`, 'delegtest123!');
+      const childLogin = await apiLogin(playwright, `${username}@${childGroupName}`, 'Deleg#Test#E2E46');
       const childCookies = cookieString(childLogin.sessionCookie, childLogin.csrfCookie);
 
       // Should be able to create a record in the delegated zone
@@ -113,7 +113,7 @@ test.describe('Delegation', () => {
 
   test('delegation without write perm prevents editing', async ({ playwright }) => {
     const username = uniqueName('e2e_deleg_nowrite');
-    const uid = await createUser(playwright, cookies, childGid, { username, password: 'delegtest123!' });
+    const uid = await createUser(playwright, cookies, childGid, { username, password: 'Deleg#Test#E2E46' });
 
     try {
       // Delegate zone with NO write, NO add_records permission
@@ -121,7 +121,7 @@ test.describe('Delegation', () => {
         `Modify=Modify&nt_group_id=${childGid}&obj_list=${zid}&type=zone&perm_write=0&perm_delete=0&perm_delegate=0&zone_perm_add_records=0&zone_perm_delete_records=0&csrf_token=${csrfToken}`);
 
       // Login as child user
-      const childLogin = await apiLogin(playwright, `${username}@${childGroupName}`, 'delegtest123!');
+      const childLogin = await apiLogin(playwright, `${username}@${childGroupName}`, 'Deleg#Test#E2E46');
       const childCookies = cookieString(childLogin.sessionCookie, childLogin.csrfCookie);
 
       // Trying to add a record should fail

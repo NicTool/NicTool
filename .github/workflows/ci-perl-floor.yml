@@ -42,6 +42,14 @@ jobs:
           cpanm -n --installdeps .
           make
 
+      - name: Build NicTool API (with deps)
+        run: |
+          cd server/api
+          perl Makefile.PL
+          cpanm -n --installdeps .
+          make
+          make install
+
       - name: Build client (with deps)
         run: |
           cd client

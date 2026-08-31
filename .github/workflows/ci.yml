@@ -90,9 +90,10 @@ jobs:
           done
           echo "MySQL failed to become healthy" && exit 1
 
-      - name: Install NicTool client and server
+      - name: Install NicTool API, client, and server
         run: |
           docker exec ci bash -c '
+            cd /workspace/server/api && perl Makefile.PL && cpanm -n .
             cd /workspace/client && perl Makefile.PL && cpanm -n .
             cd /workspace/server && perl Makefile.PL && cpanm -n .
           '

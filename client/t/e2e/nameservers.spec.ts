@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import {
-  BASE,
+  BASE, TEST_GID,
   apiLogin, authGet, authPost, cookieString,
   createGroup, deleteGroup, createNameserver, deleteNameserver,
   uniqueName, uniqueNsName, extractCsrf, browserLogin,
@@ -15,11 +15,11 @@ test.describe('Nameservers', () => {
     const { sessionCookie, csrfCookie } = await apiLogin(playwright);
     cookies = cookieString(sessionCookie, csrfCookie);
     csrfToken = csrfCookie;
-    gid = await createGroup(playwright, cookies, 1, uniqueName('e2e_ns'));
+    gid = await createGroup(playwright, cookies, TEST_GID, uniqueName('e2e_ns'));
   });
 
   test.afterAll(async ({ playwright }) => {
-    await deleteGroup(playwright, cookies, 1, gid);
+    await deleteGroup(playwright, cookies, TEST_GID, gid);
   });
 
   test('create nameserver with BIND export format', async ({ playwright }) => {

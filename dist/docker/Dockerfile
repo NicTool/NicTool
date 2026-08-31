@@ -51,12 +51,14 @@ RUN apt-get -q update && apt-get upgrade -qy && apt-get install -qy \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Copy only Makefile.PL files for dependency caching
+# Copy dependency manifests and the bundled client API
 COPY server/Makefile.PL /tmp/nictool/server/Makefile.PL
+COPY server/api/ /tmp/nictool/server/api/
 COPY client/Makefile.PL /tmp/nictool/client/Makefile.PL
 
-# Install Perl dependencies (cached unless Makefile.PL changes)
+# Install Perl dependencies and the API required by the client
 RUN cd /tmp/nictool/server && perl Makefile.PL && cpanm -n . \
+    && cd /tmp/nictool/server/api && perl Makefile.PL && cpanm -n . \
     && cd /tmp/nictool/client && perl Makefile.PL && cpanm -n . \
     && rm -rf /tmp/nictool
 
@@ -80,6 +82,7 @@ COPY dist/   /usr/local/nictool/dist/
 
 # Install the actual NicTool modules (deps are cached in base)
 RUN cd /usr/local/nictool/server && perl Makefile.PL && make install \
+    && cd /usr/local/nictool/server/api && perl Makefile.PL && make install \
     && cd /usr/local/nictool/client && perl Makefile.PL && make install
 
 COPY dist/docker/entrypoint.sh /entrypoint.sh

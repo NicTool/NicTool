@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test';
 import {
-  BASE, GROUP_DEFAULTS,
+  BASE, GROUP_DEFAULTS, TEST_GID,
   apiLogin, authGet, authPost, cookieString,
   createGroup, deleteGroup, createZone, deleteZone,
   createRecord, deleteRecord, createUser, deleteUser,
-  uniqueName, extractCsrf,
+  uniqueName, uniqueZoneName, extractCsrf,
 } from './helpers';
 
 test.describe('Permissions', () => {
@@ -19,18 +19,18 @@ test.describe('Permissions', () => {
     rootCookies = cookieString(sessionCookie, csrfCookie);
     rootCsrf = csrfCookie;
     groupName = uniqueName('e2e_perms');
-    gid = await createGroup(playwright, rootCookies, 1, groupName);
-    zid = await createZone(playwright, rootCookies, gid, `${uniqueName('e2e')}.test`);
+    gid = await createGroup(playwright, rootCookies, TEST_GID, groupName);
+    zid = await createZone(playwright, rootCookies, gid, uniqueZoneName('e2e'));
   });
 
   test.afterAll(async ({ playwright }) => {
     await deleteZone(playwright, rootCookies, gid, zid);
-    await deleteGroup(playwright, rootCookies, 1, gid);
+    await deleteGroup(playwright, rootCookies, TEST_GID, gid);
   });
 
   async function createRestrictedUser(playwright: any, overrides: Record<string, string>) {
     const username = uniqueName('e2erestuser');
-    const password = 'restricted123!';
+    const password = 'Restrict#E2E!46';
 
     // Build permission string with overrides
     let perms = GROUP_DEFAULTS;
@@ -151,7 +151,7 @@ test.describe('Permissions', () => {
 
     try {
       const { body } = await authPost(playwright, `${BASE}/group_users.cgi`, userCookies,
-        `nt_group_id=${restrictedGid}&new=1&Create=Create&username=noperm_user&password=test123!&password2=test123!&email=no@test.example&first_name=No&last_name=Perm&csrf_token=${userCsrf}`);
+        `nt_group_id=${restrictedGid}&new=1&Create=Create&username=noperm_user&password=NoPerm%23E2E%2146&password2=NoPerm%23E2E%2146&email=no@example.com&first_name=No&last_name=Perm&csrf_token=${userCsrf}`);
       expect(body.toLowerCase()).toMatch(/error|permission|denied|not allowed|access/i);
     } finally {
       await cleanupRestrictedUser(playwright, restrictedGid, uid);
@@ -164,7 +164,7 @@ test.describe('Permissions', () => {
     try {
       // User should be able to edit their own profile
       const { body } = await authPost(playwright, `${BASE}/group_users.cgi`, userCookies,
-        `nt_group_id=${restrictedGid}&nt_user_id=${uid}&edit=1&Save=Save&username=${username}&first_name=SelfEdited&last_name=User&email=selfed@test.example&csrf_token=${userCsrf}`);
+        `nt_group_id=${restrictedGid}&nt_user_id=${uid}&edit=1&Save=Save&username=${username}&first_name=SelfEdited&last_name=User&email=selfed@example.com&csrf_token=${userCsrf}`);
       // Should not show permission error
       expect(body.toLowerCase()).not.toMatch(/permission denied|not allowed/i);
     } finally {

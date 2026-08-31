@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import {
-  BASE,
+  BASE, TEST_GID,
   apiLogin, authGet, cookieString,
   createGroup, deleteGroup, createZone, deleteZone,
   createRecord, deleteRecord, uniqueName,
@@ -15,7 +15,7 @@ test.describe('Search and Sort', () => {
     const { sessionCookie, csrfCookie } = await apiLogin(playwright);
     cookies = cookieString(sessionCookie, csrfCookie);
 
-    gid = await createGroup(playwright, cookies, 1, uniqueName('e2e_search'));
+    gid = await createGroup(playwright, cookies, TEST_GID, uniqueName('e2e_search'));
 
     // Create multiple zones for search/sort testing
     for (let i = 1; i <= 5; i++) {
@@ -29,7 +29,7 @@ test.describe('Search and Sort', () => {
     for (const z of zones) {
       await deleteZone(playwright, cookies, gid, z.zid);
     }
-    await deleteGroup(playwright, cookies, 1, gid);
+    await deleteGroup(playwright, cookies, TEST_GID, gid);
   });
 
   test('zone search by exact name', async ({ playwright }) => {

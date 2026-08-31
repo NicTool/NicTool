@@ -128,6 +128,31 @@ sub send_soap_request {
     }
 }
 
+sub send_rest_request {
+    my $self = shift;
+    my $url  = shift;
+    my %vars = @_;
+
+    my $action = $vars{action};
+    my $session = delete $vars{nt_user_session};
+
+    my $result = eval {
+        require NicTool::Transport::REST;
+        NicTool::Transport::REST->new( bless { _rest_jwt_token => $session }, 'NicTool' )
+            ->send_request( $url, %vars );
+    };
+    return { error_code => 501, error_msg => 'REST: transport error: ' . $@ } if $@;
+
+    if (   ref $result eq 'HASH'
+        && $result->{error_code}
+        && $result->{error_code} == 200
+        && $action =~ /^(?:login|verify_session)$/ )
+    {
+        delete @$result{qw( error_code error_msg )};
+    }
+    return $result;
+}
+
 sub send_xml_rpc_request {
     my $self = shift;
     my $url  = shift;

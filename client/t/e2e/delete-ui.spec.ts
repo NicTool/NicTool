@@ -4,7 +4,7 @@ import {
   createGroup, createZone, createRecord, createUser, createNameserver,
   deleteGroup, deleteZone, deleteRecord, deleteUser, deleteNameserver,
   exactListing, findInListing,
-  uniqueName, uniqueNsName, extractCsrf, BASE,
+  uniqueName, uniqueNsName, uniqueZoneName, extractCsrf, BASE, TEST_GID,
 } from './helpers';
 
 // ---------------------------------------------------------------------------
@@ -98,8 +98,8 @@ test.describe('Delete via UI trash icon', () => {
 
   test('delete group via rendered trash icon link', async ({ playwright }) => {
     const groupName = uniqueName('deluigrp');
-    const gid = await createGroup(playwright, cookies, 1, groupName);
-    const body = await exactListing(playwright, cookies, 'group.cgi', 1, groupName);
+    const gid = await createGroup(playwright, cookies, TEST_GID, groupName);
+    const body = await exactListing(playwright, cookies, 'group.cgi', TEST_GID, groupName);
 
     // Extract the actual delete link from the HTML
     const href = extractGroupDeleteHref(body, gid);
@@ -116,12 +116,12 @@ test.describe('Delete via UI trash icon', () => {
 
     // Group should be gone from listing
     expect(await findInListing(playwright, cookies,
-      { cgi: 'group.cgi', gid: 1, idParam: 'nt_group_id' },
+      { cgi: 'group.cgi', gid: TEST_GID, idParam: 'nt_group_id' },
       groupName)).toBeNull();
   });
 
   test('delete user via rendered trash icon link', async ({ playwright }) => {
-    const gid = await createGroup(playwright, cookies, 1);
+    const gid = await createGroup(playwright, cookies, TEST_GID);
     const username = uniqueName('deluiusr');
     const uid = await createUser(playwright, cookies, gid, { username });
 
@@ -142,16 +142,27 @@ test.describe('Delete via UI trash icon', () => {
     expect(listBody).not.toContain(username);
 
     // Cleanup
-    await deleteGroup(playwright, cookies, 1, gid);
+    await deleteGroup(playwright, cookies, TEST_GID, gid);
   });
 
   test('delete nameserver via rendered trash icon link', async ({ playwright }) => {
-    // Create nameserver in root group (gid=1) which has usable nameservers
+    const deletedName = uniqueNsName('deluinsgone') + '.example.com.';
+    const deletedId = await createNameserver(playwright, cookies, TEST_GID,
+      { name: deletedName });
+    await deleteNameserver(playwright, cookies, TEST_GID, deletedId);
+
+    const existingName = uniqueNsName('deluinskeep') + '.example.com.';
+    const existingId = await createNameserver(playwright, cookies, TEST_GID,
+      { name: existingName });
+
     const nsName = uniqueNsName('deluins') + '.example.com.';
-    const nsid = await createNameserver(playwright, cookies, 1, { name: nsName });
+    const nsid = await createNameserver(playwright, cookies, TEST_GID, { name: nsName });
+    expect(await findInListing(playwright, cookies,
+      { cgi: 'group_nameservers.cgi', gid: TEST_GID, idParam: 'nt_nameserver_id' },
+      nsName)).toBe(nsid);
 
     const body = await exactListing(playwright, cookies,
-      'group_nameservers.cgi', 1, nsName);
+      'group_nameservers.cgi', TEST_GID, nsName);
 
     // Extract the actual delete link
     const href = extractNameserverDeleteHref(body, nsid);
@@ -164,13 +175,15 @@ test.describe('Delete via UI trash icon', () => {
 
     // Nameserver should be gone
     expect(await findInListing(playwright, cookies,
-      { cgi: 'group_nameservers.cgi', gid: 1, idParam: 'nt_nameserver_id' },
+      { cgi: 'group_nameservers.cgi', gid: TEST_GID, idParam: 'nt_nameserver_id' },
       nsName)).toBeNull();
+
+    await deleteNameserver(playwright, cookies, TEST_GID, existingId);
   });
 
   test('delete zone via rendered trash icon link', async ({ playwright }) => {
-    const gid = await createGroup(playwright, cookies, 1);
-    const zoneName = `${uniqueName('deluizn')}.test`;
+    const gid = await createGroup(playwright, cookies, TEST_GID);
+    const zoneName = uniqueZoneName('deluizn');
     const zid = await createZone(playwright, cookies, gid, zoneName);
 
     // Fetch the zone listing page
@@ -190,12 +203,12 @@ test.describe('Delete via UI trash icon', () => {
     expect(listBody).not.toContain(zoneName);
 
     // Cleanup
-    await deleteGroup(playwright, cookies, 1, gid);
+    await deleteGroup(playwright, cookies, TEST_GID, gid);
   });
 
   test('delete record via rendered trash form submit', async ({ playwright }) => {
-    const gid = await createGroup(playwright, cookies, 1);
-    const zoneName = `${uniqueName('deluirr')}.test`;
+    const gid = await createGroup(playwright, cookies, TEST_GID);
+    const zoneName = uniqueZoneName('deluirr');
     const zid = await createZone(playwright, cookies, gid, zoneName);
     const rrid = await createRecord(playwright, cookies, gid, zid, {
       name: 'deltest', type: 'A', address: '10.0.0.99',
@@ -225,6 +238,6 @@ test.describe('Delete via UI trash icon', () => {
 
     // Cleanup
     await deleteZone(playwright, cookies, gid, zid);
-    await deleteGroup(playwright, cookies, 1, gid);
+    await deleteGroup(playwright, cookies, TEST_GID, gid);
   });
 });

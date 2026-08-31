@@ -7,6 +7,8 @@ import type { Page, Frame } from '@playwright/test';
 export const BASE = process.env.NICTOOL_URL || 'https://localhost:8443';
 export const USERNAME = process.env.NICTOOL_TEST_USER || 'root';
 export const PASSWORD = process.env.NICTOOL_TEST_PASSWORD || 'nictool';
+export const TEST_GID = Number(process.env.NICTOOL_TEST_GID || '1');
+export const TEST_USER_PASSWORD = 'Valid#E2e#Pass44';
 
 export const GROUP_DEFAULTS = [
   'user_create=1', 'user_delete=1', 'user_write=1',
@@ -157,27 +159,32 @@ export function uniqueNsName(prefix: string): string {
   return `${prefix}-${runId()}-${++_counter}`;
 }
 
+export function uniqueZoneName(prefix: string): string {
+  return `${uniqueNsName(prefix)}.test`;
+}
+
 // ---------------------------------------------------------------------------
 // CRUD Factory Helpers
 // ---------------------------------------------------------------------------
 
-// Helper to find an entity ID on a listing page by name.
-// Handles HTML-encoded ampersands and whitespace around names.
 function findIdInBody(body: string, idParam: string, name: string): string | null {
-  // Try specific match: idParam=(\d+) followed by the name somewhere nearby
-  const escaped = escapeRegex(name);
-  // Pattern 1: direct link like nt_group_id=71">groupname
-  const m1 = body.match(new RegExp(`${idParam}=(\\d+)">${escaped}`));
-  if (m1) return m1[1];
-  // Pattern 2: link with &amp; params, then name with possible whitespace
-  const m2 = body.match(new RegExp(`${idParam}=(\\d+)&amp;[^>]*>[\\s]*(?:<[^>]+>\\s*)*${escaped}`));
-  if (m2) return m2[1];
-  // Pattern 3: link with whitespace before name
-  const m3 = body.match(new RegExp(`${idParam}=(\\d+)"[^>]*>[\\s]*${escaped}`));
-  if (m3) return m3[1];
-  // Pattern 4: name appears after img tag
-  const m4 = body.match(new RegExp(`${idParam}=(\\d+)[^>]*>\\s*<img[^>]*>\\s*${escaped}`));
-  if (m4) return m4[1];
+  const links = new RegExp(
+    `<a\\s+[^>]*href="[^"]*${escapeRegex(idParam)}=(\\d+)[^"]*"[^>]*>([\\s\\S]*?)</a>`,
+    'gi',
+  );
+  let match;
+  while ((match = links.exec(body)) !== null) {
+    const text = match[2]
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (text === name) return match[1];
+  }
   return null;
 }
 
@@ -224,7 +231,7 @@ export async function deleteGroup(playwright: any, cookies: string, parentGid: s
 }
 
 export async function createZone(playwright: any, cookies: string, gid: string | number, zoneName?: string): Promise<string> {
-  const zone = zoneName || `${uniqueName('e2e')}.test`;
+  const zone = zoneName || uniqueZoneName('e2e');
   await authPost(playwright, `${BASE}/group_zones.cgi`, cookies,
     `nt_group_id=${gid}&new=1&Create=Create&zone=${zone}&mailaddr=admin.${zone}&description=e2e+test&ttl=3600&refresh=16384&retry=2048&expire=1048576&minimum=2560&csrf_token=${extractCsrf(cookies)}`);
 
@@ -268,8 +275,8 @@ export async function deleteRecord(playwright: any, cookies: string, gid: string
 export async function createUser(playwright: any, cookies: string, gid: string | number,
   opts: { username: string; password?: string; email?: string; first_name?: string; last_name?: string }
 ): Promise<string> {
-  const pw = opts.password || 'testpass123!';
-  const email = opts.email || `${opts.username}@test.example`;
+  const pw = opts.password || TEST_USER_PASSWORD;
+  const email = opts.email || `${opts.username}@example.com`;
   const first = opts.first_name || 'Test';
   const last = opts.last_name || 'User';
   await authPost(playwright, `${BASE}/group_users.cgi`, cookies,
@@ -303,15 +310,7 @@ export async function createNameserver(playwright: any, cookies: string, gid: st
 
   const body = await exactListing(playwright, cookies, 'group_nameservers.cgi', gid, opts.name);
   const nsid = findIdInBody(body, 'nt_nameserver_id', opts.name);
-  if (!nsid) {
-    // Fallback: look for any nameserver ID that isn't one of the default 3
-    const allIds = [...body.matchAll(/nt_nameserver_id=(\d+)/g)].map(m => m[1]);
-    const uniqueIds = [...new Set(allIds)];
-    // The new one should be the highest ID
-    const maxId = uniqueIds.reduce((max, id) => Math.max(max, Number(id)), 0);
-    if (maxId > 0) return String(maxId);
-    throw new Error(`Failed to find created nameserver "${opts.name}" in group ${gid}`);
-  }
+  if (!nsid) throw new Error(`Failed to find created nameserver "${opts.name}" in group ${gid}`);
   return nsid;
 }
 
