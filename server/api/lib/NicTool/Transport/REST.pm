@@ -647,10 +647,13 @@ sub send_request {
             unless defined $zrid && length $zrid;
         return _v2_param_error('nt_zone_record_id', 302)
             unless $zrid =~ /^\d+$/ && $zrid > 0;
-        my $record = $self->_get_json("/zone_record/$zrid")
-            // $self->_get_json("/zone_record/$zrid?deleted=true");
-        return _http_error(404, { error => 'No such zone record exists' })
-            unless $record && $record->{zone_record} && $record->{zone_record}[0];
+        my $record;
+        for my $query ( '', '?deleted=true' ) {
+            $record = $self->_get_json("/zone_record/$zrid$query");
+            last if $record && $record->{zone_record} && $record->{zone_record}[0];
+            undef $record;
+        }
+        return _http_error(404, { error => 'No such zone record exists' }) unless $record;
         $vars{nt_zone_id} = $record->{zone_record}[0]{zid};
     }
 

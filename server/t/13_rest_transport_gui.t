@@ -328,7 +328,7 @@ like $record_log_entry->{http}{requests}[1][1],
     'record log entry lookup is scoped to its zone and log id';
 
 my $deleted_log_entry = transport(
-    { status => 404, content => '{"message":"not found"}' },
+    response( { zone_record => [] } ),
     response( { zone_record => [ { id => 8, zid => 7, deleted => 1 } ] } ),
     response( { log => [ { id => 13, uid => 5, zid => 7, zrid => 8, action => 'deleted' } ] } ),
 );
