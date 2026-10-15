@@ -41,12 +41,9 @@ sub transport {
 my $branch = transport(
     response({ group => { id => 2 } }),
     response({ group => [
-        { id => 2, parent_gid => 1, name => 'test group' },
         { id => 3, parent_gid => 2, name => 'child' },
     ] }),
-    response({ group => [
-        { id => 3, parent_gid => 2, name => 'child' },
-    ] }),
+    response({ group => [] }),
     response({ group => [
         { id => 2, parent_gid => 1, name => 'test group' },
     ] }),
@@ -64,8 +61,31 @@ my $branch_result;
 is_deeply [ map { $_->{nt_group_id} } @{ $branch_result->{groups} } ],
     [ 2, 3 ], 'group branch is synthesized from v3 group reads';
 is_deeply \@warnings, [], 'minimal GUI transport object emits no version warning';
-is scalar @{ $branch->{http}{requests} }, 4,
-    'group branch derives child flags from one subtree read';
+is_deeply [ map { $_->[1] =~ s{^http://api:3000}{}r } @{ $branch->{http}{requests} } ],
+    [ '/session', '/group/3', '/group?parent_gid=3', '/group/2' ],
+    'a branch asks only whether its last group has children, never for the subtree';
+is_deeply [ map { $_->{has_children} } @{ $branch_result->{groups} } ], [ 1, 0 ],
+    'every group above the last has children';
+
+my $usable = transport(
+    response({ user => { id => 5 }, group => { id => 2 }, permissions => { nameserver => { usable => [] } } }),
+    response({ group => [ { id => 2, parent_gid => 1, name => 'test group' } ] }),
+    response({ group => [] }),
+    response({ nameserver => [ { id => 3, gid => 2, name => 'ns3.test.' } ] }),
+);
+my $usable_result = $usable->send_request( 'http://api:3000', action => 'get_usable_nameservers', nt_group_id => 2 );
+is scalar( grep { $_->[1] =~ m{/session$} } @{ $usable->{http}{requests} } ), 1, 'usable nameservers read the session once';
+is_deeply [ map { $_->{nt_nameserver_id} } @{ $usable_result->{nameservers} // $usable_result->{list} // [] } ], [3],
+    'usable nameservers come from the group branch';
+
+my $usable_down = transport(
+    response({ user => { id => 5 }, group => { id => 2 } }),
+    response({ group => [ { id => 2, parent_gid => 1, name => 'test group' } ] }),
+    response({ group => [] }),
+    { status => 500, content => '{"message":"db gone"}' },
+);
+is $usable_down->send_request( 'http://api:3000', action => 'get_usable_nameservers', nt_group_id => 2 )->{error_code}, 500,
+    'a failed nameserver read is an error, not an empty menu';
 
 my $empty = transport(response({ meta => {} }));
 my $empty_result = $empty->send_request(

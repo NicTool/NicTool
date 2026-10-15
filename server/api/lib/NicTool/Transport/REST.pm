@@ -420,11 +420,9 @@ sub _get_group_branch {
     return _v2_param_error( 'nt_group_id', 302 )
         unless $target_gid =~ /^\d+$/ && $target_gid > 0;
 
-    my $session = $self->_get_json('/session');
+    my $session = $self->_session;
     my $user_gid = $session && $session->{group} ? $session->{group}{id} : undef;
     return _http_error( 401, {} ) unless $user_gid;
-    $self->{group_tree_root} = $user_gid;
-    $self->_prime_group_children($user_gid);
 
     my @groups;
     my %seen;
@@ -436,6 +434,7 @@ sub _get_group_branch {
             unless ref $rows eq 'ARRAY' && @$rows;
 
         my $group = _remap_fields( $rows->[0], 'group' );
+        $self->{group_has_children}{$gid} = 1 if @groups;
         $self->_set_group_has_children($group);
         unshift @groups, $group;
         last if $gid == $user_gid;
@@ -450,7 +449,7 @@ sub _get_group_branch {
 sub _get_usable_nameservers {
     my ($self, $target_gid) = @_;
 
-    my $session = $self->_get_json('/session');
+    my $session = $self->_session;
     return _http_error( 401, {} ) unless $session && $session->{group}{id};
     $target_gid ||= $session->{group}{id};
 
@@ -460,7 +459,8 @@ sub _get_usable_nameservers {
     my @raw;
     my %seen;
     for my $group (@{ $branch->{groups} }) {
-        my $data = $self->_get_json('/nameserver?gid=' . $group->{nt_group_id});
+        my $data = $self->_get_json( '/nameserver?gid=' . $group->{nt_group_id} )
+            or return $self->{get_error};
         for my $ns (@{ $data->{nameserver} // [] }) {
             push @raw, $ns unless $seen{ $ns->{id} }++;
         }
@@ -470,7 +470,9 @@ sub _get_usable_nameservers {
     for my $nsid (@$usable) {
         next if $seen{$nsid}++;
         my $data = $self->_get_json("/nameserver/$nsid");
-        push @raw, @{ $data->{nameserver} // [] };
+        return $self->{get_error}
+            if !$data && $self->{get_error}{error_code} != 403 && $self->{get_error}{error_code} != 404;
+        push @raw, @{ $data && $data->{nameserver} // [] };
     }
 
     return $self->_adapt_response('get_usable_nameservers', { nameserver => \@raw });
@@ -575,26 +577,15 @@ sub _set_group_has_children {
     my ($self, $group) = @_;
     return if exists $group->{has_children};
     my $gid = $group->{nt_group_id} or return;
-
-    if ($self->{group_tree_root}) {
-        $self->_prime_group_children( $self->{group_tree_root} );
-        if ($self->{group_child_ids}) {
-            $group->{has_children} = $self->{group_child_ids}{$gid} ? 1 : 0;
-            return;
-        }
-    }
-
-    my $data = $self->_get_json("/group?parent_gid=$gid");
-    $group->{has_children} = @{ $data->{group} // [] } ? 1 : 0;
+    $group->{has_children} = $self->{group_has_children}{$gid} //= do {
+        my $data = $self->_get_json("/group?parent_gid=$gid");
+        @{ $data && $data->{group} // [] } ? 1 : 0;
+    };
 }
 
-sub _prime_group_children {
-    my ($self, $root_gid) = @_;
-    return if exists $self->{group_child_ids};
-    my $data = $self->_get_json("/group/$root_gid?include_subgroups=true");
-    return unless $data && ref $data->{group} eq 'ARRAY';
-    my %parents = map { ($_->{parent_gid} // 0) => 1 } @{ $data->{group} };
-    $self->{group_child_ids} = \%parents;
+sub _session {
+    my ($self) = @_;
+    return $self->{session} //= $self->_get_json('/session');
 }
 
 sub _http {
@@ -628,8 +619,7 @@ sub send_request {
     $self->{request_group_id} = $vars{nt_group_id};
     $self->{current_action} = $action;
     delete @{$self}{qw(
-        direct_delegations group_child_ids group_tree_root
-        record_delegated_zids zones_by_zid
+        direct_delegations group_has_children record_delegated_zids session zones_by_zid
     )};
 
     my $spec = $ACTION_MAP{$action};
@@ -872,7 +862,7 @@ sub send_request {
         } if ( $body{password2} // '' ) ne $body{password};
 
         if ( $action eq 'edit_user' ) {
-            my $session = $self->_get_json('/session');
+            my $session = $self->_session;
             my $uid     = $session && $session->{user} ? $session->{user}{id} : undef;
             my $me      = $uid ? $self->_get_json("/user/$uid") : undef;
             return {
@@ -1279,8 +1269,10 @@ sub _adapt_response {
     }
 
     if ($is_list) {
-        $self->{group_tree_root} = $self->{request_group_id}
-            if $resource eq 'group' && $self->{request_group_id};
+        if ( $resource eq 'group' ) {
+            $self->{group_has_children}{ $_->{parent_gid} } = 1
+                for grep { defined $_->{parent_gid} } @$entity_data;
+        }
         my @remapped = map {
             my $r = _remap_fields($_, $resource);
             if ($resource eq 'user') {
@@ -1588,7 +1580,7 @@ sub _session_group_id {
 
     my $gid = eval { $self->_nt->{user}{store}{nt_group_id} };
     if (!$gid) {
-        my $session = $self->_get_json('/session');
+        my $session = $self->_session;
         $gid = $session->{group}{id}
             if $session && $session->{group};
     }
