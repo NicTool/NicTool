@@ -9,6 +9,9 @@ use warnings;
 
 sub debug_session_sql {0}
 
+my $SESSION_BYTES = 16;
+my $V2_SESSION    = qr/\A[0-9a-f]{@{[ $SESSION_BYTES * 2 ]}}\z/;
+
 ### public methods
 sub verify {
 
@@ -286,6 +289,7 @@ sub timeout_sessions {
     );
 
     foreach my $s (@$sessions) {
+        next if $s->{nt_user_session} =~ /\A3\$/;    # v3 expires its own
         my $sess_id = $s->{nt_user_session_id};
 
         $self->_delete_session($sess_id);    # dead session
@@ -322,15 +326,16 @@ sub session_id {
         or die "session_id: unable to open /dev/urandom ($!). "
         . "Ensure /dev/urandom is accessible.\n";
     my $bytes = q{};
-    my $read  = read( $urand, $bytes, 16 );
+    my $read  = read( $urand, $bytes, $SESSION_BYTES );
     close $urand;
     die "session_id: short read from /dev/urandom\n"
-        unless defined $read && $read == 16;
+        unless defined $read && $read == $SESSION_BYTES;
     return unpack( 'H*', $bytes );
 }
 
 sub _get_session {
     my ( $self, $id ) = @_;
+    return ( undef, undef ) if !defined $id || $id !~ $V2_SESSION;
 
     my $sessions = $self->exec_query(
         "SELECT u.*, s.*, g.name AS groupname

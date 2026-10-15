@@ -39,6 +39,7 @@ sub new_zone {
     if ( $self->zone_exists( $data->{zone}, 0 ) ) {
         $self->error( 'zone', 'Zone is already taken' );
     }
+    $data->{zone} = lc $data->{zone};
 
     # sub-domain checks .. kinda nasty, but I think it has to be.
     my $z = $data->{zone};

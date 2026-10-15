@@ -952,9 +952,10 @@ sub zone_exists {
     my ( $self, $zone, $zid ) = @_;
 
     my $sql = "SELECT nt_zone_id,nt_group_id FROM nt_zone WHERE deleted=0
-        AND nt_zone_id != ? AND zone = ?";
+        AND nt_zone_id != ? AND zone IN (?, ?)";
 
-    my $zones = $self->exec_query( $sql, [ $zid, $zone ] );
+    # new names are stored lowercase, older ones as they were typed
+    my $zones = $self->exec_query( $sql, [ $zid, $zone, lc $zone ] );
     my $href  = $zones->[0];
 
     return ref $href ? $href : 0;

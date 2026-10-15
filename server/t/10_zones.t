@@ -307,6 +307,34 @@ sub test_new_zone {
             or die "Couldn't delete zone mistake " . $res->get('nt_zone_id');
     }
 
+    $res = $group1->new_zone(
+        zone        => 'TEST.com',
+        serial      => 0,
+        ttl         => 86400,
+        nameservers => "$nsid1,$nsid2",
+        description => "test delete me",
+    );
+    noerrok( $res, 300 );
+    like( $res->get('error_msg'), qr/Zone is already taken/, 'zone names compare without case' );
+    if ( !$res->is_error ) {
+        $res = $user->delete_zones( zone_list => $res->get('nt_zone_id') );
+        noerrok($res)
+            or die "Couldn't delete zone mistake " . $res->get('nt_zone_id');
+    }
+
+    $res = $group1->new_zone(
+        zone        => 'Case.Example.COM.',
+        serial      => 0,
+        ttl         => 86400,
+        nameservers => "$nsid1,$nsid2",
+        description => "test delete me",
+    );
+    noerrok($res) or die "couldn't make the mixed case zone";
+    my $case_zid = $res->get('nt_zone_id');
+    is( $user->get_zone( nt_zone_id => $case_zid )->get('zone'),
+        'case.example.com', 'zone names are stored lowercase' );
+    noerrok( $user->delete_zones( zone_list => $case_zid ) );
+
     my %rz1 = (
         zone        => '3.2.1.in-addr.arpa',
         serial      => 1,
