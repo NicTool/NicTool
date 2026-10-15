@@ -345,10 +345,12 @@ sub _expand_zone_nameservers {
             }
             $found;
         };
-        # a row missing here would read as unassigned and be cleared on save
-        my $ns = $data && $data->{nameserver} && $data->{nameserver}[0]
-            or return $self->{get_error} // _http_error( 502, { error => "No nameserver $nsid" } );
-        my $row = _remap_fields($ns, 'nameserver');
+        my $ns = $data && $data->{nameserver} && $data->{nameserver}[0];
+        my $status = $self->{get_error} ? $self->{get_error}{error_code} : 404;
+        return $self->{get_error} if !$ns && $status != 403 && $status != 404;
+
+        # an assignment the user can't read stays, or saving the zone would drop it
+        my $row = $ns ? _remap_fields( $ns, 'nameserver' ) : { nt_nameserver_id => $nsid, name => "nameserver $nsid" };
         $row->{deleted} //= 0;
         push @rows, $row;
     }

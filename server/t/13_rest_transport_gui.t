@@ -172,6 +172,14 @@ my $ns_deleted_result = $ns_deleted->send_request( 'http://api:3000', action => 
 is_deeply [ map { "$_->{nt_nameserver_id}/$_->{deleted}" } @{ $ns_deleted_result->{nameservers} } ], ['3/1'],
     'a zone still assigned to a deleted nameserver shows that nameserver';
 
+my $ns_hidden = transport(
+    response({ zone => [ { id => 7, gid => 2, zone => 'one.test', nameservers => [9] } ] }),
+    { status => 403, content => '{"message":"forbidden"}' },
+);
+my $ns_hidden_result = $ns_hidden->send_request( 'http://api:3000', action => 'get_zone', nt_zone_id => 7 );
+is_deeply [ map { $_->{nt_nameserver_id} } @{ $ns_hidden_result->{nameservers} } ], [9],
+    'a zone keeps an assigned nameserver its user cannot read';
+
 my $move_zones = transport(response({}), response({}));
 my $move_result = $move_zones->send_request(
     'http://api:3000',
