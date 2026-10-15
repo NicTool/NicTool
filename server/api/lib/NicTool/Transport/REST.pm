@@ -441,6 +441,7 @@ sub _get_group_branch {
         $gid = $group->{parent_group_id};
     }
 
+    return $self->{probe_error} if $self->{probe_error};
     return _http_error( 403, { error => 'Group is outside the user branch' } )
         unless @groups && $groups[0]{nt_group_id} == $user_gid;
     return { error_code => 200, error_msg => 'OK', groups => \@groups };
@@ -577,10 +578,14 @@ sub _set_group_has_children {
     my ($self, $group) = @_;
     return if exists $group->{has_children};
     my $gid = $group->{nt_group_id} or return;
-    $group->{has_children} = $self->{group_has_children}{$gid} //= do {
+    unless ( exists $self->{group_has_children}{$gid} ) {
         my $data = $self->_get_json("/group?parent_gid=$gid");
-        @{ $data && $data->{group} // [] } ? 1 : 0;
-    };
+        # a failed probe must not pass for a leaf, or the GUI hides the subgroups
+        return $self->{probe_error} //= $self->{get_error} unless $data;
+        $self->{group_has_children}{$gid} = @{ $data->{group} // [] } ? 1 : 0;
+    }
+    $group->{has_children} = $self->{group_has_children}{$gid};
+    return;
 }
 
 sub _session {
@@ -619,7 +624,7 @@ sub send_request {
     $self->{request_group_id} = $vars{nt_group_id};
     $self->{current_action} = $action;
     delete @{$self}{qw(
-        direct_delegations group_has_children record_delegated_zids session zones_by_zid
+        direct_delegations group_has_children probe_error record_delegated_zids session zones_by_zid
     )};
 
     my $spec = $ACTION_MAP{$action};
@@ -1350,7 +1355,7 @@ sub _adapt_response {
         $self->_supplement_delegation($result, $action);
     }
 
-    return $result;
+    return $self->{probe_error} // $result;
 }
 
 sub _adapt_log_response {

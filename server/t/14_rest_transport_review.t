@@ -301,19 +301,23 @@ my $group_listing = transport(
         { id => 4, parent_gid => 2, name => 'two' },
         { id => 5, parent_gid => 2, name => 'three' },
     ] }),
-    response({ group => [
-        { id => 2, parent_gid => 1, name => 'root' },
-        { id => 3, parent_gid => 2, name => 'one' },
-        { id => 4, parent_gid => 2, name => 'two' },
-        { id => 5, parent_gid => 2, name => 'three' },
-        { id => 6, parent_gid => 4, name => 'grandchild' },
-    ] }),
+    response({ group => [] }),
+    response({ group => [ { id => 6, parent_gid => 4, name => 'grandchild' } ] }),
+    response({ group => [] }),
 );
 my $group_listing_result = $group_listing->send_request(
     'http://api:3000', action => 'get_group_groups', nt_group_id => 2 );
-is scalar @{ $group_listing->{http}{requests} }, 2,
-    'group listings derive child flags from one subtree read';
+my @probes = map { $_->[1] =~ s{^http://api:3000}{}r } @{ $group_listing->{http}{requests} }[ 1 .. 3 ];
+is_deeply \@probes, [ map {"/group?parent_gid=$_"} 3, 4, 5 ],
+    'a group listing asks each listed group for children, not for the subtree';
 is_deeply [ map { $_->{has_children} } @{ $group_listing_result->{groups} } ],
-    [ 0, 1, 0 ], 'group listing child flags match the subtree';
+    [ 0, 1, 0 ], 'group listing child flags match each group';
+
+my $probe_down = transport(
+    response({ group => [ { id => 3, parent_gid => 2, name => 'one' } ] }),
+    status_response( 503, { error => 'try later' } ),
+);
+is $probe_down->send_request( 'http://api:3000', action => 'get_group_groups', nt_group_id => 2 )->{error_code}, 503,
+    'a failed child probe fails the listing rather than hiding subgroups';
 
 done_testing;
