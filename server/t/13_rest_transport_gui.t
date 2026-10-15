@@ -917,9 +917,8 @@ my $current = transport(response({
 }));
 my $current_result = $current->send_request(
     'http://api:3000', action => 'get_record_type', type => 'ALL' );
-is_deeply { map { $_->{name} => $_->{id} } @{ $current_result->{types} } },
-    { A => 1, CERT => 37, IPSECKEY => 45, SMIMEA => 53, TLSA => 52, WKS => 11 },
-    'every type validate offers has its IANA id, and an unknown one is left off the menu';
+is_deeply [ map { $_->{name} } @{ $current_result->{types} } ], ['A'],
+    'types the bridge cannot translate are left off the menu instead of failing it';
 
 # zones without a direct delegation fall back to the group's delegated
 # records; that list, and each record's zone, is fetched once per request

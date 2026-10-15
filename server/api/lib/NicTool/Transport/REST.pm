@@ -498,8 +498,6 @@ my %RR_TYPE_ID = (
     RRSIG      => 46,  NSEC       => 47,  DNSKEY     => 48,
     NSEC3      => 50,  NSEC3PARAM => 51,  OPENPGPKEY => 61,
     SVCB       => 64,  HTTPS      => 65,  SPF        => 99,
-    WKS        => 11,  CERT       => 37,  IPSECKEY   => 45,
-    TLSA       => 52,  SMIMEA     => 53,
     TSIG       => 250, AXFR       => 252, URI        => 256,
     CAA        => 257,
 );
@@ -517,6 +515,7 @@ sub _get_api_types {
     my @types;
     my $next_id = 0;
     for my $name (@$enum) {
+        # a type v2 has no id for has no field mapping here either
         my $id = $kind eq 'record_types' ? $RR_TYPE_ID{$name} : ++$next_id;
         next unless defined $id;
         my $type = {
