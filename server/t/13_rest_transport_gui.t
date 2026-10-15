@@ -347,6 +347,11 @@ my $resumed_result = $resumed->send_request( 'http://api:3000', action => 'verif
 is $resumed->{http}{requests}[0][2]{headers}{Authorization}, 'Bearer saved', 'a supplied session token authenticates';
 is $resumed_result->{groupname}, 'grp', 'the session carries the group name the GUI shows';
 
+my $api_down = transport( { status => 599, content => "Could not connect to 'api:3000': Connection refused" } );
+my $api_down_result = $api_down->send_request( 'http://api:3000', action => 'get_zone', nt_zone_id => 7 );
+is $api_down_result->{error_code}, 599, 'a connection failure keeps its transport status';
+like $api_down_result->{error_msg}, qr/Connection refused/, 'and its reason, rather than a JSON parse error';
+
 my $swagger = {
     paths => {
         '/nameserver' => { post => { parameters => [ {

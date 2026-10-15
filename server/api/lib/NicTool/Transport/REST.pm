@@ -596,8 +596,9 @@ sub _http {
     $agent .= "/$NicTool::VERSION"
         if defined $NicTool::VERSION && length $NicTool::VERSION;
     return $self->{http} ||= HTTP::Tiny->new(
-        agent   => $agent,
-        timeout => 30,
+        agent      => $agent,
+        timeout    => 30,
+        verify_SSL => 1,
     );
 }
 
@@ -965,11 +966,12 @@ sub send_request {
 
     my $resp = $self->_http->request($http_method, $full_url, \%opts);
 
-    # Decode response
     my $data = {};
     if ($resp->{content} && length $resp->{content}) {
         eval { $data = $JSON->decode($resp->{content}) };
         if ($@) {
+            # HTTP::Tiny reports a failed connection as 599 with a plain text reason
+            return _http_error( $resp->{status}, $resp->{content} ) if $resp->{status} >= 400;
             return {
                 error_code => 508,
                 error_msg  => "REST: JSON parse error: $@",
