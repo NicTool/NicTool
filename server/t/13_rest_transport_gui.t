@@ -327,6 +327,26 @@ like $record_log_entry->{http}{requests}[1][1],
     qr{/log/zone_record\?.*id=13.*zid=7|/log/zone_record\?.*zid=7.*id=13},
     'record log entry lookup is scoped to its zone and log id';
 
+my $deleted_log_entry = transport(
+    { status => 404, content => '{"message":"not found"}' },
+    response( { zone_record => [ { id => 8, zid => 7, deleted => 1 } ] } ),
+    response( { log => [ { id => 13, uid => 5, zid => 7, zrid => 8, action => 'deleted' } ] } ),
+);
+my $deleted_log_result = $deleted_log_entry->send_request(
+    'http://api:3000',
+    action                => 'get_zone_record_log_entry',
+    nt_zone_record_id     => 8,
+    nt_zone_record_log_id => 13,
+);
+is $deleted_log_result->{nt_zone_record_log_id}, 13, 'a deleted record still opens its log entry for recovery';
+like $deleted_log_entry->{http}{requests}[1][1], qr{/zone_record/8\?deleted=true}, 'the retry asks for deleted records';
+
+my $resumed = NicTool::Transport::REST->new( bless {}, 'Local::NicTool' );
+$resumed->{http} = Local::HTTP->new( response( { user => { id => 5 }, group => { id => 2, name => 'grp' } } ) );
+my $resumed_result = $resumed->send_request( 'http://api:3000', action => 'verify_session', nt_user_session => 'saved' );
+is $resumed->{http}{requests}[0][2]{headers}{Authorization}, 'Bearer saved', 'a supplied session token authenticates';
+is $resumed_result->{groupname}, 'grp', 'the session carries the group name the GUI shows';
+
 my $swagger = {
     paths => {
         '/nameserver' => { post => { parameters => [ {
