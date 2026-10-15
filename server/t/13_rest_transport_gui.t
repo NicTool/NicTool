@@ -425,7 +425,7 @@ ok !exists $zone_body->{template}, 'client-side record template is omitted';
 
 my $edit_zone = transport(
     response({ zone => [ {
-        id => 9, gid => 2, zone => 'new.test', serial => 2026083100,
+        id => 9, gid => 2, zone => 'new.test', serial => $new_serial,
     } ] }),
     response({ zone => [ { id => 9, gid => 2 } ] }),
 );
@@ -444,7 +444,7 @@ ok !exists $edit_zone_body->{zone}, 'zone edit omits the immutable name';
 ok !exists $edit_zone_body->{gid}, 'zone edit omits the browsed group id';
 is_deeply $edit_zone_body->{nameservers}, [], 'zone edit clears an empty nameserver selection';
 is $edit_zone_body->{ttl}, 7200, 'zone edit retains mutable fields';
-is $edit_zone_body->{serial}, 2026083101,
+is $edit_zone_body->{serial}, $new_serial + 1,
     'zone edit bumps the stored serial when the caller omits it';
 
 my $move_zone = transport(response({ zone => [ { id => 9, gid => 4 } ] }));
@@ -475,6 +475,41 @@ my $edit_user_body = JSON::PP->new->decode(
     $edit_user->{http}{requests}[0][2]{content} );
 ok !exists $edit_user_body->{gid}, 'user edit omits the browsed group id';
 is $edit_user_body->{first_name}, 'renamed', 'user edit retains profile fields';
+
+my %new_password = (
+    action      => 'edit_user',
+    nt_group_id => 4,
+    nt_user_id  => 5,
+    password    => 'n3w-Secret!',
+);
+
+my $mismatch = transport();
+my $mismatch_result = $mismatch->send_request( 'http://api:3000', %new_password, password2 => 'other' );
+is $mismatch_result->{error_code}, 300, 'a password that does not match its confirmation is refused';
+is scalar @{ $mismatch->{http}{requests} }, 0, 'a mismatched password never reaches v3';
+
+my $member = transport( response( { user => { id => 7, is_admin => 0 }, group => { id => 4 } } ) );
+my $member_result = $member->send_request(
+    'http://api:3000', %new_password,
+    password2        => $new_password{password},
+    current_password => 'old',
+);
+is $member_result->{error_code}, 510, 'a member password change waits for a v3 current password check';
+is scalar @{ $member->{http}{requests} }, 1, 'a member password change is not sent to v3';
+
+my $admin = transport(
+    response( { user => { id => 1, is_admin => 1 }, group => { id => 1 } } ),
+    response( { user => [ { id => 5 } ] } ),
+);
+$admin->send_request( 'http://api:3000', %new_password, password2 => $new_password{password}, current_password => '' );
+my $admin_body = JSON::PP->new->decode( $admin->{http}{requests}[1][2]{content} );
+is $admin_body->{password}, $new_password{password}, 'an admin password change is sent to v3';
+ok !exists $admin_body->{password2} && !exists $admin_body->{current_password},
+    'v3 gets neither confirmation field';
+
+my $one_user = transport( response( { user => [ { id => 5, username => 'u' } ], group => { id => 9 } } ) );
+my $one_user_result = $one_user->send_request( 'http://api:3000', action => 'get_user_list', user_list => '5' );
+is $one_user_result->{list}[0]{nt_group_id}, 9, 'a one-user list takes the group from the response';
 
 my $sorted_records = transport(response({ zone_record => [] }));
 $sorted_records->send_request(

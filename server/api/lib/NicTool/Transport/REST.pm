@@ -831,8 +831,23 @@ sub send_request {
         }
     }
 
-    # user: v2 sends password2 (confirmation), v3 doesn't use it
-    delete $body{password2};
+    # user: v2's sanity layer checked these, v3 has no fields for them
+    if ( $action =~ /^(?:new|edit)_user$/ && defined $body{password} && length $body{password} ) {
+        return {
+            error_code => 300,
+            error_msg  => 'Passwords must match.',
+            error_desc => 'Sanity error',
+        } if ( $body{password2} // '' ) ne $body{password};
+
+        if ( $action eq 'edit_user' ) {
+            my $session = $self->_get_json('/session');
+            return {
+                error_code => 510,
+                error_msg  => 'REST: v3 cannot check the current password yet',
+            } unless $session && $session->{user} && $session->{user}{is_admin};
+        }
+    }
+    delete @body{qw(password2 current_password)};
 
     # nameserver: v2 calls it export_format, v3 wants a flat type
     if ($action =~ /nameserver/ && exists $body{export_format}) {
@@ -1240,9 +1255,10 @@ sub _adapt_response {
                     = ref $r->{permissions} eq 'HASH'
                     ? $r->{permissions}{group}{id}
                     : undef;
+                my $response_gid = ref $data->{group} eq 'HASH' ? $data->{group}{id} : undef;
                 $r->{nt_group_id}
                     //= defined $perm_gid && length $perm_gid ? $perm_gid
-                    : $self->{request_group_id};
+                    : $response_gid // $self->{request_group_id};
             }
             $self->_set_group_has_children($r) if $resource eq 'group';
             $r->{deleted} //= 0
