@@ -488,21 +488,26 @@ my $mismatch_result = $mismatch->send_request( 'http://api:3000', %new_password,
 is $mismatch_result->{error_code}, 300, 'a password that does not match its confirmation is refused';
 is scalar @{ $mismatch->{http}{requests} }, 0, 'a mismatched password never reaches v3';
 
-my $member = transport( response( { user => { id => 7, is_admin => 0 }, group => { id => 4 } } ) );
+my $member = transport(
+    response( { user => { id => 7 }, group => { id => 4 } } ),
+    response( { user => [ { id => 7, is_admin => 0 } ] } ),
+);
 my $member_result = $member->send_request(
     'http://api:3000', %new_password,
     password2        => $new_password{password},
     current_password => 'old',
 );
 is $member_result->{error_code}, 510, 'a member password change waits for a v3 current password check';
-is scalar @{ $member->{http}{requests} }, 1, 'a member password change is not sent to v3';
+is scalar @{ $member->{http}{requests} }, 2, 'a member password change is not sent to v3';
 
 my $admin = transport(
-    response( { user => { id => 1, is_admin => 1 }, group => { id => 1 } } ),
+    response( { user => { id => 1 }, group => { id => 1 } } ),
+    response( { user => [ { id => 1, is_admin => 1 } ] } ),
     response( { user => [ { id => 5 } ] } ),
 );
 $admin->send_request( 'http://api:3000', %new_password, password2 => $new_password{password}, current_password => '' );
-my $admin_body = JSON::PP->new->decode( $admin->{http}{requests}[1][2]{content} );
+is $admin->{http}{requests}[1][1], 'http://api:3000/user/1', 'admin status comes from the user row, not the session';
+my $admin_body = JSON::PP->new->decode( $admin->{http}{requests}[2][2]{content} );
 is $admin_body->{password}, $new_password{password}, 'an admin password change is sent to v3';
 ok !exists $admin_body->{password2} && !exists $admin_body->{current_password},
     'v3 gets neither confirmation field';

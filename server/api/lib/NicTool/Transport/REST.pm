@@ -841,10 +841,12 @@ sub send_request {
 
         if ( $action eq 'edit_user' ) {
             my $session = $self->_get_json('/session');
+            my $uid     = $session && $session->{user} ? $session->{user}{id} : undef;
+            my $me      = $uid ? $self->_get_json("/user/$uid") : undef;
             return {
                 error_code => 510,
                 error_msg  => 'REST: v3 cannot check the current password yet',
-            } unless $session && $session->{user} && $session->{user}{is_admin};
+            } unless $me && $me->{user} && $me->{user}[0] && $me->{user}[0]{is_admin};
         }
     }
     delete @body{qw(password2 current_password)};
