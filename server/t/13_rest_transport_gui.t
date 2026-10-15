@@ -163,6 +163,15 @@ my $ns_down = transport(
 my $ns_down_result = $ns_down->send_request( 'http://api:3000', action => 'get_zone', nt_zone_id => 7 );
 is $ns_down_result->{error_code}, 500, 'a zone whose nameserver read fails is an error, not fewer nameservers';
 
+my $ns_deleted = transport(
+    response({ zone => [ { id => 7, gid => 2, zone => 'one.test', nameservers => [3] } ] }),
+    response({ nameserver => [] }),
+    response({ nameserver => [ { id => 3, gid => 2, name => 'ns3.test.', deleted => 1 } ] }),
+);
+my $ns_deleted_result = $ns_deleted->send_request( 'http://api:3000', action => 'get_zone', nt_zone_id => 7 );
+is_deeply [ map { "$_->{nt_nameserver_id}/$_->{deleted}" } @{ $ns_deleted_result->{nameservers} } ], ['3/1'],
+    'a zone still assigned to a deleted nameserver shows that nameserver';
+
 my $move_zones = transport(response({}), response({}));
 my $move_result = $move_zones->send_request(
     'http://api:3000',

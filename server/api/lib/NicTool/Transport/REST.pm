@@ -337,8 +337,14 @@ sub _expand_zone_nameservers {
 
     my @rows;
     for my $nsid (@$ids) {
-        my $data = $self->{nameservers_by_id}{$nsid}
-            //= $self->_get_json("/nameserver/$nsid");
+        my $data = $self->{nameservers_by_id}{$nsid} //= do {
+            my $found;
+            for my $query ( '', '?deleted=true' ) {
+                $found = $self->_get_json("/nameserver/$nsid$query") or last;
+                last if $found->{nameserver} && $found->{nameserver}[0];
+            }
+            $found;
+        };
         # a row missing here would read as unassigned and be cleared on save
         my $ns = $data && $data->{nameserver} && $data->{nameserver}[0]
             or return $self->{get_error} // _http_error( 502, { error => "No nameserver $nsid" } );
