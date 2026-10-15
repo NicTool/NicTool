@@ -577,6 +577,7 @@ sub _swagger_resolve {
 sub _set_group_has_children {
     my ($self, $group) = @_;
     return if exists $group->{has_children};
+    return unless ( $self->{current_action} // '' ) =~ /^get_/;
     my $gid = $group->{nt_group_id} or return;
     unless ( exists $self->{group_has_children}{$gid} ) {
         my $data = $self->_get_json("/group?parent_gid=$gid");

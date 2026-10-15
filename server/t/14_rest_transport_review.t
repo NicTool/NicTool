@@ -313,6 +313,12 @@ is_deeply \@probes, [ map {"/group?parent_gid=$_"} 3, 4, 5 ],
 is_deeply [ map { $_->{has_children} } @{ $group_listing_result->{groups} } ],
     [ 0, 1, 0 ], 'group listing child flags match each group';
 
+my $edited_group = transport( response({ group => [ { id => 3, parent_gid => 2, name => 'renamed' } ] }) );
+my $edited_group_result = $edited_group->send_request(
+    'http://api:3000', action => 'edit_group', nt_group_id => 3, name => 'renamed' );
+is $edited_group_result->{error_code}, 200, 'a group edit reports its own result';
+is scalar @{ $edited_group->{http}{requests} }, 1, 'a group edit does not probe for children';
+
 my $probe_down = transport(
     response({ group => [ { id => 3, parent_gid => 2, name => 'one' } ] }),
     status_response( 503, { error => 'try later' } ),
