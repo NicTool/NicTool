@@ -352,6 +352,18 @@ my $api_down_result = $api_down->send_request( 'http://api:3000', action => 'get
 is $api_down_result->{error_code}, 599, 'a connection failure keeps its transport status';
 like $api_down_result->{error_msg}, qr/Connection refused/, 'and its reason, rather than a JSON parse error';
 
+my $paged = transport( response( {
+    zone => [ map { { id => $_, gid => 2, zone => "z$_.test" } } 21 .. 30 ],
+    meta => { pagination => { offset => 20, limit => 10, total => 45 } },
+} ) );
+my $paged_result = $paged->send_request(
+    'http://api:3000', action => 'get_group_zones', nt_group_id => 2, page => 3, limit => 10 );
+like $paged->{http}{requests}[0][1], qr{limit=10}, 'a page request keeps its page size';
+like $paged->{http}{requests}[0][1], qr{offset=20}, 'page 3 of 10 starts at the 21st zone';
+is_deeply { map { $_ => $paged_result->{$_} } qw(page total_pages limit start end) },
+    { page => 3, total_pages => 5, limit => 10, start => 21, end => 30 },
+    'a paged list carries what the GUI pager reads';
+
 my $swagger = {
     paths => {
         '/nameserver' => { post => { parameters => [ {

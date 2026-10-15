@@ -734,6 +734,13 @@ sub send_request {
         $path =~ s/:\Q$key\E(?!\w)/$val/;
     }
 
+    # v2 pages by number as well as by start row, 20 to a page by default
+    if ( defined $vars{page} && $vars{page} =~ /^\d+$/ && $vars{page} > 0 ) {
+        $vars{limit} = 20 unless defined $vars{limit} && $vars{limit} =~ /^\d+$/ && $vars{limit} > 0;
+        $vars{start} = ( $vars{page} - 1 ) * $vars{limit} + 1;
+    }
+    delete $vars{page};
+
     # Build query string for GET requests
     my $query = '';
     if ($spec->{query_map}) {
@@ -1298,11 +1305,7 @@ sub _adapt_response {
         my $list_param = $LIST_PARAM{$action};
         $result->{$list_param} = \@remapped if $list_param;
         if (my $pg = $data->{meta}{pagination}) {
-            $result->{total}  = $pg->{filtered} // $pg->{total} // 0;
-            $result->{start}  = ($pg->{offset} // 0) + 1;
-            $result->{end}    = $result->{start} + scalar(@remapped) - 1;
-            my $limit = $pg->{limit} || scalar(@remapped) || 1;
-            $result->{page} = int(($pg->{offset} // 0) / $limit) + 1;
+            %$result = ( %$result, _page_fields( $pg, scalar @remapped ) );
         }
         else {
             $result->{total} = scalar @remapped;
@@ -1394,19 +1397,12 @@ sub _adapt_log_response {
         push @log, \%row;
     }
 
-    my $pg = $data->{meta}{pagination} // {};
-    my $start = ($pg->{offset} // 0) + 1;
-    my $limit = $pg->{limit} || scalar(@log) || 1;
     my $result = {
         error_code => 200,
         error_msg  => 'OK',
         log        => \@log,
         group_map  => {},
-        total      => $pg->{filtered} // $pg->{total} // scalar(@log),
-        start      => $start,
-        end        => $start + scalar(@log) - 1,
-        limit      => $limit,
-        page       => int(($pg->{offset} // 0) / $limit) + 1,
+        _page_fields( $data->{meta}{pagination} // {}, scalar @log ),
     };
     $result->{list} = $result->{log} if $action eq 'get_user_global_log';
     return {
@@ -1729,6 +1725,21 @@ sub _flatten_permissions {
     # Top-level permission fields
     $result->{self_write} = $perms->{self_write} ? 1 : 0
         if exists $perms->{self_write};
+}
+
+sub _page_fields {
+    my ( $pg, $count ) = @_;
+    my $offset = $pg->{offset} // 0;
+    my $limit  = $pg->{limit} || $count || 1;
+    my $total  = $pg->{filtered} // $pg->{total} // $count;
+    return (
+        total       => $total,
+        start       => $offset + 1,
+        end         => $offset + $count,
+        limit       => $limit,
+        page        => int( $offset / $limit ) + 1,
+        total_pages => int( ( $total + $limit - 1 ) / $limit ),
+    );
 }
 
 sub _not_implemented {
