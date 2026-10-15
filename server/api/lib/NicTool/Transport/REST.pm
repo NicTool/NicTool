@@ -232,21 +232,25 @@ sub _remap_zr_rfc_to_v2 {
     }
     if ($out->{type} eq 'NAPTR') {
         my @parts = map { delete $out->{$_} // '' } qw(flags service regexp);
-        $out->{address} = join ' ', map { qq{"$_"} } @parts;
+        $out->{address} = join ' ', map { '"' . s/([\\"])/\\$1/gr . '"' } @parts;
     }
 }
 
 sub _unpack_v2_naptr {
     my ($body, $default_replacement) = @_;
-    return unless exists $body->{address} || exists $body->{other};
+    return 1 unless exists $body->{address} || exists $body->{other};
 
     my $packed = delete $body->{address} // '';
+    my $string = qr/"((?:[^"\\]|\\.)*)"/;
     my @parts;
 
-    if ($packed =~ /^\s*"([^"]*)"\s+"([^"]*)"\s+"([^"]*)"\s*$/) {
-        @parts = ($1, $2, $3);
+    if ($packed =~ /^\s*$string\s+$string\s+$string\s*$/) {
+        my @quoted = ( $1, $2, $3 );
+        @parts = map { s/\\(.)/$1/gr } @quoted;
     } elsif ($packed =~ /^'([^']*)','([^']*)','([^']*)'$/) {
         @parts = ($1, $2, $3);
+    } elsif ($packed =~ /["']/) {
+        return;
     } else {
         @parts = (delete($body->{other}) // '', '', $packed);
     }
@@ -258,6 +262,7 @@ sub _unpack_v2_naptr {
         $body->{description} = '.';
     }
     delete $body->{other};
+    return 1;
 }
 
 # v2 DB columns -> v3 RFC field names, the inverse of %ZR_RFC_TO_V2
@@ -479,6 +484,8 @@ my %RR_TYPE_ID = (
     RRSIG      => 46,  NSEC       => 47,  DNSKEY     => 48,
     NSEC3      => 50,  NSEC3PARAM => 51,  OPENPGPKEY => 61,
     SVCB       => 64,  HTTPS      => 65,  SPF        => 99,
+    WKS        => 11,  CERT       => 37,  IPSECKEY   => 45,
+    TLSA       => 52,  SMIMEA     => 53,
     TSIG       => 250, AXFR       => 252, URI        => 256,
     CAA        => 257,
 );
@@ -497,8 +504,7 @@ sub _get_api_types {
     my $next_id = 0;
     for my $name (@$enum) {
         my $id = $kind eq 'record_types' ? $RR_TYPE_ID{$name} : ++$next_id;
-        return _http_error( 502, { error => "No record type id for $name" } )
-            unless defined $id;
+        next unless defined $id;
         my $type = {
             id          => $id,
             name        => $name,
@@ -819,8 +825,8 @@ sub send_request {
                 if !exists $body{priority} && exists $body{other};
             delete $body{other};
         }
-        _unpack_v2_naptr(\%body, $action eq 'new_zone_record')
-            if $body{type} eq 'NAPTR';
+        return _v2_param_error( 'address', 302 )
+            if $body{type} eq 'NAPTR' && !_unpack_v2_naptr( \%body, $action eq 'new_zone_record' );
 
         my $map = $ZR_V2_TO_RFC{ $body{type} };
         if ($map) {

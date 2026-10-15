@@ -673,6 +673,42 @@ is $naptr_result->{records}[0]{address},
     '"U" "E2U+sip" "!^.*$!sip:info@example.com!"',
     'RFC NAPTR fields return in the v2 packed address column';
 
+my $quoted_regexp = '!^(.*)$!sip:"\1"\\@example.com!';
+my $naptr_quoted = transport(
+    response( { zone_record => [ {
+        id => 15, zid => 9, owner => 'q.new.test.', type => 'NAPTR', order => 1, preference => 1,
+        flags => 'U', service => 'E2U+sip', regexp => $quoted_regexp, replacement => '.',
+    } ] } ),
+    response( { zone => [ { id => 9, gid => 2, zone => 'new.test.' } ] } ),
+);
+my $packed = $naptr_quoted->send_request( 'http://api:3000', action => 'get_zone_records', nt_zone_id => 9 )
+    ->{records}[0]{address};
+my $naptr_back = transport( response( { zone_record => [ { id => 15 } ] } ) );
+$naptr_back->send_request(
+    'http://api:3000',
+    action      => 'edit_zone_record',
+    nt_group_id => 2,
+    nt_zone_id  => 9,
+    nt_zone_record_id => 15,
+    type        => 'NAPTR',
+    address     => $packed,
+);
+is( JSON::PP->new->decode( $naptr_back->{http}{requests}[0][2]{content} )->{regexp},
+    $quoted_regexp, 'a NAPTR regexp with quotes and backslashes survives a round trip' );
+
+my $naptr_bad = transport();
+my $naptr_bad_result = $naptr_bad->send_request(
+    'http://api:3000',
+    action      => 'new_zone_record',
+    nt_group_id => 2,
+    nt_zone_id  => 9,
+    name        => 'bad.new.test.',
+    type        => 'NAPTR',
+    address     => '"U" "E2U+sip',
+);
+is $naptr_bad_result->{error_code}, 302, 'a malformed packed NAPTR is refused';
+is scalar @{ $naptr_bad->{http}{requests} }, 0, 'a malformed packed NAPTR never reaches v3';
+
 my $naptr_short = transport(response({
     zone_record => [ {
         id => 14, zid => 9, owner => 'short.new.test.', type => 'NAPTR',
@@ -802,6 +838,19 @@ is_deeply { map { $_->{name} => "$_->{forward}/$_->{reverse}" } @{ $typed_result
     { A => '1/1', AAAA => '1/0', MX => '1/0', PTR => '1/1', SPF => '0/0',
       SOA => '0/0', SVCB => '1/1' },
     'record type forward/reverse flags follow the v2 metadata';
+
+my $current = transport(response({
+    paths => { '/zone_record' => { post => { parameters => [ {
+        in => 'body', schema => { properties => { type => {
+            type => 'string', enum => [qw( A CERT IPSECKEY SMIMEA TLSA WKS NEWTYPE )],
+        } } },
+    } ] } } },
+}));
+my $current_result = $current->send_request(
+    'http://api:3000', action => 'get_record_type', type => 'ALL' );
+is_deeply { map { $_->{name} => $_->{id} } @{ $current_result->{types} } },
+    { A => 1, CERT => 37, IPSECKEY => 45, SMIMEA => 53, TLSA => 52, WKS => 11 },
+    'every type validate offers has its IANA id, and an unknown one is left off the menu';
 
 # zones without a direct delegation fall back to the group's delegated
 # records; that list, and each record's zone, is fetched once per request
