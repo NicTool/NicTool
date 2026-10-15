@@ -289,9 +289,12 @@ sub _get_json {
 
     my $resp = $self->_http->request('GET', $self->_base_url . $path,
         { headers => \%headers });
-    return undef unless $resp && $resp->{status} == 200 && $resp->{content};
-    my $data = eval { $JSON->decode($resp->{content}) };
-    return ref $data eq 'HASH' ? $data : undef;
+    my $data = $resp && $resp->{content} ? eval { $JSON->decode( $resp->{content} ) } : undef;
+    $self->{get_error} = undef;
+    return $data if $resp && $resp->{status} == 200 && ref $data eq 'HASH';
+    $self->{get_error} = _http_error( $resp && $resp->{status} >= 400 ? $resp->{status} : 502,
+        ref $data eq 'HASH' ? $data : {} );
+    return undef;
 }
 
 sub _qualify_owner {
@@ -336,12 +339,15 @@ sub _expand_zone_nameservers {
     for my $nsid (@$ids) {
         my $data = $self->{nameservers_by_id}{$nsid}
             //= $self->_get_json("/nameserver/$nsid");
-        my $ns = $data && $data->{nameserver} && $data->{nameserver}[0] or next;
+        # a row missing here would read as unassigned and be cleared on save
+        my $ns = $data && $data->{nameserver} && $data->{nameserver}[0]
+            or return $self->{get_error} // _http_error( 502, { error => "No nameserver $nsid" } );
         my $row = _remap_fields($ns, 'nameserver');
         $row->{deleted} //= 0;
         push @rows, $row;
     }
     $zone->{nameservers} = \@rows;
+    return;
 }
 
 # zone id -> { zone, gid }, cached for the life of the transport
@@ -1025,8 +1031,8 @@ sub _multi_get {
     for my $id (@$ids) {
         my $path = $spec->{path};
         $path =~ s{:id}{$id}g;
-        my $data = $self->_get_json($path);
-        next unless $data && ref $data->{$rkey} eq 'ARRAY';
+        my $data = $self->_get_json($path) or return $self->{get_error};
+        next unless ref $data->{$rkey} eq 'ARRAY';
         if ($resource eq 'user' && ref $data->{group} eq 'HASH') {
             $_->{gid} //= $data->{group}{id} for @{ $data->{$rkey} };
         }
@@ -1310,7 +1316,10 @@ sub _adapt_response {
         $entity->{deleted} //= 0
             if $resource =~ /^(?:zone|zone_record|group|user|nameserver)$/;
         $self->_unqualify_owner($entity) if $resource eq 'zone_record';
-        $self->_expand_zone_nameservers($entity) if $resource eq 'zone';
+        if ( $resource eq 'zone' ) {
+            my $error = $self->_expand_zone_nameservers($entity);
+            return $error if $error;
+        }
         %$result = (%$result, %$entity);
     }
 

@@ -148,6 +148,21 @@ my $zone_result = $zones->send_request(
 is_deeply [ map { $_->{nt_zone_id} } @{ $zone_result->{zones} } ],
     [ 7, 8 ], 'ID list reads are aggregated through single-object v3 routes';
 
+my $half_zones = transport(
+    response({ zone => [ { id => 7, gid => 2, zone => 'one.test' } ] }),
+    { status => 503, content => '{"message":"try later"}' },
+);
+my $half_result = $half_zones->send_request( 'http://api:3000', action => 'get_zone_list', zone_list => '7,8' );
+is $half_result->{error_code}, 503, 'a failed read in an ID list fails the list';
+
+my $ns_down = transport(
+    response({ zone => [ { id => 7, gid => 2, zone => 'one.test', nameservers => [ 3, 4 ] } ] }),
+    response({ nameserver => [ { id => 3, gid => 2, name => 'ns3.test.' } ] }),
+    { status => 500, content => '{"message":"db gone"}' },
+);
+my $ns_down_result = $ns_down->send_request( 'http://api:3000', action => 'get_zone', nt_zone_id => 7 );
+is $ns_down_result->{error_code}, 500, 'a zone whose nameserver read fails is an error, not fewer nameservers';
+
 my $move_zones = transport(response({}), response({}));
 my $move_result = $move_zones->send_request(
     'http://api:3000',
