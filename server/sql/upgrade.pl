@@ -288,9 +288,7 @@ sub _column_attr {
 
 sub _column_exists {
     my ( $table, $column ) = @_;
-    my $r;
-    eval { $r = $dbh->query("SHOW COLUMNS FROM `$table` LIKE '$column'")->hashes; };
-    return ( $r && $r->[0] && $r->[0]{field} ) ? 1 : 0;
+    return defined _column_attr( $table, $column, 'COLUMN_NAME' ) ? 1 : 0;
 }
 
 sub _add_column {
