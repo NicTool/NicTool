@@ -33,7 +33,7 @@ sub new_zone_record {
     }
 
     return $self->throw_sanity_error if $self->{errors};
-    return $self->SUPER::new_zone_record($data);
+    return $self->_with_rrset_ttl( $self->SUPER::new_zone_record($data) );
 }
 
 sub edit_zone_record {
@@ -59,11 +59,13 @@ sub edit_zone_record {
     }
 
     return $self->throw_sanity_error if $self->{errors};
-    return $self->SUPER::edit_zone_record($data);
+    return $self->_with_rrset_ttl( $self->SUPER::edit_zone_record($data) );
 }
 
 sub new_or_edit_basic_verify {
     my ( $self, $data ) = @_;
+
+    delete $self->{rrset_ttl};
 
     my $z = $self->find_zone( $data->{nt_zone_id} )
         or $self->error( 'nt_zone_id', 'invalid zone_id' );
@@ -118,26 +120,27 @@ sub _valid_ttl {
         $data->{ttl} = 86400;
         return;
     }
-    if ( defined $data->{ttl} ) {
-        $self->valid_ttl( $data->{ttl} );
-    }
+    return if !defined $data->{ttl};    # an edit that keeps its ttl
+    $self->valid_ttl( $data->{ttl} );
 
-    my @same_type = grep { $_->{type} eq $data->{type} } @$collisions;
-    if ( scalar @same_type && grep { $_->{ttl} != $data->{ttl} } @same_type ) {
-
-        # RRs with identical Name and type must have identical TTL: RFC 2181
-        # make it so by applying TTL update to all records in RRset
+    # RRs with identical Name and type must have identical TTL: RFC 2181.
+    # The rest of the RRset follows only once this record is saved, so a
+    # rejected request changes nothing.
+    $self->{rrset_ttl} = [
         map {
-            $_->{ttl} = $data->{ttl};
-
             # collision rows come from the DB with no {user}; without it the
             # cascade logs nt_user_id=0
-            $_->{user} = $data->{user};
+            { %$_, ttl => $data->{ttl}, user => $data->{user} }
+        } grep { $_->{type} eq $data->{type} && $_->{ttl} != $data->{ttl} } @$collisions
+    ];
+}
 
-            # Push that update to the DB as well(!)
-            $self->SUPER::edit_zone_record($_);
-        } @same_type;
-    }
+sub _with_rrset_ttl {
+    my ( $self, $result ) = @_;
+    my $rrset = delete $self->{rrset_ttl} || [];
+    return $result if $result->{error_code} != 200;
+    $self->SUPER::edit_zone_record($_) for @$rrset;
+    return $result;
 }
 
 sub _duplicate_record {

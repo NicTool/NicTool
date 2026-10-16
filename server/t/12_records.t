@@ -183,6 +183,19 @@ sub doit {
             $zr[ $i++ ] = $zr;
         }
 
+        # a rejected edit must leave the whole RRset as it was
+        $res = $zr[0]->edit_zone_record( address => '2.3.4.5', ttl => 6000 );
+        noerrok( $res, 300, 'duplicate address is rejected' );
+        $_->refresh for @zr;
+        is( $zr[0]->get('ttl'), 86400, 'rejected edit leaves its record ttl' );
+        is( $zr[1]->get('ttl'), 86400, 'rejected edit leaves the RRset ttl' );
+
+        # an edit that keeps its ttl leaves the RRset's alone
+        noerrok( $zr[0]->edit_zone_record( address => '3.4.5.6' ) );
+        $_->refresh for @zr;
+        is( $zr[0]->get('ttl'), 86400, 'edit without a ttl keeps the record ttl' );
+        is( $zr[1]->get('ttl'), 86400, 'edit without a ttl keeps the RRset ttl' );
+
         $res = $zr[0]->edit_zone_record( ttl => 6000 );
         noerrok($res);
 
