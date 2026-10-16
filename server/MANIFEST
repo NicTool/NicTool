@@ -37,6 +37,7 @@ api/t/protocol.t
 api/t/result.t
 api/t/TestConfig.pm
 api/t/transport.t
+api/t/zone_api.t
 bin/nt_export.pl
 bin/nt_from_git.pl
 bin/nt_import.pl
