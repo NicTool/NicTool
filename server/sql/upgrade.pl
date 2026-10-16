@@ -1574,13 +1574,14 @@ sub get_db_creds_from_nictoolserver_conf {
 }
 
 sub prompt_last_chance {
+    my $pass_shown = length $db_pass ? "********" : "(empty)";
     print qq{
 Beginning SQL upgrades.
 If any of the information is incorrect, press Control-C now!
 -------------------------
 DB_DSN:  $dsn
 DB_USER: $db_user
-DB_PASS: $db_pass
+DB_PASS: $pass_shown
 -------------------------
 
 You made a backup already, right?
