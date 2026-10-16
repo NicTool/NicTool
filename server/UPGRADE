@@ -44,18 +44,10 @@ at the end of this document first.
      safe to re-run: already-applied steps are skipped.
 
    * Upgrades crossing 2.42 store zone names lowercase without the
-     trailing dot, the form NicTool 3 matches. A live zone whose name
-     another live zone would then share is left as it was. List every live
-     zone that shares its name with another, whatever its spelling, with
-
-       SELECT z.nt_zone_id, z.zone FROM nt_zone z
-         JOIN (SELECT LOWER(zone) AS name FROM nt_zone WHERE deleted = 0
-                GROUP BY name HAVING COUNT(*) > 1) taken
-           ON taken.name = LOWER(z.zone)
-        WHERE z.deleted = 0
-        ORDER BY taken.name, z.nt_zone_id;
-
-     and rename or delete all but one of each name.
+     trailing dot, the form NicTool 3 matches, and lowercase the zone in
+     absolute record names ('@' was stored as the zone's own spelling).
+     If two live zones would then share a name, the script lists them and
+     stops; rename or delete all but one of each name, then re-run.
 
    * Upgrades crossing 2.41 convert all tables to InnoDB and add foreign
      key constraints. If audit-log rows reference parent rows that no
