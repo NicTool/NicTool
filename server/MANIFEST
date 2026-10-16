@@ -110,6 +110,8 @@ t/30_export_tinydns.t
 t/fixtures/1.0.10.in-addr.arpa
 t/fixtures/138.80.85.in-addr.arpa
 t/fixtures/example.com
+t/fixtures/import-bind.conf
+t/fixtures/import-bind.test
 t/fixtures/named.conf
 t/NicToolTest.pm
 t/README

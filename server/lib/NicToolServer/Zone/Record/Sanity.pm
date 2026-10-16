@@ -74,7 +74,15 @@ sub new_or_edit_basic_verify {
 
     $self->_expand_shortcuts( $data, $zone_text );    # expand @ and & shortcuts
 
-    if ( $data->{name} =~ /^(.+)\.$zone_text\.*$/ ) { # ends in domain name
+    # A name in the zone takes the zone's own spelling, which _valid_name and
+    # Export/Base.pm compare exactly. Recovered log rows can hold another.
+    if ( lc $data->{name} eq lc "$zone_text." ) {
+        $data->{name} = "$zone_text.";
+    }
+    elsif ( lc $data->{name} eq lc $zone_text ) {
+        $data->{name} = $zone_text;
+    }
+    elsif ( $data->{name} =~ /^(.+)\.\Q$zone_text\E\.*$/i ) {    # ends in domain name
         $data->{name} = $1;    # strip domain. record names are NOT stored absolute
     }
 

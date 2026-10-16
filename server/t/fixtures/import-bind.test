@@ -1,0 +1,8 @@
+$ORIGIN import-bind.test.
+$TTL 86400
+import-bind.test.  IN  SOA   ns1.import-bind.test. hostmaster.import-bind.test. ( 2026083001 1d 2h 4w 1h )
+import-bind.test.  IN  NS    ns1                   ; relative, expands to ns1.import-bind.test.
+@                  IN  NS    ns2                   ; relative secondary
+@                  IN  NS    ns3.import-bind.test.  ; fully qualified
+@                  IN  NS    ns4.import-bind.test.  ; defined in the parent group
+www                IN  A     192.0.2.10

@@ -57,8 +57,18 @@ jobs:
 
       - name: Start containers
         working-directory: dist/docker
+        env:
+          NICTOOL_TEST_ENV: "1"
         run: docker compose up -d --wait
         timeout-minutes: 5
+
+      - name: Check test config permissions
+        run: |
+          docker compose -f dist/docker/docker-compose.yml exec -T web sh -c '
+            for file in /usr/local/nictool/server/t/test*.cfg /usr/local/nictool/server/api/t/test.cfg; do
+              test -f "$file" && test "$(stat -c %a "$file")" = 600 || exit 1
+            done
+          '
 
       - name: Run server tests
         run: docker compose -f dist/docker/docker-compose.yml exec -T web make -C /usr/local/nictool/server test
@@ -100,6 +110,8 @@ jobs:
 
       - name: Start containers
         working-directory: dist/docker
+        env:
+          NICTOOL_TEST_ENV: "1"
         run: docker compose up -d --wait
         timeout-minutes: 5
 

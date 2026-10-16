@@ -72,7 +72,12 @@ sub _add_zone_nameserver {
         $ns_name = $ns_name . '.';
     }
 
-    my $nslist = $self->get_usable_nameservers($data)->{nameservers};
+    my $nslist = $self->get_usable_nameservers(
+        {
+            %$data,
+            nt_group_id => $zone->{nt_group_id},
+        }
+    )->{nameservers};
     my ($ns) = grep { $_->{name} =~ /^$ns_name$/i } @$nslist;
     if ( !$ns ) {
         return $self->error_response( 404, "Nameserver not defined in NicTool." );

@@ -34,8 +34,12 @@ if [ "$SQL_OUT" != "option_value" ]; then
     echo "" | perl create_tables.pl --environment
 fi
 
-echo "==> Setting up test environment"
-perl "$NT_DIR/dist/setup/setup-test-env.pl"
+if [ "${NICTOOL_TEST_ENV:-0}" = "1" ]; then
+    echo "==> Setting up test environment"
+    perl "$NT_DIR/dist/setup/setup-test-env.pl"
+else
+    echo "==> Skipping test environment; set NICTOOL_TEST_ENV=1 to enable it"
+fi
 
 unset MYSQL_PWD
 

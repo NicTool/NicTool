@@ -30,6 +30,7 @@ services:
     environment:
       DB_ENGINE: mysql
       DB_HOSTNAME: db
+      NICTOOL_TEST_ENV: ${NICTOOL_TEST_ENV:-0}
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost/index.cgi"]
       interval: 5s

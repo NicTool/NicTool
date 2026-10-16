@@ -9,6 +9,8 @@ use warnings;
 use Crypt::KeyDerivation;
 use DBI;
 
+umask 0077;
+
 my $db_engine = $ENV{DB_ENGINE}       || 'mysql';
 my $db_host   = $ENV{DB_HOSTNAME}     || '127.0.0.1';
 my $db_name   = $ENV{NICTOOL_DB_NAME} || 'nictool';
@@ -150,7 +152,8 @@ sub write_test_cfg {
     my ( $path, $content ) = @_;
     open( my $fh, '>', $path ) or die "Cannot write $path: $!\n";
     print $fh $content;
-    close $fh;
+    close $fh or die "Cannot close $path: $!\n";
+    chmod 0600, $path or die "Cannot chmod $path: $!\n";
     print "  wrote $path\n";
 }
 

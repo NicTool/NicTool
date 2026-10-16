@@ -84,7 +84,9 @@ sub import {
     my $settings;
     my $file = $ENV{NICTOOL_TEST_CFG} || "test.cfg";
     -f $file or $file = "t/test.cfg";
-    -f $file or die "could not find your test.cfg file in t/test.cfg\n";
+    -f $file
+        or die "could not find t/test.cfg; run dist/setup/setup-test-env.pl "
+        . "or start the container with NICTOOL_TEST_ENV=1\n";
 
     open( F, "<", $file );
     my $c;
