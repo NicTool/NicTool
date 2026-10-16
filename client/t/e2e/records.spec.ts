@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test';
 import {
   BASE,
-  apiLogin, authGet, authPost, cookieString,
+  authPost,
   createGroup, deleteGroup, createZone, deleteZone,
   createRecord, deleteRecord, uniqueName, extractCsrf,
-  browserLogin,
+  apiCookies, clickIfPresent, frameFor, loginBodyFrame, zonePage,
 } from './helpers';
 
 test.describe('Records', () => {
@@ -14,9 +14,8 @@ test.describe('Records', () => {
   let zid: string;
 
   test.beforeAll(async ({ playwright }) => {
-    const { sessionCookie, csrfCookie } = await apiLogin(playwright);
-    cookies = cookieString(sessionCookie, csrfCookie);
-    csrfToken = csrfCookie;
+    cookies = await apiCookies(playwright);
+    csrfToken = extractCsrf(cookies);
     gid = await createGroup(playwright, cookies, 1, uniqueName('e2e_recs'));
     zid = await createZone(playwright, cookies, gid, `${uniqueName('e2e')}.test`);
   });
@@ -26,73 +25,45 @@ test.describe('Records', () => {
     await deleteGroup(playwright, cookies, 1, gid);
   });
 
+  // creates the record, checks the zone page shows `shown`, then deletes it
+  async function recordCreated(playwright: any, opts: Parameters<typeof createRecord>[4], shown?: string | RegExp) {
+    const rrid = await createRecord(playwright, cookies, gid, zid, opts);
+    expect(Number(rrid)).toBeGreaterThan(0);
+
+    if (shown !== undefined) {
+      const body = await zonePage(playwright, cookies, gid, zid);
+      if (typeof shown === 'string') expect(body).toContain(shown);
+      else expect(body).toMatch(shown);
+    }
+
+    await deleteRecord(playwright, cookies, gid, zid, rrid);
+  }
+
   // --- Basic record types ---
 
   test('create A record', async ({ playwright }) => {
-    const rrid = await createRecord(playwright, cookies, gid, zid,
-      { name: 'a-test', type: 'A', address: '192.0.2.1' });
-    expect(Number(rrid)).toBeGreaterThan(0);
-
-    const { body } = await authGet(playwright, `${BASE}/zone.cgi?nt_group_id=${gid}&nt_zone_id=${zid}`, cookies);
-    expect(body).toContain('192.0.2.1');
-
-    await deleteRecord(playwright, cookies, gid, zid, rrid);
+    await recordCreated(playwright, { name: 'a-test', type: 'A', address: '192.0.2.1' }, '192.0.2.1');
   });
 
   test('create AAAA record', async ({ playwright }) => {
-    const rrid = await createRecord(playwright, cookies, gid, zid,
-      { name: 'aaaa-test', type: 'AAAA', address: '2001:db8::1' });
-    expect(Number(rrid)).toBeGreaterThan(0);
-
-    const { body } = await authGet(playwright, `${BASE}/zone.cgi?nt_group_id=${gid}&nt_zone_id=${zid}`, cookies);
     // Address may be displayed in expanded or compressed IPv6 form
-    expect(body).toMatch(/2001:db8:.*1|2001:0db8/i);
-
-    await deleteRecord(playwright, cookies, gid, zid, rrid);
+    await recordCreated(playwright, { name: 'aaaa-test', type: 'AAAA', address: '2001:db8::1' }, /2001:db8:.*1|2001:0db8/i);
   });
 
   test('create CNAME record', async ({ playwright }) => {
-    const rrid = await createRecord(playwright, cookies, gid, zid,
-      { name: 'cname-test', type: 'CNAME', address: 'target.example.com.' });
-    expect(Number(rrid)).toBeGreaterThan(0);
-
-    const { body } = await authGet(playwright, `${BASE}/zone.cgi?nt_group_id=${gid}&nt_zone_id=${zid}`, cookies);
-    expect(body).toContain('target.example.com.');
-
-    await deleteRecord(playwright, cookies, gid, zid, rrid);
+    await recordCreated(playwright, { name: 'cname-test', type: 'CNAME', address: 'target.example.com.' }, 'target.example.com.');
   });
 
   test('create MX record with weight', async ({ playwright }) => {
-    const rrid = await createRecord(playwright, cookies, gid, zid,
-      { name: 'mx-test', type: 'MX', address: 'mail.example.com.', weight: '10' });
-    expect(Number(rrid)).toBeGreaterThan(0);
-
-    const { body } = await authGet(playwright, `${BASE}/zone.cgi?nt_group_id=${gid}&nt_zone_id=${zid}`, cookies);
-    expect(body).toContain('mail.example.com.');
-
-    await deleteRecord(playwright, cookies, gid, zid, rrid);
+    await recordCreated(playwright, { name: 'mx-test', type: 'MX', address: 'mail.example.com.', weight: '10' }, 'mail.example.com.');
   });
 
   test('create TXT record', async ({ playwright }) => {
-    const rrid = await createRecord(playwright, cookies, gid, zid,
-      { name: 'txt-test', type: 'TXT', address: 'v=spf1 include:example.com ~all' });
-    expect(Number(rrid)).toBeGreaterThan(0);
-
-    const { body } = await authGet(playwright, `${BASE}/zone.cgi?nt_group_id=${gid}&nt_zone_id=${zid}`, cookies);
-    expect(body).toContain('v=spf1');
-
-    await deleteRecord(playwright, cookies, gid, zid, rrid);
+    await recordCreated(playwright, { name: 'txt-test', type: 'TXT', address: 'v=spf1 include:example.com ~all' }, 'v=spf1');
   });
 
   test('create NS record', async ({ playwright }) => {
-    const rrid = await createRecord(playwright, cookies, gid, zid,
-      { name: 'ns-test', type: 'NS', address: 'ns1.example.com.' });
-    expect(Number(rrid)).toBeGreaterThan(0);
-
-    const { body } = await authGet(playwright, `${BASE}/zone.cgi?nt_group_id=${gid}&nt_zone_id=${zid}`, cookies);
-    expect(body).toContain('ns1.example.com.');
-
-    await deleteRecord(playwright, cookies, gid, zid, rrid);
+    await recordCreated(playwright, { name: 'ns-test', type: 'NS', address: 'ns1.example.com.' }, 'ns1.example.com.');
   });
 
   test('edit A record address', async ({ playwright }) => {
@@ -102,7 +73,7 @@ test.describe('Records', () => {
     await authPost(playwright, `${BASE}/zone.cgi`, cookies,
       `nt_group_id=${gid}&nt_zone_id=${zid}&nt_zone_record_id=${rrid}&edit_record=${rrid}&Save=Save&name=edit-test&type=A&address=192.0.2.20&ttl=3600&csrf_token=${csrfToken}`);
 
-    const { body } = await authGet(playwright, `${BASE}/zone.cgi?nt_group_id=${gid}&nt_zone_id=${zid}`, cookies);
+    const body = await zonePage(playwright, cookies, gid, zid);
     expect(body).toContain('192.0.2.20');
 
     await deleteRecord(playwright, cookies, gid, zid, rrid);
@@ -115,7 +86,7 @@ test.describe('Records', () => {
     await authPost(playwright, `${BASE}/zone.cgi`, cookies,
       `nt_group_id=${gid}&nt_zone_id=${zid}&nt_zone_record_id=${rrid}&edit_record=${rrid}&Save=Save&name=mx-edit&type=MX&address=mail.example.com.&weight=20&ttl=3600&csrf_token=${csrfToken}`);
 
-    const { body } = await authGet(playwright, `${BASE}/zone.cgi?nt_group_id=${gid}&nt_zone_id=${zid}`, cookies);
+    const body = await zonePage(playwright, cookies, gid, zid);
     expect(body).toContain('20');
 
     await deleteRecord(playwright, cookies, gid, zid, rrid);
@@ -127,7 +98,7 @@ test.describe('Records', () => {
 
     await deleteRecord(playwright, cookies, gid, zid, rrid);
 
-    const { body } = await authGet(playwright, `${BASE}/zone.cgi?nt_group_id=${gid}&nt_zone_id=${zid}`, cookies);
+    const body = await zonePage(playwright, cookies, gid, zid);
     expect(body).not.toContain('del-test');
   });
 
@@ -139,7 +110,7 @@ test.describe('Records', () => {
     const r3 = await createRecord(playwright, cookies, gid, zid,
       { name: 'multi-txt', type: 'TXT', address: 'hello world' });
 
-    const { body } = await authGet(playwright, `${BASE}/zone.cgi?nt_group_id=${gid}&nt_zone_id=${zid}`, cookies);
+    const body = await zonePage(playwright, cookies, gid, zid);
     expect(body).toContain('192.0.2.50');
     expect(body).toContain('mx.example.com.');
     expect(body).toContain('hello world');
@@ -153,7 +124,7 @@ test.describe('Records', () => {
     const rrid = await createRecord(playwright, cookies, gid, zid,
       { name: 'ttl-test', type: 'A', address: '192.0.2.60', ttl: 86400 });
 
-    const { body } = await authGet(playwright, `${BASE}/zone.cgi?nt_group_id=${gid}&nt_zone_id=${zid}`, cookies);
+    const body = await zonePage(playwright, cookies, gid, zid);
     expect(body).toContain('86400');
 
     await deleteRecord(playwright, cookies, gid, zid, rrid);
@@ -174,7 +145,7 @@ test.describe('Records', () => {
       const rrid = await createRecord(playwright, cookies, gid, revZid,
         { name: '1', type: 'PTR', address: 'host.example.com.' });
 
-      const { body } = await authGet(playwright, `${BASE}/zone.cgi?nt_group_id=${gid}&nt_zone_id=${revZid}`, cookies);
+      const body = await zonePage(playwright, cookies, gid, revZid);
       expect(body).toContain('host.example.com.');
 
       await deleteRecord(playwright, cookies, gid, revZid, rrid);
@@ -186,102 +157,51 @@ test.describe('Records', () => {
   // --- Advanced record types ---
 
   test('create SRV record', async ({ playwright }) => {
-    const rrid = await createRecord(playwright, cookies, gid, zid,
-      { name: '_sip._tcp', type: 'SRV', address: 'sip.example.com.', weight: '10', priority: '0', other: '5060' });
-    expect(Number(rrid)).toBeGreaterThan(0);
-
-    const { body } = await authGet(playwright, `${BASE}/zone.cgi?nt_group_id=${gid}&nt_zone_id=${zid}`, cookies);
-    expect(body).toContain('sip.example.com.');
-
-    await deleteRecord(playwright, cookies, gid, zid, rrid);
+    await recordCreated(playwright, { name: '_sip._tcp', type: 'SRV', address: 'sip.example.com.', weight: '10', priority: '0', other: '5060' }, 'sip.example.com.');
   });
 
   test('create CAA record', async ({ playwright }) => {
-    const rrid = await createRecord(playwright, cookies, gid, zid,
-      { name: 'caa-test', type: 'CAA', address: 'letsencrypt.org', weight: '0', other: 'issue' });
-    expect(Number(rrid)).toBeGreaterThan(0);
-
-    const { body } = await authGet(playwright, `${BASE}/zone.cgi?nt_group_id=${gid}&nt_zone_id=${zid}`, cookies);
-    expect(body).toContain('letsencrypt.org');
-
-    await deleteRecord(playwright, cookies, gid, zid, rrid);
+    await recordCreated(playwright, { name: 'caa-test', type: 'CAA', address: 'letsencrypt.org', weight: '0', other: 'issue' }, 'letsencrypt.org');
   });
 
   test('create SPF record', async ({ playwright }) => {
-    const rrid = await createRecord(playwright, cookies, gid, zid,
-      { name: 'spf-test', type: 'SPF', address: 'v=spf1 -all' });
-    expect(Number(rrid)).toBeGreaterThan(0);
-
-    const { body } = await authGet(playwright, `${BASE}/zone.cgi?nt_group_id=${gid}&nt_zone_id=${zid}`, cookies);
-    expect(body).toContain('v=spf1');
-
-    await deleteRecord(playwright, cookies, gid, zid, rrid);
+    await recordCreated(playwright, { name: 'spf-test', type: 'SPF', address: 'v=spf1 -all' }, 'v=spf1');
   });
 
   test('create LOC record', async ({ playwright }) => {
-    const rrid = await createRecord(playwright, cookies, gid, zid,
-      { name: 'loc-test', type: 'LOC', address: '51 30 12.748 N 0 7 39.612 W 0.00m' });
-    expect(Number(rrid)).toBeGreaterThan(0);
-
-    await deleteRecord(playwright, cookies, gid, zid, rrid);
+    await recordCreated(playwright, { name: 'loc-test', type: 'LOC', address: '51 30 12.748 N 0 7 39.612 W 0.00m' });
   });
 
   test('create SSHFP record', async ({ playwright }) => {
-    const rrid = await createRecord(playwright, cookies, gid, zid,
-      { name: 'sshfp-test', type: 'SSHFP', address: '123456789abcdef67890123456789abcdef67890', weight: '1', other: '1' });
-    expect(Number(rrid)).toBeGreaterThan(0);
-
-    await deleteRecord(playwright, cookies, gid, zid, rrid);
+    await recordCreated(playwright, { name: 'sshfp-test', type: 'SSHFP', address: '123456789abcdef67890123456789abcdef67890', weight: '1', other: '1' });
   });
 
   test('create NAPTR record', async ({ playwright }) => {
-    const rrid = await createRecord(playwright, cookies, gid, zid,
-      { name: 'naptr-test', type: 'NAPTR', address: '!^.*$!sip:info@example.com!', weight: '100', priority: '10', other: 'u' });
-    expect(Number(rrid)).toBeGreaterThan(0);
-
-    await deleteRecord(playwright, cookies, gid, zid, rrid);
+    await recordCreated(playwright, { name: 'naptr-test', type: 'NAPTR', address: '!^.*$!sip:info@example.com!', weight: '100', priority: '10', other: 'u' });
   });
 
   test('create DNAME record', async ({ playwright }) => {
-    const rrid = await createRecord(playwright, cookies, gid, zid,
-      { name: 'dname-test', type: 'DNAME', address: 'other.example.com.' });
-    expect(Number(rrid)).toBeGreaterThan(0);
-
-    const { body } = await authGet(playwright, `${BASE}/zone.cgi?nt_group_id=${gid}&nt_zone_id=${zid}`, cookies);
-    expect(body).toContain('other.example.com.');
-
-    await deleteRecord(playwright, cookies, gid, zid, rrid);
+    await recordCreated(playwright, { name: 'dname-test', type: 'DNAME', address: 'other.example.com.' }, 'other.example.com.');
   });
 
   test('RR type selector dynamically shows/hides fields', async ({ page }) => {
-    await browserLogin(page);
-
-    const bodyFrame = page.frames().find(f => f.url().includes('group.cgi'));
-    expect(bodyFrame).toBeTruthy();
+    const bodyFrame = await loginBodyFrame(page);
 
     // Navigate to zones
-    const zonesLink = bodyFrame!.locator('a:has-text("Zones")');
-    if (await zonesLink.count() > 0) {
-      await zonesLink.first().click();
-      await page.waitForTimeout(1500);
-    }
+    await clickIfPresent(page, bodyFrame, 'a:has-text("Zones")');
 
     // Find a zone to click into - or just verify the type selector exists on a zone page
-    const zonesFrame = page.frames().find(f => f.url().includes('group_zones.cgi'));
+    const zonesFrame = frameFor(page, 'group_zones.cgi');
     if (zonesFrame) {
       const zoneLink = zonesFrame.locator('a[href*="nt_zone_id="]').first();
       if (await zoneLink.count() > 0) {
         await zoneLink.click();
         await page.waitForTimeout(1500);
 
-        const zoneFrame = page.frames().find(f => f.url().includes('zone.cgi'));
+        const zoneFrame = frameFor(page, 'zone.cgi');
         if (zoneFrame) {
           // Look for the "New Record" link/area
-          const newRecLink = zoneFrame.locator('a:has-text("New Resource Record")');
-          if (await newRecLink.count() > 0) {
-            await newRecLink.first().click();
-            await page.waitForTimeout(1500);
-          }
+          await clickIfPresent(page, zoneFrame, 'a:has-text("New Resource Record")');
 
           const typeSelect = zoneFrame.locator('select[name="type"]');
           if (await typeSelect.count() > 0) {

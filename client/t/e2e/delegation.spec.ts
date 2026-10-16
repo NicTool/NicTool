@@ -1,13 +1,17 @@
 import { test, expect } from '@playwright/test';
 import {
-  BASE, GROUP_DEFAULTS,
-  apiLogin, authGet, authPost, cookieString,
+  BASE,
+  authGet, authPost,
   createGroup, deleteGroup, createZone, deleteZone,
   createRecord, deleteRecord, createUser, deleteUser,
   uniqueName, extractCsrf,
+  apiCookies,
 } from './helpers';
 
 test.describe('Delegation', () => {
+  const WRITE_PERMS = 'perm_write=1&perm_delete=0&perm_delegate=0&zone_perm_add_records=1&zone_perm_delete_records=1';
+  const NO_PERMS = 'perm_write=0&perm_delete=0&perm_delegate=0&zone_perm_add_records=0&zone_perm_delete_records=0';
+
   let cookies: string;
   let csrfToken: string;
   let parentGid: string;
@@ -17,9 +21,8 @@ test.describe('Delegation', () => {
   let zoneName: string;
 
   test.beforeAll(async ({ playwright }) => {
-    const { sessionCookie, csrfCookie } = await apiLogin(playwright);
-    cookies = cookieString(sessionCookie, csrfCookie);
-    csrfToken = csrfCookie;
+    cookies = await apiCookies(playwright);
+    csrfToken = extractCsrf(cookies);
 
     parentGid = await createGroup(playwright, cookies, 1, uniqueName('e2e_deleg_parent'));
     childGroupName = uniqueName('e2e_deleg_child');
@@ -34,10 +37,15 @@ test.describe('Delegation', () => {
     await deleteGroup(playwright, cookies, 1, parentGid);
   });
 
+  // Save delegates the zone to the child group; Modify changes that delegation
+  function delegateZone(playwright: any, action: 'Save' | 'Modify', perms: string) {
+    const target = action === 'Save' ? `group_list=${childGid}` : `nt_group_id=${childGid}`;
+    return authPost(playwright, `${BASE}/delegate_zones.cgi`, cookies,
+      `${action}=${action}&${target}&obj_list=${zid}&type=zone&${perms}&csrf_token=${csrfToken}`);
+  }
+
   test('delegate zone to child group', async ({ playwright }) => {
-    // Save=Save, group_list=target, obj_list=zid, type=zone, permissions
-    const { body } = await authPost(playwright, `${BASE}/delegate_zones.cgi`, cookies,
-      `Save=Save&group_list=${childGid}&obj_list=${zid}&type=zone&perm_write=1&perm_delete=0&perm_delegate=0&zone_perm_add_records=1&zone_perm_delete_records=1&csrf_token=${csrfToken}`);
+    const { body } = await delegateZone(playwright, 'Save', WRITE_PERMS);
     expect(body.toLowerCase()).not.toContain('error_code');
   });
 
@@ -54,16 +62,13 @@ test.describe('Delegation', () => {
   });
 
   test('edit zone delegation permissions', async ({ playwright }) => {
-    // Modify=Modify to edit existing delegation
-    const { body } = await authPost(playwright, `${BASE}/delegate_zones.cgi`, cookies,
-      `Modify=Modify&nt_group_id=${childGid}&obj_list=${zid}&type=zone&perm_write=0&perm_delete=0&perm_delegate=0&zone_perm_add_records=0&zone_perm_delete_records=0&csrf_token=${csrfToken}`);
+    const { body } = await delegateZone(playwright, 'Modify', NO_PERMS);
     expect(body.toLowerCase()).not.toContain('error_code');
   });
 
   test('remove zone delegation', async ({ playwright }) => {
     // Re-delegate first
-    await authPost(playwright, `${BASE}/delegate_zones.cgi`, cookies,
-      `Save=Save&group_list=${childGid}&obj_list=${zid}&type=zone&perm_write=1&perm_delete=0&perm_delegate=0&zone_perm_add_records=1&zone_perm_delete_records=1&csrf_token=${csrfToken}`);
+    await delegateZone(playwright, 'Save', WRITE_PERMS);
 
     // Remove=Remove
     const { body } = await authPost(playwright, `${BASE}/delegate_zones.cgi`, cookies,
@@ -71,8 +76,7 @@ test.describe('Delegation', () => {
     expect(body.toLowerCase()).not.toContain('error_code');
 
     // Re-delegate for subsequent tests
-    await authPost(playwright, `${BASE}/delegate_zones.cgi`, cookies,
-      `Save=Save&group_list=${childGid}&obj_list=${zid}&type=zone&perm_write=1&perm_delete=0&perm_delegate=0&zone_perm_add_records=1&zone_perm_delete_records=1&csrf_token=${csrfToken}`);
+    await delegateZone(playwright, 'Save', WRITE_PERMS);
   });
 
   test('delegate record to child group', async ({ playwright }) => {
@@ -94,12 +98,10 @@ test.describe('Delegation', () => {
 
     try {
       // Ensure zone is delegated with write + add_records permission
-      await authPost(playwright, `${BASE}/delegate_zones.cgi`, cookies,
-        `Save=Save&group_list=${childGid}&obj_list=${zid}&type=zone&perm_write=1&perm_delete=0&perm_delegate=0&zone_perm_add_records=1&zone_perm_delete_records=1&csrf_token=${csrfToken}`);
+      await delegateZone(playwright, 'Save', WRITE_PERMS);
 
       // Login as child user
-      const childLogin = await apiLogin(playwright, `${username}@${childGroupName}`, 'delegtest123!');
-      const childCookies = cookieString(childLogin.sessionCookie, childLogin.csrfCookie);
+      const childCookies = await apiCookies(playwright, `${username}@${childGroupName}`, 'delegtest123!');
 
       // Should be able to create a record in the delegated zone
       const rrid = await createRecord(playwright, childCookies, childGid, zid,
@@ -117,22 +119,19 @@ test.describe('Delegation', () => {
 
     try {
       // Delegate zone with NO write, NO add_records permission
-      await authPost(playwright, `${BASE}/delegate_zones.cgi`, cookies,
-        `Modify=Modify&nt_group_id=${childGid}&obj_list=${zid}&type=zone&perm_write=0&perm_delete=0&perm_delegate=0&zone_perm_add_records=0&zone_perm_delete_records=0&csrf_token=${csrfToken}`);
+      await delegateZone(playwright, 'Modify', NO_PERMS);
 
       // Login as child user
-      const childLogin = await apiLogin(playwright, `${username}@${childGroupName}`, 'delegtest123!');
-      const childCookies = cookieString(childLogin.sessionCookie, childLogin.csrfCookie);
+      const childCookies = await apiCookies(playwright, `${username}@${childGroupName}`, 'delegtest123!');
 
       // Trying to add a record should fail
       const { body } = await authPost(playwright, `${BASE}/zone.cgi`, childCookies,
-        `nt_group_id=${childGid}&nt_zone_id=${zid}&new_record=1&Create=Create&name=nowrite&type=A&address=192.0.2.32&ttl=3600&csrf_token=${childLogin.csrfCookie}`);
+        `nt_group_id=${childGid}&nt_zone_id=${zid}&new_record=1&Create=Create&name=nowrite&type=A&address=192.0.2.32&ttl=3600&csrf_token=${extractCsrf(childCookies)}`);
       expect(body.toLowerCase()).toMatch(/error|permission|denied|not allowed|access/i);
     } finally {
       await deleteUser(playwright, cookies, childGid, uid);
       // Restore delegation with write
-      await authPost(playwright, `${BASE}/delegate_zones.cgi`, cookies,
-        `Modify=Modify&nt_group_id=${childGid}&obj_list=${zid}&type=zone&perm_write=1&perm_delete=0&perm_delegate=0&zone_perm_add_records=1&zone_perm_delete_records=1&csrf_token=${csrfToken}`);
+      await delegateZone(playwright, 'Modify', WRITE_PERMS);
     }
   });
 });

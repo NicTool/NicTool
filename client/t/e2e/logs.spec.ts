@@ -1,9 +1,10 @@
 import { test, expect } from '@playwright/test';
 import {
   BASE,
-  apiLogin, authGet, authPost, cookieString,
+  authGet,
   createGroup, deleteGroup, createZone, deleteZone,
   createRecord, deleteRecord, uniqueName, extractCsrf,
+  apiCookies,
 } from './helpers';
 
 test.describe('Logs', () => {
@@ -12,9 +13,8 @@ test.describe('Logs', () => {
   let gid: string;
 
   test.beforeAll(async ({ playwright }) => {
-    const { sessionCookie, csrfCookie } = await apiLogin(playwright);
-    cookies = cookieString(sessionCookie, csrfCookie);
-    csrfToken = csrfCookie;
+    cookies = await apiCookies(playwright);
+    csrfToken = extractCsrf(cookies);
     gid = await createGroup(playwright, cookies, 1, uniqueName('e2e_logs'));
   });
 

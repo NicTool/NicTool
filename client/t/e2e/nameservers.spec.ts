@@ -1,9 +1,10 @@
 import { test, expect } from '@playwright/test';
 import {
   BASE,
-  apiLogin, authGet, authPost, cookieString,
+  authGet, authPost,
   createGroup, deleteGroup, createNameserver, deleteNameserver,
-  uniqueName, uniqueNsName, extractCsrf, browserLogin,
+  uniqueName, uniqueNsName, extractCsrf,
+  apiCookies, clickIfPresent, frameFor, loginBodyFrame,
 } from './helpers';
 
 test.describe('Nameservers', () => {
@@ -12,9 +13,8 @@ test.describe('Nameservers', () => {
   let gid: string;
 
   test.beforeAll(async ({ playwright }) => {
-    const { sessionCookie, csrfCookie } = await apiLogin(playwright);
-    cookies = cookieString(sessionCookie, csrfCookie);
-    csrfToken = csrfCookie;
+    cookies = await apiCookies(playwright);
+    csrfToken = extractCsrf(cookies);
     gid = await createGroup(playwright, cookies, 1, uniqueName('e2e_ns'));
   });
 
@@ -98,26 +98,15 @@ test.describe('Nameservers', () => {
   });
 
   test('export format selector changes form fields', async ({ page }) => {
-    await browserLogin(page);
+    const bodyFrame = await loginBodyFrame(page);
 
-    const bodyFrame = page.frames().find(f => f.url().includes('group.cgi'));
-    expect(bodyFrame).toBeTruthy();
+    await clickIfPresent(page, bodyFrame, 'a:has-text("Nameservers")');
 
-    const nsLink = bodyFrame!.locator('a:has-text("Nameservers")');
-    if (await nsLink.count() > 0) {
-      await nsLink.first().click();
-      await page.waitForTimeout(1500);
-    }
-
-    const nsFrame = page.frames().find(f => f.url().includes('group_nameservers.cgi'));
+    const nsFrame = frameFor(page, 'group_nameservers.cgi');
     if (nsFrame) {
-      const newNsLink = nsFrame.locator('a:has-text("New Nameserver")');
-      if (await newNsLink.count() > 0) {
-        await newNsLink.first().click();
-        await page.waitForTimeout(1500);
-      }
+      await clickIfPresent(page, nsFrame, 'a:has-text("New Nameserver")');
 
-      const formFrame = page.frames().find(f => f.url().includes('group_nameservers.cgi'));
+      const formFrame = frameFor(page, 'group_nameservers.cgi');
       if (formFrame) {
         const formatSelect = formFrame.locator('select[name="export_format"]');
         if (await formatSelect.count() > 0) {

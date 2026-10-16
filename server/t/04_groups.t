@@ -49,67 +49,34 @@ sub do_tests {
 
 sub delete_test_groups {
 
-    if ( defined $gid3 ) {
-        $res = $user->delete_group( nt_group_id => $gid3 );
-        noerrok($res);
-    }
-    else {
-        ok(0);
-    }
-    if ( defined $gid1 ) {
-        $res = $user->delete_group( nt_group_id => $gid1 );
-        noerrok($res);
-    }
-    else {
-        ok(0);
-    }
-    if ( defined $gid2 ) {
-        $res = $user->delete_group( nt_group_id => $gid2 );
-        noerrok($res);
-    }
-    else {
-        ok(0);
+    for my $gid ( $gid3, $gid1, $gid2 ) {
+        if ( defined $gid ) {
+            $res = $user->delete_group( nt_group_id => $gid );
+            noerrok($res);
+        }
+        else {
+            ok(0);
+        }
     }
 }
 
 sub test_group_new {
 
-    # nt_group_id empty
-    $res = $user->new_group( name => 'test_delete_me1', nt_group_id => '' );
-    noerrok( $res, 301 );
-    is( $res->get('error_msg'), 'nt_group_id' );
-    ok( $res->get('error_desc') =~ qr/Required parameters missing/ );
-    if ( !$res->is_error ) {
-        $res = $user->delete_group( nt_group_id => $res->get('nt_group_id') );
-    }
-
-    # nt_group_id not integer
-    $res = $user->new_group( name => 'test_delete_me1', nt_group_id => 'abc' );
-    noerrok( $res, 302 );
-    is( $res->get('error_msg'), 'nt_group_id' );
-    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
-    if ( !$res->is_error ) {
-        $res = $user->delete_group( nt_group_id => $res->get('nt_group_id') );
-    }
-
-    # nt_group_id invalid
-    $res = $user->new_group( name => 'test_delete_me1', nt_group_id => 0 );
-    noerrok( $res, 302 );
-    is( $res->get('error_msg'), 'nt_group_id' );
-    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
-    if ( !$res->is_error ) {
-        $res = $user->delete_group( nt_group_id => $res->get('nt_group_id') );
-    }
+    bad_id_ok(
+        'nt_group_id',
+        sub {
+            my $res = $user->new_group( name => 'test_delete_me1', nt_group_id => shift );
+            $user->delete_group( nt_group_id => $res->get('nt_group_id') ) if !$res->is_error;
+            return $res;
+        }
+    );
 
     ####################
     # make test groups #
     ####################
 
-    $res = $user->new_group( name => 'test_delete_me1' );
-    noerrok($res) or die "Couldn't create test group1";
-    ok( $res->get('nt_group_id') =~ qr/^\d+$/ )
-        or die "Couldn't create test group1";
-    $gid1 = $res->get('nt_group_id');
+    $gid1 = new_id_ok( $user->new_group( name => 'test_delete_me1' ),
+        'nt_group_id', "Couldn't create test group1" );
 
     $res = $user->new_group( name => 'test_delete_me2' );
     noerrok($res) or die "Couldn't create test group2";
@@ -122,9 +89,7 @@ sub test_group_new {
     ####################
 
     $res = $user->new_group( name => 'test_delete_me1' );
-    noerrok( $res, 300 );
-    ok( $res->get('error_msg')  =~ qr/Group name is already taken at this level/ );
-    ok( $res->get('error_desc') =~ qr/Sanity error/ );
+    sanity_error_ok( $res, qr/Group name is already taken at this level/ );
     if ( !$res->is_error ) {
         $res = $user->delete_group( nt_group_id => $res->get('nt_group_id') );
     }
@@ -132,31 +97,14 @@ sub test_group_new {
 
 sub test_get_group {
 
-    # nt_group_id empty
-    $group1 = $user->get_group( nt_group_id => '' );
-    noerrok( $group1, 301 );
-    is( $group1->get('error_msg'), 'nt_group_id' );
-    ok( $group1->get('error_desc') =~ qr/Required parameters missing/ );
-
-    # nt_group_id not valid integer
-    $group1 = $user->get_group( nt_group_id => 'abc' );
-    noerrok( $group1, 302 );
-    is( $group1->get('error_msg'), 'nt_group_id' );
-    ok( $group1->get('error_desc') =~ qr/Some parameters were invalid/ );
-
-    #no nt_group_id
-    $group1 = $user->get_group( nt_group_id => 0 );    # not valid id
-    noerrok( $group1, 302 );
-    is( $group1->get('error_msg'), 'nt_group_id' );
-    ok( $group1->get('error_desc') =~ qr/Some parameters were invalid/ );
+    bad_id_ok( 'nt_group_id', sub { $user->get_group( nt_group_id => shift ) } );
 
     ####################
     # get test group   #
     ####################
 
-    $group1 = $user->get_group( nt_group_id => $gid1 );
-    noerrok($group1) or die "Couldn't get test group1";
-    is( $group1->id,                     $gid1 ) or die "Couldn't get test group1";
+    $group1 =
+        fetched_ok( $user->get_group( nt_group_id => $gid1 ), $gid1, "Couldn't get test group1" );
     is( $group1->get('name'),            'test_delete_me1' );
     is( $group1->get('parent_group_id'), $user->get('nt_group_id') );
 }
@@ -170,17 +118,7 @@ sub test_group_get_fn {
     ok( $res->get('error_msg'), 'nt_group_id' );
     ok( $res->get('error_desc') =~ qr/Required parameters missing/ );
 
-    # nt_group_id not integer
-    $res = $user->$fn( nt_group_id => 'abc' );
-    noerrok( $res, 302 );
-    is( $res->get('error_msg'), 'nt_group_id' );
-    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
-
-    # nt_group_id invalid
-    $res = $user->$fn( nt_group_id => 0 );
-    noerrok( $res, 302 );
-    is( $res->get('error_msg'), 'nt_group_id' );
-    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
+    bad_id_ok( 'nt_group_id', sub { $user->$fn( nt_group_id => shift ) }, 'abc', 0 );
 
     ####################
     # get groups of user's group, should contain the 2 test groups
@@ -208,23 +146,7 @@ sub test_group_get_fn {
 
 sub test_group_get_branch {
 
-    # nt_group_id empty
-    $res = $user->get_group_branch( nt_group_id => '' );
-    noerrok( $res, 301 );
-    is( $res->get('error_msg'), 'nt_group_id' );
-    ok( $res->get('error_desc') =~ qr/Required parameters missing/ );
-
-    # nt_group_id not integer
-    $res = $user->get_group_branch( nt_group_id => 'abc' );
-    noerrok( $res, 302 );
-    is( $res->get('error_msg'), 'nt_group_id' );
-    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
-
-    # nt_group_id not valid
-    $res = $user->get_group_branch( nt_group_id => 0 );
-    noerrok( $res, 302 );
-    is( $res->get('error_msg'), 'nt_group_id' );
-    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
+    bad_id_ok( 'nt_group_id', sub { $user->get_group_branch( nt_group_id => shift ) } );
 
     ####################
     # get groups of user's group, should contain the 2 test groups
@@ -251,29 +173,11 @@ sub test_group_get_branch {
 
 sub test_group_edit {
 
-    #no group id
-    $res = $group1->edit_group( nt_group_id => '' );
-    noerrok( $res, 301 );
-    is( $res->get('error_msg'), 'nt_group_id' );
-    ok( $res->get('error_desc') =~ qr/Required parameters missing/ );
-
-    #no group id
-    $res = $group1->edit_group( nt_group_id => 'abc' );    #not an integer
-    noerrok( $res, 302 );
-    is( $res->get('error_msg'), 'nt_group_id' );
-    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
-
-    #no group id
-    $res = $group1->edit_group( nt_group_id => 0 );        #not valid id
-    noerrok( $res, 302 );
-    is( $res->get('error_msg'), 'nt_group_id' );
-    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
+    bad_id_ok( 'nt_group_id', sub { $group1->edit_group( nt_group_id => shift ) } );
 
     #group name already taken
     $res = $group1->edit_group( name => 'test_delete_me2' );
-    noerrok( $res, 300 );
-    ok( $res->get('error_msg')  =~ qr/Group name is already taken at this level/ );
-    ok( $res->get('error_desc') =~ qr/Sanity error/ );
+    sanity_error_ok( $res, qr/Group name is already taken at this level/ );
 
     ####################
     # edit test group  #
@@ -291,23 +195,7 @@ sub test_group_edit {
 
 sub test_group_delete {
 
-    # no group id
-    $res = $user->delete_group( nt_group_id => '' );
-    noerrok( $res, 301 );
-    is( $res->get('error_msg'), 'nt_group_id' );
-    ok( $res->get('error_desc') =~ qr/Required parameters missing/ );
-
-    # group id not integer
-    $res = $user->delete_group( nt_group_id => 'abc' );
-    noerrok( $res, 302 );
-    is( $res->get('error_msg'), 'nt_group_id' );
-    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
-
-    # group id invalid
-    $res = $user->delete_group( nt_group_id => 0 );
-    noerrok( $res, 302 );
-    is( $res->get('error_msg'), 'nt_group_id' );
-    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
+    bad_id_ok( 'nt_group_id', sub { $user->delete_group( nt_group_id => shift ) } );
 
     # make new subgroup, try to delete parent group
     $res = $group1->new_group( name => 'test_delete_me3' );

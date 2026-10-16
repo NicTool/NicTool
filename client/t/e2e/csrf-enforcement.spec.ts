@@ -1,9 +1,10 @@
 import { test, expect } from '@playwright/test';
 import {
-  apiLogin, cookieString, authGet, authPost,
+  authGet, authPost,
   createGroup, createZone, createRecord, createUser, createNameserver,
   deleteGroup, deleteZone, deleteRecord, deleteUser, deleteNameserver,
   findInListing, uniqueName, uniqueNsName, extractCsrf, BASE, GROUP_DEFAULTS,
+  apiCookies,
 } from './helpers';
 
 // ---------------------------------------------------------------------------
@@ -32,8 +33,7 @@ test.describe('Mutating endpoints reject requests without a csrf_token', () => {
   let nsName: string;
 
   test.beforeAll(async ({ playwright }) => {
-    const login = await apiLogin(playwright);
-    cookies = cookieString(login.sessionCookie, login.csrfCookie);
+    cookies = await apiCookies(playwright);
 
     groupName = uniqueName('csrfenf');
     gid = await createGroup(playwright, cookies, 1, groupName);

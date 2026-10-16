@@ -1,7 +1,8 @@
 import { test, expect } from '@playwright/test';
 import {
-  BASE, USERNAME, PASSWORD,
+  BASE, USERNAME,
   freshCtx, getLoginCsrf, apiLogin, authGet, cookieString,
+  apiCookies, extractCsrf, postLogin,
 } from './helpers';
 
 test.describe('Authentication', () => {
@@ -16,13 +17,8 @@ test.describe('Authentication', () => {
     const ctx = await freshCtx(playwright);
     const { csrfToken, csrfCookie } = await getLoginCsrf(ctx);
 
-    const res = await ctx.post(`${BASE}/index.cgi`, {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Cookie': `NicTool_csrf=${csrfCookie}`,
-      },
-      data: `username=${USERNAME}&password=wrongpassword&login=Enter&csrf_token=${csrfToken}`,
-    });
+    const res = await postLogin(ctx, csrfCookie,
+      `username=${USERNAME}&password=wrongpassword&login=Enter&csrf_token=${csrfToken}`);
 
     const body = await res.text();
     const setCookies = res.headersArray().filter(h => h.name.toLowerCase() === 'set-cookie');
@@ -38,13 +34,7 @@ test.describe('Authentication', () => {
     const ctx = await freshCtx(playwright);
     const { csrfToken, csrfCookie } = await getLoginCsrf(ctx);
 
-    const res = await ctx.post(`${BASE}/index.cgi`, {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Cookie': `NicTool_csrf=${csrfCookie}`,
-      },
-      data: `username=&password=&login=Enter&csrf_token=${csrfToken}`,
-    });
+    const res = await postLogin(ctx, csrfCookie, `username=&password=&login=Enter&csrf_token=${csrfToken}`);
 
     const body = await res.text();
     expect(body.toLowerCase()).not.toContain('<frameset');
@@ -52,8 +42,8 @@ test.describe('Authentication', () => {
   });
 
   test('logout invalidates session', async ({ playwright }) => {
-    const { sessionCookie, csrfCookie } = await apiLogin(playwright);
-    const cookies = cookieString(sessionCookie, csrfCookie);
+    const cookies = await apiCookies(playwright);
+    const csrfCookie = extractCsrf(cookies);
 
     // Verify session works first
     const { body: before } = await authGet(playwright, `${BASE}/group.cgi?nt_group_id=1`, cookies);
@@ -69,8 +59,7 @@ test.describe('Authentication', () => {
   });
 
   test('logout rejects a missing or forged csrf_token', async ({ playwright }) => {
-    const { sessionCookie, csrfCookie } = await apiLogin(playwright);
-    const cookies = cookieString(sessionCookie, csrfCookie);
+    const cookies = await apiCookies(playwright);
 
     // The nav bar's logout link only renders for an authenticated request, so
     // it marks a surviving session. Do not assert on 'NicTool' here: the login
@@ -94,8 +83,7 @@ test.describe('Authentication', () => {
   });
 
   test('session persists across multiple requests', async ({ playwright }) => {
-    const { sessionCookie, csrfCookie } = await apiLogin(playwright);
-    const cookies = cookieString(sessionCookie, csrfCookie);
+    const cookies = await apiCookies(playwright);
 
     const { body: r1 } = await authGet(playwright, `${BASE}/group.cgi?nt_group_id=1`, cookies);
     expect(r1).toContain('NicTool');

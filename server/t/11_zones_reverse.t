@@ -42,9 +42,8 @@ sub doit {
         or die "Couldn't create test group";
     $gid1 = $res->get('nt_group_id');
 
-    $group1 = $user->get_group( nt_group_id => $gid1 );
-    noerrok($group1) && is( $group1->id, $gid1 )
-        or die "Couldn't get test group1";
+    $group1 =
+        fetched_ok( $user->get_group( nt_group_id => $gid1 ), $gid1, "Couldn't get test group1" );
 
     %z1 = (
         zone        => $rzone,
@@ -68,8 +67,7 @@ sub doit {
     ####################
 
     $zone1 = $user->get_zone( nt_zone_id => $zid1 );
-    noerrok($zone1) && is( $zone1->id, $zid1 )
-        or die "Couldn't get test zone $zid1 : " . errtext($zone1);
+    fetched_ok( $zone1, $zid1, "Couldn't get test zone $zid1 : " . errtext($zone1) );
 
     for (qw(zone serial ttl description mailaddr refresh retry expire minimum)) {
         is( $zone1->get($_), $z1{$_} );

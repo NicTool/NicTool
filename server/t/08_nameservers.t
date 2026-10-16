@@ -40,8 +40,8 @@ use Test::More 'no_plan';
 use DBI;
 use NicToolServer::Nameserver::Sanity;
 
-my ( $gid1, $gid2, $group1, $group2, $nsid1, $nsid2, $ns1, $ns2, @u, $res );
-my ( %name, %address, %ttl, %export_format );
+my ( $gid1, $gid2, $group1, $group2, $nsid1, $nsid2, $ns1, $ns2, $res );
+my %ns;
 
 my $user = nt_api_connect();
 
@@ -76,62 +76,43 @@ sub cleanup {
     ####################
 
     #$user->config(debug_request=>1,debug_response=>1);
-    if ( defined $nsid1 ) {
-        my $res = $user->delete_nameserver( nt_nameserver_id => $nsid1 );
-        noerrok($res) or diag Data::Dumper::Dumper($res);
-    }
-    else {
-        is( 1, 0, "Couldn't delete test nameserver1" );
-    }
-    if ( defined $nsid2 ) {
-        my $res = $user->delete_nameserver( nt_nameserver_id => $nsid2 );
-        noerrok($res) or diag Data::Dumper::Dumper($res);
-    }
-    else {
-        is( 1, 0, "Couldn't delete test nameserver2" );
+    for ( [ $nsid1, 'nameserver1' ], [ $nsid2, 'nameserver2' ] ) {
+        my ( $nsid, $label ) = @$_;
+        if ( defined $nsid ) {
+            my $res = $user->delete_nameserver( nt_nameserver_id => $nsid );
+            noerrok($res) or diag Data::Dumper::Dumper($res);
+        }
+        else {
+            is( 1, 0, "Couldn't delete test $label" );
+        }
     }
 
     ####################
     # cleanup support groups
     ####################
 
-    if ( defined $gid1 ) {
-        my $res = $user->delete_group( nt_group_id => $gid1 );
-        noerrok($res);
-    }
-    else {
-        is( 1, 0, "Couldn't delete test group1" );
-    }
-    if ( defined $gid2 ) {
-        my $res = $user->delete_group( nt_group_id => $gid2 );
-        noerrok($res);
-    }
-    else {
-        is( 1, 0, "Couldn't delete test group2" );
+    for ( [ $gid1, 'group1' ], [ $gid2, 'group2' ] ) {
+        my ( $gid, $label ) = @$_;
+        if ( defined $gid ) {
+            noerrok( $user->delete_group( nt_group_id => $gid ) );
+        }
+        else {
+            is( 1, 0, "Couldn't delete test $label" );
+        }
     }
 }
 
 sub test_new_group {
 
-    #make a new group
-    my $res = $user->get_group->new_group( name => 'test_delete_me1' );
-    noerrok($res) && ok( $res->get('nt_group_id') =~ qr/^\d+$/ )
-        or die "Couldn't create test group1";
-    $gid1 = $res->get('nt_group_id');
+    $gid1 = new_id_ok( $user->get_group->new_group( name => 'test_delete_me1' ),
+        'nt_group_id', "Couldn't create test group1" );
+    $group1 =
+        fetched_ok( $user->get_group( nt_group_id => $gid1 ), $gid1, "Couldn't get test group1" );
 
-    $group1 = $user->get_group( nt_group_id => $gid1 );
-    noerrok($group1) && is( $group1->id, $gid1 )
-        or die "Couldn't get test group1";
-
-    #make a new group
-    $res = $user->get_group->new_group( name => 'test_delete_me2' );
-    noerrok($res) && ok( $res->get('nt_group_id') =~ qr/^\d+$/ )
-        or die "Couldn't create test group2";
-    $gid2 = $res->get('nt_group_id');
-
-    $group2 = $user->get_group( nt_group_id => $gid2 );
-    noerrok($group2) && is( $group2->id, $gid2 )
-        or die "Couldn't get test group2";
+    $gid2 = new_id_ok( $user->get_group->new_group( name => 'test_delete_me2' ),
+        'nt_group_id', "Couldn't create test group2" );
+    $group2 =
+        fetched_ok( $user->get_group( nt_group_id => $gid2 ), $gid2, "Couldn't get test group2" );
 }
 
 sub test_new_nameserver {
@@ -146,9 +127,7 @@ sub test_new_nameserver {
         export_format => 'bind',
         ttl           => 86400
     );
-    noerrok($res) && ok( $res->get('nt_nameserver_id') =~ qr/^\d+$/ )
-        or die "couldn't make test nameserver";
-    $nsid1 = $res->get('nt_nameserver_id');
+    $nsid1 = new_id_ok( $res, 'nt_nameserver_id', "couldn't make test nameserver" );
 
     $res = $group1->new_nameserver(
         name          => 'ns2.somewhere.com.',
@@ -156,85 +135,34 @@ sub test_new_nameserver {
         export_format => 'djbdns',
         ttl           => 86401
     );
-    noerrok($res) && ok( $res->get('nt_nameserver_id') =~ qr/^\d+$/ )
-        or die "couldn't make test nameserver";
-    $nsid2 = $res->get('nt_nameserver_id');
+    $nsid2 = new_id_ok( $res, 'nt_nameserver_id', "couldn't make test nameserver" );
 }
 
 sub test_invalid_export_paths {
 
-    # path traversal in datadir
-    my $res = $group1->new_nameserver(
-        name          => 'badns1.somewhere.com.',
-        address       => '1.2.3.99',
-        export_format => 'bind',
-        datadir       => '/srv/exports/../etc',
-    );
-    noerrok( $res, 300 );
-    like( $res->get('error_msg'), qr/datadir.*traversal/ );
-
-    # double-slash in datadir
-    $res = $group1->new_nameserver(
-        name          => 'badns1.somewhere.com.',
-        address       => '1.2.3.99',
-        export_format => 'bind',
-        datadir       => '/srv//exports',
-    );
-    noerrok( $res, 300 );
-    like( $res->get('error_msg'), qr/datadir.*empty path/ );
-
-    # relative path is rejected
-    $res = $group1->new_nameserver(
-        name          => 'badns1.somewhere.com.',
-        address       => '1.2.3.99',
-        export_format => 'bind',
-        datadir       => 'relative/path',
-    );
-    noerrok( $res, 300 );
-    like( $res->get('error_msg'), qr/datadir.*absolute/ );
-
-    # shell metacharacters in datadir
-    $res = $group1->new_nameserver(
-        name          => 'badns1.somewhere.com.',
-        address       => '1.2.3.99',
-        export_format => 'bind',
-        datadir       => '/srv/exports;rm -rf /',
-    );
-    noerrok( $res, 300 );
-    like( $res->get('error_msg'), qr/datadir/ );
-
-    # path traversal in logdir
-    $res = $group1->new_nameserver(
-        name          => 'badns1.somewhere.com.',
-        address       => '1.2.3.99',
-        export_format => 'bind',
-        logdir        => '/var/log/../etc',
-    );
-    noerrok( $res, 300 );
-    like( $res->get('error_msg'), qr/logdir.*traversal/ );
-
-    # bad remote_login (shell meta)
-    $res = $group1->new_nameserver(
-        name          => 'badns1.somewhere.com.',
-        address       => '1.2.3.99',
-        export_format => 'bind',
-        remote_login  => 'user; rm -rf /',
-    );
-    noerrok( $res, 300 );
-    like( $res->get('error_msg'), qr/remote_login/ );
-
-    # bad remote_login (leading digit)
-    $res = $group1->new_nameserver(
-        name          => 'badns1.somewhere.com.',
-        address       => '1.2.3.99',
-        export_format => 'bind',
-        remote_login  => '1baduser',
-    );
-    noerrok( $res, 300 );
-    like( $res->get('error_msg'), qr/remote_login/ );
+    for (
+        [ datadir      => '/srv/exports/../etc',   qr/datadir.*traversal/ ],
+        [ datadir      => '/srv//exports',         qr/datadir.*empty path/ ],
+        [ datadir      => 'relative/path',         qr/datadir.*absolute/ ],
+        [ datadir      => '/srv/exports;rm -rf /', qr/datadir/ ],
+        [ logdir       => '/var/log/../etc',       qr/logdir.*traversal/ ],
+        [ remote_login => 'user; rm -rf /',        qr/remote_login/ ],
+        [ remote_login => '1baduser',              qr/remote_login/ ],
+        )
+    {
+        my ( $field, $value, $error ) = @$_;
+        my $res = $group1->new_nameserver(
+            name          => 'badns1.somewhere.com.',
+            address       => '1.2.3.99',
+            export_format => 'bind',
+            $field        => $value,
+        );
+        noerrok( $res, 300 );
+        like( $res->get('error_msg'), $error );
+    }
 
     # valid paths and remote_login pass
-    $res = $group1->new_nameserver(
+    my $res = $group1->new_nameserver(
         name          => 'goodns.somewhere.com.',
         address       => '1.2.3.98',
         export_format => 'bind',
@@ -258,200 +186,105 @@ sub test_invalid_export_paths {
     like( $res->get('error_msg'), qr/remote_login/ );
 }
 
+sub nameserver_is {
+    my ( $ns, $nsid ) = @_;
+    is( $ns->get($_), $ns{$nsid}{$_} ) for qw/ name address export_format ttl /;
+}
+
+# with @nsids, the listed rows are checked against those ids, in order
+sub nameservers_listed_ok {
+    my ( $res, $label, $size, @nsids ) = @_;
+    noerrok($res);
+    isa_ok( $res, 'NicTool::List' );
+    is( $res->size, $size, $label );
+    return if $res->size != $size;
+
+    my @u   = $res->list;
+    my @ids = @nsids ? @nsids : map { $_->id } @u;
+    for my $field (qw/ name address export_format ttl /) {
+        is( $u[$_]->get($field), $ns{ $ids[$_] }{$field} ) for 0 .. $#u;
+    }
+}
+
 sub test_get_nameserver {
 
-    my $res = $user->get_nameserver( nt_nameserver_id => '' );
-    noerrok( $res, 301 );
-    is( $res->get('error_msg'), 'nt_nameserver_id' );
-    ok( $res->get('error_desc') =~ qr/Required parameters missing/ );
+    bad_id_ok( 'nt_nameserver_id', sub { $user->get_nameserver( nt_nameserver_id => shift ) } );
 
-    $res = $user->get_nameserver( nt_nameserver_id => 'abc' );    #not integer
-    noerrok( $res, 302 );
-    is( $res->get('error_msg'), 'nt_nameserver_id' );
-    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
-
-    $res = $user->get_nameserver( nt_nameserver_id => 0 );        #not valid id
-    noerrok( $res, 302 );
-    is( $res->get('error_msg'), 'nt_nameserver_id' );
-    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
+    %ns = (
+        $nsid1 => {
+            name          => 'ns.somewhere.com.',
+            address       => '1.2.3.4',
+            export_format => 'bind',
+            ttl           => '86400'
+        },
+        $nsid2 => {
+            name          => 'ns2.somewhere.com.',
+            address       => '1.2.3.5',
+            export_format => 'djbdns',
+            ttl           => '86401'
+        },
+    );
 
     ####################
     # get test nameserver
     ####################
     $ns1 = $user->get_nameserver( nt_nameserver_id => $nsid1 );
-    noerrok($ns1) && is( $ns1->id, $nsid1 )
-        or die "Couldn't get test nameserver $nsid1 : " . errtext($ns1);
-    is( $ns1->get('name'),          'ns.somewhere.com.' );
-    is( $ns1->get('address'),       '1.2.3.4' );
-    is( $ns1->get('export_format'), 'bind' );
-    is( $ns1->get('ttl'),           '86400' );
+    fetched_ok( $ns1, $nsid1, "Couldn't get test nameserver $nsid1 : " . errtext($ns1) );
+    nameserver_is( $ns1, $nsid1 );
 
     $ns2 = $user->get_nameserver( nt_nameserver_id => $nsid2 );
-    noerrok($ns2) && is( $ns2->id, $nsid2 )
-        or die "Couldn't get test nameserver $nsid2 : " . errtext($ns2);
-    is( $ns2->get('name'),          'ns2.somewhere.com.' );
-    is( $ns2->get('address'),       '1.2.3.5' );
-    is( $ns2->get('export_format'), 'djbdns' );
-    is( $ns2->get('ttl'),           '86401' );
-
-    %name          = ( $nsid1 => 'ns.somewhere.com.', $nsid2 => 'ns2.somewhere.com.' );
-    %address       = ( $nsid1 => '1.2.3.4',           $nsid2 => '1.2.3.5' );
-    %export_format = ( $nsid1 => 'bind',              $nsid2 => 'djbdns' );
-    %ttl           = ( $nsid1 => '86400',             $nsid2 => '86401' );
+    fetched_ok( $ns2, $nsid2, "Couldn't get test nameserver $nsid2 : " . errtext($ns2) );
+    nameserver_is( $ns2, $nsid2 );
 }
 
 sub test_get_nameserver_list {
 
-    # missing param
-    my $res = $user->get_nameserver_list( nameserver_list => "" );
-    noerrok( $res, 301 );
-    is( $res->get('error_msg'), 'nameserver_list' );
-    ok( $res->get('error_desc') =~ qr/Required parameters missing/ );
-
-    # invalid int
-    $res = $user->get_nameserver_list( nameserver_list => "abc" );
-    noerrok( $res, 302 );
-    is( $res->get('error_msg'), 'nameserver_list' );
-    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
-
-    # invalid id
-    $res = $user->get_nameserver_list( nameserver_list => "0" );
-    noerrok( $res, 302 );
-    is( $res->get('error_msg'), 'nameserver_list' );
-    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
+    bad_id_ok( 'nameserver_list', sub { $user->get_nameserver_list( nameserver_list => shift ) },
+        '', 'abc', '0' );
 
     ####################
     # get test nameservers
     ####################
-    $res = $user->get_nameserver_list( nameserver_list => "$nsid1,$nsid2" );
-    noerrok($res);
-    isa_ok( $res, 'NicTool::List' );
-    is( $res->size, 2, 'nameserver_list incorrect size' );
-    if ( $res->size == 2 ) {
-        @u = $res->list;
-        is( $u[0]->get('name'),          $name{ $u[0]->id } );
-        is( $u[1]->get('name'),          $name{ $u[1]->id } );
-        is( $u[0]->get('address'),       $address{ $u[0]->id } );
-        is( $u[1]->get('address'),       $address{ $u[1]->id } );
-        is( $u[0]->get('export_format'), $export_format{ $u[0]->id } );
-        is( $u[1]->get('export_format'), $export_format{ $u[1]->id } );
-        is( $u[0]->get('ttl'),           $ttl{ $u[0]->id } );
-        is( $u[1]->get('ttl'),           $ttl{ $u[1]->id } );
-    }
-
-    $res = $user->get_nameserver_list( nameserver_list => "$nsid1" );
-    noerrok($res);
-    isa_ok( $res, 'NicTool::List' );
-    is( $res->size, 1, 'nameserver_list incorrect size' );
-    if ( $res->size == 1 ) {
-        @u = $res->list;
-        is( $u[0]->get('name'),          $name{$nsid1} );
-        is( $u[0]->get('address'),       $address{$nsid1} );
-        is( $u[0]->get('export_format'), $export_format{$nsid1} );
-        is( $u[0]->get('ttl'),           $ttl{$nsid1} );
-    }
-
-    $res = $user->get_nameserver_list( nameserver_list => "$nsid2" );
-    noerrok($res);
-    isa_ok( $res, 'NicTool::List' );
-    is( $res->size, 1, 'nameserver_list incorrect size' );
-    if ( $res->size == 1 ) {
-        @u = $res->list;
-        is( $u[0]->get('name'),          $name{$nsid2} );
-        is( $u[0]->get('address'),       $address{$nsid2} );
-        is( $u[0]->get('export_format'), $export_format{$nsid2} );
-        is( $u[0]->get('ttl'),           $ttl{$nsid2} );
-    }
+    nameservers_listed_ok( $user->get_nameserver_list( nameserver_list => "$nsid1,$nsid2" ),
+        'nameserver_list incorrect size', 2 );
+    nameservers_listed_ok(
+        $user->get_nameserver_list( nameserver_list => "$nsid1" ),
+        'nameserver_list incorrect size',
+        1, $nsid1
+    );
+    nameservers_listed_ok(
+        $user->get_nameserver_list( nameserver_list => "$nsid2" ),
+        'nameserver_list incorrect size',
+        1, $nsid2
+    );
 }
 
 sub test_get_group_nameservers {
 
-    my $res = $group2->get_group_nameservers( nt_group_id => '' );
-    noerrok( $res, 301 );
-    is( $res->get('error_msg'), 'nt_group_id' );
-    ok( $res->get('error_desc') =~ qr/Required parameters missing/ );
-
-    # invalid int
-    $res = $group2->get_group_nameservers( nt_group_id => 'abc' );
-    noerrok( $res, 302 );
-    is( $res->get('error_msg'), 'nt_group_id' );
-    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
-
-    $res = $group2->get_group_nameservers( nt_group_id => 0 );    # invalid id
-    noerrok( $res, 302 );
-    is( $res->get('error_msg'), 'nt_group_id' );
-    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
+    bad_id_ok( 'nt_group_id', sub { $group2->get_group_nameservers( nt_group_id => shift ) } );
 
     ####################
     # get test nameservers
     ####################
-    $res = $group1->get_group_nameservers;
-    noerrok($res);
-    isa_ok( $res, 'NicTool::List' );
-    is( $res->size, 2, 'group_nameservers incorrect size' );
-    if ( $res->size == 2 ) {
-        @u = $res->list;
-        is( $u[0]->get('name'),          $name{ $u[0]->id } );
-        is( $u[1]->get('name'),          $name{ $u[1]->id } );
-        is( $u[0]->get('address'),       $address{ $u[0]->id } );
-        is( $u[1]->get('address'),       $address{ $u[1]->id } );
-        is( $u[0]->get('export_format'), $export_format{ $u[0]->id } );
-        is( $u[1]->get('export_format'), $export_format{ $u[1]->id } );
-        is( $u[0]->get('ttl'),           $ttl{ $u[0]->id } );
-        is( $u[1]->get('ttl'),           $ttl{ $u[1]->id } );
-
-        #warn Data::Dumper::Dumper($u[0]);
-    }
+    nameservers_listed_ok( $group1->get_group_nameservers, 'group_nameservers incorrect size', 2 );
 }
 
 sub test_move_nameserver {
 
-    my $res = $group2->move_nameservers( nameserver_list => "" );
-    noerrok( $res, 301 );
-    is( $res->get('error_msg'), 'nameserver_list' );
-    ok( $res->get('error_desc') =~ qr/Required parameters missing/ );
-
-    $res = $group2->move_nameservers( nameserver_list => "abc" );    #invalid int
-    noerrok( $res, 302 );
-    is( $res->get('error_msg'), 'nameserver_list' );
-    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
-
-    $res = $group2->move_nameservers( nameserver_list => "0" );      #invalid id
-    noerrok( $res, 302 );
-    is( $res->get('error_msg'), 'nameserver_list' );
-    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
-
-    $res = $group2->move_nameservers(
-        nt_group_id     => '',
-        nameserver_list => "$nsid1,$nsid2"
+    bad_id_ok( 'nameserver_list', sub { $group2->move_nameservers( nameserver_list => shift ) },
+        '', 'abc', '0' );
+    bad_id_ok(
+        'nt_group_id',
+        sub {
+            $group2->move_nameservers( nt_group_id => shift, nameserver_list => "$nsid1,$nsid2" );
+        }
     );
-    noerrok( $res, 301 );
-    is( $res->get('error_msg'), 'nt_group_id' );
-    ok( $res->get('error_desc') =~ qr/Required parameters missing/ );
-
-    # invalid int
-    $res = $group2->move_nameservers(
-        nt_group_id     => 'abc',
-        nameserver_list => "$nsid1,$nsid2"
-    );
-    noerrok( $res, 302 );
-    is( $res->get('error_msg'), 'nt_group_id' );
-    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
-
-    # invalid id
-    $res = $group2->move_nameservers(
-        nt_group_id     => 0,
-        nameserver_list => "$nsid1,$nsid2"
-    );
-    noerrok( $res, 302 );
-    is( $res->get('error_msg'), 'nt_group_id' );
-    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
 
     ####################
     # move test nameservers
     ####################
 
-    $res = $group2->move_nameservers( nameserver_list => "$nsid1,$nsid2" );
+    my $res = $group2->move_nameservers( nameserver_list => "$nsid1,$nsid2" );
     noerrok($res);
 
     $ns1 = $user->get_nameserver( nt_nameserver_id => $nsid1 );
@@ -462,110 +295,37 @@ sub test_move_nameserver {
     noerrok($ns2);
     is( $ns2->get('nt_group_id'), $gid2 );
 
-    $res = $group2->get_group_nameservers;
-    noerrok($res);
-    isa_ok( $res, 'NicTool::List' );
-    is( $res->size, 2, 'group_nameservers incorrect size' );
-    if ( $res->size == 2 ) {
-        @u = $res->list;
-        is( $u[0]->get('name'),          $name{ $u[0]->id } );
-        is( $u[1]->get('name'),          $name{ $u[1]->id } );
-        is( $u[0]->get('address'),       $address{ $u[0]->id } );
-        is( $u[1]->get('address'),       $address{ $u[1]->id } );
-        is( $u[0]->get('export_format'), $export_format{ $u[0]->id } );
-        is( $u[1]->get('export_format'), $export_format{ $u[1]->id } );
-        is( $u[0]->get('ttl'),           $ttl{ $u[0]->id } );
-        is( $u[1]->get('ttl'),           $ttl{ $u[1]->id } );
-    }
+    nameservers_listed_ok( $group2->get_group_nameservers, 'group_nameservers incorrect size', 2 );
 }
 
 sub test_edit_nameserver {
 
-    #no nt_nameserver_id
-    my $res = $ns1->edit_nameserver( nt_nameserver_id => '' );
-    noerrok( $res, 301 );
-    is( $res->get('error_msg'), 'nt_nameserver_id' );
-    ok( $res->get('error_desc') =~ qr/Required parameters missing/ );
-
-    #no nt_nameserver_id
-    $res = $ns1->edit_nameserver( nt_nameserver_id => 'abc' );    #not integer
-    noerrok( $res, 302 );
-    is( $res->get('error_msg'), 'nt_nameserver_id' );
-    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
-
-    #no nt_nameserver_id
-    $res = $ns1->edit_nameserver( nt_nameserver_id => 0 );        #not valid id
-    noerrok( $res, 302 );
-    is( $res->get('error_msg'), 'nt_nameserver_id' );
-    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
+    bad_id_ok( 'nt_nameserver_id', sub { $ns1->edit_nameserver( nt_nameserver_id => shift ) } );
 
     ####################
     # edit test nameserver
     ####################
 
-    $res = $ns1->edit_nameserver( name => "ns3.somewhere.com." );
-    noerrok($res);
-    $ns1 = $user->get_nameserver( nt_nameserver_id => $nsid1 );
-    noerrok($ns1);
-    $name{$nsid1} = 'ns3.somewhere.com.';
-    is( $ns1->get('name'),          $name{$nsid1} );
-    is( $ns1->get('address'),       $address{$nsid1} );
-    is( $ns1->get('export_format'), $export_format{$nsid1} );
-    is( $ns1->get('ttl'),           $ttl{$nsid1} );
-
-    $res = $ns1->edit_nameserver( address => "1.2.3.6" );
-    noerrok($res);
-    $ns1 = $user->get_nameserver( nt_nameserver_id => $nsid1 );
-    noerrok($ns1);
-    $address{$nsid1} = '1.2.3.6';
-    is( $ns1->get('name'),          $name{$nsid1} );
-    is( $ns1->get('address'),       $address{$nsid1} );
-    is( $ns1->get('export_format'), $export_format{$nsid1} );
-    is( $ns1->get('ttl'),           $ttl{$nsid1} );
-
-    $ns1 = $user->get_nameserver( nt_nameserver_id => $nsid1 );
-    noerrok($ns1);
-    is( $ns1->get('name'),          $name{$nsid1} );
-    is( $ns1->get('address'),       $address{$nsid1} );
-    is( $ns1->get('export_format'), $export_format{$nsid1} );
-    is( $ns1->get('ttl'),           $ttl{$nsid1} );
-
-    $res = $ns1->edit_nameserver( export_format => 'djbdns' );
-    noerrok($res);
-    $ns1 = $user->get_nameserver( nt_nameserver_id => $nsid1 );
-    noerrok($ns1);
-    $export_format{$nsid1} = 'djbdns';
-    is( $ns1->get('name'),          $name{$nsid1} );
-    is( $ns1->get('address'),       $address{$nsid1} );
-    is( $ns1->get('export_format'), $export_format{$nsid1} );
-    is( $ns1->get('ttl'),           $ttl{$nsid1} );
-
-    $res = $ns1->edit_nameserver( ttl => "86402" );
-    noerrok($res);
-    $ns1 = $user->get_nameserver( nt_nameserver_id => $nsid1 );
-    noerrok($ns1);
-    $ttl{$nsid1} = '86402';
-    is( $ns1->get('name'),          $name{$nsid1} );
-    is( $ns1->get('address'),       $address{$nsid1} );
-    is( $ns1->get('export_format'), $export_format{$nsid1} );
-    is( $ns1->get('ttl'),           $ttl{$nsid1} );
+    # the empty edit reads the nameserver back once more without changing it
+    for my $edit (
+        [ name    => 'ns3.somewhere.com.' ],
+        [ address => '1.2.3.6' ],
+        [],
+        [ export_format => 'djbdns' ],
+        [ ttl           => '86402' ],
+        )
+    {
+        if (@$edit) {
+            noerrok( $ns1->edit_nameserver(@$edit) );
+            $ns{$nsid1}{ $edit->[0] } = $edit->[1];
+        }
+        $ns1 = $user->get_nameserver( nt_nameserver_id => $nsid1 );
+        noerrok($ns1);
+        nameserver_is( $ns1, $nsid1 );
+    }
 }
 
 sub test_delete_nameserver {
 
-    # missing nt_nameserver_id
-    my $res = $user->delete_nameserver( nt_nameserver_id => '' );
-    noerrok( $res, 301 );
-    is( $res->get('error_msg'), 'nt_nameserver_id' );
-    ok( $res->get('error_desc') =~ qr/Required parameters missing/ );
-
-    $res = $user->delete_nameserver( nt_nameserver_id => 'abc' );    #not int
-    noerrok( $res, 302 );
-    is( $res->get('error_msg'), 'nt_nameserver_id' );
-    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
-
-    $res = $user->delete_nameserver( nt_nameserver_id => 0 );        #not valid
-    noerrok( $res, 302 );
-    is( $res->get('error_msg'), 'nt_nameserver_id' );
-    ok( $res->get('error_desc') =~ qr/Some parameters were invalid/ );
+    bad_id_ok( 'nt_nameserver_id', sub { $user->delete_nameserver( nt_nameserver_id => shift ) } );
 }

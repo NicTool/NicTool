@@ -136,12 +136,7 @@ sub start {
 
 =cut
 
-    $user = new NicTool(
-        cache_users  => 0,
-        cache_groups => 0,
-        server_host  => Config('server_host'),
-        server_port  => Config('server_port')
-    );
+    $user = nt_client();
     die "Couldn't create NicTool Object" unless is( ref $user, 'NicTool' );
 
     $user->login(
@@ -312,12 +307,7 @@ USER2 inherits permissions from GROUP2.
 
 =cut
 
-    $tuser = new NicTool(
-        cache_users  => 0,
-        cache_groups => 0,
-        server_host  => Config('server_host'),
-        server_port  => Config('server_port')
-    );
+    $tuser = nt_client();
 
     $tuser->login(
         username => 'testuser1@test_delete_me1',
@@ -329,12 +319,7 @@ USER2 inherits permissions from GROUP2.
 
 =cut
 
-    $tuser2 = new NicTool(
-        cache_users  => 0,
-        cache_groups => 0,
-        server_host  => Config('server_host'),
-        server_port  => Config('server_port')
-    );
+    $tuser2 = nt_client();
 
     $tuser2->login(
         username => 'testuser2@testsubgroup',
@@ -403,9 +388,7 @@ perm_write should be 0
     noerrok($res);
 
     #warn Data::Dumper::Dumper($res);
-    foreach ( keys %dpermsnone ) {
-        is( $res->get( $dpermmap{$_} ), 0, "shouldn't have delegate $_ access" );
-    }
+    no_delegate_access_ok($res);
 
 =item (remove delegation of ZONE1 to GROUP2)
 
@@ -441,9 +424,7 @@ perm_write should be 0
 
     $res = $tuser2->get_zone( nt_zone_id => $zid1 );
     noerrok($res);
-    foreach ( keys %dpermsnone ) {
-        is( $res->get( $dpermmap{$_} ), 0, "shouldn't have delegate $_ access" );
-    }
+    no_delegate_access_ok($res);
 
 =item USER1 removes delegation of ZONE1 to GROUP2
 
@@ -480,9 +461,7 @@ perm_write should be 0
 
     $res = $tuser2->get_zone( nt_zone_id => $zid1 );
     noerrok($res);
-    foreach ( keys %dpermsnone ) {
-        is( $res->get( $dpermmap{$_} ), 0, "shouldn't have delegate $_ access" );
-    }
+    no_delegate_access_ok($res);
 
 =item USER1 removes delegation ZONE1 -> GROUP2
 
@@ -857,9 +836,7 @@ perm_write should be 0
     noerrok($res);
 
     #warn Data::Dumper::Dumper($res);
-    foreach ( keys %dpermsnone ) {
-        is( $res->get( $dpermmap{$_} ), 0, "shouldn't have delegate $_ access" );
-    }
+    no_delegate_access_ok($res);
 
 =item root removes delegation of ZONE1 to GROUP2
 
@@ -956,9 +933,7 @@ perm_write should be 0
 
     $res = $tuser2->get_zone( nt_zone_id => $zid1 );
     noerrok($res);
-    foreach ( keys %dpermsnone ) {
-        is( $res->get( $dpermmap{$_} ), 0, "shouldn't have delegate $_ access" );
-    }
+    no_delegate_access_ok($res);
 
 =item USER1 removes delegation of ZONE1 to GROUP2
 
@@ -1056,9 +1031,7 @@ perm_write should be 0
 
     $res = $tuser2->get_zone( nt_zone_id => $zid1 );
     noerrok($res);
-    foreach ( keys %dpermsnone ) {
-        is( $res->get( $dpermmap{$_} ), 0, "shouldn't have delegate $_ access" );
-    }
+    no_delegate_access_ok($res);
 
 =item USER1 removes delegation ZONE1 -> GROUP2
 
@@ -1355,12 +1328,7 @@ sub security {
 
 =cut
 
-    $tuser = new NicTool(
-        cache_users  => 0,
-        cache_groups => 0,
-        server_host  => Config('server_host'),
-        server_port  => Config('server_port')
-    );
+    $tuser = nt_client();
 
     $tuser->login(
         username => 'testuser1@test_delete_me1',
@@ -1389,9 +1357,7 @@ sub security {
         minimum     => 40,
     );
 
-    noerrok( $res, 404 );
-    like( $res->error_msg, qr/No Access Allowed to that object/ );
-    like( $res->error_desc, qr/Access Permission denied/ );
+    no_access_ok($res);
 
 =item User
 
@@ -1408,9 +1374,7 @@ sub security {
         inherit_group_permissions => 1,
     );
 
-    noerrok( $res, 404 );
-    like( $res->error_msg, qr/No Access Allowed to that object/ );
-    like( $res->error_desc, qr/Access Permission denied/ );
+    no_access_ok($res);
 
 =item Group
 
@@ -1421,9 +1385,7 @@ sub security {
         name        => 'HIGH LEVEL TEST delete me',
     );
 
-    noerrok( $res, 404 );
-    like( $res->error_msg, qr/No Access Allowed to that object/ );
-    like( $res->error_desc, qr/Access Permission denied/ );
+    no_access_ok($res);
 
 =item Nameserver
 
@@ -1437,9 +1399,7 @@ sub security {
         ttl           => 86404
     );
 
-    noerrok( $res, 404 );
-    like( $res->error_msg, qr/No Access Allowed to that object/ );
-    like( $res->error_desc, qr/Access Permission denied/ );
+    no_access_ok($res);
 
 =item Record (inside ZONE1)
 
@@ -1455,9 +1415,7 @@ sub security {
         weight      => 0
     );
 
-    noerrok( $res, 404 );
-    like( $res->error_msg, qr/No Access Allowed to that object/ );
-    like( $res->error_desc, qr/Access Permission denied/ );
+    no_access_ok($res);
 
 =back
 
@@ -1475,9 +1433,7 @@ sub security {
         nt_zone_id  => $zid1,
         description => 'HIGH LEVEL TEST 2 delete me',
     );
-    noerrok( $res, 404 );
-    like( $res->error_msg, qr/No Access Allowed to that object/ );
-    like( $res->error_desc, qr/Access Permission denied/ );
+    no_access_ok($res);
 
 =item USER2
 
@@ -1488,9 +1444,7 @@ sub security {
         first_name => 'TESTTEST',
         last_name  => 'DELETEME',
     );
-    noerrok( $res, 404 );
-    like( $res->error_msg, qr/No Access Allowed to that object/ );
-    like( $res->error_desc, qr/Access Permission denied/ );
+    no_access_ok($res);
 
 =item GROUP2
 
@@ -1500,9 +1454,7 @@ sub security {
         nt_group_id => $gid2,
         name        => 'HIGH LEVEL TEST',
     );
-    noerrok( $res, 404 );
-    like( $res->error_msg, qr/No Access Allowed to that object/ );
-    like( $res->error_desc, qr/Access Permission denied/ );
+    no_access_ok($res);
 
 =item root group
 
@@ -1512,9 +1464,7 @@ sub security {
         nt_group_id => $user->get('nt_group_id'),
         name        => 'HIGH LEVEL TEST',
     );
-    noerrok( $res, 404 );
-    like( $res->error_msg, qr/No Access Allowed to that object/ );
-    like( $res->error_desc, qr/Access Permission denied/ );
+    no_access_ok($res);
 
 =item NAMESERVER1
 
@@ -1524,9 +1474,7 @@ sub security {
         nt_nameserver_id => $nsid1,
         description      => 'HIGH LEVEL TEST 2 delete me',
     );
-    noerrok( $res, 404 );
-    like( $res->error_msg, qr/No Access Allowed to that object/ );
-    like( $res->error_desc, qr/Access Permission denied/ );
+    no_access_ok($res);
 
 =item RECORD1
 
@@ -1536,9 +1484,7 @@ sub security {
         nt_zone_record_id => $zrid1,
         description       => 'HIGH LEVEL TEST 2 delete me',
     );
-    noerrok( $res, 404 );
-    like( $res->error_msg, qr/No Access Allowed to that object/ );
-    like( $res->error_desc, qr/Access Permission denied/ );
+    no_access_ok($res);
 
 =back
 
@@ -1551,54 +1497,42 @@ sub security {
 =cut
 
     $res = $tuser->delete_zones( zone_list => $zid1, );
-    noerrok( $res, 404 );
-    like( $res->error_msg, qr/No Access Allowed to that object/ );
-    like( $res->error_desc, qr/Access Permission denied/ );
+    no_access_ok($res);
 
 =item USER2
 
 =cut
 
     $res = $tuser->delete_users( user_list => $uid2, );
-    noerrok( $res, 404 );
-    like( $res->error_msg, qr/No Access Allowed to that object/ );
-    like( $res->error_desc, qr/Access Permission denied/ );
+    no_access_ok($res);
 
 =item GROUP2
 
 =cut
 
     $res = $tuser->delete_group( nt_group_id => $gid2, );
-    noerrok( $res, 404 );
-    like( $res->error_msg, qr/No Access Allowed to that object/ );
-    like( $res->error_desc, qr/Access Permission denied/ );
+    no_access_ok($res);
 
 =item root group
 
 =cut
 
     $res = $tuser->delete_group( nt_group_id => $user->get('nt_group_id'), );
-    noerrok( $res, 404 );
-    like( $res->error_msg, qr/No Access Allowed to that object/ );
-    like( $res->error_desc, qr/Access Permission denied/ );
+    no_access_ok($res);
 
 =item NAMESERVER1
 
 =cut
 
     $res = $tuser->delete_nameserver( nt_nameserver_id => $nsid1 );
-    noerrok( $res, 404 );
-    like( $res->error_msg, qr/No Access Allowed to that object/ );
-    like( $res->error_desc, qr/Access Permission denied/ );
+    no_access_ok($res);
 
 =item RECORD1
 
 =cut
 
     $res = $tuser->delete_zone_record( nt_zone_record_id => $zrid1 );
-    noerrok( $res, 404 );
-    like( $res->error_msg, qr/No Access Allowed to that object/ );
-    like( $res->error_desc, qr/Access Permission denied/ );
+    no_access_ok($res);
 
 =back
 
@@ -1611,36 +1545,28 @@ sub security {
 =cut
 
     $res = $tuser->get_zone( nt_zone_id => $zid1, );
-    noerrok( $res, 404 );
-    like( $res->error_msg, qr/No Access Allowed to that object/ );
-    like( $res->error_desc, qr/Access Permission denied/ );
+    no_access_ok($res);
 
 =item USER2
 
 =cut
 
     $res = $tuser->get_user( nt_user_id => $uid2, );
-    noerrok( $res, 404 );
-    like( $res->error_msg, qr/No Access Allowed to that object/ );
-    like( $res->error_desc, qr/Access Permission denied/ );
+    no_access_ok($res);
 
 =item GROUP2
 
 =cut
 
     $res = $tuser->get_group( nt_group_id => $gid2, );
-    noerrok( $res, 404 );
-    like( $res->error_msg, qr/No Access Allowed to that object/ );
-    like( $res->error_desc, qr/Access Permission denied/ );
+    no_access_ok($res);
 
 =item root group
 
 =cut
 
     $res = $tuser->get_group( nt_group_id => $user->get('nt_group_id'), );
-    noerrok( $res, 404 );
-    like( $res->error_msg, qr/No Access Allowed to that object/ );
-    like( $res->error_desc, qr/Access Permission denied/ );
+    no_access_ok($res);
 
 =item NAMESERVER1 (access allowed,all nameservers read accessible)
 
@@ -1654,9 +1580,7 @@ sub security {
 =cut
 
     $res = $tuser->get_zone_record( nt_zone_record_id => $zrid1 );
-    noerrok( $res, 404 );
-    like( $res->error_msg, qr/No Access Allowed to that object/ );
-    like( $res->error_desc, qr/Access Permission denied/ );
+    no_access_ok($res);
 
 =back
 
@@ -1681,9 +1605,7 @@ sub security {
         minimum     => 40,
     );
 
-    noerrok( $res, 404 );
-    like( $res->error_msg, qr/No Access Allowed to that object/ );
-    like( $res->error_desc, qr/Access Permission denied/ );
+    no_access_ok($res);
 
 =item User
 
@@ -1700,9 +1622,7 @@ sub security {
         inherit_group_permissions => 1,
     );
 
-    noerrok( $res, 404 );
-    like( $res->error_msg, qr/No Access Allowed to that object/ );
-    like( $res->error_desc, qr/Access Permission denied/ );
+    no_access_ok($res);
 
 =item Group
 
@@ -1713,9 +1633,7 @@ sub security {
         name        => 'HIGH LEVEL TEST delete me',
     );
 
-    noerrok( $res, 404 );
-    like( $res->error_msg, qr/No Access Allowed to that object/ );
-    like( $res->error_desc, qr/Access Permission denied/ );
+    no_access_ok($res);
 
 =item Nameserver
 
@@ -1729,9 +1647,7 @@ sub security {
         ttl           => 86404
     );
 
-    noerrok( $res, 404 );
-    like( $res->error_msg, qr/No Access Allowed to that object/ );
-    like( $res->error_desc, qr/Access Permission denied/ );
+    no_access_ok($res);
 
 =back 
 
@@ -1800,4 +1716,22 @@ sub del {
 =cut
 
     noerrok( $group1->delete );
+}
+
+=back
+
+=cut
+
+sub no_access_ok {
+    my ($res) = @_;
+    noerrok( $res, 404 );
+    like( $res->error_msg,  qr/No Access Allowed to that object/ );
+    like( $res->error_desc, qr/Access Permission denied/ );
+}
+
+sub no_delegate_access_ok {
+    my ($res) = @_;
+    foreach ( keys %dpermsnone ) {
+        is( $res->get( $dpermmap{$_} ), 0, "shouldn't have delegate $_ access" );
+    }
 }
