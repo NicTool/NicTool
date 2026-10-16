@@ -148,6 +148,21 @@ sub doit {
     # new_zone_record  #
     ####################
 
+    # a name in the zone, in another case, takes the zone's spelling
+    for my $case ( [ 'WWW.TEST.COM.', 'WWW' ], [ 'Test.Com.', 'test.com.' ] ) {
+        my ( $name, $stored ) = @$case;
+        $res = $zone1->new_zone_record(
+            name    => $name,
+            address => '1.2.3.4',
+            type    => 'A',
+            ttl     => 86400,
+        );
+        noerrok($res) or next;
+        my $zrid = $res->get('nt_zone_record_id');
+        is( $user->get_zone_record( nt_zone_record_id => $zrid )->get('name'), $stored, "$name is stored as $stored" );
+        $user->delete_zone_record( nt_zone_record_id => $zrid );
+    }
+
     # no address value
     $res = $zone1->new_zone_record(
         name => 'a',

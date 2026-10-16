@@ -44,8 +44,8 @@ at the end of this document first.
      safe to re-run: already-applied steps are skipped.
 
    * Upgrades crossing 2.42 store zone names lowercase without the
-     trailing dot, the form NicTool 3 matches, and lowercase the zone in
-     absolute record names ('@' was stored as the zone's own spelling).
+     trailing dot, the form NicTool 3 matches, and lowercase the zone where
+     record names spell it: '@' was stored as the zone's own spelling.
      If two live zones would then share a name, the script lists them and
      stops; rename or delete all but one of each name, then re-run.
 

@@ -284,16 +284,18 @@ sub _existing_fks {
 # a zone's name lowercase without the trailing dot, the form NicTool 3 matches
 sub _canonical_zone_2_42 {"LOWER(TRIM(TRAILING '.' FROM z.zone))"}
 
-# Absolute record names end in their zone as it was spelled ('@' expands to
-# "$zone."), and Record/Sanity.pm compares them to the zone exactly. Returns
-# the join and the condition for those whose zone suffix isn't canonical.
+# Record names that spell their zone as it was: absolute names ('@' expands
+# to "$zone."), and a bare apex name equal to the zone. Record/Sanity.pm and
+# Export/Base.pm compare both to the zone exactly. Returns the join and the
+# condition for each kind.
 sub _records_to_fix_2_42 {
     my $zone = _canonical_zone_2_42();
     return (
         'nt_zone_record r JOIN nt_zone z ON z.nt_zone_id = r.nt_zone_id',
         "(LOWER(r.name) = CONCAT($zone, '.')
             OR RIGHT(LOWER(r.name), CHAR_LENGTH($zone) + 2) = CONCAT('.', $zone, '.'))
-         AND RIGHT(r.name, CHAR_LENGTH($zone) + 1) <> CONCAT($zone, '.')"
+         AND RIGHT(r.name, CHAR_LENGTH($zone) + 1) <> CONCAT($zone, '.')",
+        "LOWER(r.name) = $zone AND r.name <> $zone"
     );
 }
 
@@ -304,9 +306,9 @@ sub _sql_test_2_42 {
     # zone_exists matches names exactly, so any name left in another form
     # escapes it; re-run until none is
     my $zone = _canonical_zone_2_42();
-    my ( $join, $records ) = _records_to_fix_2_42();
+    my ( $join, $absolute, $apex ) = _records_to_fix_2_42();
     my ($pending_zones)   = _try_list("SELECT COUNT(*) FROM nt_zone z WHERE z.zone <> $zone");
-    my ($pending_records) = _try_list("SELECT COUNT(*) FROM $join WHERE $records");
+    my ($pending_records) = _try_list("SELECT COUNT(*) FROM $join WHERE ($absolute) OR ($apex)");
     return 0 if $pending_zones || $pending_records;
     return 0 if $r < 2.42;      # do it! bump db_version
     return 1;
@@ -330,11 +332,12 @@ sub _sql_2_42 {
         die "Aborting upgrade.\n";
     }
 
-    my ( $join, $records ) = _records_to_fix_2_42();
+    my ( $join, $absolute, $apex ) = _records_to_fix_2_42();
     return <<EO_SQL_2_42;
 UPDATE $join
    SET r.name = CONCAT(LEFT(r.name, CHAR_LENGTH(r.name) - CHAR_LENGTH($zone) - 1), $zone, '.')
- WHERE $records;
+ WHERE $absolute;
+UPDATE $join SET r.name = $zone WHERE $apex;
 UPDATE nt_zone z
    SET z.zone = $zone, z.last_modified = z.last_modified
  WHERE z.zone <> $zone;
