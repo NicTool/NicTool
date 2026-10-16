@@ -43,6 +43,15 @@ at the end of this document first.
    * The script detects which updates your database still needs, and is
      safe to re-run: already-applied steps are skipped.
 
+   * Upgrades crossing 2.42 store zone names lowercase without the
+     trailing dot, the form NicTool 3 matches. A live zone whose name
+     another live zone would then share is left as it was; list those with
+
+       SELECT nt_zone_id, zone FROM nt_zone
+        WHERE deleted = 0 AND zone <> LOWER(zone);
+
+     and rename or delete one of each pair.
+
    * Upgrades crossing 2.41 convert all tables to InnoDB and add foreign
      key constraints. If audit-log rows reference parent rows that no
      longer exist, the script prints the affected rows and stops with

@@ -35,7 +35,7 @@ my $dbh = DBIx::Simple->connect( $dsn, $db_user, $db_pass )
 
 # NOTE: when making schema changes, update db_version in 12_nt_options.sql
 my @versions = qw/ 2.00 2.05 2.08 2.09 2.10 2.11 2.14 2.15 2.16 2.17 2.18
-    2.24 2.27 2.28 2.29 2.30 2.32 2.34 2.35 2.40 2.41 /;
+    2.24 2.27 2.28 2.29 2.30 2.32 2.34 2.35 2.40 2.41 2.42 /;
 
 foreach my $version (@versions) {
 
@@ -279,6 +279,36 @@ sub _existing_fks {
         $existing{ $row->{t} }{ $row->{c} } = 1;
     }
     return \%existing;
+}
+
+sub _sql_test_2_42 {
+    my $r = _get_db_version();
+    return 1 if !defined $r;    # query failed
+
+    return 0 if $r < 2.42;      # do it! lowercase zone names, bump db_version
+    return 1;
+}
+
+# Zone names become lowercase without the trailing dot, the form NicTool 3
+# matches. A live zone whose name another live zone would then share is left
+# alone; see UPGRADE for how to list those.
+sub _sql_2_42 {
+    <<EO_SQL_2_42;
+CREATE TEMPORARY TABLE nt_zone_name_taken AS
+SELECT LOWER(TRIM(TRAILING '.' FROM zone)) AS canonical
+  FROM nt_zone
+ WHERE deleted = 0
+ GROUP BY canonical
+HAVING COUNT(*) > 1;
+UPDATE nt_zone
+   SET zone = LOWER(TRIM(TRAILING '.' FROM zone)),
+       last_modified = last_modified
+ WHERE zone <> LOWER(TRIM(TRAILING '.' FROM zone))
+   AND (deleted = 1
+        OR LOWER(TRIM(TRAILING '.' FROM zone)) NOT IN (SELECT canonical FROM nt_zone_name_taken));
+DROP TEMPORARY TABLE nt_zone_name_taken;
+UPDATE nt_options SET option_value='2.42' WHERE option_name='db_version';
+EO_SQL_2_42
 }
 
 sub _sql_test_2_41 {

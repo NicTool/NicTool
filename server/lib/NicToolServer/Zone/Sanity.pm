@@ -19,6 +19,7 @@ sub new_zone {
     }
 
     $data->{zone} =~ s/\.$//;    # remove any trailing dot
+    $data->{zone} = lc $data->{zone};    # NicTool 3 matches names in this form
 
     if ( $data->{zone} =~ /(?:in-addr|ip6).arpa$/ ) {
 
