@@ -700,6 +700,13 @@ sub test_edit_zone {
     $res = $zone1->edit_zone(%z1);
     noerrok($res);
 
+    # listing every changed field outruns the log's 255 character description
+    my $log = $user->get_user_global_log( limit => 255 );
+    noerrok($log);
+    my @edits = grep { $_->{object} eq 'zone' && $_->{object_id} == $zid1 && $_->{action} eq 'modified' }
+        @{ $log->get('list') || [] };
+    ok( @edits, 'the zone edit is in the global log' );
+
     $zone1 = $user->get_zone( nt_zone_id => $zid1 );
     noerrok($zone1) && is( $zone1->id, $zid1 )
         or die "Couldn't get test zone $zid1 : " . errtext($zone1);

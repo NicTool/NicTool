@@ -86,7 +86,7 @@ sub get_user_list {
 sub get_group_users {
     my ( $self, $data ) = @_;
 
-    $self->search_params_sanity_check( $data, qw(username first_name last_name email) );
+    $self->search_params_sanity_check( $data, qw(username first_name last_name email group_name) );
     return $self->throw_sanity_error if $self->{errors};
     return $self->SUPER::get_group_users($data);
 }
@@ -94,7 +94,7 @@ sub get_group_users {
 sub get_user_global_log {
     my ( $self, $data ) = @_;
 
-    $self->search_params_sanity_check( $data, qw(timestamp title action object description) );
+    $self->search_params_sanity_check( $data, qw(timestamp title action object target description) );
     return $self->throw_sanity_error if $self->{errors};
     return $self->SUPER::get_user_global_log($data);
 }

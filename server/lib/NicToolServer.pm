@@ -1537,7 +1537,13 @@ sub insert_row {
 
 sub log_global {
     my ( $self, $data, @more_columns ) = @_;
-    return $self->insert_row( 'nt_user_global_log', $data,
+
+    # an edit's description lists every changed field, which can outrun the
+    # varchar(255) column, and strict sql_mode then refuses the whole row
+    my %row = %$data;
+    $row{description} = substr( $row{description}, 0, 255 ) if defined $row{description};
+
+    return $self->insert_row( 'nt_user_global_log', \%row,
         qw/ nt_user_id timestamp action object object_id log_entry_id title description /,
         @more_columns );
 }
@@ -1709,12 +1715,9 @@ sub get_advanced_search_conditions {
         my $ucopt = uc( $data->{$option} );
 
         if ( $field_map->{ $data->{$field} }->{timefield} ) {
-            if ( $ucopt =~ /^(?:EQUALS|CONTAINS|STARTS|ENDS)/ ) {
-                $cond .= $data->{$option} . "UNIX_TIMESTAMP( $qv )";
-            }
-            else {
-                $cond .= "=UNIX_TIMESTAMP( $qv )";
-            }
+            # the word options have no meaning for a time; they match it exactly
+            my $op = $ucopt =~ /^(?:EQUALS|CONTAINS|STARTS|ENDS)/ ? '=' : $data->{$option};
+            $cond .= "$op UNIX_TIMESTAMP( $qv )";
         }
         elsif ( $ucopt eq 'EQUALS' ) {
             $cond .= "=$qv";
@@ -1751,6 +1754,7 @@ sub global_log_field_map {
         title       => { timefield => 0, quicksearch => 1, field => 'nt_user_global_log.title' },
         action      => { timefield => 0, quicksearch => 1, field => 'nt_user_global_log.action' },
         object      => { timefield => 0, quicksearch => 1, field => 'nt_user_global_log.object' },
+        target      => { timefield => 0, quicksearch => 0, field => 'nt_user_global_log.target_name' },
         description => { timefield => 0, quicksearch => 1, field => 'nt_user_global_log.description' },
     );
 }

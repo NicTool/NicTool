@@ -13,6 +13,7 @@ api/lib/NicTool/Cache.pm
 api/lib/NicTool/DBObject.pm
 api/lib/NicTool/Group.pm
 api/lib/NicTool/List.pm
+api/lib/NicTool/Log.pm
 api/lib/NicTool/NTObject.pm
 api/lib/NicTool/Nameserver.pm
 api/lib/NicTool/Record.pm
@@ -31,12 +32,14 @@ api/t/api.t
 api/t/cache.t
 api/t/cleanup.pl
 api/t/list.t
+api/t/log.t
 api/t/nictool.t
 api/t/object.t
 api/t/protocol.t
 api/t/result.t
 api/t/TestConfig.pm
 api/t/transport.t
+api/t/zone_api.t
 bin/nt_export.pl
 bin/nt_from_git.pl
 bin/nt_import.pl
@@ -102,6 +105,7 @@ t/08_nameservers.t
 t/10_zones.t
 t/11_zones_reverse.t
 t/12_records.t
+t/14_search.t
 t/22_export.t
 t/24_import.t
 t/25_import_tinydns.t

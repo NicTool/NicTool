@@ -59,6 +59,7 @@ $export->get_dbh(
     user => Config('db_user'),
     pass => Config('db_pass'),
 );
+_get_ns_zones_unpublished();
 
 done_testing();
 exit;
@@ -108,6 +109,16 @@ sub _tests_that_require_db {
     #ok( $r, "export ($nsid), ".scalar @$r." zones");
     #warn Data::Dumper::Dumper($r);
     #exit;
+}
+
+sub _get_ns_zones_unpublished {
+    my $zone = 'never-published.example.com';
+    $export->exec_query( "INSERT INTO nt_zone (nt_group_id, zone) VALUES (1, ?)", [$zone] );
+    my $r;
+    stdout_like { $r = $export->get_ns_zones( publish_ts => 1, zone => $zone ) } qr/retrieved 1 zones/,
+        'get_ns_zones, publish_ts';
+    is( scalar @$r, 1, 'get_ns_zones, publish_ts, includes a zone never published' );
+    $export->exec_query( "DELETE FROM nt_zone WHERE zone=?", [$zone] );
 }
 
 sub _is_ip_port {

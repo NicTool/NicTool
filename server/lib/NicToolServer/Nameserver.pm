@@ -58,42 +58,45 @@ sub get_group_nameservers {
         name => {
             timefield   => 0,
             quicksearch => 1,
-            field       => 'nt_nameserver.name'
+            field       => 'ns.name'
         },
         description => {
             timefield   => 0,
             quicksearch => 0,
-            field       => 'nt_nameserver.description'
+            field       => 'ns.description'
         },
         address => {
             timefield   => 0,
             quicksearch => 0,
-            field       => 'nt_nameserver.address'
+            field       => 'ns.address'
         },
         address6 => {
             timefield   => 0,
             quicksearch => 0,
-            field       => 'nt_nameserver.address6'
+            field       => 'ns.address6'
         },
         export_format => {
             timefield   => 0,
             quicksearch => 0,
-            field       => 'nt_nameserver_export_type.name'
+            field       => 'et.name'
         },
         export_type_id => {
             timefield   => 0,
             quicksearch => 0,
-            field       => 'nt_nameserver.export_type_id'
+            field       => 'ns.export_type_id'
+        },
+        remote_login => {
+            timefield   => 0,
+            quicksearch => 0,
+            field       => 'ns.remote_login'
         },
         status => {
             timefield   => 0,
             quicksearch => 0,
-            field       => 'nt_nameserver.export_status'
+            field       => 'ns.export_status'
         },
+        group_name => { timefield => 0, quicksearch => 0, field => 'g.name' },
     );
-
-    $field_map{group_name} = { timefield => 0, quicksearch => 0, field => 'nt_group.name' }
-        if $data->{include_subgroups};
 
     my $conditions = $self->format_search_conditions( $data, \%field_map );
 

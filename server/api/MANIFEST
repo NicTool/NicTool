@@ -13,6 +13,7 @@ lib/NicTool/Cache.pm
 lib/NicTool/DBObject.pm
 lib/NicTool/Group.pm
 lib/NicTool/List.pm
+lib/NicTool/Log.pm
 lib/NicTool/NTObject.pm
 lib/NicTool/Nameserver.pm
 lib/NicTool/Record.pm
@@ -26,9 +27,11 @@ t/TestConfig.pm
 t/api.t
 t/cache.t
 t/list.t
+t/log.t
 t/nictool.t
 t/object.t
 t/protocol.t
 t/result.t
 t/transport.t
+t/zone_api.t
 t/cleanup.pl

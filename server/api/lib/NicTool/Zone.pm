@@ -40,8 +40,11 @@ sub _api {
         new_zone_record          => { 'includeid' => 1 },
         get_zone_records         => { 'includeid' => 1 },
         get_zone_record_log      => { 'includeid' => 1 },
-        ( map { $_ => { 'include' => ['nt_group_id'] } }
-            grep { $_ ne 'new_group' } NicTool::Group::group_functions() ),
+        ( map { $_ => { 'include' => ['nt_group_id'] } } NicTool::Group::group_functions() ),
+
+        # the group passed in is the delegate, not the zone's own
+        edit_zone_delegation   => { 'includeid' => 1 },
+        delete_zone_delegation => { 'includeid' => 1 },
     };
 }
 

@@ -35,6 +35,8 @@ my $dbh = DBIx::Simple->connect( $dsn, $db_user, $db_pass )
 my @versions = qw/ 2.00 2.05 2.08 2.09 2.10 2.11 2.14 2.15 2.16 2.17 2.18
     2.24 2.27 2.28 2.29 2.30 2.32 2.34 2.35 2.40 2.41 2.42 /;
 
+clear_zero_dates();
+
 foreach my $version (@versions) {
     ( my $suffix = $version ) =~ tr/./_/;
 
@@ -115,14 +117,6 @@ sub heal {
             AND $probe_where" ]
         if @unreferenced;
 
-    # 2014-2020 releases of the v2.28 block created last_publish as
-    # TIMESTAMP NOT NULL DEFAULT 0 (changed to DATETIME NULL in #249)
-    my $lp_type = _column_attr( 'nt_zone', 'last_publish', 'DATA_TYPE' );
-    push @heals,
-        [ "nt_zone.last_publish is TIMESTAMP (pre-#249 v2.28 block); convert to DATETIME",
-          "ALTER TABLE nt_zone MODIFY last_publish DATETIME DEFAULT NULL" ]
-        if $lp_type && lc($lp_type) eq 'timestamp';
-
     # releases 2.31-2.33 shipped the v2.32 block but never wired 2.32 into the version list
     for my $table (qw/ nt_nameserver_qlog nt_nameserver_qlogfile /) {
         push @heals,
@@ -200,6 +194,40 @@ sub heal {
     print "\n";
 }
 
+# Rows written before strict sql_mode (the MySQL 8 default) can hold zero
+# dates, which strict mode refuses to copy: any ALTER of their table then dies
+# with "Incorrect datetime value". Null them, with zero dates allowed, before
+# the version blocks ALTER anything.
+sub clear_zero_dates {
+    my @sql;
+
+    # 2014-2020 releases of the v2.28 block created last_publish as
+    # TIMESTAMP NOT NULL DEFAULT 0 (changed to DATETIME NULL in #249)
+    my $lp_type = _column_attr( 'nt_zone', 'last_publish', 'DATA_TYPE' );
+    push @sql, 'ALTER TABLE nt_zone MODIFY last_publish DATETIME DEFAULT NULL'
+        if $lp_type && lc($lp_type) eq 'timestamp';
+
+    # a zero-date literal is itself an error under strict mode, so compare as a number
+    my ($zero_zones) = _try_list("SELECT COUNT(*) FROM nt_zone WHERE last_publish + 0 = 0");
+    push @sql, "UPDATE nt_zone SET last_publish = NULL WHERE last_publish + 0 = 0"
+        if $zero_zones;
+
+    my ($zero_records) = _try_list("SELECT COUNT(*) FROM nt_zone_record WHERE `timestamp` + 0 = 0");
+    push @sql, "UPDATE nt_zone_record SET `timestamp` = NULL WHERE `timestamp` + 0 = 0"
+        if $zero_records;
+
+    return if !@sql;
+
+    print "clearing zero dates\n";
+    for my $sql ( 'SET @nt_sql_mode = @@SESSION.sql_mode', "SET SESSION sql_mode = ''", @sql,
+        'SET SESSION sql_mode = @nt_sql_mode' )
+    {
+        print "  $sql;\n";
+        _execute($sql);
+    }
+    print "\n";
+}
+
 # true if any row anywhere refers to this user id. An unreadable table counts
 # as a reference: deletion must be provably safe, so probe rows are kept when
 # in doubt (they are harmless; the old script tolerated them for a decade).
@@ -260,9 +288,7 @@ sub _column_attr {
 
 sub _column_exists {
     my ( $table, $column ) = @_;
-    my $r;
-    eval { $r = $dbh->query("SHOW COLUMNS FROM `$table` LIKE '$column'")->hashes; };
-    return ( $r && $r->[0] && $r->[0]{field} ) ? 1 : 0;
+    return defined _column_attr( $table, $column, 'COLUMN_NAME' ) ? 1 : 0;
 }
 
 sub _add_column {
@@ -1500,8 +1526,9 @@ sub encode_utf8 {
     } @_;
 }
 
+# ALTER DATABASE without a name targets the DSN's database, whatever it is called
 sub encode_utf8mb4 {
-    return join '', 'ALTER DATABASE nictool DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin;', map {
+    return join '', 'ALTER DATABASE DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin;', map {
         "ALTER TABLE $_ DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin;\n OPTIMIZE TABLE $_;\n"
     } @_;
 }
@@ -1546,13 +1573,14 @@ sub get_db_creds_from_nictoolserver_conf {
 }
 
 sub prompt_last_chance {
+    my $pass_shown = length $db_pass ? "********" : "(empty)";
     print qq{
 Beginning SQL upgrades.
 If any of the information is incorrect, press Control-C now!
 -------------------------
 DB_DSN:  $dsn
 DB_USER: $db_user
-DB_PASS: $db_pass
+DB_PASS: $pass_shown
 -------------------------
 
 You made a backup already, right?

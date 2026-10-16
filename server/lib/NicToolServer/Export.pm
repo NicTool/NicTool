@@ -482,7 +482,7 @@ sub get_ns_zones {
     }
 
     if ( $p{publish_ts} ) {
-        $sql .= " AND z.last_modified > z.last_publish";
+        $sql .= " AND (z.last_publish IS NULL OR z.last_modified > z.last_publish)";
     }
     elsif ( $p{last_modified} ) {
         $sql .= " AND z.last_modified > ?";

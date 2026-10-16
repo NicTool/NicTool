@@ -148,7 +148,7 @@ sub get_zone_record_log {
     my ( $self, $data ) = @_;
 
     $self->search_params_sanity_check( $data,
-        qw(action user timestamp name description type address weight) );
+        qw(action user timestamp name description type address ttl weight) );
     return $self->throw_sanity_error if $self->{errors};
     return $self->SUPER::get_zone_record_log($data);
 }
@@ -166,8 +166,7 @@ sub get_group_zones {
     my ( $self, $data ) = @_;
 
     $self->search_params_sanity_check(
-        $data, qw/ zone group_name description
-            queries_successful queries_norecord records /
+        $data, qw/ zone group_name description /
     );
     return $self->throw_sanity_error if $self->{errors};
     return $self->SUPER::get_group_zones($data);
@@ -176,7 +175,8 @@ sub get_group_zones {
 sub get_zone_records {
     my ( $self, $data ) = @_;
 
-    $self->search_params_sanity_check( $data, qw/name description type address weight queries/ );
+    $self->search_params_sanity_check( $data,
+        qw/name description type address ttl weight priority other/ );
     return $self->throw_sanity_error if $self->{errors};
     return $self->SUPER::get_zone_records($data);
 }

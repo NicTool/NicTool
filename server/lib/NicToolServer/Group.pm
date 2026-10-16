@@ -304,6 +304,11 @@ sub get_group_subgroups {
             quicksearch => 0,
             field       => 'nt_group.parent_group_id'
         },
+        sub_groups => {
+            timefield   => 0,
+            quicksearch => 0,
+            field       => '(SELECT COUNT(*) FROM nt_group sg WHERE sg.parent_group_id = nt_group.nt_group_id AND sg.deleted = 0)'
+        },
     );
 
     my $conditions = $self->format_search_conditions( $data, \%field_map );
@@ -374,6 +379,11 @@ sub get_global_application_log {
     my %field_map = (
         $self->global_log_field_map,
         user => { timefield => 0, quicksearch => 1, field => 'nt_user.username' },
+        group_name => {
+            timefield   => 0,
+            quicksearch => 0,
+            field       => '(SELECT g.name FROM nt_group g WHERE g.nt_group_id = nt_user.nt_group_id)'
+        },
     );
 
     my $conditions = $self->format_search_conditions( $data, \%field_map );
@@ -416,8 +426,8 @@ sub get_global_application_log {
 
     my $logs = $self->exec_query( $sql, $limit_params )
         or return {
-        $r_data->{error_code} => '600',
-        $r_data->{error_msg}  => $self->{dbh}->errstr,
+        error_code => '600',
+        error_msg  => $self->{dbh}->errstr,
         };
 
     my %groups;
