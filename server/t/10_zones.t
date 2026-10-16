@@ -323,6 +323,34 @@ sub test_new_zone {
             or die "Couldn't delete zone mistake " . $res->get('nt_zone_id');
     }
 
+    # every trailing dot is stripped, so a repeat is the same zone
+    $res = $group1->new_zone(
+        zone        => 'DotTest.com..',
+        serial      => 0,
+        ttl         => 86400,
+        nameservers => "$nsid1,$nsid2",
+        description => "test delete me",
+    );
+    noerrok($res) or die "couldn't make the trailing dots zone";
+    my $dots_id = $res->get('nt_zone_id');
+    is( $user->get_zone( nt_zone_id => $dots_id )->get('zone'), 'dottest.com' );
+    $res = $group1->new_zone(
+        zone        => 'DotTest.com..',
+        serial      => 0,
+        ttl         => 86400,
+        nameservers => "$nsid1,$nsid2",
+        description => "test delete me",
+    );
+    noerrok( $res, 300 );
+    ok( $res->get('error_msg') =~ qr/Zone is already taken/ );
+    if ( !$res->is_error ) {
+        $res = $user->delete_zones( zone_list => $res->get('nt_zone_id') );
+        noerrok($res)
+            or die "Couldn't delete zone mistake " . $res->get('nt_zone_id');
+    }
+    $res = $user->delete_zones( zone_list => $dots_id );
+    noerrok($res) or die "Couldn't delete zone mistake $dots_id";
+
     # a new zone is stored lowercase
     $res = $group1->new_zone(
         zone        => 'MixedCase-Test.com',

@@ -953,7 +953,7 @@ sub zone_exists {
 
     # names are stored lowercase without the trailing dot (upgrade 2.42)
     $zone = lc $zone;
-    $zone =~ s/\.$//;
+    $zone =~ s/\.+$//;
 
     my $sql = "SELECT nt_zone_id,nt_group_id FROM nt_zone WHERE deleted=0
         AND nt_zone_id != ? AND zone = ?";

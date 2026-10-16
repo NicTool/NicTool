@@ -18,7 +18,7 @@ sub new_zone {
         $self->error( 'zone', "invalid character in zone -- $1" );
     }
 
-    $data->{zone} =~ s/\.$//;    # remove any trailing dot
+    $data->{zone} =~ s/\.+$//;    # remove any trailing dots
     $data->{zone} = lc $data->{zone};    # NicTool 3 matches names in this form
 
     if ( $data->{zone} =~ /(?:in-addr|ip6).arpa$/ ) {
