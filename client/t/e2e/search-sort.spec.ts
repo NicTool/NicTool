@@ -86,9 +86,10 @@ test.describe('Search and Sort', () => {
       `${BASE}/group_zones.cgi?nt_group_id=${gid}&start=2&limit=2`,
       cookies);
 
-    // Both pages should have content and not be identical
-    expect(page1.length).toBeGreaterThan(0);
-    expect(page2.length).toBeGreaterThan(0);
+    // the listing ignores limit, but page 2 starts past the first zone
+    expect(page1).toContain(zones[0].name);
+    expect(page2).not.toContain(zones[0].name);
+    expect(page2).toContain(zones[4].name);
   });
 
   test('sort zones descending', async ({ playwright }) => {

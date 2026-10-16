@@ -175,7 +175,9 @@ my $user = nt_api_connect();
 &start;
 
 eval {&test_api_funcs};
+warn $@ if $@;
 eval {&test_zones};
+warn $@ if $@;
 eval {&test_zone_records};
 warn $@ if $@;
 &cleanup;
@@ -548,8 +550,7 @@ sub test_api_funcs {
     #delete_zone_record_delegation
     ####################
 
-    # this section repeats the zone test above; it never called delete_zone_record_delegation
-    test_delete_zone_delegation();
+    test_delete_zone_record_delegation();
 
     ####################
     # get_delegated_zones
@@ -784,6 +785,64 @@ sub test_delete_zone_delegation {
     is( $res->size, 0 );
 }
 
+sub test_delete_zone_record_delegation {
+
+    #try true delegation
+    my $res = $tuser->delegate_zone_records(
+        zonerecord_list => $zrid1,
+        nt_group_id     => $gid2,
+        %dpermsfull,
+    );
+    noerrok($res);
+
+    $res = $tuser->get_zone_record_delegates( nt_zone_record_id => $zrid1 );
+    noerrok($res);
+    is( $res->size, 1 );
+    $res = $res->next;
+    is( $res->get('nt_group_id'), $gid2 );
+
+    $res = $tuser->get_delegated_zone_records( nt_group_id => $gid2 );
+    noerrok($res);
+    is( $res->size, 1 );
+    $res = $res->next;
+    is( $res->get('nt_zone_record_id'), $zrid1 );
+
+    bad_id_ok(
+        'nt_group_id',
+        sub {
+            $tuser->delete_zone_record_delegation(
+                nt_group_id       => shift,
+                nt_zone_record_id => $zrid1
+            );
+        }
+    );
+    bad_id_ok(
+        'nt_zone_record_id',
+        sub {
+            $tuser->delete_zone_record_delegation(
+                nt_group_id       => $gid2,
+                nt_zone_record_id => shift
+            );
+        }
+    );
+
+    #really delete it
+    $res = $tuser->delete_zone_record_delegation(
+        nt_group_id       => $gid2,
+        nt_zone_record_id => $zrid1,
+    );
+    noerrok($res);
+
+    #verify
+    $res = $tuser->get_zone_record_delegates( nt_zone_record_id => $zrid1 );
+    noerrok($res);
+    is( $res->size, 0 );
+
+    $res = $tuser->get_delegated_zone_records( nt_group_id => $gid2 );
+    noerrok($res);
+    is( $res->size, 0 );
+}
+
 # sets one more permission to $value per pass, delegating and removing the delegation each time
 sub delegation_toggled_ok {
     my ( $kind, $oid, $perms, $value ) = @_;
@@ -816,7 +875,7 @@ sub only_delegate_ok {
 
     #verify
     foreach ( keys %dpermmap ) {
-        is( $res->get($_), $perms->{ $dpermmap{$_} }, "delegation perm $_" );
+        is( $res->get( $dpermmap{$_} ), $perms->{$_}, "delegation perm $_" );
     }
 }
 

@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import {
   BASE,
-  authPost,
+  authGet, authPost,
   createGroup, deleteGroup, createZone, deleteZone,
   createRecord, deleteRecord, uniqueName, extractCsrf,
   apiCookies, clickIfPresent, frameFor, loginBodyFrame, zonePage,
@@ -86,8 +86,9 @@ test.describe('Records', () => {
     await authPost(playwright, `${BASE}/zone.cgi`, cookies,
       `nt_group_id=${gid}&nt_zone_id=${zid}&nt_zone_record_id=${rrid}&edit_record=${rrid}&Save=Save&name=mx-edit&type=MX&address=mail.example.com.&weight=20&ttl=3600&csrf_token=${csrfToken}`);
 
-    const body = await zonePage(playwright, cookies, gid, zid);
-    expect(body).toContain('20');
+    const { body } = await authGet(playwright,
+      `${BASE}/zone.cgi?nt_group_id=${gid}&nt_zone_id=${zid}&edit_record=1&nt_zone_record_id=${rrid}`, cookies);
+    expect(body).toMatch(/name="weight" value="20"/);
 
     await deleteRecord(playwright, cookies, gid, zid, rrid);
   });

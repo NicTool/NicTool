@@ -684,7 +684,7 @@ sub test_edit_user {
     }
 
     # delete user
-    $res = $user->delete_users( user_list => $usert );
+    $res = $user->delete_users( user_list => $uid );
     noerrok($res);
 }
 
@@ -763,7 +763,7 @@ sub test_zonerecord_write {
     noerrok($zr);
 
     foreach ( keys %record ) {
-        is( $zr->get($_), $record{$_}, "no settings should change" );
+        is( $zr->get($_), $record{$_}, "settings should change" );
     }
 
     #delete record
@@ -938,7 +938,7 @@ sub test_delete {
     $zone = $tuser->get_zone( nt_zone_id => $zid1 );
     noerrok($zone);
 
-    is( $zone->get('deleted'), 1, "zone should not be deleted" );
+    is( $zone->get('deleted'), 1, "zone should be deleted" );
 
     # delete zone
 
@@ -977,7 +977,7 @@ sub test_delete {
     #try to delete again
 
     $res = $tuser->delete_group( nt_group_id => $gid );
-    ok($res);
+    noerrok($res);
 
     $group = $tuser->get_group( nt_group_id => $gid );
     noerrok($group);
