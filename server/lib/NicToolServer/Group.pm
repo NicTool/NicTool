@@ -426,8 +426,8 @@ sub get_global_application_log {
 
     my $logs = $self->exec_query( $sql, $limit_params )
         or return {
-        $r_data->{error_code} => '600',
-        $r_data->{error_msg}  => $self->{dbh}->errstr,
+        error_code => '600',
+        error_msg  => $self->{dbh}->errstr,
         };
 
     my %groups;
