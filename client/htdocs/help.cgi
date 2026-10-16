@@ -25,21 +25,9 @@ require 'nictoolclient.conf';
 main();
 
 sub main {
-    my $q      = new CGI();
-    my $nt_obj = new NicToolClient($q);
-
-    return if ( $nt_obj->check_setup ne 'OK' );
-
-    my $user = $nt_obj->verify_session();
-
-    if ( $user && ref $user ) {
-        print $q->header(
-            -charset => "utf-8",
-            -cookie  => $nt_obj->csrf_cookie( $nt_obj->get_csrf_token() ),
-            %{ $nt_obj->security_headers() }
-        );
-        display( $nt_obj, $q, $user );
-    }
+    my ( $nt_obj, $q, $user ) = NicToolClient->start_page or return;
+    $nt_obj->print_header_with_csrf();
+    display( $nt_obj, $q, $user );
 }
 
 sub help_text {
@@ -90,13 +78,7 @@ sub help_text {
 sub display {
     my ( $nt_obj, $q, $user ) = @_;
 
-    $nt_obj->parse_template($NicToolClient::start_html_template);
-    $nt_obj->parse_template(
-        $NicToolClient::body_frame_start_template,
-        username  => $user->{'username'},
-        groupname => $user->{'groupname'},
-        userid    => $user->{'nt_user_id'}
-    );
+    $nt_obj->print_page_start($user);
 
     my $message;
     my $topics = help_text;

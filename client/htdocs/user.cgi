@@ -25,37 +25,16 @@ require 'nictoolclient.conf';
 main();
 
 sub main {
-    my $q      = CGI->new();
-    my $nt_obj = NicToolClient->new($q);
-
-    return if $nt_obj->check_setup ne 'OK';
-
-    my $user = $nt_obj->verify_session();
-
-    if ( $user && ref $user ) {
-        my $message;
-        if ( $q->param('redirect') ) {
-            $message = $nt_obj->redirect_from_log($q);
-        }
-        print $q->header(
-            -charset => "utf-8",
-            -cookie  => $nt_obj->csrf_cookie( $nt_obj->get_csrf_token() ),
-            %{ $nt_obj->security_headers() }
-        );
-        display( $nt_obj, $q, $user, $message );
-    }
+    my ( $nt_obj, $q, $user ) = NicToolClient->start_page or return;
+    my $message = $q->param('redirect') ? $nt_obj->redirect_from_log($q) : undef;
+    $nt_obj->print_header_with_csrf();
+    display( $nt_obj, $q, $user, $message );
 }
 
 sub display {
     my ( $nt_obj, $q, $user, $message ) = @_;
 
-    $nt_obj->parse_template($NicToolClient::start_html_template);
-    $nt_obj->parse_template(
-        $NicToolClient::body_frame_start_template,
-        username  => $user->{'username'},
-        groupname => $user->{'groupname'},
-        userid    => $user->{'nt_user_id'}
-    );
+    $nt_obj->print_page_start($user);
 
     my $duser = $nt_obj->get_user( nt_user_id => scalar( $q->param('nt_user_id') ) );
     if ( $duser->{'error_code'} ne 200 ) {
@@ -212,11 +191,7 @@ sub display_properties {
         }
     }
 
-    my @state_fields;
-    foreach ( @{ $nt_obj->paging_fields } ) {
-        push( @state_fields, "$_=" . $q->escape( scalar( $q->param($_) ) ) )
-            if ( $q->param($_) );
-    }
+    my @state_fields = $nt_obj->paging_state($q);
 
     print qq[<table class="fat">
     <tr class="dark_grey_bg">
@@ -309,11 +284,7 @@ sub display_global_log {
 
     my $list = $rv->{'list'};
 
-    my @state_fields;
-    foreach ( @{ $nt_obj->paging_fields } ) {
-        push( @state_fields, "$_=" . $q->escape( scalar( $q->param($_) ) ) )
-            if ( $q->param($_) );
-    }
+    my @state_fields = $nt_obj->paging_state($q);
 
     print qq[<table class="fat"><tr><td><hr></td></tr>];
 

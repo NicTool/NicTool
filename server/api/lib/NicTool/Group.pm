@@ -24,36 +24,22 @@ our @ISA = 'NicTool::DBObject';
 
 sub _id_name {'nt_group_id'}
 
+# API functions that act on a group: a Group supplies its own id, and the
+# objects within a group supply their nt_group_id
+sub group_functions {
+    qw/ new_user new_group get_group get_group_users move_users edit_group delete_group
+        get_group_groups get_group_branch get_group_subgroups get_global_application_log
+        get_group_zones new_zone move_zones new_nameserver get_group_nameservers
+        move_nameservers delegate_zones delegate_zone_records edit_zone_delegation
+        edit_zone_record_delegation delete_zone_delegation delete_zone_record_delegation
+        get_delegated_zones get_delegated_zone_records /;
+}
+
 sub _api {
-    +{  _get_self                     => { 'function'  => 'get_group',    'includeid' => 1 },
-        _delete_self                  => { 'function'  => 'delete_group', 'includeid' => 1 },
-        new_user                      => { 'includeid' => 1 },
-        new_group                     => { 'includeid' => 1 },
-        get_delegated_zones           => { 'includeid' => 1 },
-        get_delegated_zone_records    => { 'includeid' => 1 },
-        get_group                     => { 'includeid' => 1 },
-        get_group_users               => { 'includeid' => 1 },
-        move_users                    => { 'includeid' => 1 },
-        edit_group                    => { 'includeid' => 1, sully => 1 },
-        delete_group                  => { 'includeid' => 1 },
-        get_group_groups              => { 'includeid' => 1 },
-        get_group_branch              => { 'includeid' => 1 },
-        get_group_subgroups           => { 'includeid' => 1 },
-        get_global_application_log    => { 'includeid' => 1 },
-        get_group_zones               => { 'includeid' => 1 },
-        new_zone                      => { 'includeid' => 1 },
-        move_zones                    => { 'includeid' => 1 },
-        new_nameserver                => { 'includeid' => 1 },
-        get_group_nameservers         => { 'includeid' => 1 },
-        move_nameservers              => { 'includeid' => 1 },
-        delegate_zones                => { 'includeid' => 1 },
-        delegate_zone_records         => { 'includeid' => 1 },
-        edit_zone_delegation          => { 'includeid' => 1 },
-        edit_zone_record_delegation   => { 'includeid' => 1 },
-        delete_zone_delegation        => { 'includeid' => 1 },
-        delete_zone_record_delegation => { 'includeid' => 1 },
-        get_delegated_zones           => { 'includeid' => 1 },
-        get_delegated_zone_records    => { 'includeid' => 1 },
+    +{  _get_self    => { 'function' => 'get_group',    'includeid' => 1 },
+        _delete_self => { 'function' => 'delete_group', 'includeid' => 1 },
+        ( map { $_ => { 'includeid' => 1 } } group_functions() ),
+        edit_group => { 'includeid' => 1, sully => 1 },
     };
 }
 

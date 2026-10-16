@@ -164,7 +164,7 @@ sub get_zone_record_log {
         . "AND nt_zone_record_log.nt_user_id = nt_user.nt_user_id "
         . "AND nt_zone_record_log.nt_zone_id = "
         . $dbh->quote( $data->{nt_zone_id} )
-        . ( @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
+        . $self->and_conditions_sql($conditions);
 
     my $c = $self->exec_query($sql);
     $r_data->{total} = $c->[0]{count};
@@ -182,11 +182,12 @@ sub get_zone_record_log {
         . "AND nt_zone_record_log.nt_user_id = nt_user.nt_user_id
            AND nt_zone_record_log.nt_zone_id = "
         . $dbh->quote( $data->{nt_zone_id} )
-        . ( @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
-    $sql .= " ORDER BY " . join( ', ', @$sortby ) . " " if (@$sortby);
-    $sql .= "LIMIT " . ( $r_data->{start} - 1 ) . ", $r_data->{limit}";
+        . $self->and_conditions_sql($conditions);
+    $sql .= $self->order_by_sql($sortby);
+    my ( $limit_sql, $limit_params ) = $self->sql_limit_clause($r_data);
+    $sql .= $limit_sql;
 
-    my $zr_logs = $self->exec_query($sql)
+    my $zr_logs = $self->exec_query( $sql, $limit_params )
         or return {
         error_code => '600',
         error_msg  => $self->{dbh}->errstr,
@@ -229,14 +230,10 @@ sub get_group_zones_log {
 
     my $r_data = { error_code => 200, error_msg => 'OK', log => [] };
 
-    my @group_list;
-    if ( $data->{include_subgroups} ) {
-        @group_list =
-            ( $data->{nt_group_id}, @{ $self->get_subgroup_ids( $data->{nt_group_id} ) } );
-    }
-    else {
-        @group_list = ( $data->{nt_group_id} );
-    }
+    my @group_list =
+        $data->{include_subgroups}
+        ? $self->group_with_subgroup_ids( $data->{nt_group_id} )
+        : $data->{nt_group_id};
 
     my $sql = "SELECT COUNT(*) AS count FROM
           nt_zone_log, nt_zone, nt_user, nt_group
@@ -245,7 +242,7 @@ sub get_group_zones_log {
           AND nt_zone.nt_group_id = nt_group.nt_group_id
           AND nt_zone.nt_group_id IN("
         . join( ',', @group_list ) . ")"
-        . ( @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
+        . $self->and_conditions_sql($conditions);
 
     my $c = $self->exec_query($sql);
     $r_data->{total} = $c->[0]{count};
@@ -262,11 +259,12 @@ sub get_group_zones_log {
            AND nt_zone.nt_group_id = nt_group.nt_group_id
            AND nt_zone.nt_group_id IN("
         . join( ',', @group_list ) . ")"
-        . ( @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
-    $sql .= " ORDER BY " . join( ', ', @$sortby ) . " " if (@$sortby);
-    $sql .= "LIMIT " . ( $r_data->{start} - 1 ) . ", $r_data->{limit}";
+        . $self->and_conditions_sql($conditions);
+    $sql .= $self->order_by_sql($sortby);
+    my ( $limit_sql, $limit_params ) = $self->sql_limit_clause($r_data);
+    $sql .= $limit_sql;
 
-    my $zone_logs = $self->exec_query($sql)
+    my $zone_logs = $self->exec_query( $sql, $limit_params )
         or return {
         error_code => '600',
         error_msg  => $self->{dbh}->errstr,
@@ -306,10 +304,10 @@ sub get_group_zones {
     my $conditions = $self->format_search_conditions( $data, \%field_map );
 
     #warn "conditions: ".Data::Dumper::Dumper($conditions);
-    my @group_list = $data->{nt_group_id};
-    if ( $data->{include_subgroups} ) {
-        push @group_list, @{ $self->get_subgroup_ids( $data->{nt_group_id} ) };
-    }
+    my @group_list =
+        $data->{include_subgroups}
+        ? $self->group_with_subgroup_ids( $data->{nt_group_id} )
+        : $data->{nt_group_id};
 
     my $r_data = { 'error_code' => 200, 'error_msg' => 'OK', zones => [] };
 
@@ -321,7 +319,7 @@ sub get_group_zones {
         . " AND nt_zone.deleted='"
         . ( $data->{search_deleted} ? '1' : '0' ) . "' ";
 
-    $sql .= ( @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
+    $sql .= $self->and_conditions_sql($conditions);
 
     my $c = $self->exec_query($sql)
         or return $self->error_response( 508, $self->{dbh}->errstr );
@@ -339,7 +337,7 @@ sub get_group_zones {
          INNER JOIN nt_zone_record ON nt_delegate.nt_object_id=nt_zone_record.nt_zone_record_id
          INNER JOIN nt_zone ON nt_zone.nt_zone_id=nt_zone_record.nt_zone_id
              WHERE nt_delegate.nt_group_id=$data->{nt_group_id} AND nt_delegate.nt_object_type='ZONERECORD'";
-    $sql .= ( @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
+    $sql .= $self->and_conditions_sql($conditions);
     $sql .= " GROUP BY nt_zone.nt_zone_id";
 
     my $delegs = $self->exec_query($sql)
@@ -361,7 +359,7 @@ sub get_group_zones {
          FROM  nt_delegate as d
          INNER JOIN nt_zone ON nt_zone.nt_zone_id=d.nt_object_id
          WHERE d.nt_group_id=$data->{nt_group_id} AND d.nt_object_type='ZONE'";
-    $sql .= ( @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
+    $sql .= $self->and_conditions_sql($conditions);
 
     $delegs = $self->exec_query($sql)
         or return $self->error_response( 505, $self->{dbh}->errstr );
@@ -419,11 +417,12 @@ sub get_group_zones {
         ? "       OR nt_zone.nt_zone_id IN (" . join( ',', @zones ) . " ) "
         : ''
         ) . "         ) ";
-    $sql .= 'AND (' . join( ' ', @$conditions ) . ') ' if @$conditions;
-    $sql .= "ORDER BY " . join( ', ', @$sortby ) . " " if (@$sortby);
-    $sql .= "LIMIT " . ( $r_data->{start} - 1 ) . ", $r_data->{limit}";
+    $sql .= $self->and_conditions_sql($conditions);
+    $sql .= $self->order_by_sql($sortby);
+    my ( $limit_sql, $limit_params ) = $self->sql_limit_clause($r_data);
+    $sql .= $limit_sql;
 
-    my $all_zones = $self->exec_query($sql)
+    my $all_zones = $self->exec_query( $sql, $limit_params )
         or return {
         error_code => '505',
         error_msg  => $self->{dbh}->errstr,
@@ -503,7 +502,7 @@ sub get_zone_records {
      WHERE nt_zone_record.nt_zone_id = $data->{nt_zone_id}
        AND nt_zone_record.deleted=0
        AND nt_delegate.deleted=0 "
-            . ( @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
+            . $self->and_conditions_sql($conditions);
     }
     else {
         $sql = "SELECT COUNT(*) AS count
@@ -511,7 +510,7 @@ sub get_zone_records {
         LEFT JOIN resource_record_type rrt ON nt_zone_record.type_id=rrt.id
           WHERE nt_zone_record.deleted=0
             AND nt_zone_record.nt_zone_id = $data->{nt_zone_id}"
-            . ( @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
+            . $self->and_conditions_sql($conditions);
     }
     my $c = $self->exec_query($sql);
     $r_data->{total} = $c->[0]{count};
@@ -566,11 +565,12 @@ sub get_zone_records {
         WHERE nt_zone_record.nt_zone_id = $data->{nt_zone_id}
           AND nt_zone_record.deleted=0
           AND ( nt_delegate.deleted=0 OR nt_delegate.deleted IS NULL ) ";
-    $sql .= 'AND (' . join( ' ', @$conditions ) . ') ' if @$conditions;
-    $sql .= "ORDER BY " . join( ', ', @$sortby ) . " " if (@$sortby);
-    $sql .= "LIMIT " . ( $r_data->{start} - 1 ) . ", $r_data->{limit}";
+    $sql .= $self->and_conditions_sql($conditions);
+    $sql .= $self->order_by_sql($sortby);
+    my ( $limit_sql, $limit_params ) = $self->sql_limit_clause($r_data);
+    $sql .= $limit_sql;
 
-    my $zrecords = $self->exec_query($sql)
+    my $zrecords = $self->exec_query( $sql, $limit_params )
         or return {
         error_code => '600',
         error_msg  => $self->{dbh}->errstr,
@@ -603,13 +603,7 @@ sub new_zone {
         $data->{serial} = $self->bump_serial('new');
     }
 
-    my $sql =
-          "INSERT INTO nt_zone("
-        . join( ',', @columns )
-        . ") VALUES("
-        . join( ',', map( $self->{dbh}->quote( $data->{$_} ), @columns ) ) . ")";
-
-    my $insertid = $self->exec_query($sql)
+    my $insertid = $self->insert_row( 'nt_zone', $data, @columns )
         or return {
         error_code => 600,
         error_msg  => $self->{dbh}->errstr,
@@ -751,17 +745,8 @@ sub log_zone {
         }
     }
 
-    my $dbh = $self->{dbh};
-    my $sql =
-          "INSERT INTO nt_zone_log("
-        . join( ',', @columns )
-        . ") VALUES("
-        . join( ',', map( $dbh->quote( $data->{$_} ), @columns ) ) . ")";
-
-    my $insertid = $self->exec_query($sql) or warn $dbh->errstr;
-
-    my @g_columns = qw/ nt_user_id timestamp action object object_id
-        log_entry_id title description /;
+    my $insertid = $self->insert_row( 'nt_zone_log', $data, @columns )
+        or warn $self->{dbh}->errstr;
 
     $data->{object}       = 'zone';
     $data->{log_entry_id} = $insertid;
@@ -784,12 +769,7 @@ sub log_zone {
         $data->{description} = "recovered zone";
     }
 
-    $sql =
-          "INSERT INTO nt_user_global_log("
-        . join( ',', @g_columns )
-        . ") VALUES("
-        . join( ',', map( $dbh->quote( $data->{$_} ), @g_columns ) ) . ")";
-    $self->exec_query($sql);
+    $self->log_global($data);
 }
 
 sub delete_zones {
@@ -797,15 +777,14 @@ sub delete_zones {
 
     my %error = ( 'error_code' => 200, 'error_msg' => 'OK' );
 
-    my %groups = map { $_, 1 }
-        ( $data->{user}{nt_group_id}, @{ $self->get_subgroup_ids( $data->{user}{nt_group_id} ) } );
+    my %groups = map { $_ => 1 } $self->group_with_subgroup_ids( $data->{user}{nt_group_id} );
 
-    my @zone_ids = grep { /^\d+$/ } split( /\s*,\s*/, ( $data->{zone_list} || q{} ) );
+    my @zone_ids = @{ $self->sanitize_int_list( $data->{zone_list} || q{} ) };
     return { error_code => 503, error_msg => 'invalid zone list' } if !@zone_ids;
 
-    my $placeholders = join( ',', ('?') x @zone_ids );
-    my $sql          = "SELECT * FROM nt_zone WHERE nt_zone.nt_zone_id IN($placeholders)";
-    my $zones_data   = $self->exec_query( $sql, \@zone_ids )
+    my ( $zone_in_sql, $zone_in_params ) = $self->sql_in_clause( 'nt_zone.nt_zone_id', \@zone_ids );
+    my $sql        = "SELECT * FROM nt_zone WHERE $zone_in_sql";
+    my $zones_data = $self->exec_query( $sql, $zone_in_params )
         or return { error_code => 600, error_msg => $self->{dbh}->errstr };
 
     my $record_obj =
@@ -833,21 +812,20 @@ sub move_zones {
 
     my %rv = ( 'error_code' => 200, 'error_msg' => 'OK' );
 
-    my %groups = map { $_, 1 }
-        ( $data->{user}{nt_group_id}, @{ $self->get_subgroup_ids( $data->{user}{nt_group_id} ) } );
+    my %groups = map { $_ => 1 } $self->group_with_subgroup_ids( $data->{user}{nt_group_id} );
 
     my $new_group = $self->NicToolServer::Group::find_group( $data->{nt_group_id} );
 
-    my @zone_ids = grep { /^\d+$/ } split( /\s*,\s*/, ( $data->{zone_list} || q{} ) );
+    my @zone_ids = @{ $self->sanitize_int_list( $data->{zone_list} || q{} ) };
     return { error_code => 503, error_msg => 'invalid zone list' } if !@zone_ids;
 
-    my $placeholders = join( ',', ('?') x @zone_ids );
+    my ( $zone_in_sql, $zone_in_params ) = $self->sql_in_clause( 'nt_zone_id', \@zone_ids );
     my $sql = "SELECT nt_zone.*, nt_group.name as old_group_name
         FROM nt_zone, nt_group
        WHERE nt_zone.nt_group_id = nt_group.nt_group_id
-         AND nt_zone_id IN($placeholders)";
+         AND $zone_in_sql";
 
-    my $zrecs = $self->exec_query( $sql, \@zone_ids )
+    my $zrecs = $self->exec_query( $sql, $zone_in_params )
         or return {
         error_code => 600,
         error_msg  => $self->{dbh}->errstr,
@@ -874,8 +852,6 @@ sub get_zone_list {
     my ( $self, $data ) = @_;
 
     my %rv = ( 'error_code' => 200, 'error_msg' => 'OK' );
-
-    #my %groups = map { $_, 1 } ($data->{user}{nt_group_id}, @{ $self->get_subgroup_ids($data->{user}{nt_group_id}) });
 
     my @zone_ids = @{ $self->sanitize_int_list( $data->{zone_list} ) };
     return $self->error_response( 503, 'invalid zone list' ) if !@zone_ids;

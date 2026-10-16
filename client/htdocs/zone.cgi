@@ -27,33 +27,15 @@ main();
 sub _esc { NicToolClient::html_escape( undef, $_[0] ) }
 
 sub main {
-    my $q      = new CGI();
-    my $nt_obj = new NicToolClient($q);
-
-    return if $nt_obj->check_setup ne 'OK';
-
-    my $user = $nt_obj->verify_session();
-
-    if ( $user && ref $user ) {
-        print $q->header(
-            -charset => "utf-8",
-            -cookie  => $nt_obj->csrf_cookie( $nt_obj->get_csrf_token() ),
-            %{ $nt_obj->security_headers() }
-        );
-        display( $nt_obj, $q, $user );
-    }
+    my ( $nt_obj, $q, $user ) = NicToolClient->start_page or return;
+    $nt_obj->print_header_with_csrf();
+    display( $nt_obj, $q, $user );
 }
 
 sub display {
     my ( $nt_obj, $q, $user ) = @_;
 
-    $nt_obj->parse_template($NicToolClient::start_html_template);
-    $nt_obj->parse_template(
-        $NicToolClient::body_frame_start_template,
-        username  => $user->{'username'},
-        groupname => $user->{'groupname'},
-        userid    => $user->{'nt_user_id'},
-    );
+    $nt_obj->print_page_start($user);
 
     my $zone = $nt_obj->get_zone( nt_zone_id => scalar( $q->param('nt_zone_id') ) );
 
@@ -384,10 +366,7 @@ sub display_zone_properties {
     my ( $nt_obj, $q, $zone, $user ) = @_;
 
     my $state = 'nt_group_id=' . $q->param('nt_group_id');
-    foreach ( @{ $nt_obj->paging_fields } ) {
-        next if !$q->param($_);
-        $state .= "&amp;$_=" . $q->escape( scalar( $q->param($_) ) );
-    }
+    $state .= join '', map {"&amp;$_"} $nt_obj->paging_state($q);
     $state .= "&amp;nt_zone_id=$zone->{'nt_zone_id'}&amp;edit_zone=1";
 
     my $isdelegate = exists $zone->{'delegated_by_id'};
@@ -462,10 +441,7 @@ sub display_nameservers {
         && ( $isdelegate ? $zone->{'delegate_write'} : 1 ) )
     {
         my $state = 'nt_group_id=' . $q->param('nt_group_id');
-        foreach ( @{ $nt_obj->paging_fields } ) {
-            next if !$q->param($_);
-            $state .= "&amp;$_=" . $q->escape( scalar( $q->param($_) ) );
-        }
+        $state .= join '', map {"&amp;$_"} $nt_obj->paging_state($q);
         $state .= "&amp;nt_zone_id=$zone->{'nt_zone_id'}&amp;edit_zone=1";
         print qq[<li><a href="zone.cgi?$state">Edit</a></li>];
     }
@@ -537,11 +513,7 @@ sub display_zone_records {
 
     my $zone_records = $rv->{'records'};
 
-    my @state_fields;
-    foreach ( @{ $nt_obj->paging_fields } ) {
-        next if !$q->param($_);
-        push @state_fields, "$_=" . $q->escape( scalar( $q->param($_) ) );
-    }
+    my @state_fields = $nt_obj->paging_state($q);
     my $state_string = join( '&amp;', @state_fields );
 
     # Display the RR header: Resource Records  New Resource Record | View Resource Record Log

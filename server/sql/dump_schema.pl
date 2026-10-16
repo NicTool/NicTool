@@ -5,11 +5,12 @@ use warnings;
 use DBI;
 
 # machine dependant variables
-my $db_host = '127.0.0.1';
-my $db      = 'nictool';
-my $db_dsn  = "DBI:mysql:database=$db;host=$db_host";
-my $db_user = 'nictool';
-my $db_pass = $ENV{NICTOOL_DB_USER_PASSWORD} or die "Set NICTOOL_DB_USER_PASSWORD\n";
+my $db_host   = '127.0.0.1';
+my $db        = 'nictool';
+my $db_engine = $ENV{DB_ENGINE} || 'mysql';
+my $db_dsn    = "DBI:$db_engine:database=$db;host=$db_host";
+my $db_user   = 'nictool';
+my $db_pass   = $ENV{NICTOOL_DB_USER_PASSWORD} or die "Set NICTOOL_DB_USER_PASSWORD\n";
 
 my $dbh = DBI->connect( $db_dsn, $db_user, $db_pass,
     { RaiseError => 1, PrintError => 0 } );

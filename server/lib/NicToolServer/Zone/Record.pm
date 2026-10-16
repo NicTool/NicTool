@@ -305,11 +305,7 @@ sub log_zone_record {
             "recovered previous settings ($data->{type} $data->{weight} $data->{address})";
     }
 
-    my @g_columns =
-        qw/ nt_user_id timestamp action object object_id log_entry_id title description /;
-    $col_string = join( ',', @g_columns );
-    @values     = map { $data->{$_} } @g_columns;
-    $self->exec_query( "INSERT INTO nt_user_global_log($col_string) VALUES(??)", \@values );
+    $self->log_global($data);
 }
 
 sub get_zone_record {

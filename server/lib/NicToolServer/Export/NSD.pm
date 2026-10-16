@@ -8,11 +8,6 @@ use warnings;
 use lib 'lib';
 use parent 'NicToolServer::Export::BIND';
 
-use Cwd;
-use IO::File;
-use File::Copy;
-use Params::Validate qw/ :all /;
-
 sub update_named_include {
     my ( $self, $dir ) = @_;
 
@@ -31,28 +26,11 @@ EO_ZONE
     return 1;
 }
 
-sub write_makefile {
-    my $self = shift;
+sub default_remote_login {'nsd'}
 
-    my $exportdir = $self->{nte}->get_export_dir or do {
-        warn "no export dir!";
-        return;
-    };
-    return 1 if -e "$exportdir/Makefile";    # already exists
-
-    my $address      = $self->{nte}{ns_ref}{address}      || '127.0.0.1';
-    my $datadir      = $self->{nte}{ns_ref}{datadir}      || getcwd . '/data-all';
-    my $remote_login = $self->{nte}{ns_ref}{remote_login} || 'nsd';
-    $datadir =~ s/\/$//;                     # strip off any trailing /
-    open my $M, '>', "$exportdir/Makefile" or do {
-        warn "unable to open ./Makefile: $!\n";
-        return;
-    };
-    print $M <<EO_MAKE
-# After a successful export, 3 make targets are run: compile, remote, restart
-# Each target can do anything you'd like.
-# See https://www.gnu.org/software/make/manual/make.html
-
+sub makefile_targets {
+    my ( $self, $exportdir, $remote_login, $address, $datadir ) = @_;
+    return <<EO_MAKE;
 ################################
 #########    NSD   #############
 ################################
@@ -71,9 +49,6 @@ restart: $exportdir
 \tssh $remote_login\@$address "nsd-control reconfig && nsd-control reload"
 
 EO_MAKE
-        ;
-    close $M;
-    return 1;
 }
 
 1;

@@ -1,11 +1,9 @@
 import { test, expect } from '@playwright/test';
 import {
-  BASE, GROUP_DEFAULTS,
+  BASE, GROUP_DEFAULTS, ROOT_GROUPS,
   apiLogin, authGet, authPost, cookieString,
   createGroup, deleteGroup, findInListing, uniqueName, extractCsrf,
 } from './helpers';
-
-const ROOT_GROUPS = { cgi: 'group.cgi', gid: 1, idParam: 'nt_group_id' };
 
 test.describe('Groups', () => {
   let cookies: string;

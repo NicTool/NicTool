@@ -6,36 +6,6 @@ use strict;
 
 @NicToolServer::Group::ISA = 'NicToolServer';
 
-sub perm_fields_select {
-    qq(
-    nt_perm.group_write,
-    nt_perm.group_create,
-    nt_perm.group_delete,
-
-    nt_perm.zone_write,
-    nt_perm.zone_create,
-    nt_perm.zone_delegate,
-    nt_perm.zone_delete,
-
-    nt_perm.zonerecord_write,
-    nt_perm.zonerecord_create,
-    nt_perm.zonerecord_delegate,
-    nt_perm.zonerecord_delete,
-
-    nt_perm.user_write,
-    nt_perm.user_create,
-    nt_perm.user_delete,
-
-    nt_perm.nameserver_write,
-    nt_perm.nameserver_create,
-    nt_perm.nameserver_delete,
-
-    nt_perm.self_write,
-
-    nt_perm.usable_ns
-    );
-}
-
 sub new_group {
     my ( $self, $data ) = @_;
 
@@ -60,11 +30,7 @@ sub new_group {
 
     $data->{modified_group_id} = $insertid;
 
-    my @permcols = grep { exists $data->{$_} } qw/ group_create group_delete group_write
-        zone_create zone_delegate zone_delete zone_write
-        zonerecord_create zonerecord_delegate zonerecord_delete zonerecord_write
-        user_create user_delete user_write self_write
-        nameserver_create nameserver_delete nameserver_write /;
+    my @permcols = grep { exists $data->{$_} } $self->perm_fields;
 
     #cannot change permissions unless you have those permissions
     foreach (@permcols) {
@@ -132,13 +98,7 @@ sub edit_group {
         $error{nt_group_id} = $data->{nt_group_id};
     }
 
-    my @perms = qw(group_create group_delete group_write
-        zone_create zone_delegate zone_delete zone_write
-        zonerecord_create zonerecord_delegate zonerecord_delete zonerecord_write
-        user_create user_delete user_write self_write
-        nameserver_create nameserver_delete nameserver_write
-    );
-    my @permcols = grep { exists $data->{$_} && $data->{user}{$_} } @perms;
+    my @permcols = grep { exists $data->{$_} && $data->{user}{$_} } $self->perm_fields;
 
     my %usable = map { $_ => 1 } split( /,/, $data->{usable_nameservers} );
 
@@ -148,7 +108,7 @@ sub edit_group {
     my $gperms = $self->exec_query( $sql, $data->{nt_group_id} )
         or return $self->error_response( 505, $dbh->errstr );
     $gperms     = $gperms->[0];
-    %$prev_data = ( %$prev_data, map { $_ => $gperms->{$_} } @perms );
+    %$prev_data = ( %$prev_data, map { $_ => $gperms->{$_} } $self->perm_fields );
 
     if ( !$gperms ) {
         return $self->error_response( 507,
@@ -360,10 +320,9 @@ sub get_group_subgroups {
 
         my ( $group_in_sql, $group_in_params ) =
                 $self->sql_in_clause( 'parent_group_id', \@group_list );
-    my $cond_string  = join( ' ', @$conditions );
     my $sql          = "SELECT COUNT(*) AS count FROM nt_group
     WHERE deleted=0 AND $group_in_sql";
-    $sql .= " AND ($cond_string)" if scalar @$conditions;
+    $sql .= $self->and_conditions_sql($conditions);
 
         my $c = $self->exec_query( $sql, $group_in_params );
     $r_data->{total} = $c->[0]->{count};
@@ -375,11 +334,10 @@ sub get_group_subgroups {
     return $r_data if $r_data->{total} == 0;
 
         my ( $limit_sql, $limit_params ) = $self->sql_limit_clause($r_data);
-        my $sort_string = join( ', ', @$sortby );
     $sql = "SELECT nt_group.* FROM nt_group
     WHERE deleted=0 AND $group_in_sql";
-    $sql .= " AND ($cond_string)"    if scalar @$conditions;
-    $sql .= " ORDER BY $sort_string" if (@$sortby);
+    $sql .= $self->and_conditions_sql($conditions);
+    $sql .= $self->order_by_sql($sortby);
         $sql .= $limit_sql;
         my $group_rows = $self->exec_query( $sql, [ @$group_in_params, @$limit_params ] );
 
@@ -414,46 +372,18 @@ sub get_global_application_log {
     my ( $self, $data ) = @_;
 
     my %field_map = (
-        timestamp => {
-            timefield   => 1,
-            quicksearch => 0,
-            field       => 'nt_user_global_log.timestamp'
-        },
-        user   => { timefield => 0, quicksearch => 1, field => 'nt_user.username' },
-        action => {
-            timefield   => 0,
-            quicksearch => 1,
-            field       => 'nt_user_global_log.action'
-        },
-        object => {
-            timefield   => 0,
-            quicksearch => 1,
-            field       => 'nt_user_global_log.object'
-        },
-        title => {
-            timefield   => 0,
-            quicksearch => 1,
-            field       => 'nt_user_global_log.title'
-        },
-        description => {
-            timefield   => 0,
-            quicksearch => 1,
-            field       => 'nt_user_global_log.description'
-        },
+        $self->global_log_field_map,
+        user => { timefield => 0, quicksearch => 1, field => 'nt_user.username' },
     );
 
     my $conditions = $self->format_search_conditions( $data, \%field_map );
     my $sortby =
         $self->format_sort_conditions( $data, \%field_map, "nt_user_global_log.timestamp DESC" );
 
-    my @group_list;
-    if ( $data->{include_subgroups} ) {
-        @group_list =
-            ( $data->{nt_group_id}, @{ $self->get_subgroup_ids( $data->{nt_group_id} ) } );
-    }
-    else {
-        @group_list = ( $data->{nt_group_id} );
-    }
+    my @group_list =
+        $data->{include_subgroups}
+        ? $self->group_with_subgroup_ids( $data->{nt_group_id} )
+        : $data->{nt_group_id};
 
     my $r_data = { error_code => 200, error_msg => 'OK', log => [] };
 
@@ -462,7 +392,7 @@ sub get_global_application_log {
         . "WHERE nt_user_global_log.nt_user_id = nt_user.nt_user_id "
         . "AND nt_user.nt_group_id IN("
         . join( ',', @group_list ) . ") "
-        . ( @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
+        . $self->and_conditions_sql($conditions);
     my $c = $self->exec_query($sql);
     $r_data->{total} = $c->[0]{count};
 
@@ -479,11 +409,12 @@ sub get_global_application_log {
         . "WHERE nt_user_global_log.nt_user_id = nt_user.nt_user_id AND nt_user.nt_group_id IN("
         . join( ',', @group_list )
         . ") AND nt_user.nt_group_id = nt_group.nt_group_id ";
-    $sql .= 'AND (' . join( ' ', @$conditions ) . ') ' if @$conditions;
-    $sql .= "ORDER BY " . join( ', ', @$sortby ) . " " if (@$sortby);
-    $sql .= "LIMIT " . ( $r_data->{start} - 1 ) . ", $r_data->{limit}";
+    $sql .= $self->and_conditions_sql($conditions);
+    $sql .= $self->order_by_sql($sortby);
+    my ( $limit_sql, $limit_params ) = $self->sql_limit_clause($r_data);
+    $sql .= $limit_sql;
 
-    my $logs = $self->exec_query($sql)
+    my $logs = $self->exec_query( $sql, $limit_params )
         or return {
         $r_data->{error_code} => '600',
         $r_data->{error_msg}  => $self->{dbh}->errstr,
@@ -531,28 +462,14 @@ sub get_group_branch {
 sub log_group {
     my ( $self, $data, $action, $prev_data ) = @_;
 
-    my $dbh = $self->{dbh};
-    my @columns =
-        qw(nt_group_id parent_group_id nt_user_id action timestamp modified_group_id name);
-    my @values;
-
     my $user = $data->{user};
     $data->{modified_group_id} ||= $data->{nt_group_id};
     $data->{nt_user_id} = $user->{nt_user_id};
     $data->{action}     = $action;
     $data->{timestamp}  = time();
 
-    my $sql =
-          "INSERT INTO nt_group_log("
-        . join( ',', @columns )
-        . ") VALUES("
-        . join( ',', map( $dbh->quote( $data->{$_} ), @columns ) ) . ")";
-
-    my $insertid = $self->exec_query($sql);
-
-    # TODO test this..
-    my @g_columns = qw/ nt_user_id timestamp action object object_id
-        log_entry_id title description /;
+    my $insertid = $self->insert_row( 'nt_group_log', $data,
+        qw/ nt_group_id parent_group_id nt_user_id action timestamp modified_group_id name / );
 
     $data->{object}       = 'group';
     $data->{log_entry_id} = $insertid;
@@ -571,12 +488,7 @@ sub log_group {
         $data->{description} = 'initial creation';
     }
 
-    $sql =
-          "INSERT INTO nt_user_global_log("
-        . join( ',', @g_columns )
-        . ") VALUES("
-        . join( ',', map( $dbh->quote( $data->{$_} ), @g_columns ) ) . ")";
-    $self->exec_query($sql);
+    $self->log_global($data);
 }
 
 sub find_group {

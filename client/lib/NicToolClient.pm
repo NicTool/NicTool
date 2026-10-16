@@ -56,6 +56,21 @@ sub obj_to_cgi_map {
     };
 }
 
+# the preamble of every logged-in page: check_setup and verify_session print
+# their own error pages, so an empty return means the page is already done
+sub start_page {
+    my $class  = shift;
+    my $q      = CGI->new();
+    my $nt_obj = $class->new($q);
+
+    return if $nt_obj->check_setup ne 'OK';
+
+    my $user = $nt_obj->verify_session();
+    return if !$user || !ref $user;
+
+    return ( $nt_obj, $q, $user );
+}
+
 sub check_setup {
     my $self = shift;
 
@@ -65,7 +80,7 @@ sub check_setup {
     my $message = $server_obj->check_setup();
 
     if ( $message ne 'OK' ) {
-        print $q->header( -charset => 'utf-8', %{ $self->security_headers() } );
+        $self->print_header();
         $self->parse_template( $NicToolClient::setup_error_template,
             message => $self->html_escape($message) );
     }
@@ -113,25 +128,10 @@ sub display_login {
         $message = $error;
     }
 
-    my $expire_session = $q->cookie(
-        -name     => 'NicTool',
-        -value    => '',
-        -expires  => '-1d',
-        -path     => '/',
-        -secure   => 1,
-        -httponly => 1,
-        -samesite => 'Strict',
-    );
-
     # reuse any token already in play: minting a fresh one here clobbered the
     # cookie for every other open login tab, stranding their forms. (#335)
-    my $csrf = $self->csrf_cookie( $self->get_csrf_token() );
-
-    print $q->header(
-        -charset => 'utf-8',
-        -cookie  => [ $expire_session, $csrf ],
-        %{ $self->security_headers() },
-    );
+    $self->print_header( $self->session_cookie( '', '-1d' ),
+        $self->csrf_cookie( $self->get_csrf_token() ) );
 
     $self->parse_template( $NicToolClient::login_template,
         'message' => $self->html_escape($message) );
@@ -155,7 +155,7 @@ sub verify_session {
         $error_msg = $response->{'error_msg'};
     }
 
-    $self->expire_cookie($q);
+    $self->expire_cookie();
 
     my $escaped_msg = $q->escape($error_msg);
     $escaped_msg =~ s/[^a-zA-Z0-9%._~\-]//g;    # strip anything not URL-safe
@@ -171,57 +171,49 @@ sub verify_session {
 sub set_cookie {
     my ( $self, $value ) = @_;
 
-    my $q = $self->{'CGI'};
-
-    my $session_cookie = $q->cookie(
-        -path     => '/',
-        -name     => 'NicTool',
-        -value    => $value,
-        -expires  => '+1M',
-        -secure   => 1,
-        -httponly => 1,
-        -samesite => 'Strict',
-    );
-
     # derive from the session being issued; the request still carries the old
     # session cookie (or none at all, at login)
     $self->{'csrf_token'} = $self->derive_csrf_token($value);
 
-    my $csrf = $self->csrf_cookie( $self->get_csrf_token() );
-
-    print $q->header(
-        -cookie  => [ $session_cookie, $csrf ],
-        -charset => 'utf-8',
-        %{ $self->security_headers() },
-    );
+    $self->print_header( $self->session_cookie( $value, '+1M' ),
+        $self->csrf_cookie( $self->get_csrf_token() ) );
 }
 
 sub expire_cookie {
     my $self = shift;
-    my $q    = shift || $self->{'CGI'};
+    $self->print_header( $self->session_cookie( '', '-1d' ), $self->csrf_cookie( '', '-1d' ) );
+}
 
-    my $session_cookie = $q->cookie(
-        -name     => 'NicTool',
-        -value    => '',
-        -expires  => '-1d',
-        -path     => '/',
-        -secure   => 1,
-        -httponly => 1,
-        -samesite => 'Strict',
+# the paging and search parameters of this request, ready for a query string
+sub paging_state {
+    my ( $self, $q ) = @_;
+    return map { "$_=" . $q->escape( scalar( $q->param($_) ) ) }
+        grep { $q->param($_) } @{ $self->paging_fields };
+}
+
+sub print_page_start {
+    my ( $self, $user ) = @_;
+    $self->parse_template($NicToolClient::start_html_template);
+    $self->parse_template(
+        $NicToolClient::body_frame_start_template,
+        username  => $user->{'username'},
+        groupname => $user->{'groupname'},
+        userid    => $user->{'nt_user_id'}
     );
-    my $csrf_cookie = $q->cookie(
-        -name     => 'NicTool_csrf',
-        -value    => '',
-        -expires  => '-1d',
-        -path     => '/',
-        -secure   => 1,
-        -samesite => 'Strict',
-    );
-    print $q->header(
-        -cookie  => [ $session_cookie, $csrf_cookie ],
+}
+
+sub print_header {
+    my ( $self, @cookies ) = @_;
+    print $self->{'CGI'}->header(
         -charset => 'utf-8',
+        ( @cookies ? ( -cookie => \@cookies ) : () ),
         %{ $self->security_headers() },
     );
+}
+
+sub print_header_with_csrf {
+    my $self = shift;
+    $self->print_header( $self->csrf_cookie( $self->get_csrf_token() ) );
 }
 
 sub security_headers {
@@ -255,10 +247,22 @@ sub derive_csrf_token {
     return substr( Digest::SHA::sha256_hex( 'NicTool CSRF v1:' . $session ), 0, 40 );
 }
 
+sub session_cookie {
+    my ( $self, $value, $expires ) = @_;
+    return $self->{'CGI'}->cookie(
+        -name     => 'NicTool',
+        -value    => $value,
+        -expires  => $expires,
+        -path     => '/',
+        -secure   => 1,
+        -httponly => 1,
+        -samesite => 'Strict',
+    );
+}
+
 sub csrf_cookie {
-    my ( $self, $token ) = @_;
-    my $q = $self->{'CGI'};
-    return $q->cookie(
+    my ( $self, $token, $expires ) = @_;
+    return $self->{'CGI'}->cookie(
         -name  => 'NicTool_csrf',
         -value => $token,
         -path  => '/',
@@ -266,7 +270,7 @@ sub csrf_cookie {
         # must match the NicTool session cookie: as a browser-session cookie it
         # vanished on restart while the month-long session stayed valid, and
         # every form then failed validation. (#335)
-        -expires  => '+1M',
+        -expires  => $expires // '+1M',
         -secure   => 1,
         -httponly => 0,
         -samesite => 'Strict',
@@ -1384,32 +1388,20 @@ function selectAllorNone(group, action) {
         group.checked=action;
     }
 }
-function open_move(list) {
-    var obj_list = new Array();
-    if( list.length ) {
-            var y = 0;
-            for( x = 0; x < list.length; x++ ) {
-                    if( list[x].checked ) obj_list[y++] = list[x].value;
-            }
-    } else {
-            if( list.checked ) obj_list[0] = list.value;
-    }
-    if( obj_list.length > 0 ) {
-            newwin = window.open('$cgi?obj_list=' + obj_list.join(','), 'move_win', 'width=640,height=480,scrollbars,resizable=yes');
-            newwin.opener = self;
-    } else {
-            alert('Select at least one $name');
-    }
-}
-</script>
 ENDJS
+    print _open_selected_js( 'open_move', $cgi, $name ), "</script>\n";
 }
 
 sub display_delegate_javascript {
     my ( $self, $cgi, $name ) = @_;
-    print <<ENDJS;
-<script>
-function open_delegate(list) {
+    print "<script>\n", _open_selected_js( 'open_delegate', $cgi, $name ), "</script>\n";
+}
+
+# a JS function that opens $cgi in a popup for the checked boxes of a list
+sub _open_selected_js {
+    my ( $function, $cgi, $name ) = @_;
+    return <<ENDJS;
+function $function(list) {
     var obj_list = new Array();
     if( list.length ) {
             var y = 0;
@@ -1426,7 +1418,6 @@ function open_delegate(list) {
             alert('Select at least one $name');
     }
 }
-</script>
 ENDJS
 }
 
@@ -1567,38 +1558,20 @@ sub zone_record_template {
     my %dmarc = ( address =>
             "v=DMARC1; p=none; rua=mailto:postmaster\@$zone; ruf=mailto:postmaster\@$zone;" );
 
-    my %record1 = ( %idh, name => "$zone.", type => 'A',     address => $newip );
-    my %record2 = ( %idh, name => "mail",   type => 'A',     address => $mailip );
-    my %record3 = ( %idh, name => "www",    type => 'CNAME', address => "$zone." );
-    my %record4 = ( %idh, name => "$zone.", type => 'MX',    %mx );
-    my @zr      = ( \%record1, \%record2, \%record3, \%record4 );
+    my $www = ( $template eq 'wildcard' || $template eq 'wildcard-auth' ) ? '*' : 'www';
 
-    if ( $template eq "wildcard" ) {
-        %record3 = ( %idh, name => '*', type => "CNAME", address => "$zone." );
-        return [ \%record1, \%record2, \%record3, \%record4 ];
-    }
-    if ( $template eq "basic-auth" ) {
-        return [
-            \%record1,
-            \%record2,
-            \%record3,
-            \%record4,
+    my @zr = (
+        { %idh, name => "$zone.", type => 'A',     address => $newip },
+        { %idh, name => "mail",   type => 'A',     address => $mailip },
+        { %idh, name => $www,     type => 'CNAME', address => "$zone." },
+        { %idh, name => "$zone.", type => 'MX',    %mx },
+    );
+
+    if ( $template eq 'basic-auth' || $template eq 'wildcard-auth' ) {
+        push @zr,
             { %idh, name => "$zone.", type => 'TXT', %spf },
             { %idh, name => "$zone.", type => 'SPF', %spf },
-            { %idh, name => "_dmarc", type => 'TXT', %dmarc },
-        ];
-    }
-    if ( $template eq "wildcard-auth" ) {
-        %record3 = ( %idh, name => '*', type => "CNAME", address => "$zone." );
-        return [
-            \%record1,
-            \%record2,
-            \%record3,
-            \%record4,
-            { %idh, name => "$zone.", type => 'TXT', %spf },
-            { %idh, name => "$zone.", type => 'SPF', %spf },
-            { %idh, name => "_dmarc", type => 'TXT', %dmarc },
-        ];
+            { %idh, name => "_dmarc", type => 'TXT', %dmarc };
     }
 
     return \@zr;

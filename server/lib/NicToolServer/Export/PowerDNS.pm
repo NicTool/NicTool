@@ -7,32 +7,11 @@ use warnings;
 
 use parent 'NicToolServer::Export::BIND';
 
-use Cwd;
-use IO::File;
-use File::Copy;
+sub default_remote_login {'powerdns'}
 
-sub write_makefile {
-    my $self = shift;
-
-    my $exportdir = $self->{nte}->get_export_dir or do {
-        warn "no export dir!";
-        return;
-    };
-    return 1 if -e "$exportdir/Makefile";    # already exists
-
-    my $address = $self->{nte}{ns_ref}{address} || '127.0.0.1';
-    my $datadir = $self->{nte}{ns_ref}{datadir} || getcwd . '/data-all';
-    $datadir =~ s/\/$//;                     # strip off any trailing /
-    my $remote_login = $self->{nte}{ns_ref}{remote_login} || 'powerdns';
-    open my $M, '>', "$exportdir/Makefile" or do {
-        warn "unable to open ./Makefile: $!\n";
-        return;
-    };
-    print $M <<MAKE
-# After a successful export, 3 make targets are run: compile, remote, restart
-# Each target can do anything you'd like.
-# See https://www.gnu.org/software/make/manual/make.html
-
+sub makefile_targets {
+    my ( $self, $exportdir, $remote_login, $address, $datadir ) = @_;
+    return <<MAKE;
 ################################
 #########  PowerDNS  ###########
 ################################
@@ -46,9 +25,6 @@ remote: $exportdir/named.conf.nictool
 restart: $exportdir/named.conf.nictool
 \tssh $remote_login\@$address pdns_control cycle
 MAKE
-        ;
-    close $M;
-    return 1;
 }
 
 1;

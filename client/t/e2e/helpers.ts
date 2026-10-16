@@ -1,5 +1,6 @@
-import { type APIRequestContext } from '@playwright/test';
+import { type APIRequestContext, type APIResponse } from '@playwright/test';
 import type { Page, Frame } from '@playwright/test';
+import path from 'node:path';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -7,6 +8,12 @@ import type { Page, Frame } from '@playwright/test';
 export const BASE = process.env.NICTOOL_URL || 'https://localhost:8443';
 export const USERNAME = process.env.NICTOOL_TEST_USER || 'root';
 export const PASSWORD = process.env.NICTOOL_TEST_PASSWORD || 'nictool';
+
+export const ROOT_GROUPS = { cgi: 'group.cgi', gid: 1, idParam: 'nt_group_id' };
+
+// run manifests written by global-setup, read by global-teardown
+export const RUN_DIR = path.join(__dirname, '.e2e-runs');
+export const RUN_ID_PATTERN = /^[a-z0-9]{8,64}$/;
 
 export const GROUP_DEFAULTS = [
   'user_create=1', 'user_delete=1', 'user_write=1',
@@ -26,20 +33,32 @@ export async function freshCtx(playwright: any): Promise<APIRequestContext> {
   return await playwright.request.newContext({ ignoreHTTPSErrors: true });
 }
 
+export function formCsrfToken(body: string): string {
+  const m = body.match(/name="csrf_token"\s+value="([^"]+)"/);
+  return m ? m[1] : '';
+}
+
+function setCookieHeaders(res: Pick<APIResponse, 'headersArray'>) {
+  return res.headersArray().filter(h => h.name.toLowerCase() === 'set-cookie');
+}
+
+export function setCookieValue(res: Pick<APIResponse, 'headersArray'>, name: string): string {
+  for (const h of setCookieHeaders(res)) {
+    const m = h.value.match(new RegExp(`^${name}=([^;]+)`));
+    if (m) return m[1];
+  }
+  return '';
+}
+
 export async function getLoginCsrf(ctx: APIRequestContext) {
   const res = await ctx.get(`${BASE}/index.cgi`);
   const body = await res.text();
-  const match = body.match(/name="csrf_token"\s+value="([^"]+)"/);
-  const csrfToken = match ? match[1] : '';
-
-  const setCookies = res.headersArray().filter(h => h.name.toLowerCase() === 'set-cookie');
-  let csrfCookie = '';
-  for (const sc of setCookies) {
-    const m = sc.value.match(/NicTool_csrf=([^;]+)/);
-    if (m && m[1]) { csrfCookie = m[1]; break; }
-  }
-
-  return { csrfToken, csrfCookie, body, response: res };
+  return {
+    csrfToken: formCsrfToken(body),
+    csrfCookie: setCookieValue(res, 'NicTool_csrf'),
+    body,
+    response: res,
+  };
 }
 
 export async function apiLogin(playwright: any, username = USERNAME, password = PASSWORD) {
@@ -55,19 +74,17 @@ export async function apiLogin(playwright: any, username = USERNAME, password = 
   });
 
   const body = await res.text();
-  const headers = res.headers();
-  const setCookieHeaders = res.headersArray().filter(h => h.name.toLowerCase() === 'set-cookie');
-  let sessionCookie = '';
-  let newCsrfCookie = '';
-  for (const sc of setCookieHeaders) {
-    const sm = sc.value.match(/^NicTool=([^;]+)/);
-    if (sm && sm[1]) sessionCookie = sm[1];
-    const cm = sc.value.match(/NicTool_csrf=([^;]+)/);
-    if (cm && cm[1]) newCsrfCookie = cm[1];
-  }
+  const sessionCookie = setCookieValue(res, 'NicTool');
+  const newCsrfCookie = setCookieValue(res, 'NicTool_csrf');
 
   await ctx.dispose();
-  return { sessionCookie, csrfCookie: newCsrfCookie || csrfCookie, body, headers, setCookieHeaders };
+  return {
+    sessionCookie,
+    csrfCookie: newCsrfCookie || csrfCookie,
+    body,
+    headers: res.headers(),
+    setCookieHeaders: setCookieHeaders(res),
+  };
 }
 
 export function cookieString(sessionCookie: string, csrfCookie: string): string {
@@ -134,6 +151,16 @@ export function getBodyFrame(page: Page): Frame | undefined {
 
 export function getNavFrame(page: Page): Frame | undefined {
   return page.frames().find(f => f.url().includes('nav.cgi'));
+}
+
+export function processIsAlive(pid: unknown): boolean {
+  if (!Number.isInteger(pid) || Number(pid) <= 0) return false;
+  try {
+    process.kill(Number(pid), 0);
+    return true;
+  } catch (error: any) {
+    return error.code === 'EPERM';
+  }
 }
 
 // ---------------------------------------------------------------------------

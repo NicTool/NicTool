@@ -19,6 +19,7 @@
 package NicTool::User;
 
 use NicTool::DBObject;
+use NicTool::Group;
 our @ISA = 'NicTool::DBObject';
 
 sub _id_name {nt_user_id}
@@ -33,33 +34,7 @@ sub _api {
         get_user            => { 'includeid' => 1 },
         get_user_global_log => { 'includeid' => 1 },
         logout              => {},
-
-        #group functions
-        new_group                     => { 'include' => ['nt_group_id'] },
-        get_group                     => { 'include' => ['nt_group_id'] },
-        new_user                      => { 'include' => ['nt_group_id'] },
-        get_group_users               => { 'include' => ['nt_group_id'] },
-        move_users                    => { 'include' => ['nt_group_id'] },
-        edit_group                    => { 'include' => ['nt_group_id'] },
-        delete_group                  => { 'include' => ['nt_group_id'] },
-        get_group_groups              => { 'include' => ['nt_group_id'] },
-        get_group_branch              => { 'include' => ['nt_group_id'] },
-        get_group_subgroups           => { 'include' => ['nt_group_id'] },
-        get_global_application_log    => { 'include' => ['nt_group_id'] },
-        get_group_zones               => { 'include' => ['nt_group_id'] },
-        new_zone                      => { 'include' => ['nt_group_id'] },
-        move_zones                    => { 'include' => ['nt_group_id'] },
-        new_nameserver                => { 'include' => ['nt_group_id'] },
-        get_group_nameservers         => { 'include' => ['nt_group_id'] },
-        move_nameservers              => { 'include' => ['nt_group_id'] },
-        delegate_zones                => { 'include' => ['nt_group_id'] },
-        delegate_zone_records         => { 'include' => ['nt_group_id'] },
-        edit_zone_delegation          => { 'include' => ['nt_group_id'] },
-        edit_zone_record_delegation   => { 'include' => ['nt_group_id'] },
-        delete_zone_delegation        => { 'include' => ['nt_group_id'] },
-        delete_zone_record_delegation => { 'include' => ['nt_group_id'] },
-        get_delegated_zones           => { 'include' => ['nt_group_id'] },
-        get_delegated_zone_records    => { 'include' => ['nt_group_id'] },
+        ( map { $_ => { 'include' => ['nt_group_id'] } } NicTool::Group::group_functions() ),
     };
 }
 

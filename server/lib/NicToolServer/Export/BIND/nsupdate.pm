@@ -226,46 +226,38 @@ sub get_changed_zones {
     return \%has_changes;
 }
 
+# nsupdate wants absolute owner names
+sub _fqdn {
+    my ( $self, $r ) = @_;
+    $r->{zone} = $self->{nte}->{zone_name} unless defined $r->{zone};
+    return $r->{name} if substr( $r->{name}, -1, 1 ) eq '.';
+    return "$r->{name}.$r->{zone}";
+}
+
 sub zr_a {
     my ( $self, $r, $mode ) = @_;
-    $mode      = "add"                     unless defined $mode;
-    $r->{zone} = $self->{nte}->{zone_name} unless defined $r->{zone};
+    $mode //= "add";
 
-    return
-          "update $mode "
-        . $r->{name}
-        . ( substr( $r->{name}, -1, 1 ) eq '.' ? '' : '.' . $r->{zone} )
-        . " $r->{ttl} A $r->{address}\n";
+    return "update $mode " . $self->_fqdn($r) . " $r->{ttl} A $r->{address}\n";
 }
 
 sub zr_cname {
     my ( $self, $r, $mode ) = @_;
-    $mode      = "add"                     unless defined $mode;
-    $r->{zone} = $self->{nte}->{zone_name} unless defined $r->{zone};
+    $mode //= "add";
 
-    return
-          "update $mode "
-        . $r->{name}
-        . ( substr( $r->{name}, -1, 1 ) eq '.' ? '' : '.' . $r->{zone} )
-        . " $r->{ttl} CNAME $r->{address}\n";
+    return "update $mode " . $self->_fqdn($r) . " $r->{ttl} CNAME $r->{address}\n";
 }
 
 sub zr_mx {
     my ( $self, $r, $mode ) = @_;
-    $mode      = "add"                     unless defined $mode;
-    $r->{zone} = $self->{nte}->{zone_name} unless defined $r->{zone};
+    $mode //= "add";
 
-    return
-          "update $mode "
-        . $r->{name}
-        . ( substr( $r->{name}, -1, 1 ) eq '.' ? '' : '.' . $r->{zone} )
-        . " $r->{ttl} MX $r->{weight} $r->{address}\n";
+    return "update $mode " . $self->_fqdn($r) . " $r->{ttl} MX $r->{weight} $r->{address}\n";
 }
 
 sub zr_txt {
     my ( $self, $r, $mode ) = @_;
-    $mode      = "add"                     unless defined $mode;
-    $r->{zone} = $self->{nte}->{zone_name} unless defined $r->{zone};
+    $mode //= "add";
 
     # BIND will croak if the length of the text record is longer than 255
     if ( length $r->{address} > 255 ) {
@@ -273,16 +265,12 @@ sub zr_txt {
     }
 
     # name  ttl  class   rr     text
-    return
-          "update $mode "
-        . $r->{name}
-        . ( substr( $r->{name}, -1, 1 ) eq '.' ? '' : '.' . $r->{zone} )
-        . " $r->{ttl} TXT \"$r->{address}\"\n";
+    return "update $mode " . $self->_fqdn($r) . " $r->{ttl} TXT \"$r->{address}\"\n";
 }
 
 sub zr_ns {
     my ( $self, $r, $mode ) = @_;
-    $mode      = "add"                     unless defined $mode;
+    $mode //= "add";
     $r->{zone} = $self->{nte}->{zone_name} unless defined $r->{zone};
 
     my $name = $r->{name};
@@ -293,7 +281,7 @@ sub zr_ns {
 
 sub zr_ptr {
     my ( $self, $r, $mode ) = @_;
-    $mode      = "add"                     unless defined $mode;
+    $mode //= "add";
     $r->{zone} = $self->{nte}->{zone_name} unless defined $r->{zone};
 
     return "update $mode " . $r->{name} . "." . $r->{zone} . " $r->{ttl} PTR $r->{address}\n";
@@ -309,58 +297,43 @@ sub zr_soa {
 
 sub zr_spf {
     my ( $self, $r, $mode ) = @_;
-    $mode      = "add"                     unless defined $mode;
-    $r->{zone} = $self->{nte}->{zone_name} unless defined $r->{zone};
+    $mode //= "add";
 
     # SPF record support was added in BIND v9.4.0
 
     # name  ttl  class  type  type-specific-data
-    return
-          "update $mode "
-        . $r->{name}
-        . ( substr( $r->{name}, -1, 1 ) eq '.' ? '' : '.' . $r->{zone} )
-        . " $r->{ttl} SPF \"$r->{address}\"\n";
+    return "update $mode " . $self->_fqdn($r) . " $r->{ttl} SPF \"$r->{address}\"\n";
 }
 
 sub zr_srv {
     my ( $self, $r, $mode ) = @_;
-    $mode      = "add"                     unless defined $mode;
-    $r->{zone} = $self->{nte}->{zone_name} unless defined $r->{zone};
+    $mode //= "add";
 
     my $priority = $self->{nte}->is_ip_port( $r->{priority} );
     my $weight   = $self->{nte}->is_ip_port( $r->{weight} );
     my $port     = $self->{nte}->is_ip_port( $r->{other} );
 
     # srvce.prot.name  ttl  class   rr  pri  weight port target
-    return
-          "update $mode "
-        . $r->{name}
-        . ( substr( $r->{name}, -1, 1 ) eq '.' ? '' : '.' . $r->{zone} )
-        . " $r->{ttl} SRV $priority $weight $port $r->{address}\n";
+    return "update $mode " . $self->_fqdn($r) . " $r->{ttl} SRV $priority $weight $port $r->{address}\n";
 }
 
 sub zr_aaaa {
     my ( $self, $r, $mode ) = @_;
-    $mode      = "add"                     unless defined $mode;
-    $r->{zone} = $self->{nte}->{zone_name} unless defined $r->{zone};
+    $mode //= "add";
 
     # name  ttl  class  type  type-specific-data
-    return
-          "update $mode "
-        . $r->{name}
-        . ( substr( $r->{name}, -1, 1 ) eq '.' ? '' : '.' . $r->{zone} )
-        . " $r->{ttl} AAAA $r->{address}\n";
+    return "update $mode " . $self->_fqdn($r) . " $r->{ttl} AAAA $r->{address}\n";
 }
 
 sub zr_loc {
     my ( $self, $r, $mode ) = @_;
-    $mode = "add" unless defined $mode;
+    $mode //= "add";
     return "update $mode $r->{name} $r->{ttl} LOC $r->{address}\n";
 }
 
 sub zr_naptr {
     my ( $self, $r, $mode ) = @_;
-    $mode = "add" unless defined $mode;
+    $mode //= "add";
 
     # http://www.ietf.org/rfc/rfc2915.txt
     # https://www.ietf.org/rfc/rfc3403.txt
@@ -380,7 +353,7 @@ sub zr_naptr {
 
 sub zr_dname {
     my ( $self, $r, $mode ) = @_;
-    $mode = "add" unless defined $mode;
+    $mode //= "add";
 
     # name  ttl  class   rr     target
     return "update $mode $r->{name} $r->{ttl} DNAME $r->{address}\n";
@@ -388,7 +361,7 @@ sub zr_dname {
 
 sub zr_sshfp {
     my ( $self, $r, $mode ) = @_;
-    $mode = "add" unless defined $mode;
+    $mode //= "add";
 
     my $algo = $r->{weight};      #  1=RSA,   2=DSS,     3=ECDSA
     my $type = $r->{priority};    #  1=SHA-1, 2=SHA-256
@@ -397,7 +370,7 @@ sub zr_sshfp {
 
 sub zr_ipseckey {
     my ( $self, $r, $mode ) = @_;
-    $mode = "add" unless defined $mode;
+    $mode //= "add";
 
     my $precedence = $r->{weight};
     my $gw_type    = $r->{priority};
@@ -411,7 +384,7 @@ sub zr_ipseckey {
 
 sub zr_dnskey {
     my ( $self, $r, $mode ) = @_;
-    $mode = "add" unless defined $mode;
+    $mode //= "add";
 
     my $flags     = $r->{weight};
     my $protocol  = $r->{priority};    # always 3, RFC 4034
@@ -424,7 +397,7 @@ sub zr_dnskey {
 
 sub zr_ds {
     my ( $self, $r, $mode ) = @_;
-    $mode = "add" unless defined $mode;
+    $mode //= "add";
 
     my $key_tag     = $r->{weight};
     my $algorithm   = $r->{priority};    # same as DNSKEY algo -^
@@ -435,73 +408,57 @@ sub zr_ds {
 
 sub zr_rrsig {
     my ( $self, $r, $mode ) = @_;
-    $mode = "add" unless defined $mode;
+    $mode //= "add";
 
     return "update $mode $r->{name} $r->{ttl} RRSIG $r->{address}\n";
 }
 
 sub zr_nsec {
     my ( $self, $r, $mode ) = @_;
-    $mode = "add" unless defined $mode;
+    $mode //= "add";
     $r->{description} =~ s/[\(\)]//g;
     return "update $mode $r->{name} $r->{ttl} NSEC $r->{address} ( $r->{description} )\n";
 }
 
 sub zr_nsec3 {
     my ( $self, $r, $mode ) = @_;
-    $mode = "add" unless defined $mode;
+    $mode //= "add";
     return "update $mode $r->{name} $r->{ttl} NSEC3 $r->{address}\n";
 }
 
 sub zr_nsec3param {
     my ( $self, $r, $mode ) = @_;
-    $mode = "add" unless defined $mode;
+    $mode //= "add";
     return "update $mode $r->{name} $r->{ttl} NSEC3PARAM $r->{address}\n";
 }
 
 sub zr_hinfo {
     my ( $self, $r, $mode ) = @_;
 
-    $r->{zone} = $self->{nte}->{zone_name} unless defined $r->{zone};
-
     # Name     ttl  class   rr  address
-    return
-          "update $mode "
-        . $r->{name}
-        . ( substr( $r->{name}, -1, 1 ) eq '.' ? '' : '.' . $r->{zone} )
-        . " $r->{ttl} HINFO $r->{address}\n";
+    return "update $mode " . $self->_fqdn($r) . " $r->{ttl} HINFO $r->{address}\n";
 }
 
 sub zr_uri {
     my ( $self, $r, $mode ) = @_;
-    $mode = "add" unless defined $mode;
+    $mode //= "add";
 
-    $r->{zone} = $self->{nte}->{zone_name} unless defined $r->{zone};
     my $priority = $self->{nte}->is_ip_port( $r->{priority} );
     my $weight   = $self->{nte}->is_ip_port( $r->{weight} );
 
     # Owner Name     ttl  class   rr  pri  weight target
-    return
-          "update $mode "
-        . $r->{name}
-        . ( substr( $r->{name}, -1, 1 ) eq '.' ? '' : '.' . $r->{zone} )
-        . " $r->{ttl} URI $priority $weight \"$r->{address}\"\n";
+    return "update $mode " . $self->_fqdn($r) . " $r->{ttl} URI $priority $weight \"$r->{address}\"\n";
 }
 
 sub zr_caa {
     my ( $self, $r, $mode ) = @_;
-    $mode = "add" unless defined $mode;
+    $mode //= "add";
 
-    $r->{zone} = $self->{nte}->{zone_name} unless defined $r->{zone};
     my $crit = $self->{nte}->is_ip_port( $r->{weight} );
     my $tag  = $r->{other};
 
     # Owner Name   TTL  CLASS   Type  Issue-Crit  Tag  Property
-    return
-          "update $mode "
-        . $r->{name}
-        . ( substr( $r->{name}, -1, 1 ) eq '.' ? '' : '.' . $r->{zone} )
-        . " $r->{ttl} CAA $crit $tag \"$r->{address}\"\n";
+    return "update $mode " . $self->_fqdn($r) . " $r->{ttl} CAA $crit $tag \"$r->{address}\"\n";
 }
 
 1;

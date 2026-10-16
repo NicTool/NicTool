@@ -19,7 +19,6 @@
 use strict;
 use Crypt::KeyDerivation;
 use DBI;
-use English;
 use Getopt::Long qw/HelpMessage/;
 
 $|++;
@@ -46,19 +45,8 @@ print "
 #########################################################################
 ";
 
-my $db = undef;
-
-if ($environment) {
-    $nictool_db_name = undef;
-    die "NICTOOL_DB_NAME not set!!!\n" unless $ENV{NICTOOL_DB_NAME};
-    $db = $ENV{NICTOOL_DB_NAME};
-}
-elsif ($nictool_db_name) {
-    $db = $nictool_db_name;
-}
-else {
-    $db = answer( "the NicTool database name", 'nictool' );
-}
+my $db = setting( 'NICTOOL_DB_NAME', $nictool_db_name,
+    sub { answer( "the NicTool database name", 'nictool' ) } );
 
 die "Sorry\n" if $db =~ /^mysql$/i;
 
@@ -72,69 +60,30 @@ sub _validate_ident {
 }
 _validate_ident( $db, 'database name' );
 
-my $db_user = undef;
+my $db_user = setting( 'NICTOOL_DB_USER', $nictool_db_user,
+    sub { answer( "the NicTool database user", 'nictool' ) } );
 
-if ($environment) {
-    $nictool_db_user = undef;
-    die "NICTOOL_DB_USER not set!!!\n" unless $ENV{NICTOOL_DB_USER};
-    $db_user = $ENV{NICTOOL_DB_USER};
-}
-elsif ($nictool_db_user) {
-    $db_user = $nictool_db_user;
-}
-else {
-    $db_user = answer( "the NicTool database user", 'nictool' );
-}
-
-my $db_pass = undef;
-
-if ($environment) {
-    $nictool_db_user_password = undef;
-    die "NICTOOL_DB_USER_PASSWORD not set!!!\n"
-        unless $ENV{NICTOOL_DB_USER_PASSWORD};
-    $db_pass = $ENV{NICTOOL_DB_USER_PASSWORD};
-}
-elsif ($nictool_db_user_password) {
-    $db_pass = $nictool_db_user_password;
-}
-else {
-    $db_pass = get_password("the DB user $db_user");
-}
+my $db_pass = setting( 'NICTOOL_DB_USER_PASSWORD', $nictool_db_user_password,
+    sub { get_password("the DB user $db_user") } );
 
 print "\n
 #########################################################################
         NicTool admin user (http://root\@$db_host/)
 #########################################################################
 ";
-my $nt_root_email = undef;
 
-if ($environment) {
-    $nictool_root_email = undef;
-    die "ROOT_USER_EMAIL not set!!!\n" unless $ENV{ROOT_USER_EMAIL};
-    $nt_root_email = $ENV{ROOT_USER_EMAIL};
-}
-elsif ($nictool_root_email) {
-    $nt_root_email = $nictool_root_email;
-}
-else {
-    while ( !$nt_root_email ) {
-        $nt_root_email = answer( "the NicTool 'root' users email address", $nt_root_email );
+my $nt_root_email = setting(
+    'ROOT_USER_EMAIL',
+    $nictool_root_email,
+    sub {
+        my $email;
+        $email = answer("the NicTool 'root' users email address") while !$email;
+        return $email;
     }
-}
+);
 
-my $clear_pass = undef;
-
-if ($environment) {
-    $nictool_root_password = undef;
-    die "ROOT_USER_PASSWORD not set!!!\n" unless $ENV{ROOT_USER_PASSWORD};
-    $clear_pass = $ENV{ROOT_USER_PASSWORD};
-}
-elsif ($nictool_root_password) {
-    $clear_pass = $nictool_root_password;
-}
-else {
-    $clear_pass = get_password("the NicTool user 'root'");
-}
+my $clear_pass = setting( 'ROOT_USER_PASSWORD', $nictool_root_password,
+    sub { get_password("the NicTool user 'root'") } );
 
 my $salt      = _get_salt(16);
 my $pass_hash = unpack( "H*", Crypt::KeyDerivation::pbkdf2( $clear_pass, $salt, 5000, 'SHA512' ) );
@@ -238,47 +187,11 @@ sub get_dbh {
              Administrator DSN (database connection settings)
 #########################################################################\n";
 
-    my $db_host = undef;
-
-    if ($environment) {
-        $db_engine = undef;
-        die "DB_ENGINE not set!!!\n" unless $ENV{DB_ENGINE};
-        $db_engine = $ENV{DB_ENGINE};
-    }
-    elsif ($db_engine) {
-        $db_engine = $db_engine;
-    }
-    else {
-        $db_engine = answer( "database engine", 'mysql' );
-    }
-
-    if ($environment) {
-        $db_hostname = undef;
-        die "DB_HOSTNAME not set!!!\n" unless $ENV{DB_HOSTNAME};
-        $db_host = $ENV{DB_HOSTNAME};
-    }
-    elsif ($db_hostname) {
-        $db_host = $db_hostname;
-    }
-    else {
-        $db_host = answer( "database hostname", '127.0.0.1' );
-    }
-
-    my $db_root_pw = undef;
-
-    if ($environment) {
-        $db_root_password = undef;
-        die "DB_ROOT_PASSWORD not set!!!\n" unless $ENV{DB_ROOT_PASSWORD};
-        $db_root_pw = $ENV{DB_ROOT_PASSWORD};
-    }
-    elsif ($db_root_password) {
-        $db_root_pw = $db_root_password;
-    }
-    else {
-        system "stty -echo";
-        $db_root_pw = answer("mysql root password");
-        system "stty echo";
-    }
+    $db_engine = setting( 'DB_ENGINE', $db_engine, sub { answer( "database engine", 'mysql' ) } );
+    my $db_host = setting( 'DB_HOSTNAME', $db_hostname,
+        sub { answer( "database hostname", '127.0.0.1' ) } );
+    my $db_root_pw = setting( 'DB_ROOT_PASSWORD', $db_root_password,
+        sub { answer_secret("mysql root password") } );
     print "\n";
 
     return if $test_run;
@@ -290,88 +203,60 @@ sub get_dbh {
     return ( $dbh, $db_host, $db_engine );
 }
 
-sub answer {
-
-    my ( $question, $default, $timeout ) = @_;
-
-    # this sub is useless without a question.
-    unless ($question) {
-        die "question called incorrectly. RTFM. \n";
+# --environment takes every setting from the environment; otherwise a
+# command line option wins over prompting
+sub setting {
+    my ( $env_name, $option, $prompt ) = @_;
+    if ($environment) {
+        die "$env_name not set!!!\n" unless $ENV{$env_name};
+        return $ENV{$env_name};
     }
+    return $option if $option;
+    return $prompt->();
+}
+
+sub answer {
+    my ( $question, $default ) = @_;
+    die "question called incorrectly. RTFM. \n" if !$question;
 
     print "Please enter $question";
     print " [$default]" if $default;
     print ": ";
 
-    my ($response);
-
-    if ($timeout) {
-        eval {
-            local $SIG{ALRM} = sub { die "alarm\n" };
-            alarm $timeout;
-            $response = <STDIN>;
-            alarm 0;
-        };
-        if ($EVAL_ERROR) {
-            ( $EVAL_ERROR eq "alarm\n" )
-                ? print "timed out!\n"
-                : warn;    # propagate unexpected errors
-        }
-    }
-    else {
-        $response = <STDIN>;
-    }
-
+    my $response = <STDIN>;
     chomp $response;
 
-    # if they typed something, return it
-    return $response if ( $response ne "" );
-
-    # otherwise, return the default if available
-    return $default if $default;
-
-    # and finally return empty handed
+    return $response if $response ne "";
+    return $default  if $default;
     return "";
+}
+
+sub answer_secret {
+    my ($question) = @_;
+    system "stty -echo";
+    my $response = answer($question);
+    system "stty echo";
+    return $response;
 }
 
 sub get_password {
     my ($question) = @_;
 
-    my ( $answer, $response, $response2 );
-    while ( !$answer ) {
-        system "stty -echo";
-        $response = answer("a new password for $question");
-        system "stty echo";
-
-        system "stty -echo";
-        $response2 = answer("\nPlease verify password: ");
-        system "stty echo";
-        $answer = $response if $response and ( $response eq $response2 );
-        if ( !$answer ) {
-            print "\nPasswords didn't match!\n";
-        }
+    while (1) {
+        my $response  = answer_secret("a new password for $question");
+        my $response2 = answer_secret("\nPlease verify password: ");
+        return $response if $response && $response eq $response2;
+        print "\nPasswords didn't match!\n";
     }
-    return $answer;
 }
 
 sub get_sql_files {
-    my @r;
-    opendir( DIR, '.' ) || die "unable to open dir: $!\n";
-    foreach my $file ( sort readdir(DIR) ) {
-        next if /^\./;
-        next if -d "./$file";
-        next if $file !~ /\.sql$/;
-        push @r, $file;
-    }
-    close DIR;
-    if ( scalar @r < 8 ) {
-        die "didn't find *.sql files. Are you running this in the sql dir?\n";
-    }
+    my @r = sort grep { -f } glob '*.sql';
+    die "didn't find *.sql files. Are you running this in the sql dir?\n" if @r < 8;
     return @r;
 }
 
 sub _get_salt {
-    my $self   = shift;
     my $length = shift || 16;
     my $chars  = join( '', map chr, 40 .. 126 );    # ASCII 40-126
     my $salt;

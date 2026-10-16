@@ -8,45 +8,6 @@ use Crypt::KeyDerivation;
 
 @NicToolServer::User::ISA = 'NicToolServer';
 
-sub perm_fields_select {
-    qq/
-    nt_perm.group_write,
-    nt_perm.group_create,
-    nt_perm.group_delete,
-
-    nt_perm.zone_write,
-    nt_perm.zone_create,
-    nt_perm.zone_delegate,
-    nt_perm.zone_delete,
-
-    nt_perm.zonerecord_write,
-    nt_perm.zonerecord_create,
-    nt_perm.zonerecord_delegate,
-    nt_perm.zonerecord_delete,
-
-    nt_perm.user_write,
-    nt_perm.user_create,
-    nt_perm.user_delete,
-
-    nt_perm.nameserver_write,
-    nt_perm.nameserver_create,
-    nt_perm.nameserver_delete,
-
-    nt_perm.self_write,
-
-    nt_perm.usable_ns
-    /;
-}
-
-sub perm_fields {
-    qw/ group_create group_delete group_write
-        zone_create zone_delegate zone_delete zone_write
-        zonerecord_create zonerecord_delegate zonerecord_delete zonerecord_write
-        user_create user_delete user_write self_write
-        nameserver_create nameserver_delete nameserver_write
-        /;
-}
-
 sub get_user {
     my ( $self, $data ) = @_;
 
@@ -104,13 +65,7 @@ sub new_user {
         $data->{password}  = $self->get_pbkdf2_hash( $data->{password}, $data->{pass_salt} );
     }
 
-    my $sql =
-          "INSERT INTO nt_user("
-        . join( ',', @columns )
-        . ") VALUES("
-        . join( ',', map( $dbh->quote( $data->{$_} ), @columns ) ) . ")";
-
-    my $insertid = $self->exec_query($sql);
+    my $insertid = $self->insert_row( 'nt_user', $data, @columns );
 
     if ( defined $insertid ) {
         $error{nt_user_id} = $insertid;
@@ -129,13 +84,8 @@ sub new_user {
             $data->{$_} = 0 unless $self->{user}{$_};
         }
 
-        $sql =
-              "INSERT INTO nt_perm("
-            . join( ',', 'nt_group_id', 'nt_user_id', @permcols )
-            . ") VALUES("
-            . join( ',', 0, $insertid, map( $dbh->quote( $data->{$_} ), @permcols ) ) . ')';
-
-        $self->exec_query($sql) or do {
+        $self->insert_row( 'nt_perm', { %$data, nt_group_id => 0, nt_user_id => $insertid },
+            'nt_group_id', 'nt_user_id', @permcols ) or do {
             $error{error_code} = 600;
             $error{error_msg}  = $dbh->errstr;
         };
@@ -293,8 +243,7 @@ sub delete_users {
 
     my %rv = ( 'error_code' => 200, 'error_msg' => 'OK' );
 
-    my %groups = map { $_, 1 }
-        ( $data->{user}{nt_group_id}, @{ $self->get_subgroup_ids( $data->{user}{nt_group_id} ) } );
+    my %groups = map { $_ => 1 } $self->group_with_subgroup_ids( $data->{user}{nt_group_id} );
 
     my @userlist = split( ',', $data->{user_list} );
     my $sql      = "SELECT * FROM nt_user WHERE nt_user_id IN(??)";
@@ -341,14 +290,10 @@ sub get_group_users {
     my $conditions = $self->format_search_conditions( $data, \%field_map );
     my $sortby     = $self->format_sort_conditions( $data, \%field_map, "nt_user.username" );
 
-    my @group_list;
-    if ( $data->{include_subgroups} ) {
-        @group_list =
-            ( $data->{nt_group_id}, @{ $self->get_subgroup_ids( $data->{nt_group_id} ) } );
-    }
-    else {
-        @group_list = ( $data->{nt_group_id} );
-    }
+    my @group_list =
+        $data->{include_subgroups}
+        ? $self->group_with_subgroup_ids( $data->{nt_group_id} )
+        : $data->{nt_group_id};
     @group_list = @{ $self->sanitize_int_list(\@group_list) };
     return $self->error_response( 503, 'invalid group list' ) if !@group_list;
 
@@ -361,7 +306,7 @@ sub get_group_users {
     INNER JOIN nt_group ON nt_user.nt_group_id = nt_group.nt_group_id
     WHERE nt_user.deleted=0
             AND $group_in_sql"
-        . ( @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
+        . $self->and_conditions_sql($conditions);
 
         my $c = $self->exec_query( $sql, $group_in_params )
         or return $self->error_response( 600, $self->{dbh}->errstr );
@@ -385,8 +330,8 @@ sub get_group_users {
         INNER JOIN nt_group ON nt_user.nt_group_id = nt_group.nt_group_id
         WHERE nt_user.deleted=0
         AND $group_in_sql ";
-    $sql .= 'AND (' . join( ' ', @$conditions ) . ') ' if @$conditions;
-    $sql .= "ORDER BY " . join( ', ', @$sortby ) . " " if (@$sortby);
+    $sql .= $self->and_conditions_sql($conditions);
+    $sql .= $self->order_by_sql($sortby);
     $sql .= $limit_sql;
 
     my $group_users = $self->exec_query( $sql, [ @$group_in_params, @$limit_params ] );
@@ -410,8 +355,7 @@ sub get_group_users {
 sub move_users {
     my ( $self, $data ) = @_;
 
-    my %groups = map { $_, 1 }
-        ( $data->{user}{nt_group_id}, @{ $self->get_subgroup_ids( $data->{user}{nt_group_id} ) } );
+    my %groups = map { $_ => 1 } $self->group_with_subgroup_ids( $data->{user}{nt_group_id} );
 
     my $new_group = $self->NicToolServer::Group::find_group( $data->{nt_group_id} );
 
@@ -455,8 +399,7 @@ sub get_user_list {
 
     my %rv = ( 'error_code' => 200, 'error_msg' => 'OK', list => [] );
 
-    my %groups = map { $_, 1 }
-        ( $data->{user}{nt_group_id}, @{ $self->get_subgroup_ids( $data->{user}{nt_group_id} ) } );
+    my %groups = map { $_ => 1 } $self->group_with_subgroup_ids( $data->{user}{nt_group_id} );
 
     my @user_ids = @{ $self->sanitize_int_list( $data->{user_list} ) };
     return $self->error_response( 503, 'invalid user list' ) if !@user_ids;
@@ -483,33 +426,7 @@ sub get_user_list {
 sub get_user_global_log {
     my ( $self, $data ) = @_;
 
-    my %field_map = (
-        timestamp => {
-            timefield   => 1,
-            quicksearch => 0,
-            field       => 'nt_user_global_log.timestamp'
-        },
-        title => {
-            timefield   => 0,
-            quicksearch => 1,
-            field       => 'nt_user_global_log.title'
-        },
-        action => {
-            timefield   => 0,
-            quicksearch => 1,
-            field       => 'nt_user_global_log.action'
-        },
-        object => {
-            timefield   => 0,
-            quicksearch => 1,
-            field       => 'nt_user_global_log.object'
-        },
-        description => {
-            timefield   => 0,
-            quicksearch => 1,
-            field       => 'nt_user_global_log.description'
-        },
-    );
+    my %field_map = $self->global_log_field_map;
 
     my $conditions = $self->format_search_conditions( $data, \%field_map );
     my $sortby =
@@ -523,7 +440,7 @@ sub get_user_global_log {
     WHERE nt_user_global_log.nt_user_id = nt_user.nt_user_id
         AND nt_user.nt_user_id = "
         . $dbh->quote( $data->{nt_user_id} ) . " "
-        . ( @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
+        . $self->and_conditions_sql($conditions);
 
     my $c = $self->exec_query($sql);
     $r_data->{total} = $c->[0]->{count};
@@ -537,11 +454,12 @@ sub get_user_global_log {
     $sql = "SELECT nt_user_global_log.* FROM nt_user_global_log, nt_user
         WHERE nt_user_global_log.nt_user_id = nt_user.nt_user_id AND nt_user.nt_user_id = "
         . $dbh->quote( $data->{nt_user_id} ) . " ";
-    $sql .= 'AND (' . join( ' ', @$conditions ) . ') ' if @$conditions;
-    $sql .= "ORDER BY " . join( ', ', @$sortby ) . " " if (@$sortby);
-    $sql .= "LIMIT " . ( $r_data->{start} - 1 ) . ", $r_data->{limit}";
+    $sql .= $self->and_conditions_sql($conditions);
+    $sql .= $self->order_by_sql($sortby);
+    my ( $limit_sql, $limit_params ) = $self->sql_limit_clause($r_data);
+    $sql .= $limit_sql;
 
-    my $r = $self->exec_query($sql);
+    my $r = $self->exec_query( $sql, $limit_params );
     if ($r) {
         foreach my $row (@$r) {
             push( @{ $r_data->{list} }, $row );
@@ -558,7 +476,6 @@ sub get_user_global_log {
 sub log_user {
     my ( $self, $data, $action, $prev_data ) = @_;
 
-    my $dbh     = $self->{dbh};
     my @columns = qw/ nt_group_id nt_user_id action timestamp modified_user_id
         first_name last_name username email password /;
 
@@ -568,16 +485,7 @@ sub log_user {
     $data->{action}     = $action;
     $data->{timestamp}  = time();
 
-    my $sql =
-          "INSERT INTO nt_user_log("
-        . join( ',', @columns )
-        . ") VALUES("
-        . join( ',', map( $dbh->quote( $data->{$_} ), @columns ) ) . ")";
-
-    warn "$sql\n" if $self->debug_logs;
-    my $insertid = $self->exec_query($sql);
-
-    my @g_columns = qw(nt_user_id timestamp action object object_id log_entry_id title description);
+    my $insertid = $self->insert_row( 'nt_user_log', $data, @columns );
 
     $data->{object}       = 'user';
     $data->{log_entry_id} = $insertid;
@@ -600,14 +508,7 @@ sub log_user {
         $data->{description} = "moved from $data->{old_group_name} to $data->{group_name}";
     }
 
-    $sql =
-          "INSERT INTO nt_user_global_log("
-        . join( ',', @g_columns )
-        . ") VALUES("
-        . join( ',', map( $dbh->quote( $data->{$_} ), @g_columns ) ) . ")";
-
-    warn "$sql\n" if $self->debug_logs;
-    $self->exec_query($sql);
+    $self->log_global($data);
 }
 
 sub valid_password {
@@ -753,12 +654,12 @@ sub _get_salt {
 # verification. `eq` short-circuits on the first differing byte, leaking the
 # length of the matching prefix through response time.
 sub _secure_compare {
-    my ( $a, $b ) = @_;
-    return 0 if !defined $a || !defined $b;
-    return 0 if length($a) != length($b);
+    my ( $x, $y ) = @_;
+    return 0 if !defined $x || !defined $y;
+    return 0 if length($x) != length($y);
     my $diff = 0;
-    for my $i ( 0 .. length($a) - 1 ) {
-        $diff |= ord( substr( $a, $i, 1 ) ) ^ ord( substr( $b, $i, 1 ) );
+    for my $i ( 0 .. length($x) - 1 ) {
+        $diff |= ord( substr( $x, $i, 1 ) ) ^ ord( substr( $y, $i, 1 ) );
     }
     return $diff == 0;
 }

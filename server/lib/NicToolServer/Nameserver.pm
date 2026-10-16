@@ -97,14 +97,10 @@ sub get_group_nameservers {
 
     my $conditions = $self->format_search_conditions( $data, \%field_map );
 
-    my @group_list;
-    if ( $data->{include_subgroups} ) {
-        @group_list =
-            ( $data->{nt_group_id}, @{ $self->get_subgroup_ids( $data->{nt_group_id} ) } );
-    }
-    else {
-        @group_list = ( $data->{nt_group_id} );
-    }
+    my @group_list =
+        $data->{include_subgroups}
+        ? $self->group_with_subgroup_ids( $data->{nt_group_id} )
+        : $data->{nt_group_id};
 
     my $r_data = { 'error_code' => 200, 'error_msg' => 'OK', list => [] };
 
@@ -116,7 +112,7 @@ sub get_group_nameservers {
         . "WHERE ns.deleted=0 "
         . "AND ns.nt_group_id IN("
         . join( ',', @group_list ) . ")"
-        . ( @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '' );
+        . $self->and_conditions_sql($conditions);
     my $c = $self->exec_query($sql);
 
     $r_data->{total} = $c->[0]{count};
@@ -142,11 +138,12 @@ sub get_group_nameservers {
         INNER JOIN nt_group g ON ns.nt_group_id = g.nt_group_id
     WHERE ns.deleted=0
     AND g.nt_group_id IN(" . join( ',', @group_list ) . ") ";
-    $sql .= 'AND (' . join( ' ', @$conditions ) . ') ' if @$conditions;
-    $sql .= "ORDER BY " . join( ', ', @$sortby ) . " " if (@$sortby);
-    $sql .= "LIMIT " . ( $r_data->{start} - 1 ) . ", $r_data->{limit}";
+    $sql .= $self->and_conditions_sql($conditions);
+    $sql .= $self->order_by_sql($sortby);
+    my ( $limit_sql, $limit_params ) = $self->sql_limit_clause($r_data);
+    $sql .= $limit_sql;
 
-    my $nameservers = $self->exec_query($sql)
+    my $nameservers = $self->exec_query( $sql, $limit_params )
         or return {
         error_code => '600',
         error_msg  => $self->{dbh}->errstr,
@@ -167,8 +164,6 @@ sub get_nameserver_list {
     my ( $self, $data ) = @_;
 
     my %rv = ( 'error_code' => 200, 'error_msg' => 'OK', list => [] );
-
-    # my %groups = map { $_, 1 } ($data->{user}{nt_group_id}, @{ $self->get_subgroup_ids($data->{user}{nt_group_id}) });
 
     my $sql = "SELECT ns.*, et.name AS export_format
   FROM nt_nameserver ns
@@ -195,8 +190,7 @@ sub move_nameservers {
 
     my %rv = ( 'error_code' => 200, 'error_msg' => 'OK' );
 
-    my %groups = map { $_, 1 }
-        ( $data->{user}{nt_group_id}, @{ $self->get_subgroup_ids( $data->{user}{nt_group_id} ) } );
+    my %groups = map { $_ => 1 } $self->group_with_subgroup_ids( $data->{user}{nt_group_id} );
 
     my $new_group = $self->NicToolServer::Group::find_group( $data->{nt_group_id} );
 
@@ -288,10 +282,7 @@ sub new_nameserver {
     my @columns = qw/ nt_group_id nt_nameserver_id name ttl description logdir
         remote_login address address6 export_type_id datadir export_interval /;
 
-    my $sql    = "INSERT INTO nt_nameserver(" . join( ',', @columns ) . ') VALUES(??)';
-    my @values = map( $data->{$_}, @columns );
-
-    my $insertid = $self->exec_query( $sql, \@values )
+    my $insertid = $self->insert_row( 'nt_nameserver', $data, @columns )
         or return {
         error_code => 600,
         error_msg  => $self->{dbh}->errstr,
@@ -371,7 +362,6 @@ sub delete_nameserver {
 sub log_nameserver {
     my ( $self, $data, $action, $prev_data ) = @_;
 
-    my $dbh     = $self->{dbh};
     my @columns = qw/ nt_group_id nt_user_id action timestamp nt_nameserver_id
         name ttl description address export_type_id logdir datadir export_interval /;
 
@@ -381,13 +371,7 @@ sub log_nameserver {
     $data->{action}     = $action;
     $data->{timestamp}  = time();
 
-    my @values = map( $data->{$_}, @columns );
-    my $sql    = "INSERT INTO nt_nameserver_log(" . join( ',', @columns ) . ") VALUES(??)";
-
-    my $insertid = $self->exec_query( $sql, \@values );
-
-    my @g_columns = qw/ nt_user_id timestamp action object object_id
-        log_entry_id title description /;
+    my $insertid = $self->insert_row( 'nt_nameserver_log', $data, @columns );
 
     $data->{object}       = 'nameserver';
     $data->{log_entry_id} = $insertid;
@@ -407,12 +391,7 @@ sub log_nameserver {
         $data->{description} = "moved from $data->{old_group_name} to $data->{group_name}";
     }
 
-    $sql =
-          "INSERT INTO nt_user_global_log("
-        . join( ',', @g_columns )
-        . ") VALUES("
-        . join( ',', map( $dbh->quote( $data->{$_} ), @g_columns ) ) . ")";
-    $self->exec_query($sql);
+    $self->log_global($data);
 }
 
 sub find_nameserver {
