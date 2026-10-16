@@ -1537,7 +1537,13 @@ sub insert_row {
 
 sub log_global {
     my ( $self, $data, @more_columns ) = @_;
-    return $self->insert_row( 'nt_user_global_log', $data,
+
+    # an edit's description lists every changed field, which can outrun the
+    # varchar(255) column, and strict sql_mode then refuses the whole row
+    my %row = %$data;
+    $row{description} = substr( $row{description}, 0, 255 ) if defined $row{description};
+
+    return $self->insert_row( 'nt_user_global_log', \%row,
         qw/ nt_user_id timestamp action object object_id log_entry_id title description /,
         @more_columns );
 }
