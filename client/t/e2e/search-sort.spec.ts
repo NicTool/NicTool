@@ -1,9 +1,10 @@
 import { test, expect } from '@playwright/test';
 import {
   BASE,
-  apiLogin, authGet, cookieString,
+  authGet,
   createGroup, deleteGroup, createZone, deleteZone,
   createRecord, deleteRecord, uniqueName,
+  apiCookies,
 } from './helpers';
 
 test.describe('Search and Sort', () => {
@@ -12,8 +13,7 @@ test.describe('Search and Sort', () => {
   const zones: { name: string; zid: string }[] = [];
 
   test.beforeAll(async ({ playwright }) => {
-    const { sessionCookie, csrfCookie } = await apiLogin(playwright);
-    cookies = cookieString(sessionCookie, csrfCookie);
+    cookies = await apiCookies(playwright);
 
     gid = await createGroup(playwright, cookies, 1, uniqueName('e2e_search'));
 

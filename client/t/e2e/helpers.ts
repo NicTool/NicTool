@@ -1,4 +1,4 @@
-import { type APIRequestContext, type APIResponse } from '@playwright/test';
+import { expect, type APIRequestContext, type APIResponse } from '@playwright/test';
 import type { Page, Frame } from '@playwright/test';
 import path from 'node:path';
 
@@ -61,17 +61,22 @@ export async function getLoginCsrf(ctx: APIRequestContext) {
   };
 }
 
-export async function apiLogin(playwright: any, username = USERNAME, password = PASSWORD) {
-  const ctx = await freshCtx(playwright);
-  const { csrfToken, csrfCookie } = await getLoginCsrf(ctx);
-
-  const res = await ctx.post(`${BASE}/index.cgi`, {
+export async function postLogin(ctx: APIRequestContext, csrfCookie: string, data: string) {
+  return await ctx.post(`${BASE}/index.cgi`, {
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
       'Cookie': `NicTool_csrf=${csrfCookie}`,
     },
-    data: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&login=Enter&csrf_token=${csrfToken}`,
+    data,
   });
+}
+
+export async function apiLogin(playwright: any, username = USERNAME, password = PASSWORD) {
+  const ctx = await freshCtx(playwright);
+  const { csrfToken, csrfCookie } = await getLoginCsrf(ctx);
+
+  const res = await postLogin(ctx, csrfCookie,
+    `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&login=Enter&csrf_token=${csrfToken}`);
 
   const body = await res.text();
   const sessionCookie = setCookieValue(res, 'NicTool');
@@ -89,6 +94,11 @@ export async function apiLogin(playwright: any, username = USERNAME, password = 
 
 export function cookieString(sessionCookie: string, csrfCookie: string): string {
   return `NicTool=${sessionCookie}; NicTool_csrf=${csrfCookie}`;
+}
+
+export async function apiCookies(playwright: any, username = USERNAME, password = PASSWORD): Promise<string> {
+  const { sessionCookie, csrfCookie } = await apiLogin(playwright, username, password);
+  return cookieString(sessionCookie, csrfCookie);
 }
 
 export async function authGet(playwright: any, url: string, cookies: string) {
@@ -110,8 +120,12 @@ export async function authPost(playwright: any, url: string, cookies: string, da
   return { res, body };
 }
 
+export async function zonePage(playwright: any, cookies: string, gid: string | number, zid: string | number): Promise<string> {
+  const { body } = await authGet(playwright, `${BASE}/zone.cgi?nt_group_id=${gid}&nt_zone_id=${zid}`, cookies);
+  return body;
+}
+
 export function expectSecurityHeaders(headers: Record<string, string>) {
-  const { expect } = require('@playwright/test');
   expect(headers['content-security-policy']).toContain("default-src 'self'");
   expect(headers['x-content-type-options']).toContain('nosniff');
   expect(headers['x-frame-options']).toContain('SAMEORIGIN');
@@ -131,6 +145,27 @@ export async function browserLogin(page: Page) {
   await page.waitForTimeout(3000);
 }
 
+export function frameFor(page: Page, cgi: string): Frame | undefined {
+  return page.frames().find(f => f.url().includes(cgi));
+}
+
+// log in through the form; the frameset opens on group.cgi
+export async function loginBodyFrame(page: Page): Promise<Frame> {
+  await browserLogin(page);
+  const bodyFrame = frameFor(page, 'group.cgi');
+  expect(bodyFrame).toBeTruthy();
+  return bodyFrame!;
+}
+
+// pages only render some links for some users, so a missing link is not a failure
+export async function clickIfPresent(page: Page, frame: Frame, selector: string, wait = 1500): Promise<boolean> {
+  const link = frame.locator(selector);
+  if (await link.count() === 0) return false;
+  await link.first().click();
+  await page.waitForTimeout(wait);
+  return true;
+}
+
 export function collectViolations(page: Page) {
   const violations: string[] = [];
   page.on('console', (msg) => {
@@ -143,14 +178,6 @@ export function collectViolations(page: Page) {
     violations.push(`PAGE ERROR: ${err.message}`);
   });
   return violations;
-}
-
-export function getBodyFrame(page: Page): Frame | undefined {
-  return page.frames().find(f => f.url().includes('group.cgi') || f.url().includes('group_zones.cgi') || f.url().includes('group_users.cgi') || f.url().includes('group_nameservers.cgi') || f.url().includes('group_log.cgi') || f.url().includes('zone.cgi'));
-}
-
-export function getNavFrame(page: Page): Frame | undefined {
-  return page.frames().find(f => f.url().includes('nav.cgi'));
 }
 
 export function processIsAlive(pid: unknown): boolean {

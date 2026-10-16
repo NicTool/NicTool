@@ -1,10 +1,11 @@
 import { test, expect } from '@playwright/test';
 import {
   BASE, GROUP_DEFAULTS,
-  apiLogin, authGet, authPost, cookieString,
+  authGet, authPost,
   createGroup, deleteGroup, createZone, deleteZone,
   createRecord, deleteRecord, createUser, deleteUser,
   uniqueName, extractCsrf,
+  apiCookies,
 } from './helpers';
 
 test.describe('Permissions', () => {
@@ -15,9 +16,8 @@ test.describe('Permissions', () => {
   let zid: string;
 
   test.beforeAll(async ({ playwright }) => {
-    const { sessionCookie, csrfCookie } = await apiLogin(playwright);
-    rootCookies = cookieString(sessionCookie, csrfCookie);
-    rootCsrf = csrfCookie;
+    rootCookies = await apiCookies(playwright);
+    rootCsrf = extractCsrf(rootCookies);
     groupName = uniqueName('e2e_perms');
     gid = await createGroup(playwright, rootCookies, 1, groupName);
     zid = await createZone(playwright, rootCookies, gid, `${uniqueName('e2e')}.test`);
@@ -57,10 +57,9 @@ test.describe('Permissions', () => {
     const uid = await createUser(playwright, rootCookies, restrictedGid, { username, password });
 
     // Login as restricted user
-    const loginResult = await apiLogin(playwright, `${username}@${restrictedGroupName}`, password);
-    const userCookies = cookieString(loginResult.sessionCookie, loginResult.csrfCookie);
+    const userCookies = await apiCookies(playwright, `${username}@${restrictedGroupName}`, password);
 
-    return { userCookies, userCsrf: loginResult.csrfCookie, restrictedGid, uid, username };
+    return { userCookies, userCsrf: extractCsrf(userCookies), restrictedGid, uid, username };
   }
 
   async function cleanupRestrictedUser(playwright: any, restrictedGid: string, uid: string) {
@@ -68,53 +67,40 @@ test.describe('Permissions', () => {
     await deleteGroup(playwright, rootCookies, gid, restrictedGid);
   }
 
-  test('user without zone_create cannot create zone', async ({ playwright }) => {
-    const { userCookies, userCsrf, restrictedGid, uid } = await createRestrictedUser(playwright, { zone_create: '0' });
-
+  // POSTs as a fresh restricted user, removed again before the body is checked
+  async function restrictedPost(playwright: any, overrides: Record<string, string>, cgi: string,
+    data: (u: Awaited<ReturnType<typeof createRestrictedUser>>) => string): Promise<string> {
+    const u = await createRestrictedUser(playwright, overrides);
     try {
-      const { body } = await authPost(playwright, `${BASE}/group_zones.cgi`, userCookies,
-        `nt_group_id=${restrictedGid}&new=1&Create=Create&zone=noperm.test&mailaddr=admin.noperm.test&description=test&ttl=3600&refresh=16384&retry=2048&expire=1048576&minimum=2560&csrf_token=${userCsrf}`);
-      expect(body.toLowerCase()).toMatch(/error|permission|denied|not allowed|access/i);
+      const { body } = await authPost(playwright, `${BASE}/${cgi}`, u.userCookies, data(u));
+      return body;
     } finally {
-      await cleanupRestrictedUser(playwright, restrictedGid, uid);
+      await cleanupRestrictedUser(playwright, u.restrictedGid, u.uid);
     }
+  }
+
+  test('user without zone_create cannot create zone', async ({ playwright }) => {
+    const body = await restrictedPost(playwright, { zone_create: '0' }, 'group_zones.cgi',
+      u => `nt_group_id=${u.restrictedGid}&new=1&Create=Create&zone=noperm.test&mailaddr=admin.noperm.test&description=test&ttl=3600&refresh=16384&retry=2048&expire=1048576&minimum=2560&csrf_token=${u.userCsrf}`);
+    expect(body.toLowerCase()).toMatch(/error|permission|denied|not allowed|access/i);
   });
 
   test('user without zone_write cannot edit zone', async ({ playwright }) => {
-    const { userCookies, userCsrf, restrictedGid, uid } = await createRestrictedUser(playwright, { zone_write: '0' });
-
-    try {
-      // Try to edit the zone created in beforeAll (in parent group)
-      const { body } = await authPost(playwright, `${BASE}/group_zones.cgi`, userCookies,
-        `nt_group_id=${gid}&nt_zone_id=${zid}&edit=1&Save=Save&zone=hacked.test&mailaddr=admin.hacked.test&description=hacked&ttl=3600&refresh=16384&retry=2048&expire=1048576&minimum=2560&csrf_token=${userCsrf}`);
-      expect(body.toLowerCase()).toMatch(/error|permission|denied|not allowed|access/i);
-    } finally {
-      await cleanupRestrictedUser(playwright, restrictedGid, uid);
-    }
+    const body = await restrictedPost(playwright, { zone_write: '0' }, 'group_zones.cgi',
+      u => `nt_group_id=${gid}&nt_zone_id=${zid}&edit=1&Save=Save&zone=hacked.test&mailaddr=admin.hacked.test&description=hacked&ttl=3600&refresh=16384&retry=2048&expire=1048576&minimum=2560&csrf_token=${u.userCsrf}`);
+    expect(body.toLowerCase()).toMatch(/error|permission|denied|not allowed|access/i);
   });
 
   test('user without zone_delete cannot delete zone', async ({ playwright }) => {
-    const { userCookies, userCsrf, restrictedGid, uid } = await createRestrictedUser(playwright, { zone_delete: '0' });
-
-    try {
-      const { body } = await authPost(playwright, `${BASE}/group_zones.cgi`, userCookies,
-        `nt_group_id=${gid}&delete=1&zone_list=${zid}&csrf_token=${userCsrf}`);
-      expect(body.toLowerCase()).toMatch(/error|permission|denied|not allowed|access/i);
-    } finally {
-      await cleanupRestrictedUser(playwright, restrictedGid, uid);
-    }
+    const body = await restrictedPost(playwright, { zone_delete: '0' }, 'group_zones.cgi',
+      u => `nt_group_id=${gid}&delete=1&zone_list=${zid}&csrf_token=${u.userCsrf}`);
+    expect(body.toLowerCase()).toMatch(/error|permission|denied|not allowed|access/i);
   });
 
   test('user without zonerecord_create cannot create record', async ({ playwright }) => {
-    const { userCookies, userCsrf, restrictedGid, uid } = await createRestrictedUser(playwright, { zonerecord_create: '0' });
-
-    try {
-      const { body } = await authPost(playwright, `${BASE}/zone.cgi`, userCookies,
-        `nt_group_id=${gid}&nt_zone_id=${zid}&new_record=1&Create=Create&name=noperm&type=A&address=192.0.2.99&ttl=3600&csrf_token=${userCsrf}`);
-      expect(body.toLowerCase()).toMatch(/error|permission|denied|not allowed|access/i);
-    } finally {
-      await cleanupRestrictedUser(playwright, restrictedGid, uid);
-    }
+    const body = await restrictedPost(playwright, { zonerecord_create: '0' }, 'zone.cgi',
+      u => `nt_group_id=${gid}&nt_zone_id=${zid}&new_record=1&Create=Create&name=noperm&type=A&address=192.0.2.99&ttl=3600&csrf_token=${u.userCsrf}`);
+    expect(body.toLowerCase()).toMatch(/error|permission|denied|not allowed|access/i);
   });
 
   test('user without zonerecord_delete cannot delete record', async ({ playwright }) => {
@@ -122,53 +108,31 @@ test.describe('Permissions', () => {
     const rrid = await createRecord(playwright, rootCookies, gid, zid,
       { name: 'perm-del-test', type: 'A', address: '192.0.2.98' });
 
-    const { userCookies, userCsrf, restrictedGid, uid } = await createRestrictedUser(playwright, { zonerecord_delete: '0' });
-
     try {
-      const { body } = await authPost(playwright, `${BASE}/zone.cgi`, userCookies,
-        `nt_group_id=${gid}&nt_zone_id=${zid}&nt_zone_record_id=${rrid}&delete_record=${rrid}&csrf_token=${userCsrf}`);
+      const body = await restrictedPost(playwright, { zonerecord_delete: '0' }, 'zone.cgi',
+        u => `nt_group_id=${gid}&nt_zone_id=${zid}&nt_zone_record_id=${rrid}&delete_record=${rrid}&csrf_token=${u.userCsrf}`);
       expect(body.toLowerCase()).toMatch(/error|permission|denied|not allowed|access/i);
     } finally {
-      await cleanupRestrictedUser(playwright, restrictedGid, uid);
       await deleteRecord(playwright, rootCookies, gid, zid, rrid);
     }
   });
 
   test('user without group_create cannot create sub-group', async ({ playwright }) => {
-    const { userCookies, userCsrf, restrictedGid, uid } = await createRestrictedUser(playwright, { group_create: '0' });
-
-    try {
-      const { body } = await authPost(playwright, `${BASE}/group.cgi`, userCookies,
-        `nt_group_id=${restrictedGid}&new=1&Create=Create&name=noperm_group&${GROUP_DEFAULTS}&csrf_token=${userCsrf}`);
-      expect(body.toLowerCase()).toMatch(/error|permission|denied|not allowed|access/i);
-    } finally {
-      await cleanupRestrictedUser(playwright, restrictedGid, uid);
-    }
+    const body = await restrictedPost(playwright, { group_create: '0' }, 'group.cgi',
+      u => `nt_group_id=${u.restrictedGid}&new=1&Create=Create&name=noperm_group&${GROUP_DEFAULTS}&csrf_token=${u.userCsrf}`);
+    expect(body.toLowerCase()).toMatch(/error|permission|denied|not allowed|access/i);
   });
 
   test('user without user_create cannot create user', async ({ playwright }) => {
-    const { userCookies, userCsrf, restrictedGid, uid } = await createRestrictedUser(playwright, { user_create: '0' });
-
-    try {
-      const { body } = await authPost(playwright, `${BASE}/group_users.cgi`, userCookies,
-        `nt_group_id=${restrictedGid}&new=1&Create=Create&username=noperm_user&password=test123!&password2=test123!&email=no@test.example&first_name=No&last_name=Perm&csrf_token=${userCsrf}`);
-      expect(body.toLowerCase()).toMatch(/error|permission|denied|not allowed|access/i);
-    } finally {
-      await cleanupRestrictedUser(playwright, restrictedGid, uid);
-    }
+    const body = await restrictedPost(playwright, { user_create: '0' }, 'group_users.cgi',
+      u => `nt_group_id=${u.restrictedGid}&new=1&Create=Create&username=noperm_user&password=test123!&password2=test123!&email=no@test.example&first_name=No&last_name=Perm&csrf_token=${u.userCsrf}`);
+    expect(body.toLowerCase()).toMatch(/error|permission|denied|not allowed|access/i);
   });
 
   test('user with self_write can edit own profile', async ({ playwright }) => {
-    const { userCookies, userCsrf, restrictedGid, uid, username } = await createRestrictedUser(playwright, { self_write: '1' });
-
-    try {
-      // User should be able to edit their own profile
-      const { body } = await authPost(playwright, `${BASE}/group_users.cgi`, userCookies,
-        `nt_group_id=${restrictedGid}&nt_user_id=${uid}&edit=1&Save=Save&username=${username}&first_name=SelfEdited&last_name=User&email=selfed@test.example&csrf_token=${userCsrf}`);
-      // Should not show permission error
-      expect(body.toLowerCase()).not.toMatch(/permission denied|not allowed/i);
-    } finally {
-      await cleanupRestrictedUser(playwright, restrictedGid, uid);
-    }
+    const body = await restrictedPost(playwright, { self_write: '1' }, 'group_users.cgi',
+      u => `nt_group_id=${u.restrictedGid}&nt_user_id=${u.uid}&edit=1&Save=Save&username=${u.username}&first_name=SelfEdited&last_name=User&email=selfed@test.example&csrf_token=${u.userCsrf}`);
+    // Should not show permission error
+    expect(body.toLowerCase()).not.toMatch(/permission denied|not allowed/i);
   });
 });

@@ -1,8 +1,9 @@
 import { test, expect } from '@playwright/test';
 import {
   BASE, GROUP_DEFAULTS, ROOT_GROUPS,
-  apiLogin, authGet, authPost, cookieString,
+  authGet, authPost,
   createGroup, deleteGroup, findInListing, uniqueName, extractCsrf,
+  apiCookies,
 } from './helpers';
 
 test.describe('Groups', () => {
@@ -10,9 +11,8 @@ test.describe('Groups', () => {
   let csrfToken: string;
 
   test.beforeAll(async ({ playwright }) => {
-    const { sessionCookie, csrfCookie } = await apiLogin(playwright);
-    cookies = cookieString(sessionCookie, csrfCookie);
-    csrfToken = csrfCookie;
+    cookies = await apiCookies(playwright);
+    csrfToken = extractCsrf(cookies);
   });
 
   test('create sub-group with all permissions', async ({ playwright }) => {

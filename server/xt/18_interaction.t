@@ -39,12 +39,7 @@ use NicToolTest;
 use NicTool;
 use Test::More tests => 200;
 
-$user = new NicTool(
-    cache_users  => 0,
-    cache_groups => 0,
-    server_host  => Config('server_host'),
-    server_port  => Config('server_port')
-);
+$user = nt_client();
 die "Couldn't create NicTool Object" unless is( ref $user, 'NicTool' );
 
 $user->login(
@@ -75,146 +70,64 @@ warn $@ if $@;
 
 sub groups_with_children {
 
-    $res = $user->new_group( name => 'test_delete_me1' );
-    die "Couldn't create test group1"
-        unless noerrok($res)
-        and like( $res->get('nt_group_id'), qr/^\d+$/ );
-    $gid1 = $res->get('nt_group_id');
-
-    $group1 = $user->get_group( nt_group_id => $gid1 );
-    die "Couldn't get test group1"
-        unless noerrok($group1)
-        and is( $group1->id, $gid1 );
-
     #
     # delete group with remaining children
     #
 
-    #
-    # zone
-    #
-    $res = $group1->new_zone(
-        zone        => 'test.com',
-        serial      => 0,
-        ttl         => 86400,
-        description => "test delete me",
-        mailaddr    => "somebody.somewhere.com",
-        refresh     => 10,
-        retry       => 20,
-        expire      => 30,
-        minimum     => 40,
-    );
-    if ( noerrok($res) ) {
-        $zid = $res->get('nt_zone_id');
-        $res = $group1->delete;
-        noerrok( $res, 600, 'has zone' );
-        like( $res->get('error_msg'),
-                qr/You can't delete this group until you delete all of its zones/ );
-        like( $res->get('error_desc'), qr/Failure/ );
+    for (
+        [   zone => 'zones',
+            'nt_zone_id', sub { $group1->new_zone( test_com_zone() ) },
+            sub { $user->delete_zones( zone_list => shift ) }
+        ],
+        [   user => 'users',
+            'nt_user_id',
+            sub {
+                $group1->new_user(
+                    first_name => 'test',
+                    last_name  => '1',
+                    email      => 'test@blah.blah',
+                    username   => 'testuser1',
+                    password   => 'testpass',
+                    password2  => 'testpass'
+                );
+            },
+            sub { $user->delete_users( user_list => shift ) }
+        ],
+        [   group => 'sub-groups',
+            'nt_group_id',
+            sub { $group1->new_group( name => 'sub_test1' ) },
+            sub { $user->delete_group( nt_group_id => shift ) }
+        ],
+        )
+    {
+        my ( $type, $children, $id_field, $create, $delete ) = @$_;
 
-        if ( $res->error_code eq 600 ) {
-            $res = $user->delete_zones( zone_list => $zid );
-            noerrok($res);
+        new_test_group1();
+
+        $res = $create->();
+        if ( noerrok($res) ) {
+            my $id = $res->get($id_field);
             $res = $group1->delete;
-            noerrok($res);
+            noerrok( $res, 600, "has $type" );
+            like( $res->get('error_msg'),
+                qr/You can't delete this group until you delete all of its $children/ );
+            like( $res->get('error_desc'), qr/Failure/ );
+
+            if ( $res->error_code eq 600 ) {
+                $res = $delete->($id);
+                noerrok($res);
+                $res = $group1->delete;
+                noerrok($res);
+            }
+            else {
+                is( 0, 1, "Group was already deleted incorrectly" );
+                is( 0, 1, "Not deleting $type $id" );
+            }
         }
         else {
-            is( 0, 1, "Group was already deleted incorrectly" );
-            is( 0, 1, "Not deleting zone $zid" );
+            warn "Couldn't create test $type";
+            for ( 1 .. 6 ) { ok(0) }
         }
-    }
-    else {
-        warn "Couldn't create test zone";
-        for ( 1 .. 6 ) { ok(0) }
-    }
-
-    #
-    # user
-    #
-
-    #make a new group
-    $res = $user->new_group( name => 'test_delete_me1' );
-    die "Couldn't create test group1"
-        unless noerrok($res)
-        and like( $res->get('nt_group_id'), qr/^\d+$/ );
-    $gid1 = $res->get('nt_group_id');
-
-    $group1 = $user->get_group( nt_group_id => $gid1 );
-    die "Couldn't get test group1"
-        unless noerrok($group1)
-        and is( $group1->id, $gid1 );
-
-    $res = $group1->new_user(
-        first_name => 'test',
-        last_name  => '1',
-        email      => 'test@blah.blah',
-        username   => 'testuser1',
-        password   => 'testpass',
-        password2  => 'testpass'
-    );
-    if ( noerrok($res) ) {
-        $uid = $res->get('nt_user_id');
-        $res = $group1->delete;
-        noerrok( $res, 600, 'has user' );
-        like( $res->get('error_msg'),
-                qr/You can't delete this group until you delete all of its users/ );
-        like( $res->get('error_desc'), qr/Failure/ );
-
-        if ( $res->error_code eq 600 ) {
-            $res = $user->delete_users( user_list => $uid );
-            noerrok($res);
-            $res = $group1->delete;
-            noerrok($res);
-        }
-        else {
-            is( 0, 1, "Group was already deleted incorrectly" );
-            is( 0, 1, "Not deleting user $uid" );
-        }
-    }
-    else {
-        warn "Couldn't create test user";
-        for ( 1 .. 6 ) { ok(0) }
-    }
-
-    #
-    # group
-    #
-
-    #make a new group
-    $res = $user->new_group( name => 'test_delete_me1' );
-    die "Couldn't create test group1"
-        unless noerrok($res)
-        and like( $res->get('nt_group_id'), qr/^\d+$/ );
-    $gid1 = $res->get('nt_group_id');
-
-    $group1 = $user->get_group( nt_group_id => $gid1 );
-    die "Couldn't get test group1"
-        unless noerrok($group1)
-        and is( $group1->id, $gid1 );
-
-    $res = $group1->new_group( name => 'sub_test1' );
-    if ( noerrok($res) ) {
-        $gid = $res->get('nt_group_id');
-        $res = $group1->delete;
-        noerrok( $res, 600, 'has group' );
-        like( $res->get('error_msg'),
-                qr/You can't delete this group until you delete all of its sub-groups/ );
-        like( $res->get('error_desc'), qr/Failure/ );
-
-        if ( $res->error_code eq 600 ) {
-            $res = $user->delete_group( nt_group_id => $gid );
-            noerrok($res);
-            $res = $group1->delete;
-            noerrok($res);
-        }
-        else {
-            is( 0, 1, "Group was already deleted incorrectly" );
-            is( 0, 1, "Not deleting group $gid" );
-        }
-    }
-    else {
-        warn "Couldn't create test group";
-        for ( 1 .. 6 ) { ok(0) }
     }
 }
 
@@ -248,34 +161,12 @@ sub nameserver_with_zones {
     $nsid = $res->get('nt_nameserver_id');
 
     #make new zone
-    $res = $group1->new_zone(
-        zone        => 'test.com',
-        serial      => 0,
-        ttl         => 86400,
-        description => "test delete me",
-        mailaddr    => "somebody.somewhere.com",
-        refresh     => 10,
-        retry       => 20,
-        expire      => 30,
-        minimum     => 40,
-        nameservers => $nsid
-    );
+    $res = $group1->new_zone( test_com_zone(), nameservers => $nsid );
     noerrok($res);
     $zid1 = $res->get('nt_zone_id');
 
     #make new zone
-    $res = $group1->new_zone(
-        zone        => 'test2.com',
-        serial      => 0,
-        ttl         => 86400,
-        description => "test delete me",
-        mailaddr    => "somebody.somewhere.com",
-        refresh     => 10,
-        retry       => 20,
-        expire      => 30,
-        minimum     => 40,
-        nameservers => $nsid
-    );
+    $res = $group1->new_zone( test_com_zone(), zone => 'test2.com', nameservers => $nsid );
     noerrok($res);
     $zid2 = $res->get('nt_zone_id');
 
@@ -312,28 +203,9 @@ sub nameserver_with_zones {
 
 sub deleted_zones {
 
-    $res = $user->new_group( name => 'test_delete_me1' );
-    die "Couldn't create test group1"
-        unless noerrok($res)
-        and like( $res->get('nt_group_id'), qr/^\d+$/ );
-    $gid1 = $res->get('nt_group_id');
+    new_test_group1();
 
-    $group1 = $user->get_group( nt_group_id => $gid1 );
-    die "Couldn't get test group1"
-        unless noerrok($group1)
-        and is( $group1->id, $gid1 );
-
-    $res = $group1->new_zone(
-        zone        => 'test.com',
-        serial      => 0,
-        ttl         => 86400,
-        description => "test delete me",
-        mailaddr    => "somebody.somewhere.com",
-        refresh     => 10,
-        retry       => 20,
-        expire      => 30,
-        minimum     => 40,
-    );
+    $res = $group1->new_zone( test_com_zone() );
     noerrok($res);
     $zid1 = $res->get('nt_zone_id');
 
@@ -356,9 +228,7 @@ sub deleted_zones {
         nt_zone_record_id => $zrid1,
         name              => 'b',
     );
-    noerrok( $res, 300 );
-    like( $res->error_msg, qr/Cannot create\/edit records in a deleted zone\./ );
-    like( $res->error_desc, qr/Sanity error/ );
+    sanity_like_ok( $res, qr/Cannot create\/edit records in a deleted zone\./ );
 
     #try to create a new record
 
@@ -369,18 +239,14 @@ sub deleted_zones {
         address    => '1.2.3.4',
         ttl        => 86400,
     );
-    noerrok( $res, 300 );
-    like( $res->error_msg, qr/Cannot create\/edit records in a deleted zone\./ );
-    like( $res->error_desc, qr/Sanity error/ );
+    sanity_like_ok( $res, qr/Cannot create\/edit records in a deleted zone\./ );
 
     #try to modify deleted zone
     $res = $user->edit_zone(
         nt_zone_id  => $zid1,
         description => 'this zone is deleted!!',
     );
-    noerrok( $res, 300 );
-    like( $res->error_msg, qr/Cannot edit deleted zone!/ );
-    like( $res->error_desc, qr/Sanity error/ );
+    sanity_like_ok( $res, qr/Cannot edit deleted zone!/ );
 
     #delete group
     noerrok( $group1->delete );
@@ -389,28 +255,9 @@ sub deleted_zones {
 
 sub deleted_records {
 
-    $res = $user->new_group( name => 'test_delete_me1' );
-    die "Couldn't create test group1"
-        unless noerrok($res)
-        and like( $res->get('nt_group_id'), qr/^\d+$/ );
-    $gid1 = $res->get('nt_group_id');
+    new_test_group1();
 
-    $group1 = $user->get_group( nt_group_id => $gid1 );
-    die "Couldn't get test group1"
-        unless noerrok($group1)
-        and is( $group1->id, $gid1 );
-
-    $res = $group1->new_zone(
-        zone        => 'test.com',
-        serial      => 0,
-        ttl         => 86400,
-        description => "test delete me",
-        mailaddr    => "somebody.somewhere.com",
-        refresh     => 10,
-        retry       => 20,
-        expire      => 30,
-        minimum     => 40,
-    );
+    $res = $group1->new_zone( test_com_zone() );
     noerrok($res);
     $zid1 = $res->get('nt_zone_id');
 
@@ -433,9 +280,7 @@ sub deleted_records {
         nt_zone_record_id => $zrid1,
         name              => 'b',
     );
-    noerrok( $res, 300 );
-    like( $res->error_msg, qr/Cannot edit deleted record!/ );
-    like( $res->error_desc, qr/Sanity error/ );
+    sanity_like_ok( $res, qr/Cannot edit deleted record!/ );
 
     $res = $user->delete_zones( zone_list => $zid1 );
     noerrok($res);
@@ -447,16 +292,7 @@ sub deleted_records {
 
 sub deleted_users {
 
-    $res = $user->new_group( name => 'test_delete_me1' );
-    die "Couldn't create test group1"
-        unless noerrok($res)
-        and like( $res->get('nt_group_id'), qr/^\d+$/ );
-    $gid1 = $res->get('nt_group_id');
-
-    $group1 = $user->get_group( nt_group_id => $gid1 );
-    die "Couldn't get test group1"
-        unless noerrok($group1)
-        and is( $group1->id, $gid1 );
+    new_test_group1();
 
     $res = $group1->new_user(
         first_name => 'test',
@@ -477,9 +313,7 @@ sub deleted_users {
         nt_user_id => $uid1,
         first_name => 'deleted',
     );
-    noerrok( $res, 300 );
-    like( $res->error_msg, qr/Cannot edit deleted user!/ );
-    like( $res->error_desc, qr/Sanity error/ );
+    sanity_like_ok( $res, qr/Cannot edit deleted user!/ );
 
     #delete group
     noerrok( $group1->delete );
@@ -487,16 +321,7 @@ sub deleted_users {
 
 sub deleted_nameservers {
 
-    $res = $user->new_group( name => 'test_delete_me1' );
-    die "Couldn't create test group1"
-        unless noerrok($res)
-        and like( $res->get('nt_group_id'), qr/^\d+$/ );
-    $gid1 = $res->get('nt_group_id');
-
-    $group1 = $user->get_group( nt_group_id => $gid1 );
-    die "Couldn't get test group1"
-        unless noerrok($group1)
-        and is( $group1->id, $gid1 );
+    new_test_group1();
 
     $res = $group1->new_nameserver(
         name          => 'ns2.somewhere.com.',
@@ -515,9 +340,7 @@ sub deleted_nameservers {
         nt_nameserver_id => $nsid1,
         address          => '5.4.2.1',
     );
-    noerrok( $res, 300 );
-    like( $res->error_msg, qr/Cannot edit deleted nameserver!/ );
-    like( $res->error_desc, qr/Sanity error/ );
+    sanity_like_ok( $res, qr/Cannot edit deleted nameserver!/ );
 
     #delete group
     noerrok( $group1->delete );
@@ -525,16 +348,7 @@ sub deleted_nameservers {
 
 sub deleted_groups {
 
-    $res = $user->new_group( name => 'test_delete_me1' );
-    die "Couldn't create test group1"
-        unless noerrok($res)
-        and like( $res->get('nt_group_id'), qr/^\d+$/ );
-    $gid1 = $res->get('nt_group_id');
-
-    $group1 = $user->get_group( nt_group_id => $gid1 );
-    die "Couldn't get test group1"
-        unless noerrok($group1)
-        and is( $group1->id, $gid1 );
+    new_test_group1();
 
     $res = $group1->new_group( name => 'testsubgroup', );
     noerrok($res);
@@ -567,17 +381,13 @@ sub deleted_groups {
         nt_group_id => $gid2,
         name        => 'testsubgroup modified',
     );
-    noerrok( $res, 300 );
-    like( $res->error_msg, qr/Cannot edit a deleted group!/ );
-    like( $res->error_desc, qr/Sanity error/ );
+    sanity_like_ok( $res, qr/Cannot edit a deleted group!/ );
 
     $res = $user->edit_nameserver(
         nt_nameserver_id => $nsid1,
         name             => 'ns3.somewhere.com',
     );
-    noerrok( $res, 300 );
-    like( $res->error_msg, qr/Cannot edit nameserver in a deleted group!/ );
-    like( $res->error_desc, qr/Sanity error/ );
+    sanity_like_ok( $res, qr/Cannot edit nameserver in a deleted group!/ );
 
     $res = $user->new_nameserver(
         nt_group_id   => $gid2,
@@ -586,17 +396,13 @@ sub deleted_groups {
         export_format => 'djbdns',
         ttl           => 86401,
     );
-    noerrok( $res, 300 );
-    like( $res->error_msg, qr/Cannot add nameserver to a deleted group!/ );
-    like( $res->error_desc, qr/Sanity error/ );
+    sanity_like_ok( $res, qr/Cannot add nameserver to a deleted group!/ );
 
     $res = $user->new_group(
         nt_group_id => $gid2,
         name        => 'testsubgroup2',
     );
-    noerrok( $res, 300 );
-    like( $res->error_msg, qr/Cannot add group to a deleted group!/ );
-    like( $res->error_desc, qr/Sanity error/ );
+    sanity_like_ok( $res, qr/Cannot add group to a deleted group!/ );
 
     $res = $user->new_user(
         nt_group_id => $gid2,
@@ -607,25 +413,10 @@ sub deleted_groups {
         password    => 'testpass',
         password2   => 'testpass'
     );
-    noerrok( $res, 300 );
-    like( $res->error_msg, qr/Cannot add user to a deleted group!/ );
-    like( $res->error_desc, qr/Sanity error/ );
+    sanity_like_ok( $res, qr/Cannot add user to a deleted group!/ );
 
-    $res = $user->new_zone(
-        nt_group_id => $gid2,
-        zone        => 'test.com',
-        serial      => 0,
-        ttl         => 86400,
-        description => "test delete me",
-        mailaddr    => "somebody.somewhere.com",
-        refresh     => 10,
-        retry       => 20,
-        expire      => 30,
-        minimum     => 40,
-    );
-    noerrok( $res, 300 );
-    like( $res->error_msg, qr/Cannot add zone to a deleted group!/ );
-    like( $res->error_desc, qr/Sanity error/ );
+    $res = $user->new_zone( nt_group_id => $gid2, test_com_zone() );
+    sanity_like_ok( $res, qr/Cannot add zone to a deleted group!/ );
 
     #delete group
     noerrok( $group1->delete );
@@ -633,16 +424,7 @@ sub deleted_groups {
 
 sub deleted_objects_delegation {
 
-    $res = $user->new_group( name => 'test_delete_me1' );
-    die "Couldn't create test group1"
-        unless noerrok($res)
-        and like( $res->get('nt_group_id'), qr/^\d+$/ );
-    $gid1 = $res->get('nt_group_id');
-
-    $group1 = $user->get_group( nt_group_id => $gid1 );
-    die "Couldn't get test group1"
-        unless noerrok($group1)
-        and is( $group1->id, $gid1 );
+    new_test_group1();
 
     $res = $group1->new_group( name => 'testsubgroup', );
     noerrok($res);
@@ -660,17 +442,7 @@ sub deleted_objects_delegation {
     noerrok($res);
     is( $res->get('deleted'), 1, "group sohuld be deleted" );
 
-    $res = $group1->new_zone(
-        zone        => 'test.com',
-        serial      => 0,
-        ttl         => 86400,
-        description => "test delete me",
-        mailaddr    => "somebody.somewhere.com",
-        refresh     => 10,
-        retry       => 20,
-        expire      => 30,
-        minimum     => 40,
-    );
+    $res = $group1->new_zone( test_com_zone() );
     noerrok($res);
     $zid1 = $res->get('nt_zone_id');
 
@@ -701,9 +473,7 @@ sub deleted_objects_delegation {
         nt_group_id => $gid2,
         perm_write  => 1
     );
-    noerrok( $res, 300 );
-    like( $res->error_msg, qr/Cannot delegate to a deleted group!/ );
-    like( $res->error_desc, qr/Sanity error/ );
+    sanity_like_ok( $res, qr/Cannot delegate to a deleted group!/ );
 
     #try to delegate record to deleted group
 
@@ -712,9 +482,7 @@ sub deleted_objects_delegation {
         nt_group_id     => $gid2,
         perm_write      => 1
     );
-    noerrok( $res, 300 );
-    like( $res->error_msg, qr/Cannot delegate to a deleted group!/ );
-    like( $res->error_desc, qr/Sanity error/ );
+    sanity_like_ok( $res, qr/Cannot delegate to a deleted group!/ );
 
     #now try delegating deleted objects to a group
 
@@ -731,9 +499,7 @@ sub deleted_objects_delegation {
         zonerecord_list => $zrid2,
         nt_group_id     => $gid2
     );
-    noerrok( $res, 300 );
-    like( $res->error_msg, qr/Cannot delegate deleted objects!/ );
-    like( $res->error_desc, qr/Sanity error/ );
+    sanity_like_ok( $res, qr/Cannot delegate deleted objects!/ );
 
     #delete zone
     $res = $user->delete_zones( zone_list => $zid1 );
@@ -745,9 +511,7 @@ sub deleted_objects_delegation {
         zone_list   => $zid1,
         nt_group_id => $gid2
     );
-    noerrok( $res, 300 );
-    like( $res->error_msg, qr/Cannot delegate deleted objects!/ );
-    like( $res->error_desc, qr/Sanity error/ );
+    sanity_like_ok( $res, qr/Cannot delegate deleted objects!/ );
 
     #clean up group
     noerrok( $user->delete_group( nt_group_id => $gid2 ) );
@@ -757,22 +521,12 @@ sub deleted_objects_delegation {
 }
 
 sub self {
-    $res = $user->new_group(
-        name        => 'test_delete_me1',
+    new_test_group1(
         self_write  => 1,
         zone_create => 0,
         zone_delete => 0,
         zone_write  => 0,
     );
-    die "Couldn't create test group1"
-        unless noerrok($res)
-        and like( $res->get('nt_group_id'), qr/^\d+$/ );
-    $gid1 = $res->get('nt_group_id');
-
-    $group1 = $user->get_group( nt_group_id => $gid1 );
-    die "Couldn't get test group1"
-        unless noerrok($group1)
-        and is( $group1->id, $gid1 );
 
     $res = $group1->new_group( name => 'testsubgroup', );
     noerrok($res);
@@ -793,12 +547,7 @@ sub self {
 
     #log in as testuser
 
-    $tuser = new NicTool(
-        cache_users  => 0,
-        cache_groups => 0,
-        server_host  => Config('server_host'),
-        server_port  => Config('server_port')
-    );
+    $tuser = nt_client();
     die "Couldn't create NicTool Object" unless is( ref $tuser, 'NicTool' );
 
     $tuser->login(
@@ -811,17 +560,12 @@ sub self {
     #let test user try to move self
 
     $res = $tuser->move_users( user_list => $uid2, nt_group_id => $gid2 );
-    noerrok( $res, 300 );
-    like( $res->error_msg, qr/Cannot move yourself to another group!/ );
-    like( $res->error_desc, qr/Sanity error/ );
+    sanity_like_ok( $res, qr/Cannot move yourself to another group!/ );
 
     #try to change self permissions
 
     $tuser->user->refresh;
-    foreach (qw(zone_write zone_create zone_delete)) {
-        is( $tuser->get($_), 0, "self edit $_ permissions" );
-    }
-    is( $tuser->get('self_write'), 1, "self edit self_write permissions" );
+    self_perms_is( $tuser, 0, 'self' );
 
     $res = $tuser->edit_user(
         nt_user_id                => $uid2,
@@ -832,10 +576,7 @@ sub self {
     );
     noerrok($res);
     $tuser->user->refresh;
-    foreach (qw(zone_write zone_create zone_delete)) {
-        is( $tuser->get($_), 0, "self edit $_ permissions" );
-    }
-    is( $tuser->get('self_write'), 1, "self edit self_write permissions" );
+    self_perms_is( $tuser, 0, 'self' );
 
     noerrok(
         $user->edit_user(
@@ -848,10 +589,7 @@ sub self {
     );
 
     $tuser->user->refresh;
-    foreach (qw(zone_write zone_create zone_delete)) {
-        is( $tuser->get($_), 1, "root edit $_ permissions" );
-    }
-    is( $tuser->get('self_write'), 1, "root edit self_write permissions" );
+    self_perms_is( $tuser, 1, 'root' );
 
     $res = $tuser->edit_user(
         nt_user_id                => $uid2,
@@ -862,17 +600,11 @@ sub self {
     );
     noerrok($res);
     $tuser->user->refresh;
-    foreach (qw(zone_write zone_create zone_delete)) {
-        is( $tuser->get($_), 1, "self edit $_ permissions" );
-    }
-    is( $tuser->get('self_write'), 1, "self edit self_write permissions" );
+    self_perms_is( $tuser, 1, 'self' );
 
     $user1 = $user->get_user( nt_user_id => $uid2 );
     noerrok($user1);
-    foreach (qw(zone_write zone_create zone_delete)) {
-        is( $user1->get($_), 1, "self edit $_ permissions" );
-    }
-    is( $user1->get('self_write'), 1, "self edit self_write permissions" );
+    self_perms_is( $user1, 1, 'self' );
 
     #try to delete self
     $res = $tuser->delete_users( user_list => $uid2 );
@@ -888,4 +620,46 @@ sub self {
 
     #delete group
     noerrok( $group1->delete );
+}
+
+sub new_test_group1 {
+    $res = $user->new_group( name => 'test_delete_me1', @_ );
+    die "Couldn't create test group1"
+        unless noerrok($res)
+        and like( $res->get('nt_group_id'), qr/^\d+$/ );
+    $gid1 = $res->get('nt_group_id');
+
+    $group1 = $user->get_group( nt_group_id => $gid1 );
+    die "Couldn't get test group1"
+        unless noerrok($group1)
+        and is( $group1->id, $gid1 );
+}
+
+sub test_com_zone {
+    return (
+        zone        => 'test.com',
+        serial      => 0,
+        ttl         => 86400,
+        description => "test delete me",
+        mailaddr    => "somebody.somewhere.com",
+        refresh     => 10,
+        retry       => 20,
+        expire      => 30,
+        minimum     => 40,
+    );
+}
+
+sub sanity_like_ok {
+    my ( $res, $msg ) = @_;
+    noerrok( $res, 300 );
+    like( $res->error_msg,  $msg );
+    like( $res->error_desc, qr/Sanity error/ );
+}
+
+sub self_perms_is {
+    my ( $u, $want, $who ) = @_;
+    foreach (qw(zone_write zone_create zone_delete)) {
+        is( $u->get($_), $want, "$who edit $_ permissions" );
+    }
+    is( $u->get('self_write'), 1, "$who edit self_write permissions" );
 }

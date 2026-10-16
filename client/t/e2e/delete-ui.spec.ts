@@ -1,10 +1,11 @@
 import { test, expect } from '@playwright/test';
 import {
-  apiLogin, cookieString, authGet, authPost,
+  authGet, authPost,
   createGroup, createZone, createRecord, createUser, createNameserver,
-  deleteGroup, deleteZone, deleteRecord, deleteUser, deleteNameserver,
+  deleteGroup, deleteZone,
   exactListing, findInListing,
-  uniqueName, uniqueNsName, extractCsrf, BASE,
+  uniqueName, uniqueNsName, BASE,
+  apiCookies, zonePage,
 } from './helpers';
 
 // ---------------------------------------------------------------------------
@@ -18,43 +19,18 @@ import {
 
 // ---- Helpers to extract delete links/forms from rendered HTML ----
 
-/** Extract the trash-icon delete href for a group from group.cgi HTML */
-function extractGroupDeleteHref(html: string, gid: string): string | null {
-  // Pattern: <a href="group.cgi?nt_group_id=PARENT&amp;delete=GID" ...><img ...trash.gif...>
-  const re = new RegExp(`<a\\s+href="(group\\.cgi\\?[^"]*delete=${gid}[^"]*)"[^>]*>\\s*<img[^>]*trash\\.gif`);
-  const m = html.match(re);
-  return m ? m[1].replace(/&amp;/g, '&') : null;
-}
-
-/** Extract the trash-icon delete href for a user from group_users.cgi HTML */
-function extractUserDeleteHref(html: string, uid: string): string | null {
-  const re = new RegExp(`<a\\s+href="(group_users\\.cgi\\?[^"]*delete=1[^"]*obj_list=${uid}[^"]*)"[^>]*>\\s*<img[^>]*trash\\.gif`);
-  const m = html.match(re);
-  if (m) return m[1].replace(/&amp;/g, '&');
-  // Try alternate order: obj_list before delete
-  const re2 = new RegExp(`<a\\s+href="(group_users\\.cgi\\?[^"]*obj_list=${uid}[^"]*delete=1[^"]*)"[^>]*>\\s*<img[^>]*trash\\.gif`);
-  const m2 = html.match(re2);
-  return m2 ? m2[1].replace(/&amp;/g, '&') : null;
-}
-
-/** Extract the trash-icon delete href for a nameserver from group_nameservers.cgi HTML */
-function extractNameserverDeleteHref(html: string, nsid: string): string | null {
-  const re = new RegExp(`<a\\s+href="(group_nameservers\\.cgi\\?[^"]*delete=1[^"]*nt_nameserver_id=${nsid}[^"]*)"[^>]*>\\s*<img[^>]*trash\\.gif`);
-  const m = html.match(re);
-  if (m) return m[1].replace(/&amp;/g, '&');
-  const re2 = new RegExp(`<a\\s+href="(group_nameservers\\.cgi\\?[^"]*nt_nameserver_id=${nsid}[^"]*delete=1[^"]*)"[^>]*>\\s*<img[^>]*trash\\.gif`);
-  const m2 = html.match(re2);
-  return m2 ? m2[1].replace(/&amp;/g, '&') : null;
-}
-
-/** Extract the trash-icon delete href for a zone from group_zones.cgi HTML */
-function extractZoneDeleteHref(html: string, zid: string): string | null {
-  const re = new RegExp(`<a\\s+href="(group_zones\\.cgi\\?[^"]*delete=1[^"]*zone_list=${zid}[^"]*)"[^>]*>\\s*<img[^>]*trash\\.gif`);
-  const m = html.match(re);
-  if (m) return m[1].replace(/&amp;/g, '&');
-  const re2 = new RegExp(`<a\\s+href="(group_zones\\.cgi\\?[^"]*zone_list=${zid}[^"]*delete=1[^"]*)"[^>]*>\\s*<img[^>]*trash\\.gif`);
-  const m2 = html.match(re2);
-  return m2 ? m2[1].replace(/&amp;/g, '&') : null;
+/**
+ * The trash-icon delete href in a listing: a link to `cgi` carrying every
+ * param, in either order, wrapped around trash.gif.
+ */
+function trashHref(html: string, cgi: string, ...params: string[]): string | null {
+  const orders = params.length > 1 ? [params, [...params].reverse()] : [params];
+  for (const order of orders) {
+    const re = new RegExp(`<a\\s+href="(${cgi.replace('.', '\\.')}\\?[^"]*${order.join('[^"]*')}[^"]*)"[^>]*>\\s*<img[^>]*trash\\.gif`);
+    const m = html.match(re);
+    if (m) return m[1].replace(/&amp;/g, '&');
+  }
+  return null;
 }
 
 /** Extract the delete form for a record from zone.cgi HTML */
@@ -88,12 +64,9 @@ function extractRecordDeleteForm(html: string, rrid: string): { action: string; 
 
 test.describe('Delete via UI trash icon', () => {
   let cookies: string;
-  let csrfCookie: string;
 
   test.beforeAll(async ({ playwright }) => {
-    const login = await apiLogin(playwright);
-    cookies = cookieString(login.sessionCookie, login.csrfCookie);
-    csrfCookie = login.csrfCookie;
+    cookies = await apiCookies(playwright);
   });
 
   test('delete group via rendered trash icon link', async ({ playwright }) => {
@@ -102,7 +75,7 @@ test.describe('Delete via UI trash icon', () => {
     const body = await exactListing(playwright, cookies, 'group.cgi', 1, groupName);
 
     // Extract the actual delete link from the HTML
-    const href = extractGroupDeleteHref(body, gid);
+    const href = trashHref(body, 'group.cgi', `delete=${gid}`);
     expect(href, 'trash icon link should exist for the group').toBeTruthy();
 
     // The link MUST contain csrf_token for CSRF protection to pass
@@ -129,7 +102,7 @@ test.describe('Delete via UI trash icon', () => {
     const { body } = await authGet(playwright, `${BASE}/group_users.cgi?nt_group_id=${gid}`, cookies);
 
     // Extract the actual delete link
-    const href = extractUserDeleteHref(body, uid);
+    const href = trashHref(body, 'group_users.cgi', 'delete=1', `obj_list=${uid}`);
     expect(href, 'trash icon link should exist for the user').toBeTruthy();
     expect(href, 'delete link must include csrf_token').toContain('csrf_token');
 
@@ -154,7 +127,7 @@ test.describe('Delete via UI trash icon', () => {
       'group_nameservers.cgi', 1, nsName);
 
     // Extract the actual delete link
-    const href = extractNameserverDeleteHref(body, nsid);
+    const href = trashHref(body, 'group_nameservers.cgi', 'delete=1', `nt_nameserver_id=${nsid}`);
     expect(href, 'trash icon link should exist for the nameserver').toBeTruthy();
     expect(href, 'delete link must include csrf_token').toContain('csrf_token');
 
@@ -177,7 +150,7 @@ test.describe('Delete via UI trash icon', () => {
     const { body } = await authGet(playwright, `${BASE}/group_zones.cgi?nt_group_id=${gid}`, cookies);
 
     // Extract the actual delete link
-    const href = extractZoneDeleteHref(body, zid);
+    const href = trashHref(body, 'group_zones.cgi', 'delete=1', `zone_list=${zid}`);
     expect(href, 'trash icon link should exist for the zone').toBeTruthy();
     expect(href, 'delete link must include csrf_token').toContain('csrf_token');
 
@@ -202,8 +175,7 @@ test.describe('Delete via UI trash icon', () => {
     });
 
     // Fetch the zone detail page (which lists records)
-    const { body } = await authGet(playwright,
-      `${BASE}/zone.cgi?nt_group_id=${gid}&nt_zone_id=${zid}`, cookies);
+    const body = await zonePage(playwright, cookies, gid, zid);
 
     // Extract the delete form for this record
     const form = extractRecordDeleteForm(body, rrid);

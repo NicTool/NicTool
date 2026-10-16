@@ -1,10 +1,11 @@
 import { test, expect } from '@playwright/test';
 import {
   BASE,
-  apiLogin, authGet, authPost, cookieString,
+  authGet, authPost,
   createGroup, deleteGroup, createZone, deleteZone,
   createUser, deleteUser, createNameserver, deleteNameserver,
   uniqueName, uniqueNsName, extractCsrf,
+  apiCookies,
 } from './helpers';
 
 test.describe('Move Operations', () => {
@@ -14,9 +15,8 @@ test.describe('Move Operations', () => {
   let groupB: string;
 
   test.beforeAll(async ({ playwright }) => {
-    const { sessionCookie, csrfCookie } = await apiLogin(playwright);
-    cookies = cookieString(sessionCookie, csrfCookie);
-    csrfToken = csrfCookie;
+    cookies = await apiCookies(playwright);
+    csrfToken = extractCsrf(cookies);
 
     groupA = await createGroup(playwright, cookies, 1, uniqueName('e2e_moveA'));
     groupB = await createGroup(playwright, cookies, 1, uniqueName('e2e_moveB'));
@@ -27,123 +27,66 @@ test.describe('Move Operations', () => {
     await deleteGroup(playwright, cookies, 1, groupB);
   });
 
+  const ZONES = { move: 'move_zones.cgi', list: 'group_zones.cgi', remove: deleteZone };
+  const USERS = { move: 'move_users.cgi', list: 'group_users.cgi', remove: deleteUser };
+  const NAMESERVERS = { move: 'move_nameservers.cgi', list: 'group_nameservers.cgi', remove: deleteNameserver };
+
+  // moves the object from groupA to groupB; with checkSource the move's own
+  // response goes unchecked and groupA must no longer list it
+  async function movedOk(playwright: any, kind: typeof ZONES, id: string, name: string, checkSource: boolean) {
+    const listed = async (gid: string) =>
+      (await authGet(playwright, `${BASE}/${kind.list}?nt_group_id=${gid}`, cookies)).body;
+
+    try {
+      const { body } = await authPost(playwright, `${BASE}/${kind.move}`, cookies,
+        `Save=Save&group_list=${groupB}&obj_list=${id}&csrf_token=${csrfToken}`);
+      if (checkSource) {
+        expect(await listed(groupA)).not.toContain(name);
+      } else {
+        expect(body.toLowerCase()).not.toContain('error_code');
+      }
+      expect(await listed(groupB)).toContain(name);
+    } finally {
+      await kind.remove(playwright, cookies, groupB, id).catch(() =>
+        kind.remove(playwright, cookies, groupA, id).catch(() => {}));
+    }
+  }
+
   test('move zone to different group', async ({ playwright }) => {
     const zone = `${uniqueName('e2e-move')}.test`;
     const zid = await createZone(playwright, cookies, groupA, zone);
-
-    try {
-      // Move zone: Save=Save, group_list=target, obj_list=zid
-      const { body } = await authPost(playwright, `${BASE}/move_zones.cgi`, cookies,
-        `Save=Save&group_list=${groupB}&obj_list=${zid}&csrf_token=${csrfToken}`);
-      expect(body.toLowerCase()).not.toContain('error_code');
-
-      const { body: bBody } = await authGet(playwright,
-        `${BASE}/group_zones.cgi?nt_group_id=${groupB}`, cookies);
-      expect(bBody).toContain(zone);
-    } finally {
-      await deleteZone(playwright, cookies, groupB, zid).catch(() =>
-        deleteZone(playwright, cookies, groupA, zid).catch(() => {}));
-    }
+    await movedOk(playwright, ZONES, zid, zone, false);
   });
 
   test('moved zone absent from source, present in target', async ({ playwright }) => {
     const zone = `${uniqueName('e2e-move2')}.test`;
     const zid = await createZone(playwright, cookies, groupA, zone);
-
-    try {
-      await authPost(playwright, `${BASE}/move_zones.cgi`, cookies,
-        `Save=Save&group_list=${groupB}&obj_list=${zid}&csrf_token=${csrfToken}`);
-
-      const { body: aBody } = await authGet(playwright,
-        `${BASE}/group_zones.cgi?nt_group_id=${groupA}`, cookies);
-      expect(aBody).not.toContain(zone);
-
-      const { body: bBody } = await authGet(playwright,
-        `${BASE}/group_zones.cgi?nt_group_id=${groupB}`, cookies);
-      expect(bBody).toContain(zone);
-    } finally {
-      await deleteZone(playwright, cookies, groupB, zid).catch(() =>
-        deleteZone(playwright, cookies, groupA, zid).catch(() => {}));
-    }
+    await movedOk(playwright, ZONES, zid, zone, true);
   });
 
   test('move user to different group', async ({ playwright }) => {
     const username = uniqueName('e2emoveuser');
     const uid = await createUser(playwright, cookies, groupA, { username });
-
-    try {
-      const { body } = await authPost(playwright, `${BASE}/move_users.cgi`, cookies,
-        `Save=Save&group_list=${groupB}&obj_list=${uid}&csrf_token=${csrfToken}`);
-      expect(body.toLowerCase()).not.toContain('error_code');
-
-      const { body: bBody } = await authGet(playwright,
-        `${BASE}/group_users.cgi?nt_group_id=${groupB}`, cookies);
-      expect(bBody).toContain(username);
-    } finally {
-      await deleteUser(playwright, cookies, groupB, uid).catch(() =>
-        deleteUser(playwright, cookies, groupA, uid).catch(() => {}));
-    }
+    await movedOk(playwright, USERS, uid, username, false);
   });
 
   test('moved user absent from source, present in target', async ({ playwright }) => {
     const username = uniqueName('e2emoveuser2');
     const uid = await createUser(playwright, cookies, groupA, { username });
-
-    try {
-      await authPost(playwright, `${BASE}/move_users.cgi`, cookies,
-        `Save=Save&group_list=${groupB}&obj_list=${uid}&csrf_token=${csrfToken}`);
-
-      const { body: aBody } = await authGet(playwright,
-        `${BASE}/group_users.cgi?nt_group_id=${groupA}`, cookies);
-      expect(aBody).not.toContain(username);
-
-      const { body: bBody } = await authGet(playwright,
-        `${BASE}/group_users.cgi?nt_group_id=${groupB}`, cookies);
-      expect(bBody).toContain(username);
-    } finally {
-      await deleteUser(playwright, cookies, groupB, uid).catch(() =>
-        deleteUser(playwright, cookies, groupA, uid).catch(() => {}));
-    }
+    await movedOk(playwright, USERS, uid, username, true);
   });
 
   test('move nameserver to different group', async ({ playwright }) => {
     const nsName = `${uniqueNsName('ns-move')}.e2e.test.`;
     const nsid = await createNameserver(playwright, cookies, groupA,
       { name: nsName, address: '192.0.2.70' });
-
-    try {
-      const { body } = await authPost(playwright, `${BASE}/move_nameservers.cgi`, cookies,
-        `Save=Save&group_list=${groupB}&obj_list=${nsid}&csrf_token=${csrfToken}`);
-      expect(body.toLowerCase()).not.toContain('error_code');
-
-      const { body: bBody } = await authGet(playwright,
-        `${BASE}/group_nameservers.cgi?nt_group_id=${groupB}`, cookies);
-      expect(bBody).toContain(nsName);
-    } finally {
-      await deleteNameserver(playwright, cookies, groupB, nsid).catch(() =>
-        deleteNameserver(playwright, cookies, groupA, nsid).catch(() => {}));
-    }
+    await movedOk(playwright, NAMESERVERS, nsid, nsName, false);
   });
 
   test('moved nameserver absent from source, present in target', async ({ playwright }) => {
     const nsName = `${uniqueNsName('ns-move2')}.e2e.test.`;
     const nsid = await createNameserver(playwright, cookies, groupA,
       { name: nsName, address: '192.0.2.71' });
-
-    try {
-      await authPost(playwright, `${BASE}/move_nameservers.cgi`, cookies,
-        `Save=Save&group_list=${groupB}&obj_list=${nsid}&csrf_token=${csrfToken}`);
-
-      const { body: aBody } = await authGet(playwright,
-        `${BASE}/group_nameservers.cgi?nt_group_id=${groupA}`, cookies);
-      expect(aBody).not.toContain(nsName);
-
-      const { body: bBody } = await authGet(playwright,
-        `${BASE}/group_nameservers.cgi?nt_group_id=${groupB}`, cookies);
-      expect(bBody).toContain(nsName);
-    } finally {
-      await deleteNameserver(playwright, cookies, groupB, nsid).catch(() =>
-        deleteNameserver(playwright, cookies, groupA, nsid).catch(() => {}));
-    }
+    await movedOk(playwright, NAMESERVERS, nsid, nsName, true);
   });
 });

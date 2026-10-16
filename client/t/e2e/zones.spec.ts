@@ -1,9 +1,10 @@
 import { test, expect } from '@playwright/test';
 import {
   BASE,
-  apiLogin, authGet, authPost, cookieString,
+  authGet, authPost,
   createGroup, deleteGroup, createZone, deleteZone,
-  uniqueName, extractCsrf, browserLogin,
+  uniqueName, extractCsrf,
+  apiCookies, clickIfPresent, frameFor, loginBodyFrame, zonePage,
 } from './helpers';
 
 test.describe('Zones', () => {
@@ -12,9 +13,8 @@ test.describe('Zones', () => {
   let gid: string;
 
   test.beforeAll(async ({ playwright }) => {
-    const { sessionCookie, csrfCookie } = await apiLogin(playwright);
-    cookies = cookieString(sessionCookie, csrfCookie);
-    csrfToken = csrfCookie;
+    cookies = await apiCookies(playwright);
+    csrfToken = extractCsrf(cookies);
     gid = await createGroup(playwright, cookies, 1, uniqueName('e2e_zones'));
   });
 
@@ -49,7 +49,7 @@ test.describe('Zones', () => {
 
     // The POST response or subsequent GET should reflect the new values
     // View the zone record list page which shows SOA details
-    const { body } = await authGet(playwright, `${BASE}/zone.cgi?nt_group_id=${gid}&nt_zone_id=${zid}`, cookies);
+    const body = await zonePage(playwright, cookies, gid, zid);
     // SOA values should be visible somewhere (either in zone header or edit form)
     expect(body).toContain(zone);
 
@@ -85,7 +85,7 @@ test.describe('Zones', () => {
     const zid = await createZone(playwright, cookies, gid, zone);
 
     // View the zone record list page (shows zone name in header)
-    const { body } = await authGet(playwright, `${BASE}/zone.cgi?nt_group_id=${gid}&nt_zone_id=${zid}`, cookies);
+    const body = await zonePage(playwright, cookies, gid, zid);
     expect(body).toContain(zone);
 
     await deleteZone(playwright, cookies, gid, zid);
@@ -104,7 +104,7 @@ test.describe('Zones', () => {
     const zid = m![1];
 
     // View zone record page to confirm zone exists with correct name
-    const { body } = await authGet(playwright, `${BASE}/zone.cgi?nt_group_id=${gid}&nt_zone_id=${zid}`, cookies);
+    const body = await zonePage(playwright, cookies, gid, zid);
     expect(body).toContain(zone);
 
     await deleteZone(playwright, cookies, gid, zid);
@@ -125,28 +125,17 @@ test.describe('Zones', () => {
   });
 
   test('new zone form auto-updates mailaddr via JS', async ({ page }) => {
-    await browserLogin(page);
-
-    const bodyFrame = page.frames().find(f => f.url().includes('group.cgi'));
-    expect(bodyFrame).toBeTruthy();
+    const bodyFrame = await loginBodyFrame(page);
 
     // Navigate to zones
-    const zonesLink = bodyFrame!.locator('a:has-text("Zones")');
-    if (await zonesLink.count() > 0) {
-      await zonesLink.first().click();
-      await page.waitForTimeout(1500);
-    }
+    await clickIfPresent(page, bodyFrame, 'a:has-text("Zones")');
 
-    const zonesFrame = page.frames().find(f => f.url().includes('group_zones.cgi'));
+    const zonesFrame = frameFor(page, 'group_zones.cgi');
     if (zonesFrame) {
-      const newZoneLink = zonesFrame.locator('a:has-text("New Zone")');
-      if (await newZoneLink.count() > 0) {
-        await newZoneLink.first().click();
-        await page.waitForTimeout(1500);
-      }
+      await clickIfPresent(page, zonesFrame, 'a:has-text("New Zone")');
 
       // Find the zone form frame
-      const formFrame = page.frames().find(f => f.url().includes('group_zones.cgi'));
+      const formFrame = frameFor(page, 'group_zones.cgi');
       if (formFrame) {
         const zoneInput = formFrame.locator('input[name="zone"]');
         if (await zoneInput.count() > 0) {

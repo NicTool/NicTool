@@ -24,14 +24,10 @@ use NicToolServer::Import::BIND;
 my $nt_api = nt_api_connect();
 my $bind   = nt_import_connect();
 
-my $res = $nt_api->get_group->new_group( name => 'test_delete_group' );
-noerrok($res) && ok( $res->get('nt_group_id') =~ qr/^\d+$/ )
-    or die "Couldn't create test group";
-my $gid1 = $res->get('nt_group_id');
-
-my $group1 = $nt_api->get_group( nt_group_id => $gid1 );
-noerrok($group1) && is( $group1->id, $gid1 )
-    or die "Couldn't get test group1";
+my $gid1 = new_id_ok( $nt_api->get_group->new_group( name => 'test_delete_group' ),
+    'nt_group_id', "Couldn't create test group" );
+my $group1 =
+    fetched_ok( $nt_api->get_group( nt_group_id => $gid1 ), $gid1, "Couldn't get test group1" );
 
 $bind->{group_id} = $group1;
 
@@ -45,27 +41,24 @@ ok( !$import_error, 'rerun import succeeds with existing records' ) or diag $imp
 
 my @nameserver_ids;
 for my $number ( 1 .. 3 ) {
-    $res = $group1->new_nameserver(
+    my $res = $group1->new_nameserver(
         name          => "ns$number.import-bind.test.",
         address       => "192.0.2.$number",
         export_format => 'bind',
         ttl           => 86400,
     );
-    noerrok($res) && ok( $res->get('nt_nameserver_id') =~ qr/^\d+$/ )
-        or die "Couldn't create test nameserver";
-    push @nameserver_ids, $res->get('nt_nameserver_id');
+    push @nameserver_ids, new_id_ok( $res, 'nt_nameserver_id', "Couldn't create test nameserver" );
 }
 
 my $parent_group = $nt_api->get_group;
-$res = $parent_group->new_nameserver(
+my $res          = $parent_group->new_nameserver(
     name          => "ns4.import-bind.test.",
     address       => "192.0.2.4",
     export_format => 'bind',
     ttl           => 86400,
 );
-noerrok($res) && ok( $res->get('nt_nameserver_id') =~ qr/^\d+$/ )
-    or die "Couldn't create the parent group nameserver";
-push @nameserver_ids, $res->get('nt_nameserver_id');
+push @nameserver_ids,
+    new_id_ok( $res, 'nt_nameserver_id', "Couldn't create the parent group nameserver" );
 
 eval { $bind->import_records('t/fixtures/import-bind.conf'); 1 };
 $import_error = $@;

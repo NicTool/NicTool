@@ -1,9 +1,10 @@
 import { test, expect } from '@playwright/test';
 import {
-  apiLogin, cookieString, authGet, authPost,
+  authGet, authPost,
   createGroup, createZone, createRecord, createUser,
   deleteGroup, deleteZone, deleteUser,
   findInListing, uniqueName, extractCsrf, BASE,
+  apiCookies, zonePage,
 } from './helpers';
 
 // ---------------------------------------------------------------------------
@@ -43,8 +44,7 @@ test.describe('Options-menu delete links carry CSRF (#354)', () => {
   let csrfToken: string;
 
   test.beforeAll(async ({ playwright }) => {
-    const login = await apiLogin(playwright);
-    cookies = cookieString(login.sessionCookie, login.csrfCookie);
+    cookies = await apiCookies(playwright);
     csrfToken = extractCsrf(cookies);
   });
 
@@ -71,8 +71,7 @@ test.describe('Options-menu delete links carry CSRF (#354)', () => {
     const zid = await createZone(playwright, cookies, gid);
 
     // The options menu is rendered above the zone detail view.
-    const { body } = await authGet(playwright,
-      `${BASE}/zone.cgi?nt_group_id=${gid}&nt_zone_id=${zid}`, cookies);
+    const body = await zonePage(playwright, cookies, gid, zid);
 
     const href = findHref(body, 'group_zones.cgi?', `zone_list=${zid}`, 'delete=1');
     expect(href, 'zone options menu should render a Delete link').toBeTruthy();
@@ -124,8 +123,7 @@ test.describe('Options-menu delete links carry CSRF (#354)', () => {
     await authPost(playwright, `${BASE}/delegate_zones.cgi`, cookies,
       `Save=Save&group_list=${childGid}&obj_list=${zid}&type=zone&perm_write=1&perm_delete=1&perm_delegate=0&zone_perm_add_records=1&zone_perm_delete_records=1&csrf_token=${csrfToken}`);
 
-    const childLogin = await apiLogin(playwright, `${username}@${groupName}`, password);
-    const childCookies = cookieString(childLogin.sessionCookie, childLogin.csrfCookie);
+    const childCookies = await apiCookies(playwright, `${username}@${groupName}`, password);
 
     const { body } = await authGet(playwright,
       `${BASE}/zone.cgi?nt_group_id=${childGid}&nt_zone_id=${zid}`, childCookies);

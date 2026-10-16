@@ -60,14 +60,10 @@ warn $@ if $@;
 sub test_new_group1 {
 
     # make a new group
-    my $res = $user->new_group( name => 'test_delete_me1' );
-    noerrok($res) && ok( $res->get('nt_group_id') =~ qr/^\d+$/ )
-        or die "Couldn't create test group1";
-    my $gid = $res->get('nt_group_id');
-
-    my $group = $user->get_group( nt_group_id => $gid );
-    noerrok($group) && is( $group->id, $gid )
-        or die "Couldn't get test group1";
+    my $gid = new_id_ok( $user->new_group( name => 'test_delete_me1' ),
+        'nt_group_id', "Couldn't create test group1" );
+    my $group =
+        fetched_ok( $user->get_group( nt_group_id => $gid ), $gid, "Couldn't get test group1" );
 
     return $gid, $group;
 }
@@ -86,12 +82,7 @@ sub test_new_user {
     noerrok($res) or die "Couldn't create test user";
 
     #login as test user
-    my $tuser = new NicTool(
-        cache_users  => 0,
-        cache_groups => 0,
-        server_host  => Config('server_host'),
-        server_port  => Config('server_port')
-    );
+    my $tuser = nt_client();
     isa_ok( $tuser, 'NicTool' );
 
     $tuser->login(
@@ -145,45 +136,32 @@ sub test_perms {
     toggle_group_inherited_permissions();
 }
 
+# the group shows %perms, or $group_value for every perm when given; the user always shows %perms
+sub perms_shown_ok {
+    my ( $name, $group_value ) = @_;
+
+    noerrok( $group1->refresh )
+        or die "Couldn't refresh test group $gid1";
+
+    foreach my $k ( keys %perms ) {
+        is( $group1->get($k), $group_value // $perms{$k}, $name->($k) );
+    }
+
+    noerrok( $tuser->refresh ) or die "Couldn't refresh test user $uid1";
+
+    foreach my $k ( keys %perms ) {
+        is( $tuser->get($k), $perms{$k}, $name->($k) );
+    }
+}
+
 sub toggle_group_permissions {
 
     # set and unset each permission for group. check inheritance
-    foreach ( keys %perms ) {
-
-        #set perm to TRUE
-        $perms{$_} = 1;
-
-        my $res = $group1->edit_group( $_ => 1 );
-        noerrok($res);
-        noerrok( $group1->refresh )
-            or die "Couldn't refresh test group $gid1";
-
-        foreach my $k ( keys %perms ) {
-            is( $group1->get($k), $perms{$k}, "perm $_ set to 1: $k incorrect" );
-        }
-
-        noerrok( $tuser->refresh ) or die "Couldn't refresh test user $uid1";
-
-        foreach my $k ( keys %perms ) {
-            is( $tuser->get($k), $perms{$k}, "perm $_ set to 1: $k incorrect" );
-        }
-
-        #set perm to FALSE
-        $perms{$_} = 0;
-
-        $res = $group1->edit_group( $_ => 0 );
-        noerrok($res);
-        noerrok( $group1->refresh )
-            or die "Couldn't refresh test group $gid1";
-
-        foreach my $k ( keys %perms ) {
-            is( $group1->get($k), $perms{$k}, "perm $_ set to 0: $k incorrect" );
-        }
-
-        noerrok( $tuser->refresh ) or die "Couldn't refresh test user $uid1";
-
-        foreach my $k ( keys %perms ) {
-            is( $tuser->get($k), $perms{$k}, "perm $_ set to 0: $k incorrect" );
+    foreach my $p ( keys %perms ) {
+        for my $value ( 1, 0 ) {
+            $perms{$p} = $value;
+            noerrok( $group1->edit_group( $p => $value ) );
+            perms_shown_ok( sub {"perm $p set to $value: $_[0] incorrect"} );
         }
     }
 }
@@ -192,45 +170,15 @@ sub toggle_user_permissions {
 
     #set and unset each permission for user
     foreach my $p ( keys %perms ) {
-
-        #set perm to TRUE
-        $perms{$p} = 1;
-
-        my $res = $user->edit_user(
-            nt_user_id                => $uid1,
-            $p                        => 1,
-            inherit_group_permissions => 0
-        );
-        noerrok($res);
-        noerrok( $group1->refresh )
-            or die "Couldn't refresh test group $gid1";
-
-        foreach my $k ( keys %perms ) {
-            is( $group1->get($k), 0, "user perm $p set to 1: $k incorrect" );
-        }
-
-        noerrok( $tuser->refresh ) or die "Couldn't refresh test user $uid1";
-
-        foreach my $k ( keys %perms ) {
-            is( $tuser->get($k), $perms{$k}, "user perm $p set to 1: $k incorrect" );
-        }
-
-        #set perm to FALSE
-        $perms{$p} = 0;
-
-        $res = $user->edit_user( nt_user_id => $uid1, $p => 0 );
-        noerrok($res);
-        noerrok( $group1->refresh )
-            or die "Couldn't refresh test group $gid1";
-
-        foreach my $k ( keys %perms ) {
-            is( $group1->get($k), 0, "user perm $p set to 0: $k incorrect" );
-        }
-
-        noerrok( $tuser->refresh ) or die "Couldn't refresh test user $uid1";
-
-        foreach my $k ( keys %perms ) {
-            is( $tuser->get($k), $perms{$k}, "user perm $p set to 0: $k incorrect" );
+        for my $value ( 1, 0 ) {
+            $perms{$p} = $value;
+            my $res = $user->edit_user(
+                nt_user_id => $uid1,
+                $p         => $value,
+                ( $value ? ( inherit_group_permissions => 0 ) : () ),
+            );
+            noerrok($res);
+            perms_shown_ok( sub {"user perm $p set to $value: $_[0] incorrect"}, 0 );
         }
     }
 }
@@ -246,43 +194,11 @@ sub toggle_group_inherited_permissions {
         or die "Couldn't modify test user perms";
 
     # check inheritance again
-    foreach ( keys %perms ) {
-
-        #set perm to TRUE
-        $perms{$_} = 1;
-
-        $res = $group1->edit_group( $_ => 1 );
-        noerrok($res);
-        noerrok( $group1->refresh )
-            or die "Couldn't refresh test group $gid1";
-
-        foreach my $k ( keys %perms ) {
-            is( $group1->get($k), $perms{$k}, "perm $_ set to 1" );
-        }
-
-        noerrok( $tuser->refresh ) or die "Couldn't refresh test user $uid1";
-
-        foreach my $k ( keys %perms ) {
-            is( $tuser->get($k), $perms{$k}, "perm $_ set to 1" );
-        }
-
-        #set perm to FALSE
-        $perms{$_} = 0;
-
-        $res = $group1->edit_group( $_ => 0 );
-        noerrok($res);
-        noerrok( $group1->refresh )
-            or die "Couldn't refresh test group $gid1";
-
-        foreach my $k ( keys %perms ) {
-            is( $group1->get($k), $perms{$k}, "perm $_ set to 0" );
-        }
-
-        noerrok( $tuser->refresh )
-            or die "Couldn't refresh test user $uid1";
-
-        foreach my $k ( keys %perms ) {
-            is( $tuser->get($k), $perms{$k}, "perm $_ set to 0" );
+    foreach my $p ( keys %perms ) {
+        for my $value ( 1, 0 ) {
+            $perms{$p} = $value;
+            noerrok( $group1->edit_group( $p => $value ) );
+            perms_shown_ok( sub {"perm $p set to $value"} );
         }
     }
 }
@@ -1035,30 +951,7 @@ sub test_delete {
     ####################
 
     #create
-    my %group = (
-        name         => "test_delete_me 2",
-        group_write  => 0,
-        group_create => 0,
-        group_delete => 0,
-
-        zone_write    => 0,
-        zone_create   => 0,
-        zone_delegate => 0,
-        zone_delete   => 0,
-
-        zonerecord_write    => 0,
-        zonerecord_create   => 0,
-        zonerecord_delegate => 0,
-        zonerecord_delete   => 0,
-
-        user_write  => 0,
-        user_create => 0,
-        user_delete => 0,
-
-        nameserver_write  => 0,
-        nameserver_create => 0,
-        nameserver_delete => 0,
-    );
+    my %group = ( name => "test_delete_me 2", get_perms_all() );
 
     $res = $tuser->new_group(%group);
 
@@ -1290,27 +1183,11 @@ sub test_bounds {
 
     );
     my @perms = qw(
-        group_write
-        group_create
-        group_delete
-
-        zone_write
-        zone_create
-        zone_delegate
-        zone_delete
-
-        zonerecord_write
-        zonerecord_create
-        zonerecord_delegate
-        zonerecord_delete
-
-        user_write
-        user_create
-        user_delete
-
-        nameserver_write
-        nameserver_create
-        nameserver_delete
+        group_write group_create group_delete
+        zone_write zone_create zone_delegate zone_delete
+        zonerecord_write zonerecord_create zonerecord_delegate zonerecord_delete
+        user_write user_create user_delete
+        nameserver_write nameserver_create nameserver_delete
     );
 
     my %trueperms = map { $_ => 1 } @perms;
@@ -1349,44 +1226,20 @@ sub test_bounds {
         }
 
         # group should not have $perm
-        $group = $user->get_group( nt_group_id => $gid );
-        noerrok($group);
-        is( $group->get($perm), 0, "create group with $perm" );
+        bounded_perm_is( 'group', $gid, $perm, 0, "create group with $perm" );
 
         ## set $perm to true for test group
-        $res = $user->edit_group( nt_group_id => $gid, $perm => 1 );
-        noerrok($res);
-
-        $group = $user->get_group( nt_group_id => $gid );
-        noerrok($group);
-        is( $group->get($perm), 1, "create group with $perm" );
+        noerrok( $user->edit_group( nt_group_id => $gid, $perm => 1 ) );
+        bounded_perm_is( 'group', $gid, $perm, 1, "create group with $perm" );
 
         if ( $perm ne 'group_write' ) {
 
-            #test user try to set $perm to 0
-            $res = $tuser->edit_group( nt_group_id => $gid, $perm => 0 );
-            noerrok($res);
-
-            $group = $user->get_group( nt_group_id => $gid );
-            noerrok($group);
-            is( $group->get($perm), 1, "create group with $perm" );
-
-            ## set $perm to false for test group
-            $res = $user->edit_group( nt_group_id => $gid, $perm => 0 );
-            noerrok($res);
-
-            $group = $user->get_group( nt_group_id => $gid );
-            noerrok($group);
-            is( $group->get($perm), 0, "create group with $perm" );
-
-            #test user try to set $perm to 1
-            $res = $tuser->edit_group( nt_group_id => $gid, $perm => 1 );
-            noerrok($res);
-
-            $group = $user->get_group( nt_group_id => $gid );
-            noerrok($group);
-            is( $group->get($perm), 0, "create group with $perm" );
-
+            # the test user can't clear $perm, nor set it once root has cleared it
+            for ( [ $tuser, 0, 1 ], [ $user, 0, 0 ], [ $tuser, 1, 0 ] ) {
+                my ( $who, $set, $want ) = @$_;
+                noerrok( $who->edit_group( nt_group_id => $gid, $perm => $set ) );
+                bounded_perm_is( 'group', $gid, $perm, $want, "create group with $perm" );
+            }
         }
 
         #delete group
@@ -1415,44 +1268,20 @@ sub test_bounds {
         }
 
         #user should not have $perm
-        my $u = $user->get_user( nt_user_id => $uid );
-        noerrok($u);
-        is( $u->get($perm), 0, "create user with $perm" );
+        bounded_perm_is( 'user', $uid, $perm, 0, "create user with $perm" );
 
         ## set $perm to true for test user
-        $res = $user->edit_user( nt_user_id => $uid, $perm => 1 );
-        noerrok($res);
-
-        $u = $user->get_user( nt_user_id => $uid );
-        noerrok($u);
-        is( $u->get($perm), 1, "create user with $perm" );
+        noerrok( $user->edit_user( nt_user_id => $uid, $perm => 1 ) );
+        bounded_perm_is( 'user', $uid, $perm, 1, "create user with $perm" );
 
         if ( $perm ne 'user_write' ) {
 
-            #test user try to set $perm to 0
-            $res = $tuser->edit_user( nt_user_id => $uid, $perm => 0 );
-            noerrok($res);
-
-            $u = $user->get_user( nt_user_id => $uid );
-            noerrok($u);
-            is( $u->get($perm), 1, "modify user with $perm" );
-
-            ## set $perm to false for test user
-            $res = $user->edit_user( nt_user_id => $uid, $perm => 0 );
-            noerrok($res);
-
-            $u = $user->get_user( nt_user_id => $uid );
-            noerrok($u);
-            is( $u->get($perm), 0, "modify user with $perm" );
-
-            #test user try to set $perm to 1
-            $res = $tuser->edit_user( nt_user_id => $uid, $perm => 1 );
-            noerrok($res);
-
-            $u = $user->get_user( nt_user_id => $uid );
-            noerrok($u);
-            is( $u->get($perm), 0, "modify user with $perm" );
-
+            # the test user can't clear $perm, nor set it once root has cleared it
+            for ( [ $tuser, 0, 1 ], [ $user, 0, 0 ], [ $tuser, 1, 0 ] ) {
+                my ( $who, $set, $want ) = @$_;
+                noerrok( $who->edit_user( nt_user_id => $uid, $perm => $set ) );
+                bounded_perm_is( 'user', $uid, $perm, $want, "modify user with $perm" );
+            }
         }
 
         #delete user
@@ -1460,6 +1289,16 @@ sub test_bounds {
         noerrok($res);
         $res->is_error and die "couldn't delete test user ($uid)";
     }
+}
+
+sub bounded_perm_is {
+    my ( $type, $id, $perm, $want, $name ) = @_;
+    my $obj =
+          $type eq 'group'
+        ? $user->get_group( nt_group_id => $id )
+        : $user->get_user( nt_user_id => $id );
+    noerrok($obj);
+    is( $obj->get($perm), $want, $name );
 }
 
 sub test_usable_nameservers {

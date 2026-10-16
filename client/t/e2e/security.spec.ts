@@ -4,6 +4,7 @@ import {
   freshCtx, getLoginCsrf, apiLogin, authGet, authPost,
   expectSecurityHeaders, browserLogin, collectViolations,
   findInListing, uniqueName, uniqueNsName,
+  apiCookies, clickIfPresent, extractCsrf, frameFor, loginBodyFrame, postLogin,
 } from './helpers';
 
 // ---------------------------------------------------------------------------
@@ -19,8 +20,7 @@ test.describe('T1: Security Headers', () => {
   });
 
   test('authenticated page has all security headers', async ({ playwright }) => {
-    const { sessionCookie, csrfCookie } = await apiLogin(playwright);
-    const cookies = `NicTool=${sessionCookie}; NicTool_csrf=${csrfCookie}`;
+    const cookies = await apiCookies(playwright);
     const { res } = await authGet(playwright, `${BASE}/group.cgi?nt_group_id=1`, cookies);
     expect(res.status()).toBe(200);
     expectSecurityHeaders(res.headers());
@@ -88,30 +88,23 @@ test.describe('T4: CSRF in Login Form', () => {
 // T5: CSRF Blocks Forged Login
 // ---------------------------------------------------------------------------
 test.describe('T5: CSRF Blocks Forged Login', () => {
-  test('login rejected with wrong csrf_token', async ({ playwright }) => {
+  async function forgedLoginRejected(playwright: any, tokenParam: string) {
     const ctx = await freshCtx(playwright);
     const { csrfCookie } = await getLoginCsrf(ctx);
-    const res = await ctx.post(`${BASE}/index.cgi`, {
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Cookie': `NicTool_csrf=${csrfCookie}` },
-      data: `username=${USERNAME}&password=${PASSWORD}&login=Enter&csrf_token=0000000000000000000000000000000000000000`,
-    });
+    const res = await postLogin(ctx, csrfCookie,
+      `username=${USERNAME}&password=${PASSWORD}&login=Enter${tokenParam}`);
     const body = await res.text();
     expect(body).toContain('Session expired');
     expect(body.toLowerCase()).not.toContain('<frameset');
     await ctx.dispose();
+  }
+
+  test('login rejected with wrong csrf_token', async ({ playwright }) => {
+    await forgedLoginRejected(playwright, '&csrf_token=0000000000000000000000000000000000000000');
   });
 
   test('login rejected with missing csrf_token', async ({ playwright }) => {
-    const ctx = await freshCtx(playwright);
-    const { csrfCookie } = await getLoginCsrf(ctx);
-    const res = await ctx.post(`${BASE}/index.cgi`, {
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Cookie': `NicTool_csrf=${csrfCookie}` },
-      data: `username=${USERNAME}&password=${PASSWORD}&login=Enter`,
-    });
-    const body = await res.text();
-    expect(body).toContain('Session expired');
-    expect(body.toLowerCase()).not.toContain('<frameset');
-    await ctx.dispose();
+    await forgedLoginRejected(playwright, '');
   });
 });
 
@@ -120,8 +113,7 @@ test.describe('T5: CSRF Blocks Forged Login', () => {
 // ---------------------------------------------------------------------------
 test.describe('T6: CSRF Blocks Forged Authenticated POST', () => {
   test('group create rejected without csrf_token', async ({ playwright }) => {
-    const { sessionCookie, csrfCookie } = await apiLogin(playwright);
-    const cookies = `NicTool=${sessionCookie}; NicTool_csrf=${csrfCookie}`;
+    const cookies = await apiCookies(playwright);
     const { body } = await authPost(playwright, `${BASE}/group.cgi`, cookies,
       `nt_group_id=1&new=1&Create=Create&name=csrf_test_group&${GROUP_DEFAULTS}`);
     expect(body).toContain('CSRF validation failed');
@@ -133,8 +125,8 @@ test.describe('T6: CSRF Blocks Forged Authenticated POST', () => {
 // ---------------------------------------------------------------------------
 test.describe('T7: CRUD Regression', () => {
   test('full lifecycle: create group, zone, record; edit record; delete all', async ({ playwright }) => {
-    const { sessionCookie, csrfCookie } = await apiLogin(playwright);
-    const cookies = `NicTool=${sessionCookie}; NicTool_csrf=${csrfCookie}`;
+    const cookies = await apiCookies(playwright);
+    const csrfCookie = extractCsrf(cookies);
 
     // --- Create a sub-group ---
     const groupName = uniqueName('e2e_test');
@@ -211,8 +203,8 @@ test.describe('T8: XSS Protection', () => {
 // ---------------------------------------------------------------------------
 test.describe('T9: Delete Record is POST', () => {
   test('delete button is inside a POST form with csrf_token', async ({ playwright }) => {
-    const { sessionCookie, csrfCookie } = await apiLogin(playwright);
-    const cookies = `NicTool=${sessionCookie}; NicTool_csrf=${csrfCookie}`;
+    const cookies = await apiCookies(playwright);
+    const csrfCookie = extractCsrf(cookies);
 
     // Create a temp zone in root group
     const zoneName = `${uniqueNsName('e2e-del')}.test`;
@@ -288,23 +280,9 @@ test.describe('T11: Browser Enforcement', () => {
     const bodyContent = await bodyFrame!.content();
     expect(bodyContent).toContain('NicTool');
 
-    const zonesLink = bodyFrame!.locator('a:has-text("Zones")');
-    if (await zonesLink.count() > 0) {
-      await zonesLink.first().click();
-      await page.waitForTimeout(1500);
-    }
-
-    const usersLink = bodyFrame!.locator('a:has-text("Users")');
-    if (await usersLink.count() > 0) {
-      await usersLink.first().click();
-      await page.waitForTimeout(1500);
-    }
-
-    const logLink = bodyFrame!.locator('a:has-text("Log")');
-    if (await logLink.count() > 0) {
-      await logLink.first().click();
-      await page.waitForTimeout(1500);
-    }
+    await clickIfPresent(page, bodyFrame!, 'a:has-text("Zones")');
+    await clickIfPresent(page, bodyFrame!, 'a:has-text("Users")');
+    await clickIfPresent(page, bodyFrame!, 'a:has-text("Log")');
 
     expect(violations).toEqual([]);
   });
@@ -312,29 +290,14 @@ test.describe('T11: Browser Enforcement', () => {
   test('CRUD operations in browser produce no CSP violations', async ({ page }) => {
     const violations = collectViolations(page);
 
-    await browserLogin(page);
+    const bodyFrame = await loginBodyFrame(page);
 
-    const bodyFrame = page.frames().find((f) => f.url().includes('group.cgi'));
-    expect(bodyFrame).toBeTruthy();
+    await clickIfPresent(page, bodyFrame, 'a:has-text("New Sub-Group")');
 
-    const newGroupLink = bodyFrame!.locator('a:has-text("New Sub-Group")');
-    if (await newGroupLink.count() > 0) {
-      await newGroupLink.first().click();
-      await page.waitForTimeout(1500);
-    }
-
-    const zonesLink = bodyFrame!.locator('a:has-text("Zones")');
-    if (await zonesLink.count() > 0) {
-      await zonesLink.first().click();
-      await page.waitForTimeout(1500);
-
-      const zonesFrame = page.frames().find((f) => f.url().includes('group_zones.cgi'));
+    if (await clickIfPresent(page, bodyFrame, 'a:has-text("Zones")')) {
+      const zonesFrame = frameFor(page, 'group_zones.cgi');
       if (zonesFrame) {
-        const newZoneLink = zonesFrame.locator('a:has-text("New Zone")');
-        if (await newZoneLink.count() > 0) {
-          await newZoneLink.first().click();
-          await page.waitForTimeout(1500);
-        }
+        await clickIfPresent(page, zonesFrame, 'a:has-text("New Zone")');
       }
     }
 

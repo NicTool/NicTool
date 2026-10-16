@@ -7,15 +7,14 @@ use warnings;
 
 require Exporter;
 our @ISA    = 'Exporter';
-our @EXPORT = qw/ diffhtok noerrok errtext nowarn yeswarn nt_api_connect /;
+our @EXPORT = qw/
+    noerrok errtext param_error_ok bad_id_ok sanity_error_ok new_id_ok fetched_ok
+    nt_client nt_api_connect
+    /;
 
 use Test::More;
 use lib 'api/lib';
 use lib '../api/lib';
-
-our $warn = 1;
-sub nowarn  { $warn = 0 }
-sub yeswarn { $warn = 1 }
 
 sub noerrok {
     my ( $obj, $code, $msg ) = @_;
@@ -65,19 +64,47 @@ sub errtext {
     return "$err->{'error_code'}:$err->{'error_desc'}:$err->{'error_msg'}";
 }
 
-sub diffhtok {
-    my $ht     = shift;
-    my $expect = shift;
-    my $ok     = 1;
-    foreach ( keys %$expect ) {
-        if ( $$expect{$_} ne $$ht{$_} ) {
-            $ok = 0;
-            if ($warn) {
-                warn "key $_ is not $$expect{$_} : $$ht{$_} " . join( ":", caller );
-            }
-        }
-    }
-    return ok($ok);
+my %param_error_desc = (
+    301 => qr/Required parameters missing/,
+    302 => qr/Some parameters were invalid/,
+);
+
+sub param_error_ok {
+    my ( $res, $code, $param, $name ) = @_;
+    local $Test::Builder::Level = $Test::Builder::Level + 1;
+    noerrok( $res, $code, $name );
+    is( $res->get('error_msg'), $param );
+    ok( $res->get('error_desc') =~ $param_error_desc{$code} );
+}
+
+# an empty id is missing (301), any other bad value is invalid (302)
+sub bad_id_ok {
+    my ( $param, $call, @values ) = @_;
+    @values = ( '', 'abc', 0 ) if !@values;
+    local $Test::Builder::Level = $Test::Builder::Level + 1;
+    param_error_ok( $call->($_), length $_ ? 302 : 301, $param ) for @values;
+}
+
+sub sanity_error_ok {
+    my ( $res, $msg, $name ) = @_;
+    local $Test::Builder::Level = $Test::Builder::Level + 1;
+    noerrok( $res, 300, $name );
+    ok( $res->get('error_msg')  =~ $msg );
+    ok( $res->get('error_desc') =~ qr/Sanity error/ );
+}
+
+sub new_id_ok {
+    my ( $res, $field, $why ) = @_;
+    local $Test::Builder::Level = $Test::Builder::Level + 1;
+    noerrok($res) && ok( $res->get($field) =~ qr/^\d+$/ ) or die $why;
+    return $res->get($field);
+}
+
+sub fetched_ok {
+    my ( $obj, $id, $why ) = @_;
+    local $Test::Builder::Level = $Test::Builder::Level + 1;
+    noerrok($obj) && is( $obj->id, $id ) or die $why;
+    return $obj;
 }
 
 sub import {
@@ -124,21 +151,22 @@ sub import {
 Please install the NicTool api library or edit 'test.cfg' to specify its location."
         if $@;
 
-    NicToolTest->export_to_level(
-        1, qw/
-            diffhtok noerrok errtext nowarn yeswarn nt_api_connect
-            /
+    NicToolTest->export_to_level(1);
+}
+
+sub nt_client {
+    return NicTool->new(
+        cache_users  => 0,
+        cache_groups => 0,
+        server_host  => main::Config('server_host'),
+        server_port  => main::Config('server_port'),
+        @_
     );
 }
 
 sub nt_api_connect () {
 
-    my $user = new NicTool(
-        cache_users  => 0,
-        cache_groups => 0,
-        server_host  => main::Config('server_host'),
-        server_port  => main::Config('server_port')
-    );
+    my $user = nt_client();
 
     ok( ref $user, 'NicTool API client' )
         or die "Couldn't create NicTool Object";
