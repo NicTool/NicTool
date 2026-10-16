@@ -103,6 +103,7 @@ t/08_nameservers.t
 t/10_zones.t
 t/11_zones_reverse.t
 t/12_records.t
+t/14_search.t
 t/22_export.t
 t/24_import.t
 t/25_import_tinydns.t

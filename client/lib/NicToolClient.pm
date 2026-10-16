@@ -1274,7 +1274,7 @@ sub display_group_list {
             ),
             "
   </td>
-  <td>", ( $group->{'children'} ? $group->{'children'} : 'n/a' ), "</td>
+  <td>", ( $group->{'has_children'} || 'n/a' ), "</td>
  </tr>";
     }
 

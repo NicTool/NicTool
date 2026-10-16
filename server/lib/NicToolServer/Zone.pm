@@ -124,12 +124,17 @@ sub get_zone_record_log {
         type => {
             timefield   => 0,
             quicksearch => 0,
-            field       => 'nt_zone_record_log.type'
+            field       => '(SELECT rrt.name FROM resource_record_type rrt WHERE rrt.id = nt_zone_record_log.type_id)'
         },
         address => {
             timefield   => 0,
             quicksearch => 0,
             field       => 'nt_zone_record_log.address'
+        },
+        ttl => {
+            timefield   => 0,
+            quicksearch => 0,
+            field       => 'nt_zone_record_log.ttl'
         },
         weight => {
             timefield   => 0,
@@ -298,8 +303,12 @@ sub get_group_zones {
         },
     );
 
-    $field_map{group_name} = { timefield => 0, quicksearch => 0, field => 'nt_group.name' }
-        if $data->{include_subgroups};
+    # a subquery: the count and delegate queries don't join nt_group
+    $field_map{group_name} = {
+        timefield   => 0,
+        quicksearch => 0,
+        field       => '(SELECT g.name FROM nt_group g WHERE g.nt_group_id = nt_zone.nt_group_id)'
+    } if $data->{include_subgroups};
 
     my $conditions = $self->format_search_conditions( $data, \%field_map );
 
@@ -471,6 +480,11 @@ sub get_zone_records {
             timefield   => 0,
             quicksearch => 0,
             field       => 'nt_zone_record.address'
+        },
+        ttl => {
+            timefield   => 0,
+            quicksearch => 0,
+            field       => 'nt_zone_record.ttl'
         },
         weight => {
             timefield   => 0,

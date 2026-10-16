@@ -281,11 +281,9 @@ sub get_group_users {
             quicksearch => 0,
             field       => 'nt_user.last_name'
         },
-        email => { timefield => 0, quicksearch => 0, field => 'nt_user.email' },
+        email      => { timefield => 0, quicksearch => 0, field => 'nt_user.email' },
+        group_name => { timefield => 0, quicksearch => 0, field => 'nt_group.name' },
     );
-
-    $field_map{group_name} = { timefield => 0, quicksearch => 0, field => 'nt_group.name' }
-        if $data->{include_subgroups};
 
     my $conditions = $self->format_search_conditions( $data, \%field_map );
     my $sortby     = $self->format_sort_conditions( $data, \%field_map, "nt_user.username" );

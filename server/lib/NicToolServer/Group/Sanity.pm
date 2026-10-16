@@ -81,7 +81,7 @@ sub get_group_subgroups {
 sub get_global_application_log {
     my ( $self, $data ) = @_;
 
-    $self->search_params_sanity_check( $data, qw(timestamp user action object title description) );
+    $self->search_params_sanity_check( $data, qw(timestamp group_name user action object title description) );
     return $self->throw_sanity_error if $self->{errors};
     return $self->SUPER::get_global_application_log($data);
 }
