@@ -1528,8 +1528,9 @@ sub encode_utf8 {
     } @_;
 }
 
+# ALTER DATABASE without a name targets the DSN's database, whatever it is called
 sub encode_utf8mb4 {
-    return join '', 'ALTER DATABASE nictool DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin;', map {
+    return join '', 'ALTER DATABASE DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin;', map {
         "ALTER TABLE $_ DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin;\n OPTIMIZE TABLE $_;\n"
     } @_;
 }
