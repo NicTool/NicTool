@@ -18,7 +18,8 @@ sub new_zone {
         $self->error( 'zone', "invalid character in zone -- $1" );
     }
 
-    $data->{zone} =~ s/\.$//;    # remove any trailing dot
+    $data->{zone} =~ s/\.+$//;    # remove any trailing dots
+    $data->{zone} = lc $data->{zone};    # NicTool 3 matches names in this form
 
     if ( $data->{zone} =~ /(?:in-addr|ip6).arpa$/ ) {
 
@@ -39,7 +40,6 @@ sub new_zone {
     if ( $self->zone_exists( $data->{zone}, 0 ) ) {
         $self->error( 'zone', 'Zone is already taken' );
     }
-    $data->{zone} = lc $data->{zone};
 
     # sub-domain checks .. kinda nasty, but I think it has to be.
     my $z = $data->{zone};

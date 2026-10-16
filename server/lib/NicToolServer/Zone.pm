@@ -951,11 +951,14 @@ sub set_zone_nameservers {
 sub zone_exists {
     my ( $self, $zone, $zid ) = @_;
 
-    my $sql = "SELECT nt_zone_id,nt_group_id FROM nt_zone WHERE deleted=0
-        AND nt_zone_id != ? AND zone IN (?, ?)";
+    # names are stored lowercase without the trailing dot (upgrade 2.42)
+    $zone = lc $zone;
+    $zone =~ s/\.+$//;
 
-    # new names are stored lowercase, older ones as they were typed
-    my $zones = $self->exec_query( $sql, [ $zid, $zone, lc $zone ] );
+    my $sql = "SELECT nt_zone_id,nt_group_id FROM nt_zone WHERE deleted=0
+        AND nt_zone_id != ? AND zone = ?";
+
+    my $zones = $self->exec_query( $sql, [ $zid, $zone ] );
     my $href  = $zones->[0];
 
     return ref $href ? $href : 0;
