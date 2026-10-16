@@ -43,7 +43,9 @@ sub edit_zone_record {
     return $zr if $zr->{error_code} ne 200;
 
     $data->{nt_zone_id} = $zr->{nt_zone_id};
-    foreach (qw/ type address /) {
+
+    # name too: without it an edit that omits the name finds no RRset to keep in step
+    foreach (qw/ type address name /) {
         $data->{$_} = $zr->{$_} if !exists $data->{$_};
     }
 
