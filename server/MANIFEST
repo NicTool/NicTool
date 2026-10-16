@@ -13,6 +13,7 @@ api/lib/NicTool/Cache.pm
 api/lib/NicTool/DBObject.pm
 api/lib/NicTool/Group.pm
 api/lib/NicTool/List.pm
+api/lib/NicTool/Log.pm
 api/lib/NicTool/NTObject.pm
 api/lib/NicTool/Nameserver.pm
 api/lib/NicTool/Record.pm
@@ -31,6 +32,7 @@ api/t/api.t
 api/t/cache.t
 api/t/cleanup.pl
 api/t/list.t
+api/t/log.t
 api/t/nictool.t
 api/t/object.t
 api/t/protocol.t
