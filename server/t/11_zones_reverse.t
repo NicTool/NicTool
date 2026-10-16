@@ -38,7 +38,7 @@ sub doit {
 
     #make a new group
     $res = $user->get_group->new_group( name => 'test_reverse' );
-    noerrok($res) && ok( $res->get('nt_group_id') => qr/^\d+$/ )
+    noerrok($res) && ok( $res->get('nt_group_id') =~ qr/^\d+$/ )
         or die "Couldn't create test group";
     $gid1 = $res->get('nt_group_id');
 
@@ -58,7 +58,7 @@ sub doit {
         minimum     => 401,
     );
     $res = $group1->new_zone(%z1);
-    noerrok($res) && ok( $res->get('nt_zone_id') => qr/^\d+$/ )
+    noerrok($res) && ok( $res->get('nt_zone_id') =~ qr/^\d+$/ )
         or die "couldn't make test zone $rzone";
     $zid1 = $res->get('nt_zone_id');
 

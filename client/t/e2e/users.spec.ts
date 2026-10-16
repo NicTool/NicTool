@@ -60,15 +60,17 @@ test.describe('Users', () => {
     const username = uniqueName('e2euser');
     const uid = await createUser(playwright, cookies, gid, { username, password: 'oldpass123!' });
 
-    // The CGI doesn't forward current_password to the server API,
-    // so password changes via the web UI require the server's sanity check.
-    // Verify the server enforces the current_password requirement.
-    const { body: editBody } = await authPost(playwright, `${BASE}/group_users.cgi`, cookies,
-      `nt_group_id=${gid}&nt_user_id=${uid}&edit=1&Save=Save&username=${username}&password=newpass456!&password2=newpass456!&email=${username}@test.example&first_name=Test&last_name=User&csrf_token=${csrfToken}`);
+    // an admin may set any password, so the user changes their own
+    const userCookies = await apiCookies(playwright, `${username}@${groupName}`, 'oldpass123!');
+    const changePassword = async (current: string) => (await authPost(playwright, `${BASE}/user.cgi`, userCookies,
+      `nt_group_id=${gid}&nt_user_id=${uid}&edit=1&Save=Save&username=${username}&first_name=Test&last_name=User&email=${username}@test.example&password=newpass456!&password2=newpass456!${current}&csrf_token=${extractCsrf(userCookies)}`)).body;
 
-    // Server should reject without current_password (for non-admin users)
-    // As admin, this may succeed or show an error depending on the is_admin check
-    expect(editBody).toBeDefined();
+    expect(await changePassword('')).toContain('Current password is required.');
+    expect(await changePassword('&current_password=wrongpass1!')).toContain('Current password is incorrect.');
+    expect(await changePassword('&current_password=oldpass123!')).not.toContain('Sanity Error');
+
+    const login = await apiLogin(playwright, `${username}@${groupName}`, 'newpass456!');
+    expect(login.sessionCookie, 'the new password logs in').toBeTruthy();
 
     await deleteUser(playwright, cookies, gid, uid);
   });

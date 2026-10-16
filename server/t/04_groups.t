@@ -78,11 +78,8 @@ sub test_group_new {
     $gid1 = new_id_ok( $user->new_group( name => 'test_delete_me1' ),
         'nt_group_id', "Couldn't create test group1" );
 
-    $res = $user->new_group( name => 'test_delete_me2' );
-    noerrok($res) or die "Couldn't create test group2";
-    ok( $res->get('nt_group_id') => qr/^\d+$/ )
-        or die "Couldn't create test group2";
-    $gid2 = $res->get('nt_group_id');
+    $gid2 = new_id_ok( $user->new_group( name => 'test_delete_me2' ),
+        'nt_group_id', "Couldn't create test group2" );
 
     ####################
     # test duplicate name
@@ -112,13 +109,7 @@ sub test_get_group {
 sub test_group_get_fn {
     my $fn = "get_group_" . shift;
 
-    # nt_group_id empty
-    $res = $user->$fn( nt_group_id => '' );
-    noerrok( $res, 301 );
-    ok( $res->get('error_msg'), 'nt_group_id' );
-    ok( $res->get('error_desc') =~ qr/Required parameters missing/ );
-
-    bad_id_ok( 'nt_group_id', sub { $user->$fn( nt_group_id => shift ) }, 'abc', 0 );
+    bad_id_ok( 'nt_group_id', sub { $user->$fn( nt_group_id => shift ) } );
 
     ####################
     # get groups of user's group, should contain the 2 test groups
@@ -204,6 +195,6 @@ sub test_group_delete {
 
     $res = $group1->delete_group;
     noerrok( $res, 600 );
-    ok( $res->get('error_msg'),
+    like( $res->get('error_msg'),
         qr/You can't delete this group until you delete all of its sub-groups/ );
 }

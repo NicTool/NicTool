@@ -58,7 +58,10 @@ test.describe('Delegation', () => {
   test('delegated zone shows delegation info', async ({ playwright }) => {
     const { body } = await authGet(playwright,
       `${BASE}/group_zones.cgi?nt_group_id=${childGid}`, cookies);
-    expect(body).toContain(zoneName);
+    const row = body.match(new RegExp(`<tr[^>]*id="zoneID${zid}"[\\s\\S]*?</tr>`));
+    expect(row, 'the child group lists the zone').toBeTruthy();
+    expect(row![0]).toContain('zone-delegated.gif');
+    expect(row![0]).toContain('perm-write.gif');
   });
 
   test('edit zone delegation permissions', async ({ playwright }) => {

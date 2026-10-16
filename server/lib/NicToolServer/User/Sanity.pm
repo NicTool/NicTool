@@ -40,17 +40,18 @@ sub edit_user {
     if ( exists $data->{password} && $data->{password} ne '' ) {
 
         if ( !$data->{user}{is_admin} ) {    # logged in user (not form user)
-            if ( !exists $data->{current_password} ) {
+            if ( !defined $data->{current_password} || $data->{current_password} eq '' ) {
                 $self->error( 'current_password', "Current password is required." );
             }
-            elsif (
-                $self->valid_password(
-                    $data->{current_password}, $dataobj->{password},
-                    $dataobj->{username},      $dataobj->{pass_salt}
-                )
-                )
-            {
-                $self->error( 'current_password', "Current password is incorrect." );
+            else {
+                # get_user blanks the stored hash
+                my ( $err, $stored ) = $self->select_user( $data->{nt_user_id} );
+                return $err if $err;
+                $self->error( 'current_password', "Current password is incorrect." )
+                    if !$self->valid_password(
+                    $data->{current_password}, $stored->{password},
+                    $stored->{username},       $stored->{pass_salt}
+                    );
             }
         }
 

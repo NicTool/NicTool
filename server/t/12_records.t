@@ -183,10 +183,26 @@ sub doit {
             $zr[ $i++ ] = $zr;
         }
 
+        # a rejected edit must leave the whole RRset as it was
+        $res = $zr[0]->edit_zone_record( address => '2.3.4.5', ttl => 6000 );
+        noerrok( $res, 300, 'duplicate address is rejected' );
+        $_->refresh for @zr;
+        is( $zr[0]->get('ttl'), 86400, 'rejected edit leaves its record ttl' );
+        is( $zr[1]->get('ttl'), 86400, 'rejected edit leaves the RRset ttl' );
+
+        # an edit that keeps its ttl leaves the RRset's alone
+        noerrok( $zr[0]->edit_zone_record( address => '3.4.5.6' ) );
+        $_->refresh for @zr;
+        is( $zr[0]->get('ttl'), 86400, 'edit without a ttl keeps the record ttl' );
+        is( $zr[1]->get('ttl'), 86400, 'edit without a ttl keeps the RRset ttl' );
+
         $res = $zr[0]->edit_zone_record( ttl => 6000 );
+        noerrok($res);
 
         # Test that the update has been propagated to the whole RRset
-        is( $zr[0]->get('ttl'), $zr[1]->get('ttl') );
+        $_->refresh for @zr;
+        is( $zr[0]->get('ttl'), 6000, 'edited record has the new ttl' );
+        is( $zr[1]->get('ttl'), 6000, 'the rest of the RRset has the new ttl' );
 
         # Cleanup after us...
         foreach (@id) {
@@ -367,7 +383,7 @@ sub doit {
     $res   = $zone1->new_zone_record(%zr1);
     $zrid1 = new_id_ok( $res, 'nt_zone_record_id', "Couldn't create test record" );
     $zr1   = $user->get_zone_record( nt_zone_record_id => $zrid1 );
-    noerrok($res) && is( $zr1->get('nt_zone_record_id'), $zrid1 )
+    noerrok($zr1) && is( $zr1->get('nt_zone_record_id'), $zrid1 )
         or die "Couldn't get test record 1";
 
     %zr2 = (
@@ -381,8 +397,8 @@ sub doit {
     $res   = $zone1->new_zone_record(%zr2);
     $zrid2 = new_id_ok( $res, 'nt_zone_record_id', "Couldn't create test record" );
     $zr2   = $user->get_zone_record( nt_zone_record_id => $zrid2 );
-    noerrok($res) && is( $zr2->get('nt_zone_record_id'), $zrid2 )
-        or die "Couldn't get test record 1";
+    noerrok($zr2) && is( $zr2->get('nt_zone_record_id'), $zrid2 )
+        or die "Couldn't get test record 2";
 
     ####################
     # get_zone_record
@@ -436,7 +452,7 @@ sub doit {
     is( $res->size, 2 );
     $saw1 = 0;
     $saw2 = 0;
-    if ( $res->size => 2 ) {
+    if ( $res->size == 2 ) {
         for $z ( $res->list ) {
             if ( $z->id eq $zrid1 ) {
                 $saw1 = 1;
@@ -655,18 +671,12 @@ sub doit {
                 mx_srv_args($type),
             );
             noerrok($res);
-            for (
-                qw[ -blah -blah.something - something.-something /blah.something blah./something.com ]
-                )
-            {
-                $res = $zr1->edit_zone_record( address => $address );
-                noerrok( $res, 300, "type $type address $address" );
-                ok( $res->get('error_msg') =~ qr/must point to a FQDN/,
-                    "edit_zone_record, $type, $address" );
-                ok( $res->get('error_desc') =~ qr/Sanity error/,
-                    "edit_zone_record, $type, $address"
-                );
-            }
+
+            $res = $zr1->edit_zone_record( address => $address );
+            noerrok( $res, 300, "type $type address $address" );
+            ok( $res->get('error_msg') =~ qr/must point to a FQDN/,
+                "edit_zone_record, $type, $address" );
+            ok( $res->get('error_desc') =~ qr/Sanity error/, "edit_zone_record, $type, $address" );
         }
     }
 

@@ -305,7 +305,7 @@ sub test_get_zone {
     fetched_ok( $zone1, $zid1, "Couldn't get test zone $zid1 : " . errtext($zone1) );
 
     for (qw(zone serial ttl description mailaddr refresh retry expire minimum)) {
-        ok( $zone1->get($_) =~ $z1{$_} );
+        is( $zone1->get($_), $z1{$_} );
     }
     ok($_) for zone_nameservers_seen($zone1);
 
@@ -456,7 +456,7 @@ sub test_get_group_zones {
     is( $res->size, 4 );
     my $saw1 = 0;
     my $saw2 = 0;
-    if ( $res->size => 4 ) {
+    if ( $res->size == 4 ) {
         for $z ( $res->list ) {
             if ( $z->id eq $zid1 ) {
                 $saw1 = 1;
@@ -547,11 +547,11 @@ sub test_move_zones {
 
     $zone1 = $user->get_zone( nt_zone_id => $zid1 );
     noerrok($zone1);
-    ok( $zone1->get('nt_group_id') =~ $gid2 );
+    is( $zone1->get('nt_group_id'), $gid2 );
 
     $zone2 = $user->get_zone( nt_zone_id => $zid2 );
     noerrok($zone2);
-    ok( $zone2->get('nt_group_id') =~ $gid2 );
+    is( $zone2->get('nt_group_id'), $gid2 );
 }
 
 sub test_delete_zones {

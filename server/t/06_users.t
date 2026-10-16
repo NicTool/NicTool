@@ -77,6 +77,7 @@ sub do_the_tests {
     test_new_user();
     test_get_user();
     test_edit_user();
+    test_self_password_change();
 
     ####################
     # use data later   #
@@ -249,7 +250,7 @@ sub test_get_user {
     is( $user1->get('username'), 'testuser1' );
 
     $user2 =
-        fetched_ok( $nt_obj->get_user( nt_user_id => $uid2 ), $uid2, "Couldn't get test user1" );
+        fetched_ok( $nt_obj->get_user( nt_user_id => $uid2 ), $uid2, "Couldn't get test user2" );
     is( $user2->get('username'), 'testuser2' );
 }
 
@@ -329,7 +330,7 @@ sub test_edit_user {
 
     # test changing of password
     my $tuser = nt_client();
-    is( ref $nt_obj, 'NicTool' ) or die "Couldn't create NicTool Object";
+    is( ref $tuser, 'NicTool' ) or die "Couldn't create NicTool Object";
 
     $tuser->login(
         username => 'testuser2@test_delete_me1',
@@ -359,6 +360,27 @@ sub test_edit_user {
     if ( !$tuser->result->is_error ) {
         noerrok( $tuser->logout );
     }
+}
+
+sub test_self_password_change {
+
+    noerrok( $user1->edit_user( self_write => 1 ) );
+
+    my $client = nt_client();
+    $client->login( username => 'testuser1@test_delete_me1', password => 'testpass' );
+    noerrok( $client->result ) or return;
+
+    my %new = ( username => 'testuser1', password => 'testpass3', password2 => 'testpass3' );
+    sanity_error_ok( $client->edit_user( nt_user_id => $uid1, %new ),
+        qr/Current password is required/ );
+    sanity_error_ok( $client->edit_user( nt_user_id => $uid1, current_password => 'wrongpass', %new ),
+        qr/Current password is incorrect/ );
+    noerrok( $client->edit_user( nt_user_id => $uid1, current_password => 'testpass', %new ) );
+    noerrok( $client->logout );
+
+    $client->login( username => 'testuser1@test_delete_me1', password => 'testpass3' );
+    noerrok( $client->result, 200, 'logs in with the new password' );
+    noerrok( $client->logout );
 }
 
 sub users_listed_ok {
