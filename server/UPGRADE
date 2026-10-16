@@ -45,12 +45,17 @@ at the end of this document first.
 
    * Upgrades crossing 2.42 store zone names lowercase without the
      trailing dot, the form NicTool 3 matches. A live zone whose name
-     another live zone would then share is left as it was; list those with
+     another live zone would then share is left as it was. List every live
+     zone that shares its name with another, whatever its spelling, with
 
-       SELECT nt_zone_id, zone FROM nt_zone
-        WHERE deleted = 0 AND zone <> LOWER(zone);
+       SELECT z.nt_zone_id, z.zone FROM nt_zone z
+         JOIN (SELECT LOWER(zone) AS name FROM nt_zone WHERE deleted = 0
+                GROUP BY name HAVING COUNT(*) > 1) taken
+           ON taken.name = LOWER(z.zone)
+        WHERE z.deleted = 0
+        ORDER BY taken.name, z.nt_zone_id;
 
-     and rename or delete one of each pair.
+     and rename or delete all but one of each name.
 
    * Upgrades crossing 2.41 convert all tables to InnoDB and add foreign
      key constraints. If audit-log rows reference parent rows that no
