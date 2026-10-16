@@ -1,10 +1,8 @@
 import { test, expect } from '@playwright/test';
 import {
-  BASE, GROUP_DEFAULTS,
-  apiLogin, authGet, authPost, deleteGroup, findInListing, uniqueName,
+  BASE, GROUP_DEFAULTS, ROOT_GROUPS,
+  apiLogin, authGet, authPost, deleteGroup, findInListing, formCsrfToken, setCookieValue, uniqueName,
 } from './helpers';
-
-const ROOT_GROUPS = { cgi: 'group.cgi', gid: 1, idParam: 'nt_group_id' };
 
 // Regression tests for the cross-process CSRF token race (#335, fixed in #353).
 //
@@ -21,20 +19,6 @@ const ROOT_GROUPS = { cgi: 'group.cgi', gid: 1, idParam: 'nt_group_id' };
 // do not feed responses back are byte-for-byte the same traffic, which is
 // what makes this test deterministic rather than a race.
 
-function formToken(body: string): string {
-  const m = body.match(/name="csrf_token"\s+value="([^"]+)"/);
-  return m ? m[1] : '';
-}
-
-function setCookieValue(res: { headersArray(): { name: string; value: string }[] }, name: string): string {
-  for (const h of res.headersArray()) {
-    if (h.name.toLowerCase() !== 'set-cookie') continue;
-    const m = h.value.match(new RegExp(`^${name}=([^;]+)`));
-    if (m && m[1]) return m[1];
-  }
-  return '';
-}
-
 test.describe('CSRF token agreement across CGI processes', () => {
   test('form from one frame survives the sibling frame\'s Set-Cookie', async ({ playwright }) => {
     const { sessionCookie } = await apiLogin(playwright);
@@ -46,7 +30,7 @@ test.describe('CSRF token agreement across CGI processes', () => {
     const bodyFrame = await authGet(playwright, `${BASE}/group.cgi?nt_group_id=1`, sessionOnly);
     const navFrame  = await authGet(playwright, `${BASE}/nav.cgi?nt_group_id=1`, sessionOnly);
 
-    const groupFormToken = formToken(bodyFrame.body);
+    const groupFormToken = formCsrfToken(bodyFrame.body);
     expect(groupFormToken, 'group.cgi renders a csrf token').toMatch(/^[0-9a-f]{40}$/);
 
     const navCookieToken = setCookieValue(navFrame.res, 'NicTool_csrf');
@@ -78,7 +62,7 @@ test.describe('CSRF token agreement across CGI processes', () => {
     // browser, eaten by an extension, or simply never re-sent). The form
     // token is derived from the session, so the POST must stand on its own.
     const { body: page } = await authGet(playwright, `${BASE}/group.cgi?nt_group_id=1`, sessionOnly);
-    const token = formToken(page);
+    const token = formCsrfToken(page);
     expect(token, 'group.cgi renders a csrf token').toMatch(/^[0-9a-f]{40}$/);
 
     const name = uniqueName('e2e_csrf_nocookie');

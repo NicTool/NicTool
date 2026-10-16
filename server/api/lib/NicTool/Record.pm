@@ -34,7 +34,6 @@ sub _api {
         get_zone_record_log_entry     => { 'includeid' => 1 },
         edit_zone_record_delegation   => { 'includeid' => 1 },
         delete_zone_record_delegation => { 'includeid' => 1 },
-        get_zone_record_delegates     => { 'includeid' => 1 },
     };
 }
 

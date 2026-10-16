@@ -37,7 +37,7 @@ sub update_named_include {
 
     # full export, write a new include file
     my $datadir = $self->{nte}->get_export_data_dir || $dir;
-    my $fh      = $self->get_export_file( 'named.conf.nictool', $dir );
+    my $fh      = $self->get_export_file( $self->include_file, $dir );
     foreach my $zone ( sort $self->{nte}->zones_exported ) {
         my $tmpl = $self->get_template( $dir, $zone );
         if ($tmpl) {
@@ -60,7 +60,7 @@ sub update_named_include_incremental {
     # there's likely to be more lines in the include file than zones to append
     # build a lookup table of changed zones and pass through the file once
     my $to_add = $self->get_changed_zones($dir);
-    my $file   = "$dir/named.conf.nictool";
+    my $file   = "$dir/" . $self->include_file;
 
     my $in = IO::File->new( $file, '<' ) or do {
         warn "unable to read $file\n";
@@ -72,9 +72,8 @@ sub update_named_include_incremental {
         return;
     };
 
-    # zone "simerson.net"  IN { type master; file "/etc/namedb/nictool/simerson.net"; };
     while ( my $line = <$in> ) {
-        my $zone = ( split( /\"/, $line, 3 ) )[1];
+        my $zone = $self->include_line_zone($line);
         if ( $to_add->{$zone} ) {
             delete $to_add->{$zone};    # exists, remove from add list
         }
@@ -91,6 +90,14 @@ sub update_named_include_incremental {
     unlink $file;
     File::Copy::move( "$file.tmp", $file );
     return 1;
+}
+
+sub include_file {'named.conf.nictool'}
+
+# zone "simerson.net"  IN { type master; file "/etc/namedb/nictool/simerson.net"; };
+sub include_line_zone {
+    my ( $self, $line ) = @_;
+    return ( split( /\"/, $line, 3 ) )[1];
 }
 
 sub get_changed_zones {
@@ -136,62 +143,46 @@ sub get_template {
 
 sub compile {
     my $self = shift;
-
-    $self->{nte}->set_status("compile");
-    my $exportdir = $self->{nte}->get_export_dir;
-    my $before    = time;
-    # List form prevents shell interpretation of $exportdir.
-    system( 'make', '-C', $exportdir, 'compile' ) == 0 or do {
-        $self->{nte}->set_status("last: FAILED compile: $?");
-        $self->{nte}->elog("unable to compile: $?");
-        return;
-    };
-    my $elapsed = time - $before;
-    my $message = "compiled";
-    $message .= " ($elapsed secs)" if $elapsed > 5;
+    my $message = $self->_run_make_target( 'compile', 'compile', 'compile', 'compiled' ) or return;
     $self->{nte}->elog($message);
     return 1;
 }
 
 sub restart {
     my $self = shift;
-
     return 1 if !defined $self->{nte}{ns_ref}{address};
-    my $exportdir = $self->{nte}->get_export_dir;
-
-    my $before = time;
-    $self->{nte}->set_status("remote restart");
-    system( 'make', '-C', $exportdir, 'restart' ) == 0 or do {
-        $self->{nte}->set_status("last: FAILED restart: $?");
-        $self->{nte}->elog("unable to restart: $?");
-        return;
-    };
-    my $elapsed = time - $before;
-    my $message = "restarted";
-    $message .= " ($elapsed secs)" if $elapsed > 5;
+    my $message = $self->_run_make_target( 'restart', 'remote restart', 'restart', 'restarted' ) or return;
     $self->{nte}->elog($message);
     return 1;
 }
 
 sub rsync {
     my $self = shift;
-
     return 1 if !defined $self->{nte}{ns_ref}{address};    # no rsync
-    my $exportdir = $self->{nte}->get_export_dir;
-
-    $self->{nte}->set_status("remote rsync");
-    my $before = time;
-    system( 'make', '-C', $exportdir, 'remote' ) == 0 or do {
-        $self->{nte}->set_status("last: FAILED rsync: $?");
-        $self->{nte}->elog("unable to rsync: $?");
-        return;
-    };
-    my $elapsed = time - $before;
-    my $message = "copied";
-    $message .= " ($elapsed secs)" if $elapsed > 5;
+    my $message = $self->_run_make_target( 'remote', 'remote rsync', 'rsync', 'copied' ) or return;
     $self->{nte}->set_copied(1);
     $self->{nte}->elog($message);
     return 1;
+}
+
+# returns the log message on success
+sub _run_make_target {
+    my ( $self, $target, $status, $action, $done ) = @_;
+
+    $self->{nte}->set_status($status);
+    my $exportdir = $self->{nte}->get_export_dir;
+    my $before    = time;
+
+    # List form prevents shell interpretation of $exportdir.
+    system( 'make', '-C', $exportdir, $target ) == 0 or do {
+        $self->{nte}->set_status("last: FAILED $action: $?");
+        $self->{nte}->elog("unable to $action: $?");
+        return;
+    };
+    my $elapsed = time - $before;
+    my $message = $done;
+    $message .= " ($elapsed secs)" if $elapsed > 5;
+    return $message;
 }
 
 sub write_makefile {
@@ -205,17 +196,27 @@ sub write_makefile {
 
     my $address      = $self->{nte}{ns_ref}{address}      || '127.0.0.1';
     my $datadir      = $self->{nte}{ns_ref}{datadir}      || getcwd . '/data-all';
-    my $remote_login = $self->{nte}{ns_ref}{remote_login} || 'bind';
+    my $remote_login = $self->{nte}{ns_ref}{remote_login} || $self->default_remote_login;
     $datadir =~ s/\/$//;                     # strip off any trailing /
     open my $M, '>', "$exportdir/Makefile" or do {
         warn "unable to open ./Makefile: $!\n";
         return;
     };
-    print $M <<MAKE
+    print $M <<MAKE, $self->makefile_targets( $exportdir, $remote_login, $address, $datadir );
 # After a successful export, 3 make targets are run: compile, remote, restart
 # Each target can do anything you'd like.
 # See https://www.gnu.org/software/make/manual/make.html
 
+MAKE
+    close $M;
+    return 1;
+}
+
+sub default_remote_login {'bind'}
+
+sub makefile_targets {
+    my ( $self, $exportdir, $remote_login, $address, $datadir ) = @_;
+    return <<MAKE;
 ################################
 #########  BIND 9  #############
 ################################
@@ -233,9 +234,6 @@ restart: $exportdir/named.conf.nictool
 \t#ssh $remote_login\@$address rndc reload
 \ttest 1
 MAKE
-        ;
-    close $M;
-    return 1;
 }
 
 sub zr_a {

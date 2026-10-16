@@ -23,11 +23,10 @@ my $test_pass = _random_password(20);
 my $salt      = _get_salt(16);
 my $pass_hash = unpack( "H*", Crypt::KeyDerivation::pbkdf2( $test_pass, $salt, 5000, 'SHA512' ) );
 
+# in the DSN rather than the connect attributes: test.cfg copies the DSN
 my $dsn = "DBI:$db_engine:database=$db_name;host=$db_host;port=3306";
 $dsn .= ";mysql_ssl=1" if $ENV{DB_SSL};
-my %opts = ( RaiseError => 1 );
-$opts{mysql_ssl} = 1 if $ENV{DB_SSL};
-my $dbh = DBI->connect( $dsn, $db_user, $db_pass, \%opts )
+my $dbh = DBI->connect( $dsn, $db_user, $db_pass, { RaiseError => 1 } )
     or die "Cannot connect to $dsn: $DBI::errstr\n";
 
 # The ids are whatever the database hands out: a database with real data

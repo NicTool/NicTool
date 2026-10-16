@@ -2,7 +2,7 @@ import { request } from '@playwright/test';
 import { readdirSync, readFileSync, unlinkSync } from 'node:fs';
 import path from 'node:path';
 import {
-  BASE, apiLogin, cookieString, authGet,
+  BASE, RUN_DIR, RUN_ID_PATTERN, apiLogin, cookieString, authGet, processIsAlive,
   deleteGroup, deleteZone, deleteUser, deleteNameserver,
 } from './helpers';
 
@@ -15,21 +15,10 @@ type RunManifest = {
   file: string;
 };
 
-const RUN_DIR = path.join(__dirname, '.e2e-runs');
 const MAX_AGE_MS = Number(process.env.NICTOOL_E2E_CLEAN_AGE_MS || 30 * 60 * 1000);
 
 function normalizedUrl(url: string): string {
   return url.replace(/\/+$/, '');
-}
-
-function processIsAlive(pid: unknown): boolean {
-  if (!Number.isInteger(pid) || Number(pid) <= 0) return false;
-  try {
-    process.kill(Number(pid), 0);
-    return true;
-  } catch (error: any) {
-    return error.code === 'EPERM';
-  }
 }
 
 function eligibleRuns(now = Date.now()): RunManifest[] {
@@ -47,7 +36,7 @@ function eligibleRuns(now = Date.now()): RunManifest[] {
     try {
       const manifest = JSON.parse(readFileSync(path.join(RUN_DIR, file), 'utf8'));
       if (manifest.version !== 1 ||
-          !/^[a-z0-9]{8,64}$/.test(manifest.runId) ||
+          !RUN_ID_PATTERN.test(manifest.runId) ||
           !Number.isFinite(manifest.createdAt) ||
           normalizedUrl(manifest.baseUrl) !== normalizedUrl(BASE)) {
         continue;

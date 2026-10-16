@@ -98,78 +98,47 @@ sub ver_check {
     my $pv = $self->{client}->protocol_version;
     return undef unless $pv;
 
-    if ( $pv !~ /^-?\d+(?:\.\d+)?$/ ) {
-        return $self->error_response( 510,
-            "This server requires at least protocol version $NicToolServer::MIN_PROTOCOL_VERSION. You have specified protocol version $pv"
-        ) if $pv =~ /^-/;
-
-        return $self->error_response( 510,
-            "This server allows at most protocol version $NicToolServer::MAX_PROTOCOL_VERSION. You have specified protocol version $pv"
-        );
+    my ( $too_low, $too_high );
+    if ( $pv =~ /^-?\d+(?:\.\d+)?$/ ) {
+        $too_low  = $pv < $NicToolServer::MIN_PROTOCOL_VERSION;
+        $too_high = $pv > $NicToolServer::MAX_PROTOCOL_VERSION;
     }
-
-    my $pv_num  = $pv + 0;
-    my $min_num = $NicToolServer::MIN_PROTOCOL_VERSION + 0;
-    my $max_num = $NicToolServer::MAX_PROTOCOL_VERSION + 0;
+    else {
+        $too_low  = $pv =~ /^-/;
+        $too_high = !$too_low;
+    }
 
     return $self->error_response( 510,
         "This server requires at least protocol version $NicToolServer::MIN_PROTOCOL_VERSION. You have specified protocol version $pv"
-    ) if $pv_num < $min_num;
+    ) if $too_low;
     return $self->error_response( 510,
         "This server allows at most protocol version $NicToolServer::MAX_PROTOCOL_VERSION. You have specified protocol version $pv"
-    ) if $pv_num > $max_num;
+    ) if $too_high;
+    return;
 }
 
 sub api_commands {
     my $self = shift;
 
-    my %new_user;
-
-    if ($NicToolServer::ldap_only) {
-
-        %new_user = (
-
-            'new_user' => {
-                'class'      => 'User::Sanity',
-                'method'     => 'new_user',
-                'creation'   => 'USER',
-                'parameters' => {
-                    'nt_group_id' => {
-                        'access' => 'read',
-                        required => 1,
-                        type     => 'GROUP'
-                    },
-                    'username' => { required => 1 },
-                    'email'    => { required => 1 },
+    my %new_user = (
+        'new_user' => {
+            'class'      => 'User::Sanity',
+            'method'     => 'new_user',
+            'creation'   => 'USER',
+            'parameters' => {
+                'nt_group_id' => {
+                    'access' => 'read',
+                    required => 1,
+                    type     => 'GROUP'
                 },
+                'username' => { required => 1 },
+                'email'    => { required => 1 },
+                $NicToolServer::ldap_only
+                ? ()
+                : ( 'password' => { required => 1 }, 'password2' => { required => 1 } ),
             },
-
-        );
-
-    }
-    else {
-        %new_user = (
-
-            'new_user' => {
-                'class'      => 'User::Sanity',
-                'method'     => 'new_user',
-                'creation'   => 'USER',
-                'parameters' => {
-                    'nt_group_id' => {
-                        'access' => 'read',
-                        required => 1,
-                        type     => 'GROUP'
-                    },
-                    'username'  => { required => 1 },
-                    'email'     => { required => 1 },
-                    'password'  => { required => 1 },
-                    'password2' => { required => 1 },
-                },
-            },
-
-        );
-
-    }
+        },
+    );
 
     return {
 
@@ -1433,6 +1402,11 @@ sub get_subgroup_ids {
     return \@list;
 }
 
+sub group_with_subgroup_ids {
+    my ( $self, $nt_group_id ) = @_;
+    return ( $nt_group_id, @{ $self->get_subgroup_ids($nt_group_id) } );
+}
+
 sub get_parentgroup_ids {
     my ( $self, $nt_group_id ) = @_;
 
@@ -1553,6 +1527,19 @@ sub exec_query {
     warn "$err\t$@\n$query"  if $@;                              #&& $self->debug_sql );
     warn $err . $dbix->error if $dbix->error ne 'DBI error: ';
     return $r;
+}
+
+sub insert_row {
+    my ( $self, $table, $row, @columns ) = @_;
+    return $self->exec_query( "INSERT INTO $table(" . join( ',', @columns ) . ") VALUES(??)",
+        [ @$row{@columns} ] );
+}
+
+sub log_global {
+    my ( $self, $data, @more_columns ) = @_;
+    return $self->insert_row( 'nt_user_global_log', $data,
+        qw/ nt_user_id timestamp action object object_id log_entry_id title description /,
+        @more_columns );
 }
 
 sub check_object_deleted {
@@ -1758,6 +1745,26 @@ sub get_advanced_search_conditions {
     return @conditions;
 }
 
+sub global_log_field_map {
+    return (
+        timestamp   => { timefield => 1, quicksearch => 0, field => 'nt_user_global_log.timestamp' },
+        title       => { timefield => 0, quicksearch => 1, field => 'nt_user_global_log.title' },
+        action      => { timefield => 0, quicksearch => 1, field => 'nt_user_global_log.action' },
+        object      => { timefield => 0, quicksearch => 1, field => 'nt_user_global_log.object' },
+        description => { timefield => 0, quicksearch => 1, field => 'nt_user_global_log.description' },
+    );
+}
+
+sub and_conditions_sql {
+    my ( $self, $conditions ) = @_;
+    return @$conditions ? ' AND (' . join( ' ', @$conditions ) . ') ' : '';
+}
+
+sub order_by_sql {
+    my ( $self, $sortby ) = @_;
+    return @$sortby ? ' ORDER BY ' . join( ', ', @$sortby ) . ' ' : '';
+}
+
 sub format_sort_conditions {
     my ( $self, $data, $field_map, $default ) = @_;
 
@@ -1928,6 +1935,20 @@ sub search_params_sanity_check {
             unless $data->{$sort} =~ /^\d+$/;
     }
 
+}
+
+sub perm_fields {
+    qw/ group_create group_delete group_write
+        zone_create zone_delegate zone_delete zone_write
+        zonerecord_create zonerecord_delegate zonerecord_delete zonerecord_write
+        user_create user_delete user_write self_write
+        nameserver_create nameserver_delete nameserver_write
+        /;
+}
+
+sub perm_fields_select {
+    my $self = shift;
+    return join ', ', map {"nt_perm.$_"} $self->perm_fields, 'usable_ns';
 }
 
 sub clean_perm_data {

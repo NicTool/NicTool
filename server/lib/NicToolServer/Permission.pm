@@ -116,10 +116,8 @@ sub get_user_permissions {
 sub log_delegate {
     my ( $self, $data, $action, $prev_data ) = @_;
 
-    my $dbh = $self->{dbh};
     my @columns =
         qw(nt_user_id nt_user_name action nt_object_type nt_object_id nt_group_id timestamp perm_write perm_delete perm_delegate zone_perm_add_records zone_perm_delete_records zone_perm_modify_zone zone_perm_modify_mailaddr zone_perm_modify_desc zone_perm_modify_minimum zone_perm_modify_serial zone_perm_modify_refresh zone_perm_modify_retry zone_perm_modify_expire zone_perm_modify_ttl zone_perm_modify_nameservers);
-    my @values;
 
     my $user = $data->{user};
     $data->{nt_user_id} = $data->{delegated_by_id};
@@ -133,15 +131,7 @@ sub log_delegate {
         $data->{$_} = $prev_data->{$_} unless exists $data->{$_};
     }
 
-    my $sql =
-          "INSERT INTO nt_delegate_log("
-        . join( ',', @columns )
-        . ") VALUES("
-        . join( ',', map( $dbh->quote( $data->{$_} ), @columns ) ) . ")";
-    my $insertid = $self->exec_query($sql);
-
-    my @g_columns =
-        qw(nt_user_id timestamp action object object_id target target_id target_name log_entry_id title description);
+    my $insertid = $self->insert_row( 'nt_delegate_log', $data, @columns );
 
     $data->{object}       = lc( $data->{nt_object_type} );
     $data->{object}       = 'zone_record' if $data->{object} eq 'zonerecord';
@@ -165,12 +155,7 @@ sub log_delegate {
         $data->{description} = 'initial delegation';
     }
 
-    $sql =
-          "INSERT INTO nt_user_global_log("
-        . join( ',', @g_columns )
-        . ") VALUES("
-        . join( ',', map( $dbh->quote( $data->{$_} ), @g_columns ) ) . ")";
-    $self->exec_query($sql);
+    $self->log_global( $data, qw/ target target_id target_name / );
 }
 
 sub delegate_objects {

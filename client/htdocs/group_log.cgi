@@ -25,37 +25,16 @@ require 'nictoolclient.conf';
 main();
 
 sub main {
-    my $q      = new CGI();
-    my $nt_obj = new NicToolClient($q);
-
-    return if ( $nt_obj->check_setup ne 'OK' );
-
-    my $user = $nt_obj->verify_session();
-
-    if ( $user && ref $user ) {
-        my $message;
-        if ( $q->param('redirect') ) {
-            $message = $nt_obj->redirect_from_log($q);
-        }
-        print $q->header(
-            -charset => "utf-8",
-            -cookie  => $nt_obj->csrf_cookie( $nt_obj->get_csrf_token() ),
-            %{ $nt_obj->security_headers() }
-        );
-        display( $nt_obj, $q, $user, $message );
-    }
+    my ( $nt_obj, $q, $user ) = NicToolClient->start_page or return;
+    my $message = $q->param('redirect') ? $nt_obj->redirect_from_log($q) : undef;
+    $nt_obj->print_header_with_csrf();
+    display( $nt_obj, $q, $user, $message );
 }
 
 sub display {
     my ( $nt_obj, $q, $user, $message ) = @_;
 
-    $nt_obj->parse_template($NicToolClient::start_html_template);
-    $nt_obj->parse_template(
-        $NicToolClient::body_frame_start_template,
-        username  => $user->{'username'},
-        groupname => $user->{'groupname'},
-        userid    => $user->{'nt_user_id'}
-    );
+    $nt_obj->print_page_start($user);
 
     my $level = $nt_obj->display_group_tree(
         $user,
@@ -124,11 +103,7 @@ sub display_log {
     my $log = $rv->{'log'};
     my $map = $rv->{'group_map'};
 
-    my @state_fields;
-    foreach ( @{ $nt_obj->paging_fields } ) {
-        next if !$q->param($_);
-        push @state_fields, "$_=" . $q->escape( scalar( $q->param($_) ) );
-    }
+    my @state_fields = $nt_obj->paging_state($q);
     my $state_string = @state_fields ? join( '&amp;', @state_fields ) : 'not_empty=1';
 
     $nt_obj->display_nice_error($message) if $message;

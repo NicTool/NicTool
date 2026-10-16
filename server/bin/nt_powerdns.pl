@@ -40,7 +40,10 @@ my $db_host = $ENV{NT_PDNS_DB_HOST} // '127.0.0.1';
 my $db_user = $ENV{NT_PDNS_DB_USER} // 'nictool';
 my $db_pass = $ENV{NT_PDNS_DB_PASS} or die "Set NT_PDNS_DB_PASS\n";
 
-my $dsn = "DBI:mysql:database=$db_name;host=$db_host;mysql_ssl=1";
+my $db_engine = $ENV{NT_PDNS_DB_ENGINE} // $ENV{DB_ENGINE} // 'mysql';
+my $ssl_attr  = $db_engine eq 'MariaDB' ? 'mariadb_ssl' : 'mysql_ssl';
+
+my $dsn = "DBI:$db_engine:database=$db_name;host=$db_host;$ssl_attr=1";
 my $dbh = DBI->connect( $dsn, $db_user, $db_pass )
     or die "LOG\tUnable to connect to database: $!\nFAIL\n";
 
