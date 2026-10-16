@@ -182,10 +182,10 @@ sub start {
     $res = $group1->new_user(
         first_name                => 'test',
         last_name                 => '1',
-        email                     => 'test@blah.blah',
+        email                     => 'test@example.com',
         username                  => 'testuser1',
-        password                  => 'testpass',
-        password2                 => 'testpass',
+        password                  => 'T3st!P@ss99',
+        password2                 => 'T3st!P@ss99',
         inherit_group_permissions => 1,
     );
     noerrok($res) or die "Couldn't create test user";
@@ -232,10 +232,10 @@ sub start {
     $res = $subg->new_user(
         first_name                => 'test2',
         last_name                 => '2',
-        email                     => 'test2@blah.blah',
+        email                     => 'test2@example.com',
         username                  => 'testuser2',
-        password                  => 'testpass2',
-        password2                 => 'testpass2',
+        password                  => 'T3st!P@ss88',
+        password2                 => 'T3st!P@ss88',
         inherit_group_permissions => 1,
     );
     noerrok($res) or die "Couldn't create test user";
@@ -248,13 +248,15 @@ sub start {
         cache_zone    => 0,
         cache_records => 0,
         server_host   => Config('server_host'),
-        server_port   => Config('server_port')
+        server_port   => Config('server_port'),
+        data_protocol     => Config('data_protocol'),
+        transfer_protocol => ( Config('transfer_protocol') || 'http' )
     );
     isa_ok( $tuser, 'NicTool' );
 
     $tuser->login(
         username => 'testuser1@test_delete_me1',
-        password => 'testpass'
+        password => 'T3st!P@ss99'
     );
     ok( $tuser->result );
 
@@ -1399,12 +1401,14 @@ sub test_zones {
         cache_groups => 0,
         server_host  => Config('server_host'),
         server_port  => Config('server_port'),
+        data_protocol     => Config('data_protocol'),
+        transfer_protocol => ( Config('transfer_protocol') || 'http' ),
     );
     isa_ok( $tuser2, 'NicTool' ) or die "Couldn't create NicTool Object";
 
     $tuser2->login(
         username => 'testuser2@testsubgroup',
-        password => 'testpass2',
+        password => 'T3st!P@ss88',
     );
     noerrok( $tuser2->result ) && ok( $tuser2->nt_user_session )
         or die "Couldn't log in";
@@ -1851,14 +1855,16 @@ sub test_zone_records {
         cache_users  => 0,
         cache_groups => 0,
         server_host  => Config('server_host'),
-        server_port  => Config('server_port')
+        server_port  => Config('server_port'),
+        data_protocol     => Config('data_protocol'),
+        transfer_protocol => ( Config('transfer_protocol') || 'http' )
     );
     isa_ok( $tuser2, 'NicTool' )
         or die "Couldn't create NicTool Object";
 
     $tuser2->login(
         username => 'testuser2@testsubgroup',
-        password => 'testpass2',
+        password => 'T3st!P@ss88',
     );
     noerrok( $tuser2->result ) && ok( $tuser2->nt_user_session )
         or die "Couldn't log in";

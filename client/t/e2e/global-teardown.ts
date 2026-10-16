@@ -2,7 +2,7 @@ import { request } from '@playwright/test';
 import { readdirSync, readFileSync, unlinkSync } from 'node:fs';
 import path from 'node:path';
 import {
-  BASE, apiLogin, cookieString, authGet,
+  BASE, TEST_GID, apiLogin, cookieString, authGet,
   deleteGroup, deleteZone, deleteUser, deleteNameserver,
 } from './helpers';
 
@@ -177,7 +177,7 @@ export default async function globalTeardown(): Promise<void> {
   let total = 0;
   let lastRemoved = 0;
   for (let round = 0; round <= 5; round++) {
-    lastRemoved = await cleanGroup(pw, cookies, '1', new Set(), runIds);
+    lastRemoved = await cleanGroup(pw, cookies, String(TEST_GID), new Set(), runIds);
     total += lastRemoved;
     if (lastRemoved === 0) break;
   }

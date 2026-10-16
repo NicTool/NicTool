@@ -4,7 +4,6 @@ package NicTool;
 
 use strict;
 use Carp;
-use SOAP::Lite;
 
 #use Data::Dumper;
 
@@ -16,7 +15,7 @@ use NicTool::Transport;
 use NicTool::Cache;
 our $AUTOLOAD;
 
-$NicTool::VERSION = '1.03';
+$NicTool::VERSION = '1.04';
 
 sub new {
     my $pkg  = shift;
@@ -99,8 +98,8 @@ sub _conf {
     return {
         'server_host'          => 'localhost',
         'server_port'          => '8082',
-        'transfer_protocol'    => 'http',
-        'data_protocol'        => 'soap',
+        'transfer_protocol'    => ($ENV{NICTOOL_SERVER_PROTOCOL} || 'http'),
+        'data_protocol'        => ($ENV{NICTOOL_DATA_PROTOCOL} || 'soap'),
         'nt_user_session'      => undef,
         'use_protocol_version' => 0,
         'nt_protocol_version'  => '1.0',
@@ -346,7 +345,7 @@ NicTool - A client framework for interaction with a NicToolServer via SOAP or XM
 
 =head1 VERSION
 
-version 1.02
+version 1.04
 
 =head1 SYNOPSIS
 

@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import {
-  BASE, USERNAME, PASSWORD, GROUP_DEFAULTS,
+  BASE, USERNAME, PASSWORD, GROUP_DEFAULTS, TEST_GID,
   freshCtx, getLoginCsrf, apiLogin, authGet, authPost,
   expectSecurityHeaders, browserLogin, collectViolations,
   findInListing, uniqueName, uniqueNsName,
@@ -21,7 +21,7 @@ test.describe('T1: Security Headers', () => {
   test('authenticated page has all security headers', async ({ playwright }) => {
     const { sessionCookie, csrfCookie } = await apiLogin(playwright);
     const cookies = `NicTool=${sessionCookie}; NicTool_csrf=${csrfCookie}`;
-    const { res } = await authGet(playwright, `${BASE}/group.cgi?nt_group_id=1`, cookies);
+    const { res } = await authGet(playwright, `${BASE}/group.cgi?nt_group_id=${TEST_GID}`, cookies);
     expect(res.status()).toBe(200);
     expectSecurityHeaders(res.headers());
   });
@@ -123,7 +123,7 @@ test.describe('T6: CSRF Blocks Forged Authenticated POST', () => {
     const { sessionCookie, csrfCookie } = await apiLogin(playwright);
     const cookies = `NicTool=${sessionCookie}; NicTool_csrf=${csrfCookie}`;
     const { body } = await authPost(playwright, `${BASE}/group.cgi`, cookies,
-      `nt_group_id=1&new=1&Create=Create&name=csrf_test_group&${GROUP_DEFAULTS}`);
+      `nt_group_id=${TEST_GID}&new=1&Create=Create&name=csrf_test_group&${GROUP_DEFAULTS}`);
     expect(body).toContain('CSRF validation failed');
   });
 });
@@ -139,12 +139,12 @@ test.describe('T7: CRUD Regression', () => {
     // --- Create a sub-group ---
     const groupName = uniqueName('e2e_test');
     await authPost(playwright, `${BASE}/group.cgi`, cookies,
-      `nt_group_id=1&new=1&Create=Create&name=${groupName}&${GROUP_DEFAULTS}&csrf_token=${csrfCookie}`);
+      `nt_group_id=${TEST_GID}&new=1&Create=Create&name=${groupName}&${GROUP_DEFAULTS}&csrf_token=${csrfCookie}`);
 
     // Fetch the group list to find the new group ID
     let body = '';
     const groupId = await findInListing(playwright, cookies,
-      { cgi: 'group.cgi', gid: 1, idParam: 'nt_group_id' }, groupName);
+      { cgi: 'group.cgi', gid: TEST_GID, idParam: 'nt_group_id' }, groupName);
     expect(groupId).toBeTruthy();
     const gid = groupId!;
 
@@ -186,9 +186,9 @@ test.describe('T7: CRUD Regression', () => {
 
     // --- Delete the group (include csrf_token in query string) ---
     ({ body } = await authGet(playwright,
-      `${BASE}/group.cgi?nt_group_id=1&delete=${gid}&csrf_token=${csrfCookie}`, cookies));
+      `${BASE}/group.cgi?nt_group_id=${TEST_GID}&delete=${gid}&csrf_token=${csrfCookie}`, cookies));
     expect(await findInListing(playwright, cookies,
-      { cgi: 'group.cgi', gid: 1, idParam: 'nt_group_id' }, groupName)).toBeNull();
+      { cgi: 'group.cgi', gid: TEST_GID, idParam: 'nt_group_id' }, groupName)).toBeNull();
   });
 });
 
@@ -217,21 +217,21 @@ test.describe('T9: Delete Record is POST', () => {
     // Create a temp zone in root group
     const zoneName = `${uniqueNsName('e2e-del')}.test`;
     await authPost(playwright, `${BASE}/group_zones.cgi`, cookies,
-      `nt_group_id=1&new=1&Create=Create&zone=${zoneName}&mailaddr=admin.${zoneName}&description=e2e&ttl=3600&refresh=16384&retry=2048&expire=1048576&minimum=2560&csrf_token=${csrfCookie}`);
+      `nt_group_id=${TEST_GID}&new=1&Create=Create&zone=${zoneName}&mailaddr=admin.${zoneName}&description=e2e&ttl=3600&refresh=16384&retry=2048&expire=1048576&minimum=2560&csrf_token=${csrfCookie}`);
 
     // Find zone ID
     let body = '';
     const foundZoneId = await findInListing(playwright, cookies,
-      { cgi: 'group_zones.cgi', gid: 1, idParam: 'nt_zone_id' }, zoneName);
+      { cgi: 'group_zones.cgi', gid: TEST_GID, idParam: 'nt_zone_id' }, zoneName);
     expect(foundZoneId).toBeTruthy();
     const zoneId = foundZoneId!;
 
     // Create an A record
     await authPost(playwright, `${BASE}/zone.cgi`, cookies,
-      `nt_group_id=1&nt_zone_id=${zoneId}&new_record=1&Create=Create&name=deltest&type=A&address=192.0.2.99&ttl=3600&csrf_token=${csrfCookie}`);
+      `nt_group_id=${TEST_GID}&nt_zone_id=${zoneId}&new_record=1&Create=Create&name=deltest&type=A&address=192.0.2.99&ttl=3600&csrf_token=${csrfCookie}`);
 
     // Fetch zone page and verify delete form structure
-    ({ body } = await authGet(playwright, `${BASE}/zone.cgi?nt_group_id=1&nt_zone_id=${zoneId}`, cookies));
+    ({ body } = await authGet(playwright, `${BASE}/zone.cgi?nt_group_id=${TEST_GID}&nt_zone_id=${zoneId}`, cookies));
 
     expect(body).toContain('method="post"');
     expect(body).toContain('name="delete_record"');
@@ -242,10 +242,10 @@ test.describe('T9: Delete Record is POST', () => {
     const recordIdMatch = body.match(/name="delete_record"\s+value="(\d+)"/);
     if (recordIdMatch) {
       await authPost(playwright, `${BASE}/zone.cgi`, cookies,
-        `nt_group_id=1&nt_zone_id=${zoneId}&nt_zone_record_id=${recordIdMatch[1]}&delete_record=${recordIdMatch[1]}&csrf_token=${csrfCookie}`);
+        `nt_group_id=${TEST_GID}&nt_zone_id=${zoneId}&nt_zone_record_id=${recordIdMatch[1]}&delete_record=${recordIdMatch[1]}&csrf_token=${csrfCookie}`);
     }
     await authPost(playwright, `${BASE}/group_zones.cgi`, cookies,
-      `nt_group_id=1&delete=1&zone_list=${zoneId}&csrf_token=${csrfCookie}`);
+      `nt_group_id=${TEST_GID}&delete=1&zone_list=${zoneId}&csrf_token=${csrfCookie}`);
   });
 });
 

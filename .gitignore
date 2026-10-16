@@ -17,4 +17,5 @@ client/lib/nictoolclient.conf
 server/lib/nictoolserver.conf
 dist/docker/.env
 server/t/test.cfg
+server/t/test-rest.cfg
 server/api/t/test.cfg

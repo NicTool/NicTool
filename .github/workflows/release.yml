@@ -103,8 +103,12 @@ jobs:
           echo "ROOT_USER_PASSWORD=$ROOT_PW" >> "$GITHUB_ENV"
           echo "NICTOOL_CLIENT_DIR=$GITHUB_WORKSPACE/client" >> "$GITHUB_ENV"
 
-      - name: Install NicTool client and server
+      - name: Install NicTool API, client, and server
         run: |
+          cd "$GITHUB_WORKSPACE/server/api"
+          perl Makefile.PL
+          cpanm -n .
+
           cd "$GITHUB_WORKSPACE/client"
           perl Makefile.PL
           cpanm -n .

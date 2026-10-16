@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import {
-  BASE, USERNAME, PASSWORD,
+  BASE, USERNAME, PASSWORD, TEST_GID,
   freshCtx, getLoginCsrf, apiLogin, authGet, cookieString,
 } from './helpers';
 
@@ -56,7 +56,7 @@ test.describe('Authentication', () => {
     const cookies = cookieString(sessionCookie, csrfCookie);
 
     // Verify session works first
-    const { body: before } = await authGet(playwright, `${BASE}/group.cgi?nt_group_id=1`, cookies);
+    const { body: before } = await authGet(playwright, `${BASE}/group.cgi?nt_group_id=${TEST_GID}`, cookies);
     expect(before).toContain('NicTool');
 
     // Logout
@@ -64,7 +64,7 @@ test.describe('Authentication', () => {
       `${BASE}/index.cgi?logout=1&csrf_token=${csrfCookie}`, cookies);
 
     // Session should no longer work - should get login page or redirect
-    const { body: after } = await authGet(playwright, `${BASE}/group.cgi?nt_group_id=1`, cookies);
+    const { body: after } = await authGet(playwright, `${BASE}/group.cgi?nt_group_id=${TEST_GID}`, cookies);
     expect(after.toLowerCase()).toMatch(/login|username|password|error|session/);
   });
 
@@ -77,19 +77,19 @@ test.describe('Authentication', () => {
     // page is titled that too, which would pass whether or not logout happened.
     await authGet(playwright, `${BASE}/index.cgi?logout=1`, cookies);
     const { body: afterMissing } = await authGet(playwright,
-      `${BASE}/group.cgi?nt_group_id=1`, cookies);
+      `${BASE}/group.cgi?nt_group_id=${TEST_GID}`, cookies);
     expect(afterMissing).toContain('logout=1');
 
     await authGet(playwright,
       `${BASE}/index.cgi?logout=1&csrf_token=${'f'.repeat(40)}`, cookies);
     const { body: afterForged } = await authGet(playwright,
-      `${BASE}/group.cgi?nt_group_id=1`, cookies);
+      `${BASE}/group.cgi?nt_group_id=${TEST_GID}`, cookies);
     expect(afterForged).toContain('logout=1');
   });
 
   test('invalid session cookie gets no authenticated content', async ({ playwright }) => {
     const cookies = cookieString('invalidsessioncookie123', 'invalidcsrf123');
-    const { body } = await authGet(playwright, `${BASE}/group.cgi?nt_group_id=1`, cookies);
+    const { body } = await authGet(playwright, `${BASE}/group.cgi?nt_group_id=${TEST_GID}`, cookies);
     expect(body.toLowerCase()).toMatch(/login|username|password|error|session/);
   });
 
@@ -97,13 +97,13 @@ test.describe('Authentication', () => {
     const { sessionCookie, csrfCookie } = await apiLogin(playwright);
     const cookies = cookieString(sessionCookie, csrfCookie);
 
-    const { body: r1 } = await authGet(playwright, `${BASE}/group.cgi?nt_group_id=1`, cookies);
+    const { body: r1 } = await authGet(playwright, `${BASE}/group.cgi?nt_group_id=${TEST_GID}`, cookies);
     expect(r1).toContain('NicTool');
 
-    const { body: r2 } = await authGet(playwright, `${BASE}/group.cgi?nt_group_id=1`, cookies);
+    const { body: r2 } = await authGet(playwright, `${BASE}/group.cgi?nt_group_id=${TEST_GID}`, cookies);
     expect(r2).toContain('NicTool');
 
-    const { body: r3 } = await authGet(playwright, `${BASE}/group.cgi?nt_group_id=1`, cookies);
+    const { body: r3 } = await authGet(playwright, `${BASE}/group.cgi?nt_group_id=${TEST_GID}`, cookies);
     expect(r3).toContain('NicTool');
   });
 });

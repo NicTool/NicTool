@@ -36,6 +36,7 @@ sub get_transport_agent {
     my %transport_class_for = (
         SOAP   => 'NicTool::Transport::SOAP',
         XMLRPC => 'NicTool::Transport::XMLRPC',
+        REST   => 'NicTool::Transport::REST',
     );
     my $class = $transport_class_for{$dp}
         or die "Unable to use class NicTool::Transport::$dp for data protocol '$protocol'";
