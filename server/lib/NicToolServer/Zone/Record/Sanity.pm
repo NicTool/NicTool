@@ -770,7 +770,7 @@ NicToolServer::Zone::Record::Sanity - sanity tests for zone records
 
 =head1 VERSION
 
-version 2.41
+version 2.42
 
 =head1 SYNOPSIS
 

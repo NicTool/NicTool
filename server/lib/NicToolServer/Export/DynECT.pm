@@ -380,7 +380,7 @@ NicToolServer::Export::DynECT - export NicTool DNS data to DynECT managed DNS
 
 =head1 VERSION
 
-version 2.41
+version 2.42
 
 =head1 SYNOPSIS
 

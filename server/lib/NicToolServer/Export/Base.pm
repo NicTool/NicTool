@@ -121,7 +121,7 @@ NicToolServer::Export::Base - abstract base class for exporter modules
 
 =head1 VERSION
 
-version 2.41
+version 2.42
 
 =head1 AUTHORS
 

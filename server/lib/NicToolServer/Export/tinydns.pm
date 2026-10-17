@@ -948,7 +948,7 @@ NicToolServer::Export::tinydns - export NicTool DNS data to tinydns (part of djb
 
 =head1 VERSION
 
-version 2.41
+version 2.42
 
 =head1 Instructions for Use
 

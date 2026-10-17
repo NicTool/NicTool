@@ -490,7 +490,7 @@ NicToolServer::Export::BIND - exporting DNS data to authoritative DNS servers
 
 =head1 VERSION
 
-version 2.41
+version 2.42
 
 =head1 SYNOPSIS
 
