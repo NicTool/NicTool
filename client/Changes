@@ -1,4 +1,18 @@
 
+2.42    2026.10.17
+
+* Security
+    * CSRF: derive tokens from the session and verify against it, #353, #355
+    * CSRF: add tokens to top nav links, #354
+    * CSRF: require a token to log out, #355
+* Fixes
+    * login: reuse the CSRF token so other open login tabs keep working, #353
+    * group list: sub-groups column read the wrong field, #375
+* Updates & Changes
+    * bump minimum Perl version to 5.030, #354
+    * consolidate duplicated code, #374
+    * CSRF unit tests and expanded Playwright E2E coverage, #355, #377, #378
+
 2.41    2026.05.26
 
 * Security

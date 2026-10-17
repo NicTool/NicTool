@@ -399,7 +399,7 @@ NicToolServer::Import::Base - base class for NicTool import classes
 
 =head1 VERSION
 
-version 2.41
+version 2.42
 
 =head1 AUTHORS
 
