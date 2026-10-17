@@ -30,7 +30,7 @@ NicToolServer::Client::SOAP - SOAP implementation for NicToolServer
 
 =head1 VERSION
 
-version 2.41
+version 2.42
 
 =head1 SYNOPSIS
 

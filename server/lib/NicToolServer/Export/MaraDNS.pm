@@ -69,7 +69,7 @@ NicToolServer::Export::MaraDNS - exporting DNS data to MaraDNS servers
 
 =head1 VERSION
 
-version 2.41
+version 2.42
 
 =head1 AUTHOR
 

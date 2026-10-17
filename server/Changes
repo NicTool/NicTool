@@ -1,5 +1,34 @@
 Revision history for NicToolServer
 
+2.42    2026.10.17
+
+* Security
+    * CSRF: verify tokens against the session, #355
+    * session: accept only v2 session ids, ignore v3, #372
+    * edit_user: verify the current password on self changes, #378
+* Fixes
+    * zone record: TTL-sync cascade logged edits as nt_user_id=0, #357
+    * zone record: sync RRset TTLs only after the record saves, #378
+    * zone record: check every wildcard owner name for invalid chars, #376
+    * zone: find nameservers through the zone's group, #371
+    * users: move permission rows with users, #367
+    * groups: only read and update the group's own permission row, #367
+    * export: include never-published zones in publish_ts exports, #375
+    * log: truncate long descriptions to fit nt_user_global_log, #375
+    * search: fix search & sort fields for ns, users, zones, records, logs, #375
+    * api: add NicTool::Log; zone delegation calls pass the delegate group, #375
+* Updates & Changes
+    * zone: store names lc without the trailing dot (as v3 does), #373
+      * upgrade.pl lc existing zones, stops if that creates dupes
+    * passwords: verify v3 self-describing PBKDF2 hashes, #363
+    * sql/upgrade.pl: detect schema drift and heal it, #356
+    * sql/upgrade.pl: repair (not delete) orphaned audit rows, #357
+    * UPGRADE: rewrite for the current era, #358
+    * declare DBD::mysql as the driver prereq, #359, #369
+    * bump min Perl version to 5.030, #354
+    * docker: make the test environment opt-in, #370
+    * consolidate duplicated code, #374, #377
+
 2.41    2026.05.26
 
 * Security

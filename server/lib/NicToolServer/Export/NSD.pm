@@ -65,7 +65,7 @@ NicToolServer::Export::NSD - exporting DNS data to NSD
 
 =head1 VERSION
 
-version 2.41
+version 2.42
 
 =head1 SYNOPSIS
 

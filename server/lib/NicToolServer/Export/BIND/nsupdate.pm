@@ -475,7 +475,7 @@ NicToolServer::Export::BIND::nsupdate - exporting DNS data to authoritative DNS 
 
 =head1 VERSION
 
-version 2.41
+version 2.42
 
 =head1 SYNOPSIS
 
